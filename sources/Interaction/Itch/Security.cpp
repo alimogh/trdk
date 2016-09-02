@@ -23,7 +23,7 @@ Itch::Security::Security(
 		Context &context,
 		const Lib::Symbol &symbol,
 		const MarketDataSource &source)
-	: Base(context, symbol, source, true)
+	: Base(context, symbol, source, true, SupportedLevel1Types().set())
 	, m_hasBidUpdates(false)
 	, m_hasAskUpdates(false)
 	, m_maxNewOrderId(0) {

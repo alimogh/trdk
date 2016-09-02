@@ -49,15 +49,7 @@ namespace {
 		val = std::numeric_limits<Level1Value>::quiet_NaN();
 	}
 
-	template<Level1TickType tick>
-	double GetIfSet(const Level1 &level1) {
-		const Level1Value &value = level1[tick];
-		return IsSet(value) ? value : 0;
-	}
-
 	//! Returns symbol price precision.
-	/** @sa https://mbcm.robotdk.com:8443/x/K4AP
-	  */
 	uint8_t GetPrecision(const Symbol &symbol, const MarketDataSource &source) {
 		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
 			return 5;
@@ -102,9 +94,24 @@ Security::Bar::Bar(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Security::Exception::Exception(const char *what)
+	: Lib::Exception(what) {
+	//...//
+}
+
+Security::MarketDataValueDoesNotExist::MarketDataValueDoesNotExist(
+		const char *what)
+	: Exception(what) {
+	//...//
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 class Security::Implementation : private boost::noncopyable {
 
 public:
+
+	Security &m_self;
 
 	static boost::atomic<InstanceId> m_nextInstanceId;
 	const InstanceId m_instanceId;
@@ -133,6 +140,7 @@ public:
 	boost::atomic_int64_t m_marketDataTime;
 	boost::atomic_size_t m_numberOfMarketDataUpdates;
 	boost::atomic_bool m_isLevel1Started;
+	const SupportedLevel1Types m_supportedLevel1Types;
 	boost::atomic_bool m_isOnline;
 
 	boost::optional<ContractExpiration> m_expiration;
@@ -142,10 +150,13 @@ public:
 public:
 
 	Implementation(
+			Security &self,
 			const MarketDataSource &source,
 			const Symbol &symbol,
-			bool isOnline)
-		: m_instanceId(m_nextInstanceId++)
+			bool isOnline,
+			const SupportedLevel1Types &supportedLevel1Types)
+		: m_self(self)
+		, m_instanceId(m_nextInstanceId++)
 		, m_source(source)
 		, m_pricePrecision(GetPrecision(symbol, source))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
@@ -153,16 +164,18 @@ public:
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
 		, m_isLevel1Started(false)
+		, m_supportedLevel1Types(supportedLevel1Types)
 		, m_isOnline(isOnline) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
-			m_riskControlContext[i] = m_source.GetContext()
+			m_riskControlContext[i] = m_source
+				.GetContext()
 				.GetRiskControl(TradingMode(i + 1))
 				.CreateSymbolContext(symbol);
 		}
 	
-		foreach (auto &item, m_level1) {
+		for (auto &item: m_level1) {
 			Unset(item);
 		}
 
@@ -188,7 +201,9 @@ public:
 			flush,
 			isPreviouslyChanged);
 		UpdateMarketDataStat(time);
-		m_level1TickSignal(time, tick, flush);
+		if (m_isLevel1Started) {
+			m_level1TickSignal(time, tick, flush);
+		}
 		return isChanged;
 	}
 
@@ -241,14 +256,16 @@ public:
 			bool flush,
 			bool isChanged,
 			bool isPreviouslyChanged) {
+
+		timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 		
 		if (!flush || !(isChanged || isPreviouslyChanged)) {
 			return;
 		}
 		
 		if (!m_isLevel1Started) {
-			foreach (const auto &item, m_level1) {
-				if (!IsSet(item)) {
+			for (auto i = 0; i < m_level1.size(); ++i) {
+				if (!IsSet(m_level1[i]) && m_supportedLevel1Types[i]) {
 					return;
 				}
 			}
@@ -256,7 +273,6 @@ public:
 			m_isLevel1Started = true;
 		}
 
-		timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 		UpdateMarketDataStat(time);
 		m_level1UpdateSignal(timeMeasurement);
 
@@ -268,9 +284,22 @@ public:
 		return result;
 	}
 
+	template<Level1TickType tick>
+	double GetLevel1Value(const Level1 &level1) const {
+		const Level1Value &value = level1[tick];
+		if (!IsSet(value)) {
+			boost::format message(
+				"Market data value \"%1%\" does not exists for %2%");
+			message % ConvertToPch(tick) % m_self;
+			throw MarketDataValueDoesNotExist(message.str().c_str());
+		}
+		return value;
+	}
+
 };
 
-boost::atomic<Security::InstanceId> Security::Implementation::m_nextInstanceId(0);
+boost::atomic<Security::InstanceId> Security::Implementation::m_nextInstanceId(
+	0);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -278,9 +307,17 @@ Security::Security(
 		Context &context,
 		const Symbol &symbol,
 		const MarketDataSource &source,
-		bool isOnline)
-	: Base(context, symbol),
-	m_pimpl(new Implementation(source, GetSymbol(), isOnline)) {
+		bool isOnline,
+		const SupportedLevel1Types &supportedLevel1Types)
+	: Base(context, symbol)
+	, m_pimpl(
+		new Implementation(
+			*this,
+			source,
+			symbol, 
+			isOnline,
+			supportedLevel1Types)) {
+	//...//
 }
 
 Security::~Security() {
@@ -295,7 +332,7 @@ RiskControlSymbolContext & Security::GetRiskControlContext(
 		const TradingMode &mode) {
 	AssertLt(0, mode);
 	AssertGe(m_pimpl->m_riskControlContext.size(), mode);
-	// If context is not set - riscontrol is disabled and nobody should call
+	// If context is not set - risk control is disabled and nobody should call
 	// this method:
 	Assert(m_pimpl->m_riskControlContext[mode - 1]);
 	return *m_pimpl->m_riskControlContext[mode - 1];
@@ -375,19 +412,23 @@ double Security::GetLastPrice() const {
 }
 
 ScaledPrice Security::GetLastPriceScaled() const {
-	return ScaledPrice(GetIfSet<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1));
+	return ScaledPrice(
+		m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1));
 }
 
 Qty Security::GetLastQty() const {
-	return Qty(GetIfSet<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
+	return Qty(
+		m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetTradedVolume() const {
-	return Qty(GetIfSet<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
+	return Qty(
+		m_pimpl->GetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
 }
 
 ScaledPrice Security::GetAskPriceScaled() const {
-	return ScaledPrice(GetIfSet<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
+	return ScaledPrice(
+		m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
 }
 
 double Security::GetAskPrice() const {
@@ -395,11 +436,12 @@ double Security::GetAskPrice() const {
 }
 
 Qty Security::GetAskQty() const {
-	return Qty(GetIfSet<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
+	return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
 }
 
 ScaledPrice Security::GetBidPriceScaled() const {
-	return ScaledPrice(GetIfSet<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
+	return ScaledPrice(
+		m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
 }
 
 double Security::GetBidPrice() const {
@@ -407,7 +449,7 @@ double Security::GetBidPrice() const {
 }
 
 Qty Security::GetBidQty() const {
-	return Qty(GetIfSet<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
+	return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetBrokerPosition() const {
@@ -624,6 +666,22 @@ void Security::AddLevel1Tick(
 					timeMeasurement,
 					false,
 					false))));
+}
+
+void Security::AddLevel1Tick(
+		const pt::ptime &time,
+		const std::vector<trdk::Level1TickValue> &ticks,
+		const TimeMeasurement::Milestones &timeMeasurement) {
+	size_t counter = 0;
+	bool isPreviousChanged = false;
+	for (const auto &tick: ticks) {
+		isPreviousChanged = m_pimpl->AddLevel1Tick(
+			time,
+			tick,
+			timeMeasurement,
+			++counter >= ticks.size(),
+			isPreviousChanged);
+	}
 }
 
 void Security::AddTrade(

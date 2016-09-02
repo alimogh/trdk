@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <bitset>
+
 #if defined(BOOST_GCC)
 #	include <signal.h>
 #endif

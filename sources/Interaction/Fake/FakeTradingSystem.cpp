@@ -231,7 +231,7 @@ public:
 		} else {
 			order.submitTime = now;
 		}
-		m_currentOrders->push_back(order);
+		m_currentOrders->emplace_back(order);
 	
 		m_condition.notify_all();
 	
@@ -280,7 +280,7 @@ private:
 						: &m_orders1;
 				}
 				Assert(!orders->empty());
-				foreach (const Order &order, *orders) {
+				for (const Order &order: *orders) {
 					Assert(order.callback);
 					Assert(!IsZero(order.price));
 					if (order.execDelay.total_nanoseconds() > 0) {
@@ -431,6 +431,7 @@ OrderId Fake::TradingSystem::SendSell(
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	AssertLt(0, price);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -466,6 +467,8 @@ OrderId Fake::TradingSystem::SendSellImmediatelyOrCancel(
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	AssertLt(0, price);
+	AssertLt(0, qty);
 	Order order = {
 		&security,
 		currency,
@@ -529,6 +532,7 @@ OrderId Fake::TradingSystem::SendBuy(
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	AssertLt(0, price);
 	AssertLt(0, qty);
 	Order order = {
 		&security,
@@ -564,6 +568,8 @@ OrderId Fake::TradingSystem::SendBuyImmediatelyOrCancel(
 			const ScaledPrice &price,
 			const OrderParams &params,
 			const OrderStatusUpdateSlot &statusUpdateSlot) {
+	AssertLt(0, price);
+	AssertLt(0, qty);
 	Order order = {
 		&security,
 		currency,

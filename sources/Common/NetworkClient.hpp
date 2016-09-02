@@ -94,8 +94,8 @@ namespace trdk { namespace Lib {
 		  */
 		virtual void HandleNewMessages(
 				const boost::posix_time::ptime &time,
-				const Buffer::iterator &begin,
-				const Buffer::iterator &end,
+				const Buffer::const_iterator &begin,
+				const Buffer::const_iterator &end,
 				const trdk::Lib::TimeMeasurement::Milestones &)
 			= 0;
 

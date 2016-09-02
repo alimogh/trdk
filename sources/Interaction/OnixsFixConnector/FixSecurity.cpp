@@ -23,7 +23,7 @@ FixSecurity::FixSecurity(
 		Context &context,
 		const Symbol &symbol,
 		const MarketDataSource &source)
-	: Base(context, symbol, source, true)
+	: Base(context, symbol, source, true, SupportedLevel1Types().set())
 	, m_flush(&FixSecurity::FlushBookIterativeUpdates) {
 	//...//
 }

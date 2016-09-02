@@ -187,8 +187,8 @@ public:
 				const auto newSize = activeBuffer.size() * 2;
 				{
 					boost::format message(
-						"Increase the buffer size"
-							": %1$.02f -> %2$.02f kilobytes.");
+						"Increasing buffer size:"
+							" %1$.02f -> %2$.02f kilobytes.");
 					message
 						% (double(activeBuffer.size()) / 1024)
 						% (double(newSize) / 1024);
@@ -209,16 +209,13 @@ public:
 		StartRead(nextBuffer, unreceivedMessageLen, activeBuffer);
 
 		Assert(transferedRend > lastMessageRbegin);
-		Assert(lastMessageRbegin.base() < activeBuffer.cend());
+		Assert(lastMessageRbegin.base() <= activeBuffer.cend());
 		Assert(activeBuffer.cbegin() < lastMessageRbegin.base());
 		{
-			
-			const auto &begin = activeBuffer.begin();
-			const auto &len = std::distance(
-				activeBuffer.cbegin(),
-				lastMessageRbegin.base());
-			const auto &end = begin + len;
-			
+
+			const auto &begin = activeBuffer.cbegin();
+			const auto &end = lastMessageRbegin.base();
+
 			try {
 			
 				m_self.HandleNewMessages(now, begin, end, timeMeasurement);
@@ -252,8 +249,8 @@ public:
 					<< (ex.GetExpectedByte() & 0xff)
 					<< '.';
 				m_self.LogError(ss.str());
-				
-				throw Exception("Protocol error");
+
+				throw;
 			
 			}
 		
@@ -265,6 +262,10 @@ public:
 			activeBuffer.clear();
 			activeBuffer.resize(nextBuffer.size());
 		}
+
+#		ifdef DEV_VER
+			std::fill(activeBuffer.begin(), activeBuffer.end(), 0xff);
+#		endif
 
 	}
 
@@ -375,6 +376,16 @@ void NetworkClient::Start() {
 #	endif
 	m_pimpl->m_buffer.first.resize(initiaBufferSize);
 	m_pimpl->m_buffer.second.resize(m_pimpl->m_buffer.first.size());
+#	ifdef DEV_VER
+		std::fill(
+			m_pimpl->m_buffer.first.begin(),
+			m_pimpl->m_buffer.first.end(),
+			0xff);
+		std::fill(
+			m_pimpl->m_buffer.second.begin(),
+			m_pimpl->m_buffer.second.end(),
+			0xff);
+#	endif
 
 	m_pimpl->StartRead(m_pimpl->m_buffer.first, 0, m_pimpl->m_buffer.second);
 

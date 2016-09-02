@@ -46,6 +46,31 @@ std::ostream & trdk::operator <<(std::ostream &os, const OrderParams &params) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char * trdk::ConvertToPch(const Level1TickType &tickType) {
+	static_assert(numberOfLevel1TickTypes == 7, "List changed.");
+	switch (tickType) {
+		default:
+			AssertEq(LEVEL1_TICK_LAST_PRICE, tickType);
+			return "UNKNOWN";
+		case LEVEL1_TICK_LAST_PRICE:
+			return "last price";
+		case LEVEL1_TICK_LAST_QTY:
+			return "last qty";
+		case LEVEL1_TICK_BID_PRICE:
+			return "bid price";
+		case LEVEL1_TICK_BID_QTY:
+			return "bid qty";
+		case LEVEL1_TICK_ASK_PRICE:
+			return "ask price";
+		case LEVEL1_TICK_ASK_QTY:
+			return "ask qty";
+		case LEVEL1_TICK_TRADING_VOLUME:
+			return "trading volume";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 TradingMode trdk::ConvertTradingModeFromString(const std::string &mode) {
 	
 	static_assert(numberOfTradingModes == 3, "List changed.");

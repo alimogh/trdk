@@ -17,11 +17,33 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::DdfPlus;
 
+namespace pt = boost::posix_time;
+
+namespace {
+
+	DdfPlus::Security::SupportedLevel1Types GetSupportedLevel1Types() {
+		DdfPlus::Security::SupportedLevel1Types result;
+		result.set(LEVEL1_TICK_LAST_PRICE);
+		result.set(LEVEL1_TICK_LAST_QTY);
+		result.set(LEVEL1_TICK_BID_PRICE);
+		result.set(LEVEL1_TICK_BID_QTY);
+		result.set(LEVEL1_TICK_ASK_PRICE);
+		result.set(LEVEL1_TICK_ASK_QTY);
+		return result;
+	}
+
+}
+
 DdfPlus::Security::Security(
 		Context &context,
 		const Symbol &symbol,
 		const trdk::MarketDataSource &source)
-	: trdk::Security(context, symbol, source, true) {
+	: trdk::Security(
+		context,
+		symbol,
+		source,
+		true,
+		GetSupportedLevel1Types()) {
 	//...//
 }
 
@@ -62,4 +84,14 @@ std::string DdfPlus::Security::GenerateDdfPlusCode() const {
 
 	return result.str();
 
+}
+
+void DdfPlus::Security::AddLevel1Tick(const Level1TickValue &&tick) {
+	m_ticksBuffer.emplace_back(std::move(tick));
+}
+
+void DdfPlus::Security::Flush(
+		const pt::ptime &time,
+		const TimeMeasurement::Milestones &timeMeasurement) {
+	Base::AddLevel1Tick(time, m_ticksBuffer, timeMeasurement);
 }

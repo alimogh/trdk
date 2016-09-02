@@ -105,7 +105,8 @@ namespace trdk { namespace Tests {
 			context,
 			lib::Symbol("TEST_SCALE2/USD::STK"),
 			marketDataSource,
-			true);
+			true,
+			Security::SupportedLevel1Types());
 		svc::BarService service(
 			context,
 			"Tag",

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/Security.hpp"
+#include "Fwd.hpp"
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
@@ -31,11 +32,20 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 		using Base::SetExpiration;
 		using Base::IsLevel1Required;
-		using Base::AddLevel1Tick;
 
 	public:
 
 		std::string GenerateDdfPlusCode() const;
+
+		void AddLevel1Tick(const Level1TickValue &&);
+
+		void Flush(
+				const boost::posix_time::ptime &,
+				const Lib::TimeMeasurement::Milestones &);
+
+	private:
+
+		std::vector<Level1TickValue> m_ticksBuffer;
 
 	};
 

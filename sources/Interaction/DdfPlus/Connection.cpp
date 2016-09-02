@@ -27,160 +27,23 @@ namespace gr = boost::gregorian;
 
 namespace {
 
-	////////////////////////////////////////////////////////////////////////////////
+
+	enum {
+		//! The start of header <soh> control character(x01) indicates the
+		//! beginning of the block.
+		SOH = 0x01,
+		//! <stx> is control character (x02).
+		STX = 0x02,
+		//! <etx> control character(x03) signified the end of the block.
+		EXT = 0x03,
+		VARIABLE_FIELD_END = ',',
+	};
 
 	class Client : public Lib::NetworkClient {
 
 	public:
 
 		typedef Lib::NetworkClient Base;
-
-	private:
-
-		enum {
-			//! The start of header <soh> control character(x01) indicates the
-			//! beginning of the block.
-			SOH = 0x01,
-			//! <stx> is control character (x02).
-			STX = 0x02,
-			//! <etx> control character(x03) signified the end of the block.
-			EXT = 0x03,
-			VARIABLE_FIELD_END = ',',
-		};
-
-		class ErrorMessage : private boost::noncopyable {
-		public:
-			explicit ErrorMessage(
-					Buffer::iterator begin,
-					const Buffer::iterator &bufferEnd) {
-				Assert(begin < bufferEnd);
-				if (*begin == ' ' && begin != bufferEnd) {
-					++begin;
-				}
-				m_message = &*begin;
-				m_end = std::find(begin, bufferEnd, '\n');
-				if (bufferEnd == m_end) {
-					throw ProtocolError(
-						"Error message does not have message end",
-						&*std::prev(m_end),
-						'\n');
-				}
-				// \n replacing by \0 and moving iterator to real message end.
-				*m_end++ = 0;
-			}
-		public:
-			const Buffer::iterator & GetEnd() const {
-				return m_end;
-			}
-			void Handle(const Client &) const {
-				boost::format message("Server error: \"%1%\"");
-				message % m_message;
-				throw Exception(message.str().c_str());
-			}
-		private:
-			const char *m_message;
-			Buffer::iterator m_end;
-		};
-
-		class TimeMessage : private boost::noncopyable {
-		public:
-			explicit TimeMessage(
-					const Buffer::iterator &begin,
-					const Buffer::iterator &end)
-				: m_end(end) {
-				if (std::distance(begin, m_end) != 14) {
-					throw ProtocolError(
-						"Time stamp message has wrong length",
-						&*std::prev(m_end),
-						0);
-				}
-			}
-		public:
-			void Handle(Client &client) {
-				const auto &now = client.GetContext().GetCurrentTime();
-#				if defined(_DEBUG)
-					const auto &period = pt::minutes(1);
-#				elif defined(_TEST)
-					const auto &period = pt::minutes(5);
-#				else
-					const auto &period = pt::minutes(15);
-#				endif
-				if (
-						!client.m_lastServerTimeUpdate.is_not_a_date_time()
-						&&	now - client.m_lastServerTimeUpdate < period) {
-					return;
-				}
-				try {
-					const auto &year
-						= boost::lexical_cast<uint16_t>(&*(m_end - 14), 4);
-					const auto &month
-						= boost::lexical_cast<uint16_t>(&*(m_end - 10), 2);
-					if (month <= 0 || month > 12) {
-						throw ProtocolError(
-							"Time stamp message has wrong value for month",
-							&*std::prev(m_end),
-							0);
-					}
-					const auto &day
-						= boost::lexical_cast<uint16_t>(&*(m_end - 8), 2);
-					if (month <= 0 || month > 31) {
-						throw ProtocolError(
-							"Time stamp message has wrong value for month day",
-							&*std::prev(m_end),
-							0);
-					}
-					const auto &hours
-						= boost::lexical_cast<uint32_t>(&*(m_end - 6), 2);
-					if (hours > 23) {
-						throw ProtocolError(
-							"Time stamp message has wrong value for hours",
-							&*std::prev(m_end),
-							0);
-					}
-					const auto &minutes
-						= boost::lexical_cast<uint16_t>(&*(m_end - 4), 2);
-					if (minutes > 59) {
-						throw ProtocolError(
-							"Time stamp message has wrong value for minutes",
-							&*std::prev(m_end),
-							0);
-					}
-					const auto &seconds
-						= boost::lexical_cast<uint16_t>(&*(m_end - 2), 2);
-					if (seconds > 59) {
-						throw ProtocolError(
-							"Time stamp message has wrong value for seconds",
-							&*std::prev(m_end),
-							0);
-					}
-					const pt::ptime time(
-						gr::date(year, month, day),
-						pt::time_duration(hours, minutes, seconds));
-					client.m_lastServerTimeUpdate = std::move(now);
-					client.m_lastKnownServerTime = std::move(time);
-				} catch (const boost::bad_lexical_cast &) {
-					throw ProtocolError(
-						"Time stamp message has wrong format",
-						&*std::prev(m_end),
-						0);
-				}
-				boost::format message(
-					"Server local time: %1%. Received %2$.02f %3%.");
-				message % client.m_lastKnownServerTime;
-				if (client.GetNumberOfReceivedBytes() > (1024 * 1024)) {
-					message
-						%	(client.GetNumberOfReceivedBytes() / (1024 * 1024))
-						%	"megabytes";
-				} else {
-					message
-						%	(client.GetNumberOfReceivedBytes() / 1024)
-						%	"kilobytes";
-				}
-				client.LogDebug(message.str());
-			}
-		private:
-			Buffer::iterator m_end;
-		};
 
 	public:
 		
@@ -208,18 +71,16 @@ namespace {
 		  */
 		void SubscribeToMarketData(const DdfPlus::Security &security) {
 
-			{
-				boost::format message(
-					"Sending market data request for %1% (%2%)...");
-				message % security % security.GenerateDdfPlusCode();
-				LogInfo(message.str());
-			}
+			GetLog().Info(
+				"Sending market data request for %1% (%2%)...",
+				security,
+				security.GenerateDdfPlusCode());
 
 			Assert(security.IsLevel1Required());
 			if (!security.IsLevel1Required()) {
-				boost::format message("Market data is not required by %1%.");
-				message % security;
-				LogWarn(message.str());
+				GetLog().Warn(
+					"Market data is not required by %1%.",
+					security);
 				return;
 			}
 
@@ -304,40 +165,44 @@ namespace {
 
 		virtual void HandleNewMessages(
 				const pt::ptime &now,
-				const Buffer::iterator &begin,
-				const Buffer::iterator &bufferEnd,
+				const Buffer::const_iterator &begin,
+				const Buffer::const_iterator &bufferEnd,
 				const TimeMeasurement::Milestones &measurement) {
 
 			Assert(begin != bufferEnd);
+			AssertEq('\n', *std::prev(bufferEnd));
+			AssertEq(0, m_unflushedSecurities.size());
 
-			auto messageBegin = begin;
-			do {
+			for (auto messageBegin = begin; messageBegin < bufferEnd; ) {
 
-				switch (*messageBegin++) {
+				const auto &messageEnd
+					= std::find(messageBegin, bufferEnd, '\n');
+				Assert(messageEnd != bufferEnd);
+
+				const auto messageType = *messageBegin++;
+				if (messageBegin == messageEnd) {
+					continue;
+				}
+
+				switch (messageType) {
 					case '\n':
 						break;
 					case '-':
-						messageBegin = HandleNewMessage<ErrorMessage>(
-							messageBegin,
-							bufferEnd);
+						HandleErrorMessage(messageBegin, messageEnd);
 						break;
 					case SOH:
-						messageBegin = HandleNewDdfPlusMessage(
-							now,
-							messageBegin,
-							bufferEnd,
-							measurement);
-					default:
-						for ( ; messageBegin != bufferEnd; ++messageBegin) {
-							if (*messageBegin == '\n') {
-								++messageBegin;
-								break;
-							}
-						}
+						HandleNewDdfPlusMessage(messageBegin, messageEnd);
 						break;
 				}
 
-			} while (messageBegin < bufferEnd);
+				messageBegin = std::next(messageEnd);
+
+			}
+
+			for (DdfPlus::Security *security: m_unflushedSecurities) {
+				security->Flush(now, measurement);
+			}
+			m_unflushedSecurities.clear();
 
 		}
 
@@ -351,60 +216,57 @@ namespace {
 			return GetService().GetSource().GetContext();
 		}
 
-		template<typename Message>
-		Buffer::iterator HandleNewMessage(
-				const Buffer::iterator &messageBegin,
-				const Buffer::iterator &bufferEnd) {
-			const Message message(messageBegin, bufferEnd);
-			message.Handle(*this);
-			return message.GetEnd();
+		void HandleErrorMessage(
+				Buffer::const_iterator begin,
+				const Buffer::const_iterator &end) {
+			Assert(begin < end);
+			if (*begin == ' ' && std::next(begin) != end) {
+				++begin;
+			}
+			boost::format errorMessage("Server error: \"%1%\"");
+			errorMessage % std::string(begin, end);
+			throw Exception(errorMessage.str().c_str());
 		}
 
-		Buffer::iterator HandleNewDdfPlusMessage(
-				const pt::ptime &now,
-				Buffer::iterator messageBegin,
-				const Buffer::iterator &bufferEnd,
-				const TimeMeasurement::Milestones &measurement) {
+		void HandleNewDdfPlusMessage(
+				Buffer::const_iterator messageBegin,
+				const Buffer::const_iterator &messageEnd) {
 			
-			auto end = std::find(messageBegin, bufferEnd, EXT);
-			if (end == bufferEnd) {
-				if (std::distance(messageBegin, bufferEnd) == 1) {
+			auto end = std::find(messageBegin, messageEnd, EXT);
+			if (end == messageEnd) {
+				if (std::distance(messageBegin, messageEnd) == 1) {
 					// Workaround for strange protocol behavior "0a 01 <0a>".
-					return end;
+					return;
 				}
 				throw ProtocolError(
 					"Ddfplus message does not have end",
-					&*std::prev(bufferEnd),
+					&*std::prev(messageEnd),
 					EXT);
 			}
 
 			switch (*messageBegin++) {
 				case '2':
-					HandleNewDdfPlusSubMessage(
-						now,
-						messageBegin,
-						end,
-						measurement);
+					HandleNewDdfPlusSubMessage(messageBegin, end);
 					break;
 				case '#':
-					TimeMessage(messageBegin, end).Handle(*this);
+					HandleDdfPlusTimeMessage(messageBegin, end);
 					break;
 				default:
-					throw ProtocolError(
-						"Unknown ddfplus message",
-						&*std::prev(messageBegin),
-						0);
+#					ifdef _DEBUG
+					{
+						GetLog().Debug(
+							"Unknown ddfplus message %1%.",
+							*std::prev(messageBegin));
+					}
+#					endif
+					break;
 			}
-		
-			return ++end;
-		
+
 		}
 
 		void HandleNewDdfPlusSubMessage(
-				const pt::ptime &time,
 				const Buffer::const_iterator &messageBegin,
-				const Buffer::const_iterator &messageEnd,
-				const TimeMeasurement::Milestones &timeMeasurement) {
+				const Buffer::const_iterator &messageEnd) {
 
 			auto symbolEnd
 				= std::find(messageBegin, messageEnd, VARIABLE_FIELD_END);
@@ -426,6 +288,7 @@ namespace {
 
 			switch (subType) {
 				case '7':
+				case '8':
 					break;
 				default:
 					return;
@@ -456,12 +319,10 @@ namespace {
 			textBegin += 3;
 			switch (subType) {
 				case '7':
-					HandleNewDdfPlusMessage7(
-						*security,
-						time,
-						textBegin,
-						messageEnd,
-						timeMeasurement);
+					HandleNewDdfPlusMessage7(*security, textBegin, messageEnd);
+					break;
+				case '8':
+					HandleNewDdfPlusMessage8(*security, textBegin, messageEnd);
 					break;
 				default:
 					AssertFail("Unknown sub-message type");
@@ -469,51 +330,192 @@ namespace {
 			}
 
 		}
-		
+	
+		void HandleDdfPlusTimeMessage(
+				const Buffer::const_iterator &begin,
+				const Buffer::const_iterator &end) {
+
+			if (std::distance(begin, end) != 14) {
+				throw ProtocolError(
+					"Time stamp message has wrong length",
+					&*std::prev(end),
+					0);
+			}
+
+			const auto &now = GetContext().GetCurrentTime();
+#			if defined(_DEBUG)
+				const auto &period = pt::minutes(1);
+#			elif defined(_TEST)
+				const auto &period = pt::minutes(5);
+#			else
+				const auto &period = pt::minutes(15);
+#			endif
+			if (
+					!m_lastServerTimeUpdate.is_not_a_date_time()
+					&&	now - m_lastServerTimeUpdate < period) {
+				return;
+			}
+			
+			try {
+
+				const auto &year
+					= boost::lexical_cast<uint16_t>(&*(end - 14), 4);
+
+				const auto &month
+					= boost::lexical_cast<uint16_t>(&*(end - 10), 2);
+				if (month <= 0 || month > 12) {
+					throw ProtocolError(
+						"Time stamp message has wrong value for month",
+						&*std::prev(end),
+						0);
+				}
+
+				const auto &day
+					= boost::lexical_cast<uint16_t>(&*(end - 8), 2);
+				if (day <= 0 || day > 31) {
+					throw ProtocolError(
+						"Time stamp message has wrong value for month day",
+						&*std::prev(end),
+						0);
+				}
+				
+				const auto &hours
+					= boost::lexical_cast<uint32_t>(&*(end - 6), 2);
+				if (hours > 23) {
+					throw ProtocolError(
+						"Time stamp message has wrong value for hours",
+						&*std::prev(end),
+						0);
+				}
+				
+				const auto &minutes
+					= boost::lexical_cast<uint16_t>(&*(end - 4), 2);
+				if (minutes > 59) {
+					throw ProtocolError(
+						"Time stamp message has wrong value for minutes",
+						&*std::prev(end),
+						0);
+				}
+				
+				const auto &seconds
+					= boost::lexical_cast<uint16_t>(&*(end - 2), 2);
+				if (seconds > 59) {
+					throw ProtocolError(
+						"Time stamp message has wrong value for seconds",
+						&*std::prev(end),
+						0);
+				}
+
+				const pt::ptime time(
+					gr::date(year, month, day),
+					pt::time_duration(hours, minutes, seconds));
+				m_lastServerTimeUpdate = std::move(now);
+				m_lastKnownServerTime = std::move(time);
+
+			} catch (const boost::bad_lexical_cast &) {
+				throw ProtocolError(
+					"Time stamp message has wrong format",
+					&*std::prev(end),
+					0);
+			}
+
+			{
+				boost::format message(
+					"Server local time: %1%. Received %2$.02f %3%.");
+				message % m_lastKnownServerTime;
+				if (GetNumberOfReceivedBytes() > (1024 * 1024)) {
+					message
+						%	(GetNumberOfReceivedBytes() / (1024 * 1024))
+						%	"megabytes";
+				} else {
+					message
+						%	(GetNumberOfReceivedBytes() / 1024)
+						%	"kilobytes";
+				}
+				GetLog().Debug(message.str().c_str());
+			}
+
+		}
+
 		void HandleNewDdfPlusMessage7(
 				DdfPlus::Security &security,
-				const pt::ptime &time,
-				const Buffer::const_iterator &begin,
-				const Buffer::const_iterator &end,
-				const TimeMeasurement::Milestones &timeMeasurement) {
+				Buffer::const_iterator begin,
+				const Buffer::const_iterator &end) {
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_LAST_PRICE>(begin, end));
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_LAST_QTY>(begin, end));
+			ScheduleFlushing(security);
+		}
 
-			auto priceRange = boost::make_iterator_range(
+		void HandleNewDdfPlusMessage8(
+				DdfPlus::Security &security,
+				Buffer::const_iterator begin,
+				const Buffer::const_iterator &end) {
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_BID_PRICE>(begin, end));
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_BID_QTY>(begin, end));
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_ASK_PRICE>(begin, end));
+			security.AddLevel1Tick(
+				ReadLevel1TickValue<LEVEL1_TICK_ASK_QTY>(begin, end));
+			ScheduleFlushing(security);
+		}
+
+		template<typename Value, typename Iterator>
+		static Value ReadVariableField(
+				Iterator &begin,
+				const Iterator &end) {
+
+			auto range = boost::make_iterator_range(
 				begin,
 				std::find(begin, end, VARIABLE_FIELD_END));
-			if (boost::end(priceRange) == end) {
+			if (boost::end(range) == end) {
 				throw ProtocolError(
-					"Trading sub-message does not have price",
+					"Failed to locate variable field",
 					&*std::prev(end),
 					VARIABLE_FIELD_END);
 			}
 
-			auto sizeRange = boost::make_iterator_range(
-				std::next(boost::end(priceRange)),
-				std::find(
-					std::next(boost::end(priceRange)),
-					end,
-					VARIABLE_FIELD_END));
-			if (boost::end(sizeRange) == end) {
-				throw ProtocolError(
-					"Trading sub-message does not have size",
-					&*std::prev(end),
-					VARIABLE_FIELD_END);
+			try {
+				const auto &result = boost::lexical_cast<Value>(range);
+				begin = std::next(boost::end(range));
+				return result;
+			} catch (const boost::bad_lexical_cast &ex) {
+				boost::format message("Failed to parse field value: \"%1%\"");
+				message % ex.what();
+				throw ProtocolError(message.str().c_str(), &*std::prev(end), 0);
 			}
+	
+		}
 
-			security.AddLevel1Tick(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-					boost::lexical_cast<ScaledPrice>(priceRange)),
-				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(
-					boost::lexical_cast<Qty>(sizeRange)),
-				timeMeasurement);
+		template<Level1TickType type, typename Iterator>
+		static Level1TickValue ReadLevel1TickValue(
+				Iterator &begin,
+				const Iterator &end) {
+			typedef Level1TickTypeToValueType<type>::Type Type;
+			return Level1TickValue::Create<type>(
+				ReadVariableField<Type>(begin, end));
+		}
 
+		void ScheduleFlushing(DdfPlus::Security &security) {
+			const auto &pos = std::find(
+				m_unflushedSecurities.cbegin(),
+				m_unflushedSecurities.cend(),
+				&security);
+			if (pos != m_unflushedSecurities.cend()) {
+				return;
+			}
+			m_unflushedSecurities.emplace_back(&security);
 		}
 
 	private:
 
 		pt::ptime m_lastKnownServerTime;
 		pt::ptime m_lastServerTimeUpdate;
+
+		std::vector<DdfPlus::Security *> m_unflushedSecurities;
 
 	};
 

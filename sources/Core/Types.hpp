@@ -137,6 +137,41 @@ namespace trdk {
 		numberOfLevel1TickTypes
 	};
 
+	template<trdk::Level1TickType type>
+	struct Level1TickTypeToValueType {
+		//...//
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_PRICE> {
+		typedef trdk::ScaledPrice Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
+		typedef trdk::Qty Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_BID_PRICE> {
+		typedef trdk::ScaledPrice Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
+		typedef trdk::Qty Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_PRICE> {
+		typedef trdk::ScaledPrice Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
+		typedef trdk::Qty Type;
+	};
+	template<>
+	struct Level1TickTypeToValueType<LEVEL1_TICK_TRADING_VOLUME> {
+		typedef trdk::ScaledPrice Type;
+	};
+
+	const char * ConvertToPch(const Level1TickType &);
+
 	class Level1TickValue {
 
 	private:
