@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/05/17 01:08:41
+ *   Created: 2016/08/26 23:11:34
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,10 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+namespace trdk { namespace Interaction { namespace DdfPlus {
 
-	struct ContractExpiration;
-	class ExpirationCalendar;
+	class Security;
+	class MarketDataSource;
 
-	class NetworkClient;
-	class NetworkClientService;
-	class NetworkClientServiceIo;
-
-} }
+} } }
 

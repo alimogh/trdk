@@ -119,7 +119,7 @@ namespace trdk {
 		virtual const RiskControl & GetRiskControl(
 				const trdk::TradingMode &)
 				const
-				= 0;
+			= 0;
 
 		template<typename Method>
 		void InvokeDropCopy(const Method &method) const {
@@ -139,6 +139,10 @@ namespace trdk {
 		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
 		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
 
+		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
+				const
+			= 0;
+
 		//! Market Data Sources count.
 		/** @sa GetMarketDataSource
 		  */
@@ -151,7 +155,7 @@ namespace trdk {
 		virtual const trdk::MarketDataSource & GetMarketDataSource(
 				size_t index)
 				const
-				= 0;
+			= 0;
 		//! Returns Market Data Source by index.
 		/** Throws an exception if index in unknown.
 		  * @sa GetNumberOfMarketDataSources
@@ -163,12 +167,12 @@ namespace trdk {
 		virtual void ForEachMarketDataSource(
 				const boost::function<bool (const trdk::MarketDataSource &)> &)
 				const
-				= 0;
+			= 0;
 		//! Applies the given predicate to the each market data source and
 		//! stops if predicate returns false.
 		virtual void ForEachMarketDataSource(
 				const boost::function<bool (trdk::MarketDataSource &)> &)
-				= 0;
+			= 0;
 
 		//! Trading Systems count.
 		/** @sa GetTradingSystem
@@ -183,7 +187,7 @@ namespace trdk {
 				size_t index,
 				const trdk::TradingMode &)
 				const
-				= 0;
+			= 0;
 		//! Returns Trading System by index.
 		/** Throws an exception if index in unknown.
 		  * @sa GetNumberOfTradingSystems
@@ -192,7 +196,7 @@ namespace trdk {
 		virtual trdk::TradingSystem & GetTradingSystem(
 				size_t index,
 				const trdk::TradingMode &)
-				= 0;
+			= 0;
 
 	protected:
 
@@ -210,7 +214,7 @@ namespace trdk {
 		virtual const trdk::Security * FindSecurity(
 				const trdk::Lib::Symbol &)
 				const
-				= 0;
+			= 0;
 
 	private:
 

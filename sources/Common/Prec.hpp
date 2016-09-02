@@ -14,7 +14,7 @@
 
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/algorithm/string.hpp>
- #	include <boost/thread/thread.hpp>
+#	include <boost/thread/thread.hpp>
 #	include <boost/format.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/regex.hpp>
@@ -29,6 +29,9 @@
 #	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/shared_ptr.hpp>
 #	include <boost/make_shared.hpp>
+#	include <boost/make_unique.hpp>
+#	include <boost/enable_shared_from_this.hpp>
+#	include <boost/asio.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #include <iomanip>

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/05/17 01:08:41
+ *   Created: 2016/08/23 23:28:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,8 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
-
-	struct ContractExpiration;
-	class ExpirationCalendar;
-
-	class NetworkClient;
-	class NetworkClientService;
-	class NetworkClientServiceIo;
-
-} }
-
+#ifdef BOOST_WINDOWS
+#	define TRDK_INTERACTION_DDFPLUS_API
+#else
+#	define TRDK_INTERACTION_DDFPLUS_API extern "C"
+#endif

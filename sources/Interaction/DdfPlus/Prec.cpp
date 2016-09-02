@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/05/17 01:08:41
+ *   Created: 2016/08/23 23:28:24
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,16 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
-
-namespace trdk { namespace Lib {
-
-	struct ContractExpiration;
-	class ExpirationCalendar;
-
-	class NetworkClient;
-	class NetworkClientService;
-	class NetworkClientServiceIo;
-
-} }
-
+#include "Prec.hpp"

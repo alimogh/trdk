@@ -27,6 +27,8 @@ namespace trdk {
 		typedef trdk::TradingSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
+		typedef std::bitset<trdk::numberOfLevel1TickTypes> SupportedLevel1Types;
+
 		typedef void (Level1UpdateSlotSignature)(
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Update one of more from following values:
@@ -112,13 +114,27 @@ namespace trdk {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
+		public:
+			explicit Exception(const char *what);
+		};
+
+		class TRDK_CORE_API MarketDataValueDoesNotExist
+			: public trdk::Security::Exception {
+		public:
+			explicit MarketDataValueDoesNotExist(const char *what);
+		};
+
+		////////////////////////////////////////////////////////////////////////////////
+
 	public:
 
 		explicit Security(
 				trdk::Context &,
 				const trdk::Lib::Symbol &,
 				trdk::MarketDataSource &,
-				bool isOnline);
+				bool isOnline,
+				const SupportedLevel1Types &);
 		// CUSTOMIZED MERHOD for GadM (virtual, for dynamic casting)
 		virtual ~Security();
 
@@ -140,7 +156,7 @@ namespace trdk {
 		bool IsStarted() const;
 		bool IsLevel1Started() const;
 
-		//! Returns true if security has online data, not history.
+		//! Returns true if security has on-line data, not history.
 		bool IsOnline() const;
 
 		//! Sets requested data start time if it not later than existing.
@@ -317,6 +333,17 @@ namespace trdk {
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+		//! Adds many Level I parameter ticks.
+		/** More optimal than call "add one tick" several times. Subscribers
+		 ** will be notified about Level I Update only if parameter will be
+		 ** changed. Level I Tick event will be generated in any case. First
+		 ** tick will be added first in the notification queue, last - will be
+		 ** added last. All ticks can have one type or various.
+		  */
+		void AddLevel1Tick(
+				const boost::posix_time::ptime &,
+				const std::vector<trdk::Level1TickValue> &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		void AddTrade(

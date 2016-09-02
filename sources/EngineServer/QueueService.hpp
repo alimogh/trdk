@@ -109,6 +109,8 @@ namespace trdk { namespace EngineServer {
 		size_t GetSize() const;
 		bool IsEmpty() const;
 
+		size_t TakeRecordNumber();
+
 	private:
 
 		void RunDequeue();
@@ -124,7 +126,7 @@ namespace trdk { namespace EngineServer {
 
 		bool m_flushFlag;
 
-		size_t m_nextRecordIndex;
+		size_t m_nextRecordNumber;
 		std::pair<Queue, Queue> m_queues;
 		Queue *m_currentQueue;
 

@@ -14,7 +14,6 @@
 #include "Core/TradingSystem.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Context.hpp"
-#include "Common/ExpirationCalendar.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
@@ -139,7 +138,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		explicit TradingSystem(
 				const TradingMode &,
-				size_t index,
+				size_t tradingSystemIndex,
+				size_t marketDataSourceIndex,
 				Context &,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
@@ -279,8 +279,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		mutable PositionsMutex m_positionsMutex;
 		std::unique_ptr<Positions> m_positions;
-
-		Lib::ExpirationCalendar m_expirationCalendar;
 
 	};
 

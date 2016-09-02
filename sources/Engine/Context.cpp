@@ -22,6 +22,7 @@
 #include "Core/TradingSystem.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/RiskControl.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -40,29 +41,6 @@ namespace {
 		size_t result = 0;
 		for (const auto &modules: modulesByTag) {
 			result += modules.second.size();
-		}
-		return result;
-	}
-
-	std::string GetMarketDataSourceSectionName(const MarketDataSource &source) {
-		std::string result = Engine::Ini::Sections::marketDataSource;
-		if (!source.GetTag().empty()) {
-			result += "." + source.GetTag();
-		}
-		return result;
-	}
-
-	std::string GetMarketDataSourceSectionName(
-			const TradingSystem &tradingSystem) {
-		static_assert(numberOfTradingModes == 3, "List changed.");
-		Assert(
-			tradingSystem.GetMode() == TRADING_MODE_LIVE
-			|| tradingSystem.GetMode() == TRADING_MODE_PAPER);
-		std::string result = tradingSystem.GetMode() == TRADING_MODE_LIVE
-			?	Engine::Ini::Sections::tradingSystem
-			:	Engine::Ini::Sections::paperTradingSystem;
-		if (!tradingSystem.GetTag().empty()) {
-			result += "." + tradingSystem.GetTag();
 		}
 		return result;
 	}
@@ -88,6 +66,8 @@ public:
 
 	ModuleList m_modulesDlls;
 
+	std::unique_ptr<ExpirationCalendar> m_expirationCalendar;
+
 	TradingSystems m_tradingSystems;
 	MarketDataSources m_marketDataSources;
 
@@ -104,6 +84,34 @@ public:
 		for (size_t i = 0; i < m_riskControl.size(); ++i) {
 			m_riskControl[i].reset(
 				new RiskControl(m_context, conf, TradingMode(i + 1)));
+		}
+
+		{
+			const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
+				"Expiration",
+				"calendar_csv",
+				"");
+			if (!expirationCalendarFilePath.empty()) {
+				m_context.GetLog().Debug(
+					"Loading expiration calendar from %1%...",
+					expirationCalendarFilePath);
+				m_expirationCalendar.reset(new ExpirationCalendar);
+				m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+				const ExpirationCalendar::Stat stat
+					= m_expirationCalendar->CalcStat();
+				const char *const message
+					= "Expiration calendar has %1% symbols"
+						" and %2% expirations.";
+				stat.numberOfExpirations && stat.numberOfSymbols
+					?	m_context.GetLog().Info(
+							message,
+							stat.numberOfSymbols,
+							stat.numberOfExpirations)
+					:	m_context.GetLog().Warn(
+							message,
+							stat.numberOfSymbols,
+							stat.numberOfExpirations);
+			}
 		}
 
 		BootContext(
@@ -260,9 +268,7 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 			Assert(!tradingSystemRef.section.empty());
 
 			auto &tradingSystem = *tradingSystemRef.tradingSystem;
-			const IniSectionRef confSection(
-				conf,
-				GetMarketDataSourceSectionName(tradingSystemRef.tradingSystem));
+			const IniSectionRef confSection(conf, tradingSystemRef.section);
 
 			try {
 				tradingSystem.Connect(confSection);
@@ -275,7 +281,7 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 				GetLog().Error(
 					"Failed to make trading system connection: \"%1%\".",
 					ex);
-				throw Exception("Failed to make trading system");
+				throw Exception("Failed to make trading system connection");
 			}
 
 			const char *const terminalCmdFileKey = "terminal_cmd_file";
@@ -290,26 +296,22 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
 
 	}
 
-	ForEachMarketDataSource(
-		[&](MarketDataSource &source) -> bool {
-			try {
-				source.Connect(
-					IniSectionRef(
-						conf,
-						GetMarketDataSourceSectionName(source)));
-			} catch (const Interactor::ConnectError &ex) {
-				boost::format message(
-					"Failed to connect to market data source: \"%1%\"");
-				message % ex;
-				throw Interactor::ConnectError(message.str().c_str());
-			} catch (const Lib::Exception &ex) {
-				GetLog().Error(
-					"Failed to make market data connection: \"%1%\".",
-					ex);
-				throw Exception("Failed to make market data connection");
-			}
-			return true;
-		});
+	for (auto &source : m_pimpl->m_marketDataSources) {
+		try {
+			source.marketDataSource->Connect(
+				IniSectionRef(conf, source.section));
+		} catch (const Interactor::ConnectError &ex) {
+			boost::format message(
+				"Failed to connect to market data source: \"%1%\"");
+			message % ex;
+			throw Interactor::ConnectError(message.str().c_str());
+		} catch (const Lib::Exception &ex) {
+			GetLog().Error(
+				"Failed to make market data connection: \"%1%\".",
+				ex);
+			throw Exception("Failed to make market data connection");
+		}
+	}
 
 	ForEachMarketDataSource(
 		[&](MarketDataSource &source) -> bool {
@@ -506,6 +508,13 @@ const RiskControl & Engine::Context::GetRiskControl(
 	return m_pimpl->GetRiskControl(mode);
 }
 
+const ExpirationCalendar & Engine::Context::GetExpirationCalendar() const {
+	if (!m_pimpl->m_expirationCalendar) {
+		throw Exception("Expiration calendar is not supported");
+	}
+	return *m_pimpl->m_expirationCalendar;
+}
+
 size_t Engine::Context::GetNumberOfMarketDataSources() const {
 	return m_pimpl->m_marketDataSources.size();
 }
@@ -520,7 +529,7 @@ MarketDataSource & Engine::Context::GetMarketDataSource(size_t index) {
 	if (index >= m_pimpl->m_marketDataSources.size()) {
 		throw Exception("Market Data Source index is out of range");
 	}
-	return *m_pimpl->m_marketDataSources[index];
+	return *m_pimpl->m_marketDataSources[index].marketDataSource;
 }
 
 void Engine::Context::ForEachMarketDataSource(
@@ -530,8 +539,8 @@ void Engine::Context::ForEachMarketDataSource(
 		size_t i = 0;
 #	endif
 	for (const auto &source: m_pimpl->m_marketDataSources) {
-		AssertEq(i++, source->GetIndex());
-		if (!pred(*source)) {
+		AssertEq(i++, source.marketDataSource->GetIndex());
+		if (!pred(*source.marketDataSource)) {
 			return;
 		}
 	}
@@ -543,8 +552,8 @@ void Engine::Context::ForEachMarketDataSource(
 		size_t i = 0;
 #	endif
 	for (auto &source: m_pimpl->m_marketDataSources) {
-		AssertEq(i++, source->GetIndex());
-		if (!pred(*source)) {
+		AssertEq(i++, source.marketDataSource->GetIndex());
+		if (!pred(*source.marketDataSource)) {
 			return;
 		}
 	}

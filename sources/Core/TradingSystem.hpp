@@ -20,14 +20,21 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	typedef boost::tuple<
-			boost::shared_ptr<trdk::TradingSystem> /* can't be nullptr */,
-			boost::shared_ptr<trdk::MarketDataSource> /* can be nullptr */ >
-		TradingSystemFactoryResult;
-
-	typedef trdk::TradingSystemFactoryResult (TradingSystemFactory)(
+	typedef boost::shared_ptr<trdk::TradingSystem> (TradingSystemFactory)(
 			const trdk::TradingMode &,
-			size_t index,
+			size_t tradingSystemIndex,
+			trdk::Context &,
+			const std::string &tag,
+			const trdk::Lib::IniSectionRef &);
+
+	struct TradingSystemAndMarketDataSourceFactoryResult {
+		boost::shared_ptr<trdk::TradingSystem> tradingSystem;
+		boost::shared_ptr<trdk::MarketDataSource> marketDataSource;
+	};
+	typedef trdk::TradingSystemAndMarketDataSourceFactoryResult (TradingSystemAndMarketDataSourceFactory)(
+			const trdk::TradingMode &,
+			size_t tradingSystemIndex,
+			size_t marketDataSourceSystemIndex,
 			trdk::Context &,
 			const std::string &tag,
 			const trdk::Lib::IniSectionRef &);

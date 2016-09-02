@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/05/17 01:08:41
+ *   Created: 2016/08/23 23:27:53
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,16 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+#include "Common/Assert.hpp"
 
-	struct ContractExpiration;
-	class ExpirationCalendar;
+#include "Common/DisableBoostWarningsBegin.h"
+#	include <boost/algorithm/string/join.hpp>
+#	include <boost/unordered_map.hpp>
+#include "Common/DisableBoostWarningsEnd.h"
 
-	class NetworkClient;
-	class NetworkClientService;
-	class NetworkClientServiceIo;
+#include "Common/Common.hpp"
 
-} }
+#include "Core/Fwd.hpp"
+#include "Api.h"
 
+#include "Common/Assert.hpp"
