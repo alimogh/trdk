@@ -52,7 +52,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	private:
 
-		Connection m_connection;
+		std::unique_ptr<Connection> m_connection;
 
 		boost::unordered_map<std::string, boost::shared_ptr<DdfPlus::Security>>
 			m_securities;
