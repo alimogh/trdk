@@ -487,7 +487,11 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				: contract.symbol),
 			request.tickerId);
 
-		request.security->SetOnline();
+		if (!request.security->IsOnline()) {
+			request.security->SetOnline();
+		} else {
+			Assert(m_securityInSwitching);
+		}
 		
 		requests.swap(m_marketDataRequests);
 
@@ -1406,6 +1410,15 @@ void Client::tickPrice(
 	if (!security) {
 		return;
 	}
+	if (m_securityInSwitching && m_securityInSwitching == security) {
+		{
+			boost::mutex::scoped_lock lock(m_switchMutex);
+			Assert(m_securityInSwitching);
+			Assert(m_securityInSwitching == security);
+			m_securityInSwitching = nullptr;
+		}
+		m_switchCondition.notify_all();
+	}
 	security->AddLevel1Tick(
 		now,
 		valueCtor(security->ScalePrice(price)),
@@ -1442,6 +1455,15 @@ void Client::tickSize(
 	ib::Security *const security = GetMarketDataRequest(tickerId);
 	if (!security) {
 		return;
+	}
+	if (m_securityInSwitching && m_securityInSwitching == security) {
+		{
+			boost::mutex::scoped_lock lock(m_switchMutex);
+			Assert(m_securityInSwitching);
+			Assert(m_securityInSwitching == security);
+			m_securityInSwitching = nullptr;
+		}
+		m_switchCondition.notify_all();
 	}
 	security->AddLevel1Tick(now, valueCtor(size), timeMeasurement);
 }
