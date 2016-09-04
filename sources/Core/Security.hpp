@@ -127,6 +127,19 @@ namespace trdk {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		enum ServiceEvent {
+			//! Security switched to another contract.
+			SERVICE_EVENT_CONTRACT_SWITCHED,
+			numberOfServiceEvents
+		};
+
+		typedef void (ServiceEventSlotSignature)(
+			const trdk::Security::ServiceEvent &);
+		typedef boost::function<ServiceEventSlotSignature> ServiceEventSlot;
+		typedef boost::signals2::connection ServiceEventSlotConnection;
+
+		////////////////////////////////////////////////////////////////////////////////
+
 	public:
 
 		explicit Security(
@@ -135,14 +148,12 @@ namespace trdk {
 				trdk::MarketDataSource &,
 				bool isOnline,
 				const SupportedLevel1Types &);
-		// CUSTOMIZED MERHOD for GadM (virtual, for dynamic casting)
 		virtual ~Security();
 
 	public:
 
 		//! Returns Market Data Source object which provides market data for
 		//! this security object.
-		trdk::MarketDataSource & GetSource();
 		const trdk::MarketDataSource & GetSource() const;
 
 		RiskControlSymbolContext & GetRiskControlContext(
@@ -205,9 +216,8 @@ namespace trdk {
 		//! Returns next expiration time.
 		/** Throws exception if expiration is not provided.
 		  * @sa GetExpiration
-		  * @todo Operation is not thread-safe!
 		  */
-		const trdk::Lib::ContractExpiration & GetExpiration() const;
+		trdk::Lib::ContractExpiration GetExpiration() const;
 
 	public:
 
@@ -229,6 +239,10 @@ namespace trdk {
 		
 		BookUpdateTickSlotConnection SubscribeToBookUpdateTicks(
 				const BookUpdateTickSlot &)
+				const;
+
+		ServiceEventSlotConnection SubscribeToServiceEvents(
+				const ServiceEventSlot &)
 				const;
 
 	protected:
@@ -377,7 +391,6 @@ namespace trdk {
 
 		//! Sets new expiration.
 		/** @sa GetExpiration
-		  * @todo Operation is not thread-safe!
 		  */
 		void SetExpiration(const trdk::Lib::ContractExpiration &);
 

@@ -14,6 +14,7 @@
 #include "Exception.hpp"
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 
@@ -100,6 +101,10 @@ time_t Lib::ConvertToTimeT(const pt::ptime &source) {
 	}
 	const pt::time_duration durationFromTEpoch(source - unixEpochStart);
 	return static_cast<time_t>(durationFromTEpoch.total_seconds());
+}
+
+int64_t Lib::ConvertToMicroseconds(const gr::date &date) {
+	return ConvertToMicroseconds(pt::ptime(date));
 }
 
 int64_t Lib::ConvertToMicroseconds(const pt::ptime &source) {

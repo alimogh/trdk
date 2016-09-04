@@ -251,14 +251,14 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		void SubscribeToMarketData(Security &);
 		void SubscribeToMarketDepthLevel2(Security &);
 
-	public:
-
-		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
-		void SwitchToNewContract(Security &);
+		void SwitchToNextContract(Security &security);
 
 	private:
 
-		Contract Client::GetContract(const trdk::Security &) const;
+		Contract Client::GetContract(
+				const trdk::Security &,
+				const Lib::ContractExpiration * = nullptr)
+				const;
 		Contract GetContract(const trdk::Security &, const OrderParams &) const;
 
 		void PostponeMarketDataSubscription(Security &) const;
@@ -500,7 +500,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		std::string m_account;
 		TradingSystem::Account *m_accountInfo;
 
-		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
 		boost::mutex m_switchMutex;
 		boost::condition_variable m_switchCondition;
 		boost::atomic<const Security *> m_securityInSwitching;

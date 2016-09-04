@@ -37,7 +37,7 @@ namespace {
 DdfPlus::Security::Security(
 		Context &context,
 		const Symbol &symbol,
-		const trdk::MarketDataSource &source)
+		trdk::MarketDataSource &source)
 	: trdk::Security(
 		context,
 		symbol,
@@ -61,8 +61,8 @@ std::string DdfPlus::Security::GenerateDdfPlusCode() const {
 				throw Exception(
 					"Explicit symbol for futures contracts is not supported");
 			} else if (
-					GetExpiration().year > 2019
-					|| GetExpiration().year < 2010) {
+					GetExpiration().GetYear() > 2019
+					|| GetExpiration().GetYear() < 2010) {
 				throw MethodDoesNotImplementedError(
 					"Work with features from < 2010 or > 2019"
 						" is not supported");
@@ -70,8 +70,8 @@ std::string DdfPlus::Security::GenerateDdfPlusCode() const {
 		
 			result
 				<< GetSymbol().GetSymbol()
-				<< char(GetExpiration().code)
-				<< (GetExpiration().year - 2010);
+				<< char(GetExpiration().GetCode())
+				<< (GetExpiration().GetYear() - 2010);
 		
 			break;
 		

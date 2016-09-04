@@ -106,7 +106,7 @@ trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
 			GetLog().Info(
 				"Current expiration date for \"%1%\": %2% (%3%).",
 				symbol,
-				result->GetExpiration().expirationDate,
+				result->GetExpiration().GetDate(),
 				result->GenerateDdfPlusCode());
 		}
 		break;

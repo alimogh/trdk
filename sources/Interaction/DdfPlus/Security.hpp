@@ -26,7 +26,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 		explicit Security(
 				Context &,
 				const Lib::Symbol &,
-				const trdk::MarketDataSource &);
+				trdk::MarketDataSource &);
 
 	public:
 

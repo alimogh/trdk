@@ -228,10 +228,10 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 				GetMdsLog().Info(
 					"Current expiration date for \"%1%\": %2% (%3%%4%%5%).",
 					symbol,
-					expiration->expirationDate,
+					expiration->GetDate(),
 					symbol.GetSymbol(),
-					char(expiration->code),
-					expiration->year - 2010);
+					char(expiration->GetCode()),
+					expiration->GetYear() - 2010);
 				result->SetExpiration(*expiration);
 			}
 			break;
@@ -442,6 +442,8 @@ void ib::TradingSystem::RegOrder(const PlacedOrder &order) {
 	m_placedOrders.insert(order);
 }
 
-void ib::TradingSystem::SwitchToNewContract(trdk::Security &security) {
-	m_client->SwitchToNewContract(dynamic_cast<Security &>(security));
+void ib::TradingSystem::SwitchToNextContract(trdk::Security &security) {
+	m_client->SwitchToNextContract(
+		*boost::polymorphic_downcast<ib::Security *>(&security));
 }
+

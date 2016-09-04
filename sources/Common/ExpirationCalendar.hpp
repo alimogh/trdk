@@ -11,13 +11,12 @@
 #pragma once
 
 #include "Symbol.hpp"
-//#include "DisableBoostWarningsBegin.h"
-// #	include <boost/filesystem/path.hpp>
-//#include "DisableBoostWarningsEnd.h"
 
 namespace trdk { namespace Lib {
 
-	struct ContractExpiration {
+	class ContractExpiration {
+
+	public:
 
 		//! Futures contract code.
 		/** https://en.wikipedia.org/wiki/Futures_contract#Codes
@@ -36,14 +35,24 @@ namespace trdk { namespace Lib {
 			CODE_NOVEMBER = 'X',
 			CODE_DECEMBER = 'Z'
 		};
-		
-		Code code;
-		uint16_t year;
-		boost::gregorian::date expirationDate;
 
-		bool operator <(const ContractExpiration &rhs) const {
-			return expirationDate < rhs.expirationDate;
-		}
+	public:
+
+		explicit ContractExpiration(const boost::gregorian::date &);
+
+	public:
+
+		bool operator <(const ContractExpiration &rhs) const;
+
+		Code GetCode() const;
+
+		std::uint16_t GetYear() const;
+
+		const boost::gregorian::date & GetDate() const;
+
+	private:
+
+		boost::gregorian::date m_date;
 	
 	};
 

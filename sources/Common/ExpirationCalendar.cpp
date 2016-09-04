@@ -19,9 +19,65 @@ namespace mi = boost::multi_index;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+ContractExpiration::ContractExpiration(const gr::date &date)
+	: m_date(date) {
+	//...//
+}
+
+bool ContractExpiration::operator <(const ContractExpiration &rhs) const {
+	return m_date < rhs.m_date;
+}
+
+ContractExpiration::Code ContractExpiration::GetCode() const {
+	switch (m_date.month()) {
+		case gr::Jan:
+			return ContractExpiration::CODE_FEBRUARY;
+		case gr::Feb:
+			return ContractExpiration::CODE_MARCH;
+		case gr::Mar:
+			return ContractExpiration::CODE_APRIL;
+		case gr::Apr:
+			return ContractExpiration::CODE_MAY;
+		case gr::May:
+			return ContractExpiration::CODE_JUNE;
+		case gr::Jun:
+			return ContractExpiration::CODE_JULY;
+		case gr::Jul:
+			return ContractExpiration::CODE_AUGUST;
+		case gr::Aug:
+			return ContractExpiration::CODE_SEPTEMBER;
+		case gr::Sep:
+			return ContractExpiration::CODE_OCTOBER;
+		case gr::Oct:
+			return ContractExpiration::CODE_NOVEMBER;
+		case gr::Nov:
+			return ContractExpiration::CODE_DECEMBER;
+		case gr::Dec:
+			return ContractExpiration::CODE_JANUARY;
+		default:
+			AssertEq(gr::Jan, m_date.month());
+			throw SystemException("Unknown expiration date month");
+	}
+}
+
+std::uint16_t ContractExpiration::GetYear() const {
+	uint16_t result = m_date.year();
+	if (m_date.month() == gr::Dec) {
+		++result;
+	}
+	return result;
+}
+
+const gr::date & ContractExpiration::GetDate() const {
+	return m_date;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 	struct ByExpirationDate {
+		//...//
 	};
 
 	typedef boost::multi_index_container<
@@ -29,10 +85,10 @@ namespace {
 		mi::indexed_by<
 			mi::ordered_unique<
 				mi::tag<ByExpirationDate>,
-				mi::member<
+				mi::const_mem_fun<
 					ContractExpiration,
-					gr::date,
-					&ContractExpiration::expirationDate>>>>
+					const gr::date &,
+					&ContractExpiration::GetDate>>>>
 		SymbolContracts;
 
 	typedef boost::unordered_map<std::string, SymbolContracts>
@@ -189,7 +245,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 		}
 
 		std::string symbol;
-		ContractExpiration contract = {};
+		gr::date expirationDate;
 
 		typedef boost::split_iterator<std::string::iterator> SpitIterator;
 		for (
@@ -207,10 +263,10 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 			
 			if (symbol.empty()) {
 			
-				Assert(contract.expirationDate.is_not_a_date());
+				Assert(expirationDate.is_not_a_date());
 				symbol = std::move(field);
 			
-			} else if (contract.expirationDate.is_not_a_date()) {
+			} else if (expirationDate.is_not_a_date()) {
 			
 				uint32_t expirationDateInt;
 				try {
@@ -248,8 +304,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 							" at line %2%");
 					throw Exception(error.str().c_str());
 				}
-				contract.expirationDate
-					= gr::date(date.year, date.month, date.day);
+				expirationDate = gr::date(date.year, date.month, date.day);
 
 			} else {
 			
@@ -262,59 +317,13 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 		
 		}
 
-		if (symbol.empty() || contract.expirationDate.is_not_a_date()) {
+		if (symbol.empty() || expirationDate.is_not_a_date()) {
 			boost::format error("Wrong CSV-file format in %1% at line %2%");
 			error % filePath % numberOfLines;
 			throw Exception(error.str().c_str());
 		}
 
-		contract.year = contract.expirationDate.year();
-
-		switch (contract.expirationDate.month()) {
-			case gr::Jan:
-				contract.code = ContractExpiration::CODE_FEBRUARY;
-				break;
-			case gr::Feb:
-				contract.code = ContractExpiration::CODE_MARCH;
-				break;
-			case gr::Mar:
-				contract.code = ContractExpiration::CODE_APRIL;
-				break;
-			case gr::Apr:
-				contract.code = ContractExpiration::CODE_MAY;
-				break;
-			case gr::May:
-				contract.code = ContractExpiration::CODE_JUNE;
-				break;
-			case gr::Jun:
-				contract.code = ContractExpiration::CODE_JULY;
-				break;
-			case gr::Jul:
-				contract.code = ContractExpiration::CODE_AUGUST;
-				break;
-			case gr::Aug:
-				contract.code = ContractExpiration::CODE_SEPTEMBER;
-				break;
-			case gr::Sep:
-				contract.code = ContractExpiration::CODE_OCTOBER;
-				break;
-			case gr::Oct:
-				contract.code = ContractExpiration::CODE_NOVEMBER;
-				break;
-			case gr::Nov:
-				contract.code = ContractExpiration::CODE_DECEMBER;
-				break;
-			case gr::Dec:
-				contract.code = ContractExpiration::CODE_JANUARY;
-				++contract.year;
-				break;
-			default:
-				AssertEq(gr::Jan, contract.expirationDate.month());
-				throw SystemException("Unknown expiration date month");
-		}
-
-		const auto &insertResult = contracts[symbol].emplace(
-			std::move(contract));
+		const auto &insertResult = contracts[symbol].emplace(expirationDate);
 		if (!insertResult.second) {
 			boost::format error("Non-unique value in CSV-file %1% at line %2%");
 			error % filePath % numberOfLines;
@@ -347,7 +356,7 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 	const gr::date &startDate = startTime.date();
 	const auto &contract = contractPos->second.get<ByExpirationDate>();
 	const auto &begin = contract.lower_bound(startDate);
-	if (begin == contract.end() || begin->expirationDate < startDate) {
+	if (begin == contract.end() || begin->GetDate() < startDate) {
 		return Iterator();
 	}
 

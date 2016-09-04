@@ -14,6 +14,7 @@
 #include "Strategy.hpp"
 #include "Settings.hpp"
 #include "TradingLog.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -161,6 +162,7 @@ public:
 
 	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
+	boost::optional<ContractExpiration> m_expiration;
 
 	ScaledPrice m_closeStartPrice;
 	DynamicData m_closed;
@@ -792,7 +794,17 @@ public:
 		ReportOpeningStart(action);
 
 		try {
-			const auto orderId = openImpl(qtyToOpen);
+			OrderId orderId;
+			if (
+					!orderParams.expiration
+					&& !m_security.GetSymbol().IsExplicit()) {
+				m_expiration = m_security.GetExpiration();
+				OrderParams additionalOrderParams(orderParams);
+				additionalOrderParams.expiration = &*m_expiration;
+				orderId = openImpl(qtyToOpen, additionalOrderParams);
+			} else {
+				orderId = openImpl(qtyToOpen, orderParams);
+			}
 			m_isRegistered = true;	// supporting prev. logic
 									// (when was m_strategy = nullptr),
 									// don't know why set flag only here.
@@ -857,7 +869,15 @@ public:
 		}
 		ReportClosingStart("pre");
 
-		const auto orderId = closeImpl(m_position.GetActiveQty());
+
+		OrderId orderId;
+		if (m_expiration && !orderParams.expiration) {
+			OrderParams additionalOrderParams(orderParams);
+			additionalOrderParams.expiration = &*m_expiration;
+			orderId = closeImpl(m_position.GetActiveQty(), additionalOrderParams);
+		} else {
+			orderId = closeImpl(m_position.GetActiveQty(), orderParams);
+		}
 		m_closeType = closeType;
 		m_closed.hasPrice = hasPrice;
 		m_closed.hasOrder = true;
@@ -1413,7 +1433,7 @@ OrderId Position::OpenAtMarketPrice() {
 
 OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](const Qty &qty) -> OrderId {
+		[this](const Qty &qty, const OrderParams &params) {
 			return DoOpenAtMarketPrice(qty, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1429,7 +1449,7 @@ OrderId Position::Open(
 		const ScaledPrice &price,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](const Qty &qty) -> OrderId {
+		[this, &price](const Qty &qty, const OrderParams &params) {
 			return DoOpen(qty, price, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1446,7 +1466,7 @@ OrderId Position::OpenAtMarketPriceWithStopPrice(
 		const ScaledPrice &stopPrice,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](const Qty &qty) -> OrderId {
+		[this, stopPrice](const Qty &qty, const OrderParams &params) {
 			return DoOpenAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1463,7 +1483,7 @@ OrderId Position::OpenImmediatelyOrCancel(
 		const ScaledPrice &price,
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](const Qty &qty) -> OrderId {
+		[this, price](const Qty &qty, const OrderParams &params) {
 			return DoOpenImmediatelyOrCancel(qty, price, params);
 		},
 		TIME_IN_FORCE_IOC,
@@ -1478,7 +1498,7 @@ OrderId Position::OpenAtMarketPriceImmediatelyOrCancel() {
 OrderId Position::OpenAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	return m_pimpl->Open(
-		[&](const Qty &qty) {
+		[this](const Qty &qty, const OrderParams &params) {
 			return DoOpenAtMarketPriceImmediatelyOrCancel(qty, params);
 		},
 		TIME_IN_FORCE_IOC,
@@ -1496,7 +1516,7 @@ OrderId Position::CloseAtMarketPrice(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](const Qty &qty) -> OrderId {
+		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPrice(qty, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1514,7 +1534,7 @@ OrderId Position::Close(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](const Qty &qty) -> OrderId {
+		[this, &price](const Qty &qty, const OrderParams &params) {
 			return DoClose(qty, price, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1537,7 +1557,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](const Qty &qty) -> OrderId {
+		[this, stopPrice](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
 		TIME_IN_FORCE_DAY,
@@ -1557,7 +1577,7 @@ OrderId Position::CloseImmediatelyOrCancel(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](const Qty &qty) {
+		[this, price](const Qty &qty, const OrderParams &params) {
 			return DoCloseImmediatelyOrCancel(qty, price, params);
 		},
 		TIME_IN_FORCE_IOC,
@@ -1575,7 +1595,7 @@ OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
-		[&](const Qty &qty) {
+		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
 		},
 		TIME_IN_FORCE_IOC,
@@ -1592,7 +1612,7 @@ bool Position::CancelAtMarketPrice(
 		const OrderParams &params) {
 	return m_pimpl->CancelAtMarketPrice(
 		closeType,
-		[&](const Qty &qty) -> OrderId {
+		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPrice(qty, params);
 		},
 		TIME_IN_FORCE_DAY,

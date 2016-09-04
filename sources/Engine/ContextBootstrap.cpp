@@ -541,6 +541,7 @@ namespace {
 		SYSTEM_SERVICE_TRADES,
 		SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 		SYSTEM_SERVICE_BARS,
+		SYSTEM_SERVICE_SECURITY_SERVICE_EVENT,
 		numberOfSystemServices
 	};
 
@@ -952,7 +953,7 @@ private:
 			conf);
 
 		static_assert(
-			numberOfSystemServices == 6,
+			numberOfSystemServices == 7,
 			"System service list changed.");
 		if (	boost::iequals(tag, Constants::Services::level1Updates)
 				|| boost::iequals(tag, Constants::Services::level1Ticks)
@@ -1211,8 +1212,8 @@ private:
 		typedef ModuleTrait<Module> Trait;
 
 		const auto &parseRequest = [&](
-					const SupplierRequest &request,
-					Module *uniqueInstance) {
+				const SupplierRequest &request,
+				Module *uniqueInstance) {
 			typedef ModuleTrait<Module> Trait;
 			if (
 					boost::iequals(
@@ -1340,6 +1341,14 @@ private:
 				requirements.requiredSystemServices[requiredService].insert(
 					supplierRequest.symbols.begin(),
 					supplierRequest.symbols.end());
+				// Adds notification about security events for each entity that
+				// uses this security directly or by dependency from another
+				// entity.
+				requirements
+					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_SERVICE_EVENT]
+					.insert(
+						supplierRequest.symbols.begin(),
+						supplierRequest.symbols.end());
 			},
 			list);
 	}
@@ -1365,6 +1374,14 @@ private:
 					}
 #				endif
 				module.insert(supplierRequest.symbols);
+				// Adds notification about security events for each entity that
+				// uses this security directly or by dependency from another
+				// entity.
+				requirements
+					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_SERVICE_EVENT]
+					.insert(
+						supplierRequest.symbols.begin(),
+						supplierRequest.symbols.end());
 			},
 			list);
 	}
@@ -1533,8 +1550,8 @@ private:
 
 	template<typename Module>
 	void BindModuleWithSystemRequirements(
-				const TagRequirementsList &requirements,
-				std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
+			const TagRequirementsList &requirements,
+			std::map<std::string /*tag*/, ModuleDll<Module>> &modules) {
 
 		typedef ModuleTrait<Module> Trait;
 		AssertEq(int(Trait::Type), int(requirements.subscriberType));
@@ -1573,13 +1590,11 @@ private:
 		}
 
 		// Subscribing to system services:
-		for (
-				const auto &requirement:
-				requirements.requiredSystemServices) {
+		for (const auto &requirement: requirements.requiredSystemServices) {
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
 			static_assert(
-				numberOfSystemServices == 6,
+				numberOfSystemServices == 7,
 				"System service list changed.");
 			switch (requirement.first) {
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
@@ -1596,11 +1611,15 @@ private:
 					subscribe = &SubscriptionsManager::SubscribeToTrades;
 					break;
 				case SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES:
-					subscribe = &SubscriptionsManager
-						::SubscribeToBrokerPositionUpdates;
+					subscribe
+						= &SubscriptionsManager::SubscribeToBrokerPositionUpdates;
 					break;
 				case SYSTEM_SERVICE_BARS:
 					subscribe = &SubscriptionsManager::SubscribeToBars;
+					break;
+				case  SYSTEM_SERVICE_SECURITY_SERVICE_EVENT:
+					subscribe
+						= &SubscriptionsManager::SubscribeToSecurityServiceEvents;
 					break;
 				default:
 					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
@@ -1619,7 +1638,12 @@ private:
 								ForEachModuleInstance(
 									module,
 									// bind is a workaround for g++ internal error with lambda:
-									boost::bind(&ContextStateBootstrapper::SubscribeModuleStandaloneInstance<Module>, this, _1, subscribe, &security),
+									boost::bind(
+										&ContextStateBootstrapper::SubscribeModuleStandaloneInstance<Module>,
+										this,
+										_1,
+										subscribe,
+										&security),
 									[&](Module &instance) {
 										SubscribeModuleSymbolInstance(
 											instance,
@@ -1670,8 +1694,8 @@ private:
 
 	template<typename Module, typename Pred>
 	void ForEachSubscribedSecurity(
-				Module &module,
-				const Pred &pred) {
+			Module &module,
+			const Pred &pred) {
 		const auto begin = module.GetSecurities().GetBegin();
 		const auto end = module.GetSecurities().GetEnd();
 		for (auto i = begin; i != end; ++i) {
@@ -1680,8 +1704,8 @@ private:
 	}
 	template<typename Callback>
 	void ForEachSubscribedSecurity(
-				Service &module,
-				const Callback &callback) {
+			Service &module,
+			const Callback &callback) {
 		const auto begin = module.GetSecurities().GetBegin();
 		const auto end = module.GetSecurities().GetEnd();
 		for (auto i = begin; i != end; ++i) {

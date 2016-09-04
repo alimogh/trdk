@@ -47,7 +47,12 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Qty &,
 				bool isInitial)
-				= 0;
+			= 0;
+
+		virtual void RaiseSecurityServiceEvent(
+				trdk::Security &,
+				const trdk::Security::ServiceEvent &)
+			= 0;
 
 	protected:
 		
@@ -82,6 +87,10 @@ namespace trdk {
 				bool isInitial);
 
 		virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);
+
+		virtual void OnSecurityServiceEvent(
+				trdk::Security &,
+				const trdk::Security::ServiceEvent &);
 
 	private:
 

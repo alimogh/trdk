@@ -164,6 +164,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual void SubscribeToSecurities();
 
+		virtual void SwitchToNextContract(trdk::Security &);
+
 	public:
 
 		virtual const Account & GetAccount() const;
@@ -177,9 +179,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				const boost::function<
 					bool (const trdk::TradingSystem::Position &)> &)
 			const;
-
-		//! CUSTOMIZED MERHOD for GadM. Switches security to new contact.
-		virtual void SwitchToNewContract(trdk::Security &);
 
 	protected:
 

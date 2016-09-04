@@ -35,6 +35,9 @@ namespace trdk {
 		virtual void RaiseNewBarEvent(
 				trdk::Security &,
 				const trdk::Security::Bar &);
+		virtual void RaiseSecurityServiceEvent(
+				trdk::Security &,
+				const trdk::Security::ServiceEvent &);
 
 		void RaiseLevel1UpdateEvent(Security &);
 		void RaiseLevel1TickEvent(

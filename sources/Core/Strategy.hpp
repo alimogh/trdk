@@ -146,6 +146,10 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Security::Bar &);
 
+		virtual void RaiseSecurityServiceEvent(
+				trdk::Security &,
+				const trdk::Security::ServiceEvent &);
+
 		void RaiseLevel1UpdateEvent(
 				trdk::Security &,
 				const trdk::Lib::TimeMeasurement::Milestones &);

@@ -447,4 +447,39 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 
 }
 
+void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
+		Security &security,
+		const Security::ServiceEvent &event)
+		const {
+
+	const class Visitor
+		: public boost::static_visitor<void>,
+		private boost::noncopyable {
+	public:		
+		explicit Visitor(
+				Security &security,
+				const Security::ServiceEvent &event)
+			: m_source(security)
+			, m_event(event) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &strategy) const {
+			strategy.RaiseSecurityServiceEvent(m_source, m_event);
+		}
+		void operator ()(Service &service) const {
+			service.RaiseSecurityServiceEvent(m_source, m_event);
+		}
+		void operator ()(Observer &observer) const {
+			observer.RaiseSecurityServiceEvent(m_source, m_event);
+		}
+	private:
+		Security &m_source;
+		const Security::ServiceEvent &m_event;
+	} visitor(security, event);
+
+	boost::apply_visitor(visitor, m_subscriber);
+
+}
+
 //////////////////////////////////////////////////////////////////////////

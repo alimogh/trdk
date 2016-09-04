@@ -73,9 +73,9 @@ void SubscriptionsManager::Suspend() {
 }
 
 void SubscriptionsManager::SubscribeToLevel1Updates(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<ss::connection> &slotConnections) {
 	const auto slot = Security::Level1UpdateSlot(
 		boost::bind(
 			&Dispatcher::SignalLevel1Update,
@@ -95,7 +95,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 		}
 		throw;
 	}
-	Report(*subscriber, security, "Level 1 Updates");
+	Report(*subscriber, security, "level 1 updates");
 }
 
 void SubscriptionsManager::SubscribeToLevel1Ticks(
@@ -123,7 +123,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 		}
 		throw;
 	}
-	Report(*subscriber, security, "Level 1 Ticks");
+	Report(*subscriber, security, "level 1 ticks");
 }
 
 void SubscriptionsManager::SubscribeToTrades(
@@ -179,7 +179,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 		}
 		throw;
 	}
-	Report(*subscriber, security, "Broker Position Updates");
+	Report(*subscriber, security, "broker position updates");
 }
 
 void SubscriptionsManager::SubscribeToBars(
@@ -209,9 +209,9 @@ void SubscriptionsManager::SubscribeToBars(
 }
 
 void SubscriptionsManager::SubscribeToBookUpdateTicks(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<ss::connection> &slotConnections) {
 	const auto slot = Security::BookUpdateTickSlot(
 		boost::bind(
 			&Dispatcher::SignalBookUpdateTick,
@@ -233,6 +233,32 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 		throw;
 	}
 	Report(*subscriber, security, "book update ticks");
+}
+
+void SubscriptionsManager::SubscribeToSecurityServiceEvents(
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<ss::connection> &slotConnections) {
+	const auto slot = Security::ServiceEventSlot(
+		boost::bind(
+			&Dispatcher::SignalSecurityServiceEvents,
+			&m_dispatcher,
+			subscriber,
+			boost::ref(security),
+			_1));
+	const auto &connection = security.SubscribeToServiceEvents(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+	Report(*subscriber, security, "security service events");
 }
 
 void SubscriptionsManager::SubscribeToLevel1Updates(
@@ -520,6 +546,60 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 				const SubscriberPtrWrapper &subscriber,
 				std::list<ss::connection> &slotConnections) {
 			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityServiceEvents(
+		Security &security,
+		Strategy &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToSecurityServiceEvents(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityServiceEvents(
+		Security &security,
+		Service &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToSecurityServiceEvents(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityServiceEvents(
+		Security &security,
+		Observer &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<ss::connection> &slotConnections) {
+			SubscribeToSecurityServiceEvents(
+				security,
+				subscriber,
+				slotConnections);
 		});
 }
 

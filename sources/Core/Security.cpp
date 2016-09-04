@@ -78,6 +78,7 @@ namespace {
 			return result;
 		}
 	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -134,6 +135,8 @@ public:
 	mutable boost::signals2::signal<NewBarSlotSignature> m_barSignal;
 	mutable boost::signals2::signal<BookUpdateTickSlotSignature>
 		m_bookUpdateTickSignal;
+	mutable boost::signals2::signal<ServiceEventSlotSignature>
+		m_serviceEventSignal;
 
 	Level1 m_level1;
 	boost::atomic<Qty::ValueType> m_brokerPosition;
@@ -143,7 +146,7 @@ public:
 	const SupportedLevel1Types m_supportedLevel1Types;
 	boost::atomic_bool m_isOnline;
 
-	boost::optional<ContractExpiration> m_expiration;
+	boost::atomic_int64_t m_expirationTime;
 
 	pt::ptime m_requestedDataStartTime;
 
@@ -184,8 +187,23 @@ public:
 	void UpdateMarketDataStat(const pt::ptime &time) {
 		Assert(!time.is_not_a_date_time());
 		AssertLe(GetLastMarketDataTime(), time);
-		m_marketDataTime = ConvertToMicroseconds(time);
+		const auto &marketDataTime = ConvertToMicroseconds(time);
+		m_marketDataTime = marketDataTime;
 		++m_numberOfMarketDataUpdates;
+		const auto expirationTime = m_expirationTime.load();
+		if (
+				expirationTime
+				&& marketDataTime >= expirationTime
+				&& m_isOnline) {
+			m_source.GetLog().Info(
+				"Switching %1% to the next contract as last market data update"
+					" is %2% and expiration time is %3%...",
+				m_self,
+				time,
+				ConvertToPTimeFromMicroseconds(expirationTime));
+			m_source.SwitchToNextContract(m_self);
+			m_serviceEventSignal(SERVICE_EVENT_CONTRACT_SWITCHED);
+		}
 	}
 
 	bool AddLevel1Tick(
@@ -259,7 +277,10 @@ public:
 
 		timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
 		
-		if (!flush || !(isChanged || isPreviouslyChanged)) {
+		if (!flush) {
+			return;
+		} else if (!(isChanged || isPreviouslyChanged)) {
+			UpdateMarketDataStat(time);
 			return;
 		}
 		
@@ -338,12 +359,8 @@ RiskControlSymbolContext & Security::GetRiskControlContext(
 	return *m_pimpl->m_riskControlContext[mode - 1];
 }
 
-MarketDataSource & Security::GetSource() {
-	return m_pimpl->m_source;
-}
-
 const MarketDataSource & Security::GetSource() const {
-	return const_cast<Security *>(this)->GetSource();
+	return m_pimpl->m_source;
 }
 
 uintmax_t Security::GetPriceScale() const {
@@ -461,31 +478,31 @@ Qty Security::GetBrokerPosition() const {
 }
 
 Security::Level1UpdateSlotConnection Security::SubscribeToLevel1Updates(
-			const Level1UpdateSlot &slot)
+		const Level1UpdateSlot &slot)
 		const {
 	return m_pimpl->m_level1UpdateSignal.connect(slot);
 }
 
 Security::Level1UpdateSlotConnection Security::SubscribeToLevel1Ticks(
-			const Level1TickSlot &slot)
+		const Level1TickSlot &slot)
 		const {
 	return m_pimpl->m_level1TickSignal.connect(slot);
 }
 
 Security::NewTradeSlotConnection Security::SubscribeToTrades(
-			const NewTradeSlot &slot)
+		const NewTradeSlot &slot)
 		const {
 	return m_pimpl->m_tradeSignal.connect(slot);
 }
 
 Security::NewTradeSlotConnection Security::SubscribeToBrokerPositionUpdates(
-			const BrokerPositionUpdateSlot &slot)
+		const BrokerPositionUpdateSlot &slot)
 		const {
 	return m_pimpl->m_brokerPositionUpdateSignal.connect(slot);
 }
 
 Security::NewBarSlotConnection Security::SubscribeToBars(
-			const NewBarSlot &slot)
+		const NewBarSlot &slot)
 		const {
 	return m_pimpl->m_barSignal.connect(slot);
 }
@@ -493,6 +510,11 @@ Security::NewBarSlotConnection Security::SubscribeToBars(
 Security::BookUpdateTickSlotConnection
 Security::SubscribeToBookUpdateTicks(const BookUpdateTickSlot &slot) const {
 	return m_pimpl->m_bookUpdateTickSignal.connect(slot);
+}
+
+Security::ServiceEventSlotConnection
+Security::SubscribeToServiceEvents(const ServiceEventSlot &slot) const {
+	return m_pimpl->m_serviceEventSignal.connect(slot);
 }
 
 bool Security::IsLevel1Required() const {
@@ -832,17 +854,20 @@ void Security::SetBook(
 
 }
 
-const ContractExpiration & Security::GetExpiration() const {
-	if (!m_pimpl->m_expiration) {
+ContractExpiration Security::GetExpiration() const {
+	if (!m_pimpl->m_expirationTime) {
 		boost::format error("%1% doesn't have expiration");
 		error % *this;
 		throw LogicError(error.str().c_str());
 	}
-	return *m_pimpl->m_expiration;
+	return ContractExpiration(
+		ConvertToPTimeFromMicroseconds(m_pimpl->m_expirationTime).date());
 }
 
 void Security::SetExpiration(const ContractExpiration &expiration) {
-	m_pimpl->m_expiration = expiration;
+	const auto &time = ConvertToMicroseconds(expiration.GetDate());
+	AssertLt(m_pimpl->m_expirationTime, time);
+	m_pimpl->m_expirationTime = time;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

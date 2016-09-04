@@ -71,12 +71,15 @@ namespace {
 	IBString FormatLocalSymbol(
 			std::string symbol,
 			const ContractExpiration &expirationInfo) {
-		if (expirationInfo.year > 2019 || expirationInfo.year < 2010) {
+		if (
+				expirationInfo.GetYear() > 2019
+				|| expirationInfo.GetYear() < 2010) {
 			throw MethodDoesNotImplementedError(
 				"Work with features from < 2010 or > 2019 is not implemented");
 		}
-		symbol.push_back(char(expirationInfo.code));
-		symbol += boost::lexical_cast<IBString>(expirationInfo.year - 2010);
+		symbol.push_back(char(expirationInfo.GetCode()));
+		symbol += boost::lexical_cast<IBString>(
+			expirationInfo.GetYear() - 2010);
 		return symbol;
 	}
 
@@ -224,8 +227,10 @@ void Client::Task() {
 	m_ts.GetTsLog().Debug("Client task finished.");
 }
 
-
-Contract Client::GetContract(const trdk::Security &security) const {
+Contract Client::GetContract(
+		const trdk::Security &security,
+		const ContractExpiration *customContractExpiration)
+		const {
 	Contract contract;
 	static_assert(
 		numberOfSecurityTypes == 5,
@@ -233,20 +238,25 @@ Contract Client::GetContract(const trdk::Security &security) const {
 	const Symbol &symbol = security.GetSymbol();
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_STOCK:
+			Assert(!customContractExpiration);
 			contract.secType = "STK";
 			contract.symbol = symbol.GetSymbol();
 			contract.primaryExchange = symbol.GetPrimaryExchange();
 			break;
 		case SECURITY_TYPE_FUTURES:
+			Assert(!customContractExpiration);
 			contract.secType = "FUT";
 			contract.includeExpired = true;
 			contract.localSymbol = !symbol.IsExplicit()
 				?	FormatLocalSymbol(
 						symbol.GetSymbol(),
-						security.GetExpiration())
+						customContractExpiration
+							?	*customContractExpiration
+							:	security.GetExpiration())
 				:	symbol.GetSymbol();
 			break;
 		case SECURITY_TYPE_FUTURES_OPTIONS:
+			Assert(!customContractExpiration);
 			contract.secType = "FOP";
 			contract.symbol = symbol.GetSymbol();
 			contract.strike = symbol.GetStrike();
@@ -264,9 +274,9 @@ Contract Client::GetContract(const trdk::Security &security) const {
 
 Contract Client::GetContract(
 		const trdk::Security &security,
-		const OrderParams &)
+		const OrderParams &params)
 		const {
-	return GetContract(security);
+	return GetContract(security, params.expiration);
 }
 
 void Client::StartData() {
@@ -598,7 +608,7 @@ bool Client::SendMarketDataHistoryRequest(
 			const auto &prevExpiration = std::prev(request.expiration);
 			if (prevExpiration) {
 				request.subRequestStart
-					= pt::ptime(prevExpiration->expirationDate);
+					= pt::ptime(prevExpiration->GetDate());
 				request.subRequestStart += pt::hours(24);
 				if (request.subRequestStart >= request.subRequestEnd) {
 					AssertEq(request.subRequestStart, request.subRequestEnd);
@@ -1773,7 +1783,7 @@ void Client::historicalData(
 			const auto &prevExpiration = std::prev(request->expiration);
 			if (
 					!prevExpiration
-					|| pt::ptime(prevExpiration->expirationDate) < time) {
+					|| pt::ptime(prevExpiration->GetDate()) < time) {
 				Assert(
 					m_historyUpdates.find(request->security)
 						== m_historyUpdates.cend()
@@ -1826,9 +1836,9 @@ void Client::historicalData(
 	if (prevExpiration) {
 		if (
 				request->subRequestStart
-				<= pt::ptime(prevExpiration->expirationDate)) {
+				<= pt::ptime(prevExpiration->GetDate())) {
 			AssertEq(
-				pt::ptime(prevExpiration->expirationDate),
+				pt::ptime(prevExpiration->GetDate()),
 				request->subRequestStart);
 			m_ts.GetMdsLog().Debug(
 				"Finished Level I"
@@ -1837,9 +1847,9 @@ void Client::historicalData(
 						", ticker ID: %6%).",
 				*request->security,
 				request->security->GetSymbol().GetSymbol(),
-				char(request->expiration->code),
-				request->expiration->year - 2010,
-				request->expiration->expirationDate,
+				char(request->expiration->GetCode()),
+				request->expiration->GetYear() - 2010,
+				request->expiration->GetDate(),
 				request->tickerId);
 		}
 		if (
@@ -1883,8 +1893,8 @@ namespace {
 
 		log
 			<< raw.time
-			<< ',' << char(expiration.code) << (expiration.year - 2010)
-			<< ',' << expiration.expirationDate
+			<< ',' << char(expiration.GetCode()) << (expiration.GetYear() - 2010)
+			<< ',' << expiration.GetDate()
 			<< ',' << adjustRatio
 			<< ',' << raw.openPrice
 			<< ',' << adjusted.openPrice
@@ -2222,7 +2232,7 @@ void Client::displayGroupUpdated(
 	AssertFail("Unexpected method call.");
 }
 
-void Client::SwitchToNewContract(ib::Security &security) {
+void Client::SwitchToNextContract(ib::Security &security) {
 
 	boost::mutex::scoped_lock switchLock(m_switchMutex);
 	Assert(!m_securityInSwitching);
@@ -2233,7 +2243,7 @@ void Client::SwitchToNewContract(ib::Security &security) {
 		throw MarketDataSource::Error("Failed to find old request");
 	}
 
-	const auto prevExpiration = m_ts.m_expirationCalendar.Find(
+	const auto prevExpiration = m_ts.GetContext().GetExpirationCalendar().Find(
 		security.GetSymbol(),
 		m_ts.GetContext().GetCurrentTime());
 	if (!prevExpiration) {
@@ -2243,8 +2253,8 @@ void Client::SwitchToNewContract(ib::Security &security) {
 		throw trdk::MarketDataSource::Error(error.str().c_str());
 	}
 	AssertEq(
-		security.GetExpiration().expirationDate,
-		prevExpiration->expirationDate);
+		security.GetExpiration().GetDate(),
+		prevExpiration->GetDate());
 	auto nextExpiration = prevExpiration;
 	if (!++nextExpiration) {
 		boost::format error(
@@ -2263,11 +2273,11 @@ void Client::SwitchToNewContract(ib::Security &security) {
 			FormatLocalSymbol(
 				security.GetSymbol().GetSymbol(),
 				*prevExpiration),
-			prevExpiration->expirationDate,
+			prevExpiration->GetDate(),
 			FormatLocalSymbol(
 				security.GetSymbol().GetSymbol(),
 				*nextExpiration),
-			nextExpiration->expirationDate);
+			nextExpiration->GetDate());
 	
 		m_client->cancelMktData(oldRequest->tickerId);
 		m_marketDataRequests.erase(oldRequest);
@@ -2289,12 +2299,12 @@ void Client::SwitchToNewContract(ib::Security &security) {
 		FormatLocalSymbol(
 			security.GetSymbol().GetSymbol(),
 			*prevExpiration),
-		prevExpiration->expirationDate,
+		prevExpiration->GetDate(),
 		FormatLocalSymbol(
 			security.GetSymbol().GetSymbol(),
 			*nextExpiration),
-		nextExpiration->expirationDate);
-	
+		nextExpiration->GetDate());
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

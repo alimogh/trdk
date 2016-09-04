@@ -59,15 +59,6 @@ namespace EmaFuturesStrategy {
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
-			, m_timeToRollOverBeforeExpiration(
-				pt::hours(
-					conf.ReadTypedKey<unsigned int>(
-						"days_to_rollover_before_expiration")
-					* 24))
-			, m_timeOfDayToRollOver(
-				pt::hours(
-					conf.ReadTypedKey<uint16_t>(
-						"time_of_day_to_rollover_hours")))
 			, m_security(nullptr)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
 			GetLog().Info(
@@ -76,8 +67,7 @@ namespace EmaFuturesStrategy {
 					" Order price delta: %3%."
 					" Take-profit trailing: %4%%%"
 						" will be activated after profit %5% * %6% = %7%."
-					" Max loss: %8% * %9% = %10%."
-					" Time to roll over before expiration: %11% at %12%.",
+					" Max loss: %8% * %9% = %10%.",
 				m_numberOfContracts, // 1
 				m_passiveOrderMaxLifetime, // 2
 				m_orderPriceDelta, // 3
@@ -87,9 +77,7 @@ namespace EmaFuturesStrategy {
 				m_minProfitToActivateTakeProfit * m_numberOfContracts, // 7
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
-				m_maxLossMoneyPerContract * m_numberOfContracts, // 10
-				m_timeToRollOverBeforeExpiration, // 11
-				m_timeOfDayToRollOver);
+				m_maxLossMoneyPerContract * m_numberOfContracts);
 			OpenStartegyLog();
 		}
 		
@@ -198,7 +186,7 @@ namespace EmaFuturesStrategy {
 			
 			const Direction &signal = UpdateDirection();
 			Assert(m_security);
-			if (!m_security->IsOnline() || StartRollOver()) {
+			if (!m_security->IsOnline()) {
 				return;
 			}
 			if (signal != DIRECTION_LEVEL) {
@@ -226,6 +214,24 @@ namespace EmaFuturesStrategy {
 			throw MethodDoesNotImplementedError(
 				"EmaFuturesStrategy::OnPostionsCloseRequest"
 					" is not implemented");
+		}
+
+		virtual void OnSecurityServiceEvent(
+				Security &security,
+				const Security::ServiceEvent &event) {
+			
+			static_assert(
+				Security::numberOfServiceEvents == 1,
+				"List changed.");
+			if (event != Security::SERVICE_EVENT_CONTRACT_SWITCHED) {
+				Strategy::OnSecurityServiceEvent(security, event);
+				return;
+			} else if (&security != m_security) {
+				return;
+			}
+
+			StartRollOver();
+
 		}
 
 	private:
@@ -604,44 +610,23 @@ namespace EmaFuturesStrategy {
 
 		}
 
-		bool StartRollOver() {
-
-			const auto &expirationTime
-				= pt::ptime(m_security->GetExpiration().expirationDate)
-				+ m_timeOfDayToRollOver;
-			const auto &now = GetContext().GetCurrentTime();
-			if (expirationTime < now) {
-				throw Exception("Expiration is missed");
-			}
-
-			const auto &timeToRollOver
-				= expirationTime - m_timeToRollOverBeforeExpiration;
-			if (now < timeToRollOver) {
-				AssertLt(now, expirationTime);
-				return false;
-			}
+		void StartRollOver() {
 
 			if (!GetPositions().GetSize()) {
-				// Added to the custom branch for GadM:
-				m_security->GetSource().SwitchToNewContract(*m_security);
-				AssertLt(
-					now,
-					pt::ptime(m_security->GetExpiration().expirationDate));
-				return false;
+				return;
 			}
 			
 			auto &position
 				= dynamic_cast<Position &>(*GetPositions().GetBegin());
 			if (position.HasActiveCloseOrders()) {
-				return true;
+				return;
 			}
 
 			GetTradingLog().Write(
-				"rollover\texpiration=%1%\ttime-to-rollover=%2%\tposition=%3%",
+				"rollover\texpiration=%1%\tposition=%2%",
 				[&](TradingRecord &record) {
 					record
-						% pt::ptime(m_security->GetExpiration().expirationDate)
-						% timeToRollOver
+						% pt::ptime(m_security->GetExpiration().GetDate())
 						% position.GetId();
 				});
 
@@ -649,8 +634,6 @@ namespace EmaFuturesStrategy {
 				INTENTION_CLOSE_PASSIVE,
 				Position::CLOSE_TYPE_ROLLOVER,
 				DIRECTION_LEVEL);
-
-			return true;
 
 		}
 
@@ -662,9 +645,6 @@ namespace EmaFuturesStrategy {
 						!= Position::CLOSE_TYPE_ROLLOVER) {
 				return;
 			}
-
-			// Added to the custom branch for GadM:
-			m_security->GetSource().SwitchToNewContract(*m_security);
 
 			AssertLt(0, oldPosition.GetOpenedQty());
 			boost::shared_ptr<Position> newPosition;
@@ -695,8 +675,6 @@ namespace EmaFuturesStrategy {
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingPercentage;
 		const double m_maxLossMoneyPerContract;
-		const pt::time_duration m_timeToRollOverBeforeExpiration;
-		const pt::time_duration m_timeOfDayToRollOver;
 
 		Security *m_security;
 

@@ -29,11 +29,11 @@ Observer::~Observer() {
 
 void Observer::OnLevel1Update(Security &security) {
 	GetLog().Error(
-		"Subscribed to %1% Level 1 Updates, but can't work with it"
+		"Subscribed to %1% level 1 updates, but can't work with it"
 			" (doesn't have OnLevel1Update method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 updates, but can't work with it");
+		"Module subscribed to level 1 updates, but can't work with it");
 }
 
 void Observer::RaiseBrokerPositionUpdateEvent(
@@ -79,4 +79,11 @@ void Observer::RaiseServiceDataUpdateEvent(
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	const Lock lock(GetMutex());
 	OnServiceDataUpdate(service, timeMeasurement);
+}
+
+void Observer::RaiseSecurityServiceEvent(
+		Security &security,
+		const Security::ServiceEvent &event) {
+	const Lock lock(GetMutex());
+	OnSecurityServiceEvent(security, event);
 }

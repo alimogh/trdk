@@ -421,11 +421,11 @@ void Strategy::OnLevel1Update(
 		Security &security,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
-		"Subscribed to %1% Level 1 Updates, but can't work with it"
+		"Subscribed to %1% level 1 updates, but can't work with it"
 			" (doesn't have OnLevel1Update method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Level 1 updates, but can't work with it");
+		"Module subscribed to level 1 updates, but can't work with it");
 }
 
 void Strategy::OnPositionUpdate(Position &) {
@@ -437,11 +437,11 @@ void Strategy::OnBookUpdateTick(
 		const PriceBook &,
 		const TimeMeasurement::Milestones &) {
 	GetLog().Error(
-		"Subscribed to %1% Book Update Ticks, but can't work with it"
+		"Subscribed to %1% book Update ticks, but can't work with it"
 			" (doesn't have OnBookUpdateTick method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
-		"Module subscribed to Book Update Ticks, but can't work with it");
+		"Module subscribed to book Update ticks, but can't work with it");
 }
 
 void Strategy::Register(Position &position) {
@@ -661,6 +661,23 @@ void Strategy::RaiseBookUpdateTickEvent(
 		OnBookUpdateTick(security, book, timeMeasurement);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
+	}
+}
+
+void Strategy::RaiseSecurityServiceEvent(
+		Security &security,
+		const Security::ServiceEvent &event) {
+	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
+	if (IsBlocked()) {
+		return;
+	}
+	try {
+		OnSecurityServiceEvent(security, event);
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "security service event");
 	}
 }
 

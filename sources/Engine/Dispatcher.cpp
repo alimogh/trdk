@@ -43,14 +43,15 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 Dispatcher::Dispatcher(Engine::Context &context)
-		: m_context(context),
-		m_level1Updates("Level 1 Updates", m_context),
-		m_level1Ticks("Level 1 Ticks", m_context),
-		m_newTrades("Trades", m_context),
-		m_positionsUpdates("Positions", m_context),
-		m_brokerPositionsUpdates("Broker Positions", m_context),
-		m_newBars("Bars", m_context),
-		m_bookUpdateTicks("Book Update Ticks", m_context) {
+	: m_context(context)
+	, m_level1Updates("Level 1 updates", m_context)
+	, m_level1Ticks("Level 1 ticks", m_context)
+	, m_newTrades("Trades", m_context)
+	, m_positionsUpdates("Positions", m_context)
+	, m_brokerPositionsUpdates("Broker positions", m_context)
+	, m_newBars("Bars", m_context)
+	, m_bookUpdateTicks("Book update ticks", m_context)
+	, m_securityServiceEvents("Security service events", m_context) {
 	unsigned int threadsCount = 1;
 	boost::shared_ptr<boost::barrier> startBarrier(
 		new boost::barrier(threadsCount + 1));
@@ -67,6 +68,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		m_positionsUpdates,
 		m_newBars,
 		m_brokerPositionsUpdates,
+		m_securityServiceEvents,
 		threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier->wait();
@@ -86,6 +88,7 @@ Dispatcher::~Dispatcher() {
 		m_positionsUpdates.Stop();
 		m_newBars.Stop();
 		m_brokerPositionsUpdates.Stop();
+		m_securityServiceEvents.Stop();
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -107,6 +110,7 @@ void Dispatcher::Activate() {
 	m_positionsUpdates.Activate();
 	m_newBars.Activate();
 	m_brokerPositionsUpdates.Activate();
+	m_securityServiceEvents.Activate();
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
@@ -123,6 +127,7 @@ void Dispatcher::Suspend() {
 	m_positionsUpdates.Suspend();
 	m_newBars.Suspend();
 	m_brokerPositionsUpdates.Suspend();
+	m_securityServiceEvents.Suspend();
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
@@ -138,7 +143,8 @@ bool Dispatcher::IsActive() const {
 		|| m_newTrades.IsActive()
 		|| m_positionsUpdates.IsActive()
 		|| m_newBars.IsActive()
-		|| m_brokerPositionsUpdates.IsActive();
+		|| m_brokerPositionsUpdates.IsActive()
+		|| m_securityServiceEvents.IsActive();
 }
 
 void Dispatcher::SignalLevel1Update(
@@ -265,6 +271,24 @@ void Dispatcher::SignalBookUpdateTick(
 				book,
 				timeMeasurement,
 				subscriber),
+			true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalSecurityServiceEvents(
+		SubscriberPtrWrapper &subscriber,
+		Security &security,
+		const Security::ServiceEvent &serviceEvent) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_securityServiceEvents.Queue(
+			boost::make_tuple(&security, serviceEvent, subscriber),
 			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.

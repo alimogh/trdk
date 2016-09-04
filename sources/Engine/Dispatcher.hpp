@@ -233,7 +233,8 @@ namespace trdk { namespace Engine {
 				SubscriberPtrWrapper,
 				Lib::TimeMeasurement::Milestones>
 			Level1UpdateEvent;
-		typedef EventQueue<std::vector<Level1UpdateEvent>> Level1UpdateEventQueue;
+		typedef EventQueue<std::vector<Level1UpdateEvent>>
+			Level1UpdateEventQueue;
 
 		typedef boost::tuple<
 				SubscriberPtrWrapper::Level1Tick,
@@ -289,6 +290,14 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::vector<BookUpdateTickEvent>>
 			BookUpdateTickEventQueue;
 
+		typedef boost::tuple<
+				Security *,
+				Security::ServiceEvent,
+				SubscriberPtrWrapper>
+			SecurityServiceEvent;
+		typedef EventQueue<std::vector<SecurityServiceEvent>>
+			SecurityServiceEventQueue;
+
 	public:
 
 		explicit Dispatcher(Engine::Context &);
@@ -302,6 +311,7 @@ namespace trdk { namespace Engine {
 		void Suspend();
 
 		void SyncDispatching() {
+			m_securityServiceEvents.Sync();
 			m_bookUpdateTicks.Sync();
 			m_newBars.Sync();
 			m_brokerPositionsUpdates.Sync();
@@ -345,6 +355,10 @@ namespace trdk { namespace Engine {
 				Security &,
 				const PriceBook &,
 				const Lib::TimeMeasurement::Milestones &);
+		void SignalSecurityServiceEvents(
+				SubscriberPtrWrapper &,
+				Security &,
+				const Security::ServiceEvent &);
 
 	private:
 
@@ -367,40 +381,39 @@ namespace trdk { namespace Engine {
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const Level1UpdateEvent &level1UpdateEvent,
-					EventList &eventList) {
+				const Level1UpdateEvent &event,
+				EventList &eventList) {
 			//! @todo place for optimization
-			foreach (const Level1UpdateEvent &event, eventList) {
-				if (	boost::get<0>(level1UpdateEvent)
-								== boost::get<0>(event)
-							&& boost::get<1>(level1UpdateEvent)
-									== boost::get<1>(event)) {
+			for (const auto &it: boost::adaptors::reverse(eventList)) {
+				if (
+						boost::get<0>(event) == boost::get<0>(it)
+						&& boost::get<1>(event) == boost::get<1>(it)) {
 					return false;
 				}
 			}
-			eventList.push_back(level1UpdateEvent);
-			boost::get<2>(level1UpdateEvent)
+			eventList.emplace_back(event);
+			boost::get<2>(event)
 				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const Level1TickEvent &tick,
-					EventList &eventList) {
-			eventList.push_back(tick);
+				const Level1TickEvent &tick,
+				EventList &eventList) {
+			eventList.emplace_back(tick);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const NewTradeEvent &newTradeEvent,
-					EventList &eventList) {
-			eventList.push_back(newTradeEvent);
+				const NewTradeEvent &newTradeEvent,
+				EventList &eventList) {
+			eventList.emplace_back(newTradeEvent);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const PositionUpdateEvent &positionUpdateEvent,
-					EventList &eventList) {
+				const PositionUpdateEvent &positionUpdateEvent,
+				EventList &eventList) {
 			//! @todo place for optimization
 			const auto &end = eventList.cend();
 			const auto &pos = std::find(
@@ -410,30 +423,45 @@ namespace trdk { namespace Engine {
 			if (pos != end) {
 				return false;
 			}
-			eventList.push_back(positionUpdateEvent);
+			eventList.emplace_back(positionUpdateEvent);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const BrokerPositionUpdateEvent &positionUpdateEvent,
-					EventList &eventList) {
-			eventList.push_back(positionUpdateEvent);
+				const BrokerPositionUpdateEvent &positionUpdateEvent,
+				EventList &eventList) {
+			eventList.emplace_back(positionUpdateEvent);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const NewBarEvent &newBarEvent,
-					EventList &eventList) {
-			eventList.push_back(newBarEvent);
+				const NewBarEvent &newBarEvent,
+				EventList &eventList) {
+			eventList.emplace_back(newBarEvent);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-					const BookUpdateTickEvent &bookUpdateTickEvent,
-					EventList &eventList) {
-			eventList.push_back(bookUpdateTickEvent);
+				const BookUpdateTickEvent &bookUpdateTickEvent,
+				EventList &eventList) {
+			eventList.emplace_back(bookUpdateTickEvent);
 			boost::get<2>(bookUpdateTickEvent)
 				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
+			return true;
+		}
+		template<typename EventList>
+		static bool QueueEvent(
+				const SecurityServiceEvent &event,
+				EventList &eventList) {
+			//! @todo place for optimization
+			for (const auto &it: boost::adaptors::reverse(eventList)) {
+				if (
+						boost::get<0>(event) == boost::get<0>(it)
+						&& boost::get<1>(event) == boost::get<1>(it)) {
+					return false;
+				}
+			}
+			eventList.emplace_back(event);
 			return true;
 		}
 
@@ -1152,6 +1180,167 @@ namespace trdk { namespace Engine {
 		////////////////////////////////////////////////////////////////////////////////
 
 		template<
+			typename DispatchingTimeMeasurementPolicy,
+			typename ListWithHighPriority,
+			typename ListWithLowPriority,
+			typename ListWithExtraLowPriority,
+			typename ListWithExtraLowPriority2,
+			typename ListWithExtraLowPriority3,
+			typename ListWithExtraLowPriority4,
+			typename ListWithExtraLowPriority5,
+			typename ListWithExtraLowPriority6>
+		void StartNotificationTask(
+				boost::shared_ptr<boost::barrier> startBarrier,
+				ListWithHighPriority &listWithHighPriority,
+				ListWithLowPriority &listWithLowPriority,
+				ListWithExtraLowPriority &listWithExtraLowPriority,
+				ListWithExtraLowPriority2 &listWithExtraLowPriority2,
+				ListWithExtraLowPriority3 &listWithExtraLowPriority3,
+				ListWithExtraLowPriority4 &listWithExtraLowPriority4,
+				ListWithExtraLowPriority5 &listWithExtraLowPriority5,
+				ListWithExtraLowPriority6 &listWithExtraLowPriority6,
+				unsigned int &threadsCounter) {
+			Lib::UseUnused(threadsCounter);
+			const auto lists = boost::make_tuple(
+				boost::ref(listWithHighPriority),
+				boost::ref(listWithLowPriority),
+				boost::ref(listWithExtraLowPriority),
+				boost::ref(listWithExtraLowPriority2),
+				boost::ref(listWithExtraLowPriority3),
+				boost::ref(listWithExtraLowPriority4),
+				boost::ref(listWithExtraLowPriority5),
+				boost::ref(listWithExtraLowPriority6));
+			m_threads.create_thread(
+				boost::bind(
+					&Dispatcher::NotificationTask<
+						decltype(lists),
+						DispatchingTimeMeasurementPolicy>,
+					this,
+					boost::ref(startBarrier),
+					lists));
+			Assert(1 <= threadsCounter--);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7,
+			typename T8>
+		static std::string GetEventListsName(
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7, T8> &lists) {
+			boost::format result("%1%, %2%, %3%, %4%, %5%, %6%, %7%, %8%");
+			result
+				% boost::get<0>(lists).GetName()
+				% boost::get<1>(lists).GetName()
+				% boost::get<2>(lists).GetName()
+				% boost::get<3>(lists).GetName()
+				% boost::get<4>(lists).GetName()
+				% boost::get<5>(lists).GetName()
+				% boost::get<6>(lists).GetName()
+				% boost::get<7>(lists).GetName();
+			return result.str();
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7,
+			typename T8>
+		static void AssignEventListsSyncObjects(
+				boost::shared_ptr<EventListsSyncObjects> &sync,
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7, T8> &lists) {
+			boost::get<0>(lists).AssignSyncObjects(sync);
+			boost::get<1>(lists).AssignSyncObjects(sync);
+			boost::get<2>(lists).AssignSyncObjects(sync);
+			boost::get<3>(lists).AssignSyncObjects(sync);
+			boost::get<4>(lists).AssignSyncObjects(sync);
+			boost::get<5>(lists).AssignSyncObjects(sync);
+			boost::get<6>(lists).AssignSyncObjects(sync);
+			boost::get<7>(lists).AssignSyncObjects(sync);
+		}
+
+		template<
+			typename T1,
+			typename T2,
+			typename T3,
+			typename T4,
+			typename T5,
+			typename T6,
+			typename T7,
+			typename T8>
+		void FlushEventListsCollection(
+				const boost::tuple<T1, T2, T3, T4, T5, T6, T7, T8> &lists,
+				std::bitset<8> &deactivationMask,
+				EventQueueLock &lock,
+				const Lib::TimeMeasurement::Milestones &timeMeasurement)
+				const {
+			do {
+				do {
+					do {
+						do {
+							do {
+								do {
+									do {
+										FlushEventList<0>(
+											lists,
+											deactivationMask,
+											lock,
+											timeMeasurement);
+									} while (
+										FlushEventList<1>(
+											lists,
+											deactivationMask,
+											lock,
+											timeMeasurement));
+								} while (
+									FlushEventList<2>(
+										lists,
+										deactivationMask,
+										lock,
+										timeMeasurement));
+							} while (
+								FlushEventList<3>(
+									lists,
+									deactivationMask,
+									lock,
+									timeMeasurement));
+						} while (
+							FlushEventList<4>(
+								lists,
+								deactivationMask,
+								lock,
+								timeMeasurement));
+					} while (
+						FlushEventList<5>(
+							lists,
+							deactivationMask,
+							lock,
+							timeMeasurement));
+				} while (
+					FlushEventList<6>(
+						lists,
+						deactivationMask,
+						lock,
+						timeMeasurement));
+			} while (
+				FlushEventList<7>(
+					lists,
+					deactivationMask,
+					lock,
+					timeMeasurement));
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		template<
 			typename EventLists,
 			typename DispatchingTimeMeasurementPolicy>
 		void NotificationTask(
@@ -1242,6 +1431,7 @@ namespace trdk { namespace Engine {
 		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
 		NewBarEventQueue m_newBars;
 		BookUpdateTickEventQueue m_bookUpdateTicks;
+		SecurityServiceEventQueue m_securityServiceEvents;
 
 	};
 
@@ -1298,6 +1488,12 @@ namespace trdk { namespace Engine {
 			*boost::get<0>(bookUpdateTickEvent),
 			boost::get<1>(bookUpdateTickEvent),
 			timeMeasurement);
+	}
+	template<>
+	inline void Dispatcher::RaiseEvent(SecurityServiceEvent &event) {
+		boost::get<2>(event).RaiseSecurityServiceEvent(
+			*boost::get<0>(event),
+			boost::get<1>(event));
 	}
 
 } }
