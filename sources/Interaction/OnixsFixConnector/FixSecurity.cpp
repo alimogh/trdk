@@ -22,7 +22,7 @@ using namespace trdk::Interaction::OnixsFixConnector;
 FixSecurity::FixSecurity(
 		Context &context,
 		const Symbol &symbol,
-		const MarketDataSource &source)
+		MarketDataSource &source)
 	: Base(context, symbol, source, true, SupportedLevel1Types().set())
 	, m_flush(&FixSecurity::FlushBookIterativeUpdates) {
 	//...//

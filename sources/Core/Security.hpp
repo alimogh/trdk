@@ -127,15 +127,28 @@ namespace trdk {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		enum ServiceEvent {
+			//! Security switched to another contract.
+			SERVICE_EVENT_CONTRACT_SWITCHED,
+			numberOfServiceEvents
+		};
+
+		typedef void (ServiceEventSlotSignature)(
+			const trdk::Security::ServiceEvent &);
+		typedef boost::function<ServiceEventSlotSignature> ServiceEventSlot;
+		typedef boost::signals2::connection ServiceEventSlotConnection;
+
+		////////////////////////////////////////////////////////////////////////////////
+
 	public:
 
 		explicit Security(
 				trdk::Context &,
 				const trdk::Lib::Symbol &,
-				const trdk::MarketDataSource &,
+				trdk::MarketDataSource &,
 				bool isOnline,
 				const SupportedLevel1Types &);
-		~Security();
+		virtual ~Security();
 
 	public:
 
@@ -203,9 +216,8 @@ namespace trdk {
 		//! Returns next expiration time.
 		/** Throws exception if expiration is not provided.
 		  * @sa GetExpiration
-		  * @todo Operation is not thread-safe!
 		  */
-		const trdk::Lib::ContractExpiration & GetExpiration() const;
+		trdk::Lib::ContractExpiration GetExpiration() const;
 
 	public:
 
@@ -227,6 +239,10 @@ namespace trdk {
 		
 		BookUpdateTickSlotConnection SubscribeToBookUpdateTicks(
 				const BookUpdateTickSlot &)
+				const;
+
+		ServiceEventSlotConnection SubscribeToServiceEvents(
+				const ServiceEventSlot &)
 				const;
 
 	protected:
@@ -375,7 +391,6 @@ namespace trdk {
 
 		//! Sets new expiration.
 		/** @sa GetExpiration
-		  * @todo Operation is not thread-safe!
 		  */
 		void SetExpiration(const trdk::Lib::ContractExpiration &);
 

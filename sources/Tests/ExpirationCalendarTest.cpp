@@ -103,9 +103,9 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX1/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::Apr, 6)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::May, 20), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
 			EXPECT_FALSE(++it);
 		}
 		{
@@ -113,9 +113,9 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX1/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::May, 20)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::May, 20), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
 			EXPECT_FALSE(++it);
 		}
 
@@ -125,9 +125,9 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2015, gr::Sep, 25)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Expiration::CODE_DECEMBER, it->code);
-			EXPECT_EQ(2015, it->year);
-			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
+			EXPECT_EQ(2015, it->GetYear());
+			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
 			EXPECT_TRUE(++it);
 		}
 
@@ -144,9 +144,9 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2016, gr::Feb, 1)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Expiration::CODE_MARCH, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
 			EXPECT_TRUE(++it);
 		}
 
@@ -157,45 +157,45 @@ namespace trdk { namespace Tests {
 				lib::Symbol("XXX2/USD::FUT"),
 				pt::ptime(gr::date(2015, gr::Sep, 26)));
 			ASSERT_TRUE(it);
-			EXPECT_EQ(Expiration::CODE_DECEMBER, it->code);
-			EXPECT_EQ(2015, it->year);
-			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
+			EXPECT_EQ(2015, it->GetYear());
+			EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
 			
 			// {"XXX2", 20151225},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_JANUARY, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_JANUARY, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it->GetDate());
 
 			// {"XXX2", 20160118},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_FEBRUARY, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_FEBRUARY, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it->GetDate());
 		
 			// {"XXX2", 20160219},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_MARCH, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
 
 			// {"XXX2", 20160317},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_APRIL, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::Mar, 17), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_APRIL, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::Mar, 17), it->GetDate());
 
 			// {"XXX2", 20160420},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_MAY, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_MAY, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->GetDate());
 
 			// {"XXX2", 20160521},
 			ASSERT_TRUE(++it);
-			EXPECT_EQ(Expiration::CODE_JUNE, it->code);
-			EXPECT_EQ(2016, it->year);
-			EXPECT_EQ(gr::date(2016, gr::May, 21), it->expirationDate);
+			EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
+			EXPECT_EQ(2016, it->GetYear());
+			EXPECT_EQ(gr::date(2016, gr::May, 21), it->GetDate());
 
 			ASSERT_FALSE(++it);
 
@@ -273,41 +273,41 @@ namespace trdk { namespace Tests {
 			lib::Symbol("XXX2/USD::FUT"),
 			pt::ptime(gr::date(2015, gr::Sep, 26)));
 		ASSERT_TRUE(it1);
-		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it1->expirationDate);
+		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it1->GetDate());
 
-		EXPECT_EQ(gr::date(2015, gr::Dec, 25), std::next(it1)->expirationDate);
+		EXPECT_EQ(gr::date(2015, gr::Dec, 25), std::next(it1)->GetDate());
 		EXPECT_EQ(
 			gr::date(2015, gr::Nov, 10),
-			std::prev(std::next(it1))->expirationDate);
+			std::prev(std::next(it1))->GetDate());
 
 		auto it2 = ++it1;
 		ASSERT_TRUE(it2);
-		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
-		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it2->expirationDate);
+		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->GetDate());
+		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it2->GetDate());
 
 		ASSERT_TRUE(++it2);
-		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
-		EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->expirationDate);
+		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->GetDate());
+		EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->GetDate());
 
 		{
 			auto it3 = it2++;
-			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
-			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it2->expirationDate);
-			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it3->expirationDate);
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->GetDate());
+			EXPECT_EQ(gr::date(2016, gr::Feb, 19), it2->GetDate());
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it3->GetDate());
 		}
 
 		{
 			auto it4 = --it2;
-			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
-			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->expirationDate);
-			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it4->expirationDate);
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->GetDate());
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it2->GetDate());
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it4->GetDate());
 		}
 
 		{
 			auto it5 = it2--;
-			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->expirationDate);
-			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it2->expirationDate);
-			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it5->expirationDate);
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it1->GetDate());
+			EXPECT_EQ(gr::date(2015, gr::Dec, 25), it2->GetDate());
+			EXPECT_EQ(gr::date(2016, gr::Jan, 18), it5->GetDate());
 		}
 
 		{

@@ -101,7 +101,10 @@ namespace trdk { namespace Engine {
 				const PriceBook &,
 				const Lib::TimeMeasurement::Milestones &)
 				const;
-
+		void RaiseSecurityServiceEvent(
+				Security &,
+				const Security::ServiceEvent &)
+				const;
 	private:
 
 		ModuleRefVariant m_subscriber;

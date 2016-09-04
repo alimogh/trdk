@@ -26,7 +26,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		explicit Security(
 				Context &,
 				const Lib::Symbol &,
-				const MarketDataSource &,
+				MarketDataSource &,
 				bool isTestSource);
 
 	public:

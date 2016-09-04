@@ -58,7 +58,7 @@ namespace trdk {
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		bool RaiseBrokerPositionUpdateEvent(
-				trdk::Security &security,
+				const trdk::Security &security,
 				const trdk::Qty &qty,
 				bool isInitial);
 		bool RaiseNewBarEvent(
@@ -68,6 +68,9 @@ namespace trdk {
 				const trdk::Security &,
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
+		virtual void RaiseSecurityServiceEvent(
+				const trdk::Security &,
+				const trdk::Security::ServiceEvent &);
 
 	protected:
 
@@ -103,7 +106,7 @@ namespace trdk {
 		  * @param isInitial	true if it initial data at start.
 		  */
 		virtual bool OnBrokerPositionUpdate(
-				trdk::Security &,
+				const trdk::Security &,
 				const trdk::Qty &,
 				bool isInitial);
 
@@ -115,6 +118,10 @@ namespace trdk {
 				const trdk::Security &,
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
+
+		virtual void OnSecurityServiceEvent(
+				const trdk::Security &,
+				const trdk::Security::ServiceEvent &);
 
 	private:
 

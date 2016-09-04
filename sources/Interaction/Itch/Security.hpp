@@ -33,10 +33,7 @@ namespace trdk { namespace Interaction { namespace Itch {
 
 	public:
 
-		explicit Security(
-				Context &,
-				const Lib::Symbol &,
-				const MarketDataSource &);
+		explicit Security(Context &, const Lib::Symbol &, MarketDataSource &);
 
 	public:
 

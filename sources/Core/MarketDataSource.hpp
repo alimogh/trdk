@@ -115,6 +115,11 @@ namespace trdk {
 				const boost::function<bool (const trdk::Security &)> &)
 				const;
 
+		//! Switches security to the next contract ordered by expiration date.
+		/** @param	security	Security to switch. Should be not explicit.
+		  */
+		virtual void SwitchToNextContract(trdk::Security &security);
+
 	protected:
 
 		trdk::Security & CreateSecurity(const trdk::Lib::Symbol &);

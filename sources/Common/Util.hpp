@@ -114,6 +114,7 @@ namespace trdk { namespace Lib {
 	const boost::posix_time::time_duration & GetEstDiff();
 	const boost::posix_time::time_duration & GetEstDiffLocal();
 
+	int64_t ConvertToMicroseconds(const boost::gregorian::date &);
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
 	int64_t ConvertToMicroseconds(const boost::posix_time::ptime &);
 	boost::posix_time::ptime ConvertToPTimeFromMicroseconds(int64_t);

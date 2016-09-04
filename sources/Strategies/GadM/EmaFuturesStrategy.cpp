@@ -607,7 +607,7 @@ namespace EmaFuturesStrategy {
 		bool StartRollOver() {
 
 			const auto &expirationTime
-				= pt::ptime(m_security->GetExpiration().expirationDate)
+				= pt::ptime(m_security->GetExpiration().GetDate())
 				+ m_timeOfDayToRollOver;
 			const auto &now = GetContext().GetCurrentTime();
 			if (expirationTime < now) {
@@ -638,7 +638,7 @@ namespace EmaFuturesStrategy {
 				"rollover\texpiration=%1%\ttime-to-rollover=%2%\tposition=%3%",
 				[&](TradingRecord &record) {
 					record
-						% pt::ptime(m_security->GetExpiration().expirationDate)
+						% pt::ptime(m_security->GetExpiration().GetDate())
 						% timeToRollOver
 						% position.GetId();
 				});

@@ -21,7 +21,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 		explicit FakeSecurity(
 				Context &context,
 				const Lib::Symbol &symbol,
-				const MarketDataSource &source)
+				MarketDataSource &source)
 			: Security(
 				context,
 				symbol, 

@@ -90,8 +90,14 @@ namespace trdk {
 		  */
 		boost::optional<uint8_t> qtyPrecision;
 
+		//! Define forced expiration for order contract.
+		/** If set - this expiration will be used, not from security object.
+		  */
+		const trdk::Lib::ContractExpiration *expiration;
+
 		explicit OrderParams()
-			: isManualOrder(false) {
+			: isManualOrder(false)
+			, expiration(nullptr) {
 			//...//
 		}
 

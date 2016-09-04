@@ -36,7 +36,7 @@ namespace trdk { namespace Interaction { namespace OnixsFixConnector {
 		explicit FixSecurity(
 				Context &context,
 				const Lib::Symbol &symbol,
-				const trdk::MarketDataSource &source);
+				trdk::MarketDataSource &source);
 
 	public:
 

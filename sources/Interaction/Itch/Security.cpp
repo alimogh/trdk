@@ -22,7 +22,7 @@ namespace pt = boost::posix_time;
 Itch::Security::Security(
 		Context &context,
 		const Lib::Symbol &symbol,
-		const MarketDataSource &source)
+		MarketDataSource &source)
 	: Base(context, symbol, source, true, SupportedLevel1Types().set())
 	, m_hasBidUpdates(false)
 	, m_hasAskUpdates(false)

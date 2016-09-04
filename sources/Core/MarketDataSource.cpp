@@ -207,6 +207,14 @@ void MarketDataSource::ForEachSecurity(
 	}
 }
 
+void MarketDataSource::SwitchToNextContract(trdk::Security &security) {
+	GetLog().Error(
+		"Market data source does not support contact switching for %1%.",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Market data source does not support contact switching");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 std::ostream & trdk::operator <<(

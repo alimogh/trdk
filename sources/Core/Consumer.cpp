@@ -105,6 +105,19 @@ void Consumer::OnNewBar(Security &security, const Security::Bar &) {
 		"Module subscribed to new bars, but can't work with it");
 }
 
+void Consumer::OnSecurityServiceEvent(
+		Security &security,
+		const Security::ServiceEvent &event) {
+	GetLog().Error(
+		"Subscribed to security service event from %1%"
+			", but can't work with event %2%"
+			" (doesn't have OnSecurityServiceEvent method implementation).",
+		security,
+		event);
+	throw MethodDoesNotImplementedError(
+		"Subscribed to security service event, but can't work with it");
+}
+
 void Consumer::RegisterSource(Security &security) {
 	if (!m_pimpl->m_securities.Insert(security)) {
 		return;
