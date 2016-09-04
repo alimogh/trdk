@@ -35,6 +35,8 @@ namespace trdk { namespace Lib {
 		/** @throw NetworkClientService::Exception	If connection will fail.
 		  */
 		void Connect();
+		//! Stops all.
+		void Stop();
 
 		trdk::Lib::NetworkClientServiceIo & GetIo();
 

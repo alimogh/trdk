@@ -179,7 +179,7 @@ namespace trdk { namespace EngineServer {
 		struct BarCache {
 			const Security *security;
 			boost::posix_time::ptime time;
-			boost::posix_time::time_duration size;
+			int64_t size;
 			ScaledPrice open;
 			ScaledPrice close;
 			ScaledPrice high;
@@ -252,6 +252,14 @@ namespace trdk { namespace EngineServer {
 					const trdk::Security &,
 					const boost::posix_time::ptime &,
 					const boost::posix_time::time_duration &,
+					const trdk::ScaledPrice &openTradePrice,
+					const trdk::ScaledPrice &closeTradePrice,
+					const trdk::ScaledPrice &highTradePrice,
+					const trdk::ScaledPrice &lowTradePrice);
+			virtual void CopyBar(
+					const trdk::Security &,
+					const boost::posix_time::ptime &,
+					size_t numberOfTicksInBar,
 					const trdk::ScaledPrice &openTradePrice,
 					const trdk::ScaledPrice &closeTradePrice,
 					const trdk::ScaledPrice &highTradePrice,

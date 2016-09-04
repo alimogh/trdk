@@ -207,6 +207,9 @@ public:
 
 	std::unique_ptr<std::ofstream> m_barsLog;
 
+	boost::function<bool(const pt::ptime &)> m_isNewBar;
+	boost::function<void()> m_copyCurrentBar;
+
 public:
 
 	explicit Implementation(
@@ -337,15 +340,28 @@ public:
 
 
 		if (!m_countedBarSize) {
+			
+			m_isNewBar = boost::bind(&Implementation::IsNewTimedBar, this, _1);
+			m_copyCurrentBar
+				= boost::bind(&Implementation::CopyCurrentTimedBar, this);
+			
 			m_service.GetLog().Info(
 				"Stated with size \"%1%\" (number of history bars: %2%).",
 				m_timedBarSize,
 				m_numberOfHistoryBars);
+		
 		} else {
+
+			m_isNewBar
+				= boost::bind(&Implementation::IsNewTickCountedBar, this, _1);
+			m_copyCurrentBar
+				= boost::bind(&Implementation::CopyCurrentTickCountedBar, this);
+
 			m_service.GetLog().Info(
 				"Stated with size \"%1% %2%\".",
 				m_countedBarSize,
 				m_unitsStr);
+		
 		}
 
 	}
@@ -493,7 +509,7 @@ public:
 	bool ContinueBar(const Callback &callback) {
 		Assert(!m_bars.empty());
 		callback(*m_currentBar);
-		CopyCurrentBar();
+		m_copyCurrentBar();
 		return false;
 	}
 
@@ -509,7 +525,7 @@ public:
 		m_currentBarTicksCount = CurrentBarTicksCount();
 		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
 		callback(*m_currentBar);
-		CopyCurrentBar();
+		m_copyCurrentBar();
 		return isSignificantBar;
 	}
 
@@ -526,9 +542,7 @@ public:
 			return hasChanges;
 		} else {
 			Assert(m_security == &security);
-			const bool isNewBar = !m_currentBarEnd.is_not_a_date_time()
-				?	m_currentBarEnd < time
-				:	m_currentBarTicksCount.value >= m_countedBarSize;
+			const bool isNewBar = m_isNewBar(time);
 			return isNewBar
 				? StartNewBar(time, callback)
 				: ContinueBar(callback);
@@ -810,11 +824,12 @@ public:
 		closePriceField = openPriceField;
 	}
 
-	void CopyCurrentBar() const {
+	void CopyCurrentTimedBar() const {
 		Assert(m_currentBar);
-		if (m_currentBarEnd.is_not_a_date_time()) {
-			return;
-		}
+		AssertNe(UNITS_TICKS, m_units);
+		AssertEq(0, m_countedBarSize);
+		Assert(!m_currentBarEnd.is_not_a_date_time());
+		Assert(!m_timedBarSize.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
@@ -826,6 +841,37 @@ public:
 					m_currentBar->highTradePrice,
 					m_currentBar->lowTradePrice);
 			});
+	}
+	void CopyCurrentTickCountedBar() const {
+		Assert(m_currentBar);
+		AssertEq(UNITS_TICKS, m_units);
+		AssertLt(0, m_countedBarSize);
+		Assert(m_currentBarEnd.is_not_a_date_time());
+		Assert(m_timedBarSize.is_not_a_date_time());
+		m_service.GetContext().InvokeDropCopy(
+			[this](DropCopy &dropCopy) {
+				dropCopy.CopyBar(
+					*m_security,
+					m_currentBar->time,
+					m_countedBarSize,
+					m_currentBar->openTradePrice,
+					m_currentBar->closeTradePrice,
+					m_currentBar->highTradePrice,
+					m_currentBar->lowTradePrice);
+			});
+	}
+
+	bool IsNewTimedBar(const pt::ptime &time) const {
+		AssertNe(UNITS_TICKS, m_units);
+		Assert(!m_currentBarEnd.is_not_a_date_time());
+		AssertEq(0, m_countedBarSize);
+		return m_currentBarEnd < time;
+	}
+	bool IsNewTickCountedBar(const pt::ptime &) const {
+		AssertEq(UNITS_TICKS, m_units);
+		Assert(m_currentBarEnd.is_not_a_date_time());
+		AssertLt(0, m_countedBarSize);
+		return m_currentBarTicksCount.value >= m_countedBarSize;
 	}
 
 };

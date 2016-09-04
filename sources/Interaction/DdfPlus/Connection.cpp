@@ -532,7 +532,12 @@ Connection::Connection(
 }
 
 Connection::~Connection() {
-	//...//
+	try {
+		Stop();
+	} catch (...) {
+		AssertFailNoException();
+		terminate();
+	}
 }
 
 DdfPlus::MarketDataSource & Connection::GetSource() {

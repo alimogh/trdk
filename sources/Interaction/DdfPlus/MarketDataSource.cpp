@@ -41,11 +41,13 @@ DdfPlus::MarketDataSource::MarketDataSource(
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Base(index, context, tag)
-	, m_connection(ReadCredentials(conf), *this) {
+	, m_connection(
+		boost::make_unique<Connection>(ReadCredentials(conf), *this)) {
 	//...//
 }
 
 DdfPlus::MarketDataSource::~MarketDataSource() {
+	m_connection.reset();
 	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
 	GetTradingLog().WaitForFlush();
@@ -55,17 +57,17 @@ void DdfPlus::MarketDataSource::Connect(const IniSectionRef &) {
 
 	GetLog().Debug(
 		"Connecting to \"%1%:%2%\" with login \"%3%\" and password...",
-		m_connection.GetCredentials().host,
-		m_connection.GetCredentials().port,
-		m_connection.GetCredentials().login);
+		m_connection->GetCredentials().host,
+		m_connection->GetCredentials().port,
+		m_connection->GetCredentials().login);
 
-	m_connection.Connect();
+	m_connection->Connect();
 
 	GetLog().Info(
 		"Connected to \"%1%:%2%\" with login \"%3%\" and password.",
-		m_connection.GetCredentials().host,
-		m_connection.GetCredentials().port,
-		m_connection.GetCredentials().login);
+		m_connection->GetCredentials().host,
+		m_connection->GetCredentials().port,
+		m_connection->GetCredentials().login);
 
 }
 
@@ -75,7 +77,7 @@ void DdfPlus::MarketDataSource::SubscribeToSecurities() {
 		m_securities.size());
 	try {
 		for (const auto &security : m_securities) {
-			m_connection.SubscribeToMarketData(*security.second);
+			m_connection->SubscribeToMarketData(*security.second);
 		}
 	} catch (const DdfPlus::Connection::Exception &ex) {
 		GetLog().Error("Failed to send market data request: \"%1%\".", ex);

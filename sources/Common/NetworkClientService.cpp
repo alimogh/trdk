@@ -193,9 +193,12 @@ NetworkClientService::NetworkClientService()
 }
 
 NetworkClientService::~NetworkClientService() {
+	// Use NetworkClientService::Stop from implemneation dtor to avoid problems
+	// with virtual calls (for example to dump info into logs or if new info
+	// will arrive).
+	Assert(m_pimpl->m_io.GetService().stopped());
 	try {
-		m_pimpl->m_io.GetService().stop();
-		m_pimpl->m_serviceThreads.join_all();
+		Stop();
 	} catch (...) {
 		AssertFailNoException();
 		terminate();
@@ -211,6 +214,11 @@ void NetworkClientService::Connect() {
 		}
 	}
 	m_pimpl->Connect();
+}
+
+void NetworkClientService::Stop() {
+	m_pimpl->m_io.GetService().stop();
+	m_pimpl->m_serviceThreads.join_all();
 }
 
 void NetworkClientService::OnDisconnect() {

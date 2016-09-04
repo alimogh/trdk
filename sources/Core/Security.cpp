@@ -168,7 +168,8 @@ public:
 		, m_numberOfMarketDataUpdates(0)
 		, m_isLevel1Started(false)
 		, m_supportedLevel1Types(supportedLevel1Types)
-		, m_isOnline(isOnline) {
+		, m_isOnline(isOnline)
+		, m_expirationTime(0) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
