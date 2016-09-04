@@ -164,6 +164,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		virtual void SubscribeToSecurities();
 
+		virtual void SwitchToNextContract(trdk::Security &);
+
 	public:
 
 		virtual const Account & GetAccount() const;
