@@ -474,7 +474,30 @@ void EngineServer::Service::DropCopy::CopyBar(
 	const BarCache bar = {
 		&security,
 		time,
-		size,
+		size.total_seconds(),
+		openTradePrice,
+		closeTradePrice,
+		highTradePrice,
+		lowTradePrice
+	};
+	m_queue.Enqueue(
+		[this, bar](size_t recordNumber, size_t attemptNo, bool dump) -> bool {
+			return m_service.StoreBar(recordNumber, attemptNo, dump, bar);
+		});
+}
+
+void EngineServer::Service::DropCopy::CopyBar(
+		const Security &security,
+		const pt::ptime &time,
+		size_t numberOfTicksInBar,
+		const ScaledPrice &openTradePrice,
+		const ScaledPrice &closeTradePrice,
+		const ScaledPrice &highTradePrice,
+		const ScaledPrice &lowTradePrice) {
+	const BarCache bar = {
+		&security,
+		time,
+		-int64_t(numberOfTicksInBar),
 		openTradePrice,
 		closeTradePrice,
 		highTradePrice,
@@ -1383,8 +1406,8 @@ bool EngineServer::Service::StoreBar(
 	record["source"] = bar.security->GetSource().GetTag();
 	record["symbol"] = bar.security->GetSymbol().GetSymbol();
 	record["time"] = ConvertToMicroseconds(bar.time);
-	AssertLt(0, bar.size.total_seconds());
-	record["size"] = int64_t(bar.size.total_seconds());
+	AssertNe(0, bar.size);
+	record["size"] = bar.size;
 	record["open"] = bar.security->DescalePrice(bar.open);
 	record["close"] = bar.security->DescalePrice(bar.close);
 	record["high"] = bar.security->DescalePrice(bar.high);

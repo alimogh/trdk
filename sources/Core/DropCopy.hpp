@@ -111,6 +111,15 @@ namespace trdk {
 				const trdk::ScaledPrice &highTradePrice,
 				const trdk::ScaledPrice &lowTradePrice)
 			= 0;
+		virtual void CopyBar(
+				const trdk::Security &,
+				const boost::posix_time::ptime &,
+				size_t numberOfTicksInBar,
+				const trdk::ScaledPrice &openTradePrice,
+				const trdk::ScaledPrice &closeTradePrice,
+				const trdk::ScaledPrice &highTradePrice,
+				const trdk::ScaledPrice &lowTradePrice)
+			= 0;
 
 		virtual trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
 				const boost::uuids::uuid &instance,
