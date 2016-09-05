@@ -94,4 +94,5 @@ void DdfPlus::Security::Flush(
 		const pt::ptime &time,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 	Base::AddLevel1Tick(time, m_ticksBuffer, timeMeasurement);
+	m_ticksBuffer.clear();
 }
