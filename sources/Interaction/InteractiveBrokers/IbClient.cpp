@@ -244,7 +244,6 @@ Contract Client::GetContract(
 			contract.primaryExchange = symbol.GetPrimaryExchange();
 			break;
 		case SECURITY_TYPE_FUTURES:
-			Assert(!customContractExpiration);
 			contract.secType = "FUT";
 			contract.includeExpired = true;
 			contract.localSymbol = !symbol.IsExplicit()
