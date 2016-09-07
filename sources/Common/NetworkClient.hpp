@@ -51,6 +51,9 @@ namespace trdk { namespace Lib {
 
 		typedef std::vector<char> Buffer;
 
+		typedef boost::mutex BufferMutex;
+		typedef BufferMutex::scoped_lock BufferLock;
+
 	public:
 
 		explicit NetworkClient(
@@ -78,19 +81,22 @@ namespace trdk { namespace Lib {
 		virtual void OnStart() = 0;
 
 		//! Find message end by reverse iterators.
-		/** @param[in] rbegin	Buffer end (reversed begin).
-		  * @param[in] rend		Buffer begin (reversed end).
-		  * @return	Last byte of a message, or rend if the range doesn't include
-		  *			message end.
+		/** Called under lock.
+		  * @param[in] bufferBegin		Buffer begin.
+		  * @param[in] transferedBegin	Last operation transfered begin.
+		  * @param[in] bufferEnd		Buffer end.
+		  * @return	Last byte of a message, or bufferEnd if the range
+		  *			doesn't include message end.
 		  */
-		virtual Buffer::const_reverse_iterator FindMessageEnd(
-				const Buffer::const_reverse_iterator &rbegin,
-				const Buffer::const_reverse_iterator &rend)
+		virtual Buffer::const_iterator FindLastMessageLastByte(
+				const Buffer::const_iterator &bufferBegin,
+				const Buffer::const_iterator &transferedEnd,
+				const Buffer::const_iterator &bufferEnd)
 				const
 			= 0;
 
 		//! Handles messages in the buffer.
-		/** This range has one or more messages.
+		/** Called under lock. This range has one or more messages.
 		  */
 		virtual void HandleNewMessages(
 				const boost::posix_time::ptime &time,
@@ -105,6 +111,13 @@ namespace trdk { namespace Lib {
 		/** Thread-safe only from HandleNewMessages call.
 		  */
 		size_t GetNumberOfReceivedBytes() const;
+
+		//! Returns number of received bytes.
+		/** Thread-safe only from HandleNewMessages call.
+		  * 
+		  * @return Pair where 1-st value - value, second - unit name.
+		  */
+		std::pair<double, std::string> GetReceivedVerbouseStat() const;
 
 		virtual trdk::Lib::NetworkClientService & GetService();
 		virtual const trdk::Lib::NetworkClientService & GetService() const;
@@ -125,6 +138,9 @@ namespace trdk { namespace Lib {
 				const char *requestName,
 				const char *expectedResponse,
 				const char *errorResponse = nullptr);
+
+		//! Locks data acrimonious exchange (recursive mutex).
+		BufferLock LockDataExchange();
 
 	private:
 

@@ -497,7 +497,16 @@ public:
 				throw Error("Weeks units is not implemented");
 			case UNITS_TICKS:
 				AssertEq(endTime, pt::not_a_date_time);
-				startTime = tradeTime;
+				if (startTime == tradeTime) {
+					//! @todo workaround for TWS DB and TWS chart. Remove it
+					//! when DB will key bars and abstract data not only by
+					//! time and when chart will able to draw two and more
+					//! points with the same time.
+					//! @sa https://todoist.com/showTask?id=54571085
+					startTime += pt::microseconds(1);
+				} else {
+					startTime = tradeTime;
+				}
 				break;
 			default:
 				AssertFail("Unknown units type");
@@ -829,7 +838,6 @@ public:
 		AssertNe(UNITS_TICKS, m_units);
 		AssertEq(0, m_countedBarSize);
 		Assert(!m_currentBarEnd.is_not_a_date_time());
-		Assert(!m_timedBarSize.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
@@ -847,7 +855,6 @@ public:
 		AssertEq(UNITS_TICKS, m_units);
 		AssertLt(0, m_countedBarSize);
 		Assert(m_currentBarEnd.is_not_a_date_time());
-		Assert(m_timedBarSize.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(

@@ -60,7 +60,7 @@ namespace {
 		
 		explicit StatReport(Context &context)
 			: m_reportPeriod(pt::seconds(30))
-            , m_strategyIndex(0)
+			, m_strategyIndex(0)
 			, m_tsIndex(0)
 			, m_dispatchingIndex(0)
 			, m_isSecurititesStatStopped(true)
@@ -284,8 +284,9 @@ namespace {
 				destination
 					<< index << '\t' << now << '\t' << tag 
 					<< '\t' << GetMilestoneName(id)
-					<< '\t' << stat
-					<< std::endl;
+					<< '\t';
+				stat.Dump(destination, m_reportPeriod.total_seconds());
+				destination << std::endl;
 			}
 
 			accum.Reset();

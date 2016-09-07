@@ -266,7 +266,7 @@
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="Connection.cpp" />
+    <ClCompile Include="History.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
@@ -283,15 +283,17 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Security.cpp" />
+    <ClCompile Include="Stream.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="Connection.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="History.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Stream.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.vcxproj">

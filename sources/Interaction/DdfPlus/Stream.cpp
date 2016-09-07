@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Connection.hpp"
+#include "Stream.hpp"
 #include "Security.hpp"
 #include "MarketDataSource.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -47,11 +47,11 @@ namespace {
 
 	public:
 		
-		explicit Client(Connection &connection)
+		explicit Client(Stream &service)
 			: Base(
-				connection,
-				connection.GetCredentials().host,
-				connection.GetCredentials().port) {
+				service,
+				service.GetCredentials().host,
+				service.GetCredentials().port) {
 			//...//
 		}
 			
@@ -72,19 +72,21 @@ namespace {
 		void SubscribeToMarketData(const DdfPlus::Security &security) {
 
 			GetLog().Info(
-				"Sending market data request for %1% (%2%)...",
+				"%1%Sending market data request for %2% (%3%)...",
+				GetService().GetLogTag(),
 				security,
 				security.GenerateDdfPlusCode());
 
 			Assert(security.IsLevel1Required());
 			if (!security.IsLevel1Required()) {
 				GetLog().Warn(
-					"Market data is not required by %1%.",
+					"%1%Market data is not required by %2%.",
+					GetService().GetLogTag(),
 					security);
 				return;
 			}
 
-			boost::format command("GO %1%=S\n\r");
+			boost::format command("GO %1%=S\r\n");
 			command % security.GenerateDdfPlusCode();
 			Send(command.str());
 
@@ -92,17 +94,15 @@ namespace {
 
 	protected:
 
-		virtual Connection & GetService() {
-			return *boost::polymorphic_downcast<Connection *>(
-				&Base::GetService());
+		virtual Stream & GetService() {
+			return *boost::polymorphic_downcast<Stream *>(&Base::GetService());
 		}
-		virtual const Connection & GetService() const {
-			return *boost::polymorphic_downcast<const Connection *>(
+		virtual const Stream & GetService() const {
+			return *boost::polymorphic_downcast<const Stream *>(
 				&Base::GetService());
 		}
 
-		virtual Lib::TimeMeasurement::Milestones StartMessageMeasurement()
-				const {
+		virtual TimeMeasurement::Milestones StartMessageMeasurement() const {
 			return GetContext().StartStrategyTimeMeasurement();
 		}
 
@@ -135,7 +135,7 @@ namespace {
 					"\n+++\n");
 
 			{
-				boost::format loginMessage("LOGIN %1%:%2%\n\r");
+				boost::format loginMessage("LOGIN %1%:%2%\r\n");
 				loginMessage
 					% GetService().GetCredentials().login
 					% GetService().GetCredentials().password;
@@ -150,17 +150,23 @@ namespace {
 			}
 
 			RequestSynchronously(
-				"VERSION 4\n\r",
+				"VERSION 4\r\n",
 				"protocol version request",
 				"+ Version set to 4.\n");
 
 		}
 
-		virtual Buffer::const_reverse_iterator FindMessageEnd(
-				const Buffer::const_reverse_iterator &rbegin,
-				const Buffer::const_reverse_iterator &rend)
+		virtual Buffer::const_iterator FindLastMessageLastByte(
+				const Buffer::const_iterator &,
+				const Buffer::const_iterator &begin,
+				const Buffer::const_iterator &end)
 				const {
-			return std::find(rbegin, rend, '\n');
+			const Buffer::const_reverse_iterator rend(begin);
+			const auto &result = std::find(
+				Buffer::const_reverse_iterator(end),
+				rend,
+				'\n');
+			return result == rend ? end : result.base();
 		}
 
 		virtual void HandleNewMessages(
@@ -255,7 +261,8 @@ namespace {
 #					ifdef _DEBUG
 					{
 						GetLog().Debug(
-							"Unknown ddfplus message %1%.",
+							"%1%Unknown ddfplus message %2%.",
+							GetService().GetLogTag(),
 							*std::prev(messageBegin));
 					}
 #					endif
@@ -420,19 +427,13 @@ namespace {
 			}
 
 			{
-				boost::format message(
-					"Server local time: %1%. Received %2$.02f %3%.");
-				message % m_lastKnownServerTime;
-				if (GetNumberOfReceivedBytes() > (1024 * 1024)) {
-					message
-						%	(GetNumberOfReceivedBytes() / (1024 * 1024))
-						%	"megabytes";
-				} else {
-					message
-						%	(GetNumberOfReceivedBytes() / 1024)
-						%	"kilobytes";
-				}
-				GetLog().Debug(message.str().c_str());
+				const auto &stat = GetReceivedVerbouseStat();
+				GetLog().Debug(
+					"%1%Server local time: %2%. Received %3$.02f %4%.",
+					GetService().GetLogTag(),
+					m_lastKnownServerTime,
+					stat.first,
+					stat.second);
 			}
 
 		}
@@ -523,15 +524,16 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Connection::Connection(
+Stream::Stream(
 		const Credentials &credentials,
 		DdfPlus::MarketDataSource &source)
-	: m_credentials(credentials)
+	: NetworkClientService("Stream")
+	, m_credentials(credentials)
 	, m_source(source) {
 	//...//
 }
 
-Connection::~Connection() {
+Stream::~Stream() {
 	try {
 		Stop();
 	} catch (...) {
@@ -540,42 +542,42 @@ Connection::~Connection() {
 	}
 }
 
-DdfPlus::MarketDataSource & Connection::GetSource() {
+DdfPlus::MarketDataSource & Stream::GetSource() {
 	return m_source;
 }
-const DdfPlus::MarketDataSource & Connection::GetSource() const {
+const DdfPlus::MarketDataSource & Stream::GetSource() const {
 	return m_source;
 }
 
-const Connection::Credentials & Connection::GetCredentials() const {
+const Stream::Credentials & Stream::GetCredentials() const {
 	return m_credentials;
 }
 
-pt::ptime Connection::GetCurrentTime() const {
+pt::ptime Stream::GetCurrentTime() const {
 	return m_source.GetContext().GetCurrentTime();
 }
 
-std::unique_ptr<NetworkClient> Connection::CreateClient() {
+std::unique_ptr<NetworkClient> Stream::CreateClient() {
 	return std::unique_ptr<NetworkClient>(new Client(*this));
 }
 
-void Connection::LogDebug(const char *message) const {
+void Stream::LogDebug(const char *message) const {
 	m_source.GetLog().Debug(message);
 }
 
-void Connection::LogInfo(const std::string &message) const {
+void Stream::LogInfo(const std::string &message) const {
 	m_source.GetLog().Info(message.c_str());
 }
 
-void Connection::LogError(const std::string &message) const {
+void Stream::LogError(const std::string &message) const {
 	m_source.GetLog().Error(message.c_str());
 }
 
-void Connection::OnConnectionRestored() {
+void Stream::OnConnectionRestored() {
 	m_source.SubscribeToSecurities();
 }
 
-void Connection::SubscribeToMarketData(const DdfPlus::Security &security) {
+void Stream::SubscribeToMarketData(const DdfPlus::Security &security) {
 	InvokeClient<Client>(
 		boost::bind(&Client::SubscribeToMarketData, _1, boost::cref(security)));
 }

@@ -142,27 +142,16 @@ const std::string & TimeMeasurement::GetMilestoneName(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::ostream & TimeMeasurement::operator <<(
-		std::ostream &os,
-		const MilestoneStat &stat) {
+void MilestoneStat::Dump(std::ostream &os, size_t numberOfSubPeriods) const {
 	os.setf(std::ios::left);
+	const auto size = GetSize();
 	os
-		<< std::setfill(' ') << std::setw(10) << stat.GetSize()
-		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetAvg()
-		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetMin()
-		<< '\t' << std::setfill(' ') << std::setw(10) << stat.GetMax();
-	return os;
-}
-
-std::wostream & TimeMeasurement::operator <<(
-		std::wostream &os,
-		const MilestoneStat &stat) {
-	os
-		<< std::setfill(L' ') << std::setw(10) << stat.GetSize()
-		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetAvg()
-		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetMin()
-		<< '\t' << std::setfill(L' ') << std::setw(10) << stat.GetMax();
-	return os;
+		<< std::setfill(' ') << std::setw(10) << size 
+		<< '\t' << std::setfill(' ') << std::setw(10)
+			<< (size / numberOfSubPeriods)
+		<< '\t' << std::setfill(' ') << std::setw(10) << GetAvg()
+		<< '\t' << std::setfill(' ') << std::setw(10) << GetMin()
+		<< '\t' << std::setfill(' ') << std::setw(10) << GetMax();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

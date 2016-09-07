@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include "Connection.hpp"
+#include "Stream.hpp"
+#include "History.hpp"
 #include "Security.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
@@ -52,7 +53,12 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	private:
 
-		std::unique_ptr<Connection> m_connection;
+		void CheckHistoryConnection();
+
+	private:
+
+		std::unique_ptr<Stream> m_stream;
+		std::unique_ptr<History> m_history;
 
 		boost::unordered_map<std::string, boost::shared_ptr<DdfPlus::Security>>
 			m_securities;

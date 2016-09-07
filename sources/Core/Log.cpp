@@ -68,13 +68,13 @@ void Log::AppendRecordHead(
 	if (tag) {
 		os << '[' << tag << "]\t";
 	}
-	os << time;
-#			ifdef BOOST_WINDOWS
-	os << "\t[";
-#			else
-	os << "\t[0x" << std::ios::hex;
-#			endif
-	os << threadId << "]:\t";
+	os << time << " [";
+#	ifdef BOOST_WINDOWS
+		os << std::setw(5);
+#	else
+		os << std::ios::hex;
+#	endif
+	os << threadId << "]: ";
 	if (module) {
 		os << '[' << *module << "] ";
 	}
