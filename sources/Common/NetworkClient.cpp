@@ -21,6 +21,8 @@ namespace io = boost::asio;
 namespace ip = io::ip;
 namespace pt = boost::posix_time;
 
+////////////////////////////////////////////////////////////////////////////////
+
 NetworkClient::Exception::Exception(const char *what) throw()
 	: Lib::Exception(what) {
 	//...//
@@ -51,9 +53,6 @@ class NetworkClient::Implementation : private boost::noncopyable {
 
 public:
 
-	typedef boost::mutex BufferMutex;
-	typedef BufferMutex::scoped_lock BufferLock;
-
 	NetworkClient &m_self;
 
 	NetworkClientService &m_service;
@@ -78,6 +77,13 @@ public:
 			Buffer &nextBuffer) {
 	
 		AssertLt(bufferStartOffset, activeBuffer.size());
+
+#		ifdef DEV_VER
+			std::fill(
+				activeBuffer.begin() + bufferStartOffset,
+				activeBuffer.end(),
+				0xff);
+#		endif
 
 		auto self = m_self.shared_from_this();
 		using Handler
@@ -130,48 +136,87 @@ public:
 			OnConnectionError(error);
 			return;
 		} else if (!transferredBytes) {
-			m_self.LogInfo("Connection was gratefully closed.");
+			{
+				boost::format message(
+					"%1%Connection was gratefully closed."
+						" Received %2$.02f %3%.");
+				message % m_service.GetLogTag();
+				const auto &stat = m_self.GetReceivedVerbouseStat();
+				message % stat.first % stat.second;
+				m_self.LogInfo(message.str().c_str());
+			}
 			m_service.OnDisconnect();
 			return;
 		}
 
 		// Checking for a message at the buffer end which wasn't fully received.
-		const auto &transferedRend = activeBuffer.crend() - bufferStartOffset;
-		const auto &transferedRbegin = transferedRend - transferredBytes;
-		const auto &lastMessageRbegin = m_self.FindMessageEnd(
-			transferedRbegin,
-			transferedRend);
-		const size_t unreceivedMessageLen = lastMessageRbegin - transferedRbegin;
+		const auto &transferedBegin = activeBuffer.cbegin() + bufferStartOffset;
+		const auto &transferedEnd = transferedBegin + transferredBytes;
 
 		// To synchronizes fast data packets it should be stopped before 1st
-		// StartRead and buffers size change.
+		// StartRead and buffers size change. Also, if FindLastMessageLastByte
+		// reads state that can be set in HandleNewMessages - this two
+		// operations should synced too.
 		const BufferLock bufferLock(m_bufferMutex);
 
 		m_numberOfReceivedBytes += transferredBytes;
 
+		Buffer::const_iterator lastMessageLastByte;
+		try {
+			lastMessageLastByte = m_self.FindLastMessageLastByte(
+				activeBuffer.cbegin(),
+				transferedBegin,
+				transferedEnd);
+		} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
+			Dump(ex, activeBuffer.cbegin(), transferedEnd);
+			throw Exception("Protocol error");
+		}
+		Assert(transferedBegin <= lastMessageLastByte);
+		Assert(lastMessageLastByte <= transferedEnd);
+		
+		const auto bufferedSize = bufferStartOffset + transferredBytes;
+		const auto unreceivedMessageLen = lastMessageLastByte == transferedEnd
+			?	bufferedSize
+			:	transferedEnd - std::next(lastMessageLastByte);
+		AssertLe(unreceivedMessageLen, activeBuffer.size());
+
 		if (unreceivedMessageLen > 0) {
+
+			const auto freeBufferSpace = activeBuffer.size() - bufferedSize;
 
 			// At the end of the buffer located message start without end. That
 			// means that the buffer is too small to receive all messages.
 		
-			if (unreceivedMessageLen >= transferredBytes) {
-				// Buffer not too small to receive all messages - it too small to
-				// receive one message.
-				AssertEq(transferredBytes, unreceivedMessageLen);
-				Assert(lastMessageRbegin == transferedRend);
-				const auto newSize = activeBuffer.size() * 2;
-				boost::format message(
-					"Receiving large message (more then %1$.02f kilobytes)..."
-						" To optimize reading buffer will be increased"
-						": %1$.02f -> %2$.02f kilobytes.");
-				message
-					% (double(transferredBytes) / 1024)
-					% (double(newSize) / 1024);
-				m_self.LogWarn(message.str());
-				activeBuffer.resize(newSize);
-				nextBuffer.resize(newSize);
-				// To the active buffer added more space at the end, so it can
-				// continue to receive the current message in the active buffer.
+			if (unreceivedMessageLen >= bufferedSize) {
+				AssertEq(unreceivedMessageLen, bufferedSize);
+				// Buffer not too small to receive all messages - it too small
+				// to receive one message.
+				if (unreceivedMessageLen / 3 > freeBufferSpace) {
+					const auto newSize = activeBuffer.size() * 2;
+					boost::format message(
+						"%1%Receiving large message in %2$.02f kilobytes..."
+							" To optimize reading buffer 0x%3% will"
+							" be increased: %4$.02f -> %5$.02f kilobytes."
+							" Total received volume: %6$.02f %7%.");
+					message
+						% m_service.GetLogTag()
+						% (double(unreceivedMessageLen) / 1024)
+						% &activeBuffer
+						% (double(activeBuffer.size()) / 1024)
+						% (double(newSize) / 1024);
+					const auto &stat = m_self.GetReceivedVerbouseStat();
+					message % stat.first % stat.second;
+					m_self.LogWarn(message.str());
+					if (newSize > (1024 * 1024) * 20) {
+						throw Exception(
+							"The maximum possible buffer size is exceeded.");
+					}
+					activeBuffer.resize(newSize);
+					nextBuffer.resize(newSize);
+					// To the active buffer added more space at the end, so it
+					// can continue to receive the current message in the active
+					// buffer.
+				}
 				StartRead(
 					activeBuffer,
 					bufferStartOffset + transferredBytes,
@@ -180,80 +225,55 @@ public:
 				return;
 			}
 			
-			if (
-					bufferStartOffset + transferredBytes == activeBuffer.size()
-					&& nextBuffer.size() <= activeBuffer.size()) {
+			if (freeBufferSpace == 0) {
 				nextBuffer.clear();
 				const auto newSize = activeBuffer.size() * 2;
 				{
 					boost::format message(
-						"Increasing buffer size:"
-							" %1$.02f -> %2$.02f kilobytes.");
+						"%1%Increasing buffer 0x%2% size:"
+							" %3$.02f -> %4$.02f kilobytes."
+							" Total received volume: %5$.02f %6%.");
 					message
+						% m_service.GetLogTag()
+						% &nextBuffer
 						% (double(activeBuffer.size()) / 1024)
 						% (double(newSize) / 1024);
+					const auto &stat = m_self.GetReceivedVerbouseStat();
+					message % stat.first % stat.second;
 					m_self.LogDebug(message.str());
 				}
 				nextBuffer.resize(newSize);
 			}
-			const auto &transferedEnd
-				= activeBuffer.cbegin() + bufferStartOffset + transferredBytes;
+
+			if (unreceivedMessageLen >= 256) {
+				boost::format message(
+					"%1%Restoring buffer content in %2% bytes"
+						" to continue to receive message..."
+						" Total received volume: %3$.02f %4%.");
+				message % m_service.GetLogTag() % unreceivedMessageLen;
+				const auto &stat = m_self.GetReceivedVerbouseStat();
+				message % stat.first % stat.second;
+				m_self.LogDebug(message.str());
+			}
+			AssertGe(nextBuffer.size(), unreceivedMessageLen);
 			std::copy(
 				transferedEnd - unreceivedMessageLen,
 				transferedEnd,
 				nextBuffer.begin());
-			transferredBytes -= unreceivedMessageLen;
 
 		}
 
 		StartRead(nextBuffer, unreceivedMessageLen, activeBuffer);
 
-		Assert(transferedRend > lastMessageRbegin);
-		Assert(lastMessageRbegin.base() <= activeBuffer.cend());
-		Assert(activeBuffer.cbegin() < lastMessageRbegin.base());
-		{
-
-			const auto &begin = activeBuffer.cbegin();
-			const auto &end = lastMessageRbegin.base();
-
-			try {
-			
-				m_self.HandleNewMessages(now, begin, end, timeMeasurement);
-			
-			} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
-			
-				std::ostringstream ss;
-				ss << "Protocol error: \"" << ex << "\".";
-			
-				ss << " Active buffer: [ ";
-				Assert(&*begin < ex.GetBufferAddress());
-				Assert(ex.GetBufferAddress() < &*(end));
-				for (auto it = begin; it != end; ++it) {
-					const bool isHighlighted = &*it == ex.GetBufferAddress();
-					if (isHighlighted) {
-						ss << '<';
-					}
-					ss
-						<< std::hex << std::setfill('0') << std::setw(2)
-						<< (*it & 0xff);
-					if (isHighlighted) {
-						ss << '>';
-					}
-					ss << ' ';
-				}
-				ss << "].";
-
-				ss
-					<< " Expected byte: 0x"
-					<< std::hex << std::setfill('0') << std::setw(2)
-					<< (ex.GetExpectedByte() & 0xff)
-					<< '.';
-				m_self.LogError(ss.str());
-
-				throw;
-			
-			}
-		
+		try {
+			m_self.HandleNewMessages(
+				now, 
+				activeBuffer.cbegin(),
+				lastMessageLastByte,
+				timeMeasurement);
+		} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
+			Dump(ex, activeBuffer.cbegin(), lastMessageLastByte);
+			throw Exception("Protocol error");
 		}
 
 		// activeBuffer.size() may be greater if handler of prev thread raised
@@ -263,10 +283,6 @@ public:
 			activeBuffer.resize(nextBuffer.size());
 		}
 
-#		ifdef DEV_VER
-			std::fill(activeBuffer.begin(), activeBuffer.end(), 0xff);
-#		endif
-
 	}
 
 	void OnConnectionError(const boost::system::error_code &error) {
@@ -274,12 +290,55 @@ public:
 		m_socket.close();
 		{
 			boost::format message(
-				"Connection to server closed by error:"
-					" \"%1%\", (network error: \"%2%\")");
-			message % SysError(error.value()) % error;
+				"%1%Connection to server closed by error:"
+					" \"%2%\", (network error: \"%3%\")."
+					" Received %4$.02f %5%.");
+			message
+				% m_service.GetLogTag()
+				% SysError(error.value())
+				% error;
+			const auto &stat = m_self.GetReceivedVerbouseStat();
+			message % stat.first % stat.second;
 			m_self.LogError(message.str());
 		}
 		m_service.OnDisconnect();
+	}
+
+	void Dump(
+			const NetworkClient::ProtocolError &ex,
+			const Buffer::const_iterator &begin,
+			const Buffer::const_iterator &end)
+			const {
+
+		std::ostringstream ss;
+		ss << m_service.GetLogTag() << "Protocol error: \"" << ex << "\".";
+			
+		ss << " Active buffer: [ ";
+		Assert(&*begin < ex.GetBufferAddress());
+		Assert(ex.GetBufferAddress() < &*(end));
+		for (auto it = begin; it < end; ++it) {
+			const bool isHighlighted = &*it == ex.GetBufferAddress();
+			if (isHighlighted) {
+				ss << '<';
+			}
+			ss
+				<< std::hex << std::setfill('0') << std::setw(2)
+				<< (*it & 0xff);
+			if (isHighlighted) {
+				ss << '>';
+			}
+			ss << ' ';
+		}
+		ss << "].";
+
+		ss
+			<< " Expected byte: 0x"
+			<< std::hex << std::setfill('0') << std::setw(2)
+			<< (ex.GetExpectedByte() & 0xff)
+			<< '.';
+
+		m_self.LogError(ss.str());
+
 	}
 
 };
@@ -350,8 +409,8 @@ void NetworkClient::Start() {
 			reinterpret_cast<const char *>(&timeout),
 			sizeof(timeout));
 		if (setsockoptResult) {
-			boost::format message("Failed to set SO_RCVTIMEO: \"%1%\".");
-			message % setsockoptResult;
+			boost::format message("%1%Failed to set SO_RCVTIMEO: \"%2%\".");
+			message % GetService().GetLogTag() % setsockoptResult;
 			LogError(message.str());
 		}
 		setsockoptResult = setsockopt(
@@ -361,8 +420,8 @@ void NetworkClient::Start() {
 			reinterpret_cast<const char *>(&timeout),
 			sizeof(timeout));
 		if (setsockoptResult) {
-			boost::format message("Failed to set SO_SNDTIMEO: \"%1%\".");
-			message % setsockoptResult;
+			boost::format message("%1%Failed to set SO_SNDTIMEO: \"%2%\".");
+			message % GetService().GetLogTag() % setsockoptResult;
 			LogError(message.str());
 		}
 	}
@@ -372,7 +431,7 @@ void NetworkClient::Start() {
 #	if DEV_VER
 		const size_t initiaBufferSize = 256;
 #	else
-		const size_t initiaBufferSize = 1024 * 1024;
+		const size_t initiaBufferSize = (1024 * 1024) * 2;
 #	endif
 	m_pimpl->m_buffer.first.resize(initiaBufferSize);
 	m_pimpl->m_buffer.second.resize(m_pimpl->m_buffer.first.size());
@@ -395,7 +454,11 @@ void NetworkClient::Stop() {
 	if (!m_pimpl->m_socket.is_open()) {
 		return;
 	}
-	LogInfo("Closing connection...");
+	{
+		boost::format message("%1%Closing connection...");
+		message % GetService().GetLogTag();
+		LogInfo(message.str().c_str());
+	}
 	m_pimpl->m_socket.shutdown(io::ip::tcp::socket::shutdown_both);
 	m_pimpl->m_socket.close();
 }
@@ -458,9 +521,13 @@ bool NetworkClient::CheckResponceSynchronously(
 		{
 			serverResponse[serverResponseSize] = 0;
 			boost::format logMessage(
-				"Unexpected %1% response from server (size: %2% bytes)"
-					": \"%3%\".");
-			logMessage % actionName % serverResponseSize % &serverResponse[0];
+				"%1%Unexpected %2% response from server (size: %3% bytes)"
+					": \"%4%\".");
+			logMessage
+				% GetService().GetLogTag()
+				% actionName
+				% serverResponseSize
+				% &serverResponse[0];
 			LogError(logMessage.str());
 		}
 		boost::format logMessage("Unexpected %1% response from server");
@@ -523,9 +590,10 @@ void NetworkClient::SendSynchronously(
 	if (error || size != message.size()) {
 		{
 			boost::format logMessage(
-				"Failed to send %1%: \"%2%\", (network error: \"%3%\")."
-					" Message size: %4% bytes, sent: %5% bytes.");
+				"%1%Failed to send %2%: \"%3%\", (network error: \"%4%\")."
+					" Message size: %5% bytes, sent: %6% bytes.");
 			logMessage
+				% GetService().GetLogTag()
 				% requestName
 				% SysError(error.value())
 				% error
@@ -552,3 +620,22 @@ bool NetworkClient::RequestSynchronously(
 		errorResponse);
 }
 
+std::pair<double, std::string> NetworkClient::GetReceivedVerbouseStat() const {
+	if (m_pimpl->m_numberOfReceivedBytes > ((1024 * 1024) * 1024)) {
+		return std::make_pair(
+			double(m_pimpl->m_numberOfReceivedBytes) / ((1024 * 1024) * 1024),
+			"gigabytes");
+	} else if (m_pimpl->m_numberOfReceivedBytes > (1024 * 1024)) {
+		return std::make_pair(
+			double(m_pimpl->m_numberOfReceivedBytes) / (1024 * 1024),
+			"megabytes");
+	} else {
+		return std::make_pair(
+			double(m_pimpl->m_numberOfReceivedBytes) / 1024,
+			"kilobytes");
+	}
+}
+
+NetworkClient::BufferLock NetworkClient::LockDataExchange() {
+	return BufferLock(m_pimpl->m_bufferMutex);
+}

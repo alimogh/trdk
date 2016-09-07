@@ -15,7 +15,7 @@
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
-	class Connection : public Lib::NetworkClientService {
+	class Stream : public Lib::NetworkClientService {
 
 	public:
 
@@ -28,8 +28,8 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 	public:
 
-		explicit Connection(const Credentials &, DdfPlus::MarketDataSource &);
-		virtual ~Connection();
+		explicit Stream(const Credentials &, DdfPlus::MarketDataSource &);
+		virtual ~Stream();
 
 	public:
 

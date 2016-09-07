@@ -17,14 +17,26 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::DdfPlus;
 
+namespace pt = boost::posix_time;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-	Connection::Credentials ReadCredentials(const IniSectionRef &conf) {
-		const Connection::Credentials result = {
+	Stream::Credentials ReadStreamCredentials(const IniSectionRef &conf) {
+		const Stream::Credentials result = {
 			conf.ReadKey("server_host"),
 			conf.ReadTypedKey<size_t>("server_port"),
+			conf.ReadKey("login"),
+			conf.ReadKey("password")
+		};
+		return result;
+	}
+
+	History::Credentials ReadHistoryCredentials(const IniSectionRef &conf) {
+		const History::Credentials result = {
+			"ds01.ddfplus.com",
+			80,
 			conf.ReadKey("login"),
 			conf.ReadKey("password")
 		};
@@ -41,13 +53,15 @@ DdfPlus::MarketDataSource::MarketDataSource(
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Base(index, context, tag)
-	, m_connection(
-		boost::make_unique<Connection>(ReadCredentials(conf), *this)) {
+	, m_stream(
+		boost::make_unique<Stream>(ReadStreamCredentials(conf), *this))
+	, m_history(
+		boost::make_unique<History>(ReadHistoryCredentials(conf), *this)) {
 	//...//
 }
 
 DdfPlus::MarketDataSource::~MarketDataSource() {
-	m_connection.reset();
+	m_stream.reset();
 	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
 	GetTradingLog().WaitForFlush();
@@ -56,34 +70,50 @@ DdfPlus::MarketDataSource::~MarketDataSource() {
 void DdfPlus::MarketDataSource::Connect(const IniSectionRef &) {
 
 	GetLog().Debug(
-		"Connecting to \"%1%:%2%\" with login \"%3%\" and password...",
-		m_connection->GetCredentials().host,
-		m_connection->GetCredentials().port,
-		m_connection->GetCredentials().login);
+		"Connecting to stream at \"%1%:%2%\""
+			" with login \"%3%\" and password...",
+		m_stream->GetCredentials().host,
+		m_stream->GetCredentials().port,
+		m_stream->GetCredentials().login);
 
-	m_connection->Connect();
+	m_stream->Connect();
 
 	GetLog().Info(
-		"Connected to \"%1%:%2%\" with login \"%3%\" and password.",
-		m_connection->GetCredentials().host,
-		m_connection->GetCredentials().port,
-		m_connection->GetCredentials().login);
+		"Connected to stream at \"%1%:%2%\" with login \"%3%\" and password.",
+		m_stream->GetCredentials().host,
+		m_stream->GetCredentials().port,
+		m_stream->GetCredentials().login);
 
 }
 
 void DdfPlus::MarketDataSource::SubscribeToSecurities() {
+
 	GetLog().Debug(
 		"Sending market data request for %1% securities...",
 		m_securities.size());
+
 	try {
+	
 		for (const auto &security : m_securities) {
-			m_connection->SubscribeToMarketData(*security.second);
+			if (
+					security
+						.second
+						->GetRequestedDataStartTime()
+						.is_not_a_date_time()) {
+				m_stream->SubscribeToMarketData(*security.second);
+			} else {
+				CheckHistoryConnection();
+				m_history->LoadHistory(*security.second);
+			}
 		}
-	} catch (const DdfPlus::Connection::Exception &ex) {
+	
+	} catch (const DdfPlus::Stream::Exception &ex) {
 		GetLog().Error("Failed to send market data request: \"%1%\".", ex);
 		throw Error("Failed to send market data request");
 	}
+
 	GetLog().Debug("Market data request sent.");
+
 }
 
 trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
@@ -122,11 +152,34 @@ trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
 }
 
 DdfPlus::Security * DdfPlus::MarketDataSource::FindSecurity(
-			const std::string &ddfPlusCodeSymbolCode) {
+		const std::string &ddfPlusCodeSymbolCode) {
 	const auto &result = m_securities.find(ddfPlusCodeSymbolCode);
 	return result != m_securities.cend()
 		? &*result->second
 		: nullptr;
+}
+
+void DdfPlus::MarketDataSource::CheckHistoryConnection() {
+
+	if (m_history->IsConnected()) {
+		return;
+	}
+
+	GetLog().Debug(
+		"Connecting to history at \"%1%:%2%\""
+			" with login \"%3%\" and password...",
+		m_history->GetCredentials().host,
+		m_history->GetCredentials().port,
+		m_history->GetCredentials().login);
+
+	m_history->Connect();
+
+	GetLog().Info(
+		"Connected to history \"%1%:%2%\" with login \"%3%\" and password.",
+		m_history->GetCredentials().host,
+		m_history->GetCredentials().port,
+		m_history->GetCredentials().login);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

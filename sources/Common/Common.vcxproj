@@ -251,6 +251,7 @@
     <ClCompile Include="Currency.cpp" />
     <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="ExpirationCalendar.cpp" />
+    <ClCompile Include="HttpClient.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="NetworkClient.cpp" />
     <ClCompile Include="NetworkClientService.cpp" />
@@ -287,6 +288,7 @@
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="HttpClient.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="NetworkClient.hpp" />
     <ClInclude Include="NetworkClientService.hpp" />

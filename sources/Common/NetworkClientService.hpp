@@ -27,14 +27,20 @@ namespace trdk { namespace Lib {
 	public:
 
 		NetworkClientService();
+		explicit NetworkClientService(const std::string &logTag);
 		virtual ~NetworkClientService();
 
 	public:
+
+		const std::string & GetLogTag() const;
 
 		//! Connects.
 		/** @throw NetworkClientService::Exception	If connection will fail.
 		  */
 		void Connect();
+
+		bool IsConnected() const;
+
 		//! Stops all.
 		void Stop();
 

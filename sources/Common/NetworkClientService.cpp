@@ -40,6 +40,8 @@ public:
 
 	NetworkClientService &m_self;
 
+	std::string m_logTag;
+
 	NetworkClientServiceIo m_io;
 	boost::thread_group m_serviceThreads;
 	std::unique_ptr<io::deadline_timer> m_reconnectTimer;
@@ -78,8 +80,9 @@ public:
 		
 		} catch (const NetworkClient::Exception &ex) {
 			{
-				boost::format message("Failed to connect to server: \"%1%\".");
-				message % ex;
+				boost::format message(
+					"%1%Failed to connect to server: \"%2%\".");
+				message % m_logTag % ex;
 				m_self.LogError(message.str());
 			}
 			m_client.reset();
@@ -89,7 +92,11 @@ public:
 	}
 
 	void RunServiceThread() {
-		m_self.LogDebug("Started IO-service thread...");
+		{
+			boost::format message("%1%Started IO-service thread...");
+			message % m_logTag;
+			m_self.LogDebug(message.str().c_str());
+		}
 		for ( ; ; ) {
 			try {
 				m_io.GetService().run();
@@ -97,8 +104,8 @@ public:
 			} catch (const NetworkClient::Exception &ex) {
 				const ClientLock lock(m_clientMutex);
 				try {
-					boost::format message("Fatal error: \"%1%\".");
-					message % ex;
+					boost::format message("%1%Fatal error: \"%2%\".");
+					message % m_logTag % ex;
 					m_self.LogError(message.str());
 					if (m_client) {
 						const auto client = m_client;
@@ -116,7 +123,12 @@ public:
 				throw;
 			}
 		}
-		m_self.LogDebug("IO-service thread completed.");
+		{
+			boost::format message("%1%IO-service thread completed.");
+			message % m_logTag;
+			m_self.LogDebug(message.str().c_str());
+		}
+		
 	}
 
 	void ScheduleReconnect() {
@@ -126,8 +138,8 @@ public:
 
 			const auto &sleepTime = pt::seconds(30);
 			{
-				boost::format message("Reconnecting at %1% (after %2%)...");
-				message % (now + sleepTime) % sleepTime;
+				boost::format message("%1%Reconnecting at %2% (after %3%)...");
+				message % m_logTag % (now + sleepTime) % sleepTime;
 				m_self.LogInfo(message.str());
 			}
 
@@ -138,8 +150,8 @@ public:
 				[this](const boost::system::error_code &error) {
 					m_reconnectTimer.reset();
 					if (error) {
-						boost::format message("Reconnect canceled: \"%1%\".");
-						message % SysError(error.value());
+						boost::format message("%1%Reconnect canceled: \"%2%\".");
+						message % m_logTag % SysError(error.value());
 						m_self.LogInfo(message.str());
 						return;
 					}
@@ -159,15 +171,19 @@ public:
 
 		Assert(!m_client);
 
-		m_self.LogInfo("Reconnecting...");
+		{
+			boost::format message("%1%Reconnecting...");
+			message % m_logTag;
+			m_self.LogInfo(message.str().c_str());
+		}
 
 		try {
 			Connect();
 		} catch (const NetworkClientService::Exception &ex) {
 			Assert(!m_client);
 			{
-				boost::format message("Failed to reconnect: \"%1%\".");
-				message % ex;
+				boost::format message("%1%Failed to reconnect: \"%2%\".");
+				message % m_logTag % ex;
 				m_self.LogError(message.str());
 			}
 			ScheduleReconnect();
@@ -192,6 +208,11 @@ NetworkClientService::NetworkClientService()
 	//...//
 }
 
+NetworkClientService::NetworkClientService(const std::string &logTag)
+	: m_pimpl(new Implementation(*this)) {
+	m_pimpl->m_logTag = "[" + logTag + "] ";
+}
+
 NetworkClientService::~NetworkClientService() {
 	// Use NetworkClientService::Stop from implemneation dtor to avoid problems
 	// with virtual calls (for example to dump info into logs or if new info
@@ -205,6 +226,10 @@ NetworkClientService::~NetworkClientService() {
 	}
 }
 
+const std::string & NetworkClientService::GetLogTag() const {
+	return m_pimpl->m_logTag;
+}
+
 void NetworkClientService::Connect() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
@@ -214,6 +239,11 @@ void NetworkClientService::Connect() {
 		}
 	}
 	m_pimpl->Connect();
+}
+
+bool NetworkClientService::IsConnected() const {
+	const ClientLock lock(m_pimpl->m_clientMutex);
+	return m_pimpl->m_client ? true : false;
 }
 
 void NetworkClientService::Stop() {
@@ -241,7 +271,9 @@ void NetworkClientService::InvokeClient(
 		const boost::function<void(NetworkClient &)> &callback) {
 	const ClientLock lock(m_pimpl->m_clientMutex);
 	if (!m_pimpl->m_client) {
-		throw Exception("Has no active connection");
+		boost::format message("%1%Has no active connection");
+		message % GetLogTag();
+		throw Exception(message.str().c_str());
 	}
 	callback(*m_pimpl->m_client);
 }
