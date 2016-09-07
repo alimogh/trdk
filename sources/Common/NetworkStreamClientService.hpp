@@ -15,7 +15,7 @@
 
 namespace trdk { namespace Lib {
 
-	class NetworkClientService : private boost::noncopyable {
+	class NetworkStreamClientService : private boost::noncopyable {
 
 	public:
 
@@ -26,16 +26,17 @@ namespace trdk { namespace Lib {
 	
 	public:
 
-		NetworkClientService();
-		explicit NetworkClientService(const std::string &logTag);
-		virtual ~NetworkClientService();
+		NetworkStreamClientService();
+		explicit NetworkStreamClientService(const std::string &logTag);
+		virtual ~NetworkStreamClientService();
 
 	public:
 
 		const std::string & GetLogTag() const;
 
 		//! Connects.
-		/** @throw NetworkClientService::Exception	If connection will fail.
+		/** @throw NetworkStreamClientService::Exception	If connection
+		  *													will fail.
 		  */
 		void Connect();
 
@@ -54,7 +55,7 @@ namespace trdk { namespace Lib {
 
 		virtual boost::posix_time::ptime GetCurrentTime() const = 0;
 
-		virtual std::unique_ptr<trdk::Lib::NetworkClient> CreateClient() = 0;
+		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient() = 0;
 
 		virtual void LogDebug(const char *) const = 0;
 		virtual void LogInfo(const std::string &) const = 0;
@@ -67,13 +68,13 @@ namespace trdk { namespace Lib {
 		template<typename Client>
 		void InvokeClient(const boost::function<void(Client &)> &callback) {
 			InvokeClient(
-				[callback](trdk::Lib::NetworkClient &client) {
+				[callback](trdk::Lib::NetworkStreamClient &client) {
 					callback(*boost::polymorphic_downcast<Client *>(&client));
 				});
 		}
 
 		void InvokeClient(	
-			const boost::function<void(trdk::Lib::NetworkClient &)> &);
+			const boost::function<void(trdk::Lib::NetworkStreamClient &)> &);
 
 
 	private:

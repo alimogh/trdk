@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "NetworkClient.hpp"
-#include "NetworkClientService.hpp"
+#include "NetworkStreamClient.hpp"
+#include "NetworkStreamClientService.hpp"
 #include "NetworkClientServiceIo.hpp"
 #include "SysError.hpp"
 
@@ -23,17 +23,17 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-NetworkClient::Exception::Exception(const char *what) throw()
+NetworkStreamClient::Exception::Exception(const char *what) throw()
 	: Lib::Exception(what) {
 	//...//
 }
 
-NetworkClient::ConnectError::ConnectError(const char *what) throw()
+NetworkStreamClient::ConnectError::ConnectError(const char *what) throw()
 	: Exception(what) {
 	//...//
 }
 
-NetworkClient::ProtocolError::ProtocolError(
+NetworkStreamClient::ProtocolError::ProtocolError(
 		const char *what,
 		const char *bufferAddres,
 		char expectedByte)
@@ -42,20 +42,20 @@ NetworkClient::ProtocolError::ProtocolError(
 	, m_expectedByte(expectedByte) {
 	//...//
 }
-const char * NetworkClient::ProtocolError::GetBufferAddress() const {
+const char * NetworkStreamClient::ProtocolError::GetBufferAddress() const {
 	return m_bufferAddres;
 }
-char NetworkClient::ProtocolError::GetExpectedByte() const {
+char NetworkStreamClient::ProtocolError::GetExpectedByte() const {
 	return m_expectedByte;
 }
 
-class NetworkClient::Implementation : private boost::noncopyable {
+class NetworkStreamClient::Implementation : private boost::noncopyable {
 
 public:
 
-	NetworkClient &m_self;
+	NetworkStreamClient &m_self;
 
-	NetworkClientService &m_service;
+	NetworkStreamClientService &m_service;
 	io::ip::tcp::socket m_socket;
 
 	std::pair<Buffer, Buffer> m_buffer;
@@ -63,7 +63,7 @@ public:
 
 	size_t m_numberOfReceivedBytes;
 
-	explicit Implementation(NetworkClientService &service, NetworkClient &self)
+	explicit Implementation(NetworkStreamClientService &service, NetworkStreamClient &self)
 		: m_self(self)
 		, m_service(service)
 		, m_socket(m_service.GetIo().GetService())
@@ -167,7 +167,7 @@ public:
 				activeBuffer.cbegin(),
 				transferedBegin,
 				transferedEnd);
-		} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
+		} catch (const trdk::Lib::NetworkStreamClient::ProtocolError &ex) {
 			Dump(ex, activeBuffer.cbegin(), transferedEnd);
 			throw Exception("Protocol error");
 		}
@@ -271,7 +271,7 @@ public:
 				activeBuffer.cbegin(),
 				lastMessageLastByte,
 				timeMeasurement);
-		} catch (const trdk::Lib::NetworkClient::ProtocolError &ex) {
+		} catch (const trdk::Lib::NetworkStreamClient::ProtocolError &ex) {
 			Dump(ex, activeBuffer.cbegin(), lastMessageLastByte);
 			throw Exception("Protocol error");
 		}
@@ -305,7 +305,7 @@ public:
 	}
 
 	void Dump(
-			const NetworkClient::ProtocolError &ex,
+			const NetworkStreamClient::ProtocolError &ex,
 			const Buffer::const_iterator &begin,
 			const Buffer::const_iterator &end)
 			const {
@@ -343,8 +343,8 @@ public:
 
 };
 
-NetworkClient::NetworkClient(
-		NetworkClientService &service,
+NetworkStreamClient::NetworkStreamClient(
+		NetworkStreamClientService &service,
 		const std::string &host,
 		size_t port)
 	: m_pimpl(new Implementation(service, *this)) {
@@ -375,22 +375,22 @@ NetworkClient::NetworkClient(
 
 }
 
-NetworkClient::~NetworkClient() {
+NetworkStreamClient::~NetworkStreamClient() {
 	//...//
 }
 
-size_t NetworkClient::GetNumberOfReceivedBytes() const {
+size_t NetworkStreamClient::GetNumberOfReceivedBytes() const {
 	return m_pimpl->m_numberOfReceivedBytes;
 }
 
-NetworkClientService & NetworkClient::GetService() {
+NetworkStreamClientService & NetworkStreamClient::GetService() {
 	return m_pimpl->m_service;
 }
-const NetworkClientService & NetworkClient::GetService() const {
-	return const_cast<NetworkClient *>(this)->GetService();
+const NetworkStreamClientService & NetworkStreamClient::GetService() const {
+	return const_cast<NetworkStreamClient *>(this)->GetService();
 }
 
-void NetworkClient::Start() {
+void NetworkStreamClient::Start() {
 
 	AssertEq(0, m_pimpl->m_buffer.first.size());
 	AssertEq(0, m_pimpl->m_buffer.second.size());
@@ -450,7 +450,7 @@ void NetworkClient::Start() {
 
 }
 
-void NetworkClient::Stop() {
+void NetworkStreamClient::Stop() {
 	if (!m_pimpl->m_socket.is_open()) {
 		return;
 	}
@@ -463,7 +463,7 @@ void NetworkClient::Stop() {
 	m_pimpl->m_socket.close();
 }
 
-bool NetworkClient::CheckResponceSynchronously(
+bool NetworkStreamClient::CheckResponceSynchronously(
 		const char *actionName,
 		const char *expectedResponse,
 		const char *errorResponse) {
@@ -539,7 +539,7 @@ bool NetworkClient::CheckResponceSynchronously(
 
 }
 
-void NetworkClient::Send(const std::string &&message) {
+void NetworkStreamClient::Send(const std::string &&message) {
 
 	Assert(!message.empty());
 
@@ -570,7 +570,7 @@ void NetworkClient::Send(const std::string &&message) {
 
 }
 
-void NetworkClient::SendSynchronously(
+void NetworkStreamClient::SendSynchronously(
 		const std::string &message,
 		const char *requestName) {
 
@@ -608,7 +608,7 @@ void NetworkClient::SendSynchronously(
 
 }
 
-bool NetworkClient::RequestSynchronously(
+bool NetworkStreamClient::RequestSynchronously(
 		const std::string &message,
 		const char *requestName,
 		const char *expectedResponse,
@@ -620,7 +620,7 @@ bool NetworkClient::RequestSynchronously(
 		errorResponse);
 }
 
-std::pair<double, std::string> NetworkClient::GetReceivedVerbouseStat() const {
+std::pair<double, std::string> NetworkStreamClient::GetReceivedVerbouseStat() const {
 	if (m_pimpl->m_numberOfReceivedBytes > ((1024 * 1024) * 1024)) {
 		return std::make_pair(
 			double(m_pimpl->m_numberOfReceivedBytes) / ((1024 * 1024) * 1024),
@@ -636,6 +636,6 @@ std::pair<double, std::string> NetworkClient::GetReceivedVerbouseStat() const {
 	}
 }
 
-NetworkClient::BufferLock NetworkClient::LockDataExchange() {
+NetworkStreamClient::BufferLock NetworkStreamClient::LockDataExchange() {
 	return BufferLock(m_pimpl->m_bufferMutex);
 }

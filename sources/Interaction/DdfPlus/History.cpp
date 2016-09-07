@@ -12,7 +12,7 @@
 #include "History.hpp"
 #include "Security.hpp"
 #include "MarketDataSource.hpp"
-#include "Common/HttpClient.hpp"
+#include "Common/HttpStreamClient.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -25,11 +25,11 @@ namespace pt = boost::posix_time;
 
 namespace {
 
-	class Client : public Lib::HttpClient {
+	class Client : public Lib::HttpStreamClient {
 
 	public:
 
-		typedef Lib::HttpClient Base;
+		typedef Lib::HttpStreamClient Base;
 
 	public:
 		
@@ -291,7 +291,7 @@ namespace {
 History::History(
 		const Credentials &credentials,
 		DdfPlus::MarketDataSource &source)
-	: NetworkClientService("History")
+	: NetworkStreamClientService("History")
 	, m_credentials(credentials)
 	, m_source(source) {
 	//...//
@@ -321,8 +321,8 @@ pt::ptime History::GetCurrentTime() const {
 	return m_source.GetContext().GetCurrentTime();
 }
 
-std::unique_ptr<NetworkClient> History::CreateClient() {
-	return std::unique_ptr<NetworkClient>(new Client(*this));
+std::unique_ptr<NetworkStreamClient> History::CreateClient() {
+	return std::unique_ptr<NetworkStreamClient>(new Client(*this));
 }
 
 void History::LogDebug(const char *message) const {

@@ -13,7 +13,7 @@
 #include "Security.hpp"
 #include "MarketDataSource.hpp"
 #include "Common/ExpirationCalendar.hpp"
-#include "Common/NetworkClient.hpp"
+#include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -39,11 +39,11 @@ namespace {
 		VARIABLE_FIELD_END = ',',
 	};
 
-	class Client : public Lib::NetworkClient {
+	class Client : public Lib::NetworkStreamClient {
 
 	public:
 
-		typedef Lib::NetworkClient Base;
+		typedef Lib::NetworkStreamClient Base;
 
 	public:
 		
@@ -527,7 +527,7 @@ namespace {
 Stream::Stream(
 		const Credentials &credentials,
 		DdfPlus::MarketDataSource &source)
-	: NetworkClientService("Stream")
+	: NetworkStreamClientService("Stream")
 	, m_credentials(credentials)
 	, m_source(source) {
 	//...//
@@ -557,8 +557,8 @@ pt::ptime Stream::GetCurrentTime() const {
 	return m_source.GetContext().GetCurrentTime();
 }
 
-std::unique_ptr<NetworkClient> Stream::CreateClient() {
-	return std::unique_ptr<NetworkClient>(new Client(*this));
+std::unique_ptr<NetworkStreamClient> Stream::CreateClient() {
+	return std::unique_ptr<NetworkStreamClient>(new Client(*this));
 }
 
 void Stream::LogDebug(const char *message) const {

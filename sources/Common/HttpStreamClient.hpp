@@ -10,19 +10,19 @@
 
 #pragma once
 
-#include "NetworkClient.hpp"
+#include "NetworkStreamClient.hpp"
 
 namespace trdk { namespace Lib {
 
-	class HttpClient : public trdk::Lib::NetworkClient {
+	class HttpStreamClient : public trdk::Lib::NetworkStreamClient {
 
 	public:
 
-		explicit HttpClient(
-			trdk::Lib::NetworkClientService &,
+		explicit HttpStreamClient(
+			trdk::Lib::NetworkStreamClientService &,
 			const std::string &host,
 			size_t port);
-		virtual ~HttpClient();
+		virtual ~HttpStreamClient();
 
 	protected:
 

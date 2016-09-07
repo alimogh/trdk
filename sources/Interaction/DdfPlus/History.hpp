@@ -10,12 +10,12 @@
 
 #pragma once
 
-#include "Common/NetworkClientService.hpp"
+#include "Common/NetworkStreamClientService.hpp"
 #include "Fwd.hpp"
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
 
-	class History : public Lib::NetworkClientService {
+	class History : public Lib::NetworkStreamClientService {
 
 	public:
 
@@ -44,7 +44,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 		virtual boost::posix_time::ptime GetCurrentTime() const;
 
-		virtual std::unique_ptr<trdk::Lib::NetworkClient> CreateClient();
+		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient();
 
 		virtual void LogDebug(const char *) const;
 		virtual void LogInfo(const std::string &) const;

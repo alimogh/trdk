@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "HttpClient.hpp"
+#include "HttpStreamClient.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -26,15 +26,15 @@ namespace {
 
 }
 
-class HttpClient::Implementation : private boost::noncopyable {
+class HttpStreamClient::Implementation : private boost::noncopyable {
 
 public:
 
-	HttpClient &m_self;
+	HttpStreamClient &m_self;
 	const std::string m_host;
 	State m_state;
 	
-	explicit Implementation(HttpClient &self, const std::string &host)
+	explicit Implementation(HttpStreamClient &self, const std::string &host)
 		: m_self(self)
 		, m_host(host)
 		, m_state(STATE_NO_REQUEST) {
@@ -50,20 +50,20 @@ public:
 
 };
 
-HttpClient::HttpClient(
-		NetworkClientService &service,
+HttpStreamClient::HttpStreamClient(
+		NetworkStreamClientService &service,
 		const std::string &host,
 		size_t port)
-	: NetworkClient(service, host, port)
+	: NetworkStreamClient(service, host, port)
 	, m_pimpl(new Implementation(*this, host)) {
 	//...//
 }
 
-HttpClient::~HttpClient() {
+HttpStreamClient::~HttpStreamClient() {
 	//...//
 }
 
-void HttpClient::Request(
+void HttpStreamClient::Request(
 		const std::string &request,
 		const boost::function<void(void)> &onRequestCallback) {
 	const BufferLock lock(LockDataExchange());
@@ -82,11 +82,11 @@ void HttpClient::Request(
 	m_pimpl->m_state = STATE_REQUEST_SENT;
 }
 
-void HttpClient::OnStart() {
+void HttpStreamClient::OnStart() {
 	//...//
 }
 
-HttpClient::Buffer::const_iterator HttpClient::FindLastMessageLastByte(
+HttpStreamClient::Buffer::const_iterator HttpStreamClient::FindLastMessageLastByte(
 		const Buffer::const_iterator &begin,
 		const Buffer::const_iterator &,
 		const Buffer::const_iterator &end)
@@ -155,7 +155,7 @@ HttpClient::Buffer::const_iterator HttpClient::FindLastMessageLastByte(
 
 }
 
-void HttpClient::HandleNewMessages(
+void HttpStreamClient::HandleNewMessages(
 		const pt::ptime &time,
 		const Buffer::const_iterator &begin,
 		const Buffer::const_iterator &end,

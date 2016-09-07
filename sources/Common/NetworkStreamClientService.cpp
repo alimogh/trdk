@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "NetworkClientService.hpp"
-#include "NetworkClient.hpp"
+#include "NetworkStreamClientService.hpp"
+#include "NetworkStreamClient.hpp"
 #include "NetworkClientServiceIo.hpp"
 #include "SysError.hpp"
 
@@ -28,17 +28,17 @@ namespace {
 
 }
 
-NetworkClientService::Exception::Exception(const char *what) throw()
+NetworkStreamClientService::Exception::Exception(const char *what) throw()
 	: Lib::Exception(what) {
 	//...//
 }
 
-class NetworkClientService::Implementation : private boost::noncopyable {
+class NetworkStreamClientService::Implementation : private boost::noncopyable {
 
 
 public:
 
-	NetworkClientService &m_self;
+	NetworkStreamClientService &m_self;
 
 	std::string m_logTag;
 
@@ -47,7 +47,7 @@ public:
 	std::unique_ptr<io::deadline_timer> m_reconnectTimer;
 
 	ClientMutex m_clientMutex;
-	boost::shared_ptr<NetworkClient> m_client;
+	boost::shared_ptr<NetworkStreamClient> m_client;
 
 	bool m_hasNewData;
 
@@ -55,7 +55,7 @@ public:
 
 public:
 
-	explicit Implementation(NetworkClientService &self)
+	explicit Implementation(NetworkStreamClientService &self)
 		: m_self(self) {
 		//...//
 	}
@@ -78,7 +78,7 @@ public:
 					boost::bind(&Implementation::RunServiceThread, this));
 			}
 		
-		} catch (const NetworkClient::Exception &ex) {
+		} catch (const NetworkStreamClient::Exception &ex) {
 			{
 				boost::format message(
 					"%1%Failed to connect to server: \"%2%\".");
@@ -101,7 +101,7 @@ public:
 			try {
 				m_io.GetService().run();
 				break;
-			} catch (const NetworkClient::Exception &ex) {
+			} catch (const NetworkStreamClient::Exception &ex) {
 				const ClientLock lock(m_clientMutex);
 				try {
 					boost::format message("%1%Fatal error: \"%2%\".");
@@ -179,7 +179,7 @@ public:
 
 		try {
 			Connect();
-		} catch (const NetworkClientService::Exception &ex) {
+		} catch (const NetworkStreamClientService::Exception &ex) {
 			Assert(!m_client);
 			{
 				boost::format message("%1%Failed to reconnect: \"%2%\".");
@@ -203,20 +203,20 @@ public:
 
 };
 
-NetworkClientService::NetworkClientService()
+NetworkStreamClientService::NetworkStreamClientService()
 	: m_pimpl(new Implementation(*this)) {
 	//...//
 }
 
-NetworkClientService::NetworkClientService(const std::string &logTag)
+NetworkStreamClientService::NetworkStreamClientService(const std::string &logTag)
 	: m_pimpl(new Implementation(*this)) {
 	m_pimpl->m_logTag = "[" + logTag + "] ";
 }
 
-NetworkClientService::~NetworkClientService() {
-	// Use NetworkClientService::Stop from implemneation dtor to avoid problems
-	// with virtual calls (for example to dump info into logs or if new info
-	// will arrive).
+NetworkStreamClientService::~NetworkStreamClientService() {
+	// Use NetworkStreamClientService::Stop from implemneation dtor to avoid
+	// problems with virtual calls (for example to dump info into logs or if
+	// new info will arrive).
 	Assert(m_pimpl->m_io.GetService().stopped());
 	try {
 		Stop();
@@ -226,11 +226,11 @@ NetworkClientService::~NetworkClientService() {
 	}
 }
 
-const std::string & NetworkClientService::GetLogTag() const {
+const std::string & NetworkStreamClientService::GetLogTag() const {
 	return m_pimpl->m_logTag;
 }
 
-void NetworkClientService::Connect() {
+void NetworkStreamClientService::Connect() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
 		Assert(!m_pimpl->m_client);
@@ -241,17 +241,17 @@ void NetworkClientService::Connect() {
 	m_pimpl->Connect();
 }
 
-bool NetworkClientService::IsConnected() const {
+bool NetworkStreamClientService::IsConnected() const {
 	const ClientLock lock(m_pimpl->m_clientMutex);
 	return m_pimpl->m_client ? true : false;
 }
 
-void NetworkClientService::Stop() {
+void NetworkStreamClientService::Stop() {
 	m_pimpl->m_io.GetService().stop();
 	m_pimpl->m_serviceThreads.join_all();
 }
 
-void NetworkClientService::OnDisconnect() {
+void NetworkStreamClientService::OnDisconnect() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
 		if (!m_pimpl->m_client) {
@@ -263,12 +263,12 @@ void NetworkClientService::OnDisconnect() {
 	m_pimpl->Reconnect();
 }
 
-NetworkClientServiceIo & NetworkClientService::GetIo() {
+NetworkClientServiceIo & NetworkStreamClientService::GetIo() {
 	return m_pimpl->m_io;
 }
 
-void NetworkClientService::InvokeClient(
-		const boost::function<void(NetworkClient &)> &callback) {
+void NetworkStreamClientService::InvokeClient(
+		const boost::function<void(NetworkStreamClient &)> &callback) {
 	const ClientLock lock(m_pimpl->m_clientMutex);
 	if (!m_pimpl->m_client) {
 		boost::format message("%1%Has no active connection");

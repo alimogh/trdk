@@ -16,9 +16,9 @@
 
 namespace trdk { namespace Lib {
 
-	class NetworkClient
+	class NetworkStreamClient
 		: private boost::noncopyable,
-		public boost::enable_shared_from_this<trdk::Lib::NetworkClient> {
+		public boost::enable_shared_from_this<trdk::Lib::NetworkStreamClient> {
 
 	public:
 
@@ -27,12 +27,12 @@ namespace trdk { namespace Lib {
 			explicit Exception(const char *what) throw();
 		};
 
-		class ConnectError : public trdk::Lib::NetworkClient::Exception {
+		class ConnectError : public trdk::Lib::NetworkStreamClient::Exception {
 		public:
 			explicit ConnectError(const char *what) throw();
 		};
 
-		class ProtocolError : public trdk::Lib::NetworkClient::Exception {
+		class ProtocolError : public trdk::Lib::NetworkStreamClient::Exception {
 		public:
 			explicit ProtocolError(
 					const char *what,
@@ -56,11 +56,11 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		explicit NetworkClient(
-				trdk::Lib::NetworkClientService &,
+		explicit NetworkStreamClient(
+				trdk::Lib::NetworkStreamClientService &,
 				const std::string &host,
 				size_t port);
-		virtual ~NetworkClient();
+		virtual ~NetworkStreamClient();
 
 	public:
 
@@ -119,8 +119,8 @@ namespace trdk { namespace Lib {
 		  */
 		std::pair<double, std::string> GetReceivedVerbouseStat() const;
 
-		virtual trdk::Lib::NetworkClientService & GetService();
-		virtual const trdk::Lib::NetworkClientService & GetService() const;
+		virtual trdk::Lib::NetworkStreamClientService & GetService();
+		virtual const trdk::Lib::NetworkStreamClientService & GetService() const;
 
 		void Send(const std::string &&);
 

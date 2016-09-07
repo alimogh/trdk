@@ -50,13 +50,13 @@
     <ClCompile Include="ExpirationCalendar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkClient.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkClientService.cpp">
+    <ClCompile Include="NetworkStreamClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HttpClient.cpp">
+    <ClCompile Include="NetworkStreamClientService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpStreamClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -136,16 +136,16 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NetworkClientServiceIo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HttpClient.hpp">
+    <ClInclude Include="NetworkStreamClient.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkStreamClientService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpStreamClient.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

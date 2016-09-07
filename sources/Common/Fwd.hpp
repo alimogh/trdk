@@ -15,8 +15,8 @@ namespace trdk { namespace Lib {
 	class ContractExpiration;
 	class ExpirationCalendar;
 
-	class NetworkClient;
-	class NetworkClientService;
+	class NetworkStreamClient;
+	class NetworkStreamClientService;
 	class NetworkClientServiceIo;
 
 } }
