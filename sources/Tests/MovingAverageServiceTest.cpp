@@ -12,12 +12,14 @@
 #include "Services/MovingAverageService.hpp"
 #include "MockContext.hpp"
 #include "MockMarketDataSource.hpp"
+#include "MockDropCopy.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
 namespace pt = boost::posix_time;
 
 using namespace trdk::Tests;
+using namespace testing;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -168,321 +170,340 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Tests {
+template<typename Policy>
+class MovingAverageServiceTypedTest : public testing::Test {
+	//...//
+};
+TYPED_TEST_CASE_P(MovingAverageServiceTypedTest);
 
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 	
-	template<typename Policy>
-	class MovingAverageServiceTypedTest : public testing::Test {
-		//...//
-	};
-	TYPED_TEST_CASE_P(MovingAverageServiceTypedTest);
+	typedef typename TypeParam Policy;
 
-	////////////////////////////////////////////////////////////////////////////////
-
-	TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
-	
-		typedef typename TypeParam Policy;
-
-		boost::format settingsString(
-			"[Section]\n"
-				"type = %1%\n"
-				"history = yes\n"
-				"period = 10");
-		settingsString % Policy::GetType();
-		const lib::IniString settingsForBars(
-			settingsString.str() + "\nsource = close price");
-		const lib::IniString settingsForLastPrice(
-			settingsString.str() + "\nsource = last price");
+	boost::format settingsString(
+		"[Section]\n"
+			"id = 627AF583-5B76-4001-8FF3-A110B19DE8D4\n"
+			"type = %1%\n"
+			"history = yes\n"
+			"period = 10");
+	settingsString % Policy::GetType();
+	const lib::IniString settingsForBars(
+		settingsString.str() + "\nsource = close price");
+	const lib::IniString settingsForLastPrice(
+		settingsString.str() + "\nsource = last price");
 		
-		MockContext context;
-		MockMarketDataSource marketDataSource(0, context, std::string("0"));
-		const Security security(
-			context,
-			lib::Symbol("TEST_SCALE2/USD::STK"),
-			marketDataSource,
-			true,
-			Security::SupportedLevel1Types());
+	MockContext context;
+	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	const trdk::Security security(
+		context,
+		lib::Symbol("TEST_SCALE2/USD::STK"),
+		marketDataSource,
+		true,
+		trdk::Security::SupportedLevel1Types());
 
-		svc::MovingAverageService serviceForBars(
-			context,
-			"Tag",
-			lib::IniSectionRef(settingsForBars, "Section"));
-		svc::MovingAverageService serviceForLastPrice(
-			context,
-			"Tag",
-			lib::IniSectionRef(settingsForLastPrice, "Section"));
+	MockDropCopy dropCopy;
+	EXPECT_CALL(dropCopy, RegisterAbstractDataSource(_, _, _))
+		.Times(2)
+		.WillRepeatedly(Return(12334));
+	EXPECT_CALL(dropCopy, CopyAbstractDataPoint(_, _, _))
+		.Times((_countof(source) - 10) * 2);
+	EXPECT_CALL(context, GetDropCopy())
+		.Times((_countof(source) - 10 + 1) * 2)
+		.WillRepeatedly(Return(&dropCopy));
 
-		
-		for (size_t i = 0; i < _countof(source); ++i) {
+	svc::MovingAverageService serviceForBars(
+		context,
+		"Tag",
+		lib::IniSectionRef(settingsForBars, "Section"));
+	svc::MovingAverageService serviceForLastPrice(
+		context,
+		"Tag",
+		lib::IniSectionRef(settingsForLastPrice, "Section"));
 
-			const auto value = source[i][0];
+	for (size_t i = 0; i < _countof(source); ++i) {
+
+		const auto value = source[i][0];
 			
-			svc::BarService::Bar bar;
-			bar.closeTradePrice = ScaledPrice(lib::Scale(value, 100));
-			ASSERT_EQ(
-					!lib::IsZero(source[i][Policy::GetColumn()]),
-					serviceForBars.OnNewBar(security, bar))
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-			ASSERT_THROW(
-				serviceForBars.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(value)),
-				svc::MovingAverageService::Error);
-
-			ASSERT_EQ(
+		svc::BarService::Bar bar;
+		bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(value, 100));
+		ASSERT_EQ(
 				!lib::IsZero(source[i][Policy::GetColumn()]),
-				serviceForLastPrice.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(value)));
-			ASSERT_FALSE(
-				serviceForLastPrice.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(value)));
-			ASSERT_THROW(
-				serviceForLastPrice.OnNewBar(security, bar),
-				svc::MovingAverageService::Error);
+				serviceForBars.OnNewBar(security, bar))
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+		ASSERT_THROW(
+			serviceForBars.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
+					value)),
+			svc::MovingAverageService::Error);
 
-			if (lib::IsZero(source[i][Policy::GetColumn()])) {
-				continue;
-			}
+		ASSERT_EQ(
+			!lib::IsZero(source[i][Policy::GetColumn()]),
+			serviceForLastPrice.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
+					value)));
+		ASSERT_FALSE(
+			serviceForLastPrice.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_BID_PRICE>(
+					value)));
+		ASSERT_THROW(
+			serviceForLastPrice.OnNewBar(security, bar),
+			svc::MovingAverageService::Error);
 
-			EXPECT_DOUBLE_EQ(
-					source[i][0],
-					serviceForBars.GetLastPoint().source)
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< serviceForBars.GetLastPoint().value << ";";
-			EXPECT_DOUBLE_EQ(
-					source[i][Policy::GetColumn()],
-					serviceForBars.GetLastPoint().value)
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< serviceForBars.GetLastPoint().value << ";";
+		if (lib::IsZero(source[i][Policy::GetColumn()])) {
+			continue;
+		}
 
-			EXPECT_DOUBLE_EQ(
+		EXPECT_DOUBLE_EQ(
 				source[i][0],
-				serviceForLastPrice.GetLastPoint().source);
-			EXPECT_DOUBLE_EQ(
+				serviceForBars.GetLastPoint().source)
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+			<< " service.GetLastPoint().value = "
+				<< serviceForBars.GetLastPoint().value << ";";
+		EXPECT_DOUBLE_EQ(
 				source[i][Policy::GetColumn()],
-				serviceForLastPrice.GetLastPoint().value);
+				serviceForBars.GetLastPoint().value)
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+			<< " service.GetLastPoint().value = "
+				<< serviceForBars.GetLastPoint().value << ";";
 
-		}
-
-		ASSERT_NO_THROW(serviceForBars.GetHistorySize());
-		ASSERT_EQ(_countof(source) - 10, serviceForBars.GetHistorySize());
-		EXPECT_THROW(
-			serviceForBars.GetHistoryPoint(_countof(source) - 10),
-			svc::MovingAverageService::ValueDoesNotExistError);
-		EXPECT_THROW(
-			serviceForBars.GetHistoryPointByReversedIndex(_countof(source) - 10),
-			svc::MovingAverageService::ValueDoesNotExistError);
-
-		ASSERT_NO_THROW(serviceForLastPrice.GetHistorySize());
-		ASSERT_EQ(_countof(source) - 10, serviceForLastPrice.GetHistorySize());
-		EXPECT_THROW(
-			serviceForLastPrice.GetHistoryPoint(_countof(source) - 10),
-			svc::MovingAverageService::ValueDoesNotExistError);
-		EXPECT_THROW(
-			serviceForLastPrice.GetHistoryPointByReversedIndex(
-				_countof(source) - 10),
-			svc::MovingAverageService::ValueDoesNotExistError);
-
-		size_t offset = 9;
-		for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
-			auto pos = i + offset;
-			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-				++offset;
-				++pos;
-			}
-			ASSERT_DOUBLE_EQ(
-					source[pos][Policy::GetColumn()],
-					serviceForBars.GetHistoryPoint(i).value)
-				<< "i = " << i << ";"
-				<< " pos = " << pos << ";";
-		}
-		offset = 0;
-		for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
-			auto pos = _countof(source) - 1 - i - offset;
-			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-				++offset;
-				--pos;
-			}
-			ASSERT_DOUBLE_EQ(
-					source[pos][Policy::GetColumn()],
-					serviceForBars.GetHistoryPointByReversedIndex(i).value)
-				<< "i = " << i << ";"
-				<< " pos = " << pos << ";";
-		}
-
-		offset = 9;
-		for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
-			auto pos = i + offset;
-			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-				++offset;
-				++pos;
-			}
-			ASSERT_DOUBLE_EQ(
-					source[pos][Policy::GetColumn()],
-					serviceForLastPrice.GetHistoryPoint(i).value)
-				<< "i = " << i << ";"
-				<< " pos = " << pos << ";";
-		}
-		offset = 0;
-		for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
-			auto pos = _countof(source) - 1 - i - offset;
-			if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
-				++offset;
-				--pos;
-			}
-			ASSERT_DOUBLE_EQ(
-					source[pos][Policy::GetColumn()],
-					serviceForLastPrice.GetHistoryPointByReversedIndex(i).value)
-				<< "i = " << i << ";"
-				<< " pos = " << pos << ";";
-		}
+		EXPECT_DOUBLE_EQ(
+			source[i][0],
+			serviceForLastPrice.GetLastPoint().source);
+		EXPECT_DOUBLE_EQ(
+			source[i][Policy::GetColumn()],
+			serviceForLastPrice.GetLastPoint().value);
 
 	}
 
-	TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
+	ASSERT_NO_THROW(serviceForBars.GetHistorySize());
+	ASSERT_EQ(_countof(source) - 10, serviceForBars.GetHistorySize());
+	EXPECT_THROW(
+		serviceForBars.GetHistoryPoint(_countof(source) - 10),
+		svc::MovingAverageService::ValueDoesNotExistError);
+	EXPECT_THROW(
+		serviceForBars.GetHistoryPointByReversedIndex(_countof(source) - 10),
+		svc::MovingAverageService::ValueDoesNotExistError);
 
-		typedef typename TypeParam Policy;
+	ASSERT_NO_THROW(serviceForLastPrice.GetHistorySize());
+	ASSERT_EQ(_countof(source) - 10, serviceForLastPrice.GetHistorySize());
+	EXPECT_THROW(
+		serviceForLastPrice.GetHistoryPoint(_countof(source) - 10),
+		svc::MovingAverageService::ValueDoesNotExistError);
+	EXPECT_THROW(
+		serviceForLastPrice.GetHistoryPointByReversedIndex(
+			_countof(source) - 10),
+		svc::MovingAverageService::ValueDoesNotExistError);
 
-		boost::format settingsString(
-			"[Section]\n"
-				"type = %1%\n"
-				"history = no\n"
-				"period = 10");
-		settingsString % Policy::GetType();
-		const lib::IniString settingsForBars(
-			settingsString.str() + "\nsource = close price");
-		const lib::IniString settingsForLastPrice(
-			settingsString.str() + "\nsource = last price");
+	size_t offset = 9;
+	for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
+		auto pos = i + offset;
+		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+			++offset;
+			++pos;
+		}
+		ASSERT_DOUBLE_EQ(
+				source[pos][Policy::GetColumn()],
+				serviceForBars.GetHistoryPoint(i).value)
+			<< "i = " << i << ";"
+			<< " pos = " << pos << ";";
+	}
+	offset = 0;
+	for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
+		auto pos = _countof(source) - 1 - i - offset;
+		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+			++offset;
+			--pos;
+		}
+		ASSERT_DOUBLE_EQ(
+				source[pos][Policy::GetColumn()],
+				serviceForBars.GetHistoryPointByReversedIndex(i).value)
+			<< "i = " << i << ";"
+			<< " pos = " << pos << ";";
+	}
+
+	offset = 9;
+	for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
+		auto pos = i + offset;
+		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+			++offset;
+			++pos;
+		}
+		ASSERT_DOUBLE_EQ(
+				source[pos][Policy::GetColumn()],
+				serviceForLastPrice.GetHistoryPoint(i).value)
+			<< "i = " << i << ";"
+			<< " pos = " << pos << ";";
+	}
+	offset = 0;
+	for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
+		auto pos = _countof(source) - 1 - i - offset;
+		if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+			++offset;
+			--pos;
+		}
+		ASSERT_DOUBLE_EQ(
+				source[pos][Policy::GetColumn()],
+				serviceForLastPrice.GetHistoryPointByReversedIndex(i).value)
+			<< "i = " << i << ";"
+			<< " pos = " << pos << ";";
+	}
+
+}
+
+TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
+
+	typedef typename TypeParam Policy;
+
+	boost::format settingsString(
+		"[Section]\n"
+			"id = 627AF583-5B76-4001-8FF3-A110B19DE8D4\n"
+			"type = %1%\n"
+			"history = no\n"
+			"period = 10");
+	settingsString % Policy::GetType();
+	const lib::IniString settingsForBars(
+		settingsString.str() + "\nsource = close price");
+	const lib::IniString settingsForLastPrice(
+		settingsString.str() + "\nsource = last price");
 		
-		MockContext context;
-		MockMarketDataSource marketDataSource(0, context, std::string("0"));
-		const Security security(
-			context,
-			lib::Symbol("TEST_SCALE2/USD::STK"),
-			marketDataSource,
-			true,
-			Security::SupportedLevel1Types());
+	MockContext context;
+	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	const trdk::Security security(
+		context,
+		lib::Symbol("TEST_SCALE2/USD::STK"),
+		marketDataSource,
+		true,
+		trdk::Security::SupportedLevel1Types());
 
-		svc::MovingAverageService serviceForBars(
-			context,
-			"Tag",
-			lib::IniSectionRef(settingsForBars, "Section"));
-		svc::MovingAverageService serviceForLastPrice(
-			context,
-			"Tag",
-			lib::IniSectionRef(settingsForLastPrice, "Section"));
+	MockDropCopy dropCopy;
+	EXPECT_CALL(dropCopy, RegisterAbstractDataSource(_, _, _))
+		.Times(2)
+		.WillRepeatedly(Return(12334));
+	EXPECT_CALL(dropCopy, CopyAbstractDataPoint(_, _, _))
+		.Times((_countof(source) - 10) * 2);
+	EXPECT_CALL(context, GetDropCopy())
+		.Times((_countof(source) - 10 + 1) * 2)
+		.WillRepeatedly(Return(&dropCopy));
 
-		for (size_t i = 0; i < _countof(source); ++i) {
+	svc::MovingAverageService serviceForBars(
+		context,
+		"Tag",
+		lib::IniSectionRef(settingsForBars, "Section"));
+	svc::MovingAverageService serviceForLastPrice(
+		context,
+		"Tag",
+		lib::IniSectionRef(settingsForLastPrice, "Section"));
+
+	for (size_t i = 0; i < _countof(source); ++i) {
 			
-			const auto &value = source[i][0];
+		const auto &value = source[i][0];
 
-			svc::BarService::Bar bar;
-			bar.closeTradePrice = ScaledPrice(lib::Scale(value, 100));
-			ASSERT_EQ(
-					!lib::IsZero(source[i][Policy::GetColumn()]),
-					serviceForBars.OnNewBar(security, bar))
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
-			ASSERT_THROW(
-				serviceForBars.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(value)),
-				svc::MovingAverageService::Error);
-
-			ASSERT_EQ(
+		svc::BarService::Bar bar;
+		bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(value, 100));
+		ASSERT_EQ(
 				!lib::IsZero(source[i][Policy::GetColumn()]),
-				serviceForLastPrice.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(value)));
-			ASSERT_FALSE(
-				serviceForLastPrice.OnLevel1Tick(
-					security,
-					pt::not_a_date_time,
-					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(value)));
-			ASSERT_THROW(
-				serviceForLastPrice.OnNewBar(security, bar),
-				svc::MovingAverageService::Error);
+				serviceForBars.OnNewBar(security, bar))
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";";
+		ASSERT_THROW(
+			serviceForBars.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
+					value)),
+			svc::MovingAverageService::Error);
+
+		ASSERT_EQ(
+			!lib::IsZero(source[i][Policy::GetColumn()]),
+			serviceForLastPrice.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
+					value)));
+		ASSERT_FALSE(
+			serviceForLastPrice.OnLevel1Tick(
+				security,
+				pt::not_a_date_time,
+				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_BID_PRICE>(
+					value)));
+		ASSERT_THROW(
+			serviceForLastPrice.OnNewBar(security, bar),
+			svc::MovingAverageService::Error);
 			
-			if (lib::IsZero(source[i][Policy::GetColumn()])) {
-				continue;
-			}
-
-			EXPECT_DOUBLE_EQ(source[i][0], serviceForBars.GetLastPoint().source)
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< serviceForBars.GetLastPoint().value << ";";
-			EXPECT_DOUBLE_EQ(
-					source[i][Policy::GetColumn()],
-					serviceForBars.GetLastPoint().value)
-				<< "i = " << i << ";"
-				<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
-				<< " service.GetLastPoint().value = "
-					<< serviceForBars.GetLastPoint().value << ";";
-
-			EXPECT_DOUBLE_EQ(
-				source[i][0],
-				serviceForLastPrice.GetLastPoint().source);
-			EXPECT_DOUBLE_EQ(
-				source[i][Policy::GetColumn()],
-				serviceForLastPrice.GetLastPoint().value);
-
+		if (lib::IsZero(source[i][Policy::GetColumn()])) {
+			continue;
 		}
 
-		EXPECT_THROW(
-			serviceForBars.GetHistorySize(),
-			svc::MovingAverageService::HasNotHistory);
-		EXPECT_THROW(
-			serviceForBars.GetHistoryPoint(0),
-			svc::MovingAverageService::HasNotHistory);
-		EXPECT_THROW(
-			serviceForBars.GetHistoryPointByReversedIndex(0),
-			svc::MovingAverageService::HasNotHistory);
+		EXPECT_DOUBLE_EQ(source[i][0], serviceForBars.GetLastPoint().source)
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+			<< " service.GetLastPoint().value = "
+				<< serviceForBars.GetLastPoint().value << ";";
+		EXPECT_DOUBLE_EQ(
+				source[i][Policy::GetColumn()],
+				serviceForBars.GetLastPoint().value)
+			<< "i = " << i << ";"
+			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
+			<< " service.GetLastPoint().value = "
+				<< serviceForBars.GetLastPoint().value << ";";
 
-		EXPECT_THROW(
-			serviceForLastPrice.GetHistorySize(),
-			svc::MovingAverageService::HasNotHistory);
-		EXPECT_THROW(
-			serviceForLastPrice.GetHistoryPoint(0),
-			svc::MovingAverageService::HasNotHistory);
-		EXPECT_THROW(
-			serviceForLastPrice.GetHistoryPointByReversedIndex(0),
-			svc::MovingAverageService::HasNotHistory);
+		EXPECT_DOUBLE_EQ(
+			source[i][0],
+			serviceForLastPrice.GetLastPoint().source);
+		EXPECT_DOUBLE_EQ(
+			source[i][Policy::GetColumn()],
+			serviceForLastPrice.GetLastPoint().value);
 
 	}
 
-	////////////////////////////////////////////////////////////////////////////////
+	EXPECT_THROW(
+		serviceForBars.GetHistorySize(),
+		svc::MovingAverageService::HasNotHistory);
+	EXPECT_THROW(
+		serviceForBars.GetHistoryPoint(0),
+		svc::MovingAverageService::HasNotHistory);
+	EXPECT_THROW(
+		serviceForBars.GetHistoryPointByReversedIndex(0),
+		svc::MovingAverageService::HasNotHistory);
 
-	REGISTER_TYPED_TEST_CASE_P(
-		MovingAverageServiceTypedTest,
-		RealTimeWithHistory,
-		RealTimeWithoutHistory);
+	EXPECT_THROW(
+		serviceForLastPrice.GetHistorySize(),
+		svc::MovingAverageService::HasNotHistory);
+	EXPECT_THROW(
+		serviceForLastPrice.GetHistoryPoint(0),
+		svc::MovingAverageService::HasNotHistory);
+	EXPECT_THROW(
+		serviceForLastPrice.GetHistoryPointByReversedIndex(0),
+		svc::MovingAverageService::HasNotHistory);
 
-	////////////////////////////////////////////////////////////////////////////////
+}
 
-	typedef ::testing::Types<SmaTrait, EmaTrait, SmMaTrait>
-		MovingAverageServiceTestPolicies;
+////////////////////////////////////////////////////////////////////////////////
 
-	INSTANTIATE_TYPED_TEST_CASE_P(
-		MovingAverageService,
-		MovingAverageServiceTypedTest,
-		MovingAverageServiceTestPolicies);
+REGISTER_TYPED_TEST_CASE_P(
+	MovingAverageServiceTypedTest,
+	RealTimeWithHistory,
+	RealTimeWithoutHistory);
 
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-} }
+typedef ::testing::Types<SmaTrait, EmaTrait, SmMaTrait>
+	MovingAverageServiceTestPolicies;
+
+INSTANTIATE_TYPED_TEST_CASE_P(
+	MovingAverageService,
+	MovingAverageServiceTypedTest,
+	MovingAverageServiceTestPolicies);
 
 ////////////////////////////////////////////////////////////////////////////////

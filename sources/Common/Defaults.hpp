@@ -24,6 +24,8 @@ namespace trdk {
 
 		static boost::filesystem::path GetPositionsLogDir();
 
+		static boost::filesystem::path GetTicksLogDir();
+
 		static boost::filesystem::path GetRawDataLogDir();
 
 	};

@@ -574,7 +574,7 @@ void Stream::LogError(const std::string &message) const {
 }
 
 void Stream::OnConnectionRestored() {
-	m_source.SubscribeToSecurities();
+	m_source.ResubscribeToSecurities();
 }
 
 void Stream::SubscribeToMarketData(const DdfPlus::Security &security) {

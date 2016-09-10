@@ -138,8 +138,7 @@ void SubscriptionsManager::SubscribeToTrades(
 			boost::ref(security),
 			_1,
 			_2,
-			_3,
-			_4));
+			_3));
 	const auto &connection = security.SubscribeToTrades(slot);
 	try {
 		slotConnections.push_back(connection);

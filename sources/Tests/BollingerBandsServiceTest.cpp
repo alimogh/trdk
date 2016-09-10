@@ -139,9 +139,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Tests {
-
-	class BollingerBandsServiceTest : public testing::Test {
+class BollingerBandsServiceTest : public testing::Test {
 
 	protected:
 		
@@ -209,8 +207,6 @@ namespace trdk { namespace Tests {
 		std::unique_ptr<svc::BollingerBandsService> m_service;
 
 	};
-
-} }
 
 TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	

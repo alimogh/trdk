@@ -38,6 +38,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 		virtual void Connect(const trdk::Lib::IniSectionRef &);
 
 		virtual void SubscribeToSecurities();
+		void ResubscribeToSecurities();
 
 	public:
 
@@ -45,6 +46,10 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 		DdfPlus::Security * FindSecurity(
 				const std::string &ddfPlusCodeSymbolCode);
+
+		void OnHistoryRequestCompleted(
+				DdfPlus::Security &/*,
+				bool isRequestQueueEmpty*/);
 
 	protected:
 
@@ -58,6 +63,8 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 	private:
 
 		std::unique_ptr<Stream> m_stream;
+		
+		History::Settings m_historySettings;
 		std::unique_ptr<History> m_history;
 
 		boost::unordered_map<std::string, boost::shared_ptr<DdfPlus::Security>>

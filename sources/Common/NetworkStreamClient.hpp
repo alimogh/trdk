@@ -51,7 +51,7 @@ namespace trdk { namespace Lib {
 
 		typedef std::vector<char> Buffer;
 
-		typedef boost::mutex BufferMutex;
+		typedef boost::recursive_mutex BufferMutex;
 		typedef BufferMutex::scoped_lock BufferLock;
 
 	public:

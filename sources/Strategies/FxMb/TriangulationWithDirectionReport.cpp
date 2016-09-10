@@ -212,7 +212,7 @@ public:
 					const auto &utc = pt::microsec_clock::universal_time();
 					record
 						% "UTC: " % '\0' % utc
-						% "EST: " % '\0' % (utc + GetEstDiff());
+						% "EST: " % '\0' % (utc + GetEstTimeZoneDiff());
 				}
 				record
 					% "Build: " TRDK_BUILD_IDENTITY

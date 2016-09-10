@@ -21,6 +21,9 @@
       <Filter>Mocks</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="MockDropCopy.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MovingAverageServiceTest.cpp">
@@ -47,6 +50,9 @@
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="ExpirationCalendarTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="UtilsTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>

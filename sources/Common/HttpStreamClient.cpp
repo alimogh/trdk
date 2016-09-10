@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "HttpStreamClient.hpp"
+#include "NetworkStreamClientService.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -44,6 +45,16 @@ public:
 	void HandleHeaders(
 			const boost::split_iterator<Buffer::const_iterator> &range) {
 		if (!boost::starts_with(*range, "HTTP/1.1 200 OK\r\n")) {
+			boost::format message(
+				"%1%Request response was not returned with success: \"%2%\".");
+			message
+				%	m_self.GetService().GetLogTag()
+				%	std::string(
+						boost::begin(*range),
+						std::find(
+							boost::begin(*range),
+							boost::end(*range), '\r'));
+			m_self.LogError(message.str());
 			throw Exception("Request response was not returned with success");
 		}
 	}
@@ -95,19 +106,19 @@ HttpStreamClient::Buffer::const_iterator HttpStreamClient::FindLastMessageLastBy
 	Assert(begin != end);
 	AssertLt(STATE_NO_REQUEST, m_pimpl->m_state);
 
-	if (m_pimpl->m_state == STATE_REQUEST_SENT) {
-		const auto &range = boost::make_iterator_range(begin, end);
-		const auto &header = boost::make_find_iterator(
-			range,
-			boost::last_finder("\r\n\r\n", boost::is_equal()));
-		if (header.eof()) {
-			return end;
-		}
-		return std::prev(boost::end(*header));
-	}
-
 	auto range = boost::make_iterator_range(begin, end);
 	auto result = end;
+
+	if (m_pimpl->m_state == STATE_REQUEST_SENT) {
+		const auto &header = boost::make_find_iterator(
+			range,
+			boost::first_finder("\r\n\r\n", boost::is_equal()));
+		if (header == boost::find_iterator<Buffer::const_iterator>()) {
+			return result;
+		}
+		result = std::prev(boost::end(*header));
+		range = boost::make_iterator_range(boost::end(*header), end);
+	}
 
 	for (
 			auto chunk = boost::make_find_iterator(
@@ -161,73 +172,77 @@ void HttpStreamClient::HandleNewMessages(
 		const Buffer::const_iterator &end,
 		const TimeMeasurement::Milestones &timeMeasurement) {
 
+	Assert(begin != end);
+
 	auto range = boost::make_iterator_range(begin, std::next(end));
 
 	if (m_pimpl->m_state == STATE_REQUEST_SENT) {
-
 		const auto &header = boost::make_split_iterator(
 			range,
 			boost::first_finder("\r\n\r\n", boost::is_equal()));
-		Assert(!header.eof());
-		AssertEq(4, std::distance(boost::end(*header), boost::end(range)));
+		Assert(header != boost::split_iterator<Buffer::const_iterator>());
+		AssertLe(4, std::distance(boost::end(*header), boost::end(range)));
 		m_pimpl->HandleHeaders(header);
 		m_pimpl->m_state = STATE_HEADER_RECEIVED;
+		range = boost::make_iterator_range(
+			boost::end(*header) + 4,
+			boost::end(range));
+		if (range.empty()) {
+			return;
+		}
+	}
 
-	} else {
-		
-		auto chunk = boost::make_split_iterator(
+	auto chunk = boost::make_split_iterator(
+		range,
+		boost::first_finder("\r\n", boost::is_equal()));
+	Assert(!chunk.eof());
+	Assert(!chunk->empty());
+
+	for ( ; ; ) {
+
+		std::intmax_t chunkSize = 0;
+		std::stringstream ss;
+		ss << std::hex << boost::copy_range<std::string>(*chunk);
+		ss >> chunkSize;
+		chunkSize += 2;
+
+		const auto contentBegin = boost::end(*chunk) + 2;
+		AssertLe(chunkSize, std::distance(contentBegin, boost::end(range)));
+		if (chunkSize == 2) {
+			if (
+					chunkSize
+					> std::distance(contentBegin, boost::end(range))) {
+				throw ProtocolError(
+					"Failed to read last chunk",
+					&*std::prev(boost::end(*chunk) + chunkSize),
+					0);
+			}
+			Assert(contentBegin + chunkSize == boost::end(range));
+			m_pimpl->m_state = STATE_NO_REQUEST;
+			OnRequestComplete();
+			return;
+		}
+
+		range = boost::make_iterator_range(
+			contentBegin + chunkSize,
+			boost::end(range));
+		AssertEq('\n', *(boost::begin(range) - 1));
+		AssertEq('\r', *(boost::begin(range) - 2));
+
+		HandleNewSubMessages(
+			time,
+			contentBegin,
+			boost::begin(range) - 2,
+			timeMeasurement);
+
+		if (range.empty()) {
+			break;
+		}
+		chunk = boost::make_split_iterator(
 			range,
 			boost::first_finder("\r\n", boost::is_equal()));
 		Assert(!chunk.eof());
 		Assert(!chunk->empty());
-
-		for ( ; ; ) {
-
-			std::intmax_t chunkSize = 0;
-			std::stringstream ss;
-			ss << std::hex << boost::copy_range<std::string>(*chunk);
-			ss >> chunkSize;
-			chunkSize += 2;
-
-			const auto contentBegin = boost::end(*chunk) + 2;
-			AssertLe(chunkSize, std::distance(contentBegin, boost::end(range)));
-			if (chunkSize == 2) {
-				if (
-						chunkSize
-						> std::distance(contentBegin, boost::end(range))) {
-					throw ProtocolError(
-						"Failed to read last chunk",
-						&*std::prev(boost::end(*chunk) + chunkSize),
-						0);
-				}
-				Assert(contentBegin + chunkSize == boost::end(range));
-				m_pimpl->m_state = STATE_NO_REQUEST;
-				OnRequestComplete();
-				return;
-			}
-
-			range = boost::make_iterator_range(
-				contentBegin + chunkSize,
-				boost::end(range));
-			AssertEq('\n', *(boost::begin(range) - 1));
-			AssertEq('\r', *(boost::begin(range) - 2));
-
-			HandleNewSubMessages(
-				time,
-				contentBegin,
-				boost::begin(range) - 2,
-				timeMeasurement);
-
-			if (range.empty()) {
-				break;
-			}
-			chunk = boost::make_split_iterator(
-				range,
-				boost::first_finder("\r\n", boost::is_equal()));
-			Assert(!chunk.eof());
-			Assert(!chunk->empty());
-
-		}
 
 	}
 

@@ -51,11 +51,14 @@ namespace trdk { namespace Lib {
 
 		void OnDisconnect();
 
+		void OnClientDestroy();
+
 	protected:
 
 		virtual boost::posix_time::ptime GetCurrentTime() const = 0;
 
-		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient() = 0;
+		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient()
+				= 0;
 
 		virtual void LogDebug(const char *) const = 0;
 		virtual void LogInfo(const std::string &) const = 0;

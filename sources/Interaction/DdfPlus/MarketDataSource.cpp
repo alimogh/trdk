@@ -33,12 +33,13 @@ namespace {
 		return result;
 	}
 
-	History::Credentials ReadHistoryCredentials(const IniSectionRef &conf) {
-		const History::Credentials result = {
+	History::Settings ReadHistorySettings(const IniSectionRef &conf) {
+		const History::Settings result = {
 			"ds01.ddfplus.com",
 			80,
 			conf.ReadKey("login"),
-			conf.ReadKey("password")
+			conf.ReadKey("password"),
+			true
 		};
 		return result;
 	}
@@ -55,8 +56,7 @@ DdfPlus::MarketDataSource::MarketDataSource(
 	: Base(index, context, tag)
 	, m_stream(
 		boost::make_unique<Stream>(ReadStreamCredentials(conf), *this))
-	, m_history(
-		boost::make_unique<History>(ReadHistoryCredentials(conf), *this)) {
+	, m_historySettings(ReadHistorySettings(conf)) {
 	//...//
 }
 
@@ -94,14 +94,16 @@ void DdfPlus::MarketDataSource::SubscribeToSecurities() {
 
 	try {
 	
-		for (const auto &security : m_securities) {
+		for (const auto &security: m_securities) {
 			if (
 					security
 						.second
 						->GetRequestedDataStartTime()
 						.is_not_a_date_time()) {
+				security.second->SetOnline();
 				m_stream->SubscribeToMarketData(*security.second);
 			} else {
+				Assert(!security.second->IsOnline());
 				CheckHistoryConnection();
 				m_history->LoadHistory(*security.second);
 			}
@@ -113,6 +115,31 @@ void DdfPlus::MarketDataSource::SubscribeToSecurities() {
 	}
 
 	GetLog().Debug("Market data request sent.");
+
+}
+
+
+void DdfPlus::MarketDataSource::ResubscribeToSecurities() {
+
+	GetLog().Debug(
+		"Resending market data request for %1% securities...",
+		m_securities.size());
+
+	try {
+	
+		for (const auto &security: m_securities) {
+			if (!security.second->IsOnline()) {
+				continue;
+			}
+			m_stream->SubscribeToMarketData(*security.second);
+		}
+	
+	} catch (const DdfPlus::Stream::Exception &ex) {
+		GetLog().Error("Failed to resend market data request: \"%1%\".", ex);
+		throw Error("Failed to resend market data request");
+	}
+
+	GetLog().Debug("Market data request resent.");
 
 }
 
@@ -161,24 +188,50 @@ DdfPlus::Security * DdfPlus::MarketDataSource::FindSecurity(
 
 void DdfPlus::MarketDataSource::CheckHistoryConnection() {
 
-	if (m_history->IsConnected()) {
+	if (m_history && m_history->IsConnected()) {
 		return;
+	}
+
+	if (!m_history) {
+		m_history.reset(new History(m_historySettings, *this));
 	}
 
 	GetLog().Debug(
 		"Connecting to history at \"%1%:%2%\""
 			" with login \"%3%\" and password...",
-		m_history->GetCredentials().host,
-		m_history->GetCredentials().port,
-		m_history->GetCredentials().login);
+		m_history->GetSettings().host,
+		m_history->GetSettings().port,
+		m_history->GetSettings().login);
 
 	m_history->Connect();
 
 	GetLog().Info(
 		"Connected to history \"%1%:%2%\" with login \"%3%\" and password.",
-		m_history->GetCredentials().host,
-		m_history->GetCredentials().port,
-		m_history->GetCredentials().login);
+		m_history->GetSettings().host,
+		m_history->GetSettings().port,
+		m_history->GetSettings().login);
+
+}
+
+void DdfPlus::MarketDataSource::OnHistoryRequestCompleted(
+		DdfPlus::Security &security/*,
+		bool isRequestQueueEmpty*/) {
+
+	Assert(m_history);
+	Assert(!security.IsOnline());
+
+	GetLog().Debug(
+		"%1% history loaded, sending on-line market data request...",
+		security);
+	security.SetOnline();
+	m_stream->SubscribeToMarketData(security);
+	GetLog().Info(
+		"%1% history loaded, on-line market data request sent.",
+		security);
+
+//	if (isRequestQueueEmpty) {
+		m_history.reset();
+//	}
 
 }
 

@@ -15,6 +15,7 @@
 #include "DisableBoostWarningsBegin.h"
 #	include <boost/algorithm/string.hpp>
 #	include <boost/thread/thread.hpp>
+#	include <boost/thread/recursive_mutex.hpp>
 #	include <boost/format.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/regex.hpp>

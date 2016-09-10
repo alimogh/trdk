@@ -16,6 +16,7 @@
 #	include <boost/algorithm/string/join.hpp>
 #	include <boost/unordered_map.hpp>
 #	include <boost/algorithm/string/split.hpp>
+#	include <boost/thread/recursive_mutex.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

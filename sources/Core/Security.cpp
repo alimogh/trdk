@@ -187,7 +187,11 @@ public:
 
 	void UpdateMarketDataStat(const pt::ptime &time) {
 		Assert(!time.is_not_a_date_time());
-		AssertLe(GetLastMarketDataTime(), time);
+#		ifdef BOOST_ENABLE_ASSERT_HANDLER
+			if (!GetLastMarketDataTime().is_not_a_date_time()) {
+				AssertLe(GetLastMarketDataTime(), time);
+			}
+#		endif
 		const auto &marketDataTime = ConvertToMicroseconds(time);
 		m_marketDataTime = marketDataTime;
 		++m_numberOfMarketDataUpdates;
@@ -301,9 +305,10 @@ public:
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
-		const pt::ptime result = ConvertToPTimeFromMicroseconds(m_marketDataTime);
-		Assert(!result.is_not_a_date_time());
-		return result;
+		const auto marketDataTime = m_marketDataTime.load();
+		return marketDataTime
+			?	ConvertToPTimeFromMicroseconds(m_marketDataTime)
+			:	pt::not_a_date_time;
 	}
 
 	template<Level1TickType tick>
@@ -403,7 +408,7 @@ void Security::SetOnline() {
 	Assert(!m_pimpl->m_isOnline);
 	m_pimpl->m_isOnline = true;
 	GetContext().GetLog().Info(
-		"%1% now is online. Last data time: %2%.",
+		"%1% now is on-line. Last data time: %2%.",
 		*this,
 		GetLastMarketDataTime());
 }
@@ -713,13 +718,12 @@ void Security::AddLevel1Tick(
 
 void Security::AddTrade(
 			const boost::posix_time::ptime &time,
-			const OrderSide &side,
 			const ScaledPrice &price,
 			const Qty &qty,
 			const TimeMeasurement::Milestones &timeMeasurement,
 			bool useAsLastTrade,
 			bool useForTradedVolume) {
-	
+
 	bool isLevel1Changed = false;
 	if (useAsLastTrade) {
 		if (m_pimpl->SetLevel1(
@@ -762,7 +766,7 @@ void Security::AddTrade(
 	}
 
 	m_pimpl->UpdateMarketDataStat(time);
-	m_pimpl->m_tradeSignal(time, price, qty, side);
+	m_pimpl->m_tradeSignal(time, price, qty);
 
 }
 

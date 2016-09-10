@@ -65,8 +65,7 @@ namespace trdk {
 				trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		
 		virtual void OnServiceDataUpdate(
 				const trdk::Service &,

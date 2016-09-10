@@ -178,6 +178,10 @@ namespace EmaFuturesStrategy {
 				const Service &service,
 				const Milestones &timeMeasurement) {
 
+			if (!m_security->IsOnline()) {
+				return;
+			}
+
 			m_ema[FAST].CheckSource(service, m_ema[SLOW])
 				|| m_ema[SLOW].CheckSource(service, m_ema[FAST]);
 			if (!IsDataActual()) {
@@ -186,9 +190,6 @@ namespace EmaFuturesStrategy {
 			
 			const Direction &signal = UpdateDirection();
 			Assert(m_security);
-			if (!m_security->IsOnline()) {
-				return;
-			}
 			if (signal != DIRECTION_LEVEL) {
 				GetTradingLog().Write(
 					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%"
@@ -584,14 +585,7 @@ namespace EmaFuturesStrategy {
 			fs::path path = Defaults::GetPositionsLogDir();
 			const auto &now = GetContext().GetCurrentTime();
 			path /= SymbolToFileName(
-				(boost::format("%1%_%2%%3%%4%_%5%%6%%7%")
-					% GetTag()
-					% now.date().year()
-					% now.date().month().as_number()
-					% now.date().day()
-					% now.time_of_day().hours()
-					% now.time_of_day().minutes()
-					% now.time_of_day().seconds())
+				(boost::format("%1%_%2%") % GetTag() % ConvertToFileName(now))
 				.str(),
 				"csv");
 			fs::create_directories(path.branch_path());

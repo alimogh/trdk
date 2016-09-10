@@ -48,8 +48,7 @@ namespace trdk {
 				trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		void RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);

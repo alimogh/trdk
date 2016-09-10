@@ -68,10 +68,9 @@ void Observer::RaiseNewTradeEvent(
 		Security &security,
 		const boost::posix_time::ptime &time,
 		const trdk::ScaledPrice &price,
-		const trdk::Qty &qty,
-		const trdk::OrderSide &side) {
+		const trdk::Qty &qty) {
 	const Lock lock(GetMutex());
-	OnNewTrade(security, time, price, qty, side);
+	OnNewTrade(security, time, price, qty);
 }
 
 void Observer::RaiseServiceDataUpdateEvent(

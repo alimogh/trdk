@@ -338,8 +338,7 @@ namespace trdk { namespace Engine {
 				Security &,
 				const boost::posix_time::ptime &,
 				const ScaledPrice &,
-				const Qty &,
-				const OrderSide &);
+				const Qty &);
 		void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
 		void SignalBrokerPositionUpdate(
 				SubscriberPtrWrapper &,

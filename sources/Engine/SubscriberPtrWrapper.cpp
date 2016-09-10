@@ -244,8 +244,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(
 				*m_trade.security,
 				m_trade.time,
 				m_trade.price,
-				m_trade.qty,
-				m_trade.side);
+				m_trade.qty);
 		}
 		void operator ()(Service &service) const {
 			if (	
@@ -253,8 +252,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(
 						*m_trade.security,
 						m_trade.time,
 						m_trade.price,
-						m_trade.qty,
-						m_trade.side)) {
+						m_trade.qty)) {
 				RaiseServiceDataUpdateEvent(service, m_timeMeasurement);
 			}
 		}
@@ -263,8 +261,7 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(
 				*m_trade.security,
 				m_trade.time,
 				m_trade.price,
-				m_trade.qty,
-				m_trade.side);
+				m_trade.qty);
 		}
 	private:
 		const Trade &m_trade;

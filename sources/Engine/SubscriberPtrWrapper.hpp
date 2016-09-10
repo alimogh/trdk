@@ -43,7 +43,6 @@ namespace trdk { namespace Engine {
 			boost::posix_time::ptime time;
 			ScaledPrice price;
 			Qty qty;
-			OrderSide side;
 		};
 
 		struct BrokerPosition {

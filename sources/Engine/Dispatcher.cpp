@@ -185,8 +185,7 @@ void Dispatcher::SignalNewTrade(
 		Security &security,
 		const pt::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty,
-		const OrderSide &side) {
+		const Qty &qty) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
@@ -195,8 +194,7 @@ void Dispatcher::SignalNewTrade(
 			&security,
 			time,
 			price,
-			qty,
-			side};
+			qty};
 		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.

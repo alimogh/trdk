@@ -52,8 +52,7 @@ namespace trdk {
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		bool RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
@@ -92,8 +91,7 @@ namespace trdk {
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 
 		virtual bool OnServiceDataUpdate(
 				const trdk::Service &,

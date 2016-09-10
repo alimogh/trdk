@@ -351,6 +351,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MockContext.hpp" />
+    <ClInclude Include="MockDropCopy.hpp" />
     <ClInclude Include="MockMarketDataSource.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
@@ -378,6 +379,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SymbolTest.cpp" />
+    <ClCompile Include="UtilsTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">

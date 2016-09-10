@@ -170,10 +170,9 @@ bool Service::RaiseNewTradeEvent(
 		const Security &security,
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty,
-		const OrderSide &side) {
+		const Qty &qty) {
 	const Lock lock(GetMutex());
-	return OnNewTrade(security, time, price, qty, side);
+	return OnNewTrade(security, time, price, qty);
 }
 
 bool Service::RaiseServiceDataUpdateEvent(
@@ -239,8 +238,7 @@ bool Service::OnNewTrade(
 		const Security &security,
 		const boost::posix_time::ptime &,
 		const ScaledPrice &,
-		const Qty &,
-		const OrderSide &) {
+		const Qty &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (doesn't have OnNewTrade method implementation).",

@@ -42,7 +42,7 @@ DdfPlus::Security::Security(
 		context,
 		symbol,
 		source,
-		true,
+		false,
 		GetSupportedLevel1Types()) {
 	//...//
 }

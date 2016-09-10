@@ -96,6 +96,10 @@ namespace trdk { namespace Lib {
 				const std::string &symbol,
 				const std::string &);
 
+	std::string ConvertToFileName(const boost::posix_time::ptime &);
+	std::string ConvertToFileName(const boost::posix_time::time_duration &);
+	std::string ConvertToFileName(const boost::gregorian::date &);
+
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::filesystem::path GetExeFilePath();
@@ -111,8 +115,13 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	const boost::posix_time::time_duration & GetEstDiff();
-	const boost::posix_time::time_duration & GetEstDiffLocal();
+	const boost::posix_time::time_duration & GetEstTimeZoneDiff();
+	const boost::posix_time::time_duration & GetEstTimeZoneDiffLocal();
+
+	//! CST - Central Standard Time / Central Time (Standard Time).
+	const boost::posix_time::time_duration & GetCstTimeZoneDiff();
+	//! CST - Central Standard Time / Central Time (Standard Time).
+	const boost::posix_time::time_duration & GetCstTimeZoneDiffLocal();
 
 	int64_t ConvertToMicroseconds(const boost::gregorian::date &);
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);

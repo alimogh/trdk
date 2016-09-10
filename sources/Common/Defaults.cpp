@@ -38,6 +38,12 @@ fs::path Defaults::GetPositionsLogDir() {
 	return result;
 }
 
+fs::path Defaults::GetTicksLogDir() {
+	auto result = GetLogFilePath();
+	result /= "Ticks";
+	return result;
+}
+
 fs::path Defaults::GetRawDataLogDir() {
 	auto result = GetLogFilePath();
 	result /= "Raw";

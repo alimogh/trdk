@@ -122,6 +122,13 @@ BarService::BarDoesNotExistError::BarDoesNotExistError(const char *what) throw()
 	//...//
 }
 
+BarService::MethodDoesNotSupportBySettings::MethodDoesNotSupportBySettings(
+		const char *what)
+		throw()
+	: Error(what) {
+	//...//
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 BarService::Bar::Bar()
@@ -209,6 +216,11 @@ public:
 
 	boost::function<bool(const pt::ptime &)> m_isNewBar;
 	boost::function<void()> m_copyCurrentBar;
+
+	boost::function<
+			bool(const Security &, const pt::ptime &, const Level1TickValue &)>
+		m_onLevel1Tick;
+	boost::function<bool(const Security &, const Security::Bar &)> m_onNewBar;
 
 public:
 
@@ -344,6 +356,15 @@ public:
 			m_isNewBar = boost::bind(&Implementation::IsNewTimedBar, this, _1);
 			m_copyCurrentBar
 				= boost::bind(&Implementation::CopyCurrentTimedBar, this);
+			m_onLevel1Tick
+				= boost::bind(
+					&Implementation::HandleLevel1Tick,
+					this,
+					_1,
+					_2,
+					_3);
+			m_onNewBar
+				= boost::bind(&Implementation::HandleNewBar, this, _1, _2);
 			
 			m_service.GetLog().Info(
 				"Stated with size \"%1%\" (number of history bars: %2%).",
@@ -356,6 +377,16 @@ public:
 				= boost::bind(&Implementation::IsNewTickCountedBar, this, _1);
 			m_copyCurrentBar
 				= boost::bind(&Implementation::CopyCurrentTickCountedBar, this);
+			m_onLevel1Tick
+				= boost::bind(
+					&Implementation::ThrowLevel1TickSupportError,
+					this,
+					_1,
+					_2,
+					_3);
+			m_onNewBar
+				= boost::bind(
+					&Implementation::ThrowNewBarSupportError, this, _1, _2);
 
 			m_service.GetLog().Info(
 				"Stated with size \"%1% %2%\".",
@@ -379,16 +410,11 @@ public:
 		//! @todo Use context log dir
 		fs::path path = Defaults::GetBarsDataLogDir();
 		path /= SymbolToFileName(
-			(boost::format("%1%_%2%%3%_%4%%5%%6%_%7%%8%%9%")
+			(boost::format("%1%_%2%%3%_%4%")
 					% m_security->GetSymbol()
 					% m_unitsStr
 					% m_barSizeStr
-					% m_currentBar->time.date().year()
-					% m_currentBar->time.date().month().as_number()
-					% m_currentBar->time.date().day()
-					% m_currentBar->time.time_of_day().hours()
-					% m_currentBar->time.time_of_day().minutes()
-					% m_currentBar->time.time_of_day().seconds())
+					% ConvertToFileName(m_currentBar->time))
 				.str(),
 			"csv");
 
@@ -411,8 +437,11 @@ public:
 				<< csvDelimeter << "High"
 				<< csvDelimeter << "Low"
 				<< csvDelimeter << "Close"
-				<< csvDelimeter << "Volume"
-				<< std::endl;
+				<< csvDelimeter << "Volume";
+			if (m_countedBarSize) {
+				*m_barsLog << csvDelimeter << "Number of ticks";
+			}
+			*m_barsLog << std::endl;
 		}
 		*m_barsLog << std::setfill('0');
 
@@ -428,16 +457,16 @@ public:
 			const auto date = m_currentBar->time.date();
 			*m_barsLog
 				<< date.year()
-				<< std::setw(2) << date.month().as_number()
-				<< std::setw(2) << date.day();
+				<< '.' << std::setw(2) << date.month().as_number()
+				<< '.' << std::setw(2) << date.day();
 		}
 		{
 			const auto time = m_currentBar->time.time_of_day();
 			*m_barsLog
 				<< csvDelimeter
 				<< std::setw(2) << time.hours()
-				<< std::setw(2) << time.minutes()
-				<< std::setw(2) << time.seconds();
+				<< ':' << std::setw(2) << time.minutes()
+				<< ':' << std::setw(2) << time.seconds();
 		}
 		*m_barsLog
 			<< csvDelimeter
@@ -448,8 +477,11 @@ public:
 				<< m_security->DescalePrice(m_currentBar->lowTradePrice)
 			<< csvDelimeter
 				<< m_security->DescalePrice(m_currentBar->closeTradePrice)
-			<< csvDelimeter << m_currentBar->tradingVolume
-			<< std::endl;
+			<< csvDelimeter << m_currentBar->tradingVolume;
+		if (m_countedBarSize) {
+			*m_barsLog << csvDelimeter << m_currentBarTicksCount.value;
+		}
+		*m_barsLog << std::endl;
 	}
 
 	void GetBarTimePoints(
@@ -549,7 +581,9 @@ public:
 		}
 	}
 
-	bool OnNewBar(const Security &security, const Security::Bar &sourceBar) {
+	bool HandleNewBar(
+			const Security &security,
+			const Security::Bar &sourceBar) {
 		
 		AssertGe(m_timedBarSize, sourceBar.size);
 		if (m_timedBarSize < sourceBar.size) {
@@ -557,7 +591,7 @@ public:
 				"Can't work with source bar size %1% as service bar size %2%.",
 				sourceBar.size,
 				m_timedBarSize);
-			throw Error("Wrong source bar size");
+			throw MethodDoesNotSupportBySettings("Wrong source bar size");
 		}
 
 		const auto &setOpen = [](
@@ -604,7 +638,6 @@ public:
 						setClose(sourceBar, statBar.closeTradePrice);
 						setMax(sourceBar, statBar.highTradePrice);
 						setMin(sourceBar, statBar.lowTradePrice);
-						++m_currentBarTicksCount.value;
 						break;
 					case Security::Bar::BID:
 						setMin(sourceBar, statBar.minBidPrice);
@@ -624,7 +657,13 @@ public:
 
 	}
 
-	bool OnLevel1Tick(
+	bool ThrowNewBarSupportError(const Security &, const Security::Bar &) {
+		throw MethodDoesNotSupportBySettings(
+			"Bar service does not support work with incoming bars"
+				" by the current settings (only timed bars supported)");
+	}
+
+	bool HandleLevel1Tick(
 			const Security &security,
 			const pt::ptime &time,
 			const Level1TickValue &value) {
@@ -677,7 +716,6 @@ public:
 							bar.maxAskPrice,
 							[](const Bar &bar) {return bar.closeAskPrice;},
 							[this]() {return m_security->GetAskPriceScaled();});
-						++m_currentBarTicksCount.value;
 						break;
 					
 					case LEVEL1_TICK_LAST_QTY:
@@ -695,7 +733,6 @@ public:
 							bar.maxAskPrice,
 							[](const Bar &bar) {return bar.closeAskPrice;},
 							[this]() {return m_security->GetAskPriceScaled();});
-						++m_currentBarTicksCount.value;
 						break;
 
 					case LEVEL1_TICK_BID_PRICE:
@@ -750,11 +787,20 @@ public:
 	
 	}
 
+	bool ThrowLevel1TickSupportError(
+			const Security &,
+			const pt::ptime &,
+			const Level1TickValue &) {
+		throw MethodDoesNotSupportBySettings(
+			"Bar service does not support work with level 1 ticks"
+				" by the current settings (only timed bars supported)");
+	}
+
 	bool OnNewTrade(
 			const Security &security,
 			const pt::ptime &time,
-			ScaledPrice price,
-			Qty qty) {
+			const ScaledPrice &price,
+			const Qty &qty) {
 		return AppendStat(
 			security,
 			time,
@@ -773,7 +819,10 @@ public:
 					:	price;
 				bar.closeTradePrice = price;
 				bar.tradingVolume += qty;
-				++m_currentBarTicksCount.value;
+				if (m_countedBarSize) {
+					bar.time = time;
+					++m_currentBarTicksCount.value;
+				}
 			});
 	}
 
@@ -829,7 +878,6 @@ public:
 		AssertNe(UNITS_TICKS, m_units);
 		AssertEq(0, m_countedBarSize);
 		Assert(!m_currentBarEnd.is_not_a_date_time());
-		Assert(!m_timedBarSize.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
@@ -847,7 +895,6 @@ public:
 		AssertEq(UNITS_TICKS, m_units);
 		AssertLt(0, m_countedBarSize);
 		Assert(m_currentBarEnd.is_not_a_date_time());
-		Assert(m_timedBarSize.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
@@ -898,28 +945,27 @@ pt::ptime BarService::OnSecurityStart(const Security &security) {
 }
 
 bool BarService::OnNewBar(const Security &security, const Security::Bar &bar) {
-	return m_pimpl->OnNewBar(security, bar);
+	return m_pimpl->m_onNewBar(security, bar);
 }
 
 bool BarService::OnLevel1Tick(
 		const Security &security,
 		const pt::ptime &time,
 		const Level1TickValue &value) {
-	return m_pimpl->OnLevel1Tick(security, time, value);
+	return m_pimpl->m_onLevel1Tick(security, time, value);
 }
 
 bool BarService::OnNewTrade(
 		const Security &security,
 		const pt::ptime &time,
-		ScaledPrice price,
-		Qty qty,
-		OrderSide) {
+		const ScaledPrice &price,
+		const Qty &qty) {
 	return m_pimpl->OnNewTrade(security, time, price, qty);
 }
 
 const Security & BarService::GetSecurity() const {
 	if (!m_pimpl->m_security) {
-		throw Error("Service doesn't have data security");
+		throw Error("Service does not have data security");
 	}
 	return *m_pimpl->m_security;
 }

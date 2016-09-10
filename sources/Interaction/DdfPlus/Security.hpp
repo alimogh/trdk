@@ -29,13 +29,15 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 				trdk::MarketDataSource &);
 
 	public:
+		
+		using Base::SetOnline;
 
 		using Base::SetExpiration;
 		using Base::IsLevel1Required;
 
-	public:
-
 		std::string GenerateDdfPlusCode() const;
+
+		using Base::AddTrade;
 
 		void AddLevel1Tick(const Level1TickValue &&);
 

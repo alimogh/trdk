@@ -46,8 +46,7 @@ namespace trdk {
 		typedef void (NewTradeSlotSignature)(
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
@@ -362,7 +361,6 @@ namespace trdk {
 
 		void AddTrade(
 				const boost::posix_time::ptime &,
-				const trdk::OrderSide &,
 				const trdk::ScaledPrice &,
 				const trdk::Qty &,
 				const trdk::Lib::TimeMeasurement::Milestones &,

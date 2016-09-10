@@ -44,6 +44,11 @@ namespace {
 		return boost::make_shared<lt::posix_time_zone>(estTimeZone);
 	}
 
+	boost::shared_ptr<lt::posix_time_zone> GetCstTimeZone() {
+		static const lt::posix_time_zone estTimeZone("CST-6");
+		return boost::make_shared<lt::posix_time_zone>(estTimeZone);
+	}
+
 	pt::time_duration CalcTimeZoneOffset(
 			const pt::ptime &time1,
 			const pt::ptime &time2) {
@@ -67,7 +72,32 @@ namespace {
 
 }
 
-const pt::time_duration & Lib::GetEstDiff() {
+std::string Lib::ConvertToFileName(const pt::ptime &source) {
+	return
+		ConvertToFileName(source.date())
+		+ '_'
+		+ ConvertToFileName(source.time_of_day());
+}
+
+std::string Lib::ConvertToFileName(const pt::time_duration &source) {
+	std::ostringstream result;
+	result
+		<< std::setfill('0') << std::setw(2) << source.hours()
+		<< std::setfill('0') << std::setw(2) << source.minutes()
+		<< std::setfill('0') << std::setw(2) << source.seconds();
+	return result.str();
+}
+
+std::string Lib::ConvertToFileName(const gr::date &source) {
+	std::ostringstream result;
+	result
+		<< source.year()
+		<< std::setfill('0') << std::setw(2) << source.month().as_number()
+		<< std::setfill('0') << std::setw(2) << source.day();
+	return result.str();
+}
+
+const pt::time_duration & Lib::GetEstTimeZoneDiff() {
 	static const pt::time_duration result = CalcTimeZoneOffset(
 		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
 			.local_time(),
@@ -76,9 +106,29 @@ const pt::time_duration & Lib::GetEstDiff() {
 	return result;
 }
 
-const pt::time_duration & Lib::GetEstDiffLocal() {
+const pt::time_duration & Lib::GetEstTimeZoneDiffLocal() {
 	static const pt::time_duration result = CalcTimeZoneOffset(
 		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
+			.local_time(),
+		lt::local_date_time(
+				pt::second_clock::local_time(),
+				lt::time_zone_ptr())
+			.local_time());
+	return result;
+}
+
+const pt::time_duration & Lib::GetCstTimeZoneDiff() {
+	static const pt::time_duration result = CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetCstTimeZone())
+			.local_time(),
+		lt::local_date_time(boost::get_system_time(), GetCstTimeZone())
+			.utc_time());
+	return result;
+}
+
+const pt::time_duration & Lib::GetCstTimeZoneDiffLocal() {
+	static const pt::time_duration result = CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetCstTimeZone())
 			.local_time(),
 		lt::local_date_time(
 				pt::second_clock::local_time(),

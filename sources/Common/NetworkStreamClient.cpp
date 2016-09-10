@@ -245,12 +245,14 @@ public:
 				nextBuffer.resize(newSize);
 			}
 
-			if (unreceivedMessageLen >= 256) {
+			if (unreceivedMessageLen >= 10 * 1024) {
 				boost::format message(
-					"%1%Restoring buffer content in %2% bytes"
+					"%1%Restoring buffer content in %2$.02f kilobytes"
 						" to continue to receive message..."
 						" Total received volume: %3$.02f %4%.");
-				message % m_service.GetLogTag() % unreceivedMessageLen;
+				message
+					% m_service.GetLogTag()
+					% (double(unreceivedMessageLen) / 1024);
 				const auto &stat = m_self.GetReceivedVerbouseStat();
 				message % stat.first % stat.second;
 				m_self.LogDebug(message.str());
@@ -376,7 +378,12 @@ NetworkStreamClient::NetworkStreamClient(
 }
 
 NetworkStreamClient::~NetworkStreamClient() {
-	//...//
+	try {
+		m_pimpl->m_service.OnClientDestroy();
+	} catch (...) {
+		AssertFailNoException();
+		terminate();
+	}
 }
 
 size_t NetworkStreamClient::GetNumberOfReceivedBytes() const {

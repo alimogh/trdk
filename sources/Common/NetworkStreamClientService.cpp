@@ -47,16 +47,17 @@ public:
 	std::unique_ptr<io::deadline_timer> m_reconnectTimer;
 
 	ClientMutex m_clientMutex;
+	boost::condition_variable m_clientDetorCondition;
 	boost::shared_ptr<NetworkStreamClient> m_client;
-
-	bool m_hasNewData;
+	bool m_isWaitingForClient;
 
 	pt::ptime m_lastConnectionAttempTime;
 
 public:
 
 	explicit Implementation(NetworkStreamClientService &self)
-		: m_self(self) {
+		: m_self(self)
+		, m_isWaitingForClient(false) {
 		//...//
 	}
 
@@ -77,6 +78,8 @@ public:
 				m_serviceThreads.create_thread(
 					boost::bind(&Implementation::RunServiceThread, this));
 			}
+			
+			m_isWaitingForClient = true;
 		
 		} catch (const NetworkStreamClient::Exception &ex) {
 			{
@@ -102,7 +105,7 @@ public:
 				m_io.GetService().run();
 				break;
 			} catch (const NetworkStreamClient::Exception &ex) {
-				const ClientLock lock(m_clientMutex);
+				ClientLock lock(m_clientMutex);
 				try {
 					boost::format message("%1%Fatal error: \"%2%\".");
 					message % m_logTag % ex;
@@ -112,6 +115,12 @@ public:
 						// See OnDisconnect to know why it should be reset here.
 						m_client.reset();
 						client->Stop();
+						Assert(m_isWaitingForClient);
+						m_clientDetorCondition.wait(lock);
+						Assert(!m_isWaitingForClient);
+					} else if (m_isWaitingForClient) {
+						m_clientDetorCondition.wait(lock);
+						Assert(!m_isWaitingForClient);
 					}
 				} catch (...) {
 					AssertFailNoException();
@@ -193,9 +202,13 @@ public:
 		try {
 			m_self.OnConnectionRestored();
 		} catch (...) {
-			const ClientLock lock(m_clientMutex);
+			ClientLock lock(m_clientMutex);
 			Assert(m_client);
 			m_client.reset();
+			if (m_isWaitingForClient) {
+				m_clientDetorCondition.wait(lock);
+				Assert(!m_isWaitingForClient);
+			}
 			throw;
 		}
 
@@ -218,6 +231,7 @@ NetworkStreamClientService::~NetworkStreamClientService() {
 	// problems with virtual calls (for example to dump info into logs or if
 	// new info will arrive).
 	Assert(m_pimpl->m_io.GetService().stopped());
+	Assert(!m_pimpl->m_isWaitingForClient);
 	try {
 		Stop();
 	} catch (...) {
@@ -251,16 +265,35 @@ void NetworkStreamClientService::Stop() {
 	m_pimpl->m_serviceThreads.join_all();
 }
 
-void NetworkStreamClientService::OnDisconnect() {
+void NetworkStreamClientService::OnClientDestroy() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
-		if (!m_pimpl->m_client) {
-			// Forcibly disconnected.
-			return;
-		} 
-		m_pimpl->m_client.reset();
+		Assert(m_pimpl->m_isWaitingForClient);
+		m_pimpl->m_isWaitingForClient = false;
 	}
-	m_pimpl->Reconnect();
+	m_pimpl->m_clientDetorCondition.notify_all();
+}
+
+void NetworkStreamClientService::OnDisconnect() {
+	m_pimpl->m_io.GetService().post(
+		[this]() {
+			bool hasClient;
+			{
+				ClientLock lock(m_pimpl->m_clientMutex);
+				hasClient = m_pimpl->m_client ? true : false;
+				m_pimpl->m_client.reset();
+				if (m_pimpl->m_isWaitingForClient) {
+					m_pimpl->m_clientDetorCondition.wait(lock);
+					Assert(!m_pimpl->m_isWaitingForClient);
+				}
+				Assert(!m_pimpl->m_client);
+			}
+			if (!hasClient) {
+				// Forcibly disconnected.
+				return;
+			}
+			m_pimpl->Reconnect();
+		});
 }
 
 NetworkClientServiceIo & NetworkStreamClientService::GetIo() {

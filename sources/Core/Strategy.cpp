@@ -504,8 +504,7 @@ void Strategy::RaiseNewTradeEvent(
 		Security &service,
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty,
-		const OrderSide &side) {
+		const Qty &qty) {
 	const Lock lock(GetMutex());
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
@@ -514,7 +513,7 @@ void Strategy::RaiseNewTradeEvent(
 		return;
 	}
 	try {
-		OnNewTrade(service, time, price, qty, side);
+		OnNewTrade(service, time, price, qty);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "new trade");
 	}

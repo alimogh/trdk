@@ -306,9 +306,15 @@ namespace {
 					<< '\t' << m_context.GetLog().GetTime()
 					<< '\t' << security.GetSource().GetTag()
 					<< '\t' << security.GetSymbol().GetSymbol()
-					<< '\t' << numberOfMarketDataUpdates
-					<< '\t' << security.GetLastMarketDataTime().time_of_day()
-					<< std::endl;
+					<< '\t' << numberOfMarketDataUpdates;
+				const auto &lastMarketDataTime
+					= security.GetLastMarketDataTime();
+				if (lastMarketDataTime.is_not_a_date_time()) {
+					destination << lastMarketDataTime;
+				} else {
+					destination << "no last market data time";
+				}
+				destination << std::endl;
 			}
 			return !IsZero(numberOfMarketDataUpdates);
 		}

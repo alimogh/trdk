@@ -34,6 +34,12 @@ namespace trdk { namespace Services {
 			explicit BarDoesNotExistError(const char *) throw();
 		};
 
+		//! Throws when setup does not allow to work by requested method.
+		class MethodDoesNotSupportBySettings : public Error {
+		public:
+			explicit MethodDoesNotSupportBySettings(const char *) throw();
+		};
+
  		//! Bar data.
  		struct TRDK_SERVICES_API Bar {
 
@@ -112,9 +118,8 @@ namespace trdk { namespace Services {
 		virtual bool OnNewTrade(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
-				trdk::ScaledPrice,
-				trdk::Qty,
-				trdk::OrderSide);
+				const trdk::ScaledPrice &,
+				const trdk::Qty &);
 
 	public:
 

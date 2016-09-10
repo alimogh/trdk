@@ -131,7 +131,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						}
 						AddTrade(
 							time,
-							ORDER_SIDE_SELL,
 							ScaledPrice(tick.GetValue()),
 							lastQty,
 							timeMeasurement,
@@ -158,7 +157,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						}
 						AddTrade(
 							time,
-							ORDER_SIDE_BUY,
 							lastPrice,
 							tick.GetValue(),
 							timeMeasurement,

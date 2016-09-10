@@ -38,10 +38,9 @@ namespace trdk { namespace Lib {
 	protected:
 
 		//! Sends request.
-		/** @param[in] request	Request.
-		  * @param[in] onRequestCallback	Will be called after request. Will
-		  *									be called under data exchange lock.
-		  *									Should not raise exceptions.
+		/** @param[in] request				Request.
+		  * @param[in] onRequestCallback	Will be called after request if
+		  *									request has been sent.
 		  */
 		void Request(
 				const std::string &request,
