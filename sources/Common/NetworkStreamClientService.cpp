@@ -63,33 +63,41 @@ public:
 
 	void Connect() {
 
-		const ClientLock lock(m_clientMutex);
+		boost::shared_ptr<NetworkStreamClient> client;
 
-		Assert(!m_client);
-		Assert(!m_reconnectTimer);
-
-		try {
-
-			m_lastConnectionAttempTime = m_self.GetCurrentTime();
-			m_client = m_self.CreateClient();
-			m_client->Start();
-
-			while (m_serviceThreads.size() < 2) {
-				m_serviceThreads.create_thread(
-					boost::bind(&Implementation::RunServiceThread, this));
-			}
-			
-			m_isWaitingForClient = true;
+		{
 		
-		} catch (const NetworkStreamClient::Exception &ex) {
-			{
-				boost::format message(
-					"%1%Failed to connect to server: \"%2%\".");
-				message % m_logTag % ex;
-				m_self.LogError(message.str());
+			const ClientLock lock(m_clientMutex);
+
+			Assert(!m_client);
+			Assert(!m_reconnectTimer);
+
+			try {
+
+				m_lastConnectionAttempTime = m_self.GetCurrentTime();
+				client
+					= m_client
+					= m_self.CreateClient();
+				m_client->Start();
+
+				while (m_serviceThreads.size() < 2) {
+					m_serviceThreads.create_thread(
+						boost::bind(&Implementation::RunServiceThread, this));
+				}
+			
+				m_isWaitingForClient = true;
+		
+			} catch (const NetworkStreamClient::Exception &ex) {
+				{
+					boost::format message(
+						"%1%Failed to connect to server: \"%2%\".");
+					message % m_logTag % ex;
+					m_self.LogError(message.str());
+				}
+				m_client.reset();
+				throw Exception("Failed to connect to server");
 			}
-			m_client.reset();
-			throw Exception("Failed to connect to server");
+
 		}
 
 	}
@@ -111,10 +119,13 @@ public:
 					message % m_logTag % ex;
 					m_self.LogError(message.str());
 					if (m_client) {
-						const auto client = m_client;
+						auto client = m_client;
 						// See OnDisconnect to know why it should be reset here.
 						m_client.reset();
 						client->Stop();
+						lock.unlock();
+						client.reset();
+						lock.lock();
 						Assert(m_isWaitingForClient);
 						m_clientDetorCondition.wait(lock);
 						Assert(!m_isWaitingForClient);
@@ -202,12 +213,21 @@ public:
 		try {
 			m_self.OnConnectionRestored();
 		} catch (...) {
-			ClientLock lock(m_clientMutex);
-			Assert(m_client);
-			m_client.reset();
-			if (m_isWaitingForClient) {
-				m_clientDetorCondition.wait(lock);
-				Assert(!m_isWaitingForClient);
+			{
+				boost::shared_ptr<NetworkStreamClient> client;
+				{
+					const ClientLock lock(m_clientMutex);
+					Assert(m_client);
+					client = m_client;
+					m_client.reset();
+				}
+			}
+			{
+				ClientLock lock(m_clientMutex);
+				if (m_isWaitingForClient) {
+					m_clientDetorCondition.wait(lock);
+					Assert(!m_isWaitingForClient);
+				}
 			}
 			throw;
 		}
@@ -279,9 +299,17 @@ void NetworkStreamClientService::OnDisconnect() {
 		[this]() {
 			bool hasClient;
 			{
+				boost::shared_ptr<NetworkStreamClient> client;
+				{
+					const ClientLock lock(m_pimpl->m_clientMutex);
+					client = m_pimpl->m_client;
+					m_pimpl->m_client.reset();
+				}
+				hasClient = client ? true : false;
+			}
+			{
 				ClientLock lock(m_pimpl->m_clientMutex);
-				hasClient = m_pimpl->m_client ? true : false;
-				m_pimpl->m_client.reset();
+				Assert(!m_pimpl->m_client);
 				if (m_pimpl->m_isWaitingForClient) {
 					m_pimpl->m_clientDetorCondition.wait(lock);
 					Assert(!m_pimpl->m_isWaitingForClient);
