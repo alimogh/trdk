@@ -23,6 +23,7 @@
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 namespace pt = boost::posix_time;
+namespace sig = boost::signals2;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -112,6 +113,25 @@ class Security::Implementation : private boost::noncopyable {
 
 public:
 
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
+
 	Security &m_self;
 
 	static boost::atomic<InstanceId> m_nextInstanceId;
@@ -126,17 +146,15 @@ public:
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
 
-	mutable boost::signals2::signal<Level1UpdateSlotSignature>
-		m_level1UpdateSignal;
-	mutable boost::signals2::signal<Level1TickSlotSignature> m_level1TickSignal;
-	mutable boost::signals2::signal<NewTradeSlotSignature> m_tradeSignal;
-	mutable boost::signals2::signal<BrokerPositionUpdateSlotSignature>
+	mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
+	mutable SignalTrait<Level1TickSlotSignature>::Signal m_level1TickSignal;
+	mutable SignalTrait<NewTradeSlotSignature>::Signal m_tradeSignal;
+	mutable SignalTrait<BrokerPositionUpdateSlotSignature>::Signal
 		m_brokerPositionUpdateSignal;
-	mutable boost::signals2::signal<NewBarSlotSignature> m_barSignal;
-	mutable boost::signals2::signal<BookUpdateTickSlotSignature>
+	mutable SignalTrait<NewBarSlotSignature>::Signal m_barSignal;
+	mutable SignalTrait<BookUpdateTickSlotSignature>::Signal
 		m_bookUpdateTickSignal;
-	mutable boost::signals2::signal<ServiceEventSlotSignature>
-		m_serviceEventSignal;
+	mutable SignalTrait<ServiceEventSlotSignature>::Signal m_serviceEventSignal;
 
 	Level1 m_level1;
 	boost::atomic<Qty::ValueType> m_brokerPosition;
@@ -145,6 +163,7 @@ public:
 	boost::atomic_bool m_isLevel1Started;
 	const SupportedLevel1Types m_supportedLevel1Types;
 	boost::atomic_bool m_isOnline;
+	boost::atomic_bool m_isOpened;
 
 	boost::atomic_int64_t m_expirationTime;
 
@@ -157,6 +176,7 @@ public:
 			MarketDataSource &source,
 			const Symbol &symbol,
 			bool isOnline,
+			bool isOpened,
 			const SupportedLevel1Types &supportedLevel1Types)
 		: m_self(self)
 		, m_instanceId(m_nextInstanceId++)
@@ -169,6 +189,7 @@ public:
 		, m_isLevel1Started(false)
 		, m_supportedLevel1Types(supportedLevel1Types)
 		, m_isOnline(isOnline)
+		, m_isOpened(isOpened)
 		, m_expirationTime(0) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
@@ -207,7 +228,7 @@ public:
 				time,
 				ConvertToPTimeFromMicroseconds(expirationTime));
 			m_source.SwitchToNextContract(m_self);
-			m_serviceEventSignal(SERVICE_EVENT_CONTRACT_SWITCHED);
+			m_serviceEventSignal(SERVICE_EVENT_CONTRACT_SWITCHED, true);
 		}
 	}
 
@@ -335,6 +356,7 @@ Security::Security(
 		const Symbol &symbol,
 		MarketDataSource &source,
 		bool isOnline,
+		bool isOpened,
 		const SupportedLevel1Types &supportedLevel1Types)
 	: Base(context, symbol)
 	, m_pimpl(
@@ -343,6 +365,7 @@ Security::Security(
 			source,
 			symbol, 
 			isOnline,
+			isOpened,
 			supportedLevel1Types)) {
 	//...//
 }
@@ -405,12 +428,62 @@ bool Security::IsOnline() const {
 }
 
 void Security::SetOnline() {
-	Assert(!m_pimpl->m_isOnline);
-	m_pimpl->m_isOnline = true;
+	{
+		bool expectedState = false;
+		if (
+				!m_pimpl->m_isOnline.compare_exchange_strong(
+					expectedState,
+					true)) {
+			AssertNe(false, true);
+			return;
+		}
+	}
 	GetContext().GetLog().Info(
 		"%1% now is on-line. Last data time: %2%.",
 		*this,
 		GetLastMarketDataTime());
+	m_pimpl->m_serviceEventSignal(SERVICE_EVENT_ONLINE, true);
+}
+
+void Security::SetTradingSessionState(bool isOpened) {
+	{
+		bool expectedState = !isOpened;
+		if (
+				!m_pimpl->m_isOpened.compare_exchange_strong(
+					expectedState,
+					isOpened)) {
+			AssertNe(!isOpened, isOpened);
+			return;
+		}
+	}
+	GetContext().GetLog().Info(
+		"%1% trading session is %2%. Last data time: %3%.",
+		*this,
+		isOpened ? "opened" : "closed",
+		GetLastMarketDataTime());
+	m_pimpl->m_serviceEventSignal(
+		isOpened
+			?	SERVICE_EVENT_TRADING_SESSION_OPENED
+			:	SERVICE_EVENT_TRADING_SESSION_CLOSED,
+		true);
+}
+
+void Security::SwitchTradingSession() {
+	GetContext().GetLog().Info(
+		"%1% trading session is switched (%2%). Last data time: %3%.",
+		*this,
+		m_pimpl->m_isOpened ? "opened" : "closed",
+		GetLastMarketDataTime());
+	m_pimpl->m_serviceEventSignal(
+		m_pimpl->m_isOpened
+			?	SERVICE_EVENT_TRADING_SESSION_CLOSED
+			:	SERVICE_EVENT_TRADING_SESSION_OPENED,
+		false);
+	m_pimpl->m_serviceEventSignal(
+		m_pimpl->m_isOpened
+			?	SERVICE_EVENT_TRADING_SESSION_OPENED
+			:	SERVICE_EVENT_TRADING_SESSION_CLOSED,
+		true);
 }
 
 void Security::StartLevel1() {

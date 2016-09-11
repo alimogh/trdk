@@ -21,6 +21,7 @@ using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace sig = boost::signals2;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -306,15 +307,9 @@ namespace {
 					<< '\t' << m_context.GetLog().GetTime()
 					<< '\t' << security.GetSource().GetTag()
 					<< '\t' << security.GetSymbol().GetSymbol()
-					<< '\t' << numberOfMarketDataUpdates;
-				const auto &lastMarketDataTime
-					= security.GetLastMarketDataTime();
-				if (lastMarketDataTime.is_not_a_date_time()) {
-					destination << lastMarketDataTime;
-				} else {
-					destination << "no last market data time";
-				}
-				destination << std::endl;
+					<< '\t' << numberOfMarketDataUpdates
+					<< '\t' << security.GetLastMarketDataTime()
+					<< std::endl;
 			}
 			return !IsZero(numberOfMarketDataUpdates);
 		}
@@ -370,6 +365,25 @@ class Context::Implementation : private boost::noncopyable {
 
 public:
 
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
+
 	Context::Log &m_log;
 	Context::TradingLog &m_tradingLog;
 
@@ -383,10 +397,10 @@ public:
 
 	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
-	boost::signals2::signal<CurrentTimeChangeSlotSignature>
+	SignalTrait<CurrentTimeChangeSlotSignature>::Signal
 		m_customCurrentTimeChangeSignal;
 
-	boost::signals2::signal<StateUpdateSlotSignature> m_stateUpdateSignal;
+	SignalTrait<StateUpdateSlotSignature>::Signal m_stateUpdateSignal;
 	
 	explicit Implementation(
 			Context &context,
@@ -394,11 +408,11 @@ public:
 			TradingLog &tradingLog,
 			const Settings &settings,
 			const pt::ptime &startTime)
-		: m_log(log),
-		m_tradingLog(tradingLog),
-		m_settings(settings),
-		m_startTime(startTime),
-		m_params(context) {
+		: m_log(log)
+		, m_tradingLog(tradingLog)
+		, m_settings(settings)
+		, m_startTime(startTime)
+		, m_params(context) {
 		//...//
 	}
 

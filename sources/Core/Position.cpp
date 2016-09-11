@@ -21,6 +21,7 @@ using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
+namespace sig = boost::signals2;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -98,8 +99,25 @@ public:
 	typedef PostionConcurrencyPolicy::ReadLock ReadLock;
 	typedef PostionConcurrencyPolicy::WriteLock WriteLock;
 
-	typedef boost::signals2::signal<StateUpdateSlotSignature>
-		StateUpdateSignal;
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
+	typedef SignalTrait<StateUpdateSlotSignature>::Signal StateUpdateSignal;
 
 	struct StaticData {
 		uuids::uuid uuid;
@@ -1376,7 +1394,7 @@ ScaledPrice Position::GetCommission() const {
 }
 
 Position::StateUpdateConnection Position::Subscribe(
-			const StateUpdateSlot &slot)
+		const StateUpdateSlot &slot)
 		const {
 	return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
 }

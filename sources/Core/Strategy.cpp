@@ -19,6 +19,7 @@
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
+namespace sig = boost::signals2;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -285,6 +286,25 @@ public:
 
 	};
 
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
+
 public:
 
 	Strategy &m_strategy;
@@ -303,7 +323,7 @@ public:
 	StopMode m_stopMode;
 
 	PositionList m_positions;
-	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
+	SignalTrait<PositionUpdateSlotSignature>::Signal m_positionUpdateSignal;
 
 	boost::array<const Position *, 3> m_delayedPositionToForget;
 
