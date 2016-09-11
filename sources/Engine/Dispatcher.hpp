@@ -17,32 +17,40 @@
 #include "Core/PriceBook.hpp"
 
 namespace trdk { namespace Engine {
-	
-	template<Lib::Concurrency::Profile profile>
-	struct DispatcherConcurrencyPolicyT {
-		static_assert(
-			profile == Lib::Concurrency::PROFILE_RELAX,
-			"Wrong concurrency profile");
-		typedef boost::mutex Mutex;
-		typedef Mutex::scoped_lock Lock;
-		typedef boost::condition_variable Condition;
-	};
-	template<>
-	struct DispatcherConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-		typedef Lib::Concurrency::SpinMutex Mutex;
-		typedef Mutex::ScopedLock Lock;
-		typedef Lib::Concurrency::SpinCondition Condition;
-	};
-	typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
-		DispatcherConcurrencyPolicy;
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	namespace Details {
+
+		template<Lib::Concurrency::Profile profile>
+		struct DispatcherConcurrencyPolicyT {
+			static_assert(
+				profile == Lib::Concurrency::PROFILE_RELAX,
+				"Wrong concurrency profile");
+			typedef boost::mutex Mutex;
+			typedef Mutex::scoped_lock Lock;
+			typedef boost::condition_variable Condition;
+		};
+		template<>
+		struct DispatcherConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
+			typedef Lib::Concurrency::SpinMutex Mutex;
+			typedef Mutex::ScopedLock Lock;
+			typedef Lib::Concurrency::SpinCondition Condition;
+		};
+		typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
+			DispatcherConcurrencyPolicy;
+
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	class Dispatcher : private boost::noncopyable {
 
 	private:
 
-		typedef DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
-		typedef DispatcherConcurrencyPolicy::Lock EventQueueLock;
-		typedef DispatcherConcurrencyPolicy::Condition EventQueueCondition;
+		typedef Details::DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
+		typedef Details::DispatcherConcurrencyPolicy::Lock EventQueueLock;
+		typedef Details::DispatcherConcurrencyPolicy::Condition EventQueueCondition;
 
 		struct EventListsSyncObjects {
 			
@@ -79,18 +87,18 @@ namespace trdk { namespace Engine {
 
 		public:
 			
-			EventQueue(const char *name, const Context &context)
-					: m_context(context),
-					m_name(name),
-					m_current(&m_lists.first),
-					m_taksState(TASK_STATE_INACTIVE) {
+			explicit EventQueue(const char *name, const Context &context)
+				: m_context(context)
+				, m_name(name)
+				, m_current(&m_lists.first)
+				, m_taksState(TASK_STATE_INACTIVE) {
 				//...//
 			}
 
 		public:
 
 			void AssignSyncObjects(
-						boost::shared_ptr<EventListsSyncObjects> &sync) {
+					boost::shared_ptr<EventListsSyncObjects> &sync) {
 				Assert(!m_sync);
 				m_sync = sync;
 			}
@@ -194,7 +202,7 @@ namespace trdk { namespace Engine {
 
 					lock.unlock();
 					Assert(!listToRead->empty());
-					foreach (auto &event, *listToRead) {
+					for (auto &event: *listToRead) {
 						Dispatcher::RaiseEvent(event);
 					}
 					listToRead->clear();
@@ -298,6 +306,17 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::vector<SecurityServiceEvent>>
 			SecurityServiceEventQueue;
 
+		typedef boost::variant<
+				Level1UpdateEventQueue *,
+				Level1TicksEventQueue *,
+				NewTradeEventQueue *,
+				PositionsUpdateEventQueue *,
+				BrokerPositionsUpdateEventQueue *,
+				NewBarEventQueue *,
+				BookUpdateTickEventQueue *,
+				SecurityServiceEventQueue *>
+			QueueList;
+
 	public:
 
 		explicit Dispatcher(Engine::Context &);
@@ -310,16 +329,7 @@ namespace trdk { namespace Engine {
 		void Activate();
 		void Suspend();
 
-		void SyncDispatching() {
-			m_securityServiceEvents.Sync();
-			m_bookUpdateTicks.Sync();
-			m_newBars.Sync();
-			m_brokerPositionsUpdates.Sync();
-			m_positionsUpdates.Sync();
-			m_level1Updates.Sync();
-			m_newTrades.Sync();
-			m_level1Ticks.Sync();
-		}
+		void SyncDispatching();
 
 	public:
 
@@ -357,14 +367,17 @@ namespace trdk { namespace Engine {
 		void SignalSecurityServiceEvents(
 				SubscriberPtrWrapper &,
 				Security &,
-				const Security::ServiceEvent &);
+				const Security::ServiceEvent &,
+				bool flush);
 
 	private:
 
 		template<typename Event>
 		static void RaiseEvent(Event &) {
 #			if !defined(__GNUG__)
-				static_assert(false, "Failed to find event raise specialization.");
+				static_assert(
+					false,
+					"Failed to find event raise specialization.");
 #			else
 				AssertFail("Failed to find event raise specialization.");
 #			endif
@@ -373,7 +386,9 @@ namespace trdk { namespace Engine {
 		template<typename Event, typename EventList>
 		static bool QueueEvent(const Event &, EventList &) {
 #			if !defined(__GNUG__)
-				static_assert(false, "Failed to find event queue specialization.");
+				static_assert(
+					false,
+					"Failed to find event queue specialization.");
 #			else
 				AssertFail("Failed to find event raise specialization.");
 #			endif
@@ -452,14 +467,6 @@ namespace trdk { namespace Engine {
 		static bool QueueEvent(
 				const SecurityServiceEvent &event,
 				EventList &eventList) {
-			//! @todo place for optimization
-			for (const auto &it: boost::adaptors::reverse(eventList)) {
-				if (
-						boost::get<0>(event) == boost::get<0>(it)
-						&& boost::get<1>(event) == boost::get<1>(it)) {
-					return false;
-				}
-			}
 			eventList.emplace_back(event);
 			return true;
 		}
@@ -1356,8 +1363,7 @@ namespace trdk { namespace Engine {
 			try {
 				std::bitset<boost::tuples::length<EventLists>::value>
 					deactivationMask;
-				boost::shared_ptr<EventListsSyncObjects> sync(
-					new EventListsSyncObjects);
+				auto sync = boost::make_shared<EventListsSyncObjects>();
 				AssignEventListsSyncObjects(sync, lists);
 				startBarrier->wait();
 				startBarrier.reset();
@@ -1432,7 +1438,11 @@ namespace trdk { namespace Engine {
 		BookUpdateTickEventQueue m_bookUpdateTicks;
 		SecurityServiceEventQueue m_securityServiceEvents;
 
+		std::vector<QueueList> m_queues;
+
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	template<>
 	inline void Dispatcher::RaiseEvent(Level1UpdateEvent &level1Update) {
@@ -1494,5 +1504,7 @@ namespace trdk { namespace Engine {
 			*boost::get<0>(event),
 			boost::get<1>(event));
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } }

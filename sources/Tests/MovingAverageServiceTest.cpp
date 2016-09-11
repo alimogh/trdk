@@ -201,6 +201,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 		lib::Symbol("TEST_SCALE2/USD::STK"),
 		marketDataSource,
 		true,
+		true,
 		trdk::Security::SupportedLevel1Types());
 
 	MockDropCopy dropCopy;
@@ -383,6 +384,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
 		marketDataSource,
+		true,
 		true,
 		trdk::Security::SupportedLevel1Types());
 

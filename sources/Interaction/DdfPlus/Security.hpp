@@ -31,6 +31,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 	public:
 		
 		using Base::SetOnline;
+		using Base::SwitchTradingSession;
 
 		using Base::SetExpiration;
 		using Base::IsLevel1Required;

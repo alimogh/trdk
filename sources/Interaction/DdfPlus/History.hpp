@@ -35,13 +35,15 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 			
 			DdfPlus::Security *security;
 			boost::posix_time::ptime time;
+			int tradingDay;
 			std::ofstream log;
 #			ifdef BOOST_ENABLE_ASSERT_HANDLER
 				boost::posix_time::ptime lastDataTime;
 #			endif
 
 			RequestState()
-				: security(nullptr) {
+				: security(nullptr)
+				, tradingDay(0) {
 				//...//
 			}
 

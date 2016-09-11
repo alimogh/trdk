@@ -38,8 +38,8 @@ namespace {
 		explicit RaiseServiceDataUpdateEventVisitor(
 				const Service &service,
 				const TimeMeasurement::Milestones &timeMeasurement)
-			: m_service(service),
-			m_timeMeasurement(timeMeasurement) {
+			: m_service(service)
+			, m_timeMeasurement(timeMeasurement) {
 			//...//
 		}
 	public:		
@@ -69,7 +69,7 @@ namespace {
 		const RaiseServiceDataUpdateEventVisitor visitor(
 			service,
 			timeMeasurement);
-		foreach (auto subscriber, service.GetSubscribers()) {
+		for (auto subscriber: service.GetSubscribers()) {
 			try {
 				boost::apply_visitor(visitor, subscriber);
 			} catch (const Exception &ex) {
@@ -465,7 +465,11 @@ void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
 			strategy.RaiseSecurityServiceEvent(m_source, m_event);
 		}
 		void operator ()(Service &service) const {
-			service.RaiseSecurityServiceEvent(m_source, m_event);
+			if (service.RaiseSecurityServiceEvent(m_source, m_event)) {
+				RaiseServiceDataUpdateEvent(
+					service,
+					TimeMeasurement::Milestones());
+			}
 		}
 		void operator ()(Observer &observer) const {
 			observer.RaiseSecurityServiceEvent(m_source, m_event);

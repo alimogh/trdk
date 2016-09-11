@@ -206,11 +206,11 @@ bool Service::RaiseBookUpdateTickEvent(
 	return OnBookUpdateTick(security, book, timeMeasurement);
 }
 
-void Service::RaiseSecurityServiceEvent(
+bool Service::RaiseSecurityServiceEvent(
 		const Security &security,
-		const Security::ServiceEvent &event) {
+		const Security::ServiceEvent &securityEvent) {
 	const Lock lock(GetMutex());
-	return OnSecurityServiceEvent(security, event);
+	return OnSecurityServiceEvent(security, securityEvent);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -292,17 +292,10 @@ bool Service::OnBookUpdateTick(
 		"Service subscribed to book update ticks, but can't work with it");
 }
 
-void Service::OnSecurityServiceEvent(
-		const Security &security,
-		const Security::ServiceEvent &event) {
-	GetLog().Error(
-		"Subscribed to security service event from %1%"
-			", but can't work with event %2%"
-			" (doesn't have OnSecurityServiceEvent method implementation).",
-		security,
-		event);
-	throw MethodDoesNotImplementedError(
-		"Subscribed to security service event, but can't work with it");
+bool Service::OnSecurityServiceEvent(
+		const Security &,
+		const Security::ServiceEvent &) {
+	return false;
 }
 
 void Service::RegisterSubscriber(Strategy &module) {

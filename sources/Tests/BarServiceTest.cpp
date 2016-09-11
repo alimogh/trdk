@@ -67,11 +67,26 @@ namespace {
 
 	}
 
+	class TestBarService : public svc::BarService {
+	public:
+		explicit TestBarService(
+				trdk::Context &context,
+				const std::string &tag,
+				const lib::IniSectionRef &conf)
+			: BarService(context, tag, conf) {
+			//...//
+		}
+	public:
+		using BarService::OnLevel1Tick;
+		using BarService::OnNewTrade;
+		using BarService::OnSecurityServiceEvent;
+	};
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(BarServiceTest, Level1TickByTick) {
+TEST(BarServiceTest, ByNumberOfTicks) {
 	
 	const lib::IniString settings(
 		"[Section]\n"
@@ -85,8 +100,9 @@ TEST(BarServiceTest, Level1TickByTick) {
 		lib::Symbol("TEST_SCALE2/USD::STK"),
 		marketDataSource,
 		true,
+		true,
 		trdk::Security::SupportedLevel1Types());
-	svc::BarService service(
+	TestBarService service(
 		context,
 		"Tag",
 		lib::IniSectionRef(settings, "Section"));
@@ -100,7 +116,7 @@ TEST(BarServiceTest, Level1TickByTick) {
 		CopyBar(
 			_,
 			AllOf(Ge(source.front().time), Le(source.back().time)),
-			Matcher<size_t>(AllOf(Ge(0), Lt(source.size()))),
+			Matcher<size_t>(10),
 			AllOf(Ge(source.front().price), Le(source.back().price)),
 			AllOf(Ge(source.front().price), Le(source.back().price)),
 			AllOf(Ge(source.front().price), Le(source.back().price)),
@@ -110,6 +126,7 @@ TEST(BarServiceTest, Level1TickByTick) {
 		.Times(int(source.size()))
 		.WillRepeatedly(Return(&dropCopy));
 
+	double volume = 0;
 	for (size_t i = 0, tradesCount = 0; i < source.size(); ++i) {
 			
 		const auto &tick = source[i];
@@ -120,50 +137,180 @@ TEST(BarServiceTest, Level1TickByTick) {
 				tick.time,
 				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
 					tick.price)),
-			svc::BarService::MethodDoesNotSupportBySettings);
+			TestBarService::MethodDoesNotSupportBySettings);
 		ASSERT_THROW(
 			service.OnLevel1Tick(
 				security,
 				tick.time,
 				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_QTY>(
 					tick.qty)),
-			svc::BarService::MethodDoesNotSupportBySettings);
+			TestBarService::MethodDoesNotSupportBySettings);
 
 		if (service.OnNewTrade(security, tick.time, tick.price, tick.qty)) {
+			
 			ASSERT_EQ(10, tradesCount) << "i = " << i << ";";
+			ASSERT_EQ(i / 10, service.GetSize());
+
+			ASSERT_EQ(0, service.GetLastBar().openBidPrice);
+			ASSERT_EQ(0, service.GetLastBar().openAskPrice);
+			ASSERT_EQ(0, service.GetLastBar().closeBidPrice);
+			ASSERT_EQ(0, service.GetLastBar().closeAskPrice);
+			ASSERT_EQ(0, service.GetLastBar().minBidPrice);
+			ASSERT_EQ(0, service.GetLastBar().maxAskPrice);
+
+			const auto &prevTick = source[i - 1];
+
+			// For "counted bar" time of bar is time of last tick.
+			ASSERT_EQ(prevTick.time, service.GetLastBar().time);
+			ASSERT_EQ(
+				source[i - tradesCount].price,
+				service.GetLastBar().openTradePrice);
+			ASSERT_EQ(prevTick.price, service.GetLastBar().closeTradePrice);
+			ASSERT_EQ(prevTick.price, service.GetLastBar().highTradePrice);
+			ASSERT_EQ(
+				source[i - tradesCount].price,
+				service.GetLastBar().lowTradePrice);
+			ASSERT_DOUBLE_EQ(volume, service.GetLastBar().tradingVolume);
+
 			tradesCount = 0;
-//! @todo add last actual bar test
-			
+			volume = 0;
+
 		} else {
-			
+
 			ASSERT_GT(10, tradesCount) << "i = " << i << ";";
+			ASSERT_GE(i, tradesCount);
+			ASSERT_EQ(i >= 10, service.GetSize() > 0)
+				<< "i = " << i << "; service.GetSize() = " << service.GetSize();
+
+			if (service.GetSize() > 0) {
+
+				const auto &prevTick = source[i - tradesCount - 1];
+
+				// For "counted bar" time of bar is time of last tick.
+				ASSERT_EQ(prevTick.time, service.GetLastBar().time);
+				ASSERT_EQ(
+					source[i - tradesCount - 10].price,
+					service.GetLastBar().openTradePrice);
+				ASSERT_EQ(prevTick.price, service.GetLastBar().closeTradePrice);
+				ASSERT_EQ(prevTick.price, service.GetLastBar().highTradePrice);
+				ASSERT_EQ(
+					source[i - tradesCount - 10].price,
+					service.GetLastBar().lowTradePrice);
 			
+			} else {
+				EXPECT_THROW(
+					service.GetLastBar(),
+					TestBarService::BarDoesNotExistError);
+			}
+
 		}
 
 		++tradesCount;
-
+		volume += tick.qty;
+	
 	}
-		
-	ASSERT_EQ(4, service.GetSize());
 
-	EXPECT_EQ(0, service.GetLastBar().openBidPrice);
-	EXPECT_EQ(0, service.GetLastBar().openAskPrice);
-	EXPECT_EQ(0, service.GetLastBar().closeBidPrice);
-	EXPECT_EQ(0, service.GetLastBar().closeAskPrice);
-	EXPECT_EQ(0, service.GetLastBar().minBidPrice);
-	EXPECT_EQ(0, service.GetLastBar().maxAskPrice);
-		
-	EXPECT_EQ(31, service.GetLastBar().openTradePrice); // prev close
-	EXPECT_EQ(39, service.GetLastBar().closeTradePrice);
-	EXPECT_EQ(39, service.GetLastBar().highTradePrice);
-	EXPECT_EQ(31, service.GetLastBar().lowTradePrice);
-	EXPECT_EQ(
-		(31 + 1) + (32 + 1) + (33 + 1) + (34 + 1) + (35 + 1) + (36 + 1)
-			+ (37 + 1) + (38 + 1) + (39 + 1),
-		service.GetLastBar().tradingVolume);
+}
 
+TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
+	
+	const lib::IniString settings(
+		"[Section]\n"
+		"size = 10000 ticks\n"
+		"log = none");
+	
+	MockContext context;
+	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	const trdk::Security security(
+		context,
+		lib::Symbol("TEST_SCALE2/USD::STK"),
+		marketDataSource,
+		true,
+		true,
+		trdk::Security::SupportedLevel1Types());
+	TestBarService service(
+		context,
+		"Tag",
+		lib::IniSectionRef(settings, "Section"));
 
-//! @todo add test for all bars in history
-//! @todo add test with skipped periods
+	MockDropCopy dropCopy;
+	EXPECT_CALL(
+		dropCopy,
+		CopyBar(
+			_,
+			_,
+			Matcher<size_t>(10000),
+			AllOf(Ge(1), Le(4)),
+			AllOf(Ge(1), Le(4)),
+			AllOf(Ge(1), Le(4)),
+			AllOf(Ge(1), Le(4))))
+		.Times(6);
+	EXPECT_CALL(context, GetDropCopy())
+		.Times(6)
+		.WillRepeatedly(Return(&dropCopy));
+
+	EXPECT_FALSE(
+		service.OnSecurityServiceEvent(
+			security,
+			trdk::Security::SERVICE_EVENT_TRADING_SESSION_CLOSED));
+	EXPECT_EQ(0, service.GetSize());
+	EXPECT_THROW(service.GetLastBar(), TestBarService::BarDoesNotExistError);
+
+	EXPECT_FALSE(
+		service.OnNewTrade(
+			security,
+			pt::microsec_clock::local_time(),
+			1,
+			1));
+	EXPECT_EQ(0, service.GetSize());
+	EXPECT_THROW(service.GetLastBar(), TestBarService::BarDoesNotExistError);
+	EXPECT_FALSE(
+		service.OnNewTrade(
+			security,
+			pt::microsec_clock::local_time(),
+			2,
+			2));
+	EXPECT_EQ(0, service.GetSize());
+	EXPECT_THROW(service.GetLastBar(), TestBarService::BarDoesNotExistError);
+
+	EXPECT_TRUE(
+		service.OnSecurityServiceEvent(
+			security,
+			trdk::Security::SERVICE_EVENT_TRADING_SESSION_CLOSED));
+	EXPECT_EQ(1, service.GetSize());
+	EXPECT_EQ(1, service.GetLastBar().openTradePrice);
+	EXPECT_EQ(2, service.GetLastBar().closeTradePrice);
+	EXPECT_EQ(2, service.GetLastBar().highTradePrice);
+	EXPECT_EQ(1, service.GetLastBar().lowTradePrice);
+
+	EXPECT_FALSE(
+		service.OnNewTrade(
+			security,
+			pt::microsec_clock::local_time(),
+			3,
+			3));
+	EXPECT_EQ(1, service.GetSize());
+
+	EXPECT_TRUE(
+		service.OnSecurityServiceEvent(
+			security,
+			trdk::Security::SERVICE_EVENT_TRADING_SESSION_OPENED));
+	EXPECT_EQ(2, service.GetSize());
+	EXPECT_EQ(3, service.GetLastBar().openTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().closeTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().highTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().lowTradePrice);
+
+	EXPECT_FALSE(
+		service.OnNewTrade(
+			security,
+			pt::microsec_clock::local_time(),
+			4,
+			4));
+	EXPECT_EQ(2, service.GetSize());
+	EXPECT_EQ(3, service.GetLastBar().openTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().closeTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().highTradePrice);
+	EXPECT_EQ(3, service.GetLastBar().lowTradePrice);
 
 }

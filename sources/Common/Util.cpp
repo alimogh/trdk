@@ -82,18 +82,20 @@ std::string Lib::ConvertToFileName(const pt::ptime &source) {
 std::string Lib::ConvertToFileName(const pt::time_duration &source) {
 	std::ostringstream result;
 	result
-		<< std::setfill('0') << std::setw(2) << source.hours()
-		<< std::setfill('0') << std::setw(2) << source.minutes()
-		<< std::setfill('0') << std::setw(2) << source.seconds();
+		<< std::setfill('0')
+		<< std::setw(2) << source.hours()
+		<< std::setw(2) << source.minutes()
+		<< std::setw(2) << source.seconds();
 	return result.str();
 }
 
 std::string Lib::ConvertToFileName(const gr::date &source) {
 	std::ostringstream result;
 	result
+		<< std::setfill('0') 
 		<< source.year()
-		<< std::setfill('0') << std::setw(2) << source.month().as_number()
-		<< std::setfill('0') << std::setw(2) << source.day();
+		<< std::setw(2) << source.month().as_number()
+		<< std::setw(2) << source.day();
 	return result.str();
 }
 

@@ -256,6 +256,7 @@ protected:
 			m_requestState.log.close();
 			auto &security = *m_requestState.security;
 			m_requestState.security = nullptr;
+			m_requestState.tradingDay = 0;
 			GetService().GetSource().OnHistoryRequestCompleted(security);
 		} else {
 			// Just weekend or holiday.
@@ -359,13 +360,15 @@ private:
 		if (it == end) {
 			return end;
 		}
-		const std::string tradingDay(field, it);
-		if (tradingDay.empty()) {
-			GetLog().Error(
-				"%1%Failed to parse tick trading day field \"%2%\".",
-				GetService().GetLogTag(),
-				tradingDay);
-			throw Exception("Protocol error");
+		uint16_t tradingDay;
+		try {
+			tradingDay = boost::lexical_cast<decltype(tradingDay)>(
+				boost::make_iterator_range(field, it));
+		} catch (const boost::bad_lexical_cast &) {
+			throw ProtocolError(
+				"Failed to parse tick trading day field",
+				&*std::prev(it),
+				0);
 		}
 
 		field = std::next(it);
@@ -374,11 +377,10 @@ private:
 			return end;
 		}
 		const std::string session(field, it);
-		if (tradingDay.empty()) {
+		if (session.empty()) {
 			GetLog().Error(
-				"%1%Failed to parse tick session field \"%2%\".",
-				GetService().GetLogTag(),
-				session);
+				"%1%Failed to parse tick session field.",
+				GetService().GetLogTag());
 			throw Exception("Protocol error");
 		}
 
@@ -414,12 +416,7 @@ private:
 				0);
 		}
 
-		m_requestState.log
-			<< time.date()
-			<< ',' << time.time_of_day()
-			<< ',' << price
-			<< ',' << qty
-			<< std::endl;
+		LogTick(time, tradingDay, session, price, qty);
 
 #		ifdef BOOST_ENABLE_ASSERT_HANDLER
 			if (!m_requestState.lastDataTime.is_not_a_date_time()) {
@@ -429,6 +426,13 @@ private:
 			AssertLe(m_requestState.time, time + pt::seconds(1));
 #		endif
 
+		if (m_requestState.tradingDay != tradingDay) {
+			if (m_requestState.tradingDay) {
+				m_requestState.security->SwitchTradingSession();
+			}
+			m_requestState.tradingDay = tradingDay;
+		}
+	
 		m_requestState.security->AddTrade(
 			time,
 			m_requestState.security->ScalePrice(price),
@@ -448,10 +452,10 @@ private:
 			return;
 		}
 
-		Assert(!m_requestState.log);
+		Assert(!m_requestState.log.is_open());
 		auto path = Defaults::GetTicksLogDir();
 		path /= SymbolToFileName(
-			(boost::format("ddfplus%1%_%2%_%3%_%4%")
+			(boost::format("ddfplus%1%%2%_%3%_%4%")
 				% GetService().GetLogTag()
 				% security
 				% ConvertToFileName(start)
@@ -477,10 +481,43 @@ private:
 
 		GetLog().Info("%1%Logging ticks %2%.", GetService().GetLogTag(), path);
 
-		m_requestState.log << "Date,Time,Price,Size" << std::endl;
+		m_requestState.log
+			<< "Date,Time,Day,Session,Price,Size" << std::endl
+			<< std::setfill('0');
 
 	}
 
+	void LogTick(
+			const pt::ptime &time,
+			uint16_t tradingDay,
+			const std::string &session,
+			double price,
+			const Qty &qty) {
+		if (!m_requestState.log.is_open()) {
+			return;
+		}
+		{
+			const auto date = time.date();
+			m_requestState.log
+				<< date.year()
+				<< '.' << std::setw(2) << date.month().as_number()
+				<< '.' << std::setw(2) << date.day();
+		}
+		{
+			const auto &timeOfDay = time.time_of_day();
+			m_requestState.log
+				<< ','
+				<< std::setw(2) << timeOfDay.hours()
+				<< ':' << std::setw(2) << timeOfDay.minutes()
+				<< ':' << std::setw(2) << timeOfDay.seconds();
+		}
+		m_requestState.log
+			<< ',' << tradingDay
+			<< ',' << session
+			<< ',' << price
+			<< ',' << qty
+			<< std::endl;
+	}
 
 private:
 

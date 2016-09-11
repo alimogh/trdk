@@ -127,13 +127,19 @@ namespace trdk {
 		////////////////////////////////////////////////////////////////////////////////
 
 		enum ServiceEvent {
+			//! History data is loaded, security is on-line now.
+			SERVICE_EVENT_ONLINE,
+			//! Current trading session is opened.
+			SERVICE_EVENT_TRADING_SESSION_OPENED,
+			//! Current trading session is closed.
+			SERVICE_EVENT_TRADING_SESSION_CLOSED,
 			//! Security switched to another contract.
 			SERVICE_EVENT_CONTRACT_SWITCHED,
 			numberOfServiceEvents
 		};
 
 		typedef void (ServiceEventSlotSignature)(
-			const trdk::Security::ServiceEvent &);
+			const trdk::Security::ServiceEvent &, bool flush);
 		typedef boost::function<ServiceEventSlotSignature> ServiceEventSlot;
 		typedef boost::signals2::connection ServiceEventSlotConnection;
 
@@ -146,6 +152,7 @@ namespace trdk {
 				const trdk::Lib::Symbol &,
 				trdk::MarketDataSource &,
 				bool isOnline,
+				bool isOpened,
 				const SupportedLevel1Types &);
 		virtual ~Security();
 
@@ -168,6 +175,8 @@ namespace trdk {
 
 		//! Returns true if security has on-line data, not history.
 		bool IsOnline() const;
+
+		bool IsTradingSessionOpened() const;
 
 		//! Sets requested data start time if it not later than existing.
 		void SetRequestedDataStartTime(const boost::posix_time::ptime &);
@@ -247,6 +256,9 @@ namespace trdk {
 	protected:
 
 		void SetOnline();
+		
+		void SetTradingSessionState(bool isOpened);
+		void SwitchTradingSession();
 
 		bool IsLevel1Required() const;
 		bool IsLevel1UpdatesRequired() const;

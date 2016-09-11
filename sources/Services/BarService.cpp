@@ -213,6 +213,7 @@ public:
 	} m_currentBarTicksCount;
 
 	std::unique_ptr<std::ofstream> m_barsLog;
+	size_t m_session;
 
 	boost::function<bool(const pt::ptime &)> m_isNewBar;
 	boost::function<void()> m_copyCurrentBar;
@@ -232,7 +233,8 @@ public:
 		, m_numberOfHistoryBars(1)
 		, m_countedBarSize(0)
 		, m_currentBar(nullptr)
-		, m_barsLog(nullptr) {
+		, m_barsLog(nullptr)
+		, m_session(1) {
 
 		{
 			const std::string sizeStr = configuration.ReadKey("size");
@@ -411,7 +413,7 @@ public:
 		fs::path path = Defaults::GetBarsDataLogDir();
 		path /= SymbolToFileName(
 			(boost::format("%1%_%2%%3%_%4%")
-					% m_security->GetSymbol()
+					% *m_security
 					% m_unitsStr
 					% m_barSizeStr
 					% ConvertToFileName(m_currentBar->time))
@@ -431,7 +433,8 @@ public:
 		}
 		if (isNew) {
 			*m_barsLog
-				<< "Date"
+				<< "Session"
+				<< csvDelimeter << "Date"
 				<< csvDelimeter << "Time"
 				<< csvDelimeter << "Open"
 				<< csvDelimeter << "High"
@@ -453,9 +456,11 @@ public:
 		if (!m_barsLog || !m_currentBar) {
 			return;
 		}
+		*m_barsLog << m_session;
 		{
 			const auto date = m_currentBar->time.date();
 			*m_barsLog
+				<< csvDelimeter
 				<< date.year()
 				<< '.' << std::setw(2) << date.month().as_number()
 				<< '.' << std::setw(2) << date.day();
@@ -540,6 +545,7 @@ public:
 	template<typename Callback>
 	bool ContinueBar(const Callback &callback) {
 		Assert(!m_bars.empty());
+		Assert(m_currentBar);
 		callback(*m_currentBar);
 		m_copyCurrentBar();
 		return false;
@@ -548,7 +554,7 @@ public:
 	template<typename Callback>
 	bool StartNewBar(const pt::ptime &time, const Callback &callback) {
 		const bool isSignificantBar
-			= m_bars.size() > 0 && !IsZero(m_currentBar->lowTradePrice);
+			= m_currentBar && !IsZero(m_currentBar->lowTradePrice);
 		if (isSignificantBar) {
 			LogCurrentBar();
 		}
@@ -560,6 +566,22 @@ public:
 		m_copyCurrentBar();
 		return isSignificantBar;
 	}
+	
+	bool CompleteBar() {
+		
+		if (!m_currentBar || IsZero(m_currentBar->lowTradePrice)) {
+			return false;
+		}
+		
+		LogCurrentBar();
+		m_copyCurrentBar();
+
+		m_currentBar = nullptr;
+		m_currentBarTicksCount = CurrentBarTicksCount();
+
+		return true;
+
+	}
 
 	template<typename Callback>
 	bool AppendStat(
@@ -567,11 +589,17 @@ public:
 			const pt::ptime &time,
 			const Callback &callback) {
 		if (!m_currentBar) {
-			Assert(!m_security);
-			m_security = &security;
-			const bool hasChanges = StartNewBar(time, callback);
-			OpenLog();
-			return hasChanges;
+			if (!m_security) {
+				AssertEq(0, m_bars.size());
+				m_security = &security;
+				const bool hasChanges = StartNewBar(time, callback);
+				OpenLog();
+				return hasChanges;
+			} else {
+				Assert(m_security == &security);
+				AssertLt(0, m_bars.size());
+				return StartNewBar(time, callback);
+			}
 		} else {
 			Assert(m_security == &security);
 			const bool isNewBar = m_isNewBar(time);
@@ -914,10 +942,11 @@ public:
 		AssertEq(0, m_countedBarSize);
 		return m_currentBarEnd < time;
 	}
-	bool IsNewTickCountedBar(const pt::ptime &) const {
+	bool IsNewTickCountedBar(const pt::ptime &time) const {
 		AssertEq(UNITS_TICKS, m_units);
 		Assert(m_currentBarEnd.is_not_a_date_time());
 		AssertLt(0, m_countedBarSize);
+		AssertLe(m_currentBar->time, time);
 		return m_currentBarTicksCount.value >= m_countedBarSize;
 	}
 
@@ -980,16 +1009,22 @@ const BarService::Bar & BarService::GetBar(size_t index) const {
 	return m_pimpl->m_bars[index];
 }
 
-const BarService::Bar & BarService::GetBarByReversedIndex(
-		size_t index)
-		const {
+const BarService::Bar & BarService::GetBarByReversedIndex(size_t index) const {
 	if (index >= GetSize()) {
 		throw BarDoesNotExistError(
 			IsEmpty()
 				?	"BarService is empty"
 				:	"Index is out of range of BarService");
 	}
-	return *(m_pimpl->m_bars.rbegin() + index);
+	AssertGt(m_pimpl->m_bars.size(), index);
+	auto result = m_pimpl->m_bars.crbegin() + index;
+	if (m_pimpl->m_currentBar) {
+		Assert(m_pimpl->m_currentBar == &m_pimpl->m_bars.back());
+		Assert(result != m_pimpl->m_bars.crend());
+		++result;
+		Assert(result != m_pimpl->m_bars.crend());
+	}
+	return *result;
 }
 
 const BarService::Bar & BarService::GetLastBar() const {
@@ -997,7 +1032,13 @@ const BarService::Bar & BarService::GetLastBar() const {
 }
 
 size_t BarService::GetSize() const {
-	return m_pimpl->m_bars.size();
+	auto result = m_pimpl->m_bars.size();
+	if (m_pimpl->m_currentBar) {
+		AssertLe(1, result);
+		Assert(m_pimpl->m_currentBar == &m_pimpl->m_bars.back());
+		result -= 1;
+	}
+	return result;
 }
 
 bool BarService::IsEmpty() const {
@@ -1052,6 +1093,31 @@ boost::shared_ptr<BarService::QtyStat> BarService::GetTradingVolumeStat(
 			offsetof(BarService::Bar, BarService::Bar::tradingVolume)>
 		Stat;
 	return m_pimpl->CreateStat<Stat>(numberOfBars);
+}
+
+bool BarService::OnSecurityServiceEvent(
+		const Security &security,
+		const Security::ServiceEvent &securityEvent) {
+
+	static_assert(
+		Security::numberOfServiceEvents == 4,
+		"List changed.");
+
+	bool isUpdated = Base::OnSecurityServiceEvent(security, securityEvent);
+	
+	if (&security != m_pimpl->m_security) {
+		return isUpdated;
+	}
+	
+	switch (securityEvent) {
+		case Security::SERVICE_EVENT_TRADING_SESSION_OPENED:
+		case Security::SERVICE_EVENT_TRADING_SESSION_CLOSED:
+			isUpdated = m_pimpl->CompleteBar() || isUpdated;
+			++m_pimpl->m_session;
+	}
+
+	return isUpdated;
+
 }
 
 //////////////////////////////////////////////////////////////////////////

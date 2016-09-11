@@ -16,7 +16,7 @@
 #include "Core/MarketDataSource.hpp"
 
 namespace pt = boost::posix_time;
-namespace ss = boost::signals2;
+namespace sig = boost::signals2;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -75,7 +75,7 @@ void SubscriptionsManager::Suspend() {
 void SubscriptionsManager::SubscribeToLevel1Updates(
 		Security &security,
 		const SubscriberPtrWrapper &subscriber,
-		std::list<ss::connection> &slotConnections) {
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::Level1UpdateSlot(
 		boost::bind(
 			&Dispatcher::SignalLevel1Update,
@@ -101,7 +101,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 void SubscriptionsManager::SubscribeToLevel1Ticks(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+			std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::Level1TickSlot(
 		boost::bind(
 			&Dispatcher::SignalLevel1Tick,
@@ -129,7 +129,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 void SubscriptionsManager::SubscribeToTrades(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+			std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::NewTradeSlot(
 		boost::bind(
 			&Dispatcher::SignalNewTrade,
@@ -157,7 +157,7 @@ void SubscriptionsManager::SubscribeToTrades(
 void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+			std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::BrokerPositionUpdateSlot(
 		boost::bind(
 			&Dispatcher::SignalBrokerPositionUpdate,
@@ -184,7 +184,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 void SubscriptionsManager::SubscribeToBars(
 			Security &security,
 			const SubscriberPtrWrapper &subscriber,
-			std::list<ss::connection> &slotConnections) {
+			std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::NewBarSlot(
 		boost::bind(
 			&Dispatcher::SignalNewBar,
@@ -210,7 +210,7 @@ void SubscriptionsManager::SubscribeToBars(
 void SubscriptionsManager::SubscribeToBookUpdateTicks(
 		Security &security,
 		const SubscriberPtrWrapper &subscriber,
-		std::list<ss::connection> &slotConnections) {
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::BookUpdateTickSlot(
 		boost::bind(
 			&Dispatcher::SignalBookUpdateTick,
@@ -237,14 +237,15 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 		Security &security,
 		const SubscriberPtrWrapper &subscriber,
-		std::list<ss::connection> &slotConnections) {
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::ServiceEventSlot(
 		boost::bind(
 			&Dispatcher::SignalSecurityServiceEvents,
 			&m_dispatcher,
 			subscriber,
 			boost::ref(security),
-			_1));
+			_1,
+			_2));
 	const auto &connection = security.SubscribeToServiceEvents(slot);
 	try {
 		slotConnections.push_back(connection);
@@ -270,7 +271,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Updates(
 				security,
 				subscriber,
@@ -288,7 +289,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Updates(
 				security,
 				subscriber,
@@ -306,7 +307,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Updates(
 				security,
 				subscriber,
@@ -324,7 +325,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Ticks(security, subscriber, slotConnections);
 		});
 }
@@ -339,7 +340,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Ticks(security, subscriber, slotConnections);
 		});
 }
@@ -354,7 +355,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToLevel1Ticks(security, subscriber, slotConnections);
 		});
 }
@@ -369,7 +370,7 @@ void SubscriptionsManager::SubscribeToTrades(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToTrades(security, subscriber, slotConnections);
 		});
 }
@@ -384,7 +385,7 @@ void SubscriptionsManager::SubscribeToTrades(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToTrades(security, subscriber, slotConnections);
 		});
 }
@@ -399,7 +400,7 @@ void SubscriptionsManager::SubscribeToTrades(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToTrades(security, subscriber, slotConnections);
 		});
 }
@@ -414,7 +415,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBrokerPositionUpdates(
 				security,
 				subscriber,
@@ -432,7 +433,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBrokerPositionUpdates(
 				security,
 				subscriber,
@@ -450,7 +451,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBrokerPositionUpdates(
 				security,
 				subscriber,
@@ -468,7 +469,7 @@ void SubscriptionsManager::SubscribeToBars(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBars(security, subscriber, slotConnections);
 		});
 }
@@ -483,7 +484,7 @@ void SubscriptionsManager::SubscribeToBars(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBars(security, subscriber, slotConnections);
 		});
 }
@@ -498,7 +499,7 @@ void SubscriptionsManager::SubscribeToBars(
 		[this](
 					Security &security,
 					const SubscriberPtrWrapper &subscriber,
-					std::list<ss::connection> &slotConnections) {
+					std::list<sig::connection> &slotConnections) {
 			SubscribeToBars(security, subscriber, slotConnections);
 		});
 }
@@ -513,7 +514,7 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
 		});
 }
@@ -528,7 +529,7 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
 		});
 }
@@ -543,7 +544,7 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
 		});
 }
@@ -558,7 +559,7 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToSecurityServiceEvents(
 				security,
 				subscriber,
@@ -576,7 +577,7 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToSecurityServiceEvents(
 				security,
 				subscriber,
@@ -594,7 +595,7 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 		[this](
 				Security &security,
 				const SubscriberPtrWrapper &subscriber,
-				std::list<ss::connection> &slotConnections) {
+				std::list<sig::connection> &slotConnections) {
 			SubscribeToSecurityServiceEvents(
 				security,
 				subscriber,
@@ -603,16 +604,21 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 }
 
 void SubscriptionsManager::Subscribe(
-			Security &security,
-			Strategy &strategy,
-			const SubscribeImpl &subscribeImpl) {
-	if (	m_subscribedStrategies.find(&strategy)
+		Security &security,
+		Strategy &strategy,
+		const SubscribeImpl &subscribeImpl) {
+
+	if (
+			m_subscribedStrategies.find(&strategy)
 			!= m_subscribedStrategies.end()) {
+
 		subscribeImpl(
 			security,
 			SubscriberPtrWrapper(strategy),
 			m_slotConnections);
+
 	} else {
+
 		auto subscribedStrategies = m_subscribedStrategies;
 		subscribedStrategies.insert(&strategy);
 		auto slotConnections = m_slotConnections;
@@ -623,6 +629,7 @@ void SubscriptionsManager::Subscribe(
 					&m_dispatcher,
 					SubscriberPtrWrapper(strategy),
 					_1));
+
 		try {
 			slotConnections.push_back(positionUpdateConnection);
 			subscribeImpl(
@@ -638,9 +645,12 @@ void SubscriptionsManager::Subscribe(
 			}
 			throw;
 		}
+
 		slotConnections.swap(m_slotConnections);
 		subscribedStrategies.swap(m_subscribedStrategies);
+
 	}
+
 }
 
 void SubscriptionsManager::Subscribe(
@@ -656,7 +666,7 @@ void SubscriptionsManager::Subscribe(
 
 		explicit ServiceSubscriberVisitor(
 					Dispatcher &dispatcher,
-					std::list<ss::connection> &connections,
+					std::list<sig::connection> &connections,
 					std::set<const Strategy *> &subscribedStrategies)
 				: m_dispatcher(dispatcher),
 				m_connections(connections),
@@ -702,7 +712,7 @@ void SubscriptionsManager::Subscribe(
 	private:
 
 		Dispatcher &m_dispatcher;
-		std::list<ss::connection> &m_connections;
+		std::list<sig::connection> &m_connections;
 		std::set<const Strategy *> &m_subscribed;
 
 	};

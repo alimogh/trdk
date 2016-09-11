@@ -27,6 +27,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 				symbol, 
 				source,
 				true,
+				true,
 				SupportedLevel1Types().set()) {
 			StartLevel1();
 		}

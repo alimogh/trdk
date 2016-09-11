@@ -67,7 +67,7 @@ namespace trdk {
 				const trdk::Security &,
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		virtual void RaiseSecurityServiceEvent(
+		bool RaiseSecurityServiceEvent(
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
@@ -117,7 +117,7 @@ namespace trdk {
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
-		virtual void OnSecurityServiceEvent(
+		virtual bool OnSecurityServiceEvent(
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 

@@ -19,10 +19,13 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Engine;
+using namespace trdk::Engine::Details;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+	////////////////////////////////////////////////////////////////////////////////
 	
 	struct NoMeasurementPolicy {
 		static TimeMeasurement::Milestones StartDispatchingTimeMeasurement(
@@ -38,6 +41,45 @@ namespace {
 		}
 	};
 
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct StopVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Stop();
+		}
+	};
+
+	struct ActivateVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Activate();
+		}
+	};
+
+	struct SuspendVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Suspend();
+		}
+	};
+
+	struct IsActiveVisitor : public boost::static_visitor<bool> {
+		template<typename T>
+		bool operator ()(const T *obj) const {
+			return obj->IsActive();
+		}
+	};
+
+	struct SyncVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Sync();
+		}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,13 +94,28 @@ Dispatcher::Dispatcher(Engine::Context &context)
 	, m_newBars("Bars", m_context)
 	, m_bookUpdateTicks("Book update ticks", m_context)
 	, m_securityServiceEvents("Security service events", m_context) {
+
+	m_queues.emplace_back(&m_level1Updates);
+	m_queues.emplace_back(&m_level1Ticks);
+	m_queues.emplace_back(&m_newTrades);
+	m_queues.emplace_back(&m_positionsUpdates);
+	m_queues.emplace_back(&m_brokerPositionsUpdates);
+	m_queues.emplace_back(&m_newBars);
+	m_queues.emplace_back(&m_bookUpdateTicks);
+	m_queues.emplace_back(&m_securityServiceEvents);
+	m_queues.shrink_to_fit();
+
 	unsigned int threadsCount = 1;
+	
+	// Working in the multi-threading mode is not supported by service events.
+	// Such service should: 1) stop all notifications (but stop events
+	// queueing); 2) wait untill all queued events will be flushed; 3) make
+	// service event notification; 4) start notifications again.
+	// @sa SignalSecurityServiceEvents
+	AssertEq(1, threadsCount);
+
 	boost::shared_ptr<boost::barrier> startBarrier(
 		new boost::barrier(threadsCount + 1));
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::Suspend
-	// @sa Dispatcher::IsActive
 	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
 		startBarrier,
 		m_level1Updates,
@@ -72,23 +129,15 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier->wait();
+
 }
 
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
-		// @sa Dispatcher::Dispatcher
-		// @sa Dispatcher::Activate
-		// @sa Dispatcher::Suspend
-		// @sa Dispatcher::IsActive
-		m_level1Updates.Stop();
-		m_level1Ticks.Stop();
-		m_bookUpdateTicks.Stop();
-		m_newTrades.Stop();
-		m_positionsUpdates.Stop();
-		m_newBars.Stop();
-		m_brokerPositionsUpdates.Stop();
-		m_securityServiceEvents.Stop();
+		for (auto &queue: m_queues) {
+			boost::apply_visitor(StopVisitor(), queue);
+		}
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -99,52 +148,33 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	// @sa Dispatcher::Dispatcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Suspend
-	// @sa Dispatcher::IsActive
-	m_level1Updates.Activate();
-	m_level1Ticks.Activate();
-	m_bookUpdateTicks.Activate();
-	m_newTrades.Activate();
-	m_positionsUpdates.Activate();
-	m_newBars.Activate();
-	m_brokerPositionsUpdates.Activate();
-	m_securityServiceEvents.Activate();
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(ActivateVisitor(), queue);
+	}
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
-	// @sa Dispatcher::Disptcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::IsActive
-	m_level1Updates.Suspend();
-	m_level1Ticks.Suspend();
-	m_bookUpdateTicks.Suspend();
-	m_newTrades.Suspend();
-	m_positionsUpdates.Suspend();
-	m_newBars.Suspend();
-	m_brokerPositionsUpdates.Suspend();
-	m_securityServiceEvents.Suspend();
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(SuspendVisitor(), queue);
+	}
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
+void Dispatcher::SyncDispatching() {
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(SyncVisitor(), queue);
+	}
+}
+
 bool Dispatcher::IsActive() const {
-	// @sa Dispatcher::Disptcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::Suspend
-	return
-		m_level1Updates.IsActive()
-		|| m_level1Ticks.IsActive()
-		|| m_bookUpdateTicks.IsActive()
-		|| m_newTrades.IsActive()
-		|| m_positionsUpdates.IsActive()
-		|| m_newBars.IsActive()
-		|| m_brokerPositionsUpdates.IsActive()
-		|| m_securityServiceEvents.IsActive();
+	for (auto &queue: m_queues) {
+		if (!boost::apply_visitor(IsActiveVisitor(), queue)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void Dispatcher::SignalLevel1Update(
@@ -280,14 +310,16 @@ void Dispatcher::SignalBookUpdateTick(
 void Dispatcher::SignalSecurityServiceEvents(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
-		const Security::ServiceEvent &serviceEvent) {
+		const Security::ServiceEvent &serviceEvent,
+		bool flush) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
+		SyncDispatching();
 		m_securityServiceEvents.Queue(
 			boost::make_tuple(&security, serviceEvent, subscriber),
-			true);
+			flush);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();
