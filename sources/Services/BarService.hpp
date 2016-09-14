@@ -174,10 +174,16 @@ namespace trdk { namespace Services {
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
+	protected:
+
+		virtual const Bar & LoadBar(size_t index) const;
+
+		virtual void OnBarComplete();
+
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

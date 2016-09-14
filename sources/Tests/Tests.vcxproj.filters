@@ -12,6 +12,9 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{4669332f-e99e-471a-92ee-eaecea72e893}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dummies">
+      <UniqueIdentifier>{41fea1af-e367-461a-ad3e-7207c4030c41}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MockContext.hpp">
@@ -23,6 +26,18 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="MockDropCopy.hpp">
       <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="MockBarService.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="MockSecurity.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyContext.hpp">
+      <Filter>Dummies</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyMarketDataSource.hpp">
+      <Filter>Dummies</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -55,12 +70,19 @@
     <ClCompile Include="UtilsTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="DummyContext.cpp">
+      <Filter>Dummies</Filter>
+    </ClCompile>
+    <ClCompile Include="DummyMarketDataSource.cpp">
+      <Filter>Dummies</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Indicators.xlsx" />
+    <None Include="ContinuousContract.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">

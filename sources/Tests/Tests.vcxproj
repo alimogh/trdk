@@ -350,14 +350,20 @@
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DummyMarketDataSource.hpp" />
+    <ClInclude Include="MockBarService.hpp" />
     <ClInclude Include="MockContext.hpp" />
     <ClInclude Include="MockDropCopy.hpp" />
     <ClInclude Include="MockMarketDataSource.hpp" />
+    <ClInclude Include="MockSecurity.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="DummyContext.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarServiceTest.cpp" />
     <ClCompile Include="BollingerBandsServiceTest.cpp" />
+    <ClCompile Include="DummyContext.cpp" />
+    <ClCompile Include="DummyMarketDataSource.cpp" />
     <ClCompile Include="ExpirationCalendarTest.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />
@@ -540,6 +546,7 @@
     </Library>
   </ItemGroup>
   <ItemGroup>
+    <None Include="ContinuousContract.xlsx" />
     <None Include="Indicators.xlsx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

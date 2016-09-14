@@ -1,5 +1,6 @@
 
 EXPORTS
 	CreateBarService
+	CreateContinuousContractBarService
 	CreateMovingAverageService
 	CreateBollingerBandsService

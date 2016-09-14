@@ -244,6 +244,7 @@
     <ClInclude Include="Api.h" />
     <ClInclude Include="BarService.hpp" />
     <ClInclude Include="BollingerBandsService.hpp" />
+    <ClInclude Include="ContinuousContractBarService.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MovingAverageService.hpp" />
     <ClInclude Include="Prec.hpp" />
@@ -251,6 +252,7 @@
   <ItemGroup>
     <ClCompile Include="BarService.cpp" />
     <ClCompile Include="BollingerBandsService.cpp" />
+    <ClCompile Include="ContinuousContractBarService.cpp" />
     <ClCompile Include="MovingAverageService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>

@@ -29,6 +29,9 @@
     <ClInclude Include="BollingerBandsService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ContinuousContractBarService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BarService.cpp">
@@ -44,6 +47,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContinuousContractBarService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -42,7 +42,15 @@ namespace trdk { namespace Lib {
 
 	public:
 
-		bool operator <(const ContractExpiration &rhs) const;
+		bool operator ==(const ContractExpiration &) const;
+		bool operator !=(const ContractExpiration &) const;
+		bool operator <(const ContractExpiration &) const;
+
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const trdk::Lib::ContractExpiration &);
+
+	public:
 
 		Code GetCode() const;
 
@@ -107,6 +115,10 @@ namespace trdk { namespace Lib {
 		void ReloadCsv(const boost::filesystem::path &);
 
 		trdk::Lib::ExpirationCalendar::Stat CalcStat() const;
+
+		void Insert(
+				const trdk::Lib::Symbol &,
+				const trdk::Lib::ContractExpiration &);
 
 	public:
 

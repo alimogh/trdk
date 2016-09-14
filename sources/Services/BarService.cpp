@@ -11,8 +11,8 @@
 #include "Prec.hpp"
 #include "BarService.hpp"
 #include "Core/DropCopy.hpp"
-#include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -202,20 +202,30 @@ public:
 	size_t m_countedBarSize;
 
 	std::vector<Bar> m_bars;
-	Bar *m_currentBar;
-	pt::ptime m_currentBarEnd;
-	struct CurrentBarTicksCount {
-		size_t value;
-		CurrentBarTicksCount()
-			: value(0) {
+	
+	struct Current {
+	
+		Bar *bar;
+		pt::ptime end;
+		size_t count;
+
+		Current()
+			: bar(nullptr)
+			, count(0) {
 			//...//
 		}
-	} m_currentBarTicksCount;
+		explicit Current(Bar &bar)
+			: bar(&bar)
+			, count(0) {
+			//...//
+		}
+	
+	} m_current;
 
 	std::unique_ptr<std::ofstream> m_barsLog;
 	size_t m_session;
 
-	boost::function<bool(const pt::ptime &)> m_isNewBar;
+	boost::function<bool(const pt::ptime &, bool)> m_isNewBar;
 	boost::function<void()> m_copyCurrentBar;
 
 	boost::function<
@@ -232,7 +242,6 @@ public:
 		, m_security(nullptr)
 		, m_numberOfHistoryBars(1)
 		, m_countedBarSize(0)
-		, m_currentBar(nullptr)
 		, m_barsLog(nullptr)
 		, m_session(1) {
 
@@ -325,10 +334,10 @@ public:
 		{
 			const std::string logType = configuration.ReadKey("log");
 			if (boost::iequals(logType, "none")) {
-				m_service.GetLog().Info("Logging disabled.");
+				m_service.GetLog().Info("Bars logging is disabled.");
 			} else if (!boost::iequals(logType, "csv")) {
 				m_service.GetLog().Error(
-					"Wrong log type settings: \"%1%\". Unknown type."
+					"Wrong bars log type settings: \"%1%\". Unknown type."
 						" Supported: none and CSV.",
 					logType);
 				throw Error("Wrong bars log type");
@@ -355,7 +364,11 @@ public:
 
 		if (!m_countedBarSize) {
 			
-			m_isNewBar = boost::bind(&Implementation::IsNewTimedBar, this, _1);
+			m_isNewBar = boost::bind(
+				&Implementation::IsNewTimedBar,
+				this,
+				_1,
+				_2);
 			m_copyCurrentBar
 				= boost::bind(&Implementation::CopyCurrentTimedBar, this);
 			m_onLevel1Tick
@@ -375,8 +388,11 @@ public:
 		
 		} else {
 
-			m_isNewBar
-				= boost::bind(&Implementation::IsNewTickCountedBar, this, _1);
+			m_isNewBar = boost::bind(
+				&Implementation::IsNewTickCountedBar,
+				this,
+				_1,
+				_2);
 			m_copyCurrentBar
 				= boost::bind(&Implementation::CopyCurrentTickCountedBar, this);
 			m_onLevel1Tick
@@ -399,24 +415,24 @@ public:
 
 	}
 
-	void OpenLog() {
+	void OpenLog(const pt::ptime &dataStartTime) {
 
 		Assert(m_security);
-		Assert(m_currentBar);
-		Assert(!m_barsLog || !m_barsLog->is_open());
 
-		if (!m_barsLog) {
+		if (!m_barsLog || m_barsLog->is_open()) {
 			return;
 		}
 
 		//! @todo Use context log dir
 		fs::path path = Defaults::GetBarsDataLogDir();
 		path /= SymbolToFileName(
-			(boost::format("%1%_%2%%3%_%4%")
+			(boost::format("%1%_%2%%3%_%4%_%5%")
 					% *m_security
 					% m_unitsStr
 					% m_barSizeStr
-					% ConvertToFileName(m_currentBar->time))
+					% ConvertToFileName(dataStartTime)
+					% ConvertToFileName(
+						m_service.GetContext().GetCurrentTime()))
 				.str(),
 			"csv");
 
@@ -453,12 +469,13 @@ public:
 	}
 
 	void LogCurrentBar() const {
-		if (!m_barsLog || !m_currentBar) {
+		Assert(m_current.bar);
+		if (!m_barsLog || !m_current.bar) {
 			return;
 		}
 		*m_barsLog << m_session;
 		{
-			const auto date = m_currentBar->time.date();
+			const auto date = m_current.bar->time.date();
 			*m_barsLog
 				<< csvDelimeter
 				<< date.year()
@@ -466,7 +483,7 @@ public:
 				<< '.' << std::setw(2) << date.day();
 		}
 		{
-			const auto time = m_currentBar->time.time_of_day();
+			const auto time = m_current.bar->time.time_of_day();
 			*m_barsLog
 				<< csvDelimeter
 				<< std::setw(2) << time.hours()
@@ -475,16 +492,16 @@ public:
 		}
 		*m_barsLog
 			<< csvDelimeter
-				<< m_security->DescalePrice(m_currentBar->openTradePrice)
+				<< m_security->DescalePrice(m_current.bar->openTradePrice)
 			<< csvDelimeter
-				<< m_security->DescalePrice(m_currentBar->highTradePrice)
+				<< m_security->DescalePrice(m_current.bar->highTradePrice)
 			<< csvDelimeter
-				<< m_security->DescalePrice(m_currentBar->lowTradePrice)
+				<< m_security->DescalePrice(m_current.bar->lowTradePrice)
 			<< csvDelimeter
-				<< m_security->DescalePrice(m_currentBar->closeTradePrice)
-			<< csvDelimeter << m_currentBar->tradingVolume;
+				<< m_security->DescalePrice(m_current.bar->closeTradePrice)
+			<< csvDelimeter << m_current.bar->tradingVolume;
 		if (m_countedBarSize) {
-			*m_barsLog << csvDelimeter << m_currentBarTicksCount.value;
+			*m_barsLog << csvDelimeter << m_current.count;
 		}
 		*m_barsLog << std::endl;
 	}
@@ -545,8 +562,8 @@ public:
 	template<typename Callback>
 	bool ContinueBar(const Callback &callback) {
 		Assert(!m_bars.empty());
-		Assert(m_currentBar);
-		callback(*m_currentBar);
+		Assert(m_current.bar);
+		callback(*m_current.bar);
 		m_copyCurrentBar();
 		return false;
 	}
@@ -554,30 +571,33 @@ public:
 	template<typename Callback>
 	bool StartNewBar(const pt::ptime &time, const Callback &callback) {
 		const bool isSignificantBar
-			= m_currentBar && !IsZero(m_currentBar->lowTradePrice);
+			= m_current.bar && !IsZero(m_current.bar->lowTradePrice);
 		if (isSignificantBar) {
 			LogCurrentBar();
+			m_service.OnBarComplete();
 		}
 		m_bars.resize(m_bars.size() + 1);
-		m_currentBar = &m_bars.back();
-		m_currentBarTicksCount = CurrentBarTicksCount();
-		GetBarTimePoints(time, m_currentBar->time, m_currentBarEnd);
-		callback(*m_currentBar);
+		m_current = Current(m_bars.back());
+		GetBarTimePoints(time, m_current.bar->time, m_current.end);
+		callback(*m_current.bar);
 		m_copyCurrentBar();
 		return isSignificantBar;
 	}
 	
-	bool CompleteBar() {
+	bool CompleteBar(bool isAfter) {
 		
-		if (!m_currentBar || IsZero(m_currentBar->lowTradePrice)) {
+		if (!m_current.bar || IsZero(m_current.bar->lowTradePrice)) {
 			return false;
 		}
 		
 		LogCurrentBar();
-		m_copyCurrentBar();
+		if (!isAfter) {
+			m_copyCurrentBar();
+		}
 
-		m_currentBar = nullptr;
-		m_currentBarTicksCount = CurrentBarTicksCount();
+		m_service.OnBarComplete();
+
+		m_current = Current();
 
 		return true;
 
@@ -588,25 +608,27 @@ public:
 			const Security &security,
 			const pt::ptime &time,
 			const Callback &callback) {
-		if (!m_currentBar) {
-			if (!m_security) {
-				AssertEq(0, m_bars.size());
-				m_security = &security;
-				const bool hasChanges = StartNewBar(time, callback);
-				OpenLog();
-				return hasChanges;
-			} else {
-				Assert(m_security == &security);
-				AssertLt(0, m_bars.size());
-				return StartNewBar(time, callback);
-			}
+		
+		Assert(m_security == &security);
+		UseUnused(security);
+
+		bool isUpdated = false;
+		
+		if (!m_current.bar) {
+			OpenLog(time);
+			isUpdated = StartNewBar(time, callback);
 		} else {
-			Assert(m_security == &security);
-			const bool isNewBar = m_isNewBar(time);
-			return isNewBar
+			isUpdated = m_isNewBar(time, true)
 				? StartNewBar(time, callback)
 				: ContinueBar(callback);
 		}
+
+		if (m_isNewBar(time, false)) {
+			isUpdated = CompleteBar(true) || isUpdated;
+		}
+
+		return isUpdated;
+
 	}
 
 	bool HandleNewBar(
@@ -849,7 +871,7 @@ public:
 				bar.tradingVolume += qty;
 				if (m_countedBarSize) {
 					bar.time = time;
-					++m_currentBarTicksCount.value;
+					++m_current.count;
 				}
 			});
 	}
@@ -902,52 +924,56 @@ public:
 	}
 
 	void CopyCurrentTimedBar() const {
-		Assert(m_currentBar);
+		Assert(m_current.bar);
 		AssertNe(UNITS_TICKS, m_units);
 		AssertEq(0, m_countedBarSize);
-		Assert(!m_currentBarEnd.is_not_a_date_time());
+		Assert(!m_current.end.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
 					*m_security,
-					m_currentBar->time,
+					m_current.bar->time,
 					m_timedBarSize,
-					m_currentBar->openTradePrice,
-					m_currentBar->closeTradePrice,
-					m_currentBar->highTradePrice,
-					m_currentBar->lowTradePrice);
+					m_current.bar->openTradePrice,
+					m_current.bar->closeTradePrice,
+					m_current.bar->highTradePrice,
+					m_current.bar->lowTradePrice);
 			});
 	}
 	void CopyCurrentTickCountedBar() const {
-		Assert(m_currentBar);
+		Assert(m_current.bar);
 		AssertEq(UNITS_TICKS, m_units);
 		AssertLt(0, m_countedBarSize);
-		Assert(m_currentBarEnd.is_not_a_date_time());
+		Assert(m_current.end.is_not_a_date_time());
 		m_service.GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
 				dropCopy.CopyBar(
 					*m_security,
-					m_currentBar->time,
+					m_current.bar->time,
 					m_countedBarSize,
-					m_currentBar->openTradePrice,
-					m_currentBar->closeTradePrice,
-					m_currentBar->highTradePrice,
-					m_currentBar->lowTradePrice);
+					m_current.bar->openTradePrice,
+					m_current.bar->closeTradePrice,
+					m_current.bar->highTradePrice,
+					m_current.bar->lowTradePrice);
 			});
 	}
 
-	bool IsNewTimedBar(const pt::ptime &time) const {
+	bool IsNewTimedBar(const pt::ptime &time, bool isBefore) const {
 		AssertNe(UNITS_TICKS, m_units);
-		Assert(!m_currentBarEnd.is_not_a_date_time());
+		Assert(!m_current.end.is_not_a_date_time());
 		AssertEq(0, m_countedBarSize);
-		return m_currentBarEnd < time;
+		Assert(!isBefore || m_current.end >= time);
+		return isBefore
+			?	m_current.end < time
+			:	m_current.end == time;
 	}
-	bool IsNewTickCountedBar(const pt::ptime &time) const {
+	bool IsNewTickCountedBar(const pt::ptime &time, bool) const {
 		AssertEq(UNITS_TICKS, m_units);
-		Assert(m_currentBarEnd.is_not_a_date_time());
+		Assert(m_current.end.is_not_a_date_time());
 		AssertLt(0, m_countedBarSize);
-		AssertLe(m_currentBar->time, time);
-		return m_currentBarTicksCount.value >= m_countedBarSize;
+		AssertLe(m_current.bar->time, time);
+		UseUnused(time);
+		return m_current.count >= m_countedBarSize;
 	}
 
 };
@@ -958,15 +984,20 @@ BarService::BarService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration)
-	: Base(context, "BarsService", tag) {
-	m_pimpl = new Implementation(*this, configuration);
+	: Base(context, "BarsService", tag)
+	, m_pimpl(new Implementation(*this, configuration)) {
+	//...//
 }
 
 BarService::~BarService() {
-	delete m_pimpl;
+	//...//
 }
 
 pt::ptime BarService::OnSecurityStart(const Security &security) {
+	if (m_pimpl->m_security) {
+		throw Exception("Bar service works only with one security");
+	}
+	m_pimpl->m_security = &security;
 	return m_pimpl->m_countedBarSize
 		?	Base::OnSecurityStart(security)
 		:	(GetContext().GetCurrentTime()
@@ -1006,7 +1037,7 @@ const BarService::Bar & BarService::GetBar(size_t index) const {
 				?	"BarService is empty"
 				:	"Index is out of range of BarService");
 	}
-	return m_pimpl->m_bars[index];
+	return LoadBar(index);
 }
 
 const BarService::Bar & BarService::GetBarByReversedIndex(size_t index) const {
@@ -1017,25 +1048,30 @@ const BarService::Bar & BarService::GetBarByReversedIndex(size_t index) const {
 				:	"Index is out of range of BarService");
 	}
 	AssertGt(m_pimpl->m_bars.size(), index);
-	auto result = m_pimpl->m_bars.crbegin() + index;
-	if (m_pimpl->m_currentBar) {
-		Assert(m_pimpl->m_currentBar == &m_pimpl->m_bars.back());
-		Assert(result != m_pimpl->m_bars.crend());
-		++result;
-		Assert(result != m_pimpl->m_bars.crend());
+	auto forwardIndex = m_pimpl->m_bars.size() - 1 - index;
+	if (m_pimpl->m_current.bar) {
+		Assert(m_pimpl->m_current.bar == &m_pimpl->m_bars.back());
+		AssertGt(m_pimpl->m_bars.size() + 1, index);
+		AssertLt(0, forwardIndex);
+		--forwardIndex;
 	}
-	return *result;
+	return LoadBar(forwardIndex);
 }
 
 const BarService::Bar & BarService::GetLastBar() const {
 	return GetBarByReversedIndex(0);
 }
 
+const BarService::Bar & BarService::LoadBar(size_t index) const {
+	AssertLt(index, m_pimpl->m_bars.size());
+	return m_pimpl->m_bars[index];
+}
+
 size_t BarService::GetSize() const {
 	auto result = m_pimpl->m_bars.size();
-	if (m_pimpl->m_currentBar) {
+	if (m_pimpl->m_current.bar) {
 		AssertLe(1, result);
-		Assert(m_pimpl->m_currentBar == &m_pimpl->m_bars.back());
+		Assert(m_pimpl->m_current.bar == &m_pimpl->m_bars.back());
 		result -= 1;
 	}
 	return result;
@@ -1112,12 +1148,17 @@ bool BarService::OnSecurityServiceEvent(
 	switch (securityEvent) {
 		case Security::SERVICE_EVENT_TRADING_SESSION_OPENED:
 		case Security::SERVICE_EVENT_TRADING_SESSION_CLOSED:
-			isUpdated = m_pimpl->CompleteBar() || isUpdated;
+		case Security::SERVICE_EVENT_CONTRACT_SWITCHED:
+			isUpdated = m_pimpl->CompleteBar(false) || isUpdated;
 			++m_pimpl->m_session;
 	}
 
 	return isUpdated;
 
+}
+
+void BarService::OnBarComplete() {
+	//...//
 }
 
 //////////////////////////////////////////////////////////////////////////

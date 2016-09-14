@@ -24,8 +24,23 @@ ContractExpiration::ContractExpiration(const gr::date &date)
 	//...//
 }
 
+bool ContractExpiration::operator ==(const ContractExpiration &rhs) const {
+	return m_date == rhs.m_date;
+}
+
+bool ContractExpiration::operator !=(const ContractExpiration &rhs) const {
+	return m_date != rhs.m_date;
+}
+
 bool ContractExpiration::operator <(const ContractExpiration &rhs) const {
 	return m_date < rhs.m_date;
+}
+
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &os,
+		const ContractExpiration &expiration) {
+	os << expiration.m_date;
+	return os;
 }
 
 ContractExpiration::Code ContractExpiration::GetCode() const {
@@ -373,6 +388,12 @@ ExpirationCalendar::Stat ExpirationCalendar::CalcStat() const {
 		result.numberOfExpirations += symbol.second.size();
 	}
 	return result;
+}
+
+void ExpirationCalendar::Insert(
+		const Symbol &symbol,
+		const ContractExpiration &expiration) {
+	m_pimpl->m_contracts[symbol.GetSymbol()].emplace(expiration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
