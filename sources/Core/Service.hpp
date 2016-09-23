@@ -43,6 +43,10 @@ namespace trdk {
 
 	public:
 
+		void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				const Security &,
+				Security::Request &);
 		bool RaiseLevel1UpdateEvent(const trdk::Security &);
 		bool RaiseLevel1TickEvent(
 				const trdk::Security &,
@@ -68,17 +72,24 @@ namespace trdk {
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		bool RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
-	protected:
+	public:
 
 		//! Notifies about new security start.
-		/** @return Return desired security data start. Can be
-		  * boost::posix_time::not_a_date_time.
+		virtual void OnSecurityStart(
+				const trdk::Security &,
+				trdk::Security::Request &);
+		//! Notifies when security switched to another contract.
+		/** All marked data for security will be reset (so if security just
+		  * started).
 		  */
-		virtual boost::posix_time::ptime OnSecurityStart(
-				const trdk::Security &);
+		virtual void OnSecurityContractSwitched(
+				const boost::posix_time::ptime &,
+				const trdk::Security &,
+				trdk::Security::Request &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
 
@@ -118,6 +129,7 @@ namespace trdk {
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		virtual bool OnSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 

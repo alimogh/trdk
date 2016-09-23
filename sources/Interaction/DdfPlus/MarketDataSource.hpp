@@ -44,10 +44,9 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 
 		using Base::FindSecurity;
 
-		DdfPlus::Security * FindSecurity(
-				const std::string &ddfPlusCodeSymbolCode);
+		DdfPlus::Security * FindSecurity(const std::string &symbolCode);
 
-		void OnHistoryRequestCompleted(
+		void OnHistoryLoadCompleted(
 				DdfPlus::Security &/*,
 				bool isRequestQueueEmpty*/);
 

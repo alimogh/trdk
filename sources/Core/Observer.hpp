@@ -36,6 +36,7 @@ namespace trdk {
 				trdk::Security &,
 				const trdk::Security::Bar &);
 		virtual void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 

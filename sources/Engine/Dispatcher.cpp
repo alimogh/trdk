@@ -92,8 +92,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 	, m_positionsUpdates("Positions", m_context)
 	, m_brokerPositionsUpdates("Broker positions", m_context)
 	, m_newBars("Bars", m_context)
-	, m_bookUpdateTicks("Book update ticks", m_context)
-	, m_securityServiceEvents("Security service events", m_context) {
+	, m_bookUpdateTicks("Book update ticks", m_context) {
 
 	m_queues.emplace_back(&m_level1Updates);
 	m_queues.emplace_back(&m_level1Ticks);
@@ -102,18 +101,9 @@ Dispatcher::Dispatcher(Engine::Context &context)
 	m_queues.emplace_back(&m_brokerPositionsUpdates);
 	m_queues.emplace_back(&m_newBars);
 	m_queues.emplace_back(&m_bookUpdateTicks);
-	m_queues.emplace_back(&m_securityServiceEvents);
 	m_queues.shrink_to_fit();
 
 	unsigned int threadsCount = 1;
-	
-	// Working in the multi-threading mode is not supported by service events.
-	// Such service should: 1) stop all notifications (but stop events
-	// queueing); 2) wait untill all queued events will be flushed; 3) make
-	// service event notification; 4) start notifications again.
-	// @sa SignalSecurityServiceEvents
-	AssertEq(1, threadsCount);
-
 	boost::shared_ptr<boost::barrier> startBarrier(
 		new boost::barrier(threadsCount + 1));
 	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
@@ -125,7 +115,6 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		m_positionsUpdates,
 		m_newBars,
 		m_brokerPositionsUpdates,
-		m_securityServiceEvents,
 		threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier->wait();
@@ -162,10 +151,12 @@ void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
-void Dispatcher::SyncDispatching() {
+Dispatcher::UniqueSyncLock Dispatcher::SyncDispatching() const {
+	UniqueSyncLock lock(m_syncMutex);
 	for (auto &queue: m_queues) {
 		boost::apply_visitor(SyncVisitor(), queue);
 	}
+	return lock;
 }
 
 bool Dispatcher::IsActive() const {
@@ -309,17 +300,33 @@ void Dispatcher::SignalBookUpdateTick(
 
 void Dispatcher::SignalSecurityServiceEvents(
 		SubscriberPtrWrapper &subscriber,
+		const pt::ptime &time,
 		Security &security,
-		const Security::ServiceEvent &serviceEvent,
-		bool flush) {
+		const Security::ServiceEvent &serviceEvent) {
+	Assert(!m_syncMutex.try_lock_shared());
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		SyncDispatching();
-		m_securityServiceEvents.Queue(
-			boost::make_tuple(&security, serviceEvent, subscriber),
-			flush);
+		subscriber.RaiseSecurityServiceEvent(time, security, serviceEvent);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalSecurityContractSwitched(
+		SubscriberPtrWrapper &subscriber,
+		const pt::ptime &time,
+		Security &security,
+		Security::Request &request) {
+	Assert(!m_syncMutex.try_lock_shared());
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		subscriber.RaiseSecurityContractSwitchedEvent(time, security, request);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

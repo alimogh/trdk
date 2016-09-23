@@ -20,14 +20,16 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::DdfPlus;
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 namespace fs = boost::filesystem;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-	std::string FormatRequestTime(const pt::ptime &source) {
+	std::string FormatRequestTime(pt::ptime source) {
 		std::ostringstream result;
+		source += GetCstTimeZoneDiffLocal();
 		result
 			<< source.date().year()
 			<< std::setw(2) << std::setfill('0') << int(source.date().month())
@@ -53,11 +55,15 @@ public:
 
 public:
 		
-	explicit Client(History &service, RequestState &requestState)
+	explicit Client(
+			History &service,
+			History::Request &request,
+			RequestState &requestState)
 		: Base(
 			service,
 			service.GetSettings().host,
 			service.GetSettings().port)
+		, m_request(request)
 		, m_requestState(requestState) {
 		//...//
 	}
@@ -68,10 +74,12 @@ public:
 
 public:
 
-	//! Starts new or continues request.
 	void StartRequest(DdfPlus::Security &security) {
 
-		Assert(!security.GetRequestedDataStartTime().is_not_a_date_time());
+		Assert(!m_request.security);
+		Assert(m_requestState.ticks.empty());
+		Assert(!security.GetRequest().GetTime().is_not_a_date_time());
+		Assert(!security.HasExpiration());
 
 		if (
 				security.GetSymbol().GetSecurityType()
@@ -79,30 +87,78 @@ public:
 			throw Exception("Symbol type is not supported");
 		}
 
-		const auto &startTime
-			= !security.GetLastMarketDataTime().is_not_a_date_time()
-				?	security.GetLastMarketDataTime() + pt::seconds(1)
-				:	security.GetRequestedDataStartTime();
+		AssertEq(security.GetLastMarketDataTime(), pt::not_a_date_time);
+		Assert(security.GetRequest());
+		Assert(
+			security.GetRequest().GetTime().is_not_a_date_time()
+			|| security.GetRequest().GetNumberOfTicks() > 0);
 
-		RequestNext(security, startTime + GetCstTimeZoneDiffLocal());
+		History::Request request = {};
+		request.security = &security;
+		
+		if (!security.GetRequest().GetTime().is_not_a_date_time()) {
+			request.time = security.GetRequest().GetTime();
+		} else {
+			request.time = GetNextForwardRequestTime(
+				GetContext().GetCurrentTime());
+		}
+
+		const auto &expiration = GetContext().GetExpirationCalendar().Find(
+			security.GetSymbol(),
+			request.time);
+		if (!expiration) {
+			GetLog().Error(
+				"%1%Failed to find expiration info for %1% on the %2%.",
+				security,
+				request.time);
+			throw Exception("Failed to find expiration info");
+		}
+		request.expiration = *expiration;
+
+		GetLog().Info(
+			"%1%Starting to load data for %2% (%3%) from %4% CST (%5% local)"
+				", not less then %6% ticks...",
+			GetService().GetLogTag(),
+			*request.security,
+			request.security->GenerateDdfPlusCode(*request.expiration),
+			request.time + GetCstTimeZoneDiffLocal(),
+			request.time,
+			security.GetRequest().GetNumberOfTicks());
+
+		m_requestState = {};
+		RequestNext(request);
 
 	}
 
-	bool ContinueRequest() {
+	void ContinueRequest() {
 		
-		if (!m_requestState.security) {
-			return false;
+		if (!m_request.security) {
+			return;
 		}
 
-		auto &security = *m_requestState.security;
-		const auto &startTime
-			= !security.GetLastMarketDataTime().is_not_a_date_time()
-				?	security.GetLastMarketDataTime() + pt::seconds(1)
-				:	m_requestState.time + GetCstTimeZoneDiffLocal();
+		auto request = m_request;
 
-		RequestNext(security, startTime);
+		if (request.reversed) {
+		
+			if (
+					!m_requestState.ticks.empty()
+					&& request.time >= m_requestState.ticks.cbegin()->first) {
+				AssertEq(
+					request.time,
+					m_requestState.ticks.cbegin()->first);
+				m_requestState.ticks.erase(m_requestState.ticks.begin());
+			}
+		
+		} else {
 
-		return true;
+			const auto &lastDatTime = GetLastDataTime();
+			if (!lastDatTime.is_not_a_date_time()) {
+				request.time = lastDatTime;
+			}
+
+		}
+
+		RequestNext(request);
 
 	}
 
@@ -146,7 +202,7 @@ protected:
 			const Buffer::const_iterator &end,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 			
-		Assert(m_requestState.security);
+		Assert(m_request.security);
 		Assert(begin != end);
 
 		Buffer::const_iterator it = begin;
@@ -172,7 +228,7 @@ protected:
 			if (it == end) {
 				return;
 			}
-			const auto &messageEnd = HandleMessage(
+			const auto &messageEnd = HandleTickMessage(
 				m_uncompletedMessagesBuffer.cbegin(),
 				m_uncompletedMessagesBuffer.cend(),
 				timeMeasurement);
@@ -193,7 +249,7 @@ protected:
 				break;
 			}
 				
-			const auto &nextIt = HandleMessage(it, end, timeMeasurement);
+			const auto &nextIt = HandleTickMessage(it, end, timeMeasurement);
 			if (nextIt == end) {
 				m_uncompletedMessagesBuffer.resize(std::distance(it, end));
 				std::copy(it, end, m_uncompletedMessagesBuffer.begin());
@@ -209,61 +265,108 @@ protected:
 
 	virtual void OnRequestComplete() {
 
-		Assert(m_requestState.security);
-		Assert(!m_requestState.time.is_not_a_date_time());
+		Assert(m_request.security);
+		Assert(!m_request.time.is_not_a_date_time());
 
 		const auto &stat = GetReceivedVerbouseStat();
 		GetLog().Debug(
-			"%1%Completed request for %2% from %3% CST."
-				" Total received volume: %4$.02f %5%.",
+			"%1%Completed sub-request for %2% (%3%) from %4% CST (%5% local)."
+				" Cached %6% ticks in %7% packs."
+				" Total received volume: %8$.02f %9%.",
 			GetService().GetLogTag(),
-			*m_requestState.security,
-			m_requestState.time,
+			*m_request.security,
+			m_request.security->GenerateDdfPlusCode(*m_request.expiration),
+			m_request.time + GetCstTimeZoneDiffLocal(),
+			m_request.time,
+			m_requestState.numberOfTicks,
+			m_requestState.ticks.size(),
 			stat.first,
 			stat.second);
 		if (!m_uncompletedMessagesBuffer.empty()) {
 			throw Exception("Unexpected request response end");
 		}
 
-		const auto &lastDataTime
-			= m_requestState.security->GetLastMarketDataTime();
+		if (
+				m_request.reversed > 0
+				&& m_requestState.numberOfTicks
+					< m_request.security->GetRequest().GetNumberOfTicks()) {
+
+			auto newRequest = m_request;
+
+			if (
+					m_requestState.ticks.empty()
+					|| m_request.time
+						< m_requestState.ticks.cbegin()->first) {
+				if (m_request.reversed > 15) {
+					GetLog().Error(
+						"%1%Empty response for %2%.",
+						GetService().GetLogTag(),
+						*m_request.security);
+					throw Exception("Empty response");
+				}
+				++m_request.reversed;
+			} else {
+				newRequest.reversed = 1;
+			}
+
+			newRequest.time = GetNextReversedRequestTime();
+
+			RequestNext(newRequest);
+			return;
+
+		}
+
+		const auto &lastDataTime = GetLastDataTime();
 		const auto &now = GetCurrentTime();
 		if (
 				!lastDataTime.is_not_a_date_time()
-				&& lastDataTime > m_requestState.time) {
-	
+				&& lastDataTime > m_request.time) {
+
 			// Have data from last request.
 
-			if (
-					(lastDataTime - GetCstTimeZoneDiffLocal()).date()
-						>= now.date()) {
-				// Last ticks "before now".
-				RequestNext(
-					*m_requestState.security,
-					lastDataTime + pt::seconds(1));
-			} else {
-				// Next day in history.
-				AssertLt(lastDataTime.date(), now.date());
-				RequestNext(
-					*m_requestState.security,
-					pt::ptime((lastDataTime + pt::hours(24)).date()));
-			}
+			auto newRequest = m_request;
 
-		} else if (
-				(m_requestState.time - GetCstTimeZoneDiffLocal()).date()
-					>= now.date()) {
-			// No more time "before now". History request is completed.
-			m_requestState.log.close();
-			auto &security = *m_requestState.security;
-			m_requestState.security = nullptr;
-			m_requestState.tradingDay = 0;
-			GetService().GetSource().OnHistoryRequestCompleted(security);
-		} else {
-			// Just weekend or holiday.
-			RequestNext(
-				*m_requestState.security,
-				pt::ptime((m_requestState.time + pt::hours(24)).date()));
+			if (lastDataTime.date() >= now.date()) {
+				// Last ticks "before now".
+				newRequest.time = lastDataTime + pt::seconds(1);
+				RequestNext(newRequest);
+				return;
+			}
+			
+			// Next day in history.
+			AssertLt(lastDataTime.date(), now.date());
+			newRequest.time = GetNextForwardRequestTime();
+			RequestNext(newRequest);
+			
+			return;
+
 		}
+		
+		if (m_request.time.date() >= now.date()) {
+			
+			// No more time "before now". History request is completed.
+
+			if (
+					!m_request.reversed
+					&& m_requestState.numberOfTicks
+						< m_request.security->GetRequest().GetNumberOfTicks()) {
+				// Searching for more ticks...
+				auto newRequest = m_request;
+				newRequest.time = GetNextReversedRequestTime();
+				newRequest.reversed = 1;
+				RequestNext(newRequest);
+				return;
+			}
+			
+			Flush();
+			return;
+
+		}
+
+		// Just weekend or holiday.
+		auto newRequest = m_request;
+		newRequest.time = GetNextForwardRequestTime();
+		RequestNext(newRequest);
 
 	}
 
@@ -277,63 +380,69 @@ private:
 		return GetService().GetSource().GetContext();
 	}
 
-	//! Sends request to service.
-	/** @param[in]	security			Security.
-		* @param[in]	startTimeRequestCst	Data start in central time time
-		*									zone. Note: All times are in
-		*									Eastern Time for equities and
-		*									Central Time for everything else.
-		*
-		*/
-	void RequestNext(
-			DdfPlus::Security &security,
-			const pt::ptime &startTimeRequestCst) {
+	void RequestNext(const History::Request &request) {
 
-		boost::format message(
+		Assert(request.security);
+		Assert(request.expiration);
+		Assert(!request.time.is_not_a_date_time());
+		Assert(!m_requestState.ticks.count(request.time));
+
+		boost::format baseMessage(
 			"/historical/queryticks.ashx"
 				"?username=%1%&password=%2%&symbol=%3%&start=%4%");
-		message
+		const auto &symbolCode
+			= request.security->GenerateDdfPlusCode(*request.expiration);
+		baseMessage
 			% GetService().GetSettings().login
 			% GetService().GetSettings().password
-			% security.GenerateDdfPlusCode()
-			% FormatRequestTime(startTimeRequestCst);
+			% symbolCode
+			% FormatRequestTime(request.time);
 
-		GetLog().Debug(
-			"%1%Sending history sub-request for %2% from %3% CST...",
-			GetService().GetLogTag(),
-			security,
-			startTimeRequestCst);
+		auto message = baseMessage.str();
+		if (request.reversed && !m_requestState.ticks.empty()) {
 
-		Base::Request(
-			message.str(),
-			[this, &security, &startTimeRequestCst]() {
-				
-				Assert(
-					m_requestState.security
-					|| !m_requestState.log.is_open());
-				Assert(
-					!m_requestState.security
-					|| m_requestState.security == &security);
-				AssertEq(0, m_uncompletedMessagesBuffer.size());
-				
-				if (!m_requestState.security) {
-					OpenTicksLog(security, startTimeRequestCst);
-					m_requestState.security = &security;
-				}
+			Assert(!m_requestState.ticks.cbegin()->second.empty());
 
-				m_requestState.time = startTimeRequestCst;
+			const auto &endTime
+				= m_requestState.ticks.cbegin()->second.front().time;
+			message += "&end" + FormatRequestTime(endTime);
 
-			});
+			GetLog().Debug(
+				"%1%Sending reversed sub-request for %2% (%3%)"
+					"  from %4% CST (%5% local) to %6% CST (%7%)...",
+				GetService().GetLogTag(),
+				*request.security,
+				symbolCode,
+				request.time + GetCstTimeZoneDiffLocal(),
+				request.time,
+				endTime + GetCstTimeZoneDiffLocal(),
+				endTime);
+
+		} else {
+
+			GetLog().Debug(
+				"%1%Sending %2%sub-request for %3% (%4%) from %5% CST"
+					" (%6% local)...",
+				GetService().GetLogTag(),
+				request.reversed ? "reversed" : "",
+				*request.security,
+				symbolCode,
+				request.time + GetCstTimeZoneDiffLocal(),
+				request.time);
+
+		}
+
+		Request(message, [this, &request]() {m_request = request;});
 
 	}
 
-	Buffer::const_iterator HandleMessage(
+	Buffer::const_iterator HandleTickMessage(
 			const Buffer::const_iterator &begin,
 			const Buffer::const_iterator &end,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+			const TimeMeasurement::Milestones &) {
 
 		Assert(begin != end);
-		Assert(m_requestState.security);
+		Assert(m_request.security);
 
 		auto field = begin;
 		auto it = std::find(field, end, ',');
@@ -416,111 +525,197 @@ private:
 				0);
 		}
 
-		LogTick(time, tradingDay, session, price, qty);
+		OnNewTick({time - GetCstTimeZoneDiffLocal(), price, qty, tradingDay});
 
-#		ifdef BOOST_ENABLE_ASSERT_HANDLER
-			if (!m_requestState.lastDataTime.is_not_a_date_time()) {
-				AssertLe(m_requestState.lastDataTime, time);
-			}
-			m_requestState.lastDataTime = time;
-			AssertLe(m_requestState.time, time + pt::seconds(1));
-#		endif
-
-		if (m_requestState.tradingDay != tradingDay) {
-			if (m_requestState.tradingDay) {
-				m_requestState.security->SwitchTradingSession();
-			}
-			m_requestState.tradingDay = tradingDay;
-		}
+		return it;
 	
-		m_requestState.security->AddTrade(
-			time,
-			m_requestState.security->ScalePrice(price),
-			qty,
-			timeMeasurement,
+	}
+
+	void OnNewTick(const Tick &tick) {
+		m_requestState.ticks[m_request.time].emplace_back(tick);
+		++m_requestState.numberOfTicks;
+	}
+
+	bool SendTickToSecurity(const Tick &tick) {
+
+		if (m_request.tradingDay != tick.tradingDay) {
+
+			if (m_request.tradingDay) {
+				Assert(m_request.security->HasExpiration());
+				m_request.security->SwitchTradingSession(tick.time);
+			} else {
+				AssertEq(
+					m_request.security->GetLastMarketDataTime(),
+					pt::not_a_date_time);
+			}
+			m_request.tradingDay = tick.tradingDay;
+
+			if (
+					m_request.contractHistoryEndTime.is_not_a_date_time()
+					|| m_request.contractHistoryEndTime <= tick.time) {
+			
+				const gr::date contractDate(
+					tick.time.date().year(),
+					tick.time.date().month(),
+					tick.tradingDay);
+				auto expiration = GetContext().GetExpirationCalendar().Find(
+					m_request.security->GetSymbol(),
+					contractDate);
+				if (!expiration) {
+					GetLog().Error(
+						"%1%Failed to find expiration info for %1% on the %2%"
+							" (%3%).",
+						*m_request.security,
+						contractDate,
+						tick.time);
+					throw Exception("Failed to find expiration info");
+				}
+				
+				if (!m_request.security->HasExpiration()) {
+					if (
+							m_request.security->SetExpiration(
+								tick.time,
+								*expiration)) {
+						// This is 1-st expiration and someone decided to
+						// request more data.
+						throw Exception(
+							"Request addition data for the first contract"
+								" is not implemented");
+					}
+				} else if (m_request.security->GetExpiration() != *expiration) {
+					AssertLt(m_request.security->GetExpiration(), *expiration);
+					m_request.security->SetExpiration(
+						tick.time,
+						*expiration);
+					return false;
+				}
+
+			}
+
+		}
+
+		Assert(m_request.security->HasExpiration());
+	
+		m_request.security->AddTrade(
+			tick.time,
+			m_request.security->ScalePrice(tick.price),
+			tick.qty,
+			TimeMeasurement::Milestones(),
 			true,
 			true);
 
-		return it;
+		return true;
 
 	}
 
-	void OpenTicksLog(const Security &security, const pt::ptime &start) {
-		
-		if (!GetService().GetSettings().isLogEnabled) {
-			Assert(!m_requestState.log);
-			return;
-		}
-
-		Assert(!m_requestState.log.is_open());
-		auto path = Defaults::GetTicksLogDir();
-		path /= SymbolToFileName(
-			(boost::format("ddfplus%1%%2%_%3%_%4%")
-				% GetService().GetLogTag()
-				% security
-				% ConvertToFileName(start)
-				% ConvertToFileName(GetContext().GetCurrentTime()))
-			.str(),
-			"csv");
-		
-		const bool isNew = !fs::exists(path);
-		if (isNew) {
-			fs::create_directories(path.branch_path());
-		}
-		
-		m_requestState.log.open(
-			path.string(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!m_requestState.log) {
-			GetLog().Error(
-				"%1%Failed to open log ticks file %2%",
-				GetService().GetLogTag(),
-				path);
-			throw Exception("Failed to open ticks log file");
-		}
-
-		GetLog().Info("%1%Logging ticks %2%.", GetService().GetLogTag(), path);
-
-		m_requestState.log
-			<< "Date,Time,Day,Session,Price,Size" << std::endl
-			<< std::setfill('0');
-
+	void CompleteRequest() {
+		Assert(m_request.security);
+		AssertEq(0, m_requestState.ticks.size());
+		auto &security = *m_request.security;
+		m_request = {};
+		m_requestState = {};
+		GetService().GetSource().OnHistoryLoadCompleted(security);
 	}
 
-	void LogTick(
-			const pt::ptime &time,
-			uint16_t tradingDay,
-			const std::string &session,
-			double price,
-			const Qty &qty) {
-		if (!m_requestState.log.is_open()) {
+	void Flush() {
+
+		pt::ptime contractHistoryEndTime;
+		for (const auto &request: m_requestState.ticks) {
+			for (const auto &tick: request.second) {
+				if (!SendTickToSecurity(tick)) {
+					contractHistoryEndTime = tick.time;
+					break;
+				}
+			}
+			if (!contractHistoryEndTime.is_not_a_date_time()) {
+				break;
+			}
+		}
+
+		m_requestState.ticks.clear();
+		m_requestState.numberOfTicks = 0;
+		m_request.reversed = 0;
+
+		if (contractHistoryEndTime.is_not_a_date_time()) {
+			CompleteRequest();
 			return;
 		}
-		{
-			const auto date = time.date();
-			m_requestState.log
-				<< date.year()
-				<< '.' << std::setw(2) << date.month().as_number()
-				<< '.' << std::setw(2) << date.day();
+			
+		Assert(m_request.security->HasExpiration());
+			
+		History::Request request = {};
+		request.security = m_request.security;
+		request.expiration = request.security->GetExpiration();
+		request.contractHistoryEndTime = contractHistoryEndTime;
+		
+		if (!request.security->GetRequest().GetTime().is_not_a_date_time()) {
+			request.time = std::min(
+				request.security->GetRequest().GetTime(),
+				m_request.contractHistoryEndTime);
+		} else if (request.security->GetRequest().GetNumberOfTicks()) {
+			request.time = GetNextReversedRequestTime(
+				request.contractHistoryEndTime);
+			request.reversed = 1;
+		} else {
+			request.time = request.contractHistoryEndTime;
 		}
-		{
-			const auto &timeOfDay = time.time_of_day();
-			m_requestState.log
-				<< ','
-				<< std::setw(2) << timeOfDay.hours()
-				<< ':' << std::setw(2) << timeOfDay.minutes()
-				<< ':' << std::setw(2) << timeOfDay.seconds();
-		}
-		m_requestState.log
-			<< ',' << tradingDay
-			<< ',' << session
-			<< ',' << price
-			<< ',' << qty
-			<< std::endl;
+
+		GetLog().Info(
+			"%1%Starting to load data for new contract of %2% (%3%)"
+				" from %4% CST (%5% local), not less then %6% ticks...",
+			GetService().GetLogTag(),
+			*request.security,
+			request.security->GenerateDdfPlusCode(*request.expiration),
+			request.time + GetCstTimeZoneDiffLocal(),
+			request.time,
+			request.security->GetRequest().GetNumberOfTicks());
+
+		RequestNext(request);
+
 	}
 
 private:
 
+	pt::ptime GetLastDataTime() const {
+		if (
+				!m_requestState.ticks.empty()
+				&& !m_requestState.ticks.crbegin()->second.empty()) {
+			return m_requestState.ticks.crbegin()->second.back().time;
+		} else {
+			return pt::not_a_date_time;
+		}
+	}
+
+	static pt::ptime GetNextForwardRequestTime(pt::ptime time) {
+		time += GetCstTimeZoneDiffLocal();
+		time += pt::hours(24);
+		time = pt::ptime(time.date());
+		time -= GetCstTimeZoneDiffLocal();
+		return time;
+	}
+
+	pt::ptime GetNextForwardRequestTime() const {
+		return GetNextForwardRequestTime(m_request.time);
+	}
+
+	static pt::ptime GetNextReversedRequestTime(pt::ptime time) {
+		time += GetCstTimeZoneDiffLocal();
+		time -= pt::hours(24);
+		time = pt::ptime(time.date());
+		time -= GetCstTimeZoneDiffLocal();
+		return time;
+	}
+
+	pt::ptime GetNextReversedRequestTime() const {
+		const auto &lastRequest = m_requestState.ticks.empty()
+			?	m_request.time
+			:	std::min(m_requestState.ticks.cbegin()->first, m_request.time);
+		return GetNextReversedRequestTime(lastRequest);
+	}
+
+private:
+
+	History::Request &m_request;
 	RequestState &m_requestState;
 
 	std::vector<char> m_uncompletedMessagesBuffer;
@@ -534,6 +729,8 @@ History::History(
 		DdfPlus::MarketDataSource &source)
 	: NetworkStreamClientService("History")
 	, m_settings(settings)
+	, m_request({})
+	, m_requestState({})
 	, m_source(source) {
 	//...//
 }
@@ -564,7 +761,7 @@ pt::ptime History::GetCurrentTime() const {
 
 std::unique_ptr<NetworkStreamClient> History::CreateClient() {
 	return std::unique_ptr<NetworkStreamClient>(
-		new Client(*this, m_requestState));
+		new Client(*this, m_request, m_requestState));
 }
 
 void History::LogDebug(const char *message) const {
@@ -580,14 +777,7 @@ void History::LogError(const std::string &message) const {
 }
 
 void History::OnConnectionRestored() {
-	bool hasRequest = false;
-	InvokeClient<Client>(
-		[&hasRequest](Client &client) {
-			hasRequest = client.ContinueRequest();
-		});
-	if (!hasRequest) {
-		throw Exception("Don't know what to do");
-	}
+	InvokeClient<Client>(boost::bind(&Client::ContinueRequest, _1));
 }
 
 void History::LoadHistory(DdfPlus::Security &security) {

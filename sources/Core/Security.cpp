@@ -46,7 +46,7 @@ namespace {
 		return IsSet(value.load());
 	}
 
-	void Unset(boost::atomic<Level1Value> &val) {
+	void Unset(boost::atomic<Level1Value> &val) throw() {
 		val = std::numeric_limits<Level1Value>::quiet_NaN();
 	}
 
@@ -80,6 +80,66 @@ namespace {
 		}
 	}
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Security::Request::Request()
+	: m_numberOfTicks(0) {
+	//...//
+}
+
+Security::Request::operator bool() const {
+	return m_numberOfTicks || m_time.is_not_a_date_time();
+}
+
+void Security::Request::Swap(Request &rhs) throw() {
+	std::swap(m_time, rhs.m_time);
+	std::swap(m_numberOfTicks, rhs.m_numberOfTicks);
+}
+
+bool Security::Request::IsEarlier(const Request &rhs) const {
+
+	if (!m_time.is_not_a_date_time()) {
+		if (rhs.m_time.is_not_a_date_time()) {
+			return true;
+		} else if (m_time < rhs.m_time) {
+			return true;
+		}
+	}
+
+	return m_numberOfTicks > rhs.m_numberOfTicks;
+
+}
+
+void Security::Request::RequestNumberOfTicks(size_t numberOfTicks) {
+	if (m_numberOfTicks > numberOfTicks) {
+		return;
+	}
+	m_numberOfTicks = numberOfTicks;
+}
+
+void Security::Request::RequestTime(const pt::ptime &time) {
+	Assert(!time.is_not_a_date_time());
+	if (!m_time.is_not_a_date_time() && m_time < time) {
+		return;
+	}
+	m_time = time;
+}
+
+void Security::Request::Merge(const Request &rhs) {
+	if (!rhs.GetTime().is_not_a_date_time()) {
+		RequestTime(rhs.GetTime());
+	}
+	RequestNumberOfTicks(rhs.GetNumberOfTicks());
+}
+
+size_t Security::Request::GetNumberOfTicks() const {
+	return m_numberOfTicks;
+}
+
+const pt::ptime & Security::Request::GetTime() const {
+	return m_time;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,19 +215,21 @@ public:
 	mutable SignalTrait<BookUpdateTickSlotSignature>::Signal
 		m_bookUpdateTickSignal;
 	mutable SignalTrait<ServiceEventSlotSignature>::Signal m_serviceEventSignal;
+	mutable SignalTrait<ContractSwitchingSlotSignature>::Signal
+		m_contractSwitchedSignal;
 
 	Level1 m_level1;
 	boost::atomic<Qty::ValueType> m_brokerPosition;
 	boost::atomic_int64_t m_marketDataTime;
 	boost::atomic_size_t m_numberOfMarketDataUpdates;
-	boost::atomic_bool m_isLevel1Started;
+	mutable boost::atomic_bool m_isLevel1Started;
 	const SupportedLevel1Types m_supportedLevel1Types;
-	boost::atomic_bool m_isOnline;
-	boost::atomic_bool m_isOpened;
+	bool m_isOnline;
+	bool m_isOpened;
 
-	boost::atomic_int64_t m_expirationTime;
+	boost::optional<ContractExpiration> m_expiration;
 
-	pt::ptime m_requestedDataStartTime;
+	Request m_request;
 
 public:
 
@@ -175,8 +237,6 @@ public:
 			Security &self,
 			MarketDataSource &source,
 			const Symbol &symbol,
-			bool isOnline,
-			bool isOpened,
 			const SupportedLevel1Types &supportedLevel1Types)
 		: m_self(self)
 		, m_instanceId(m_nextInstanceId++)
@@ -188,9 +248,9 @@ public:
 		, m_numberOfMarketDataUpdates(0)
 		, m_isLevel1Started(false)
 		, m_supportedLevel1Types(supportedLevel1Types)
-		, m_isOnline(isOnline)
-		, m_isOpened(isOpened)
-		, m_expirationTime(0) {
+		, m_isOnline(false)
+		, m_isOpened(false)
+		, m_request({}) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -216,20 +276,6 @@ public:
 		const auto &marketDataTime = ConvertToMicroseconds(time);
 		m_marketDataTime = marketDataTime;
 		++m_numberOfMarketDataUpdates;
-		const auto expirationTime = m_expirationTime.load();
-		if (
-				expirationTime
-				&& marketDataTime >= expirationTime
-				&& m_isOnline) {
-			m_source.GetLog().Info(
-				"Switching %1% to the next contract as last market data update"
-					" is %2% and expiration time is %3%...",
-				m_self,
-				time,
-				ConvertToPTimeFromMicroseconds(expirationTime));
-			m_source.SwitchToNextContract(m_self);
-			m_serviceEventSignal(SERVICE_EVENT_CONTRACT_SWITCHED, true);
-		}
 	}
 
 	bool AddLevel1Tick(
@@ -245,7 +291,7 @@ public:
 			flush,
 			isPreviouslyChanged);
 		UpdateMarketDataStat(time);
-		if (m_isLevel1Started) {
+		if (IsLevel1Started()) {
 			m_level1TickSignal(time, tick, flush);
 		}
 		return isChanged;
@@ -309,20 +355,26 @@ public:
 			UpdateMarketDataStat(time);
 			return;
 		}
-		
-		if (!m_isLevel1Started) {
-			for (auto i = 0; i < m_level1.size(); ++i) {
-				if (!IsSet(m_level1[i]) && m_supportedLevel1Types[i]) {
-					return;
-				}
-			}
-			Assert(!m_isLevel1Started);
-			m_isLevel1Started = true;
-		}
 
 		UpdateMarketDataStat(time);
-		m_level1UpdateSignal(timeMeasurement);
 
+		if (IsLevel1Started()) {
+			m_level1UpdateSignal(timeMeasurement);
+		}
+
+	}
+
+	bool IsLevel1Started() const {
+		if (m_isLevel1Started) {
+			return true;
+		}
+		for (auto i = 0; i < m_level1.size(); ++i) {
+			if (!IsSet(m_level1[i]) && m_supportedLevel1Types[i]) {
+				return false;
+			}
+		}
+		m_isLevel1Started = true;
+		return true;
 	}
 
 	pt::ptime GetLastMarketDataTime() const {
@@ -355,8 +407,6 @@ Security::Security(
 		Context &context,
 		const Symbol &symbol,
 		MarketDataSource &source,
-		bool isOnline,
-		bool isOpened,
 		const SupportedLevel1Types &supportedLevel1Types)
 	: Base(context, symbol)
 	, m_pimpl(
@@ -364,14 +414,12 @@ Security::Security(
 			*this,
 			source,
 			symbol, 
-			isOnline,
-			isOpened,
 			supportedLevel1Types)) {
 	//...//
 }
 
 Security::~Security() {
-	delete m_pimpl;
+	//...//
 }
 
 const Security::InstanceId & Security::GetInstanceId() const {
@@ -419,92 +467,101 @@ size_t Security::TakeNumberOfMarketDataUpdates() const {
 	return m_pimpl->m_numberOfMarketDataUpdates.exchange(0);
 }
 
-bool Security::IsLevel1Started() const {
-	return m_pimpl->m_isLevel1Started;
-}
-
 bool Security::IsOnline() const {
 	return m_pimpl->m_isOnline;
 }
 
-void Security::SetOnline() {
-	{
-		bool expectedState = false;
-		if (
-				!m_pimpl->m_isOnline.compare_exchange_strong(
-					expectedState,
-					true)) {
-			AssertNe(false, true);
-			return;
-		}
-	}
-	GetContext().GetLog().Info(
-		"%1% now is on-line. Last data time: %2%.",
-		*this,
-		GetLastMarketDataTime());
-	m_pimpl->m_serviceEventSignal(SERVICE_EVENT_ONLINE, true);
-}
-
-void Security::SetTradingSessionState(bool isOpened) {
-	{
-		bool expectedState = !isOpened;
-		if (
-				!m_pimpl->m_isOpened.compare_exchange_strong(
-					expectedState,
-					isOpened)) {
-			AssertNe(!isOpened, isOpened);
-			return;
-		}
-	}
-	GetContext().GetLog().Info(
-		"%1% trading session is %2%. Last data time: %3%.",
-		*this,
-		isOpened ? "opened" : "closed",
-		GetLastMarketDataTime());
-	m_pimpl->m_serviceEventSignal(
-		isOpened
-			?	SERVICE_EVENT_TRADING_SESSION_OPENED
-			:	SERVICE_EVENT_TRADING_SESSION_CLOSED,
-		true);
-}
-
-void Security::SwitchTradingSession() {
-	GetContext().GetLog().Info(
-		"%1% trading session is switched (%2%). Last data time: %3%.",
-		*this,
-		m_pimpl->m_isOpened ? "opened" : "closed",
-		GetLastMarketDataTime());
-	m_pimpl->m_serviceEventSignal(
-		m_pimpl->m_isOpened
-			?	SERVICE_EVENT_TRADING_SESSION_CLOSED
-			:	SERVICE_EVENT_TRADING_SESSION_OPENED,
-		false);
-	m_pimpl->m_serviceEventSignal(
-		m_pimpl->m_isOpened
-			?	SERVICE_EVENT_TRADING_SESSION_OPENED
-			:	SERVICE_EVENT_TRADING_SESSION_CLOSED,
-		true);
-}
-
-void Security::StartLevel1() {
-	Assert(!m_pimpl->m_isLevel1Started);
-	m_pimpl->m_isLevel1Started = true;
-}
-
-bool Security::IsStarted() const {
-	return IsLevel1Started();
-}
-
-void Security::SetRequestedDataStartTime(const pt::ptime &newTime) {
-	if (	m_pimpl->m_requestedDataStartTime != pt::not_a_date_time
-			&& m_pimpl->m_requestedDataStartTime <= newTime) {
+void Security::SetOnline(const pt::ptime &time) {
+	Assert(!m_pimpl->m_isOnline);
+	if (m_pimpl->m_isOnline) {
 		return;
 	}
-	m_pimpl->m_requestedDataStartTime = newTime;
+	GetContext().GetLog().Info(
+		"%1% now is online. Last data time: %2%.",
+		*this,
+		GetLastMarketDataTime());
+	
+	{
+		const auto lock = GetSource().GetContext().SyncDispatching();
+		m_pimpl->m_isOnline = true;
+		m_pimpl->m_serviceEventSignal(time, SERVICE_EVENT_ONLINE);
+	}
+
 }
 
-const pt::ptime & Security::GetRequestedDataStartTime() const {
-	return m_pimpl->m_requestedDataStartTime;
+bool Security::IsTradingSessionOpened() const {
+	return m_pimpl->m_isOpened;
+}
+
+void Security::SetTradingSessionState(const pt::ptime &time, bool isOpened) {
+	
+	AssertNe(m_pimpl->m_isOpened, isOpened);
+	if (m_pimpl->m_isOpened == isOpened) {
+		return;
+	}
+	
+	GetContext().GetLog().Info(
+		"%1% trading session is %2% by the event at %3%. Last data time: %4%.",
+		*this,
+		isOpened ? "opened" : "closed",
+		time,
+		GetLastMarketDataTime());
+	
+	{
+		const auto lock = GetSource().GetContext().SyncDispatching();
+		m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
+		m_pimpl->m_serviceEventSignal(
+			time,
+			isOpened
+				?	SERVICE_EVENT_TRADING_SESSION_OPENED
+				:	SERVICE_EVENT_TRADING_SESSION_CLOSED);
+	}
+
+}
+
+void Security::SwitchTradingSession(const pt::ptime &time) {
+
+	GetContext().GetLog().Info(
+		"%1% trading session is switched (%2%) by the event at %3%."
+			" Last data time: %4%.",
+		*this,
+		m_pimpl->m_isOpened ? "opened" : "closed",
+		time,
+		GetLastMarketDataTime());
+
+	{
+
+		const auto lock = GetSource().GetContext().SyncDispatching();
+
+		m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
+		try {
+			m_pimpl->m_serviceEventSignal(
+				time,
+				m_pimpl->m_isOpened
+					?	SERVICE_EVENT_TRADING_SESSION_CLOSED
+					:	SERVICE_EVENT_TRADING_SESSION_OPENED);
+		} catch (...) {
+			m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
+			throw;
+		}
+
+		m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
+		m_pimpl->m_serviceEventSignal(
+			time,
+			m_pimpl->m_isOpened
+				?	SERVICE_EVENT_TRADING_SESSION_OPENED
+				:	SERVICE_EVENT_TRADING_SESSION_CLOSED);
+
+	}
+
+}
+
+void Security::SetRequest(const Request &request) {
+	m_pimpl->m_request.Merge(request);
+}
+
+const Security::Request & Security::GetRequest() const {
+	return m_pimpl->m_request;
 }
 
 double Security::GetLastPrice() const {
@@ -554,6 +611,12 @@ Qty Security::GetBidQty() const {
 
 Qty Security::GetBrokerPosition() const {
 	return Qty(m_pimpl->m_brokerPosition.load());
+}
+
+Security::ContractSwitchingSlotConnection Security::SubscribeToContractSwitching(
+		const ContractSwitchingSlot &slot)
+		const {
+	return m_pimpl->m_contractSwitchedSignal.connect(slot);
 }
 
 Security::Level1UpdateSlotConnection Security::SubscribeToLevel1Updates(
@@ -933,19 +996,65 @@ void Security::SetBook(
 }
 
 ContractExpiration Security::GetExpiration() const {
-	if (!m_pimpl->m_expirationTime) {
+	if (!m_pimpl->m_expiration) {
 		boost::format error("%1% doesn't have expiration");
 		error % *this;
 		throw LogicError(error.str().c_str());
 	}
-	return ContractExpiration(
-		ConvertToPTimeFromMicroseconds(m_pimpl->m_expirationTime).date());
+	return *m_pimpl->m_expiration;
 }
 
-void Security::SetExpiration(const ContractExpiration &expiration) {
-	const auto &time = ConvertToMicroseconds(expiration.GetDate());
-	AssertLt(m_pimpl->m_expirationTime, time);
-	m_pimpl->m_expirationTime = time;
+bool Security::HasExpiration() const {
+	return m_pimpl->m_expiration ? true : false;
+}
+
+bool Security::SetExpiration(
+		const pt::ptime &time,
+		const ContractExpiration &expiration) {
+
+	Assert(!m_pimpl->m_expiration || m_pimpl->m_expiration < expiration);
+
+	const bool isFirstContract = m_pimpl->m_expiration ? false : true;
+	
+	GetSource().GetLog().Info(
+		m_pimpl->m_expiration
+			?	"Switching %1% to the next contract %2%%3%%4% (%5%)"
+					" by the event at %6%..."
+			:	"Starting %1% with the contract %2%%3%%4% (%5%)"
+					" by the event at %6%...",
+		*this,
+		GetSymbol().GetSymbol(),
+		expiration.GetCode(),
+		expiration.GetYear(),
+		expiration,
+		time);
+	
+	{
+
+		const auto lock = GetSource().GetContext().SyncDispatching();
+		
+		if (m_pimpl->m_expiration) {
+			m_pimpl->m_request = {};
+		}
+
+		m_pimpl->m_expiration = expiration;
+		for (auto &item: m_pimpl->m_level1) {
+			Unset(item);
+		}
+		m_pimpl->m_marketDataTime = 0;
+
+		Request request;
+		m_pimpl->m_contractSwitchedSignal(time, request);
+
+		if (request.IsEarlier(m_pimpl->m_request)) {
+			m_pimpl->m_request.Merge(request);
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

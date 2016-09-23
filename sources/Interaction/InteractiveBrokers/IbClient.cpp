@@ -487,7 +487,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 			request.tickerId);
 
 		if (!request.security->IsOnline()) {
-			request.security->SetOnline();
+			request.security->SetOnline(pt::not_a_date_time);
 		} else {
 			Assert(m_securityInSwitching);
 		}
@@ -526,7 +526,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				request.tickerId);
 
 			if (!request.security->IsOnline()) {
-				request.security->SetOnline();
+				request.security->SetOnline(pt::not_a_date_time);
 			}
 
 			requests.swap(m_barsRequest);
@@ -539,7 +539,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 
 bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
 	Assert(!m_isNoHistoryMode);
-	const auto &requestedDataStartTime = security.GetRequestedDataStartTime();
+	const auto &requestedDataStartTime = security.GetRequest().GetTime();
 	if (requestedDataStartTime == pt::not_a_date_time) {
 		return false;
 	}
@@ -1889,7 +1889,7 @@ namespace {
 
 		log
 			<< raw.time
-			<< ',' << char(expiration.GetCode()) << (expiration.GetYear() - 2010)
+			<< ',' << expiration.GetCode() << (expiration.GetYear() - 2010)
 			<< ',' << expiration.GetDate()
 			<< ',' << adjustRatio
 			<< ',' << raw.openPrice
@@ -2280,7 +2280,7 @@ void Client::SwitchToNextContract(ib::Security &security) {
 
 		m_securityInSwitching = &security;
 	
-		security.SetExpiration(*nextExpiration);
+		security.SetExpiration(pt::not_a_date_time, *nextExpiration);
 		SendMarketDataRequest(security);
 
 	}

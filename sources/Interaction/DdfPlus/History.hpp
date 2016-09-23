@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Common/NetworkStreamClientService.hpp"
+#include "Common/ExpirationCalendar.hpp"
 #include "Fwd.hpp"
 
 namespace trdk { namespace Interaction { namespace DdfPlus {
@@ -24,29 +25,36 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 			size_t port;
 			std::string login;
 			std::string password;
-			bool isLogEnabled;
 		};
 
 	private:
 
 		class Client;
 
-		struct RequestState {
-			
+		struct Tick {
+			boost::posix_time::ptime time;
+			double price;
+			Qty qty;
+			uint16_t tradingDay;
+		};
+		typedef std::vector<Tick> Ticks;
+
+		struct Request {
+
 			DdfPlus::Security *security;
 			boost::posix_time::ptime time;
-			int tradingDay;
-			std::ofstream log;
-#			ifdef BOOST_ENABLE_ASSERT_HANDLER
-				boost::posix_time::ptime lastDataTime;
-#			endif
+			boost::optional<Lib::ContractExpiration> expiration;
 
-			RequestState()
-				: security(nullptr)
-				, tradingDay(0) {
-				//...//
-			}
+			size_t reversed;
 
+			uint16_t tradingDay;
+			boost::posix_time::ptime contractHistoryEndTime;
+
+		};
+
+		struct RequestState {
+			std::map<boost::posix_time::ptime, Ticks> ticks;
+			size_t numberOfTicks;
 		};
 
 	public:
@@ -78,6 +86,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 	private:
 
 		const Settings m_settings;
+		Request m_request;
 		RequestState m_requestState;
 		DdfPlus::MarketDataSource &m_source;
 

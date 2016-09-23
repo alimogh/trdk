@@ -14,6 +14,8 @@
 
 namespace trdk { namespace Lib {
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	class ContractExpiration {
 
 	public:
@@ -63,6 +65,12 @@ namespace trdk { namespace Lib {
 		boost::gregorian::date m_date;
 	
 	};
+
+	std::ostream & operator <<(
+		std::ostream &,
+		const trdk::Lib::ContractExpiration::Code &);
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	class ExpirationCalendar {
 
@@ -131,6 +139,15 @@ namespace trdk { namespace Lib {
 				const trdk::Lib::Symbol &symbol,
 				const boost::posix_time::ptime &start)
 				const;
+		//! Finds contract by start date.
+		/** @pram symbol	Symbol to iterate. If symbol not in the dictionary
+							- exception will be raised.
+		  *	@param start	Start time.
+		  */
+		Iterator Find(
+				const trdk::Lib::Symbol &symbol,
+				const boost::gregorian::date &start)
+				const;
 
 	private:
 
@@ -138,5 +155,7 @@ namespace trdk { namespace Lib {
 		std::unique_ptr <Implementation> m_pimpl;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } }

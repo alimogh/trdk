@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MockContext.hpp"
-#include "Services/BollingerBandsService.hpp"
+#include "BollingerBandsService.hpp"
+#include "Tests/MockContext.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;

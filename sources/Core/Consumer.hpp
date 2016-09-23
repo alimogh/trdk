@@ -28,20 +28,18 @@ namespace trdk {
 
 	public:
 
-		//! Notifies about new security start.
-		/** @return	Return desired security data start. Can be
-		  *			boost::posix_time::not_a_date_time.
-		  */
-		virtual boost::posix_time::ptime OnSecurityStart(trdk::Security &);
-
-	public:
-
 		void RegisterSource(trdk::Security &);
 
 		SecurityList & GetSecurities();
 		const SecurityList & GetSecurities() const;
 
 	public:
+
+		virtual void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				trdk::Security &,
+				trdk::Security::Request &)
+			= 0;
 
 		virtual void RaiseBrokerPositionUpdateEvent(
 				trdk::Security &,
@@ -50,12 +48,27 @@ namespace trdk {
 			= 0;
 
 		virtual void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				trdk::Security &,
 				const trdk::Security::ServiceEvent &)
 			= 0;
 
 	protected:
-		
+
+		//! Notifies about new security start.
+		virtual void OnSecurityStart(
+				trdk::Security &,
+				trdk::Security::Request &);
+
+		//! Notifies when security switched to another contract.
+		/** All marked data for security will be reset (so if security just
+		  * started).
+		  */
+		virtual void OnSecurityContractSwitched(
+				const boost::posix_time::ptime &,
+				trdk::Security &,
+				trdk::Security::Request &);
+
 		virtual void OnLevel1Tick(
 				trdk::Security &,
 				const boost::posix_time::ptime &,
@@ -88,13 +101,14 @@ namespace trdk {
 		virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);
 
 		virtual void OnSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

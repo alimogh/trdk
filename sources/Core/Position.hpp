@@ -55,21 +55,21 @@ namespace trdk {
 			numberOfCloseTypes
 		};
 
-		class TRDK_CORE_API LogicError : public trdk::Lib::LogicError {
+		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
 		public:
-			explicit LogicError(const char *what) throw();
+			explicit Exception(const char *what) throw();
 		};
 		
-		class TRDK_CORE_API AlreadyStartedError : public LogicError {
+		class TRDK_CORE_API AlreadyStartedError : public Exception {
 		public:
 			AlreadyStartedError() throw();
 		};
-		class TRDK_CORE_API NotOpenedError : public LogicError {
+		class TRDK_CORE_API NotOpenedError : public Exception {
 		public:
 			NotOpenedError() throw();
 		};
 		
-		class TRDK_CORE_API AlreadyClosedError : public LogicError {
+		class TRDK_CORE_API AlreadyClosedError : public Exception {
 		public:
 			AlreadyClosedError() throw();
 		};

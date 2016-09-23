@@ -24,19 +24,30 @@ namespace trdk { namespace Engine {
 
 		template<Lib::Concurrency::Profile profile>
 		struct DispatcherConcurrencyPolicyT {
+			
 			static_assert(
 				profile == Lib::Concurrency::PROFILE_RELAX,
 				"Wrong concurrency profile");
-			typedef boost::mutex Mutex;
-			typedef Mutex::scoped_lock Lock;
-			typedef boost::condition_variable Condition;
+			
+			typedef boost::mutex QueueMutex;
+			typedef QueueMutex::scoped_lock QueueLock;
+			typedef boost::condition_variable QueueCondition;
+
+			typedef boost::shared_mutex SyncMutex;
+			typedef boost::shared_lock<SyncMutex> SharedSyncLock;
+			typedef boost::unique_lock<SyncMutex> UniqueSyncLock;
+		
 		};
+		
 		template<>
 		struct DispatcherConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-			typedef Lib::Concurrency::SpinMutex Mutex;
-			typedef Mutex::ScopedLock Lock;
-			typedef Lib::Concurrency::SpinCondition Condition;
+		
+			typedef Lib::Concurrency::SpinMutex QueueMutex;
+			typedef QueueMutex::ScopedLock QueueLock;
+			typedef Lib::Concurrency::SpinCondition QueueCondition;
+		
 		};
+		
 		typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
 			DispatcherConcurrencyPolicy;
 
@@ -46,21 +57,36 @@ namespace trdk { namespace Engine {
 
 	class Dispatcher : private boost::noncopyable {
 
+	public:
+
+		typedef Details::DispatcherConcurrencyPolicy::UniqueSyncLock
+			UniqueSyncLock;
+
 	private:
 
-		typedef Details::DispatcherConcurrencyPolicy::Mutex EventQueueMutex;
-		typedef Details::DispatcherConcurrencyPolicy::Lock EventQueueLock;
-		typedef Details::DispatcherConcurrencyPolicy::Condition EventQueueCondition;
+		typedef Details::DispatcherConcurrencyPolicy::SharedSyncLock
+			SharedSyncLock;
+		typedef Details::DispatcherConcurrencyPolicy::SyncMutex SyncMutex;
+
+		typedef Details::DispatcherConcurrencyPolicy::QueueMutex
+			EventQueueMutex;
+		typedef Details::DispatcherConcurrencyPolicy::QueueLock
+			EventQueueLock;
+		typedef Details::DispatcherConcurrencyPolicy::QueueCondition
+			EventQueueCondition;
 
 		struct EventListsSyncObjects {
 			
-			EventQueueMutex mutex;
+			SyncMutex &syncMutex;
+
+			EventQueueMutex queueMutex;
 			EventQueueCondition newDataCondition;
 			EventQueueCondition syncCondition;
 			bool isSyncRequired;
 
-			EventListsSyncObjects()
-				: isSyncRequired(false) {
+			explicit EventListsSyncObjects(SyncMutex &syncMutex)
+				: syncMutex(syncMutex)
+				, isSyncRequired(false) {
 				//...//
 			}
 
@@ -105,7 +131,7 @@ namespace trdk { namespace Engine {
 
 			void Sync() {
 				Assert(m_sync);
-				Lock lock(m_sync->mutex);
+				Lock lock(m_sync->queueMutex);
 				m_sync->isSyncRequired = true;
 				m_sync->newDataCondition.notify_one();
 				m_sync->syncCondition.wait(lock);
@@ -122,21 +148,21 @@ namespace trdk { namespace Engine {
 
 			void Activate() {
 				Assert(m_sync);
-				const Lock lock(m_sync->mutex);
+				const Lock lock(m_sync->queueMutex);
 				AssertEq(int(TASK_STATE_INACTIVE), int(m_taksState));
 				m_taksState = TASK_STATE_ACTIVE;
 			}
 
 			void Suspend() {
 				Assert(m_sync);
-				const Lock lock(m_sync->mutex);
+				const Lock lock(m_sync->queueMutex);
 				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 				m_taksState = TASK_STATE_INACTIVE;
 			}
 
 			void Stop() {
 				Assert(m_sync);
-				const Lock lock(m_sync->mutex);
+				const Lock lock(m_sync->queueMutex);
 				AssertNe(int(TASK_STATE_STOPPED), int(m_taksState));
 				m_taksState = TASK_STATE_STOPPED;
  				m_sync->newDataCondition.notify_all();
@@ -144,7 +170,7 @@ namespace trdk { namespace Engine {
 
 			bool IsStopped(const Lock &lock) const {
 				Assert(m_sync);
-				Assert(&m_sync->mutex == lock.mutex());
+				Assert(&m_sync->queueMutex == lock.mutex());
 				Lib::UseUnused(lock);
 				return m_taksState == TASK_STATE_STOPPED;
 			}
@@ -152,23 +178,30 @@ namespace trdk { namespace Engine {
 			template<typename Event>
 			void Queue(const Event &event, bool flush) {
 				Assert(m_sync);
-				Lock lock(m_sync->mutex);
-				if (m_taksState == TASK_STATE_STOPPED) {
-					return;
-				}
-				Assert(
-					m_current == &m_lists.first
-					|| m_current == &m_lists.second);
-				if (Dispatcher::QueueEvent(event, *m_current) || flush) {
-					if (!m_context.GetSettings().IsReplayMode()) {
-						m_sync->newDataCondition.notify_one();
+				const SharedSyncLock syncLock(m_sync->syncMutex);
+				{
+					const Lock queueLock(m_sync->queueMutex);
+					if (m_taksState == TASK_STATE_STOPPED) {
+						return;
+					}
+					Assert(
+						m_current == &m_lists.first
+						|| m_current == &m_lists.second);
+					if (!Dispatcher::QueueEvent(event, *m_current)) {
+						flush = false;
+					}
+					if (flush) {
+						flush = !m_context.GetSettings().IsReplayMode();
+					}
+					if (!(m_current->size() % 50)) {
+						m_context.GetLog().Warn(
+							"Dispatcher queue \"%1%\" is too long (%2% events)!",
+							m_name,
+							m_current->size());
 					}
 				}
-				if (!(m_current->size() % 50)) {
-					m_context.GetLog().Warn(
-						"Dispatcher queue \"%1%\" is too long (%2% events)!",
-						m_name,
-						m_current->size());
+				if (flush) {
+					m_sync->newDataCondition.notify_one();
 				}
 			}
 
@@ -177,7 +210,7 @@ namespace trdk { namespace Engine {
 					const Lib::TimeMeasurement::Milestones &timeMeasurement) {
 
 				Assert(m_sync);
-				Assert(&m_sync->mutex == lock.mutex());
+				Assert(&m_sync->queueMutex == lock.mutex());
 				Assert(
 					m_current == &m_lists.first
 					|| m_current == &m_lists.second);
@@ -298,14 +331,6 @@ namespace trdk { namespace Engine {
 		typedef EventQueue<std::vector<BookUpdateTickEvent>>
 			BookUpdateTickEventQueue;
 
-		typedef boost::tuple<
-				Security *,
-				Security::ServiceEvent,
-				SubscriberPtrWrapper>
-			SecurityServiceEvent;
-		typedef EventQueue<std::vector<SecurityServiceEvent>>
-			SecurityServiceEventQueue;
-
 		typedef boost::variant<
 				Level1UpdateEventQueue *,
 				Level1TicksEventQueue *,
@@ -313,8 +338,7 @@ namespace trdk { namespace Engine {
 				PositionsUpdateEventQueue *,
 				BrokerPositionsUpdateEventQueue *,
 				NewBarEventQueue *,
-				BookUpdateTickEventQueue *,
-				SecurityServiceEventQueue *>
+				BookUpdateTickEventQueue *>
 			QueueList;
 
 	public:
@@ -329,10 +353,15 @@ namespace trdk { namespace Engine {
 		void Activate();
 		void Suspend();
 
-		void SyncDispatching();
+		UniqueSyncLock SyncDispatching() const;
 
 	public:
 
+		void SignalSecurityContractSwitched(
+				SubscriberPtrWrapper &,
+				const boost::posix_time::ptime &,
+				Security &,
+				Security::Request &);
 		void SignalLevel1Update(
 				SubscriberPtrWrapper &,
 				Security &,
@@ -366,9 +395,9 @@ namespace trdk { namespace Engine {
 				const Lib::TimeMeasurement::Milestones &);
 		void SignalSecurityServiceEvents(
 				SubscriberPtrWrapper &,
+				const boost::posix_time::ptime &,
 				Security &,
-				const Security::ServiceEvent &,
-				bool flush);
+				const Security::ServiceEvent &);
 
 	private:
 
@@ -461,13 +490,6 @@ namespace trdk { namespace Engine {
 			eventList.emplace_back(bookUpdateTickEvent);
 			boost::get<2>(bookUpdateTickEvent)
 				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
-			return true;
-		}
-		template<typename EventList>
-		static bool QueueEvent(
-				const SecurityServiceEvent &event,
-				EventList &eventList) {
-			eventList.emplace_back(event);
 			return true;
 		}
 
@@ -1363,11 +1385,12 @@ namespace trdk { namespace Engine {
 			try {
 				std::bitset<boost::tuples::length<EventLists>::value>
 					deactivationMask;
-				auto sync = boost::make_shared<EventListsSyncObjects>();
+				auto sync = boost::make_shared<EventListsSyncObjects>(
+					m_syncMutex);
 				AssignEventListsSyncObjects(sync, lists);
 				startBarrier->wait();
 				startBarrier.reset();
-				EventQueueLock lock(sync->mutex);
+				EventQueueLock lock(sync->queueMutex);
 				for ( ; ; ) {
 					const Lib::TimeMeasurement::Milestones timeMeasurement
 						= DispatchingTimeMeasurementPolicy::StartDispatchingTimeMeasurement(
@@ -1427,6 +1450,8 @@ namespace trdk { namespace Engine {
 
 		Engine::Context &m_context;
 
+		mutable SyncMutex m_syncMutex;
+
 		boost::thread_group m_threads;
 
 		Level1UpdateEventQueue m_level1Updates;
@@ -1436,7 +1461,6 @@ namespace trdk { namespace Engine {
 		BrokerPositionsUpdateEventQueue m_brokerPositionsUpdates;
 		NewBarEventQueue m_newBars;
 		BookUpdateTickEventQueue m_bookUpdateTicks;
-		SecurityServiceEventQueue m_securityServiceEvents;
 
 		std::vector<QueueList> m_queues;
 
@@ -1497,12 +1521,6 @@ namespace trdk { namespace Engine {
 			*boost::get<0>(bookUpdateTickEvent),
 			boost::get<1>(bookUpdateTickEvent),
 			timeMeasurement);
-	}
-	template<>
-	inline void Dispatcher::RaiseEvent(SecurityServiceEvent &event) {
-		boost::get<2>(event).RaiseSecurityServiceEvent(
-			*boost::get<0>(event),
-			boost::get<1>(event));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

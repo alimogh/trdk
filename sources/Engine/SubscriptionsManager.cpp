@@ -234,6 +234,46 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 	Report(*subscriber, security, "book update ticks");
 }
 
+void SubscriptionsManager::SubscribeToSecurityContractSwitching(
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<sig::connection> &slotConnections) {
+	
+	typedef void(CallbackProto)(
+		SubscriberPtrWrapper &,
+		const pt::ptime &,
+		const Security::Request &);
+	const boost::function<CallbackProto> &callback = [this, &security](
+			SubscriberPtrWrapper &subscriber,
+			const pt::ptime &time,
+			const Security::Request &request) {
+		m_dispatcher.SignalSecurityContractSwitched(
+			subscriber,
+			time,
+			security,
+			// workaround for boost::bind "forwarding problem":
+			const_cast<Security::Request &>(request));
+	};
+
+	const auto slot = Security::ContractSwitchingSlot(
+		boost::bind(callback, subscriber, _1, _2));
+	const auto &connection = security.SubscribeToContractSwitching(slot);
+	try {
+		slotConnections.push_back(connection);
+	} catch (...) {
+		try {
+			connection.disconnect();
+		} catch (...) {
+			AssertFailNoException();
+			throw;
+		}
+		throw;
+	}
+
+	Report(*subscriber, security, "security contract switching");
+
+}
+
 void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 		Security &security,
 		const SubscriberPtrWrapper &subscriber,
@@ -243,8 +283,8 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 			&Dispatcher::SignalSecurityServiceEvents,
 			&m_dispatcher,
 			subscriber,
-			boost::ref(security),
 			_1,
+			boost::ref(security),
 			_2));
 	const auto &connection = security.SubscribeToServiceEvents(slot);
 	try {
@@ -546,6 +586,60 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 				const SubscriberPtrWrapper &subscriber,
 				std::list<sig::connection> &slotConnections) {
 			SubscribeToBookUpdateTicks(security, subscriber, slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityContractSwitching(
+		Security &security,
+		Strategy &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<sig::connection> &slotConnections) {
+			SubscribeToSecurityContractSwitching(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityContractSwitching(
+		Security &security,
+		Service &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<sig::connection> &slotConnections) {
+			SubscribeToSecurityContractSwitching(
+				security,
+				subscriber,
+				slotConnections);
+		});
+}
+
+void SubscriptionsManager::SubscribeToSecurityContractSwitching(
+		Security &security,
+		Observer &subscriber) {
+	Assert(!IsActive());
+	Subscribe(
+		security,
+		subscriber,
+		[this](
+				Security &security,
+				const SubscriberPtrWrapper &subscriber,
+				std::list<sig::connection> &slotConnections) {
+			SubscribeToSecurityContractSwitching(
+				security,
+				subscriber,
+				slotConnections);
 		});
 }
 

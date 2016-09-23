@@ -42,13 +42,17 @@ DdfPlus::Security::Security(
 		context,
 		symbol,
 		source,
-		false,
-		true,
 		GetSupportedLevel1Types()) {
 	//...//
 }
 
 std::string DdfPlus::Security::GenerateDdfPlusCode() const {
+	return GenerateDdfPlusCode(GetExpiration());
+}
+
+std::string DdfPlus::Security::GenerateDdfPlusCode(
+		const ContractExpiration &expiration)
+		const {
 
 	std::ostringstream result;
 
@@ -62,8 +66,8 @@ std::string DdfPlus::Security::GenerateDdfPlusCode() const {
 				throw Exception(
 					"Explicit symbol for futures contracts is not supported");
 			} else if (
-					GetExpiration().GetYear() > 2019
-					|| GetExpiration().GetYear() < 2010) {
+					expiration.GetYear() > 2019
+					|| expiration.GetYear() < 2010) {
 				throw MethodDoesNotImplementedError(
 					"Work with features from < 2010 or > 2019"
 						" is not supported");
@@ -71,8 +75,8 @@ std::string DdfPlus::Security::GenerateDdfPlusCode() const {
 		
 			result
 				<< GetSymbol().GetSymbol()
-				<< char(GetExpiration().GetCode())
-				<< (GetExpiration().GetYear() - 2010);
+				<< expiration.GetCode()
+				<< (expiration.GetYear() - 2010);
 		
 			break;
 		

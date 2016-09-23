@@ -44,23 +44,23 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-Position::LogicError::LogicError(const char *what) throw()
-		: Lib::LogicError(what) {
+Position::Exception::Exception(const char *what) throw()
+	: Lib::Exception(what) {
 	//...//
 }
 		
 Position::AlreadyStartedError::AlreadyStartedError() throw()
-		: LogicError("Position already started") {
+	: Exception("Position already started") {
 	//...//
 }
 
 Position::NotOpenedError::NotOpenedError() throw()
-		: LogicError("Position not opened") {
+	: Exception("Position not opened") {
 	//...//
 }
 		
 Position::AlreadyClosedError::AlreadyClosedError() throw()
-		: LogicError("Position already closed") {
+	: Exception("Position already closed") {
 	//...//
 }
 
@@ -762,7 +762,14 @@ public:
 			const TimeInForce &timeInForce,
 			const OrderParams &orderParams,
 			bool hasPrice) {
-		
+
+		if (m_security.IsOnline()) {
+			throw Exception("Security is not online");
+		}
+		if (m_security.IsTradingSessionOpened()) {
+			throw Exception("Security trading session is closed");
+		}
+
 		const WriteLock lock(m_mutex);
 		std::unique_ptr<const WriteLock> oppositePositionLock;
 		if (m_position.HasActiveOrders() || m_closed.orderId != nOrderId) {

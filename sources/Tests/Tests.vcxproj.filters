@@ -41,10 +41,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MovingAverageServiceTest.cpp">
+    <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="BollingerBandsServiceTest.cpp">
+    <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="PriceBookTest.cpp">
@@ -58,16 +58,13 @@
     </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
-    <ClCompile Include="SymbolTest.cpp">
+    <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="BarServiceTest.cpp">
+    <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="ExpirationCalendarTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="UtilsTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="DummyContext.cpp">
@@ -76,13 +73,18 @@
     <ClCompile Include="DummyMarketDataSource.cpp">
       <Filter>Dummies</Filter>
     </ClCompile>
+    <ClCompile Include="..\Common\UtilsUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\SecurityUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\SymbolUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Indicators.xlsx" />
-    <None Include="ContinuousContract.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">

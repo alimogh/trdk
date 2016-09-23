@@ -23,11 +23,11 @@ Itch::Security::Security(
 		Context &context,
 		const Lib::Symbol &symbol,
 		MarketDataSource &source)
-	: Base(context, symbol, source, true, true, SupportedLevel1Types().set())
+	: Base(context, symbol, source, SupportedLevel1Types().set())
 	, m_hasBidUpdates(false)
 	, m_hasAskUpdates(false)
 	, m_maxNewOrderId(0) {
-	StartLevel1();
+	//...//
 }
 
 void Itch::Security::OnNewOrder(

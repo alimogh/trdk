@@ -360,16 +360,17 @@
     <ClInclude Include="DummyContext.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BarServiceTest.cpp" />
-    <ClCompile Include="BollingerBandsServiceTest.cpp" />
+    <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
+    <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
+    <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />
     <ClCompile Include="DummyContext.cpp" />
     <ClCompile Include="DummyMarketDataSource.cpp" />
-    <ClCompile Include="ExpirationCalendarTest.cpp" />
+    <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />
-    <ClCompile Include="PriceBookTest.cpp" />
+    <ClCompile Include="..\Core\PriceBookUTest.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MovingAverageServiceTest.cpp" />
+    <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -384,8 +385,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SymbolTest.cpp" />
-    <ClCompile Include="UtilsTest.cpp" />
+    <ClCompile Include="..\Core\SecurityUTest.cpp" />
+    <ClCompile Include="..\Common\SymbolUTest.cpp" />
+    <ClCompile Include="..\Common\UtilUTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">
@@ -544,10 +546,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
     </Library>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ContinuousContract.xlsx" />
-    <None Include="Indicators.xlsx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

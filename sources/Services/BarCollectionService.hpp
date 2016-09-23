@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/09/12 01:05:26
+ *   Created: 2012/11/14 22:07:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,27 +9,39 @@
  **************************************************************************/
 
 #pragma once
+
 #include "BarService.hpp"
-#include "Api.h"
 
 namespace trdk { namespace Services {
 
 	//! Bars collection service.
-	/** @sa https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm
-	  */
-	class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
+	class TRDK_SERVICES_API BarCollectionService : public BarService {
 
 	public:
 
 		typedef BarService Base;
 
+		//! Throws when setup does not allow to work by requested method.
+		class MethodDoesNotSupportBySettings : public Error {
+		public:
+			explicit MethodDoesNotSupportBySettings(const char *) throw();
+		};
+
 	public:
 
-		explicit ContinuousContractBarService(
+		explicit BarCollectionService(
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
-		virtual ~ContinuousContractBarService();
+		virtual ~BarCollectionService();
+
+	public:
+
+		//! Applies callback for each bar in the reversed order.
+		/** Stops if callback returns false.
+		  */
+		void ForEachReversed(const boost::function<bool(const Bar &)> &) const;
+		bool CompleteBar();
 
 	public:
 
@@ -38,31 +50,33 @@ namespace trdk { namespace Services {
 
 		virtual const trdk::Security & GetSecurity() const;
 
-		virtual Bar GetBar(size_t index) const;
-		virtual Bar GetBarByReversedIndex(size_t index) const;
+		virtual Bar GetBar(size_t) const;
+		virtual Bar GetBarByReversedIndex(size_t) const;
 		virtual Bar GetLastBar() const;
-
-	public:
 
 		virtual void OnSecurityStart(
 				const trdk::Security &,
 				trdk::Security::Request &);
 
-		virtual void OnSecurityContractSwitched(
-				const boost::posix_time::ptime &,
+		virtual bool OnNewBar(
 				const trdk::Security &,
-				trdk::Security::Request &);
+				const trdk::Security::Bar &);
 
-		virtual bool OnSecurityServiceEvent(
+		virtual bool OnLevel1Tick(
+				const trdk::Security &,
 				const boost::posix_time::ptime &,
-				const Security &,
-				const Security::ServiceEvent &);
+				const trdk::Level1TickValue &);
 
 		virtual bool OnNewTrade(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
 				const trdk::Qty &);
+
+		virtual bool OnSecurityServiceEvent(
+				const boost::posix_time::ptime &,
+				const trdk::Security &,
+				const trdk::Security::ServiceEvent &);
 
 	private:
 

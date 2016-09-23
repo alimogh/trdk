@@ -35,7 +35,8 @@ DummyContext & DummyContext::GetInstance() {
 	return result;
 }
 
-void DummyContext::SyncDispatching() {
+std::unique_ptr<DummyContext::DispatchingLock> DummyContext::SyncDispatching()
+		const {
 	throw std::logic_error("Not supported");
 }
 

@@ -38,8 +38,7 @@ namespace {
 			"ds01.ddfplus.com",
 			80,
 			conf.ReadKey("login"),
-			conf.ReadKey("password"),
-			true
+			conf.ReadKey("password")
 		};
 		return result;
 	}
@@ -95,12 +94,8 @@ void DdfPlus::MarketDataSource::SubscribeToSecurities() {
 	try {
 	
 		for (const auto &security: m_securities) {
-			if (
-					security
-						.second
-						->GetRequestedDataStartTime()
-						.is_not_a_date_time()) {
-				security.second->SetOnline();
+			if (!security.second->GetRequest()) {
+				security.second->SetOnline(pt::not_a_date_time);
 				m_stream->SubscribeToMarketData(*security.second);
 			} else {
 				Assert(!security.second->IsOnline());
@@ -161,26 +156,20 @@ trdk::Security & DdfPlus::MarketDataSource::CreateNewSecurityObject(
 				error % symbol % now;
 				throw trdk::MarketDataSource::Error(error.str().c_str());
 			}
-			result->SetExpiration(*expiration);
-			GetLog().Info(
-				"Current expiration date for \"%1%\": %2% (%3%).",
-				symbol,
-				result->GetExpiration().GetDate(),
-				result->GenerateDdfPlusCode());
+			m_securities.emplace(
+				result->GetSymbol().GetSymbol(),
+				result);
 		}
 		break;
 	}
-
-	Assert(m_securities.count(result->GenerateDdfPlusCode()) == 0);
-	m_securities.emplace(std::make_pair(result->GenerateDdfPlusCode(), result));
 
 	return *result;
 
 }
 
 DdfPlus::Security * DdfPlus::MarketDataSource::FindSecurity(
-		const std::string &ddfPlusCodeSymbolCode) {
-	const auto &result = m_securities.find(ddfPlusCodeSymbolCode);
+		const std::string &symbolCode) {
+	const auto &result = m_securities.find(symbolCode);
 	return result != m_securities.cend()
 		? &*result->second
 		: nullptr;
@@ -213,7 +202,7 @@ void DdfPlus::MarketDataSource::CheckHistoryConnection() {
 
 }
 
-void DdfPlus::MarketDataSource::OnHistoryRequestCompleted(
+void DdfPlus::MarketDataSource::OnHistoryLoadCompleted(
 		DdfPlus::Security &security/*,
 		bool isRequestQueueEmpty*/) {
 
@@ -223,7 +212,7 @@ void DdfPlus::MarketDataSource::OnHistoryRequestCompleted(
 	GetLog().Debug(
 		"%1% history loaded, sending on-line market data request...",
 		security);
-	security.SetOnline();
+	security.SetOnline(pt::not_a_date_time);
 	m_stream->SubscribeToMarketData(security);
 	GetLog().Info(
 		"%1% history loaded, on-line market data request sent.",

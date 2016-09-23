@@ -230,9 +230,9 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 					symbol,
 					expiration->GetDate(),
 					symbol.GetSymbol(),
-					char(expiration->GetCode()),
+					expiration->GetCode(),
 					expiration->GetYear() - 2010);
-				result->SetExpiration(*expiration);
+				result->SetExpiration(pt::not_a_date_time, *expiration);
 			}
 			break;
 	}

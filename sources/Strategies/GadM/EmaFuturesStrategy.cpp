@@ -87,7 +87,9 @@ namespace EmaFuturesStrategy {
 
 	public:
 
-		virtual pt::ptime OnSecurityStart(Security &security) {
+		virtual void OnSecurityStart(
+				Security &security,
+				Security::Request &request) {
 			if (!m_security) {
 				m_security = &security;
 				GetLog().Info("Using \"%1%\" to trade...", *m_security);
@@ -95,7 +97,7 @@ namespace EmaFuturesStrategy {
 				throw Exception(
 					"Strategy can not work with more than one security");
 			}
-			return GetContext().GetCurrentTime() - pt::minutes(15) * 100;
+			Base::OnSecurityStart(security, request);
 		}
 
 		virtual void OnServiceStart(const Service &service) {
@@ -132,10 +134,6 @@ namespace EmaFuturesStrategy {
 					maService->GetTag());
 				throw Exception("Failed to resolve EMA service");
 			}
-
-			//! @todo Find another solution, without const_cast:
-			OnSecurityStart(
-				const_cast<Security &>(*maService->GetSecurities().GetBegin()));
 
 		}
 
@@ -217,17 +215,13 @@ namespace EmaFuturesStrategy {
 					" is not implemented");
 		}
 
-		virtual void OnSecurityServiceEvent(
+		virtual void OnSecurityContractSwitched(
+				const pt::ptime &time,
 				Security &security,
-				const Security::ServiceEvent &event) {
-			
-			static_assert(
-				Security::numberOfServiceEvents == 1,
-				"List changed.");
-			if (event != Security::SERVICE_EVENT_CONTRACT_SWITCHED) {
-				Strategy::OnSecurityServiceEvent(security, event);
-				return;
-			} else if (&security != m_security) {
+				Security::Request &request) {
+
+			if (&security != m_security) {
+				Base::OnSecurityContractSwitched(time, security, request);
 				return;
 			}
 

@@ -33,6 +33,16 @@ namespace trdk { namespace Engine {
 
 	public:
 
+		void SubscribeToSecurityContractSwitching(
+				trdk::Security &,
+				trdk::Strategy &);
+		void SubscribeToSecurityContractSwitching(
+				trdk::Security &,
+				trdk::Service &);
+		void SubscribeToSecurityContractSwitching(
+				trdk::Security &,
+				trdk::Observer &);
+
 		void SubscribeToLevel1Updates(trdk::Security &, trdk::Strategy &);
 		void SubscribeToLevel1Updates(trdk::Security &, trdk::Service &);
 		void SubscribeToLevel1Updates(trdk::Security &, trdk::Observer &);
@@ -79,12 +89,16 @@ namespace trdk { namespace Engine {
 		void Activate();
 		void Suspend();
 
-		void SyncDispatching() {
-			m_dispatcher.SyncDispatching();
+		Dispatcher::UniqueSyncLock SyncDispatching() const {
+			return m_dispatcher.SyncDispatching();
 		}
 
 	private:
 
+		void SubscribeToSecurityContractSwitching(
+				Security &,
+				const SubscriberPtrWrapper &,
+				std::list<boost::signals2::connection> &);
 		void SubscribeToLevel1Updates(
 				Security &,		
 				const SubscriberPtrWrapper &,

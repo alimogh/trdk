@@ -82,18 +82,25 @@ namespace trdk { namespace Services {
 		  */
 		Point GetHistoryPointByReversedIndex(size_t index) const;
 
-	public:
+	protected:
+
+		virtual void OnSecurityContractSwitched(
+				const boost::posix_time::ptime &,
+				const trdk::Security &,
+				trdk::Security::Request &);
 
 		virtual bool OnServiceDataUpdate(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
+
+	public:
 
 		virtual bool OnLevel1Tick(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::Level1TickValue &);
 
-		bool OnNewBar(
+		virtual bool OnNewBar(
 				const trdk::Security &,
 				const trdk::Services::BarService::Bar &);
 

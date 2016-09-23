@@ -15,6 +15,7 @@ namespace trdk {
 	class Context;
 
 	class PriceBook;
+
 	class Security;
 	
 	class TradingSystem;

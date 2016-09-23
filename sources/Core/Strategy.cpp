@@ -631,6 +631,24 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 	}
 }
 
+void Strategy::RaiseSecurityContractSwitchedEvent(
+		const pt::ptime &time,
+		Security &security,
+		Security::Request &request) {
+	const Lock lock(GetMutex());
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
+	if (IsBlocked()) {
+		return;
+	}
+	try {
+		OnSecurityContractSwitched(time, security, request);
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
+	}
+}
+
 void Strategy::RaiseBrokerPositionUpdateEvent(
 		Security &security,
 		const Qty &qty,
@@ -684,6 +702,7 @@ void Strategy::RaiseBookUpdateTickEvent(
 }
 
 void Strategy::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		Security &security,
 		const Security::ServiceEvent &event) {
 	const Lock lock(GetMutex());
@@ -694,7 +713,7 @@ void Strategy::RaiseSecurityServiceEvent(
 		return;
 	}
 	try {
-		OnSecurityServiceEvent(security, event);
+		OnSecurityServiceEvent(time, security, event);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "security service event");
 	}

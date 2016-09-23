@@ -15,6 +15,8 @@
 using namespace trdk;
 using namespace trdk::Lib;
 
+namespace pt = boost::posix_time;
+
 Observer::Observer(
 		Context &context,
 		const std::string &name,
@@ -81,8 +83,9 @@ void Observer::RaiseServiceDataUpdateEvent(
 }
 
 void Observer::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		Security &security,
-		const Security::ServiceEvent &event) {
+		const Security::ServiceEvent &securityEvent) {
 	const Lock lock(GetMutex());
-	OnSecurityServiceEvent(security, event);
+	OnSecurityServiceEvent(time, security, securityEvent);
 }

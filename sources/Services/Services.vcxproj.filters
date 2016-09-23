@@ -11,9 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BarService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -32,11 +29,14 @@
     <ClInclude Include="ContinuousContractBarService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BarService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BarCollectionService.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BarService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -52,11 +52,28 @@
     <ClCompile Include="ContinuousContractBarService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BarService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BarCollectionService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContinuousContractBarServiceUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BarCollectionServiceUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MovingAverageServiceUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Services.def">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="ContinuousContractBarServiceUTest.xlsx" />
+    <None Include="Indicators.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Services.rc">

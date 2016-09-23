@@ -542,6 +542,7 @@ namespace {
 		SYSTEM_SERVICE_BROKER_POSITIONS_UPDATES,
 		SYSTEM_SERVICE_BARS,
 		SYSTEM_SERVICE_SECURITY_SERVICE_EVENT,
+		SYSTEM_SERVICE_SECURITY_CONTRACT_SWITCHING,
 		numberOfSystemServices
 	};
 
@@ -953,7 +954,7 @@ private:
 			conf);
 
 		static_assert(
-			numberOfSystemServices == 7,
+			numberOfSystemServices == 8,
 			"System service list changed.");
 		if (	boost::iequals(tag, Constants::Services::level1Updates)
 				|| boost::iequals(tag, Constants::Services::level1Ticks)
@@ -1345,6 +1346,11 @@ private:
 				// uses this security directly or by dependency from another
 				// entity.
 				requirements
+					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_CONTRACT_SWITCHING]
+					.insert(
+						supplierRequest.symbols.begin(),
+						supplierRequest.symbols.end());
+				requirements
 					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_SERVICE_EVENT]
 					.insert(
 						supplierRequest.symbols.begin(),
@@ -1377,6 +1383,11 @@ private:
 				// Adds notification about security events for each entity that
 				// uses this security directly or by dependency from another
 				// entity.
+				requirements
+					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_CONTRACT_SWITCHING]
+					.insert(
+						supplierRequest.symbols.begin(),
+						supplierRequest.symbols.end());
 				requirements
 					.requiredSystemServices[SYSTEM_SERVICE_SECURITY_SERVICE_EVENT]
 					.insert(
@@ -1594,9 +1605,12 @@ private:
 			void (SubscriptionsManager::*subscribe)(Security &, Module &)
 				= nullptr;
 			static_assert(
-				numberOfSystemServices == 7,
+				numberOfSystemServices == 8,
 				"System service list changed.");
 			switch (requirement.first) {
+				default:
+					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
+					break;
 				case SYSTEM_SERVICE_LEVEL1_UPDATES:
 					subscribe = &SubscriptionsManager::SubscribeToLevel1Updates;
 					break;
@@ -1621,9 +1635,9 @@ private:
 					subscribe
 						= &SubscriptionsManager::SubscribeToSecurityServiceEvents;
 					break;
-				default:
-					AssertEq(SYSTEM_SERVICE_LEVEL1_UPDATES, requirement.first);
-					break;
+				case SYSTEM_SERVICE_SECURITY_CONTRACT_SWITCHING:
+					subscribe
+						= &SubscriptionsManager::SubscribeToSecurityContractSwitching;
 			}
 			Assert(subscribe);
 			if (!subscribe) {

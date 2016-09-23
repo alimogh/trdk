@@ -37,6 +37,7 @@ namespace trdk { namespace Interaction { namespace DdfPlus {
 		using Base::IsLevel1Required;
 
 		std::string GenerateDdfPlusCode() const;
+		std::string GenerateDdfPlusCode(const Lib::ContractExpiration &) const;
 
 		using Base::AddTrade;
 

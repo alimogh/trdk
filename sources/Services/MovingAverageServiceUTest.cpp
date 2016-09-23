@@ -9,10 +9,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Services/MovingAverageService.hpp"
-#include "MockContext.hpp"
-#include "MockMarketDataSource.hpp"
-#include "MockDropCopy.hpp"
+#include "MovingAverageService.hpp"
+#include "Tests/MockContext.hpp"
+#include "Tests/MockMarketDataSource.hpp"
+#include "Tests/MockDropCopy.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
@@ -200,8 +200,6 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
 		marketDataSource,
-		true,
-		true,
 		trdk::Security::SupportedLevel1Types());
 
 	MockDropCopy dropCopy;
@@ -384,8 +382,6 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
 		marketDataSource,
-		true,
-		true,
 		trdk::Security::SupportedLevel1Types());
 
 	MockDropCopy dropCopy;

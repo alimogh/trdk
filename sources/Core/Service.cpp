@@ -149,8 +149,28 @@ Service::~Service() {
 	delete m_pimpl;
 }
 
-pt::ptime Service::OnSecurityStart(const Security &) {
-	return pt::not_a_date_time;
+void Service::OnSecurityStart(const Security &, Security::Request &) {
+	//...//
+}
+
+void Service::OnSecurityContractSwitched(
+		const pt::ptime &,
+		const Security &security,
+		Security::Request &) {
+	GetLog().Error(
+		"Subscribed to %1% contract switch event, but can't work with it"
+			" (doesn't have OnSecurityContractSwitched method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to contract switch event, but can't work with it");
+}
+
+void Service::RaiseSecurityContractSwitchedEvent(
+		const pt::ptime &time,
+		const Security &security,
+		Security::Request &request) {
+	const Lock lock(GetMutex());
+	OnSecurityContractSwitched(time, security, request);
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {
@@ -207,10 +227,11 @@ bool Service::RaiseBookUpdateTickEvent(
 }
 
 bool Service::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		const Security &security,
 		const Security::ServiceEvent &securityEvent) {
 	const Lock lock(GetMutex());
-	return OnSecurityServiceEvent(security, securityEvent);
+	return OnSecurityServiceEvent(time, security, securityEvent);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -293,6 +314,7 @@ bool Service::OnBookUpdateTick(
 }
 
 bool Service::OnSecurityServiceEvent(
+		const pt::ptime &,
 		const Security &,
 		const Security::ServiceEvent &) {
 	return false;
@@ -318,10 +340,9 @@ void Service::RegisterSource(Security &security) {
 	if (!m_pimpl->m_securities.Insert(security)) {
 		return;
 	}
-	const auto dataStart = OnSecurityStart(security);
-	if (dataStart != pt::not_a_date_time) {
-		security.SetRequestedDataStartTime(dataStart);
-	}
+	Security::Request request;
+	OnSecurityStart(security, request);
+	security.SetRequest(request);
 }
 
 const Service::SecurityList & Service::GetSecurities() const {

@@ -301,9 +301,13 @@ namespace {
 					return;
 			}
 
-			DdfPlus::Security *const security = GetService()
+			if (std::distance(messageBegin, symbolEnd) < 2) {
+				throw Exception("Trading message has too short symbol code");
+			}
+			DdfPlus::Security *const security
+				= GetService()
 				.GetSource()
-				.FindSecurity(std::string(messageBegin, symbolEnd));
+				.FindSecurity(std::string(messageBegin, symbolEnd - 2));
 			if (!security) {
 				throw Exception("Trading message has unknown symbol");
 			}

@@ -42,7 +42,7 @@ namespace trdk { namespace Engine {
 
 		void ClosePositions();
 
-		virtual void SyncDispatching();
+		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
 
 	public:
 

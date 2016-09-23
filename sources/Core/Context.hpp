@@ -36,6 +36,11 @@ namespace trdk {
 
 		class TRDK_CORE_API Params;
 
+		class TRDK_CORE_API DispatchingLock : private boost::noncopyable {
+		public:
+			virtual ~DispatchingLock() = 0;
+		};
+
 		typedef void (CurrentTimeChangeSlotSignature)(
 					const boost::posix_time::ptime &newTime);
 		typedef boost::function<CurrentTimeChangeSlotSignature>
@@ -113,7 +118,7 @@ namespace trdk {
 
 		//! Waits until each of dispatching queue will be empty (but not all
 		//! at the same moment).
-		virtual void SyncDispatching() = 0;
+		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const = 0;
 
 		virtual RiskControl & GetRiskControl(const trdk::TradingMode &) = 0;
 		virtual const RiskControl & GetRiskControl(

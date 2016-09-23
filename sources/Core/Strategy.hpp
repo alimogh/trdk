@@ -137,6 +137,11 @@ namespace trdk {
 
 	public:
 
+		virtual void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				Security &,
+				Security::Request &);
+
 		virtual void RaiseBrokerPositionUpdateEvent(
 				trdk::Security &,
 				const trdk::Qty &,
@@ -147,6 +152,7 @@ namespace trdk {
 				const trdk::Security::Bar &);
 
 		virtual void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 

@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "ContinuousContractBarService.hpp"
-// #include "Core/Security.hpp"
+#include "BarCollectionService.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
@@ -20,6 +20,19 @@ using namespace trdk::Services;
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	struct BarMeta {
+		bool isCurrent;
+		ContractExpiration expiration;
+	};
+
+	const auto nIndex = std::numeric_limits<size_t>::max();
+
+}
+
 class ContinuousContractBarService::Implementation
 	: private boost::noncopyable {
 
@@ -27,16 +40,26 @@ public:
 
 	ContinuousContractBarService &m_self;
 
-	std::vector<Bar> m_modifiedBars;
-	
-	std::vector<ContractExpiration> m_expirations;
+	const Security *m_security;
+
+	std::unique_ptr<BarCollectionService> m_source;
+
+	std::vector<Bar> m_bars;
+	std::vector<BarMeta> m_meta;
+
+	size_t m_loadingPrevPeriodFrom;
 
 	bool m_isLogEnabled;
-	
+
 	explicit Implementation(
 			ContinuousContractBarService &self,
+			Context &context,
+			const std::string &tag,
 			const IniSectionRef &conf)
 		: m_self(self)
+		, m_security(nullptr)
+		, m_source(new BarCollectionService(context, tag, conf))
+		, m_loadingPrevPeriodFrom(nIndex)
 		, m_isLogEnabled(false) {
 		
 		{
@@ -58,7 +81,7 @@ public:
 
 	void LogBars() const {
 		
-		if (!m_isLogEnabled || m_modifiedBars.empty()) {
+		if (!m_isLogEnabled || m_bars.empty()) {
 			return;
 		}
 
@@ -66,8 +89,10 @@ public:
 		path /= SymbolToFileName(
 			(boost::format("ContinuousContract_%1%_%2%_to_%3%_%4%")
 					% m_self.GetSecurity()
-					% ConvertToFileName(m_modifiedBars.front().time)
-					% ConvertToFileName(m_modifiedBars.back().time)
+					% ConvertToFileName(
+						m_bars.front().time + GetCstTimeZoneDiffLocal())
+					% ConvertToFileName(
+						m_bars.back().time + GetCstTimeZoneDiffLocal())
 					% ConvertToFileName(m_self.GetContext().GetCurrentTime()))
 				.str(),
 			"csv");
@@ -102,16 +127,17 @@ public:
 			"Logging continuous contract bars into %1%.",
 			path);
 
-		for (const auto &bar: m_modifiedBars) {
+		for (const auto &bar: boost::adaptors::reverse(m_bars)) {
 			{
-				const auto date = bar.time.date();
+				const auto date = (bar.time + GetCstTimeZoneDiffLocal()).date();
 				log
 					<< date.year()
 					<< '.' << std::setw(2) << date.month().as_number()
 					<< '.' << std::setw(2) << date.day();
 			}
 			{
-				const auto time = bar.time.time_of_day();
+				const auto time
+					= (bar.time + GetCstTimeZoneDiffLocal()).time_of_day();
 				log
 					<< ','
 					<< std::setw(2) << time.hours()
@@ -123,152 +149,117 @@ public:
 					<< *m_self.GetContext().GetExpirationCalendar().Find(
 							m_self.GetSecurity().GetSymbol(),
 							bar.time)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.openTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.highTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.lowTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.closeTradePrice)
+				<< ',' << m_self.GetSecurity().DescalePrice(bar.openTradePrice)
+				<< ',' << m_self.GetSecurity().DescalePrice(bar.highTradePrice)
+				<< ',' << m_self.GetSecurity().DescalePrice(bar.lowTradePrice)
+				<< ',' << m_self.GetSecurity().DescalePrice(bar.closeTradePrice)
 				<< std::endl;
 		}
 
-		for (size_t i = m_modifiedBars.size() - 1; i < m_self.GetSize(); ++i) {
-			const auto &bar = m_self.GetBar(i);
-		{
-				const auto date = bar.time.date();
-				log
-					<< date.year()
-					<< '.' << std::setw(2) << date.month().as_number()
-					<< '.' << std::setw(2) << date.day();
-			}
-			{
-				const auto time = bar.time.time_of_day();
-				log
-					<< ','
-					<< std::setw(2) << time.hours()
-					<< ':' << std::setw(2) << time.minutes()
-					<< ':' << std::setw(2) << time.seconds();
-			}
-			log
-				<< ','
-					<< *m_self.GetContext().GetExpirationCalendar().Find(
-							m_self.GetSecurity().GetSymbol(),
-							bar.time)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.openTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.highTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.lowTradePrice)
-				<< ','
-					<< m_self.GetSecurity().DescalePrice(bar.closeTradePrice)
-				<< std::endl;
-		
-		}
-	
 	}
 
-	bool Rebuild(size_t size) {
+	bool Rebuild() {
 
-		if (!size) {
-			m_modifiedBars.clear();
+		Assert(m_source);
+
+		m_self.GetLog().Debug(
+			"Rebuilding continuous contract for %1% (%2% source bars)...",
+			m_self.GetSecurity(),
+			m_source->GetSize());
+
+		if (!m_source->GetSize()) {
+			m_bars.clear();
 			return false;
 		}
 
-		m_self.GetLog().Debug(
-			"Rebuilding continuous contract for %1%...",
-			m_self.GetSecurity());
+		AssertEq(m_meta.size(), m_source->GetSize());
 
-		AssertEq(m_expirations.size(), size);
-
-		auto currentExpiration = m_expirations[size - 1];
-		if (currentExpiration != m_self.GetSecurity().GetExpiration()) {
+		if (
+				m_meta[m_source->GetSize() - 1].expiration
+					!= m_self.GetSecurity().GetExpiration()) {
 			boost::format error(
 				"Actual bar (%1%) for %2% has not actual expiration %3%"
 					" (should be %4%)");
 			error
-				% (m_self.Base::LoadBar(size - 1).time)
+				% m_source->GetLastBar().time
 				% m_self.GetSecurity()
-				% currentExpiration
+				% m_meta[m_source->GetSize() - 1].expiration
 				% m_self.GetSecurity().GetExpiration();
 			throw Exception(error.str().c_str());
 		}
 
 		std::vector<Bar> bars;
 
-		struct Ratios {
-			double o;
-			double l;
-			double h;
-			double c;
-		} ratios = {1, 1, 1, 1};
+		double ratio = 0;
 
 		const auto &scale = m_self.GetSecurity().GetPriceScale();
 
 		size_t numberOfContracts = 0;
-		for (size_t i = size - 1; i > 0; --i) {
+		size_t numberOfBarsForCurrentContracts = 0;
+		size_t index = m_source->GetSize();
+		bool isCurrent = false;
+		const BarService::Bar *closeNext = nullptr;
+		m_source->ForEachReversed(
+			[&](const BarService::Bar &source) -> bool {
 			
-			size_t index = i - 1;
-			auto bar = m_self.Base::LoadBar(index);
+				AssertLt(0, index);
+				--index;
+				const BarMeta &meta = m_meta[index];
 
-			if (m_expirations[index] != currentExpiration) {
-
-				AssertLt(index, m_self.GetSize());
-				Assert(bars.empty() || index < bars.size());
-			
-				const auto &next = m_self.Base::LoadBar(index + 1);
-
-				ratios.o = double(next.openTradePrice) / bar.openTradePrice;
-				ratios.l = double(next.lowTradePrice) / bar.lowTradePrice;
-				ratios.h = double(next.highTradePrice) / bar.highTradePrice;
-				ratios.c = double(next.closeTradePrice) / bar.closeTradePrice;
-
-				currentExpiration = m_expirations[index];
-				++numberOfContracts;
-				
-				if (bars.empty()) {
-					bars.resize(index + 1);
+				if (!meta.isCurrent) {
+					isCurrent = false;
+					if (!closeNext) {
+						closeNext = &source;
+					}
+					return true;
 				}
 
-			} else if (bars.empty()) {
+				if (!isCurrent) {
+					isCurrent = true;
+					++numberOfContracts;
+					if (!closeNext) {
+						ratio = 1;
+					} else {
+						ratio
+							= double(closeNext->closeTradePrice)
+								/ source.closeTradePrice;
+						closeNext = nullptr;
+					}
+				}
 
-				continue;
-			
-			}
+				if (meta.expiration == m_self.GetSecurity().GetExpiration()) {
+					++numberOfBarsForCurrentContracts;
+				}
 
-			bar.openTradePrice = ScaledPrice(
-				RoundByScale(bar.openTradePrice * ratios.o, scale));
-			bar.lowTradePrice = ScaledPrice(
-				RoundByScale(bar.lowTradePrice * ratios.l, scale));
-			bar.highTradePrice = ScaledPrice(
-				RoundByScale(bar.highTradePrice * ratios.h, scale));
-			bar.closeTradePrice = ScaledPrice(
-				RoundByScale(bar.closeTradePrice * ratios.c, scale));
-			//! Not implemented yet:
-			AssertEq(0, bar.maxAskPrice);
-			AssertEq(0, bar.openAskPrice);
-			AssertEq(0, bar.closeAskPrice);
-			AssertEq(0, bar.minBidPrice);
-			AssertEq(0, bar.openBidPrice);
-			AssertEq(0, bar.closeBidPrice);
+				Bar bar;
+				bar.time = source.time;
+				bar.openTradePrice = ScaledPrice(
+					RoundByScale(source.openTradePrice * ratio, scale));
+				bar.lowTradePrice = ScaledPrice(
+					RoundByScale(source.lowTradePrice * ratio, scale));
+				bar.highTradePrice = ScaledPrice(
+					RoundByScale(source.highTradePrice * ratio, scale));
+				bar.closeTradePrice = ScaledPrice(
+					RoundByScale(source.closeTradePrice * ratio, scale));
+				bars.emplace_back(bar);
 
-			AssertLe(index, bars.size());
-			bars[index] = bar;
+				return true;
 
-		}
+			});
 
-		bars.swap(m_modifiedBars);
+		bars.swap(m_bars);
+		m_source.reset();
 
 		m_self.GetLog().Debug(
 			"Continuous contract rebuilt for %1%"
-				": modified %2% bars"
-				", number of bar for current contract: %3%"
-				", number contracts: %4%.",
+				": %2% bars (%3% for current contact %4%%5%%6%)"
+				", number of contracts: %7%.",
 			m_self.GetSecurity(),
-			m_modifiedBars.size(),
-			size + 1 - m_modifiedBars.size(),
+			m_bars.size(),
+			numberOfBarsForCurrentContracts,
+			m_self.GetSecurity().GetSymbol().GetSymbol(),
+			m_self.GetSecurity().GetExpiration().GetCode(),
+			m_self.GetSecurity().GetExpiration().GetYear(),
 			numberOfContracts);
 
 		LogBars();
@@ -283,8 +274,8 @@ ContinuousContractBarService::ContinuousContractBarService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: Base(context, tag, conf)
-	, m_pimpl(new Implementation(*this, conf)) {
+	: Base(context, "ContinuousContractBarsService", tag)
+	, m_pimpl(new Implementation(*this, context, tag, conf)) {
 	//...//
 }
 
@@ -292,8 +283,47 @@ ContinuousContractBarService::~ContinuousContractBarService() {
 	//...//
 }
 
-pt::ptime ContinuousContractBarService::OnSecurityStart(
-		const Security &security) {
+size_t ContinuousContractBarService::GetSize() const {
+	return m_pimpl->m_bars.size();
+}
+
+bool ContinuousContractBarService::IsEmpty() const {
+	return m_pimpl->m_bars.empty();
+}
+
+const Security & ContinuousContractBarService::GetSecurity() const {
+	return *m_pimpl->m_security;
+}
+
+bool ContinuousContractBarService::OnNewTrade(
+		const Security &security,
+		const pt::ptime &time,
+		const ScaledPrice &price,
+		const Qty &qty) {
+	
+	Assert(m_pimpl->m_source);
+
+	if (m_pimpl->m_source->OnNewTrade(security, time, price, qty)) {
+		AssertEq(m_pimpl->m_meta.size() + 1, m_pimpl->m_source->GetSize());
+		m_pimpl->m_meta.emplace_back(
+			BarMeta{
+				m_pimpl->m_loadingPrevPeriodFrom == nIndex,
+				GetSecurity().GetExpiration()
+			});
+	}
+
+	return false;
+
+}
+
+void ContinuousContractBarService::OnSecurityStart(
+		const Security &security,
+		Security::Request &request) {
+
+	if (m_pimpl->m_security) {
+		throw Exception("Bar service works only with one security");
+	}
+	m_pimpl->m_security = &security;
 
 	if (security.GetSymbol().GetSecurityType() != SECURITY_TYPE_FUTURES) {
 		boost::format message(
@@ -313,23 +343,72 @@ pt::ptime ContinuousContractBarService::OnSecurityStart(
 		throw Error(message.str().c_str());
 	}
 
-	return Base::OnSecurityStart(security);
+	if (m_pimpl->m_source) {
+		m_pimpl->m_source->OnSecurityStart(security, request);
+	}
+
+}
+
+void ContinuousContractBarService::OnSecurityContractSwitched(
+		const pt::ptime &time,
+		const Security &security,
+		Security::Request &request) {
+	
+	if (&security != &GetSecurity()) {
+		Base::OnSecurityContractSwitched(time, security, request);
+		return;
+	}
+
+	Assert(m_pimpl->m_source);
+	m_pimpl->m_source->CompleteBar();
+	if (!m_pimpl->m_source->GetSize()) {
+		return;
+	}
+
+	request.RequestTime(
+		pt::ptime(
+			(time - pt::hours(24)).date(),
+			pt::time_duration(time.time_of_day().hours(), 0, 0)));
+
+	m_pimpl->m_loadingPrevPeriodFrom = m_pimpl->m_source->GetSize() - 1;
 
 }
 
 bool ContinuousContractBarService::OnSecurityServiceEvent(
+		const pt::ptime &time,
 		const Security &security,
 		const Security::ServiceEvent &securityEvent) {
 
-	bool isUpdated = Base::OnSecurityServiceEvent(security, securityEvent);
+	if (
+			m_pimpl->m_source->OnSecurityServiceEvent(
+				time,
+				security,
+				securityEvent)) {
+		AssertEq(m_pimpl->m_meta.size() + 1, m_pimpl->m_source->GetSize());
+		m_pimpl->m_meta.emplace_back(
+			BarMeta{
+				m_pimpl->m_loadingPrevPeriodFrom == nIndex,
+				GetSecurity().GetExpiration()
+			});
+	}
+
+	bool isUpdated = Base::OnSecurityServiceEvent(
+		time,
+		security,
+		securityEvent);
 
 	if (&security != &GetSecurity()) {
 		return isUpdated;
 	}
 
 	switch (securityEvent) {
+		case Security::SERVICE_EVENT_TRADING_SESSION_CLOSED:
+			if (m_pimpl->m_loadingPrevPeriodFrom != nIndex) {
+				m_pimpl->m_loadingPrevPeriodFrom = nIndex;
+			}
+			break;
 		case Security::SERVICE_EVENT_ONLINE:
-			isUpdated = m_pimpl->Rebuild(GetSize()) || isUpdated;
+			isUpdated = m_pimpl->Rebuild() || isUpdated;
 			break;
 	}
 
@@ -337,28 +416,38 @@ bool ContinuousContractBarService::OnSecurityServiceEvent(
 
 }
 
-const ContinuousContractBarService::Bar & ContinuousContractBarService::LoadBar(
+ContinuousContractBarService::Bar ContinuousContractBarService::GetBar(
 		size_t index)
 		const {
-	return index < m_pimpl->m_modifiedBars.size()
-		?	m_pimpl->m_modifiedBars[index]
-		:	BarService::LoadBar(index);
+	if (index >= GetSize()) {
+		throw BarDoesNotExistError(
+			!GetSize()
+				?	"ContinuousContractBarService is empty"
+				:	"Index is out of range of ContinuousContractBarService");
+	}
+	return m_pimpl->m_bars[m_pimpl->m_bars.size() - index - 1];
 }
 
-void ContinuousContractBarService::OnBarComplete() {
-	
-	AssertEq(m_pimpl->m_expirations.size(), GetSize());
-	
-	m_pimpl->m_expirations.emplace_back(GetSecurity().GetExpiration());
-	
-	if (
-			GetSecurity().IsOnline()
-			&& m_pimpl->m_expirations.size() > 2
-			&& *std::next(m_pimpl->m_expirations.crbegin())
-				!= *m_pimpl->m_expirations.crbegin()) {
-		Verify(m_pimpl->Rebuild(GetSize() + 1));
+ContinuousContractBarService::Bar
+ContinuousContractBarService::GetBarByReversedIndex(
+		size_t index)
+		const {
+	if (index >= GetSize()) {
+		throw BarDoesNotExistError(
+			!GetSize()
+				?	"ContinuousContractBarService is empty"
+				:	"Index is out of range of ContinuousContractBarService");
 	}
+	return m_pimpl->m_bars[index];
+}
 
+ContinuousContractBarService::Bar
+ContinuousContractBarService::GetLastBar()
+		const {
+	if (!GetSize()) {
+		throw BarDoesNotExistError("ContinuousContractBarService is empty");
+	}
+	return m_pimpl->m_bars.front();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

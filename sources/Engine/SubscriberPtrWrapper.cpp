@@ -445,6 +445,7 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
 }
 
 void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		Security &security,
 		const Security::ServiceEvent &event)
 		const {
@@ -454,30 +455,80 @@ void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
 		private boost::noncopyable {
 	public:		
 		explicit Visitor(
+				const pt::ptime &time,
 				Security &security,
 				const Security::ServiceEvent &event)
-			: m_source(security)
+			: m_time(time)
+			, m_source(security)
 			, m_event(event) {
 			//...//
 		}
 	public:
 		void operator ()(Strategy &strategy) const {
-			strategy.RaiseSecurityServiceEvent(m_source, m_event);
+			strategy.RaiseSecurityServiceEvent(m_time, m_source, m_event);
 		}
 		void operator ()(Service &service) const {
-			if (service.RaiseSecurityServiceEvent(m_source, m_event)) {
+			if (service.RaiseSecurityServiceEvent(m_time, m_source, m_event)) {
 				RaiseServiceDataUpdateEvent(
 					service,
 					TimeMeasurement::Milestones());
 			}
 		}
 		void operator ()(Observer &observer) const {
-			observer.RaiseSecurityServiceEvent(m_source, m_event);
+			observer.RaiseSecurityServiceEvent(m_time, m_source, m_event);
 		}
 	private:
+		const pt::ptime &m_time;
 		Security &m_source;
 		const Security::ServiceEvent &m_event;
-	} visitor(security, event);
+	} visitor(time, security, event);
+
+	boost::apply_visitor(visitor, m_subscriber);
+
+}
+
+void SubscriberPtrWrapper::RaiseSecurityContractSwitchedEvent(
+		const pt::ptime &time,
+		Security &security,
+		Security::Request &request) {
+	
+	const class Visitor
+		: public boost::static_visitor<void>,
+		private boost::noncopyable {
+	public:		
+		explicit Visitor(
+				const pt::ptime &time,
+				Security &security,
+				Security::Request &request)
+			: m_time(time)
+			, m_source(security)
+			, m_request(request) {
+			//...//
+		}
+	public:
+		void operator ()(Strategy &strategy) const {
+			strategy.RaiseSecurityContractSwitchedEvent(
+				m_time,
+				m_source,
+				m_request);
+		}
+		void operator ()(Service &service) const {
+			service.RaiseSecurityContractSwitchedEvent(
+				m_time,
+				m_source,
+				m_request);
+		}
+		void operator ()(Observer &observer) const {
+			observer.RaiseSecurityContractSwitchedEvent(
+				m_time,
+				m_source,
+				m_request);
+		}
+	private:
+		const pt::ptime &m_time;
+		Security &m_source;
+		Security::Request &m_request;
+	} visitor(time, security, request);
 
 	boost::apply_visitor(visitor, m_subscriber);
 

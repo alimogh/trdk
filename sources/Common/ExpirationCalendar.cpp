@@ -43,6 +43,13 @@ std::ostream & trdk::Lib::operator <<(
 	return os;
 }
 
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &os,
+		const ContractExpiration::Code &code) {
+	os << char(code);
+	return os;
+}
+
 ContractExpiration::Code ContractExpiration::GetCode() const {
 	switch (m_date.month()) {
 		case gr::Jan:
@@ -353,7 +360,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 
 ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		const Symbol &symbol,
-		const pt::ptime &startTime)
+		const gr::date &startDate)
 		const {
 
 	if (symbol.GetSecurityType() != SECURITY_TYPE_FUTURES) {
@@ -368,7 +375,6 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		return Iterator();
 	}
 
-	const gr::date &startDate = startTime.date();
 	const auto &contract = contractPos->second.get<ByExpirationDate>();
 	const auto &begin = contract.lower_bound(startDate);
 	if (begin == contract.end() || begin->GetDate() < startDate) {
@@ -381,6 +387,12 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 
 }
 
+ExpirationCalendar::Iterator ExpirationCalendar::Find(
+		const Symbol &symbol,
+		const pt::ptime &startTime)
+		const {
+	return Find(symbol, startTime.date());
+}
 ExpirationCalendar::Stat ExpirationCalendar::CalcStat() const {
 	Stat result = {};
 	for (const auto &symbol: m_pimpl->m_contracts) {

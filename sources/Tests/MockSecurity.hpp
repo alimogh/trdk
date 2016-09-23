@@ -25,8 +25,6 @@ namespace trdk { namespace Tests {
 				DummyContext::GetInstance(),
 				trdk::Lib::Symbol("TEST_SCALE2*/USD::FUT"),
 				DummyMarketDataSource::GetInstance(),
-				false,
-				false,
 				SupportedLevel1Types()) {
 			//...//
 		}

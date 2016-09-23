@@ -487,8 +487,23 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 
 }
 
-void Engine::Context::SyncDispatching() {
-	m_pimpl->m_state->subscriptionsManager.SyncDispatching();
+std::unique_ptr<Engine::Context::DispatchingLock>
+Engine::Context::SyncDispatching()
+		const {
+	
+	class Lock : public DispatchingLock {
+	public:
+		explicit Lock(Dispatcher::UniqueSyncLock &&lock)
+			: m_lock(std::move(lock)) {
+			//...//
+		}
+	private:
+		Dispatcher::UniqueSyncLock m_lock;
+	};
+
+	return boost::make_unique<Lock>(
+		m_pimpl->m_state->subscriptionsManager.SyncDispatching());
+
 }
 
 DropCopy * Engine::Context::GetDropCopy() const {

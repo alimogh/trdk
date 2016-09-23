@@ -73,6 +73,10 @@ namespace trdk { namespace Engine {
 
 	public:
 
+		void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				Security &,
+				Security::Request &);
 		void RaiseLevel1UpdateEvent(
 				Security &,
 				const Lib::TimeMeasurement::Milestones &)
@@ -101,6 +105,7 @@ namespace trdk { namespace Engine {
 				const Lib::TimeMeasurement::Milestones &)
 				const;
 		void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				Security &,
 				const Security::ServiceEvent &)
 				const;
