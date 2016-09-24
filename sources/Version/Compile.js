@@ -26,7 +26,6 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'Fake'
-	, 'OnixsFixConnector'
 	, 'Itch'
 	, 'InteractiveBrokers'
 	, 'DdfPlus'
