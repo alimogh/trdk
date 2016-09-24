@@ -84,9 +84,9 @@ public:
 					m_serviceThreads.create_thread(
 						boost::bind(&Implementation::RunServiceThread, this));
 				}
-			
+
 				m_isWaitingForClient = true;
-		
+
 			} catch (const NetworkStreamClient::Exception &ex) {
 				{
 					boost::format message(
@@ -288,7 +288,6 @@ void NetworkStreamClientService::Stop() {
 void NetworkStreamClientService::OnClientDestroy() {
 	{
 		const ClientLock lock(m_pimpl->m_clientMutex);
-		Assert(m_pimpl->m_isWaitingForClient);
 		m_pimpl->m_isWaitingForClient = false;
 	}
 	m_pimpl->m_clientDetorCondition.notify_all();

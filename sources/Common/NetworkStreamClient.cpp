@@ -193,23 +193,26 @@ public:
 				// to receive one message.
 				if (unreceivedMessageLen / 3 > freeBufferSpace) {
 					const auto newSize = activeBuffer.size() * 2;
-					boost::format message(
-						"%1%Receiving large message in %2$.02f kilobytes..."
-							" To optimize reading buffer 0x%3% will"
-							" be increased: %4$.02f -> %5$.02f kilobytes."
-							" Total received volume: %6$.02f %7%.");
-					message
-						% m_service.GetLogTag()
-						% (double(unreceivedMessageLen) / 1024)
-						% &activeBuffer
-						% (double(activeBuffer.size()) / 1024)
-						% (double(newSize) / 1024);
-					const auto &stat = m_self.GetReceivedVerbouseStat();
-					message % stat.first % stat.second;
-					m_self.LogWarn(message.str());
+#					ifndef _DEBUG
+					{
+						boost::format message(
+							"%1%Receiving large message in %2$.02f kilobytes..."
+								" To optimize reading buffer 0x%3% will"
+								" be increased: %4$.02f -> %5$.02f kilobytes."
+								" Total received volume: %6$.02f %7%.");
+						message
+							% m_service.GetLogTag()
+							% (double(unreceivedMessageLen) / 1024)
+							% &activeBuffer
+							% (double(activeBuffer.size()) / 1024)
+							% (double(newSize) / 1024);
+						const auto &stat = m_self.GetReceivedVerbouseStat();
+						message % stat.first % stat.second;
+						m_self.LogWarn(message.str());
+					}
+#					endif
 					if (newSize > (1024 * 1024) * 20) {
-						throw Exception(
-							"The maximum possible buffer size is exceeded.");
+						throw Exception("The maximum buffer size is exceeded.");
 					}
 					activeBuffer.resize(newSize);
 					nextBuffer.resize(newSize);
@@ -228,6 +231,7 @@ public:
 			if (freeBufferSpace == 0) {
 				nextBuffer.clear();
 				const auto newSize = activeBuffer.size() * 2;
+#				ifndef _DEBUG
 				{
 					boost::format message(
 						"%1%Increasing buffer 0x%2% size:"
@@ -242,21 +246,24 @@ public:
 					message % stat.first % stat.second;
 					m_self.LogDebug(message.str());
 				}
+#				endif
 				nextBuffer.resize(newSize);
 			}
 
-			if (unreceivedMessageLen >= 10 * 1024) {
-				boost::format message(
-					"%1%Restoring buffer content in %2$.02f kilobytes"
-						" to continue to receive message..."
-						" Total received volume: %3$.02f %4%.");
-				message
-					% m_service.GetLogTag()
-					% (double(unreceivedMessageLen) / 1024);
-				const auto &stat = m_self.GetReceivedVerbouseStat();
-				message % stat.first % stat.second;
-				m_self.LogDebug(message.str());
-			}
+#			ifndef _DEBUG
+				if (unreceivedMessageLen >= 10 * 1024) {
+					boost::format message(
+						"%1%Restoring buffer content in %2$.02f kilobytes"
+							" to continue to receive message..."
+							" Total received volume: %3$.02f %4%.");
+					message
+						% m_service.GetLogTag()
+						% (double(unreceivedMessageLen) / 1024);
+					const auto &stat = m_self.GetReceivedVerbouseStat();
+					message % stat.first % stat.second;
+					m_self.LogDebug(message.str());
+				}
+#			endif
 			AssertGe(nextBuffer.size(), unreceivedMessageLen);
 			std::copy(
 				transferedEnd - unreceivedMessageLen,
