@@ -254,9 +254,6 @@
     <ProjectReference Include="..\Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj">
       <Project>{befe87ae-1376-4c4c-87d5-73e782990306}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Interaction\Itch\Itch.vcxproj">
-      <Project>{b519028e-fcdb-4c61-af52-d7603e28b1bf}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Interaction\OnixsFixConnector\OnixsFixConnector.vcxproj">
       <Project>{c86383e0-0a73-41e0-8263-9e05b608ce55}</Project>
     </ProjectReference>
