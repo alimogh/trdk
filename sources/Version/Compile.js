@@ -32,7 +32,6 @@ var requiredModules = [
 	, 'DdfPlus'
 	, 'Services'
 	, 'TestStrategy'
-	, 'FxMb'
 	, 'GadM'
 ]
 

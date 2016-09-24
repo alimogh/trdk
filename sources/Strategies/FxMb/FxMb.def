@@ -1,9 +1,0 @@
-
-EXPORTS
-
-	CreateTriangulationWithDirectionStatService
-	CreateTriangulationWithDirectionStrategy
-	CreateTwdStrategy
-	
-	GetTrdkModuleVersionInfoV1
-
