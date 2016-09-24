@@ -27,7 +27,6 @@ var requiredModules = [
 	, 'Engine'
 	, 'Fake'
 	, 'InteractiveBrokers'
-	, 'DdfPlus'
 	, 'Services'
 	, 'TestStrategy'
 	, 'GadM'
