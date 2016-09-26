@@ -763,10 +763,10 @@ public:
 			const OrderParams &orderParams,
 			bool hasPrice) {
 
-		if (m_security.IsOnline()) {
+		if (!m_security.IsOnline()) {
 			throw Exception("Security is not online");
 		}
-		if (m_security.IsTradingSessionOpened()) {
+		if (!m_security.IsTradingSessionOpened()) {
 			throw Exception("Security trading session is closed");
 		}
 
