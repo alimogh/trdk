@@ -119,7 +119,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

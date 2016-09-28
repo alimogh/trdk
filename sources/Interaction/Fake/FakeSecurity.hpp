@@ -26,13 +26,25 @@ namespace trdk { namespace Interaction { namespace Fake {
 				context,
 				symbol, 
 				source,
-				SupportedLevel1Types().set()) {
+				SupportedLevel1Types()
+					.set(LEVEL1_TICK_BID_PRICE)
+					.set(LEVEL1_TICK_BID_QTY)
+					.set(LEVEL1_TICK_ASK_PRICE)
+					.set(LEVEL1_TICK_ASK_QTY)
+					.set(LEVEL1_TICK_LAST_PRICE)
+					.set(LEVEL1_TICK_LAST_QTY)
+					.set(LEVEL1_TICK_TRADING_VOLUME)) {
 			//...//
 		}
 
 	public:
 
+		using Security::SetOnline;
+		using Security::SetTradingSessionState;
+		using Security::SetExpiration;
 		using Security::SetBook;
+		using Security::AddTrade;
+		using Security::SetLevel1;
 
 	};
 

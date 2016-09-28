@@ -287,6 +287,7 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="FakeMarketDataSource.hpp" />
+    <ClInclude Include="FakeSecurity.hpp" />
     <ClInclude Include="FakeTradingSystem.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
