@@ -1343,9 +1343,9 @@ void Client::orderStatus(
 	if (statusPos->second == ORDER_STATUS_ERROR) {
 		m_ts.GetTsLog().Error(
 			"Order %1% has been accepted by the system (simulated orders)"
-			 " or an exchange (native orders) but that currently the order"
-			 " is inactive due to system, exchange or other issues."
-			 " Trading system order status: \"%2%\".",
+				" or an exchange (native orders) but that currently the order"
+				" is inactive due to system, exchange or other issues."
+				" Trading system order status: \"%2%\".",
 		id,
 		statusText);
 	}
