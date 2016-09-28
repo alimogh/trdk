@@ -1005,10 +1005,35 @@ public:
 	bool CancelAllOrders() {
 		bool isCanceled = false;
 		if (m_opened.hasOrder) {
+			m_strategy.GetTradingLog().Write(
+				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\topen-order"
+					"\t%4%\t%5%\t%6%"
+					,
+				[this](TradingRecord &record) {
+					record
+						% m_operationId // 1
+						% m_opened.uuid // 2
+						% m_opened.orderId // 3
+						% m_security.GetSymbol().GetSymbol() // 4
+						% m_position.GetTradingSystem().GetTag() // 5
+						% m_tradingSystem.GetMode(); // 6
+				});
 			m_tradingSystem.CancelOrder(m_opened.orderId);
 			isCanceled = true;
 		}
 		if (m_closed.hasOrder) {
+			m_strategy.GetTradingLog().Write(
+				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\tclose-order"
+					"\t%4%\t%5%\t%6%",
+				[this](TradingRecord &record) {
+					record
+						% m_operationId // 1
+						% m_closed.uuid // 2
+						% m_closed.orderId // 3
+						% m_security.GetSymbol().GetSymbol() // 4
+						% m_position.GetTradingSystem().GetTag() // 5
+						% m_tradingSystem.GetMode(); // 6
+				});
 			Assert(!isCanceled);
 			m_tradingSystem.CancelOrder(m_closed.orderId);
 			isCanceled = true;
