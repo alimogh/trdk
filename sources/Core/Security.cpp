@@ -303,10 +303,10 @@ public:
 			const TimeMeasurement::Milestones &timeMeasurement,
 			bool flush,
 			bool isPreviouslyChanged) {
+		AssertLe(0, tick.GetValue());
 		const bool isChanged = !IsEqual(
 			m_level1[tick.GetType()].exchange(tick.GetValue()),
 			tick.GetValue());
-		AssertEq(m_level1[tick.GetType()], tick.GetValue());
 		FlushLevel1Update(
 			time,
 			timeMeasurement,
@@ -393,6 +393,7 @@ public:
 			message % ConvertToPch(tick) % m_self;
 			throw MarketDataValueDoesNotExist(message.str().c_str());
 		}
+		AssertLe(0, value);
 		return value;
 	}
 
