@@ -9,37 +9,34 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradingSystem.hpp"
-#include "FakeMarketDataSource.hpp"
+#include "TradingSystem.hpp"
+#include "RandomMarketDataSource.hpp"
 #include "Api.h"
 
-TRDK_INTERACTION_FAKE_API
+TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
 		const trdk::TradingMode &mode,
 		size_t index,
 		trdk::Context &context,
 		const std::string &tag,
 		const trdk::Lib::IniSectionRef &configuration) {
-	const auto &result
-		= boost::make_shared<trdk::Interaction::Fake::TradingSystem>(
-			mode,
-			index,
-			context,
-			tag,
-			configuration);
-	return result;
+	return boost::make_shared<trdk::Interaction::Test::TradingSystem>(
+		mode,
+		index,
+		context,
+		tag,
+		configuration);
 }
 
-TRDK_INTERACTION_FAKE_API
-boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
+TRDK_INTERACTION_TEST_API
+boost::shared_ptr<trdk::MarketDataSource> CreateRandomMarketDataSource(
 		size_t index,
 		trdk::Context &context,
 		const std::string &tag,
 		const trdk::Lib::IniSectionRef &configuration) {
-	return boost::shared_ptr<trdk::MarketDataSource>(
-		new trdk::Interaction::Fake::MarketDataSource(
-			index,
-			context,
-			tag,
-			configuration));
+	return boost::make_shared<trdk::Interaction::Test::RandomMarketDataSource>(
+		index,
+		context,
+		tag,
+		configuration);
 }

@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeMarketDataSource.hpp"
+#include "RandomMarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/PriceBook.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -19,9 +19,9 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction;
-using namespace trdk::Interaction::Fake;
+using namespace trdk::Interaction::Test;
 
-Fake::MarketDataSource::MarketDataSource(
+RandomMarketDataSource::RandomMarketDataSource(
 		size_t index,
 		Context &context,
 		const std::string &tag,
@@ -31,7 +31,7 @@ Fake::MarketDataSource::MarketDataSource(
 	//...//
 }
 
-Fake::MarketDataSource::~MarketDataSource() {
+RandomMarketDataSource::~RandomMarketDataSource() {
 	m_stopFlag = true;
 	m_threads.join_all();
 	// Each object, that implements CreateNewSecurityObject should waite for
@@ -39,14 +39,14 @@ Fake::MarketDataSource::~MarketDataSource() {
 	GetTradingLog().WaitForFlush();
 }
 
-void Fake::MarketDataSource::Connect(const IniSectionRef &) {
+void RandomMarketDataSource::Connect(const IniSectionRef &) {
 	if (m_threads.size()) {
 		return;
 	}
 	m_threads.create_thread([this](){NotificationThread();});
 }
 
-void Fake::MarketDataSource::NotificationThread() {
+void RandomMarketDataSource::NotificationThread() {
 
 	try {
 
@@ -162,10 +162,10 @@ void Fake::MarketDataSource::NotificationThread() {
 
 }
 
-Security & Fake::MarketDataSource::CreateNewSecurityObject(
+trdk::Security & RandomMarketDataSource::CreateNewSecurityObject(
 		const Symbol &symbol) {
 	
-	auto result = boost::make_shared<FakeSecurity>(GetContext(), symbol, *this);
+	auto result = boost::make_shared<Security>(GetContext(), symbol, *this);
 	
 	switch (result->GetSymbol().GetSecurityType()) {
 		case SECURITY_TYPE_FUTURES:
@@ -187,7 +187,8 @@ Security & Fake::MarketDataSource::CreateNewSecurityObject(
 	result->SetOnline(pt::not_a_date_time);
 	result->SetTradingSessionState(pt::not_a_date_time, true);
 	
-	const_cast<MarketDataSource *>(this)->m_securityList.emplace_back(result);
+	const_cast<RandomMarketDataSource *>(this)
+		->m_securityList.emplace_back(result);
 
 	return *result;
 

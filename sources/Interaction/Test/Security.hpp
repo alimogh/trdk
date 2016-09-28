@@ -12,17 +12,21 @@
 
 #include "Core/Security.hpp"
 
-namespace trdk { namespace Interaction { namespace Fake {
+namespace trdk { namespace Interaction { namespace Test {
 
-	class FakeSecurity : public Security {
+	class Security : public trdk::Security {
 
 	public:
 
-		explicit FakeSecurity(
+		typedef trdk::Security Base;
+
+	public:
+
+		explicit Security(
 				Context &context,
 				const Lib::Symbol &symbol,
 				MarketDataSource &source)
-			: Security(
+			: Base(
 				context,
 				symbol, 
 				source,
@@ -39,12 +43,12 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		using Security::SetOnline;
-		using Security::SetTradingSessionState;
-		using Security::SetExpiration;
-		using Security::SetBook;
-		using Security::AddTrade;
-		using Security::SetLevel1;
+		using Base::SetOnline;
+		using Base::SetTradingSessionState;
+		using Base::SetExpiration;
+		using Base::SetBook;
+		using Base::AddTrade;
+		using trdk::Security::SetLevel1;
 
 	};
 

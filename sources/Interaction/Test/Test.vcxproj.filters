@@ -17,27 +17,27 @@
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FakeMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FakeTradingSystem.cpp">
+    <ClCompile Include="TradingSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RandomMarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FakeMarketDataSource.hpp">
+    <ClInclude Include="RandomMarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FakeTradingSystem.hpp">
+    <ClInclude Include="TradingSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FakeSecurity.hpp">
+    <ClInclude Include="Security.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp">
@@ -45,12 +45,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Fake.def">
+    <None Include="Test.def">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Fake.rc">
+    <ResourceCompile Include="Test.rc">
       <Filter>Source Files</Filter>
     </ResourceCompile>
   </ItemGroup>

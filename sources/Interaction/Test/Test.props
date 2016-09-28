@@ -5,7 +5,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <Link>
-      <ModuleDefinitionFile>Fake.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Test.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

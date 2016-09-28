@@ -19,7 +19,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version\Version.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{AF773219-8D87-4958-A567-4BCB72272E51}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Fake", "Interaction\Fake\Fake.vcxproj", "{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Interaction\Test\Test.vcxproj", "{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test strategy", "Strategies\Test\TestStrategy.vcxproj", "{9EF13741-7C1B-4A58-B79C-3800B42847E7}"
 EndProject

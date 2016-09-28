@@ -11,12 +11,12 @@
 #pragma once
 
 #include "Core/MarketDataSource.hpp"
-#include "FakeSecurity.hpp"
+#include "Security.hpp"
 #include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Fake {
+namespace trdk { namespace Interaction { namespace Test {
 
-	class MarketDataSource : public trdk::MarketDataSource {
+	class RandomMarketDataSource : public trdk::MarketDataSource {
 
 	public:
 
@@ -24,12 +24,12 @@ namespace trdk { namespace Interaction { namespace Fake {
 
 	public:
 
-		MarketDataSource(
+		RandomMarketDataSource(
 				size_t index,
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
-		virtual ~MarketDataSource();
+		virtual ~RandomMarketDataSource();
 
 	public:
 
@@ -53,7 +53,7 @@ namespace trdk { namespace Interaction { namespace Fake {
 		boost::thread_group m_threads;
 		boost::atomic_bool m_stopFlag;
 
-		std::vector<boost::shared_ptr<FakeSecurity>> m_securityList;
+		std::vector<boost::shared_ptr<Security>> m_securityList;
 
 	};
 

@@ -13,7 +13,7 @@
 #include "Core/TradingSystem.hpp"
 #include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Fake {
+namespace trdk { namespace Interaction { namespace Test {
 
 	class TradingSystem : public trdk::TradingSystem {
 

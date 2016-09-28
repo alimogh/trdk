@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "FakeTradingSystem.hpp"
+#include "TradingSystem.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
@@ -18,7 +18,7 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction;
-using namespace trdk::Interaction::Fake;
+using namespace trdk::Interaction::Test;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +30,7 @@ namespace {
 		Currency currency;
 		bool isSell;
 		OrderId id;
-		Fake::TradingSystem::OrderStatusUpdateSlot callback;
+		Test::TradingSystem::OrderStatusUpdateSlot callback;
 		Qty qty;
 		ScaledPrice price;
 		OrderParams params;
@@ -47,7 +47,7 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-class Fake::TradingSystem::Implementation : private boost::noncopyable {
+class Test::TradingSystem::Implementation : private boost::noncopyable {
 
 public:
 
@@ -171,7 +171,7 @@ public:
 	~Implementation() {
 		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
 			if (m_isStarted) {
-				m_self->GetLog().Debug("Stopping Fake Trading System task...");
+				m_self->GetLog().Debug("Stopping Test Trading System task...");
 				{
 					const Lock lock(m_mutex);
 					m_isStarted = false;
@@ -180,7 +180,7 @@ public:
 				m_thread.join();
 			}
 		} else {
-			m_self->GetLog().Debug("Stopping Fake Trading System replay...");
+			m_self->GetLog().Debug("Stopping Test Trading System replay...");
 			m_currentTimeChangeSlotConnection.disconnect();
 		}
 	}
@@ -205,7 +205,7 @@ public:
 			thread.swap(m_thread);
 			m_condition.wait(lock);
 		} else {
-			m_self->GetLog().Info("Stated Fake Trading System replay...");
+			m_self->GetLog().Info("Stated Test Trading System replay...");
 			m_currentTimeChangeSlotConnection
 				= m_self->GetContext().SubscribeToCurrentTimeChange(
 					boost::bind(
@@ -274,7 +274,7 @@ private:
 				m_condition.notify_all();
 			}
 			
-			m_self->GetLog().Info("Stated Fake Trading System task...");
+			m_self->GetLog().Info("Stated Test Trading System task...");
 			
 			for ( ; ; ) {
 			
@@ -344,7 +344,7 @@ private:
 			throw;
 		}
 
-		m_self->GetLog().Info("Fake Trading System stopped.");
+		m_self->GetLog().Info("Test Trading System stopped.");
 
 	}
 
@@ -451,7 +451,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-Fake::TradingSystem::TradingSystem(
+Test::TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
@@ -463,19 +463,19 @@ Fake::TradingSystem::TradingSystem(
 	m_pimpl->m_delayGenerator.Report(GetLog());
 }
 
-Fake::TradingSystem::~TradingSystem() {
+Test::TradingSystem::~TradingSystem() {
 	//...//
 }
 
-bool Fake::TradingSystem::IsConnected() const {
+bool Test::TradingSystem::IsConnected() const {
 	return m_pimpl->IsStarted();
 }
 
-void Fake::TradingSystem::CreateConnection(const IniSectionRef &) {
+void Test::TradingSystem::CreateConnection(const IniSectionRef &) {
 	m_pimpl->Start();
 }
 
-OrderId Fake::TradingSystem::SendSellAtMarketPrice(
+OrderId Test::TradingSystem::SendSellAtMarketPrice(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -497,7 +497,7 @@ OrderId Fake::TradingSystem::SendSellAtMarketPrice(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendSell(
+OrderId Test::TradingSystem::SendSell(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -521,7 +521,7 @@ OrderId Fake::TradingSystem::SendSell(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendSellAtMarketPriceWithStopPrice(
+OrderId Test::TradingSystem::SendSellAtMarketPriceWithStopPrice(
 			Security &,
 			const Currency &,
 			const Qty &qty,
@@ -534,7 +534,7 @@ OrderId Fake::TradingSystem::SendSellAtMarketPriceWithStopPrice(
 	throw Exception("Method is not implemented");
 }
 
-OrderId Fake::TradingSystem::SendSellImmediatelyOrCancel(
+OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -558,7 +558,7 @@ OrderId Fake::TradingSystem::SendSellImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
+OrderId Test::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -580,7 +580,7 @@ OrderId Fake::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendBuyAtMarketPrice(
+OrderId Test::TradingSystem::SendBuyAtMarketPrice(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -602,7 +602,7 @@ OrderId Fake::TradingSystem::SendBuyAtMarketPrice(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendBuy(
+OrderId Test::TradingSystem::SendBuy(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -626,7 +626,7 @@ OrderId Fake::TradingSystem::SendBuy(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
+OrderId Test::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
 			Security &,
 			const Currency &,
 			const Qty &qty,
@@ -639,7 +639,7 @@ OrderId Fake::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
 	throw Exception("Method is not implemented");
 }
 
-OrderId Fake::TradingSystem::SendBuyImmediatelyOrCancel(
+OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -663,7 +663,7 @@ OrderId Fake::TradingSystem::SendBuyImmediatelyOrCancel(
 	return order.id;
 }
 
-OrderId Fake::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
+OrderId Test::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 			Security &security,
 			const Currency &currency,
 			const Qty &qty,
@@ -685,7 +685,7 @@ OrderId Fake::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 	return order.id;
 }
 
-void Fake::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+void Test::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 	{
 		const Implementation::Lock lock(m_pimpl->m_mutex);
 		m_pimpl->m_cancels.emplace_back(orderId);
@@ -693,12 +693,12 @@ void Fake::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 	m_pimpl->m_condition.notify_all();
 }
 
-void Fake::TradingSystem::SendCancelAllOrders(Security &) {
+void Test::TradingSystem::SendCancelAllOrders(Security &) {
 	AssertFail("Is not implemented.");
 	throw Exception("Method is not implemented");
 }
 
-void Fake::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {
+void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {
 
 	Base::OnSettingsUpdate(conf);
 
