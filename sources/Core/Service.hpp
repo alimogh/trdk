@@ -27,9 +27,16 @@ namespace trdk {
 
 		explicit Service(
 			trdk::Context &,
+			const boost::uuids::uuid &typeId,
 			const std::string &name,
-			const std::string &tag);
+			const std::string &tag,
+			const trdk::Lib::IniSectionRef &);
 		virtual ~Service();
+
+	public:
+
+		const boost::uuids::uuid & GetTypeId() const;
+		const boost::uuids::uuid & Service::GetId() const;
 
 	public:
 
@@ -136,7 +143,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

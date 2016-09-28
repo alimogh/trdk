@@ -184,8 +184,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 
 	boost::format settingsString(
 		"[Section]\n"
-			"id = 627AF583-5B76-4001-8FF3-A110B19DE8D4\n"
 			"type = %1%\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
 			"history = yes\n"
 			"period = 10");
 	settingsString % Policy::GetType();
@@ -202,16 +202,6 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 		marketDataSource,
 		trdk::Security::SupportedLevel1Types());
 
-	MockDropCopy dropCopy;
-	EXPECT_CALL(dropCopy, RegisterAbstractDataSource(_, _, _))
-		.Times(2)
-		.WillRepeatedly(Return(12334));
-	EXPECT_CALL(dropCopy, CopyAbstractDataPoint(_, _, _))
-		.Times((_countof(source) - 10) * 2);
-	EXPECT_CALL(context, GetDropCopy())
-		.Times((_countof(source) - 10 + 1) * 2)
-		.WillRepeatedly(Return(&dropCopy));
-
 	svc::MovingAverageService serviceForBars(
 		context,
 		"Tag",
@@ -224,7 +214,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 	for (size_t i = 0; i < _countof(source); ++i) {
 
 		const auto value = source[i][0];
-			
+
 		svc::BarService::Bar bar;
 		bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(value, 100));
 		ASSERT_EQ(
@@ -366,8 +356,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 
 	boost::format settingsString(
 		"[Section]\n"
-			"id = 627AF583-5B76-4001-8FF3-A110B19DE8D4\n"
 			"type = %1%\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
 			"history = no\n"
 			"period = 10");
 	settingsString % Policy::GetType();
@@ -384,16 +374,6 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		marketDataSource,
 		trdk::Security::SupportedLevel1Types());
 
-	MockDropCopy dropCopy;
-	EXPECT_CALL(dropCopy, RegisterAbstractDataSource(_, _, _))
-		.Times(2)
-		.WillRepeatedly(Return(12334));
-	EXPECT_CALL(dropCopy, CopyAbstractDataPoint(_, _, _))
-		.Times((_countof(source) - 10) * 2);
-	EXPECT_CALL(context, GetDropCopy())
-		.Times((_countof(source) - 10 + 1) * 2)
-		.WillRepeatedly(Return(&dropCopy));
-
 	svc::MovingAverageService serviceForBars(
 		context,
 		"Tag",
@@ -403,11 +383,14 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		"Tag",
 		lib::IniSectionRef(settingsForLastPrice, "Section"));
 
+	pt::ptime time = pt::microsec_clock::local_time();
 	for (size_t i = 0; i < _countof(source); ++i) {
 			
 		const auto &value = source[i][0];
-
+		time += pt::seconds(123);
+		
 		svc::BarService::Bar bar;
+		bar.time = time;
 		bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(value, 100));
 		ASSERT_EQ(
 				!lib::IsZero(source[i][Policy::GetColumn()]),
@@ -417,22 +400,21 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		ASSERT_THROW(
 			serviceForBars.OnLevel1Tick(
 				security,
-				pt::not_a_date_time,
+				time,
 				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
 					value)),
 			svc::MovingAverageService::Error);
-
 		ASSERT_EQ(
 			!lib::IsZero(source[i][Policy::GetColumn()]),
 			serviceForLastPrice.OnLevel1Tick(
 				security,
-				pt::not_a_date_time,
+				time,
 				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
 					value)));
 		ASSERT_FALSE(
 			serviceForLastPrice.OnLevel1Tick(
 				security,
-				pt::not_a_date_time,
+				time,
 				trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_BID_PRICE>(
 					value)));
 		ASSERT_THROW(
@@ -443,6 +425,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 			continue;
 		}
 
+		EXPECT_EQ(time, serviceForBars.GetLastPoint().time);
 		EXPECT_DOUBLE_EQ(source[i][0], serviceForBars.GetLastPoint().source)
 			<< "i = " << i << ";"
 			<< " bar.closeTradePrice = " << bar.closeTradePrice << ";"
@@ -503,5 +486,115 @@ INSTANTIATE_TYPED_TEST_CASE_P(
 	MovingAverageService,
 	MovingAverageServiceTypedTest,
 	MovingAverageServiceTestPolicies);
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(MovingAverageServiceTypedTest, DropCopy) {
+
+	const lib::IniString settings(
+		"[Section]\n"
+			"id = 00000000-0000-0000-0000-000000000001\n"
+			"type = simple\n"
+			"source = last price\n"
+			"history = no\n"
+			"period = 2");
+
+	MockDropCopy dropCopy;
+
+	pt::ptime time = pt::microsec_clock::local_time();
+
+	MockContext context;
+	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	const trdk::Security security(
+		context,
+		lib::Symbol("TEST_SCALE2/USD::STK"),
+		marketDataSource,
+		trdk::Security::SupportedLevel1Types());
+
+	svc::MovingAverageService service(
+		context,
+		"Tag",
+		lib::IniSectionRef(settings, "Section"));
+
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		EXPECT_THROW(
+			service.DropLastPointCopy(11),
+			svc::MovingAverageService::ValueDoesNotExistError);
+	}
+
+	time += pt::seconds(12);
+	EXPECT_FALSE(
+		service.OnLevel1Tick(
+			security,
+			time,
+			trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(110)));
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		EXPECT_THROW(
+			service.DropLastPointCopy(11),
+			svc::MovingAverageService::ValueDoesNotExistError);
+	}
+
+	time += pt::seconds(12);
+	ASSERT_TRUE(
+		service.OnLevel1Tick(
+			security,
+			time,
+			trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(130)));
+	{
+		const auto value = service.GetLastPoint();
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(
+				dropCopy,
+				CopyAbstractData(13, 0, value.time, value.value))
+			.Times(1);
+		service.DropLastPointCopy(13);
+	}
+
+	time += pt::seconds(12);
+	ASSERT_TRUE(
+		service.OnLevel1Tick(
+			security,
+			time,
+			trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(140)));
+	{
+		const auto value = service.GetLastPoint();
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(
+				dropCopy,
+				CopyAbstractData(14, 1, value.time, value.value))
+			.Times(1);
+		service.DropLastPointCopy(14);
+	}
+
+	time += pt::seconds(12);
+	ASSERT_TRUE(
+		service.OnLevel1Tick(
+			security,
+			time,
+			trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(150)));
+	{
+		const auto value = service.GetLastPoint();
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(
+				dropCopy,
+				CopyAbstractData(15, 2, value.time, value.value))
+			.Times(1);
+		service.DropLastPointCopy(15);
+	}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////

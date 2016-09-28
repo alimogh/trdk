@@ -274,7 +274,13 @@ ContinuousContractBarService::ContinuousContractBarService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &conf)
-	: Base(context, "ContinuousContractBarsService", tag)
+	: Base(
+		context,
+		boost::uuids::string_generator()(
+			"{2C1A33FF-D2B0-40F2-9C2A-B46306902712}"),
+		"ContinuousContractBarsService",
+		tag,
+		conf)
 	, m_pimpl(new Implementation(*this, context, tag, conf)) {
 	//...//
 }
@@ -310,6 +316,7 @@ bool ContinuousContractBarService::OnNewTrade(
 				m_pimpl->m_loadingPrevPeriodFrom == nIndex,
 				GetSecurity().GetExpiration()
 			});
+		return security.IsOnline();
 	}
 
 	return false;
@@ -448,6 +455,18 @@ ContinuousContractBarService::GetLastBar()
 		throw BarDoesNotExistError("ContinuousContractBarService is empty");
 	}
 	return m_pimpl->m_bars.front();
+}
+
+void ContinuousContractBarService::DropLastBarCopy(
+		const DropCopy::DataSourceInstanceId &sourceId)
+		const {
+	m_pimpl->m_source->DropLastBarCopy(sourceId);
+}
+
+void ContinuousContractBarService::DropUncompletedBarCopy(
+		const DropCopy::DataSourceInstanceId &sourceId)
+		const {
+	m_pimpl->m_source->DropUncompletedBarCopy(sourceId);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

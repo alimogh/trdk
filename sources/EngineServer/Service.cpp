@@ -56,8 +56,10 @@ EngineServer::Service::Topics::Topics(const std::string &suffix)
 	, storeTrade("trdk.service.trade.store")
 	, storeBook("trdk.service.book.store")
 	, storeBar("trdk.service.bar.store")
-	, registerAbstractDataSource("trdk.service.abstract_data_source.register")
-	, storeAbstractDataPoint("trdk.service.abstract_data.store")
+	, storeAbstractData("trdk.service.abstract_data.store")
+	, registerDataSourceInstance("trdk.service.data_source.register_instance")
+	, registerStrategyInstance("trdk.service.strategy.register_instance")
+	, continueStrategyInstance("trdk.service.strategy.continue_instance")
 	, startEngine((boost::format("trdk.engine.%1%.start") % suffix).str())
 	, stopEngine((boost::format("trdk.engine.%1%.stop") % suffix).str())
 	, startDropCopy(
@@ -282,6 +284,27 @@ void EngineServer::Service::DropCopy::Dump() {
 	m_queue.Dump();
 }
 
+DropCopy::StrategyInstanceId
+EngineServer::Service::DropCopy::RegisterStrategyInstance(
+		const Strategy &strategy) {
+	return m_service.RegisterStrategyInstance(strategy);
+}
+
+DropCopy::StrategyInstanceId
+EngineServer::Service::DropCopy::ContinueStrategyInstance(
+		const Strategy &strategy,
+		const pt::ptime &time) {
+	return m_service.ContinueStrategyInstance(strategy, time);
+}
+
+EngineServer::Service::DropCopy::DataSourceInstanceId
+EngineServer::Service::DropCopy::RegisterDataSourceInstance(
+		const Strategy &strategy,
+		const uuids::uuid &type,
+		const uuids::uuid &id) {
+	return m_service.RegisterDataSourceInstance(strategy, type, id);
+}
+
 void EngineServer::Service::DropCopy::CopyOrder(
 		const uuids::uuid &id,
 		const std::string *tradingSystemId,
@@ -377,22 +400,21 @@ void EngineServer::Service::DropCopy::CopyTrade(
 }
 
 void EngineServer::Service::DropCopy::ReportOperationStart(
+		const Strategy &strategy,
 		const uuids::uuid &id,
-		const pt::ptime &time,
-		const Strategy &strategy) {
+		const pt::ptime &time) {
 	m_queue.Enqueue(
-		[this, id, time, &strategy](
+		[this, &strategy, id, time](
 				size_t recordNumber,
 				size_t attemptNo,
-				bool dump)
-				-> bool {
+				bool dump) {
 			return m_service.StoreOperationStartReport(
 				recordNumber,
 				attemptNo,
 				dump,
+				strategy,
 				id,
-				time,
-				strategy);
+				time);
 		});
 }
 
@@ -464,74 +486,48 @@ void EngineServer::Service::DropCopy::CopyBook(
 }
 
 void EngineServer::Service::DropCopy::CopyBar(
-		const Security &security,
+		const DropCopy::DataSourceInstanceId &sourceId,
+		size_t index,
 		const pt::ptime &time,
-		const pt::time_duration &size,
-		const ScaledPrice &openTradePrice,
-		const ScaledPrice &closeTradePrice,
-		const ScaledPrice &highTradePrice,
-		const ScaledPrice &lowTradePrice) {
-	const BarCache bar = {
-		&security,
-		time,
-		size.total_seconds(),
-		openTradePrice,
-		closeTradePrice,
-		highTradePrice,
-		lowTradePrice
-	};
+		double open,
+		double high,
+		double low,
+		double close) {
 	m_queue.Enqueue(
-		[this, bar](size_t recordNumber, size_t attemptNo, bool dump) -> bool {
-			return m_service.StoreBar(recordNumber, attemptNo, dump, bar);
+		[this, sourceId, index, time, open, high, low, close](
+				size_t recordNumber,
+				size_t attemptNo,
+				bool dump) {
+			return m_service.StoreBar(
+				recordNumber,
+				attemptNo,
+				dump,
+				sourceId,
+				index,
+				time,
+				open,
+				high,
+				low,
+				close);
 		});
 }
 
-void EngineServer::Service::DropCopy::CopyBar(
-		const Security &security,
-		const pt::ptime &time,
-		size_t numberOfTicksInBar,
-		const ScaledPrice &openTradePrice,
-		const ScaledPrice &closeTradePrice,
-		const ScaledPrice &highTradePrice,
-		const ScaledPrice &lowTradePrice) {
-	const BarCache bar = {
-		&security,
-		time,
-		-int64_t(numberOfTicksInBar),
-		openTradePrice,
-		closeTradePrice,
-		highTradePrice,
-		lowTradePrice
-	};
-	m_queue.Enqueue(
-		[this, bar](size_t recordNumber, size_t attemptNo, bool dump) -> bool {
-			return m_service.StoreBar(recordNumber, attemptNo, dump, bar);
-		});
-}
-
-EngineServer::Service::DropCopy::AbstractDataSourceId
-EngineServer::Service::DropCopy::RegisterAbstractDataSource(
-		const uuids::uuid &instance,
-		const uuids::uuid &type,
-		const std::string &name) {
-	return m_service.RegisterAbstractDataSource(instance, type, name);
-}
-
-void EngineServer::Service::DropCopy::CopyAbstractDataPoint(
-		const AbstractDataSourceId &source,
+void EngineServer::Service::DropCopy::CopyAbstractData(
+		const DataSourceInstanceId &source,
+		size_t index,
 		const pt::ptime &time,
 		double value) {
 	m_queue.Enqueue(
-		[this, source, time, value](
+		[this, source, index, time, value](
 				size_t recordNumber,
 				size_t attemptNo,
-				bool dump)
-				-> bool {
-			return m_service.StoreAbstractDataPoint(
+				bool dump) {
+			return m_service.StoreAbstractData(
 				recordNumber,
 				attemptNo,
 				dump,
 				source,
+				index,
 				time,
 				value);
 		});
@@ -1240,9 +1236,9 @@ void EngineServer::Service::OnContextStateChanged(
 		case Context::STATE_STRATEGY_BLOCKED:
 
 			!updateMessage
-				?	m_log.Warn("Engine notified about blocked startegy.")
+				?	m_log.Warn("Engine notified about blocked strategy.")
 				:	m_log.Warn(
-						"Engine notified about blocked startegy: \"%s\".",
+						"Engine notified about blocked strategy: \"%s\".",
 						*updateMessage);
 
 			break;
@@ -1251,27 +1247,96 @@ void EngineServer::Service::OnContextStateChanged(
 
 }
 
+DropCopy::StrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
+		const Strategy &strategy) {
+
+	DropCopyRecord record;
+	record["strategy_type_id"] = strategy.GetTypeId();
+	record["strategy_id"] = strategy.GetId();
+	record["engine_instance_id"] = *m_instanceId;
+	record["trading_mode"] = strategy.GetTradingMode();
+	record["start_time"] = strategy.GetContext().GetStartTime();
+
+	const auto &result = Request<DropCopy::StrategyInstanceId>(
+		m_dropCopy.TakeRecordNumber(),
+		1,
+		&Topics::registerStrategyInstance,
+		record);
+	if (result == DropCopy::nStrategyInstanceId) {
+		throw DropCopy::Exception("Failed to register TWS strategy instance");
+	}
+
+	return result;
+
+}
+
+DropCopy::StrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
+		const Strategy &strategy,
+		const pt::ptime &time) {
+
+	AssertNe(DropCopy::nStrategyInstanceId, strategy.GetDropCopyInstanceId());
+
+	DropCopyRecord record;
+	record["previous_id"] = strategy.GetDropCopyInstanceId();
+	record["start_time"] = time;
+
+	const auto &result = Request<DropCopy::StrategyInstanceId>(
+		m_dropCopy.TakeRecordNumber(),
+		1,
+		&Topics::continueStrategyInstance,
+		record);
+	if (result == DropCopy::nStrategyInstanceId) {
+		throw DropCopy::Exception("Failed to continue TWS strategy instance");
+	}
+
+	return result;
+
+}
+
+EngineServer::Service::DropCopy::DataSourceInstanceId
+EngineServer::Service::RegisterDataSourceInstance(
+		const Strategy &strategy,
+		const uuids::uuid &type,
+		const uuids::uuid &id) {
+
+	DropCopyRecord record;
+	record["data_source_type_id"] = type;
+	record["data_source_id"] = id;
+	record["strategy_instance_id"] = strategy.GetDropCopyInstanceId();
+
+	const auto &result = Request<DropCopy::DataSourceInstanceId>(
+		m_dropCopy.TakeRecordNumber(),
+		1,
+		&Topics::registerDataSourceInstance,
+		record);
+	if (result == DropCopy::nDataSourceInstanceId) {
+		throw DropCopy::Exception(
+			"Failed to register TWS data source instance");
+	}
+
+	return result;
+
+}
+
 bool EngineServer::Service::StoreOperationStartReport(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
+		const Strategy &strategy,
 		const uuids::uuid &id,
-		const pt::ptime &time,
-		const Strategy &strategy) {
+		const pt::ptime &time) {
 
 	DropCopyRecord record;
 	record["id"] = id;
-	record["engine_instance_id"] = *m_instanceId;
+	record["strategy_instance_id"] = strategy.GetDropCopyInstanceId();
 	record["start_time"] = time;
-	record["trading_mode"] = strategy.GetTradingMode();
-	record["strategy_id"] = strategy.GetId();
 
 	return StoreRecord(
 		&Topics::storeOperationStart,
 		recordNumber,
 		storeAttemptNo,
 		dump,
-		std::move(record));
+		record);
 
 }
 
@@ -1297,7 +1362,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 		recordNumber,
 		storeAttemptNo,
 		dump,
-		std::move(record));
+		record);
 
 }
 
@@ -1357,7 +1422,7 @@ bool EngineServer::Service::StoreOrder(
 		recordNumber,
 		storeAttemptNo,
 		dump,
-		std::move(record));
+		record);
 
 }
 
@@ -1391,7 +1456,31 @@ bool EngineServer::Service::StoreTrade(
 		recordNumber,
 		storeAttemptNo,
 		dump,
-		std::move(record));
+		record);
+
+}
+
+bool EngineServer::Service::StoreAbstractData(
+		size_t recordNumber,
+		size_t storeAttemptNo,
+		bool dump,
+		const DropCopy::DataSourceInstanceId &source,
+		size_t index,
+		const pt::ptime &time,
+		double value) {
+
+	DropCopyRecord record;
+	record["data_source_instance_id"] = source;
+	record["index"] = index;
+	record["time"] = ConvertToMicroseconds(time);
+	record["value"] = value;
+
+	return StoreRecord(
+		&Topics::storeAbstractData,
+		recordNumber,
+		storeAttemptNo,
+		dump,
+		record);
 
 }
 
@@ -1399,51 +1488,29 @@ bool EngineServer::Service::StoreBar(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
-		const BarCache &bar) {
+		const DropCopy::DataSourceInstanceId &sourceId,
+		size_t index,
+		const pt::ptime &time,
+		double open,
+		double high,
+		double low,
+		double close) {
 
 	DropCopyRecord record;
-	record["engine"] = *m_instanceId;
-	record["source"] = bar.security->GetSource().GetTag();
-	record["symbol"] = bar.security->GetSymbol().GetSymbol();
-	record["time"] = ConvertToMicroseconds(bar.time);
-	AssertNe(0, bar.size);
-	record["size"] = bar.size;
-	record["open"] = bar.security->DescalePrice(bar.open);
-	record["close"] = bar.security->DescalePrice(bar.close);
-	record["high"] = bar.security->DescalePrice(bar.high);
-	record["low"] = bar.security->DescalePrice(bar.low);
+	record["data_source_instance_id"] = sourceId;
+	record["index"] = index;
+	record["time"] = ConvertToMicroseconds(time);
+	record["open"] = open;
+	record["high"] = high;
+	record["low"] = low;
+	record["close"] = close;
 
 	return StoreRecord(
 		&Topics::storeBar,
 		recordNumber,
 		storeAttemptNo,
 		dump,
-		std::move(record));
-
-}
-
-bool EngineServer::Service::StoreAbstractDataPoint(
-		size_t recordNumber,
-		size_t storeAttemptNo,
-		bool dump,
-		const DropCopy::AbstractDataSourceId &source,
-		const pt::ptime &time,
-		double value) {
-
-	DropCopyRecord record;
-	{
-		const intmax_t sourceInt = source;
-		record["source"] = sourceInt;
-	}
-	record["time"] = ConvertToMicroseconds(time);
-	record["value"] = value;
-
-	return StoreRecord(
-		&Topics::storeAbstractDataPoint,
-		recordNumber,
-		storeAttemptNo,
-		dump,
-		std::move(record));
+		record);
 
 }
 
@@ -1452,10 +1519,10 @@ bool EngineServer::Service::StoreRecord(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
-		const DropCopyRecord &&record) {
+		const DropCopyRecord &record) {
 
 	if (dump) {
-		DumpRecord(topic, recordNumber, storeAttemptNo, std::move(record));
+		DumpRecord(topic, recordNumber, storeAttemptNo, record);
 		return true;
 	}
 
@@ -1516,7 +1583,7 @@ bool EngineServer::Service::StoreRecord(
 					" Record %1% will be skipped at attempt %2%.",
 				recordNumber,
 				storeAttemptNo);
-			DumpRecord(topic, recordNumber, storeAttemptNo, std::move(record));
+			DumpRecord(topic, recordNumber, storeAttemptNo, record);
 		}
 		return true;
 	} catch (const std::exception &ex) {
@@ -1537,7 +1604,7 @@ void EngineServer::Service::DumpRecord(
 		const std::string Topics::*topic,
 		size_t recordNumber,
 		size_t storeAttemptNo,
-		const DropCopyRecord &&record) {
+		const DropCopyRecord &record) {
 	m_dropCopy.GetDataLog().Error(
 		"dump\t%1%\t%2%\t%3%\t%4%",
 		recordNumber,
@@ -1612,28 +1679,19 @@ bool EngineServer::Service::StoreBook(
 
 }
 
-EngineServer::Service::DropCopy::AbstractDataSourceId
-EngineServer::Service::RegisterAbstractDataSource(
-		const uuids::uuid &instance,
-		const uuids::uuid &type,
-		const std::string &name) {
-
-	DropCopyRecord record;
-	record["instance"] = instance;
-	record["type"] = type;
-	record["engine"] = *m_instanceId;
-	record["name"] = name;
-
-	const auto &topic = m_connection->topics.registerAbstractDataSource;
-
-	const auto &recordNumber = m_dropCopy.TakeRecordNumber();
+template<typename Result>
+Result EngineServer::Service::Request(
+		size_t recordNumber,
+		size_t storeAttemptNo,
+		const std::string Topics::*topic,
+		const DropCopyRecord &request) {
 
 	m_dropCopy.GetDataLog().Info(
-		"store\t%1%\t%2%\t%3%\t%4%",
+		"request\t%1%\t%2%\t%3%\t%4%",
 		recordNumber,
-		1,
+		storeAttemptNo,
 		topic,
-		ConvertToLogString(record));
+		ConvertToLogString(request));
 
 	boost::future<autobahn::wamp_call_result> callFuture;
 	{
@@ -1643,60 +1701,53 @@ EngineServer::Service::RegisterAbstractDataSource(
 			m_dropCopy.GetDataLog().Warn(
 				"no connection\t%1%\t%2%\t%3%",
 				recordNumber,
-				1,
-				topic);
+				storeAttemptNo,
+				m_connection->topics.*topic);
 			throw DropCopy::Exception("Has no TWS connection");
 		}
 
 		try {
 			callFuture = m_connection->session->call(
-				topic,
+				m_connection->topics.*topic,
 				std::make_tuple(),
-				record,
+				request,
 				m_config.callOptions);
 		} catch (const std::exception &ex) {
-			m_log.Error(
-				"Failed to call TWS to register Abstract Data Source: \"%1%\".",
-				ex.what());
+			m_log.Error("Failed to request to TWS: \"%1%\".", ex.what());
 			m_dropCopy.GetDataLog().Error(
-				"store error\t%1%\t%2%\t%3%\t%4%",
+				"request error\t%1%\t%2%\t%3%\t%4%",
 				recordNumber,
-				1,
-				topic,
+				storeAttemptNo,
+				m_connection->topics.*topic,
 				ex.what());
-			throw DropCopy::Exception("Failed to call TWS");
+			throw DropCopy::Exception("Failed to request to TWS");
 		}
 
 	}
 
 	try {
-		const auto &result
-			= callFuture.get().argument<DropCopy::AbstractDataSourceId>(0);
-		if (result != 0) {
-			m_dropCopy.GetDataLog().Info(
-				"result\t%1%\t%2%\t%3%\t%4%",
-				recordNumber,
-				1,
-				topic,
-				result);
-			return result;
-		}
+		const auto &result = callFuture.get().argument<Result>(0);
+		m_dropCopy.GetDataLog().Info(
+			"request result\t%1%\t%2%\t%3%\t%4%",
+			recordNumber,
+			storeAttemptNo,
+			m_connection->topics.*topic,
+			result);
+		return result;
 	} catch (const std::exception &ex) {
 		m_log.Error(
-			"Failed to call TWS to register Abstract Data Source: \"%1%\".",
+			"Failed to request to TWS: \"%1%\".",
 			ex.what());
 		m_dropCopy.GetDataLog().Error(
-			"store error\t%1%\t%2%\t%3%\t%4%",
+			"request error\t%1%\t%2%\t%3%\t%4%",
 			recordNumber,
-			1,
-			topic,
+			storeAttemptNo,
+			m_connection->topics.*topic,
 			ex.what());
 	}
 
-	m_log.Error(
-		"Failed to call TWS to register Abstract Data Source"
-				": TWS returned error.");
-	throw DropCopy::Exception("Failed to call TWS");
+	m_log.Error("Failed to request to TWS: TWS returned error.");
+	throw DropCopy::Exception("Failed to request to TWS");
 
 }
 

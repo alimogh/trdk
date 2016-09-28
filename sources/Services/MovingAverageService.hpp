@@ -40,6 +40,7 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
+			boost::posix_time::ptime time;
 			double source;
 			double value;
 		};
@@ -60,6 +61,13 @@ namespace trdk { namespace Services {
 		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
 		  */
 		Point GetLastPoint() const;
+
+		//! Drops last value point copy.
+		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+		  */
+		void DropLastPointCopy(
+				const trdk::DropCopy::DataSourceInstanceId &)
+				const;
 
 	public:
 
@@ -107,7 +115,7 @@ namespace trdk { namespace Services {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

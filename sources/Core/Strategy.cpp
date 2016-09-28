@@ -20,6 +20,7 @@
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -308,7 +309,8 @@ public:
 public:
 
 	Strategy &m_strategy;
-	const boost::uuids::uuid m_id;
+	const uuids::uuid m_typeId;
+	const uuids::uuid m_id;
 	const std::string m_title;
 	const TradingMode m_tradingMode;
 
@@ -327,21 +329,28 @@ public:
 
 	boost::array<const Position *, 3> m_delayedPositionToForget;
 
+	DropCopy::StrategyInstanceId m_dropCopyInstanceId;
+
 public:
 
-	explicit Implementation(Strategy &strategy, const IniSectionRef &conf)
-		: m_strategy(strategy),
-		m_id(boost::uuids::string_generator()(conf.ReadKey("id"))),
-		m_title(conf.ReadKey("title")),
-		m_tradingMode(
-			ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
-		m_isEnabled(conf.ReadBoolKey("is_enabled")),
-		m_isBlocked(false),
-		m_riskControlScope(
+	explicit Implementation(
+			Strategy &strategy,
+			const uuids::uuid &typeId,
+			const IniSectionRef &conf)
+		: m_strategy(strategy)
+		, m_typeId(typeId)
+		, m_id(uuids::string_generator()(conf.ReadKey("id")))
+		, m_title(conf.ReadKey("title"))
+		, m_tradingMode(
+			ConvertTradingModeFromString(conf.ReadKey("trading_mode")))
+		, m_isEnabled(conf.ReadBoolKey("is_enabled"))
+		, m_isBlocked(false)
+		, m_riskControlScope(
 			m_strategy.GetContext().GetRiskControl(m_tradingMode).CreateScope(
 				m_strategy.GetTag(),
-				conf)),
-		m_stopMode(STOP_MODE_UNKNOWN) {
+				conf))
+		, m_stopMode(STOP_MODE_UNKNOWN)
+		, m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
 		m_delayedPositionToForget.fill(nullptr);
 	}
 
@@ -393,15 +402,32 @@ public:
 
 Strategy::Strategy(
 		trdk::Context &context,
+		const uuids::uuid &typeId,
 		const std::string &name,
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Consumer(context, "Strategy", name, tag) {
-	m_pimpl = new Implementation(*this, conf);
+
+	m_pimpl = new Implementation(*this, typeId, conf);
+
+	std::string dropCopyInstanceIdStr = "not used";
+	GetContext().InvokeDropCopy(
+		[this, &dropCopyInstanceIdStr](DropCopy &dropCopy) {
+			m_pimpl->m_dropCopyInstanceId
+				= dropCopy.RegisterStrategyInstance(*this);
+			AssertNe(
+				DropCopy::nStrategyInstanceId,
+				m_pimpl->m_dropCopyInstanceId);
+			dropCopyInstanceIdStr = boost::lexical_cast<std::string>(
+				m_pimpl->m_dropCopyInstanceId);
+		});
+	
 	GetLog().Info(
-		"%1%, %2% mode.",
+		"%1%, %2% mode, drop copy ID: %3%.",
 		m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED",
-		boost::to_upper_copy(ConvertToString(GetTradingMode())));
+		boost::to_upper_copy(ConvertToString(GetTradingMode())),
+		dropCopyInstanceIdStr);
+
 }
 
 Strategy::~Strategy() {
@@ -417,7 +443,11 @@ Strategy::~Strategy() {
 	delete m_pimpl;
 }
 
-const boost::uuids::uuid & Strategy::GetId() const {
+const uuids::uuid & Strategy::GetTypeId() const {
+	return m_pimpl->m_typeId;
+}
+
+const uuids::uuid & Strategy::GetId() const {
 	return m_pimpl->m_id;
 }
 
@@ -427,6 +457,11 @@ const std::string & Strategy::GetTitle() const {
 
 TradingMode Strategy::GetTradingMode() const {
 	return m_pimpl->m_tradingMode;
+}
+
+const DropCopy::StrategyInstanceId & Strategy::GetDropCopyInstanceId() const {
+	AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
+	return m_pimpl->m_dropCopyInstanceId;
 }
 
 RiskControlScope & Strategy::GetRiskControlScope() {

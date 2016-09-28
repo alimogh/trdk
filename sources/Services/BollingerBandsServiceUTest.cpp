@@ -12,6 +12,7 @@
 #include "BollingerBandsService.hpp"
 #include "Tests/MockContext.hpp"
 
+namespace pt = boost::posix_time;
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
 
@@ -160,6 +161,7 @@ class BollingerBandsServiceTest : public testing::Test {
 			for (size_t i = 0; i < _countof(source); ++i) {
 			
 				const svc::MovingAverageService::Point ma = {
+					pt::not_a_date_time,
 					double(lib::Scale(source[i][0], 100)),
 					double(lib::Scale(source[i][1], 100))
 				};
@@ -212,6 +214,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	
 	std::string settingsString(
 		"[Section]\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
 			"history = yes\n");
 	const lib::IniString settings(settingsString);
 	m_service.reset(
@@ -307,7 +310,9 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 
 TEST_F(BollingerBandsServiceTest, RealTimeWithoutHistory) {
 
-	std::string settingsString("[Section]\n");
+	std::string settingsString(
+		"[Section]\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n");
 	const lib::IniString settings(settingsString);
 	m_service.reset(
 		new svc::BollingerBandsService(

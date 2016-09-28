@@ -182,9 +182,9 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				GetStrategy().GetContext().InvokeDropCopy(
 					[this, &startTime](DropCopy &dropCopy) {
 					dropCopy.ReportOperationStart(
+						GetStrategy(),
 						GetId(),
-						startTime,
-						GetStrategy());
+						startTime);
 				});
 				Open(GetOpenStartPrice());
 				m_isPassiveOpen = true;

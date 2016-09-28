@@ -42,6 +42,13 @@ namespace trdk { namespace Services {
 		virtual Bar GetBarByReversedIndex(size_t index) const;
 		virtual Bar GetLastBar() const;
 
+		virtual void DropLastBarCopy(
+				const trdk::DropCopy::DataSourceInstanceId &)
+				const;
+		virtual void DropUncompletedBarCopy(
+				const trdk::DropCopy::DataSourceInstanceId &)
+				const;
+
 	public:
 
 		virtual void OnSecurityStart(

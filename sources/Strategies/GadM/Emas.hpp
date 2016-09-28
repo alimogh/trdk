@@ -53,13 +53,17 @@ namespace trdk { namespace Strategies { namespace GadM {
 		Ema()
 			: m_value(0)
 			, m_service(nullptr)
-			, m_numberOfUpdates(0) {
+			, m_numberOfUpdates(0)
+			, m_dropCopyDataSourceId(DropCopy::nDataSourceInstanceId) {
 			//...//
 		}
-		explicit Ema(const Services::MovingAverageService &service)
+		explicit Ema(
+				const Services::MovingAverageService &service,
+				const DropCopy::DataSourceInstanceId &dropCopyDataSourceId)
 			: m_value(0)
 			, m_service(&service)
-			, m_numberOfUpdates(0) {
+			, m_numberOfUpdates(0)
+			, m_dropCopyDataSourceId(dropCopyDataSourceId) {
 			//...//
 		}
 		operator bool() const {
@@ -90,10 +94,18 @@ namespace trdk { namespace Strategies { namespace GadM {
 		size_t GetNumberOfUpdates() const {
 			return m_numberOfUpdates;
 		}
+		bool IsSame(const Service &service) const {
+			return m_service == &service;
+		}
+		void DropLastPointCopy() const {
+			AssertNe(DropCopy::nDataSourceInstanceId, m_dropCopyDataSourceId);
+			m_service->DropLastPointCopy(m_dropCopyDataSourceId);
+		}
 	private:
 		double m_value;
 		const Services::MovingAverageService *m_service;
 		size_t m_numberOfUpdates;
+		DropCopy::DataSourceInstanceId m_dropCopyDataSourceId;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

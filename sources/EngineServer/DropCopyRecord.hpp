@@ -18,6 +18,7 @@ namespace trdk { namespace EngineServer {
 			boost::uuids::uuid,
 			boost::posix_time::ptime,
 			double,
+			int32_t,
 			intmax_t,
 			uintmax_t,
 			Qty,

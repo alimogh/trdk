@@ -31,6 +31,21 @@ namespace trdk { namespace Tests {
 		MOCK_METHOD0(Flush, void());
 		MOCK_METHOD0(Dump, void());
 
+		MOCK_METHOD1(
+			RegisterStrategyInstance,
+			StrategyInstanceId(const trdk::Strategy &));
+		MOCK_METHOD2(
+			ContinueStrategyInstance,
+			StrategyInstanceId(
+				const trdk::Strategy &,
+				const boost::posix_time::ptime &));
+		MOCK_METHOD3(
+			RegisterDataSourceInstance,
+			trdk::DropCopy::DataSourceInstanceId(
+				const trdk::Strategy &,
+				const boost::uuids::uuid &type,
+				const boost::uuids::uuid &id));
+
 		virtual void CopyOrder(
 				const boost::uuids::uuid &,
 				const std::string *,
@@ -72,9 +87,9 @@ namespace trdk { namespace Tests {
 		MOCK_METHOD3(
 			ReportOperationStart,
 			void(
+				const trdk::Strategy &,
 				const boost::uuids::uuid &id,
-				const boost::posix_time::ptime &,
-				const trdk::Strategy &));
+				const boost::posix_time::ptime &));
 		MOCK_METHOD5(
 			ReportOperationEnd,
 			void(
@@ -91,34 +106,18 @@ namespace trdk { namespace Tests {
 		MOCK_METHOD7(
 			CopyBar,
 			void(
-				const trdk::Security &,
+				const trdk::DropCopy::DataSourceInstanceId &,
+				size_t index,
 				const boost::posix_time::ptime &,
-				const boost::posix_time::time_duration &,
-				const trdk::ScaledPrice &openTradePrice,
-				const trdk::ScaledPrice &closeTradePrice,
-				const trdk::ScaledPrice &highTradePrice,
-				const trdk::ScaledPrice &lowTradePrice));
-		MOCK_METHOD7(
-			CopyBar,
+				double,
+				double,
+				double,
+				double));
+		MOCK_METHOD4(
+			CopyAbstractData,
 			void(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				size_t numberOfTicksInBar,
-				const trdk::ScaledPrice &openTradePrice,
-				const trdk::ScaledPrice &closeTradePrice,
-				const trdk::ScaledPrice &highTradePrice,
-				const trdk::ScaledPrice &lowTradePrice));
-
-		MOCK_METHOD3(
-			RegisterAbstractDataSource,
-			trdk::DropCopy::AbstractDataSourceId(
-				const boost::uuids::uuid &instance,
-				const boost::uuids::uuid &type,
-				const std::string &name));
-		MOCK_METHOD3(
-			CopyAbstractDataPoint,
-			void(
-				const trdk::DropCopy::AbstractDataSourceId &,
+				const trdk::DropCopy::DataSourceInstanceId &,
+				size_t index,
 				const boost::posix_time::ptime &,
 				double value));
 

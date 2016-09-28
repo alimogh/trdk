@@ -75,8 +75,9 @@ TEST(BarServiceTest, ByNumberOfTicks) {
 	
 	const lib::IniString settings(
 		"[Section]\n"
-		"size = 10 ticks\n"
-		"log = none");
+			"size = 10 ticks\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"log = none");
 	
 	MockContext context;
 	MockMarketDataSource marketDataSource(0, context, std::string("0"));
@@ -99,22 +100,6 @@ TEST(BarServiceTest, ByNumberOfTicks) {
 
 	const size_t numberOfSets = 39;
 	const Source &source = GetSource(numberOfSets);
-
-	MockDropCopy dropCopy;
-	EXPECT_CALL(
-		dropCopy,
-		CopyBar(
-			_,
-			AllOf(Ge(source.front().time), Le(source.back().time)),
-			Matcher<size_t>(10),
-			AllOf(Ge(source.front().price), Le(source.back().price)),
-			AllOf(Ge(source.front().price), Le(source.back().price)),
-			AllOf(Ge(source.front().price), Le(source.back().price)),
-			AllOf(Ge(source.front().price), Le(source.back().price))))
-		.Times(int(source.size()));
-	EXPECT_CALL(context, GetDropCopy())
-		.Times(int(source.size()))
-		.WillRepeatedly(Return(&dropCopy));
 
 	double volume = 0;
 	for (size_t i = 0, tradesCount = 0; i < source.size(); ++i) {
@@ -204,8 +189,9 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
 	
 	const lib::IniString settings(
 		"[Section]\n"
-		"size = 10000 ticks\n"
-		"log = none");
+			"size = 10000 ticks\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"log = none");
 	
 	MockContext context;
 	MockMarketDataSource marketDataSource(0, context, std::string("0"));
@@ -218,22 +204,6 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
 		context,
 		"Tag",
 		lib::IniSectionRef(settings, "Section"));
-
-	MockDropCopy dropCopy;
-	EXPECT_CALL(
-		dropCopy,
-		CopyBar(
-			_,
-			_,
-			Matcher<size_t>(10000),
-			AllOf(Ge(1), Le(4)),
-			AllOf(Ge(1), Le(4)),
-			AllOf(Ge(1), Le(4)),
-			AllOf(Ge(1), Le(4))))
-		.Times(6);
-	EXPECT_CALL(context, GetDropCopy())
-		.Times(6)
-		.WillRepeatedly(Return(&dropCopy));
 
 	{
 		trdk::Security::Request request;
@@ -326,11 +296,11 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
 
 	const lib::IniString settings(
 		"[Section]\n" 
-		"size = 2 ticks\n"
-		"log = none");
+			"size = 2 ticks\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"log = none");
 
 	MockContext context;
-	EXPECT_CALL(context, GetDropCopy()).WillRepeatedly(Return(nullptr));
 
 	MockSecurity security;
 	svc::BarCollectionService service(
@@ -348,11 +318,181 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
 	const auto &now = pt::microsec_clock::local_time();
 	EXPECT_FALSE(service.OnNewTrade(security,  now, 1, 3));
 	EXPECT_EQ(0, service.GetSize());
+	EXPECT_TRUE(service.IsEmpty());
 	EXPECT_TRUE(service.OnNewTrade(security,  now, 1, 3));
+	EXPECT_FALSE(service.IsEmpty());
 	EXPECT_EQ(1, service.GetSize());
 	EXPECT_FALSE(service.OnNewTrade(security, now, 1, 3));
+	EXPECT_FALSE(service.IsEmpty());
 	EXPECT_EQ(1, service.GetSize());
 	EXPECT_TRUE(service.OnNewTrade(security,  now, 1, 3));
+	EXPECT_FALSE(service.IsEmpty());
 	EXPECT_EQ(2, service.GetSize());
+
+}
+
+TEST(BarServiceTest, DropCopy) {
+
+	const lib::IniString settings(
+		"[Section]\n"
+			"size = 3 ticks\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"log = none");
+	
+	MockDropCopy dropCopy;
+
+	MockContext context;
+	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	const trdk::Security security(
+		context,
+		lib::Symbol("TEST_SCALE2/USD::STK"),
+		marketDataSource,
+		trdk::Security::SupportedLevel1Types());
+	
+	svc::BarCollectionService service(
+		context,
+		"Tag",
+		lib::IniSectionRef(settings, "Section"));
+	{
+		trdk::Security::Request request;
+		service.OnSecurityStart(security, request);
+		EXPECT_EQ(request.GetTime(), pt::not_a_date_time);
+		EXPECT_EQ(3, request.GetNumberOfTicks());
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		EXPECT_THROW(
+			service.DropLastBarCopy(12),
+			svc::BarCollectionService::BarDoesNotExistError);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		service.DropUncompletedBarCopy(12);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	const auto time1 = pt::microsec_clock::local_time();
+	service.OnNewTrade(security, time1, 110, 2);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		EXPECT_THROW(
+			service.DropLastBarCopy(12),
+			svc::BarCollectionService::BarDoesNotExistError);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(12, 0, time1, 1.1, 1.1, 1.1, 1.1))
+			.Times(1);
+		service.DropUncompletedBarCopy(12);
+	}
+
+	const auto time2 = time1 + pt::seconds(12);
+	service.OnNewTrade(security, time2, 330, 4);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		EXPECT_THROW(
+			service.DropLastBarCopy(12),
+			svc::BarCollectionService::BarDoesNotExistError);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(13, 0, time2, 1.1, 3.3, 1.1, 3.3))
+			.Times(1);
+		service.DropUncompletedBarCopy(13);
+	}
+
+	const auto time3 = time2 + pt::seconds(12);
+	service.OnNewTrade(security, time3, 550, 6);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5))
+			.Times(1);
+		service.DropLastBarCopy(15);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		service.DropUncompletedBarCopy(15);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	const auto time4 = time3 + pt::seconds(43);
+	service.OnNewTrade(security, time4, 110, 99);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5))
+			.Times(1);
+		service.DropLastBarCopy(15);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(12, 1, time4, 1.1, 1.1, 1.1, 1.1))
+			.Times(1);
+		service.DropUncompletedBarCopy(12);
+	}
+
+	const auto time5 = time4 + pt::seconds(12);
+	service.OnNewTrade(security, time5, 330, 4);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5))
+			.Times(1);
+		service.DropLastBarCopy(15);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(13, 1, time5, 1.1, 3.3, 1.1, 3.3))
+			.Times(1);
+		service.DropUncompletedBarCopy(13);
+	}
+
+	const auto time6 = time5 + pt::seconds(12);
+	service.OnNewTrade(security, time6, 550, 6);
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy())
+			.Times(1)
+			.WillOnce(Return(&dropCopy));
+		EXPECT_CALL(dropCopy, CopyBar(15, 1, time6, 1.1, 5.5, 1.1, 5.5))
+			.Times(1);
+		service.DropLastBarCopy(15);
+	}
+	{
+		InSequence s;
+		EXPECT_CALL(context, GetDropCopy()).Times(0);
+		service.DropUncompletedBarCopy(15);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 }

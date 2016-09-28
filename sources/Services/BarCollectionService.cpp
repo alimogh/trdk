@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "BarCollectionService.hpp"
-#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
 using namespace trdk;
@@ -94,7 +93,6 @@ public:
 	size_t m_session;
 
 	boost::function<bool(const pt::ptime &, bool)> m_isNewBar;
-	boost::function<void()> m_copyCurrentBar;
 
 	boost::function<
 			bool(const Security &, const pt::ptime &, const Level1TickValue &)>
@@ -237,8 +235,6 @@ public:
 				this,
 				_1,
 				_2);
-			m_copyCurrentBar
-				= boost::bind(&Implementation::CopyCurrentTimedBar, this);
 			m_onLevel1Tick
 				= boost::bind(
 					&Implementation::HandleLevel1Tick,
@@ -261,8 +257,6 @@ public:
 				this,
 				_1,
 				_2);
-			m_copyCurrentBar
-				= boost::bind(&Implementation::CopyCurrentTickCountedBar, this);
 			m_onLevel1Tick
 				= boost::bind(
 					&Implementation::ThrowLevel1TickSupportError,
@@ -432,7 +426,6 @@ public:
 		Assert(!m_bars.empty());
 		Assert(m_current.bar);
 		callback(*m_current.bar);
-		m_copyCurrentBar();
 		return false;
 	}
 
@@ -447,18 +440,14 @@ public:
 		m_current = Current(m_bars.back());
 		GetBarTimePoints(time, m_current.bar->time, m_current.end);
 		callback(*m_current.bar);
-		m_copyCurrentBar();
 		return isSignificantBar;
 	}
 	
-	bool CompleteBar(bool isAfter) {
+	bool CompleteBar() {
 		if (!m_current.bar || IsZero(m_current.bar->lowTradePrice)) {
 			return false;
 		}
 		LogCurrentBar();
-		if (!isAfter) {
-			m_copyCurrentBar();
-		}
 		m_current = Current();
 		return true;
 	}
@@ -484,7 +473,7 @@ public:
 		}
 
 		if (m_isNewBar(time, false)) {
-			isUpdated = CompleteBar(true) || isUpdated;
+			isUpdated = CompleteBar() || isUpdated;
 		}
 
 		return isUpdated;
@@ -783,41 +772,6 @@ public:
 		closePriceField = openPriceField;
 	}
 
-	void CopyCurrentTimedBar() const {
-		Assert(m_current.bar);
-		AssertNe(UNITS_TICKS, m_units);
-		AssertEq(0, m_countedBarSize);
-		Assert(!m_current.end.is_not_a_date_time());
-		m_service.GetContext().InvokeDropCopy(
-			[this](DropCopy &dropCopy) {
-				dropCopy.CopyBar(
-					*m_security,
-					m_current.bar->time,
-					m_timedBarSize,
-					m_current.bar->openTradePrice,
-					m_current.bar->closeTradePrice,
-					m_current.bar->highTradePrice,
-					m_current.bar->lowTradePrice);
-			});
-	}
-	void CopyCurrentTickCountedBar() const {
-		Assert(m_current.bar);
-		AssertEq(UNITS_TICKS, m_units);
-		AssertLt(0, m_countedBarSize);
-		Assert(m_current.end.is_not_a_date_time());
-		m_service.GetContext().InvokeDropCopy(
-			[this](DropCopy &dropCopy) {
-				dropCopy.CopyBar(
-					*m_security,
-					m_current.bar->time,
-					m_countedBarSize,
-					m_current.bar->openTradePrice,
-					m_current.bar->closeTradePrice,
-					m_current.bar->highTradePrice,
-					m_current.bar->lowTradePrice);
-			});
-	}
-
 	bool IsNewTimedBar(const pt::ptime &time, bool isBefore) const {
 		AssertNe(UNITS_TICKS, m_units);
 		Assert(!m_current.end.is_not_a_date_time());
@@ -844,7 +798,13 @@ BarCollectionService::BarCollectionService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration)
-	: Base(context, "BarsService", tag)
+	: Base(
+		context,
+		boost::uuids::string_generator()(
+			"{7619E946-BDE0-4FB6-94A6-CFFF3F183D92}"),
+		"BarsService",
+		tag,
+		configuration)
 	, m_pimpl(new Implementation(*this, configuration)) {
 	//...//
 }
@@ -947,7 +907,9 @@ size_t BarCollectionService::GetSize() const {
 }
 
 bool BarCollectionService::IsEmpty() const {
-	return m_pimpl->m_bars.empty();
+	return
+		m_pimpl->m_bars.empty()
+		|| (m_pimpl->m_bars.size() == 1 && m_pimpl->m_current.bar);
 }
 
 bool BarCollectionService::OnSecurityServiceEvent(
@@ -980,7 +942,7 @@ bool BarCollectionService::OnSecurityServiceEvent(
 }
 
 bool BarCollectionService::CompleteBar() {
-	return m_pimpl->CompleteBar(false);
+	return m_pimpl->CompleteBar();
 }
 
 void BarCollectionService::ForEachReversed(
@@ -999,6 +961,53 @@ void BarCollectionService::ForEachReversed(
 			return;
 		}
 	}
+}
+
+void BarCollectionService::DropLastBarCopy(
+		const DropCopy::DataSourceInstanceId &sourceId)
+		const {
+	
+	if (IsEmpty()) {
+		throw BarDoesNotExistError("BarService is empty");
+	}
+	
+	GetContext().InvokeDropCopy(
+		[this, &sourceId](DropCopy &dropCopy) {
+			const Bar &bar = GetLastBar();
+			const Security &security = GetSecurity();
+			dropCopy.CopyBar(
+				sourceId,
+				GetSize() - 1,
+				bar.time,
+				security.DescalePrice(bar.openTradePrice),
+				security.DescalePrice(bar.highTradePrice),
+				security.DescalePrice(bar.lowTradePrice),
+				security.DescalePrice(bar.closeTradePrice));
+		});
+
+}
+
+void BarCollectionService::DropUncompletedBarCopy(
+		const DropCopy::DataSourceInstanceId &sourceId)
+		const {
+	
+	if (!m_pimpl->m_current.bar) {
+		return;
+	}
+	
+	GetContext().InvokeDropCopy(
+		[this, &sourceId](DropCopy &dropCopy) {
+			const Security &security = GetSecurity();
+			dropCopy.CopyBar(
+				sourceId,
+				m_pimpl->m_bars.size() - 1,
+				m_pimpl->m_current.bar->time,
+				security.DescalePrice(m_pimpl->m_current.bar->openTradePrice),
+				security.DescalePrice(m_pimpl->m_current.bar->highTradePrice),
+				security.DescalePrice(m_pimpl->m_current.bar->lowTradePrice),
+				security.DescalePrice(m_pimpl->m_current.bar->closeTradePrice));
+		});
+
 }
 
 //////////////////////////////////////////////////////////////////////////

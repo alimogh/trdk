@@ -72,9 +72,11 @@ namespace trdk { namespace EngineServer {
 			std::string storeTrade;
 			std::string storeBook;
 			std::string storeBar;
+			std::string storeAbstractData;
 
-			std::string registerAbstractDataSource;
-			std::string storeAbstractDataPoint;
+			std::string registerStrategyInstance;
+			std::string continueStrategyInstance;
+			std::string registerDataSourceInstance;
 
 			std::string startEngine;
 			std::string stopEngine;
@@ -176,16 +178,6 @@ namespace trdk { namespace EngineServer {
 
 		};
 
-		struct BarCache {
-			const Security *security;
-			boost::posix_time::ptime time;
-			int64_t size;
-			ScaledPrice open;
-			ScaledPrice close;
-			ScaledPrice high;
-			ScaledPrice low;
-		};
-
 		class DropCopy : public trdk::DropCopy {
 		public:
 			explicit DropCopy(Service &);
@@ -204,6 +196,15 @@ namespace trdk { namespace EngineServer {
 			virtual void Flush();
 			virtual void Dump();
 		public:
+			virtual trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+					const trdk::Strategy &);
+			virtual trdk::DropCopy::StrategyInstanceId ContinueStrategyInstance(
+					const Strategy &,
+					const boost::posix_time::ptime &);
+			virtual DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+					const trdk::Strategy &,
+					const boost::uuids::uuid &type,
+					const boost::uuids::uuid &id);
 			virtual void CopyOrder(
 					const boost::uuids::uuid &id,
 					const std::string *tradingSystemId,
@@ -236,9 +237,9 @@ namespace trdk { namespace EngineServer {
 					double bestAskPrice,
 					const trdk::Qty &bestAskQty);
 			virtual void ReportOperationStart(
+					const trdk::Strategy &,
 					const boost::uuids::uuid &id,
-					const boost::posix_time::ptime &,
-					const trdk::Strategy &);
+					const boost::posix_time::ptime &);
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
@@ -249,27 +250,16 @@ namespace trdk { namespace EngineServer {
 					const trdk::Security &,
 					const trdk::PriceBook &);
 			virtual void CopyBar(
-					const trdk::Security &,
+					const trdk::DropCopy::DataSourceInstanceId &,
+					size_t index,
 					const boost::posix_time::ptime &,
-					const boost::posix_time::time_duration &,
-					const trdk::ScaledPrice &openTradePrice,
-					const trdk::ScaledPrice &closeTradePrice,
-					const trdk::ScaledPrice &highTradePrice,
-					const trdk::ScaledPrice &lowTradePrice);
-			virtual void CopyBar(
-					const trdk::Security &,
-					const boost::posix_time::ptime &,
-					size_t numberOfTicksInBar,
-					const trdk::ScaledPrice &openTradePrice,
-					const trdk::ScaledPrice &closeTradePrice,
-					const trdk::ScaledPrice &highTradePrice,
-					const trdk::ScaledPrice &lowTradePrice);
-			virtual trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
-					const boost::uuids::uuid &instance,
-					const boost::uuids::uuid &type,
-					const std::string &name);
-			virtual void CopyAbstractDataPoint(
-					const trdk::DropCopy::AbstractDataSourceId &,
+					double open,
+					double high,
+					double low,
+					double close);
+			virtual void CopyAbstractData(
+					const trdk::DropCopy::DataSourceInstanceId &,
+					size_t index,
 					const boost::posix_time::ptime &,
 					double value);
 		private:
@@ -326,13 +316,23 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
+		trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+				const Strategy &);
+		DropCopy::StrategyInstanceId ContinueStrategyInstance(
+				const Strategy &,
+				const boost::posix_time::ptime &);
+		trdk::DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+				const Strategy &,
+				const boost::uuids::uuid &type,
+				const boost::uuids::uuid &id);
+
 		bool StoreOperationStartReport(
 				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
+				const trdk::Strategy &,
 				const boost::uuids::uuid &id,
-				const boost::posix_time::ptime &,
-				const trdk::Strategy &);
+				const boost::posix_time::ptime &);
 		bool StoreOperationEndReport(
 				size_t recordNumber,
 				size_t storeAttemptNo,
@@ -370,36 +370,45 @@ namespace trdk { namespace EngineServer {
 				const trdk::Security &,
 				const trdk::PriceBook &);
 
+		bool StoreAbstractData(
+				size_t recordNumber,
+				size_t storeAttemptNo,
+				bool dump,
+				const trdk::DropCopy::DataSourceInstanceId &,
+				size_t index,
+				const boost::posix_time::ptime &,
+				double value);
+
 		bool StoreBar(
 				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
-				const BarCache &);
-
-		bool StoreAbstractDataPoint(
-				size_t recordNumber,
-				size_t storeAttemptNo,
-				bool dump,
-				const trdk::DropCopy::AbstractDataSourceId &,
+				const DropCopy::DataSourceInstanceId &,
+				size_t index,
 				const boost::posix_time::ptime &,
-				double value);
+				double open,
+				double high,
+				double low,
+				double close);
 
 		bool StoreRecord(
 				const std::string Topics::*topic,
 				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
-				const DropCopyRecord &&);
+				const DropCopyRecord &);
 		void DumpRecord(
 				const std::string Topics::*topic,
 				size_t recordNumber,
 				size_t storeAttemptNo,
-				const DropCopyRecord &&);
+				const DropCopyRecord &);
 
-		trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
-				const boost::uuids::uuid &instance,
-				const boost::uuids::uuid &type,
-				const std::string &name);
+		template<typename Result>
+		Result Request(
+				size_t recordNumber,
+				size_t storeAttemptNo,
+				const std::string Topics::*topic,
+				const DropCopyRecord &request);
 
 	private:
 

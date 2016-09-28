@@ -20,7 +20,8 @@ namespace trdk {
 
 	public:
 
-		typedef std::int32_t AbstractDataSourceId;
+		typedef std::int32_t StrategyInstanceId;
+		typedef std::int32_t DataSourceInstanceId;
 
 	public:
 
@@ -28,6 +29,11 @@ namespace trdk {
 		public:
 			explicit Exception(const char *what) throw();
 		};
+
+	public:
+
+		static const trdk::DropCopy::StrategyInstanceId nStrategyInstanceId;
+		static const trdk::DropCopy::DataSourceInstanceId nDataSourceInstanceId;
 	
 	public:
 
@@ -48,6 +54,19 @@ namespace trdk {
 		virtual void Dump() = 0;
 
 	public:
+
+		virtual trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+				const trdk::Strategy &)
+			= 0;
+		virtual trdk::DropCopy::StrategyInstanceId ContinueStrategyInstance(
+				const trdk::Strategy &,
+				const boost::posix_time::ptime &)
+			= 0;
+		virtual trdk::DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+				const trdk::Strategy &,
+				const boost::uuids::uuid &type,
+				const boost::uuids::uuid &id)
+			= 0;
 
 		virtual void CopyOrder(
 				const boost::uuids::uuid &id,
@@ -85,9 +104,9 @@ namespace trdk {
 			= 0;
 
 		virtual void ReportOperationStart(
+				const trdk::Strategy &,
 				const boost::uuids::uuid &id,
-				const boost::posix_time::ptime &,
-				const trdk::Strategy &)
+				const boost::posix_time::ptime &)
 			= 0;
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,
@@ -103,31 +122,18 @@ namespace trdk {
 			= 0;
 
 		virtual void CopyBar(
-				const trdk::Security &,
+				const trdk::DropCopy::DataSourceInstanceId &,
+				size_t index,
 				const boost::posix_time::ptime &,
-				const boost::posix_time::time_duration &,
-				const trdk::ScaledPrice &openTradePrice,
-				const trdk::ScaledPrice &closeTradePrice,
-				const trdk::ScaledPrice &highTradePrice,
-				const trdk::ScaledPrice &lowTradePrice)
-			= 0;
-		virtual void CopyBar(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				size_t numberOfTicksInBar,
-				const trdk::ScaledPrice &openTradePrice,
-				const trdk::ScaledPrice &closeTradePrice,
-				const trdk::ScaledPrice &highTradePrice,
-				const trdk::ScaledPrice &lowTradePrice)
+				double open,
+				double high,
+				double low,
+				double close)
 			= 0;
 
-		virtual trdk::DropCopy::AbstractDataSourceId RegisterAbstractDataSource(
-				const boost::uuids::uuid &instance,
-				const boost::uuids::uuid &type,
-				const std::string &name)
-			= 0;
-		virtual void CopyAbstractDataPoint(
-				const trdk::DropCopy::AbstractDataSourceId &,
+		virtual void CopyAbstractData(
+				const trdk::DropCopy::DataSourceInstanceId &,
+				size_t index,
 				const boost::posix_time::ptime &,
 				double value)
 			= 0;

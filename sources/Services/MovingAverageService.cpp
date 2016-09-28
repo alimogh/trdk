@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
-#include "Core/DropCopy.hpp"
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
@@ -363,19 +362,17 @@ public:
 
 	MovingAverageService &m_service;
 
-	boost::atomic_bool m_isEmpty;
-	
 	MaSourceInfo m_sourceInfo;
 
 	uintmax_t m_period;
 	std::unique_ptr<Acc> m_acc;
 
-	boost::optional<Point> m_lastValue;
+	Point m_lastValue;
+	size_t m_lastValueNo;
+
 	std::unique_ptr<History> m_history;
 
 	pt::ptime m_lastZeroTime;
-
-	boost::optional<DropCopy::AbstractDataSourceId> m_dropCopyMaSourceId;
 
 public:
 
@@ -383,8 +380,8 @@ public:
 			MovingAverageService &service,
 			const IniSectionRef &configuration)
 		: m_service(service)
-		, m_isEmpty(true)
-		, m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_PRICE>()) {
+		, m_sourceInfo(MaSourceToType<MA_SOURCE_CLOSE_PRICE>())
+		, m_lastValueNo(0) {
 
 		m_period = configuration.ReadTypedKey<uintmax_t>(
 			Configuration::Keys::period);
@@ -466,25 +463,8 @@ public:
 			m_history.reset(new History);
 		}
 
-		std::string dropCopyMaSourceIdStr;
-		m_service.GetContext().InvokeDropCopy(
-			[&](DropCopy &dropCopy) {
-				const auto &generator = uuids::string_generator();
-				m_dropCopyMaSourceId = dropCopy.RegisterAbstractDataSource(
-					generator(configuration.ReadKey("id")),
-					generator("C58AA2A7-BD32-4CA2-9587-A45C0F819759"),
-					m_service.GetTag() + "1");
-				dropCopyMaSourceIdStr = boost::lexical_cast<std::string>(
-					*m_dropCopyMaSourceId);
-			});
-		if (dropCopyMaSourceIdStr.empty()) {
-			Assert(!m_dropCopyMaSourceId);
-			dropCopyMaSourceIdStr = "not used";
-		}
-
 		m_service.GetLog().Info(
-			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%"
-				", drop copy ID = %9%.",
+			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%, %7% = %8%.",
 			Configuration::Keys::type,
 			types[type],
 			Configuration::Keys::period,
@@ -492,8 +472,7 @@ public:
 			Configuration::Keys::source,
 			sources[GetMaSource(m_sourceInfo)].first,
 			Configuration::Keys::isHistoryOn,
-			m_history ? "yes" : "no",
-			dropCopyMaSourceIdStr);
+			m_history ? "yes" : "no");
 
 	}
 
@@ -526,7 +505,8 @@ public:
 			double newValue) {
 
 		if (IsZero(newValue)) {
-			if (	m_lastZeroTime == pt::not_a_date_time
+			if (
+					m_lastZeroTime == pt::not_a_date_time
 					|| valueTime - m_lastZeroTime >= pt::minutes(1)) {
 				if (m_lastZeroTime != pt::not_a_date_time) {
 					m_service.GetLog().Debug("Recently received only zeros.");
@@ -544,25 +524,18 @@ public:
 		}
 
 		const Point newPoint = {
+			valueTime,
 			newValue,
 			RoundByScale(
 				boost::apply_visitor(GetValueVisitor(), *m_acc),
 				security.GetPriceScale())
 		};
 		m_lastValue = newPoint;
-		m_isEmpty = false;
+		++m_lastValueNo;
 
 		if (m_history) {
 			m_history->PushBack(newPoint);
 		}
-
-		m_service.GetContext().InvokeDropCopy(
-			[this, &valueTime, &newPoint](DropCopy &dropCopy) {
-				dropCopy.CopyAbstractDataPoint(
-					*m_dropCopyMaSourceId,
-					valueTime,
-					newPoint.value);
-			});
 
 		return true;
 
@@ -576,12 +549,18 @@ MovingAverageService::MovingAverageService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration)
-	: Service(context, "MovingAverageService", tag) {
-	m_pimpl = new Implementation(*this, configuration);
+	: Service(
+		context,
+		uuids::string_generator()("{E1C56A8F-637B-4F73-8F15-A106845F6F71}"),
+		"MovingAverageService",
+		tag,
+		configuration)
+	, m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {
+	//...//
 }
 
 MovingAverageService::~MovingAverageService() {
-	delete m_pimpl;
+	//...//
 }
 
 bool MovingAverageService::OnServiceDataUpdate(
@@ -619,14 +598,34 @@ bool MovingAverageService::OnNewBar(
 }
 
 bool MovingAverageService::IsEmpty() const {
-	return m_pimpl->m_isEmpty;
+	return m_pimpl->m_lastValueNo == 0;
 }
 
 MovingAverageService::Point MovingAverageService::GetLastPoint() const {
-	if (!m_pimpl->m_lastValue) {
+	if (IsEmpty()) {
 		throw ValueDoesNotExistError("MovingAverageService is empty");
 	}
-	return *m_pimpl->m_lastValue;
+	return m_pimpl->m_lastValue;
+}
+
+void MovingAverageService::DropLastPointCopy(
+		const DropCopy::DataSourceInstanceId &sourceId)
+		const {
+	
+	if (IsEmpty()) {
+		throw ValueDoesNotExistError("MovingAverageService is empty");
+	}
+
+	GetContext().InvokeDropCopy(
+		[this, &sourceId](DropCopy &dropCopy) {
+			AssertLt(0, m_pimpl->m_lastValueNo);
+			dropCopy.CopyAbstractData(
+				sourceId,
+				m_pimpl->m_lastValueNo - 1,
+				m_pimpl->m_lastValue.time,
+				m_pimpl->m_lastValue.value);
+		});
+
 }
 
 size_t MovingAverageService::GetHistorySize() const {

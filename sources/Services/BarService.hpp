@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Core/Service.hpp"
+#include "Core/DropCopy.hpp"
 #include "Api.h"
 
 namespace trdk { namespace Services {
@@ -63,8 +64,10 @@ namespace trdk { namespace Services {
 
 		explicit BarService(
 				Context &context,
+				const boost::uuids::uuid &typeId,
 				const std::string &name,
-				const std::string &tag);
+				const std::string &tag,
+				const Lib::IniSectionRef &);
 		virtual ~BarService();
 
 	public:
@@ -97,6 +100,15 @@ namespace trdk { namespace Services {
 		  * @sa trdk::Services::BarService::GetBarByReversedIndex
 		  */
 		virtual Bar GetLastBar() const = 0;
+
+		virtual void DropLastBarCopy(
+				const trdk::DropCopy::DataSourceInstanceId &)
+				const
+			= 0;
+		virtual void DropUncompletedBarCopy(
+				const trdk::DropCopy::DataSourceInstanceId &)
+				const
+			= 0;
 
 	};
 

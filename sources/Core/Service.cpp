@@ -15,6 +15,7 @@
 #include "Strategy.hpp"
 
 namespace pt = boost::posix_time;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -91,13 +92,19 @@ private:
 public:
 
 	Service &m_service;
-	bool m_hasNewData;
+	const uuids::uuid m_typeId;
+	const uuids::uuid m_id;
 
 	ModuleSecurityList m_securities;
 	SubscriberList m_subscribers;
 
-	explicit Implementation(Service &service)
-		: m_service(service) {
+	explicit Implementation(
+			Service &service,
+			const uuids::uuid &typeId,
+			const IniSectionRef &conf)
+		: m_service(service)
+		, m_typeId(typeId)
+		, m_id(uuids::string_generator()(conf.ReadKey("id"))) {
 		//...//
 	}
 
@@ -139,14 +146,24 @@ public:
 
 Service::Service(
 		Context &context,
+		const uuids::uuid &typeId,
 		const std::string &name,
-		const std::string &tag)
+		const std::string &tag,
+		const IniSectionRef &conf)
 	: Module(context, "Service", name, tag) {
-	m_pimpl = new Implementation(*this);
+	m_pimpl.reset(new Implementation(*this, typeId, conf));
 }
 
 Service::~Service() {
-	delete m_pimpl;
+	//...//
+}
+
+const uuids::uuid & Service::GetTypeId() const {
+	return m_pimpl->m_typeId;
+}
+
+const uuids::uuid & Service::GetId() const {
+	return m_pimpl->m_id;
 }
 
 void Service::OnSecurityStart(const Security &, Security::Request &) {

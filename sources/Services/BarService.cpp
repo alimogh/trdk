@@ -49,9 +49,11 @@ BarService::Bar::Bar()
 
 BarService::BarService(
 		Context &context,
+		const boost::uuids::uuid &typeId,
 		const std::string &name,
-		const std::string &tag)
-	: Base(context, name, tag) {
+		const std::string &tag,
+		const IniSectionRef &conf)
+	: Base(context, typeId, name, tag, conf) {
 	//...//
 }
 

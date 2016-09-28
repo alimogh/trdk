@@ -16,13 +16,13 @@
 #include "Core/PriceBook.hpp"
 #include "Core/Position.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/DropCopy.hpp"
 #include "Api.h"
 
 using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+namespace uuids = boost::uuids;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -41,7 +41,13 @@ namespace trdk { namespace Strategies { namespace Test {
 				const std::string &name,
 				const std::string &tag,
 				const Lib::IniSectionRef &conf)
-			: Super(context, name, tag, conf)
+			: Super(
+				context,
+				uuids::string_generator()(
+					"{063AB9A2-EE3E-4AF7-85B0-AC0B63E27F43}"),
+				name,
+				tag,
+				conf)
 			, m_numberOfOperations(0)
 			, m_finResultRange(0, 1000)
 			, m_generateFinResultRandom(m_random, m_finResultRange) {
@@ -163,9 +169,9 @@ namespace trdk { namespace Strategies { namespace Test {
 			GetContext().InvokeDropCopy(
 				[this, &operationId](DropCopy &dropCopy) {
 					dropCopy.ReportOperationStart(
+						*this,
 						operationId,
-						GetContext().GetCurrentTime(),
-						*this);
+						GetContext().GetCurrentTime());
 				});
 
 			position->OpenImmediatelyOrCancel(security.ScalePrice(price));

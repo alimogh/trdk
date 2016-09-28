@@ -25,13 +25,14 @@ TEST(ContinuousContractBarServiceTest, General) {
 
 	const lib::IniString settings(
 		"[Section]\n"
-		"size = 4 ticks\n"
-		"log = none");
+			"size = 4 ticks\n"
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"log = none");
 
 	MockContext context;
-	EXPECT_CALL(context, GetDropCopy()).WillRepeatedly(Return(nullptr));
 	
 	MockSecurity security;
+	EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(false));
 
 	svc::ContinuousContractBarService service(
 		context,
@@ -112,6 +113,7 @@ TEST(ContinuousContractBarServiceTest, General) {
 			
 			for (size_t k = i - 3; k < i; ++k) {
 				const Tick &historyTick = source[k];
+				InSequence s;
 				EXPECT_CALL(security, GetExpiration())
 					.Times(1)
 					.WillOnce(Return(historyTick.expiration));
@@ -149,6 +151,7 @@ TEST(ContinuousContractBarServiceTest, General) {
 
 		}
 
+		InSequence s;
 		EXPECT_CALL(security, GetExpiration())
 			.Times(1)
 			.WillOnce(Return(tick.expiration));
@@ -180,6 +183,7 @@ TEST(ContinuousContractBarServiceTest, General) {
 	}
 
 	{
+		InSequence s;
 		EXPECT_CALL(security, GetExpiration())
 			.WillRepeatedly(
 				Return(lib::ContractExpiration(gr::date(2016, 9, 12))));

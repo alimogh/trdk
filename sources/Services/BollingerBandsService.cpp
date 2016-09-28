@@ -231,7 +231,13 @@ BollingerBandsService::BollingerBandsService(
 		Context &context,
 		const std::string &tag,
 		const IniSectionRef &configuration)
-	: Service(context, "BollingerBandsService", tag) {
+	: Service(
+		context,
+		boost::uuids::string_generator()(
+			"{64BCD2BA-4FF6-4E0F-9C64-4E4DAD0AE9B7}"),
+		"BollingerBandsService",
+		tag,
+		configuration) {
 	m_pimpl = new Implementation(*this, configuration);
 }
 

@@ -22,6 +22,11 @@ DropCopy::Exception::Exception(const char *what) throw()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const DropCopy::StrategyInstanceId DropCopy::nStrategyInstanceId = -1;
+const DropCopy::DataSourceInstanceId DropCopy::nDataSourceInstanceId = -1;
+
+////////////////////////////////////////////////////////////////////////////////
+
 DropCopy::DropCopy() {
 	//...//
 }

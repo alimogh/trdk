@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
 #include "Emas.hpp"
+#include "Services/BarService.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
@@ -43,7 +44,13 @@ namespace EmaFuturesStrategy {
 				Context &context,
 				const std::string &tag,
 				const IniSectionRef &conf)
-			: Base(context, "EmaFutures", tag, conf)
+			: Base(
+				context,
+				boost::uuids::string_generator()(
+					"{E316A97B-1C1F-433B-88BF-4DB788E94208}"),
+				"EmaFutures",
+				tag,
+				conf)
 			, m_numberOfContracts(
 				conf.ReadTypedKey<uint32_t>("number_of_contracts"))
 			, m_passiveOrderMaxLifetime(
@@ -60,6 +67,8 @@ namespace EmaFuturesStrategy {
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
 			, m_security(nullptr)
+			, m_barService(nullptr)
+			, m_barServiceId(DropCopy::nDataSourceInstanceId)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
 			GetLog().Info(
 				"Number of contracts: %1%."
@@ -104,36 +113,85 @@ namespace EmaFuturesStrategy {
 			
 			const auto *const maService
 				= dynamic_cast<const MovingAverageService *>(&service);
-			if (!maService) {
-				throw Exception(
-					"Strategy should be configured"
-						" to work with MovingAverageService");
+			if (maService) {
+
+				DropCopy::DataSourceInstanceId dropCopySourceId
+					 = DropCopy::nDataSourceInstanceId;
+				GetContext().InvokeDropCopy(
+					[this, &dropCopySourceId, maService](DropCopy &dropCopy) {
+						dropCopySourceId = dropCopy.RegisterDataSourceInstance(
+							*this,
+							maService->GetTypeId(),
+							maService->GetId());
+					});
+				const std::string dropCopySourceIdStr
+					= dropCopySourceId !=  DropCopy::nDataSourceInstanceId
+						?	boost::lexical_cast<std::string>(dropCopySourceId)
+						:	std::string("not used");
+
+				if (boost::iends_with(maService->GetTag(), "fastema")) {
+					GetLog().Info(
+						"Using EMA service \"%1%\" as fast EMA"
+							" (drop copy ID: %2%)...",
+						maService->GetTag(),
+						dropCopySourceIdStr);
+					if (m_ema[FAST].HasData()) {
+						throw Exception(
+							"Strategy should have only one fast EMA service");
+					}
+					m_ema[FAST] = Ema(*maService, dropCopySourceId);
+				} else if (boost::iends_with(maService->GetTag(), "slowema")) {
+					GetLog().Info(
+						"Using EMA service \"%1%\" as slow EMA"
+							" (drop copy ID: %2%)...",
+						maService->GetTag(),
+						dropCopySourceIdStr);
+					if (m_ema[SLOW].HasData()) {
+						throw Exception(
+							"Strategy should have only one slow EMA service");
+					}
+					m_ema[SLOW] = Ema(*maService, dropCopySourceId);
+				} else {
+					GetLog().Error(
+						"Failed to resolve EMA service \"%1%\".",
+						maService->GetTag());
+					throw Exception("Failed to resolve EMA service");
+				}
+
+				return;
+
 			}
 
-			if (boost::iends_with(maService->GetTag(), "fastema")) {
-				GetLog().Info(
-					"Using EMA service \"%1%\" as fast EMA...",
-					maService->GetTag());
-				if (m_ema[FAST].HasData()) {
+			const auto *const barService
+				= dynamic_cast<const BarService *>(&service);
+			if (barService) {
+
+				if (m_barService) {
 					throw Exception(
-						"Strategy should have one one fast EMA service");
+						"Strategy should have only one bar service");
 				}
-				m_ema[FAST] = Ema(*maService);
-			} else if (boost::iends_with(maService->GetTag(), "slowema")) {
-				GetLog().Info(
-					"Using EMA service \"%1%\" as slow EMA...",
-					maService->GetTag());
-				if (m_ema[SLOW].HasData()) {
-					throw Exception(
-						"Strategy should have one one slow EMA service");
-				}
-				m_ema[SLOW] = Ema(*maService);
-			} else {
-				GetLog().Error(
-					"Failed to resolve EMA service \"%1%\".",
-					maService->GetTag());
-				throw Exception("Failed to resolve EMA service");
+				
+				GetContext().InvokeDropCopy(
+					[this, &barService](DropCopy &dropCopy) {
+						m_barServiceId = dropCopy.RegisterDataSourceInstance(
+							*this,
+							barService->GetTypeId(),
+							barService->GetId());
+						m_barService = barService;
+						GetLog().Info(
+							"Using Bar Service \"%1%\" with instance ID %2%"
+								" to drop bars copies...",
+							m_barServiceId,
+							*m_barService);
+					});
+
+				return;
+
 			}
+
+			throw Exception(
+				"Strategy should be configured"
+					" to work with MovingAverageService");
 
 		}
 
@@ -145,7 +203,11 @@ namespace EmaFuturesStrategy {
 			
 			Assert(m_security == &security);
 			UseUnused(security);
-			
+
+			if (m_barService) {
+				m_barService->DropUncompletedBarCopy(m_barServiceId);
+			}
+
 			if (!GetPositions().GetSize()) {
 				return;
 			}
@@ -175,6 +237,17 @@ namespace EmaFuturesStrategy {
 		virtual void OnServiceDataUpdate(
 				const Service &service,
 				const Milestones &timeMeasurement) {
+
+			if (&service == m_barService) {
+				m_barService->DropLastBarCopy(m_barServiceId);
+			} else {
+				for (const Ema &ema: m_ema) {
+					if (ema.IsSame(service)) {
+						ema.DropLastPointCopy();
+						break;
+					}
+				}
+			}
 
 			if (!m_security->IsOnline()) {
 				return;
@@ -665,6 +738,9 @@ namespace EmaFuturesStrategy {
 		const double m_maxLossMoneyPerContract;
 
 		Security *m_security;
+
+		const BarService *m_barService;
+		DropCopy::DataSourceInstanceId m_barServiceId;
 
 		SlowFastEmas m_ema;
 		Direction m_fastEmaDirection;

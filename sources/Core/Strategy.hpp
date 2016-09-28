@@ -12,6 +12,7 @@
 
 #include "Position.hpp"
 #include "Consumer.hpp"
+#include "DropCopy.hpp"
 #include "Fwd.hpp"
 #include "Api.h"
 
@@ -106,6 +107,7 @@ namespace trdk {
 
 		explicit Strategy(
 				trdk::Context &,
+				const boost::uuids::uuid &typeId,
 				const std::string &name,
 				const std::string &tag,
 				const trdk::Lib::IniSectionRef &);
@@ -113,9 +115,12 @@ namespace trdk {
 
 	public:
 
+		const boost::uuids::uuid & GetTypeId() const;
 		const boost::uuids::uuid & GetId() const;
 		const std::string & GetTitle() const;
 		trdk::TradingMode GetTradingMode() const;
+		const trdk::DropCopy::StrategyInstanceId & GetDropCopyInstanceId()
+				const;
 
 	public:
 
