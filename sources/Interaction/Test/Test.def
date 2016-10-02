@@ -2,4 +2,5 @@
 EXPORTS
 	CreateTradingSystem
 	CreateRandomMarketDataSource
+	CreateCsvMarketDataSource
 	GetTrdkModuleVersionInfoV1

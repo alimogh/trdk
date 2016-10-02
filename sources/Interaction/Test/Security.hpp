@@ -25,19 +25,9 @@ namespace trdk { namespace Interaction { namespace Test {
 		explicit Security(
 				Context &context,
 				const Lib::Symbol &symbol,
-				MarketDataSource &source)
-			: Base(
-				context,
-				symbol, 
-				source,
-				SupportedLevel1Types()
-					.set(LEVEL1_TICK_BID_PRICE)
-					.set(LEVEL1_TICK_BID_QTY)
-					.set(LEVEL1_TICK_ASK_PRICE)
-					.set(LEVEL1_TICK_ASK_QTY)
-					.set(LEVEL1_TICK_LAST_PRICE)
-					.set(LEVEL1_TICK_LAST_QTY)
-					.set(LEVEL1_TICK_TRADING_VOLUME)) {
+				MarketDataSource &source,
+				const SupportedLevel1Types &supportedData)
+			: Base(context, symbol,  source, supportedData) {
 			//...//
 		}
 
@@ -48,7 +38,7 @@ namespace trdk { namespace Interaction { namespace Test {
 		using Base::SetExpiration;
 		using Base::SetBook;
 		using Base::AddTrade;
-		using trdk::Security::SetLevel1;
+		using Base::SetLevel1;
 
 	};
 

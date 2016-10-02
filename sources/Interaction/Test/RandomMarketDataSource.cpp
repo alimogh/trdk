@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "RandomMarketDataSource.hpp"
+#include "Api.h"
 #include "Core/TradingLog.hpp"
 #include "Core/PriceBook.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -165,7 +166,18 @@ void RandomMarketDataSource::NotificationThread() {
 trdk::Security & RandomMarketDataSource::CreateNewSecurityObject(
 		const Symbol &symbol) {
 	
-	auto result = boost::make_shared<Security>(GetContext(), symbol, *this);
+	auto result = boost::make_shared<Security>(
+		GetContext(),
+		symbol,
+		*this,
+		Security::SupportedLevel1Types()
+			.set(LEVEL1_TICK_BID_PRICE)
+			.set(LEVEL1_TICK_BID_QTY)
+			.set(LEVEL1_TICK_ASK_PRICE)
+			.set(LEVEL1_TICK_ASK_QTY)
+			.set(LEVEL1_TICK_LAST_PRICE)
+			.set(LEVEL1_TICK_LAST_QTY)
+			.set(LEVEL1_TICK_TRADING_VOLUME));
 	
 	switch (result->GetSymbol().GetSecurityType()) {
 		case SECURITY_TYPE_FUTURES:
@@ -193,3 +205,21 @@ trdk::Security & RandomMarketDataSource::CreateNewSecurityObject(
 	return *result;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+TRDK_INTERACTION_TEST_API
+boost::shared_ptr<MarketDataSource> CreateRandomMarketDataSource(
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
+	return boost::make_shared<RandomMarketDataSource>(
+		index,
+		context,
+		tag,
+		configuration);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+

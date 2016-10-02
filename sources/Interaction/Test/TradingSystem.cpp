@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "Api.h"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
@@ -711,3 +712,21 @@ void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+TRDK_INTERACTION_TEST_API
+boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
+		const trdk::TradingMode &mode,
+		size_t index,
+		Context &context,
+		const std::string &tag,
+		const IniSectionRef &configuration) {
+	return boost::make_shared<Test::TradingSystem>(
+		mode,
+		index,
+		context,
+		tag,
+		configuration);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
