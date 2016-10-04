@@ -35,8 +35,7 @@ namespace {
 		Qty qty;
 		ScaledPrice price;
 		OrderParams params;
-		pt::ptime submitTime;
-		pt::time_duration execDelay;
+		pt::ptime execTime;
 		size_t isCanceled;
 	};
 
@@ -222,7 +221,7 @@ public:
 
 		const auto &now = m_self->GetContext().GetCurrentTime();
 
-		order.execDelay = ChooseExecutionDelay();
+		order.execTime = now + ChooseExecutionDelay();
 		if (!m_self->GetContext().GetSettings().IsReplayMode()) {
 			const auto callback = order.callback;
 			order.callback
@@ -240,12 +239,6 @@ public:
 
 		{
 			const Lock lock(m_mutex);
-			if (!m_orders.empty()) {
-				const auto &lastOrder = m_orders.back();
-				order.submitTime = lastOrder.submitTime + lastOrder.execDelay;
-			} else {
-				order.submitTime = now;
-			}
 			m_newOrders.emplace_back(order);
 		}
 		m_condition.notify_all();
@@ -327,11 +320,8 @@ private:
 					const Order &order = *it;
 					Assert(order.callback);
 					Assert(!IsZero(order.price));
-					if (order.execDelay.total_nanoseconds() > 0) {
-						boost::this_thread::sleep(
-							boost::get_system_time() + order.execDelay);
-					}
-					if (ExecuteOrder(order)) {
+					const auto &now = m_self->GetContext().GetCurrentTime();
+					if (order.execTime >=  now  && ExecuteOrder(order)) {
 						it = m_orders.erase(it);
 					} else {
 						++it;
@@ -363,12 +353,11 @@ private:
 			Assert(order.callback);
 			Assert(!IsZero(order.price));
 
-			const auto &orderExecTime = order.submitTime + order.execDelay;
-			if (orderExecTime >= newTime) {
-				break;
+			if (order.execTime > newTime) {
+				continue;
 			}
 
-			m_self->GetContext().SetCurrentTime(orderExecTime, false);
+			m_self->GetContext().SetCurrentTime(order.execTime, false);
 			if (ExecuteOrder(order)) {
 				it = m_orders.erase(it);
 			} else {
