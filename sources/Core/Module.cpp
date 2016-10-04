@@ -204,23 +204,20 @@ Module::Module(
 		const std::string &typeName,
 		const std::string &name,
 		const std::string &tag)
-	: m_pimpl(new Implementation(context, typeName, name, tag)) {
+	: m_pimpl(
+		boost::make_unique<Implementation>(context, typeName, name, tag)) {
 	//...//
 }
 
 Module::~Module() {
-	delete m_pimpl;
+	//...//
 }
 
 const Module::InstanceId & Module::GetInstanceId() const {
 	return m_pimpl->m_instanceId;
 }
 
-Module::Mutex & Module::GetMutex() const {
-	return m_pimpl->m_mutex;
-}
-
-Module::Lock Module::LockForOtherThreads() const {
+Module::Lock Module::LockForOtherThreads() {
 	return Lock(m_pimpl->m_mutex);
 }
 
@@ -269,7 +266,7 @@ void Module::OnSettingsUpdate(const trdk::Lib::IniSectionRef &) {
 }
 
 void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnSettingsUpdate(conf);
 }
 

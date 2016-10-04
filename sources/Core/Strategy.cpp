@@ -522,7 +522,7 @@ void Strategy::Unregister(Position &position) throw() {
 void Strategy::RaiseLevel1UpdateEvent(
 			Security &security,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -541,7 +541,7 @@ void Strategy::RaiseLevel1TickEvent(
 		trdk::Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -560,7 +560,7 @@ void Strategy::RaiseNewTradeEvent(
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
 		const Qty &qty) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -577,7 +577,7 @@ void Strategy::RaiseNewTradeEvent(
 void Strategy::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -595,7 +595,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	
 	Assert(position.IsStarted());
 
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 
 	Assert(m_pimpl->m_delayedPositionToForget[0] == nullptr);
 	Assert(m_pimpl->m_delayedPositionToForget[1] == nullptr);
@@ -670,7 +670,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(
 		const pt::ptime &time,
 		Security &security,
 		Security::Request &request) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -688,7 +688,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(
 		Security &security,
 		const Qty &qty,
 		bool isInitial) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -703,7 +703,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(
 }
 
 void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -721,7 +721,7 @@ void Strategy::RaiseBookUpdateTickEvent(
 		Security &security,
 		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -740,7 +740,7 @@ void Strategy::RaiseSecurityServiceEvent(
 		const pt::ptime &time,
 		Security &security,
 		const Security::ServiceEvent &event) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):

@@ -186,12 +186,12 @@ void Service::RaiseSecurityContractSwitchedEvent(
 		const pt::ptime &time,
 		const Security &security,
 		Security::Request &request) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnSecurityContractSwitched(time, security, request);
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnLevel1Update(security);
 }
 
@@ -199,7 +199,7 @@ bool Service::RaiseLevel1TickEvent(
 		const Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnLevel1Tick(security, time, value);
 }
 
@@ -208,14 +208,14 @@ bool Service::RaiseNewTradeEvent(
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
 		const Qty &qty) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnNewTrade(security, time, price, qty);
 }
 
 bool Service::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnServiceDataUpdate(service, timeMeasurement);
 }
 
@@ -223,14 +223,14 @@ bool Service::RaiseBrokerPositionUpdateEvent(
 		const Security &security,
 		const Qty &qty,
 		bool isInitial) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
 bool Service::RaiseNewBarEvent(
 		const Security &security,
 		const Security::Bar &bar) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnNewBar(security, bar);
 }
 
@@ -238,7 +238,7 @@ bool Service::RaiseBookUpdateTickEvent(
 		const Security &security,
 		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	return OnBookUpdateTick(security, book, timeMeasurement);
 }
@@ -247,7 +247,7 @@ bool Service::RaiseSecurityServiceEvent(
 		const pt::ptime &time,
 		const Security &security,
 		const Security::ServiceEvent &securityEvent) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnSecurityServiceEvent(time, security, securityEvent);
 }
 

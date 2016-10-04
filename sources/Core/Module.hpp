@@ -30,8 +30,6 @@ namespace trdk {
 
 		typedef uintmax_t InstanceId;
 
-	protected:
-
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
 		
@@ -65,21 +63,16 @@ namespace trdk {
 		trdk::Module::Log & GetLog() const throw();
 		trdk::Module::TradingLog & GetTradingLog() const throw();
 
+		Lock LockForOtherThreads();
+
 	public:
 
 		//! Returns list of required services.
 		virtual std::string GetRequiredSuppliers() const;
 
-	public:
-
 		void RaiseSettingsUpdateEvent(const trdk::Lib::IniSectionRef &);
 
 		virtual void OnServiceStart(const trdk::Service &);
-
-	protected:
-
-		Mutex & GetMutex() const;
-		Lock LockForOtherThreads() const;
 
 	protected:
 
@@ -88,7 +81,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 
