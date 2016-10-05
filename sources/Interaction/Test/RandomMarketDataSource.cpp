@@ -73,16 +73,18 @@ void RandomMarketDataSource::NotificationThread() {
 
 			const auto &now = GetContext().GetCurrentTime();
 
-			bid
-				+= ((double(generateTopRandom()) / 100)
-					* (isCorrectionPositive ? 1 : -1));
-			ask = bid + (double(generateStepRandom()) / 100);
-			if (
-					int(bid) % 5
-					|| (!isCorrectionPositive && bid < 40)
-					|| (isCorrectionPositive  && bid > 110)) {
+			if (bid < 40) {
+				isCorrectionPositive = true;
+			} else if (bid > 110) {
+				isCorrectionPositive = false;
+			} else if (int(bid) % 5) {
 				isCorrectionPositive = !isCorrectionPositive;
 			}
+
+			bid
+				+= (double(generateTopRandom()) / 100)
+					* (isCorrectionPositive ? 1 : -1);
+			ask = bid + (double(generateStepRandom()) / 100);
 
 			foreach (const auto &s, m_securityList) {
 
