@@ -212,7 +212,7 @@ private:
 			if (m_minQty) {
 				result.minTradeQty = *m_minQty;
 			}
-			return std::move(result);
+			return result;
 		}
 	protected:
 		RiskControlScope &m_riskControlScope;

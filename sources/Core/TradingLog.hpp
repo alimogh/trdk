@@ -95,11 +95,11 @@ namespace trdk {
 
 		trdk::Log::Time GetTime() {
 			TrdkAssert(m_context);
-			return std::move(m_context->GetCurrentTime());
+			return m_context->GetCurrentTime();
 		}
 
 		trdk::Log::ThreadId GetThreadId() const {
-			return std::move(m_log.GetThreadId());
+			return m_log.GetThreadId();
 		}
 
 	private:

@@ -1793,16 +1793,15 @@ void Client::historicalData(
 							time);
 					}
 #				endif
-				const HistoryUpdate update = {
-					time,
-					openPrice,
-					highPrice,
-					lowPrice,
-					closePrice,
-					request->expiration
-				};
-				m_historyUpdates[request->security]
-					.emplace_back(std::move(update));
+				m_historyUpdates[request->security].emplace_back(
+					HistoryUpdate{
+						time,
+						openPrice,
+						highPrice,
+						lowPrice,
+						closePrice,
+						request->expiration
+					});
 			}
 		}
 	

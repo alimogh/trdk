@@ -109,12 +109,6 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			//...//
 		}
 
-		Milestones(Milestones &&rhs)
-			: m_start(std::move(rhs.m_start)),
-			m_stat(std::move(rhs.m_stat)) {
-			//...//
-		}
-
 		Milestones & operator =(const Milestones &rhs) {
 			m_start = rhs.m_start;
 			m_stat = rhs.m_stat;

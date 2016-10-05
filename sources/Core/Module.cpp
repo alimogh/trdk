@@ -158,7 +158,7 @@ namespace {
 			result << '.' << tag;
 		}
 		result << '.' << instanceId;
-		return std::move(result.str());
+		return result.str();
 	}
 
 }
@@ -254,7 +254,7 @@ Module::TradingLog & Module::GetTradingLog() const throw() {
 }
 
 std::string Module::GetRequiredSuppliers() const {
-	return std::move(std::string());
+	return std::string();
 }
 
 void Module::OnServiceStart(const Service &) {

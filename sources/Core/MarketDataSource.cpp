@@ -58,7 +58,7 @@ namespace {
 			result += '.';
 			result += tag;
 		}
-		return std::move(result);
+		return result;
 	}
 
 }

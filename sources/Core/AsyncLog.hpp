@@ -68,13 +68,6 @@ namespace trdk {
 			//...//
 		}
 
-		AsyncLogRecord(AsyncLogRecord &&rhs)
-			: m_time(std::move(rhs.m_time)),
-			m_threadId(std::move(rhs.m_threadId)),
-			m_params(std::move(rhs.m_params)) {
-			//...//
-		}
-
 	public:
 
 		//! Schedules delayed formatting.
@@ -475,7 +468,7 @@ namespace trdk {
 								:	&m_queue.buffers.first;
 
 						lock.unlock();
-						foreach (const Record &record, buffer) {
+						for (const Record &record: buffer) {
 							m_log.Write(record);
 						}
 						buffer.clear();
@@ -584,9 +577,9 @@ namespace trdk {
 			{
 				const Lock lock(m_queue.mutex);
 				Assert(m_queue.activeBuffer);
-				m_queue.activeBuffer->push_back(std::move(record));
-				m_queue.condition.notify_one();
+				m_queue.activeBuffer->emplace_back(std::move(record));
 			}
+			m_queue.condition.notify_one();
 		}
 
 	private:

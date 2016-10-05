@@ -170,7 +170,8 @@ public:
 				[this](const boost::system::error_code &error) {
 					m_reconnectTimer.reset();
 					if (error) {
-						boost::format message("%1%Reconnect canceled: \"%2%\".");
+						boost::format message(
+							"%1%Reconnect canceled: \"%2%\".");
 						message % m_logTag % SysError(error.value());
 						m_self.LogInfo(message.str());
 						return;
