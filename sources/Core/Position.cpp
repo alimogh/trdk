@@ -22,6 +22,7 @@ using namespace trdk::Lib;
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
 namespace sig = boost::signals2;
+namespace accums = boost::accumulators;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -70,34 +71,11 @@ namespace {
 
 	const OrderId nOrderId = std::numeric_limits<OrderId>::max();
 
-	template<Lib::Concurrency::Profile profile>
-	struct PostionConcurrencyPolicyT {
-		static_assert(
-			profile == Lib::Concurrency::PROFILE_RELAX,
-			"Wrong concurrency profile");
-		typedef boost::shared_mutex Mutex;
-		typedef boost::shared_lock<Mutex> ReadLock;
-		typedef boost::unique_lock<Mutex> WriteLock;
-	};
-	template<>
-	struct PostionConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
-		//! @todo TRDK-167
-		typedef Lib::Concurrency::SpinMutex Mutex;
-		typedef Mutex::ScopedLock ReadLock;
-		typedef Mutex::ScopedLock WriteLock;
-	};
-	typedef PostionConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
-		PostionConcurrencyPolicy;
-
 }
 
 class Position::Implementation : private boost::noncopyable {
 
 public:
-
-	typedef PostionConcurrencyPolicy::Mutex Mutex;
-	typedef PostionConcurrencyPolicy::ReadLock ReadLock;
-	typedef PostionConcurrencyPolicy::WriteLock WriteLock;
 
 	template<typename SlotSignature>
 	struct SignalTrait {
@@ -122,32 +100,26 @@ public:
 	struct StaticData {
 		uuids::uuid uuid;
 		bool hasPrice;
-		TimeInForce timeInForce;
 	};
 
 	struct DynamicData : public StaticData {
 
-		boost::atomic<OrderId> orderId;
-		Time time;
-		struct Price {
-			boost::atomic_intmax_t total;
-			boost::atomic_size_t count;
-			Price()
-				: total(0)
-				, count(0) {
-				//...//
-			}
-		} price;
-		boost::atomic<Qty::ValueType> qty;
-		boost::atomic<ScaledPrice> comission;
-
-		boost::atomic_bool hasOrder;
+		OrderId orderId;
+		
+		pt::ptime time;
+		
+		accums::accumulator_set<
+				ScaledPrice,
+				accums::features<accums::tag::mean>>
+			price;
+		Qty qty;
+		
+		bool hasActiveOrder;
 
 		DynamicData()
 			: orderId(nOrderId)
 			, qty(0)
-			, comission(0)
-			, hasOrder(false) {
+			, hasActiveOrder(false) {
 			//...//
 		}
 
@@ -161,11 +133,9 @@ public:
 
 public:
 
-	Position &m_position;
+	Position &m_self;
 
 	TradingSystem &m_tradingSystem;
-
-	mutable Mutex m_mutex;
 
 	mutable StateUpdateSignal m_stateUpdateSignal;
 
@@ -176,7 +146,7 @@ public:
 	Security &m_security;
 	const Currency m_currency;
 
-	boost::atomic<Qty::ValueType> m_planedQty;
+	Qty m_planedQty;
 
 	const ScaledPrice m_openStartPrice;
 	DynamicData m_opened;
@@ -185,14 +155,14 @@ public:
 	ScaledPrice m_closeStartPrice;
 	DynamicData m_closed;
 
-	boost::atomic<CloseType> m_closeType;
+	CloseType m_closeType;
 
 	bool m_isMarketAsCompleted;
 
-	boost::atomic_bool m_isError;
-	boost::atomic_bool m_isInactive;
+	bool m_isError;
+	bool m_isInactive;
 
-	boost::atomic<CancelState> m_cancelState;
+	CancelState m_cancelState;
 	boost::function<void ()> m_cancelMethod;
 
 	TimeMeasurement::Milestones m_timeMeasurement;
@@ -210,7 +180,7 @@ public:
 			const Qty &qty,
 			const ScaledPrice &startPrice,
 			const TimeMeasurement::Milestones &timeMeasurement)
-		: m_position(position)
+		: m_self(position)
 		, m_tradingSystem(tradingSystem)
 		, m_strategy(strategy)
 		, m_operationId(operationId)
@@ -245,26 +215,20 @@ public:
 
 		{
 
-			const WriteLock lock(m_mutex);
-			std::unique_ptr<const WriteLock> oppositePositionLock;
-			if (m_oppositePosition) {
-				oppositePositionLock.reset(
-					new WriteLock(m_oppositePosition->m_pimpl->m_mutex));
-			}
+			const auto lock = m_strategy.LockForOtherThreads();
 
-			Assert(!m_position.IsOpened());
-			Assert(!m_position.IsClosed());
-			Assert(!m_position.IsCompleted());
+			Assert(!m_self.IsOpened());
+			Assert(!m_self.IsClosed());
+			Assert(!m_self.IsCompleted());
 			AssertNe(0, orderId);
 			AssertNe(0, m_opened.orderId);
-			AssertEq(0, m_closed.price.total);
-			AssertEq(0, m_closed.price.count);
+			AssertEq(0, accums::count(m_closed.price));
 			Assert(m_opened.time.is_not_a_date_time());
 			Assert(m_closed.time.is_not_a_date_time());
 			AssertLe(m_opened.qty, m_planedQty);
 			AssertEq(0, m_closed.qty);
-			Assert(m_opened.hasOrder);
-			Assert(!m_closed.hasOrder);
+			Assert(m_opened.hasActiveOrder);
+			Assert(!m_closed.hasActiveOrder);
 
 			if (m_opened.orderId != orderId) {
 				ReportOrderIdReplace(true, tradingSystemOrderId);
@@ -284,8 +248,7 @@ public:
 					AssertFail("Status can be set only by this object.");
 				case ORDER_STATUS_SUBMITTED:
 					AssertEq(0, m_opened.qty);
-					AssertEq(0, m_opened.price.total);
-					AssertEq(0, m_opened.price.count);
+					AssertEq(0, accums::count(m_opened.price));
 					AssertEq(
 						m_planedQty
 							+	(m_oppositePosition
@@ -298,25 +261,27 @@ public:
 				case ORDER_STATUS_FILLED:
 				case ORDER_STATUS_FILLED_PARTIALLY:
 					if (!trade) {
-						throw Exception("Filled order has no trade information");
+						throw Exception(
+							"Filled order has no trade information");
 					}
 					{
 						auto tradeQty = trade->qty;
 						if (m_oppositePosition) {
 							AssertGe(
 								m_oppositePosition->GetActiveQty()
-									+ m_position.GetPlanedQty(),
+									+ m_self.GetPlanedQty(),
 								tradeQty);
 							auto filledForOpposite = tradeQty;
-							if (filledForOpposite > m_oppositePosition->GetActiveQty()) {
+							if (
+									filledForOpposite
+										> m_oppositePosition->GetActiveQty()) {
 								filledForOpposite
 									= m_oppositePosition->GetActiveQty();
 							}
 							AssertGe(tradeQty, filledForOpposite);
 							tradeQty -= filledForOpposite;
-							m_oppositePosition->m_pimpl->m_closed.price.total
-								+= trade->price;
-							++m_oppositePosition->m_pimpl->m_closed.price.count;
+							m_oppositePosition->m_pimpl->m_closed.price(
+								trade->price);
 							m_oppositePosition->m_pimpl->m_closed.qty
 								= m_oppositePosition->m_pimpl->m_closed.qty
 									+ filledForOpposite;
@@ -333,8 +298,7 @@ public:
 							AssertEq(
 								m_opened.qty + tradeQty + remainingQty,
 								m_planedQty);
-							m_opened.price.total += trade->price;
-							++m_opened.price.count;
+							m_opened.price(trade->price);
 							m_opened.qty = m_opened.qty + tradeQty;
 							AssertLe(0, m_opened.qty);
 							ReportOpeningUpdate(
@@ -409,7 +373,7 @@ public:
 					} catch (...) {
 						AssertFailNoException();
 					}
-					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
+					m_oppositePosition->m_pimpl->m_closed.hasActiveOrder = false;
 					updatedOppositePosition = m_oppositePosition;
 					m_oppositePosition.reset();
 				} else if (isCompleted) {
@@ -419,7 +383,7 @@ public:
 					} catch (...) {
 						AssertFailNoException();
 					}
-					m_oppositePosition->m_pimpl->m_closed.hasOrder = false;
+					m_oppositePosition->m_pimpl->m_closed.hasActiveOrder = false;
 					updatedOppositePosition = m_oppositePosition;
 				}
 			}
@@ -429,7 +393,7 @@ public:
 				AssertLe(m_opened.qty, m_planedQty);
 				Assert(m_opened.time.is_not_a_date_time());
 
-				if (m_position.GetOpenedQty() > 0) {
+				if (m_self.GetOpenedQty() > 0) {
 					try {
 						m_opened.time
 							= m_security.GetContext().GetCurrentTime();
@@ -438,7 +402,7 @@ public:
 					}
 				}
 
-				m_opened.hasOrder = false;
+				m_opened.hasActiveOrder = false;
 				if (CancelIfSet()) {
 					return;
 				}
@@ -467,12 +431,12 @@ public:
 
 		{
 
-			const WriteLock lock(m_mutex);
+			const auto lock = m_strategy.LockForOtherThreads();
 
 			Assert(!m_oppositePosition);
-			Assert(m_position.IsOpened());
-			Assert(!m_position.IsClosed());
-			Assert(!m_position.IsCompleted());
+			Assert(m_self.IsOpened());
+			Assert(!m_self.IsClosed());
+			Assert(!m_self.IsCompleted());
 			Assert(!m_opened.time.is_not_a_date_time());
 			Assert(m_closed.time.is_not_a_date_time());
 			AssertLe(m_opened.qty, m_planedQty);
@@ -480,8 +444,8 @@ public:
 			AssertNe(orderId, 0);
 			AssertNe(m_closed.orderId, 0);
 			AssertNe(m_opened.orderId, orderId);
-			Assert(!m_opened.hasOrder);
-			Assert(m_closed.hasOrder);
+			Assert(!m_opened.hasActiveOrder);
+			Assert(m_closed.hasActiveOrder);
 
 			if (m_closed.orderId != orderId) {
 				ReportOrderIdReplace(false, tradingSystemOrderId);
@@ -500,8 +464,7 @@ public:
 					AssertFail("Status can be set only by this object.");
 				case ORDER_STATUS_SUBMITTED:
 					AssertEq(m_closed.qty, 0);
-					AssertEq(m_closed.price.total, 0);
-					AssertEq(m_closed.price.count, 0);
+					AssertEq(0, accums::count(m_closed.price));
 					AssertLt(0, remainingQty);
 					return;
 				case ORDER_STATUS_FILLED:
@@ -512,8 +475,7 @@ public:
 					AssertEq(trade->qty + remainingQty, m_opened.qty);
 					AssertLe(m_closed.qty + trade->qty, m_opened.qty);
 					AssertLt(0, trade->price);
-					m_closed.price.total += trade->price;
-					++m_closed.price.count;
+					m_closed.price(trade->price);
 					m_closed.qty = m_closed.qty + trade->qty;
 					AssertGt(m_closed.qty, 0);
 					ReportClosingUpdate(
@@ -555,7 +517,7 @@ public:
 			AssertLe(m_opened.qty, m_planedQty);
 			Assert(m_closed.time.is_not_a_date_time());
 
-			if (m_position.GetActiveQty() == 0) {
+			if (m_self.GetActiveQty() == 0) {
 				try {
 					m_closed.time = m_security.GetContext().GetCurrentTime();
 				} catch (...) {
@@ -564,7 +526,7 @@ public:
 				}
 			}
 
-			m_closed.hasOrder = false;
+			m_closed.hasActiveOrder = false;
 
 			CopyOrder(&tradingSystemOrderId, false, orderStatus);
 
@@ -585,17 +547,13 @@ public:
 public:
 
 	bool CancelIfSet() throw() {
-		if (m_position.IsClosed()) {
+		
+		if (m_self.IsClosed() || m_cancelState != CANCEL_STATE_SCHEDULED) {
 			return false;
 		}
-		CancelState prevCancelFlag = CANCEL_STATE_SCHEDULED;
-		const CancelState newCancelFlag = CANCEL_STATE_CANCELED;
-		if  (
-				!m_cancelState.compare_exchange_strong(
-					prevCancelFlag,
-					newCancelFlag)) {
-			return false;
-		}
+
+		m_cancelState = CANCEL_STATE_CANCELED;
+
 		try {
 			m_cancelMethod();
 			return true;
@@ -604,6 +562,7 @@ public:
 			AssertFailNoException();
 			return false;
 		}
+
 	}
 
 	void ReportOpeningStart(const char *eventDesc) const throw() {
@@ -615,13 +574,13 @@ public:
 					% m_operationId // 1
 					% m_opened.uuid // 2
 					% eventDesc // 3
-					% m_position.GetTypeStr() // 4
+					% m_self.GetTypeStr() // 4
 					% m_security.GetSymbol().GetSymbol() // 5
-					% m_position.GetTradingSystem().GetTag() // 6
+					% m_self.GetTradingSystem().GetTag() // 6
 					% m_tradingSystem.GetMode() // 7
 					% m_security.DescalePrice(m_openStartPrice) // 8
-					% m_position.GetCurrency() // 9
-					% m_position.GetPlanedQty(); // 10 and last
+					% m_self.GetCurrency() // 9
+					% m_self.GetPlanedQty(); // 10 and last
 			});
 	}
 
@@ -642,15 +601,15 @@ public:
 					% tsOrderId // 3
 					% eventDesc // 4
 					% m_tradingSystem.GetStringStatus(orderStatus) // 5
-					% m_position.GetTypeStr() // 6
+					% m_self.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
-					% m_position.GetTradingSystem().GetTag() // 8
+					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_position.GetOpenStartPrice()) // 10
-					% m_security.DescalePrice(m_position.GetOpenPrice()) // 11
-					% m_position.GetCurrency() // 12
-					% m_position.GetPlanedQty() // 13
-					% m_position.GetOpenedQty(); // 14 and last
+					% m_security.DescalePrice(m_self.GetOpenStartPrice()) // 10
+					% m_security.DescalePrice(m_self.GetOpenPrice()) // 11
+					% m_self.GetCurrency() // 12
+					% m_self.GetPlanedQty() // 13
+					% m_self.GetOpenedQty(); // 14 and last
 					
 			});
 	}
@@ -664,14 +623,14 @@ public:
 					% m_operationId // 1
 					% m_closed.uuid // 2
 					% eventDesc // 3
-					% m_position.GetTypeStr() // 4
+					% m_self.GetTypeStr() // 4
 					% m_security.GetSymbol().GetSymbol() // 5
-					% m_position.GetTradingSystem().GetTag() // 6
+					% m_self.GetTradingSystem().GetTag() // 6
 					% m_tradingSystem.GetMode() // 7
-					% m_security.DescalePrice(m_position.GetOpenPrice()) // 8
-					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 9
-					% m_position.GetCurrency() // 10
-					% m_position.GetOpenedQty(); // 11 and last
+					% m_security.DescalePrice(m_self.GetOpenPrice()) // 8
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 9
+					% m_self.GetCurrency() // 10
+					% m_self.GetOpenedQty(); // 11 and last
 			});
 	}
 
@@ -691,15 +650,15 @@ public:
 					% tsOrderId // 3
 					% eventDesc // 4
 					% m_tradingSystem.GetStringStatus(orderStatus) // 5
-					% m_position.GetTypeStr() // 6
+					% m_self.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
-					% m_position.GetTradingSystem().GetTag() // 8
+					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_position.GetCloseStartPrice()) // 10
-					% m_security.DescalePrice(m_position.GetClosePrice()) // 11
-					% m_position.GetCurrency() // 12
-					% m_position.GetOpenedQty() // 13
-					% m_position.GetClosedQty(); // 14 and last
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 10
+					% m_security.DescalePrice(m_self.GetClosePrice()) // 11
+					% m_self.GetCurrency() // 12
+					% m_self.GetOpenedQty() // 13
+					% m_self.GetClosedQty(); // 14 and last
 			});
 	}
 
@@ -723,30 +682,32 @@ public:
 public:
 
 	void RestoreOpenState(OrderId openOrderId) {
+
+		// Thread synchronization for this method should be checked after 
+		// https://app.asana.com/0/186349222941752/187455093370509:
+		AssertFail("Thread synchronization for this method should be checked.");
 		
-		const WriteLock lock(m_mutex);
-		
-		Assert(!m_position.IsOpened());
-		Assert(!m_position.IsError());
-		Assert(!m_position.IsClosed());
-		Assert(!m_position.IsCompleted());
-		Assert(!m_position.HasActiveOrders());
+		Assert(!m_self.IsOpened());
+		Assert(!m_self.IsError());
+		Assert(!m_self.IsClosed());
+		Assert(!m_self.IsCompleted());
+		Assert(!m_self.HasActiveOrders());
 		AssertLt(0, m_planedQty);
 		AssertEq(0, m_opened.qty);
 		AssertEq(0, m_closed.qty);
 		Assert(m_opened.time.is_not_a_date_time());
 		Assert(m_closed.time.is_not_a_date_time());
 
-		if (m_position.IsStarted()) {
+		if (m_self.IsStarted()) {
 			throw AlreadyStartedError();
 		}
 
 		m_opened.time = m_security.GetContext().GetCurrentTime();
-		m_opened.qty = m_planedQty.load();
+		m_opened.qty = m_planedQty;
 		m_opened.orderId = openOrderId;
 
 		if (!m_isRegistered) {
-			m_strategy.Register(m_position);
+			m_strategy.Register(m_self);
 			m_isRegistered = true;
 		}
 
@@ -770,22 +731,18 @@ public:
 			throw Exception("Security trading session is closed");
 		}
 
-		const WriteLock lock(m_mutex);
-		std::unique_ptr<const WriteLock> oppositePositionLock;
-		if (m_position.HasActiveOrders() || m_closed.orderId != nOrderId) {
+		if (m_self.HasActiveOrders() || m_closed.orderId != nOrderId) {
 			throw AlreadyStartedError();
 		}
 		
-		Assert(!m_position.IsOpened());
-		Assert(!m_position.IsError());
-		Assert(!m_position.IsClosed());
+		Assert(!m_self.IsOpened());
+		Assert(!m_self.IsError());
+		Assert(!m_self.IsClosed());
 
-		auto qtyToOpen = m_position.GetNotOpenedQty();
+		auto qtyToOpen = m_self.GetNotOpenedQty();
 		const char *action = "open-pre";
 
 		if (m_oppositePosition) {
-			oppositePositionLock.reset(
-				new WriteLock(m_oppositePosition->m_pimpl->m_mutex));
 			Assert(m_oppositePosition->m_pimpl->m_isRegistered);
 			Assert(m_oppositePosition->IsStarted());
 			Assert(!m_oppositePosition->IsError());
@@ -804,15 +761,14 @@ public:
 		}
 
 		if (!m_isRegistered) {
-			m_strategy.Register(m_position);
+			m_strategy.Register(m_self);
 			// supporting prev. logic (when was m_strategy = nullptr),
 			// don't know why set flag in other place.
 		}
 
 		const StaticData staticData = {
 			generateUuid(),
-			hasPrice,
-			timeInForce,
+			hasPrice
 		};
 
 		m_opened.uuid = staticData.uuid;
@@ -834,11 +790,11 @@ public:
 									// (when was m_strategy = nullptr),
 									// don't know why set flag only here.
 			m_opened.StaticData::operator =(staticData);
-			m_opened.hasOrder = true;
+			m_opened.hasActiveOrder = true;
 			m_opened.orderId = orderId;
 			if (m_oppositePosition) {
 				m_oppositePosition->m_pimpl->m_closeType = CLOSE_TYPE_NONE;
-				m_oppositePosition->m_pimpl->m_closed.hasOrder = true;
+				m_oppositePosition->m_pimpl->m_closed.hasActiveOrder = true;
 				m_oppositePosition->m_pimpl->m_closed.orderId = orderId;
 			}
 			CopyOrder(
@@ -850,7 +806,7 @@ public:
 			return orderId;
 		} catch (...) {
 			if (m_isRegistered) {
-				m_strategy.Unregister(m_position);
+				m_strategy.Unregister(m_self);
 			}
 			try {
 				CopyOrder(
@@ -868,7 +824,7 @@ public:
 	}
 
 	template<typename CloseImpl>
-	OrderId CloseUnsafe(
+	OrderId Close(
 			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
@@ -876,18 +832,18 @@ public:
 			bool hasPrice,
 			bool hasUuid) {
 		
-		if (!m_position.IsOpened()) {
+		if (!m_self.IsOpened()) {
 			throw NotOpenedError();
-		} else if (m_position.HasActiveCloseOrders() || m_position.IsClosed()) {
+		} else if (m_self.HasActiveCloseOrders() || m_self.IsClosed()) {
 			throw AlreadyClosedError();
 		}
 
 		Assert(!m_oppositePosition);
 		Assert(m_isRegistered);
-		Assert(m_position.IsStarted());
-		Assert(!m_position.IsError());
-		Assert(!m_position.HasActiveOrders());
-		Assert(!m_position.IsCompleted());
+		Assert(m_self.IsStarted());
+		Assert(!m_self.IsError());
+		Assert(!m_self.HasActiveOrders());
+		Assert(!m_self.IsCompleted());
 
 		if (!hasUuid) {
 			m_closed.uuid = generateUuid();
@@ -899,13 +855,13 @@ public:
 		if (m_expiration && !orderParams.expiration) {
 			OrderParams additionalOrderParams(orderParams);
 			additionalOrderParams.expiration = &*m_expiration;
-			orderId = closeImpl(m_position.GetActiveQty(), additionalOrderParams);
+			orderId = closeImpl(m_self.GetActiveQty(), additionalOrderParams);
 		} else {
-			orderId = closeImpl(m_position.GetActiveQty(), orderParams);
+			orderId = closeImpl(m_self.GetActiveQty(), orderParams);
 		}
 		m_closeType = closeType;
 		m_closed.hasPrice = hasPrice;
-		m_closed.hasOrder = true;
+		m_closed.hasActiveOrder = true;
 		m_closed.orderId = orderId;
 
 		CopyOrder(
@@ -919,23 +875,6 @@ public:
 
 	}
 
-	template<typename CloseImpl>
-	OrderId Close(
-			CloseType closeType,
-			const CloseImpl &closeImpl,
-			const TimeInForce &timeInForce,
-			const OrderParams &orderParams,
-			bool hasPrice) {
-		const Implementation::WriteLock lock(m_mutex);
-		return CloseUnsafe(
-			closeType,
-			closeImpl,
-			timeInForce,
-			orderParams,
-			hasPrice,
-			false);
-	}
-
 	template<typename CancelMethodImpl>
 	bool CancelAtMarketPrice(
 			CloseType closeType,
@@ -944,19 +883,18 @@ public:
 			const OrderParams &orderParams,
 			bool hasPrice) {
 		
-		const WriteLock lock(m_mutex);
-		if (m_position.IsCanceled()) {
-			Assert(!m_position.HasActiveOpenOrders());
-			Assert(!m_position.HasActiveCloseOrders());
+		if (m_self.IsCanceled()) {
+			Assert(!m_self.HasActiveOpenOrders());
+			Assert(!m_self.HasActiveCloseOrders());
 			return false;
 		}
 
 		m_closed.uuid = generateUuid();
 		ReportClosingStart("cancel-pre");
 
-		if (	m_position.IsClosed()
-				|| (	!m_position.IsOpened()
-						&& !m_position.HasActiveOpenOrders())) {
+		if (	m_self.IsClosed()
+				|| (	!m_self.IsOpened()
+						&& !m_self.HasActiveOpenOrders())) {
 			return false;
 		}
 
@@ -969,11 +907,11 @@ public:
 						timeInForce,
 						orderParams,
 						hasPrice]() {
-					if (!m_position.IsOpened() || m_position.IsClosed()) {
+					if (!m_self.IsOpened() || m_self.IsClosed()) {
 						SignalUpdate();
 						return;
 					}
-					CloseUnsafe<CancelMethodImpl>(
+					Close<CancelMethodImpl>(
 						closeType,
 						cancelMethodImpl,
 						timeInForce,
@@ -981,13 +919,13 @@ public:
 						hasPrice,
 						true);
 				};
-			Assert(m_position.HasActiveOrders());
+			Assert(m_self.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
 			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
 			m_cancelState = CANCEL_STATE_SCHEDULED;
 		} else {
-			Assert(!m_position.HasActiveOrders());
-			CloseUnsafe<CancelMethodImpl>(
+			Assert(!m_self.HasActiveOrders());
+			Close<CancelMethodImpl>(
 				closeType,
 				cancelMethodImpl,
 				timeInForce,
@@ -1004,7 +942,7 @@ public:
 
 	bool CancelAllOrders() {
 		bool isCanceled = false;
-		if (m_opened.hasOrder) {
+		if (m_opened.hasActiveOrder) {
 			m_strategy.GetTradingLog().Write(
 				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\topen-order"
 					"\t%4%\t%5%\t%6%"
@@ -1015,13 +953,13 @@ public:
 						% m_opened.uuid // 2
 						% m_opened.orderId // 3
 						% m_security.GetSymbol().GetSymbol() // 4
-						% m_position.GetTradingSystem().GetTag() // 5
+						% m_self.GetTradingSystem().GetTag() // 5
 						% m_tradingSystem.GetMode(); // 6
 				});
 			m_tradingSystem.CancelOrder(m_opened.orderId);
 			isCanceled = true;
 		}
-		if (m_closed.hasOrder) {
+		if (m_closed.hasActiveOrder) {
 			m_strategy.GetTradingLog().Write(
 				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\tclose-order"
 					"\t%4%\t%5%\t%6%",
@@ -1031,7 +969,7 @@ public:
 						% m_closed.uuid // 2
 						% m_closed.orderId // 3
 						% m_security.GetSymbol().GetSymbol() // 4
-						% m_position.GetTradingSystem().GetTag() // 5
+						% m_self.GetTradingSystem().GetTag() // 5
 						% m_tradingSystem.GetMode(); // 6
 				});
 			Assert(!isCanceled);
@@ -1085,7 +1023,7 @@ private:
 				double price = .0;
 				if (directionData.hasPrice) {
 					price = m_security.DescalePrice(
-						m_position.GetOpenStartPrice());
+						m_self.GetOpenStartPrice());
 				}
 
 				dropCopy.CopyOrder(
@@ -1098,17 +1036,17 @@ private:
 					&m_subOperationId,
 					m_security,
 					m_tradingSystem,
-					m_position.GetType() == TYPE_LONG
+					m_self.GetType() == TYPE_LONG
 						?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
 						:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
-					m_position.GetPlanedQty(),
+					m_self.GetPlanedQty(),
 					directionData.hasPrice ? &price : nullptr,
 					timeInForce,
-					m_position.GetCurrency(),
+					m_self.GetCurrency(),
 					orderParams && orderParams->minTradeQty
 						?	&*orderParams->minTradeQty
 						:	nullptr,
-					directionData.qty.load(),
+					directionData.qty,
 					status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
 					status == ORDER_STATUS_SENT ? &bidQty : nullptr,
 					status == ORDER_STATUS_SENT ? &askPrice : nullptr,
@@ -1254,8 +1192,8 @@ const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 
-Position::CloseType Position::GetCloseType() const throw() {
-	return CloseType(m_pimpl->m_closeType);
+const Position::CloseType & Position::GetCloseType() const throw() {
+	return m_pimpl->m_closeType;
 }
 
 bool Position::IsOpened() const throw() {
@@ -1285,11 +1223,11 @@ void Position::MarkAsCompleted() {
 }
 
 bool Position::IsError() const throw() {
-	return m_pimpl->m_isError ? true : false;
+	return m_pimpl->m_isError;
 }
 
 bool Position::IsInactive() const throw() {
-	return m_pimpl->m_isInactive ? true : false;
+	return m_pimpl->m_isInactive;
 }
 
 void Position::ResetInactive() {
@@ -1305,10 +1243,10 @@ bool Position::HasActiveOrders() const throw() {
 	return HasActiveCloseOrders() || HasActiveOpenOrders();
 }
 bool Position::HasActiveOpenOrders() const throw() {
-	return m_pimpl->m_opened.hasOrder ? true : false;
+	return m_pimpl->m_opened.hasActiveOrder;
 }
 bool Position::HasActiveCloseOrders() const throw() {
-	return m_pimpl->m_closed.hasOrder ? true : false;
+	return m_pimpl->m_closed.hasActiveOrder;
 }
 
 namespace { namespace CloseTypeStr {
@@ -1381,13 +1319,8 @@ void Position::UpdateClosing(
 		trade);
 }
 
-Position::Time Position::GetOpenTime() const {
-	Time result;
-	{
-		const Implementation::ReadLock lock(m_pimpl->m_mutex);
-		result = m_pimpl->m_opened.time;
-	}
-	return result;
+const pt::ptime & Position::GetOpenTime() const {
+	return m_pimpl->m_opened.time;
 }
 
 Qty Position::GetNotOpenedQty() const {
@@ -1400,29 +1333,20 @@ Qty Position::GetActiveQty() const throw() {
 	return GetOpenedQty() - GetClosedQty();
 }
 
-OrderId Position::GetCloseOrderId() const throw() {
+const OrderId & Position::GetCloseOrderId() const throw() {
 	return m_pimpl->m_closed.orderId;
 }
 
-Qty Position::GetClosedQty() const throw() {
-	return m_pimpl->m_closed.qty.load();
+const Qty & Position::GetClosedQty() const throw() {
+	return m_pimpl->m_closed.qty;
 }
 
 double Position::GetClosedVolume() const {
 	return GetSecurity().DescalePrice(GetClosePrice()) * GetClosedQty();
 }
 
-Position::Time Position::GetCloseTime() const {
-	Position::Time result;
-	{
-		const Implementation::ReadLock lock(m_pimpl->m_mutex);
-		result = m_pimpl->m_closed.time;
-	}
-	return result;
-}
-
-ScaledPrice Position::GetCommission() const {
-	return m_pimpl->m_opened.comission + m_pimpl->m_closed.comission;
+const pt::ptime & Position::GetCloseTime() const {
+	return m_pimpl->m_closed.time;
 }
 
 Position::StateUpdateConnection Position::Subscribe(
@@ -1431,22 +1355,21 @@ Position::StateUpdateConnection Position::Subscribe(
 	return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
 }
 
-Qty Position::GetPlanedQty() const {
-	return m_pimpl->m_planedQty.load();
+const Qty & Position::GetPlanedQty() const {
+	return m_pimpl->m_planedQty;
 }
 
 const ScaledPrice & Position::GetOpenStartPrice() const {
 	return m_pimpl->m_openStartPrice;
 }
 
-OrderId Position::GetOpenOrderId() const throw() {
+const OrderId & Position::GetOpenOrderId() const throw() {
 	return m_pimpl->m_opened.orderId;
 }
-Qty Position::GetOpenedQty() const throw() {
-	return m_pimpl->m_opened.qty.load();
+const Qty & Position::GetOpenedQty() const throw() {
+	return m_pimpl->m_opened.qty;
 }
 void Position::SetOpenedQty(const Qty &newQty) const throw() {
-	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	m_pimpl->m_opened.qty = newQty;
 	if (newQty > m_pimpl->m_planedQty) {
 		m_pimpl->m_planedQty = newQty;
@@ -1454,8 +1377,8 @@ void Position::SetOpenedQty(const Qty &newQty) const throw() {
 }
 
 ScaledPrice Position::GetOpenPrice() const {
-	return m_pimpl->m_opened.price.count > 0
-		?	ScaledPrice(m_pimpl->m_opened.price.total / m_pimpl->m_opened.price.count)
+	return accums::count(m_pimpl->m_opened.price)
+		?	ScaledPrice(accums::mean(m_pimpl->m_opened.price))
 		:	0;
 }
 
@@ -1463,7 +1386,7 @@ double Position::GetOpenedVolume() const {
 	return GetSecurity().DescalePrice(GetOpenPrice()) * GetOpenedQty();
 }
 
-ScaledPrice Position::GetCloseStartPrice() const {
+const ScaledPrice & Position::GetCloseStartPrice() const {
 	return m_pimpl->m_closeStartPrice;
 }
 
@@ -1472,8 +1395,8 @@ void Position::SetCloseStartPrice(const ScaledPrice &price) {
 }
 
 ScaledPrice Position::GetClosePrice() const {
-	return m_pimpl->m_closed.price.count > 0
-		?	ScaledPrice(m_pimpl->m_closed.price.total / m_pimpl->m_closed.price.count)
+	return accums::count(m_pimpl->m_closed.price)
+		?	ScaledPrice(accums::mean(m_pimpl->m_closed.price))
 		:	0;
 }
 
@@ -1571,6 +1494,7 @@ OrderId Position::CloseAtMarketPrice(
 		},
 		TIME_IN_FORCE_DAY,
 		params,
+		false,
 		false);
 }
 
@@ -1589,7 +1513,8 @@ OrderId Position::Close(
 		},
 		TIME_IN_FORCE_DAY,
 		params,
-		true);
+		true,
+		false);
 }
 
 OrderId Position::CloseAtMarketPriceWithStopPrice(
@@ -1612,6 +1537,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		},
 		TIME_IN_FORCE_DAY,
 		params,
+		false,
 		false);
 }
 
@@ -1632,7 +1558,8 @@ OrderId Position::CloseImmediatelyOrCancel(
 		},
 		TIME_IN_FORCE_IOC,
 		params,
-		true);
+		true,
+		false);
 }
 
 OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
@@ -1650,6 +1577,7 @@ OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
 		},
 		TIME_IN_FORCE_IOC,
 		params,
+		false,
 		false);
 }
 
@@ -1671,7 +1599,6 @@ bool Position::CancelAtMarketPrice(
 }
 
 bool Position::CancelAllOrders() {
-	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	return m_pimpl->CancelAllOrders();
 }
 

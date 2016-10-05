@@ -31,8 +31,6 @@ namespace trdk {
 		typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
 		typedef boost::signals2::connection StateUpdateConnection;
 
-		typedef boost::posix_time::ptime Time;
-
 		enum Type {
 			TYPE_LONG,
 			TYPE_SHORT,
@@ -130,7 +128,7 @@ namespace trdk {
 
 	public:
 
-		CloseType GetCloseType() const throw();
+		const CloseType & GetCloseType() const throw();
 		const std::string & GetCloseTypeStr() const;
 
 		//! Has opened qty and doesn't have active open-orders.
@@ -177,28 +175,26 @@ namespace trdk {
 
 	public:
 
-		trdk::Qty GetPlanedQty() const;
+		const trdk::Qty & GetPlanedQty() const;
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
 
-		trdk::OrderId GetOpenOrderId() const throw();
+		const trdk::OrderId & GetOpenOrderId() const throw();
 		void SetOpenedQty(const trdk::Qty &) const throw();
-		trdk::Qty GetOpenedQty() const throw();
+		const trdk::Qty & GetOpenedQty() const throw();
 		trdk::ScaledPrice GetOpenPrice() const;
 		double GetOpenedVolume() const;
-		Time GetOpenTime() const;
+		const boost::posix_time::ptime & GetOpenTime() const;
 
 		trdk::Qty GetNotOpenedQty() const;
 		trdk::Qty GetActiveQty() const throw();
 
-		trdk::OrderId GetCloseOrderId() const throw();
+		const trdk::OrderId & GetCloseOrderId() const throw();
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
-		trdk::ScaledPrice GetCloseStartPrice() const;
+		const trdk::ScaledPrice & GetCloseStartPrice() const;
 		trdk::ScaledPrice GetClosePrice() const;
-		trdk::Qty GetClosedQty() const throw();
+		const trdk::Qty & GetClosedQty() const throw();
 		double GetClosedVolume() const;
-		Time GetCloseTime() const;
-
-		trdk::ScaledPrice GetCommission() const;
+		const boost::posix_time::ptime & GetCloseTime() const;
 
 	public:
 

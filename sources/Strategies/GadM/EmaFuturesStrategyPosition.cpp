@@ -59,13 +59,11 @@ EmaFuturesStrategy::Position::~Position() {
 	//...//
 }
 
-const EmaFuturesStrategy::Position::Time &
-EmaFuturesStrategy::Position::GetStartTime() const {
+const pt::ptime & EmaFuturesStrategy::Position::GetStartTime() const {
 	return m_startTime;
 }
 
-const EmaFuturesStrategy::Position::Time &
-EmaFuturesStrategy::Position::GetCloseStartTime() const {
+const pt::ptime & EmaFuturesStrategy::Position::GetCloseStartTime() const {
 	AssertNe(pt::not_a_date_time, m_closeStartTime);
 	return m_closeStartTime;
 }

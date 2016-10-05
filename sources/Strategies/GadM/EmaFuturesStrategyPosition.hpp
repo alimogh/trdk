@@ -53,8 +53,8 @@ namespace EmaFuturesStrategy {
 
 	public:
 
-		const Time & GetStartTime() const;
-		const Time & GetCloseStartTime() const;
+		const boost::posix_time::ptime & GetStartTime() const;
+		const boost::posix_time::ptime & GetCloseStartTime() const;
 
 		const CloseType & GetOpenType() const;
 
@@ -103,8 +103,8 @@ namespace EmaFuturesStrategy {
 
 	private:
 
-		Time m_startTime;
-		Time m_closeStartTime;
+		boost::posix_time::ptime m_startTime;
+		boost::posix_time::ptime m_closeStartTime;
 		
 		Intention m_intention;
 		bool m_isSent;
