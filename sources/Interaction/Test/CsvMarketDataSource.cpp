@@ -197,6 +197,19 @@ bool CsvMarketDataSource::ReadFile(
 
 #		if 1
 		{
+			if (security.IsOnline()) {
+				const auto price = security.ScalePrice(v4);
+				security.SetLevel1(
+					time,
+					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(price),
+					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(price),
+					TimeMeasurement::Milestones());
+			}
+		}
+#		endif
+
+#		if 1
+		{
 			m_securityList.front()->AddTrade(
 				time,
 				m_securityList.front()->ScalePrice(v1),
@@ -225,19 +238,6 @@ bool CsvMarketDataSource::ReadFile(
 				TimeMeasurement::Milestones(),
 				security.IsOnline(),
 				security.IsOnline());
-		}
-#		endif
-
-#		if 1
-		{
-			if (security.IsOnline()) {
-				const auto price = security.ScalePrice(v4);
-				security.SetLevel1(
-					time,
-					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(price),
-					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(price),
-					TimeMeasurement::Milestones());
-			}
 		}
 #		endif
 
