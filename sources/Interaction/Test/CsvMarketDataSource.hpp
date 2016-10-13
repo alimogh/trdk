@@ -45,10 +45,12 @@ namespace trdk { namespace Interaction { namespace Test {
 	private:
 
 		void NotificationThread();
+		bool ReadFile(
+				size_t fileNo,
+				boost::posix_time::ptime &currentTime,
+				boost::posix_time::ptime &requestTime);
 
 	private:
-
-		std::ifstream m_source;
 
 		boost::thread_group m_threads;
 		boost::atomic_bool m_stopFlag;

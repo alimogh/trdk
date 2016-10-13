@@ -218,7 +218,9 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 			{
 				const auto &now = GetContext().GetCurrentTime();
 				const auto &expiration
-					= GetContext().GetExpirationCalendar().Find(symbol, now);
+					= GetContext().GetExpirationCalendar().Find(
+						symbol,
+						now.date());
 				if (!expiration) {
 					boost::format error(
 						"Failed to find expiration info for \"%1%\" and %2%");
@@ -226,12 +228,11 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 					throw trdk::MarketDataSource::Error(error.str().c_str());
 				}
 				GetMdsLog().Info(
-					"Current expiration date for \"%1%\": %2% (%3%%4%%5%).",
+					"Current expiration date for \"%1%\": %2% (%3%%4%).",
 					symbol,
 					expiration->GetDate(),
 					symbol.GetSymbol(),
-					expiration->GetCode(),
-					expiration->GetYear() - 2010);
+					expiration->GetContract(true));
 				result->SetExpiration(pt::not_a_date_time, *expiration);
 			}
 			break;

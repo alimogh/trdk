@@ -35,7 +35,7 @@ RandomMarketDataSource::RandomMarketDataSource(
 RandomMarketDataSource::~RandomMarketDataSource() {
 	m_stopFlag = true;
 	m_threads.join_all();
-	// Each object, that implements CreateNewSecurityObject should waite for
+	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
 	GetTradingLog().WaitForFlush();
 }
@@ -186,7 +186,7 @@ trdk::Security & RandomMarketDataSource::CreateNewSecurityObject(
 		{
 			const auto &now = GetContext().GetCurrentTime();
 			const auto &expiration
-				= GetContext().GetExpirationCalendar().Find(symbol, now);
+				= GetContext().GetExpirationCalendar().Find(symbol, now.date());
 			if (!expiration) {
 				boost::format error(
 					"Failed to find expiration info for \"%1%\" and %2%");
@@ -198,7 +198,7 @@ trdk::Security & RandomMarketDataSource::CreateNewSecurityObject(
 		break;
 	}
 
-	result->SetOnline(pt::not_a_date_time);
+	result->SetOnline(pt::not_a_date_time, true);
 	result->SetTradingSessionState(pt::not_a_date_time, true);
 	
 	const_cast<RandomMarketDataSource *>(this)

@@ -71,15 +71,7 @@ namespace {
 	IBString FormatLocalSymbol(
 			std::string symbol,
 			const ContractExpiration &expirationInfo) {
-		if (
-				expirationInfo.GetYear() > 2019
-				|| expirationInfo.GetYear() < 2010) {
-			throw MethodDoesNotImplementedError(
-				"Work with features from < 2010 or > 2019 is not implemented");
-		}
-		symbol.push_back(char(expirationInfo.GetCode()));
-		symbol += boost::lexical_cast<IBString>(
-			expirationInfo.GetYear() - 2010);
+		symbol += expirationInfo.GetContract(true);
 		return symbol;
 	}
 
@@ -487,7 +479,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 			request.tickerId);
 
 		if (!request.security->IsOnline()) {
-			request.security->SetOnline(pt::not_a_date_time);
+			request.security->SetOnline(pt::not_a_date_time, true);
 		} else {
 			Assert(m_securityInSwitching);
 		}
@@ -526,7 +518,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				request.tickerId);
 
 			if (!request.security->IsOnline()) {
-				request.security->SetOnline(pt::not_a_date_time);
+				request.security->SetOnline(pt::not_a_date_time, true);
 			}
 
 			requests.swap(m_barsRequest);
@@ -590,7 +582,9 @@ bool Client::SendMarketDataHistoryRequest(
 					= m_ts
 					.GetContext()
 					.GetExpirationCalendar()
-					.Find(request.security->GetSymbol(), request.subRequestEnd);
+					.Find(
+						request.security->GetSymbol(),
+						request.subRequestEnd.date());
 				;) {
 			if (!request.expiration) {
 				boost::format error(
@@ -1838,12 +1832,11 @@ void Client::historicalData(
 			m_ts.GetMdsLog().Debug(
 				"Finished Level I"
 					" market data history contract request"
-					" for \"%1%\" (%2%%3%%4%, expiration: %5%"
-						", ticker ID: %6%).",
+					" for \"%1%\" (%2%%3%, expiration: %4%"
+						", ticker ID: %5%).",
 				*request->security,
 				request->security->GetSymbol().GetSymbol(),
-				char(request->expiration->GetCode()),
-				request->expiration->GetYear() - 2010,
+				request->expiration->GetContract(true),
 				request->expiration->GetDate(),
 				request->tickerId);
 		}
@@ -1888,7 +1881,7 @@ namespace {
 
 		log
 			<< raw.time
-			<< ',' << expiration.GetCode() << (expiration.GetYear() - 2010)
+			<< ',' << expiration.GetContract(true)
 			<< ',' << expiration.GetDate()
 			<< ',' << adjustRatio
 			<< ',' << raw.openPrice
@@ -2240,7 +2233,7 @@ void Client::SwitchToNextContract(ib::Security &security) {
 
 	const auto prevExpiration = m_ts.GetContext().GetExpirationCalendar().Find(
 		security.GetSymbol(),
-		m_ts.GetContext().GetCurrentTime());
+		m_ts.GetContext().GetCurrentTime().date());
 	if (!prevExpiration) {
 		boost::format error(
 			"Failed to find current expiration info for \"%1%\"");

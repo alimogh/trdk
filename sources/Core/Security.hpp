@@ -154,12 +154,21 @@ namespace trdk {
 		  */
 		enum ServiceEvent {
 			//! History data is loaded, security is online now.
+			/** @sa SERVICE_EVENT_OFFLINE
+			  */
 			SERVICE_EVENT_ONLINE,
+			//! Security is offline.
+			/** @sa SERVICE_EVENT_ONLINE
+			  */
+			SERVICE_EVENT_OFFLINE,
 			//! The current trading session is opened.
+			/** @sa SERVICE_EVENT_TRADING_SESSION_CLOSED
+			  */
 			SERVICE_EVENT_TRADING_SESSION_OPENED,
 			//! The current trading session is closed.
 			/** There are no any special system limitation to trade or to get
 			  * information if the session is closed.
+			  * @sa SERVICE_EVENT_TRADING_SESSION_OPENED
 			  */
 			SERVICE_EVENT_TRADING_SESSION_CLOSED,
 			//! Number of events.
@@ -254,7 +263,7 @@ namespace trdk {
 		/** Throws exception if expiration is not provided.
 		  * @sa GetExpiration
 		  */
-		virtual trdk::Lib::ContractExpiration GetExpiration() const;
+		virtual const trdk::Lib::ContractExpiration & GetExpiration() const;
 
 		bool HasExpiration() const;
 
@@ -298,7 +307,7 @@ namespace trdk {
 
 	protected:
 
-		void SetOnline(const boost::posix_time::ptime &);
+		void SetOnline(const boost::posix_time::ptime &, bool isOnline);
 		void SetTradingSessionState(
 				const boost::posix_time::ptime &,
 				bool isOpened);

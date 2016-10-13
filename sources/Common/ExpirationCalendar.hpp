@@ -47,6 +47,7 @@ namespace trdk { namespace Lib {
 		bool operator ==(const ContractExpiration &) const;
 		bool operator !=(const ContractExpiration &) const;
 		bool operator <(const ContractExpiration &) const;
+		bool operator >(const ContractExpiration &) const;
 
 		friend std::ostream & operator <<(
 				std::ostream &,
@@ -59,6 +60,8 @@ namespace trdk { namespace Lib {
 		std::uint16_t GetYear() const;
 
 		const boost::gregorian::date & GetDate() const;
+
+		std::string GetContract(bool isShort) const;
 
 	private:
 
@@ -132,12 +135,14 @@ namespace trdk { namespace Lib {
 
 		//! Finds contract by start time.
 		/** @pram symbol	Symbol to iterate. If symbol not in the dictionary
-							- exception will be raised.
-		  *	@param start	Start time.
+		  * 				- exception will be raised.
+		  *	@param contractStartTime	Contract start time.
+		  *	@param sessionOpeningTime	Trading session opening time.
 		  */
 		Iterator Find(
 				const trdk::Lib::Symbol &symbol,
-				const boost::posix_time::ptime &start)
+				boost::posix_time::ptime contractStartTime,
+				const boost::posix_time::time_duration &sessionOpeningTime)
 				const;
 		//! Finds contract by start date.
 		/** @pram symbol	Symbol to iterate. If symbol not in the dictionary

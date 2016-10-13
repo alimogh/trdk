@@ -472,20 +472,26 @@ bool Security::IsOnline() const {
 	return m_pimpl->m_isOnline;
 }
 
-void Security::SetOnline(const pt::ptime &time) {
-	Assert(!m_pimpl->m_isOnline);
-	if (m_pimpl->m_isOnline) {
+void Security::SetOnline(const pt::ptime &time, bool isOnline) {
+	
+	AssertNe(m_pimpl->m_isOnline, isOnline);
+	if (m_pimpl->m_isOnline == isOnline) {
 		return;
 	}
-	GetContext().GetLog().Info(
-		"%1% now is online. Last data time: %2%.",
-		*this,
-		GetLastMarketDataTime());
 	
+	GetContext().GetLog().Info(
+		"%1% now is %2% by the event %3%. Last data time: %4%.",
+		*this,
+		isOnline ? "online" : "offline",
+		time,
+		GetLastMarketDataTime());
+
 	{
 		const auto lock = GetSource().GetContext().SyncDispatching();
-		m_pimpl->m_isOnline = true;
-		m_pimpl->m_serviceEventSignal(time, SERVICE_EVENT_ONLINE);
+		m_pimpl->m_isOnline = isOnline;
+		m_pimpl->m_serviceEventSignal(
+			time,
+			isOnline ? SERVICE_EVENT_ONLINE : SERVICE_EVENT_OFFLINE);
 	}
 
 }
@@ -996,7 +1002,7 @@ void Security::SetBook(
 
 }
 
-ContractExpiration Security::GetExpiration() const {
+const ContractExpiration & Security::GetExpiration() const {
 	if (!m_pimpl->m_expiration) {
 		boost::format error("%1% doesn't have expiration");
 		error % *this;
@@ -1013,21 +1019,24 @@ bool Security::SetExpiration(
 		const pt::ptime &time,
 		const ContractExpiration &expiration) {
 
-	Assert(!m_pimpl->m_expiration || m_pimpl->m_expiration < expiration);
+#	ifdef BOOST_ENABLE_ASSERT_HANDLER
+		if (m_pimpl->m_expiration) {
+			AssertLt(*m_pimpl->m_expiration, expiration);
+		}
+#	endif
 
 	const bool isFirstContract = m_pimpl->m_expiration ? false : true;
 	
 	GetSource().GetLog().Info(
 		m_pimpl->m_expiration
-			?	"Switching %1% to the next contract %2%%3%%4% (%5%)"
-					" by the event at %6%..."
-			:	"Starting %1% with the contract %2%%3%%4% (%5%)"
-					" by the event at %6%...",
+			?	"Switching %1% to the next contract %2%%3% (%4%)"
+					" by the event at %5%..."
+			:	"Starting %1% with the contract %2%%3% (%4%)"
+					" by the event at %5%...",
 		*this,
 		GetSymbol().GetSymbol(),
-		expiration.GetCode(),
-		expiration.GetYear(),
-		expiration,
+		expiration.GetContract(true),
+		expiration.GetDate(),
 		time);
 	
 	{

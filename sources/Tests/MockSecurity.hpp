@@ -32,7 +32,9 @@ namespace trdk { namespace Tests {
 	public:
 
 		MOCK_CONST_METHOD0(IsOnline, bool());
-		MOCK_CONST_METHOD0(GetExpiration, trdk::Lib::ContractExpiration());
+		MOCK_CONST_METHOD0(
+			GetExpiration,
+			const trdk::Lib::ContractExpiration &());
 
 	};
 

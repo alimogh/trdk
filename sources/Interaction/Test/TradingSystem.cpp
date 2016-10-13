@@ -202,7 +202,7 @@ public:
 			Assert(!m_isStarted);
 			boost::thread thread(boost::bind(&Implementation::Task, this));
 			m_isStarted = true;
-			thread.swap(m_thread);
+			m_thread = std::move(thread);
 			m_condition.wait(lock);
 		} else {
 			m_self->GetLog().Info("Stated Test Trading System replay...");
@@ -353,11 +353,13 @@ private:
 			Assert(order.callback);
 			Assert(!IsZero(order.price));
 
-			if (order.execTime > newTime) {
+			// More or equal because market data snapshot for newTime will be
+			// set after OnCurrentTimeChanged event.
+			if (order.execTime >= newTime) {
 				continue;
 			}
 
-			m_self->GetContext().SetCurrentTime(order.execTime, false);
+			m_self->GetContext().SetCurrentTime(newTime, false);
 			if (ExecuteOrder(order)) {
 				it = m_orders.erase(it);
 			} else {

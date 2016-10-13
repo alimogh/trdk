@@ -47,9 +47,6 @@
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="PriceBookTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="MockContext.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
@@ -64,22 +61,25 @@
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="ExpirationCalendarTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="DummyContext.cpp">
       <Filter>Dummies</Filter>
     </ClCompile>
     <ClCompile Include="DummyMarketDataSource.cpp">
       <Filter>Dummies</Filter>
     </ClCompile>
-    <ClCompile Include="..\Common\UtilsUTest.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\Core\SecurityUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="..\Common\SymbolUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\UtilUTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\PriceBookUTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>

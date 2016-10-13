@@ -39,6 +39,7 @@ namespace trdk { namespace Interaction { namespace Test {
 		using Base::SetBook;
 		using Base::AddTrade;
 		using Base::SetLevel1;
+		using Base::AddBar;
 
 	};
 

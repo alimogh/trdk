@@ -183,6 +183,22 @@ TEST(BarServiceTest, ByNumberOfTicks) {
 
 	}
 
+	{
+		EXPECT_TRUE(service.CompleteBar());
+		service.Reset();
+		EXPECT_TRUE(service.IsEmpty());
+		EXPECT_EQ(0, service.GetSize());
+		EXPECT_THROW(
+			service.GetLastBar(),
+			svc::BarCollectionService::BarDoesNotExistError);
+		EXPECT_THROW(
+			service.GetBar(0),
+			svc::BarCollectionService::BarDoesNotExistError);
+		EXPECT_THROW(
+			service.GetBarByReversedIndex(0),
+			svc::BarCollectionService::BarDoesNotExistError);
+	}
+
 }
 
 TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {

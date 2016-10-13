@@ -85,7 +85,7 @@ fs::path ExpirationCalendarTest::m_csvSourceFilePath;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(ExpirationCalendarTest, Find) {
+TEST_F(ExpirationCalendarTest, FindByDate) {
 
 	Calendar calendar;
 	calendar.ReloadCsv(m_csvSourceFilePath);
@@ -94,21 +94,25 @@ TEST_F(ExpirationCalendarTest, Find) {
 	{
 		auto it = calendar.Find(
 			lib::Symbol("XXX1/USD::FUT"),
-			pt::ptime(gr::date(2016, gr::Apr, 6)));
+			gr::date(2016, gr::Apr, 6));
 		ASSERT_TRUE(it);
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
+		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 		EXPECT_FALSE(++it);
 	}
 	{
 		auto it = calendar.Find(
 			lib::Symbol("XXX1/USD::FUT"),
-			pt::ptime(gr::date(2016, gr::May, 20)));
+			gr::date(2016, gr::May, 20));
 		ASSERT_TRUE(it);
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
+		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 		EXPECT_FALSE(++it);
 	}
 
@@ -116,11 +120,13 @@ TEST_F(ExpirationCalendarTest, Find) {
 	{
 		auto it = calendar.Find(
 			lib::Symbol("XXX2/USD::FUT"),
-			pt::ptime(gr::date(2015, gr::Sep, 25)));
+			gr::date(2015, gr::Sep, 25));
 		ASSERT_TRUE(it);
 		EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
 		EXPECT_EQ(2015, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
+		EXPECT_EQ(std::string("Z2015"), it->GetContract(false));
+		EXPECT_EQ(std::string("Z5"), it->GetContract(true));
 		EXPECT_TRUE(++it);
 	}
 
@@ -128,18 +134,20 @@ TEST_F(ExpirationCalendarTest, Find) {
 		EXPECT_FALSE(
 			calendar.Find(
 				lib::Symbol("XXX2/USD::FUT"),
-				pt::ptime(gr::date(2016, gr::May, 22))));
+				gr::date(2016, gr::May, 22)));
 	}
 
 	// {"XXX2", 20160219},
 	{
 		auto it = calendar.Find(
 			lib::Symbol("XXX2/USD::FUT"),
-			pt::ptime(gr::date(2016, gr::Feb, 1)));
+			gr::date(2016, gr::Feb, 1));
 		ASSERT_TRUE(it);
 		EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
+		EXPECT_EQ(std::string("H2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("H6"), it->GetContract(true));
 		EXPECT_TRUE(++it);
 	}
 
@@ -148,50 +156,109 @@ TEST_F(ExpirationCalendarTest, Find) {
 		// {"XXX2", 20151110},
 		auto it = calendar.Find(
 			lib::Symbol("XXX2/USD::FUT"),
-			pt::ptime(gr::date(2015, gr::Sep, 26)));
+			gr::date(2015, gr::Sep, 26));
 		ASSERT_TRUE(it);
 		EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
 		EXPECT_EQ(2015, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
+		EXPECT_EQ(std::string("Z2015"), it->GetContract(false));
+		EXPECT_EQ(std::string("Z5"), it->GetContract(true));
 			
 		// {"XXX2", 20151225},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_JANUARY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it->GetDate());
+		EXPECT_EQ(std::string("F2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("F6"), it->GetContract(true));
 
 		// {"XXX2", 20160118},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_FEBRUARY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Jan, 18), it->GetDate());
+		EXPECT_EQ(std::string("G2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("G6"), it->GetContract(true));
 		
 		// {"XXX2", 20160219},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
+		EXPECT_EQ(std::string("H2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("H6"), it->GetContract(true));
 
 		// {"XXX2", 20160317},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_APRIL, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Mar, 17), it->GetDate());
+		EXPECT_EQ(std::string("J2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("J6"), it->GetContract(true));
 
 		// {"XXX2", 20160420},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_MAY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->GetDate());
+		EXPECT_EQ(std::string("K2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("K6"), it->GetContract(true));
 
 		// {"XXX2", 20160521},
 		ASSERT_TRUE(++it);
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 21), it->GetDate());
+		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 
 		ASSERT_FALSE(++it);
 
+	}
+
+}
+
+TEST_F(ExpirationCalendarTest, FindByTime) {
+
+	Calendar calendar;
+	calendar.ReloadCsv(m_csvSourceFilePath);
+
+	{
+		auto it = calendar.Find(
+			lib::Symbol("XXX2/USD::FUT"),
+			pt::ptime(
+				gr::date(2016, gr::Apr, 21),
+				pt::time_duration(17, 0, 0)),
+			pt::time_duration(17, 0, 0));
+		ASSERT_TRUE(it);
+		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
+		EXPECT_EQ(2016, it->GetYear());
+		EXPECT_EQ(gr::date(2016, gr::May, 21), it->GetDate());
+	}
+
+	{
+		auto it = calendar.Find(
+			lib::Symbol("XXX2/USD::FUT"),
+			pt::ptime(
+				gr::date(2016, gr::Apr, 21),
+				pt::time_duration(17, 0, 1)),
+			pt::time_duration(17, 0, 0));
+		ASSERT_TRUE(it);
+		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
+		EXPECT_EQ(2016, it->GetYear());
+		EXPECT_EQ(gr::date(2016, gr::May, 21), it->GetDate());
+	}
+
+	{
+		auto it = calendar.Find(
+			lib::Symbol("XXX2/USD::FUT"),
+			pt::ptime(
+				gr::date(2016, gr::Apr, 21),
+				pt::time_duration(16, 59, 59)),
+			pt::time_duration(17, 0, 0));
+		EXPECT_EQ(Expiration::CODE_MAY, it->GetCode()) << *it;
+		EXPECT_EQ(2016, it->GetYear()) << *it;
+		EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->GetDate()) << *it;
 	}
 
 }
@@ -221,9 +288,7 @@ TEST_F(ExpirationCalendarTest, WrongInstrumnetType) {
 		error % symbol;
 		
 		try {
-			calendar.Find(
-				symbol,
-				pt::ptime(gr::date(2016, gr::May, 22)));
+			calendar.Find(symbol, gr::date(2016, gr::May, 22));
 			EXPECT_TRUE(false) << "Exception expected.";
 		} catch (const std::exception &ex) {
 			EXPECT_EQ(error.str(), ex.what());
@@ -264,7 +329,7 @@ TEST_F(ExpirationCalendarTest, Iterator) {
 	// {"XXX2", 20151110},
 	auto it1 = calendar.Find(
 		lib::Symbol("XXX2/USD::FUT"),
-		pt::ptime(gr::date(2015, gr::Sep, 26)));
+		gr::date(2015, gr::Sep, 26));
 	ASSERT_TRUE(it1);
 	EXPECT_EQ(gr::date(2015, gr::Nov, 10), it1->GetDate());
 

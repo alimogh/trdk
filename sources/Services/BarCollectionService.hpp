@@ -41,7 +41,10 @@ namespace trdk { namespace Services {
 		/** Stops if callback returns false.
 		  */
 		void ForEachReversed(const boost::function<bool(const Bar &)> &) const;
+		
 		bool CompleteBar();
+
+		void Reset() noexcept;
 
 	public:
 

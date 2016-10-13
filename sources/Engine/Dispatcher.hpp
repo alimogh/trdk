@@ -117,7 +117,11 @@ namespace trdk { namespace Engine {
 				: m_context(context)
 				, m_name(name)
 				, m_current(&m_lists.first)
-				, m_taksState(TASK_STATE_INACTIVE) {
+				, m_taksState(TASK_STATE_INACTIVE)
+				, m_queueSizeConstrolLevel(
+					!m_context.GetSettings().IsReplayMode()
+						?	50
+						:	10000) {
 				//...//
 			}
 
@@ -193,7 +197,7 @@ namespace trdk { namespace Engine {
 					if (flush) {
 						flush = !m_context.GetSettings().IsReplayMode();
 					}
-					if (!(m_current->size() % 50)) {
+					if (!(m_current->size() % m_queueSizeConstrolLevel)) {
 						m_context.GetLog().Warn(
 							"Dispatcher queue \"%1%\" is too long (%2% events)!",
 							m_name,
@@ -266,6 +270,8 @@ namespace trdk { namespace Engine {
 			boost::shared_ptr<EventListsSyncObjects> m_sync;
 
 			TaskState m_taksState;
+
+			const size_t m_queueSizeConstrolLevel;
 
 		};
 

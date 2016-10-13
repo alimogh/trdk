@@ -76,7 +76,7 @@ public:
 		pt::ptime end;
 		size_t count;
 
-		Current()
+		Current() noexcept
 			: bar(nullptr)
 			, count(0) {
 			//...//
@@ -484,14 +484,14 @@ public:
 			const Security &security,
 			const Security::Bar &sourceBar) {
 		
-		AssertGe(m_timedBarSize, sourceBar.size);
-		if (m_timedBarSize < sourceBar.size) {
-			m_service.GetLog().Error(
+			AssertGe(m_timedBarSize, sourceBar.size);
+			if (m_timedBarSize < sourceBar.size) {
+				m_service.GetLog().Error(
 				"Can't work with source bar size %1% as service bar size %2%.",
-				sourceBar.size,
-				m_timedBarSize);
-			throw MethodDoesNotSupportBySettings("Wrong source bar size");
-		}
+					sourceBar.size,
+					m_timedBarSize);
+				throw MethodDoesNotSupportBySettings("Wrong source bar size");
+			}
 
 		const auto &setOpen = [](
 				const Security::Bar &sourceBar,
@@ -918,7 +918,7 @@ bool BarCollectionService::OnSecurityServiceEvent(
 		const Security::ServiceEvent &securityEvent) {
 
 	static_assert(
-		Security::numberOfServiceEvents == 3,
+		Security::numberOfServiceEvents == 4,
 		"List changed.");
 
 	bool isUpdated = Base::OnSecurityServiceEvent(
@@ -1008,6 +1008,13 @@ void BarCollectionService::DropUncompletedBarCopy(
 				security.DescalePrice(m_pimpl->m_current.bar->closeTradePrice));
 		});
 
+}
+
+void BarCollectionService::Reset() noexcept {
+	m_pimpl->m_bars.clear();
+	Assert(!m_pimpl->m_current.bar);
+	AssertEq(0, m_pimpl->m_current.count);
+	m_pimpl->m_current = Implementation::Current();
 }
 
 //////////////////////////////////////////////////////////////////////////

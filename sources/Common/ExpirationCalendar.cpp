@@ -36,10 +36,16 @@ bool ContractExpiration::operator <(const ContractExpiration &rhs) const {
 	return m_date < rhs.m_date;
 }
 
+bool ContractExpiration::operator >(const ContractExpiration &rhs) const {
+	return m_date > rhs.m_date;
+}
+
 std::ostream & trdk::Lib::operator <<(
 		std::ostream &os,
 		const ContractExpiration &expiration) {
-	os << expiration.m_date;
+	os
+		<< expiration.m_date
+		<< " (" << expiration.GetContract(true) << ')';
 	return os;
 }
 
@@ -92,6 +98,26 @@ std::uint16_t ContractExpiration::GetYear() const {
 
 const gr::date & ContractExpiration::GetDate() const {
 	return m_date;
+}
+
+std::string ContractExpiration::GetContract(bool isShort) const {
+	
+	std::ostringstream result;
+	
+	result << GetCode();
+	
+	auto year = GetYear();
+	if (isShort) {
+		if (year > 2019 || year < 2010) {
+			throw MethodDoesNotImplementedError(
+				"Work with features from < 2010 or > 2019 is not implemented");
+		}
+		year -= 2010;
+	}
+	result << year;
+
+	return result.str();
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +183,7 @@ ExpirationCalendar::Iterator::Iterator(
 
 ExpirationCalendar::Iterator::Iterator(const Iterator &rhs) {
 	if (rhs.m_pimpl) {
-		m_pimpl.reset(new IteratorImplementation(*rhs.m_pimpl));
+		m_pimpl = boost::make_unique<IteratorImplementation>(*rhs.m_pimpl);
 	}
 }
 
@@ -223,12 +249,12 @@ public:
 };
 
 ExpirationCalendar::ExpirationCalendar()
-	: m_pimpl(new Implementation) {
+	: m_pimpl(boost::make_unique<Implementation>()) {
 	//...//
 }
 
 ExpirationCalendar::ExpirationCalendar(const ExpirationCalendar &rhs)
-	: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	: m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {
 	//...//
 }
 
@@ -382,17 +408,21 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 	}
 
 	return Iterator(
-		std::unique_ptr<IteratorImplementation>(
-			new IteratorImplementation(contract, begin)));
+		boost::make_unique<IteratorImplementation>(contract, begin));
 
 }
 
 ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		const Symbol &symbol,
-		const pt::ptime &startTime)
+		pt::ptime contractStartTime,
+		const pt::time_duration &sessionOpeningTime)
 		const {
-	return Find(symbol, startTime.date());
+	if (contractStartTime.time_of_day() < sessionOpeningTime) {
+		contractStartTime -= pt::hours(24);
+	}
+	return Find(symbol, contractStartTime.date());
 }
+
 ExpirationCalendar::Stat ExpirationCalendar::CalcStat() const {
 	Stat result = {};
 	for (const auto &symbol: m_pimpl->m_contracts) {

@@ -361,12 +361,6 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace {
-	typedef boost::shared_mutex CustomTimeMutex;
-	typedef boost::shared_lock<CustomTimeMutex> CustomTimeReadLock;
-	typedef boost::unique_lock<CustomTimeMutex> CustomTimeWriteLock;
-}
-
 class Context::Implementation : private boost::noncopyable {
 
 public:
@@ -401,7 +395,6 @@ public:
 
 	std::unique_ptr<StatReport> m_statReport;
 
-	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
 	SignalTrait<CurrentTimeChangeSlotSignature>::Signal
 		m_customCurrentTimeChangeSignal;
@@ -465,24 +458,20 @@ Context::TradingLog & Context::GetTradingLog() const throw() {
 void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 
 	AssertNe(pt::not_a_date_time, time); 
+	Assert(GetSettings().IsReplayMode());
+
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
-			AssertLe(m_pimpl->m_customCurrentTime, time);
-		}
+	if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
+		AssertLe(m_pimpl->m_customCurrentTime, time);
+	}
 #	endif
 
 	if (signalAboutUpdate) {
-		pt::ptime prevCurrentTime;
-		{
-			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
-			if (m_pimpl->m_customCurrentTime == time) {
-				return;
-			}
-			prevCurrentTime = m_pimpl->m_customCurrentTime;
+		if (m_pimpl->m_customCurrentTime == time) {
+			return;
 		}
-		for ( ; ; ) {
+		for (pt::ptime prevCurrentTime = m_pimpl->m_customCurrentTime; ; ) {
 			m_pimpl->m_customCurrentTimeChangeSignal(time);
-			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
 			if (prevCurrentTime == m_pimpl->m_customCurrentTime) {
 				break;
 			}
@@ -490,14 +479,15 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 		}
 	}
 
-	const CustomTimeWriteLock lock(m_pimpl->m_customCurrentTimeMutex);
 #	ifdef BOOST_ENABLE_ASSERT_HANDLER
 		// Second test for changes in signal slot:
 		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
 			AssertLe(m_pimpl->m_customCurrentTime, time);
 		}
 #	endif
+
 	m_pimpl->m_customCurrentTime = time;
+
 }
 
 Context::CurrentTimeChangeSlotConnection
@@ -514,8 +504,11 @@ const pt::ptime & Context::GetStartTime() const {
 pt::ptime Context::GetCurrentTime() const {
 	if (!GetSettings().IsReplayMode()) {
 		return GetLog().GetTime();
+	} else if (m_pimpl->m_customCurrentTime.is_not_a_date_time()) {
+		return pt::ptime(
+			boost::gregorian::date(1900, 1, 1),
+			pt::time_duration(0, 0, 0));
 	} else {
-		const CustomTimeReadLock lock(m_pimpl->m_customCurrentTimeMutex);
 		return m_pimpl->m_customCurrentTime;
 	}
 }

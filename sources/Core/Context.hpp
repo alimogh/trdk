@@ -42,7 +42,7 @@ namespace trdk {
 		};
 
 		typedef void (CurrentTimeChangeSlotSignature)(
-					const boost::posix_time::ptime &newTime);
+				const boost::posix_time::ptime &newTime);
 		typedef boost::function<CurrentTimeChangeSlotSignature>
 			CurrentTimeChangeSlot;
 		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
@@ -97,9 +97,8 @@ namespace trdk {
 
 		boost::posix_time::ptime GetCurrentTime() const;
 
-		//! Sets current time.
-		/** If current time set  one time - real time will be used more.
-		  * @param newTime				New time, can be only greater or equal
+		//! Sets current time (for replay mode).
+		/** @param newTime				New time, can be only greater or equal
 		  *								then current.
 		  * @param signalAboutUpdate	If true - signal about update will be
 		  *								sent for all subscribers.
@@ -108,7 +107,7 @@ namespace trdk {
 		void SetCurrentTime(
 				const boost::posix_time::ptime &newTime,
 				bool signalAboutUpdate);
-		//! Subscribes to time change by SetCurrentTime.
+		//! Subscribes to a time change by SetCurrentTime.
 		/** Signals before new time will be set for context.
 		  * @sa SetCurrentTime
 		  */
