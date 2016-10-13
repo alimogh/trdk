@@ -202,7 +202,9 @@ bool CsvMarketDataSource::ReadFile(
 				security.SetLevel1(
 					time,
 					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(price),
+					Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(1),
 					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(price),
+					Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(1),
 					TimeMeasurement::Milestones());
 			}
 		}
