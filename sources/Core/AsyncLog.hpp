@@ -43,8 +43,9 @@ namespace trdk {
 			PT_STRING,
 			PT_PCHAR,
 
-			PT_PTIME,
+			PT_TIME,
 			PT_TIME_DURATION,
+			PT_DATE,
 
 			PT_CURRENCY,
 			
@@ -144,7 +145,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 19,
+					numberOfParamTypes == 20,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -202,7 +203,7 @@ namespace trdk {
 							os);
 						break;
 
-					case PT_PTIME:
+					case PT_TIME:
 						namespace pt = boost::posix_time;
 						WriteToDumpStream(
 							boost::any_cast<const pt::ptime &>(val),
@@ -214,6 +215,13 @@ namespace trdk {
 							boost::any_cast<const pt::time_duration &>(val),
 							os);
 						break;
+					case PT_DATE:
+						namespace gr = boost::gregorian;
+						WriteToDumpStream(
+							boost::any_cast<const gr::date &>(val),
+							os);
+						break;
+
 
 					case PT_CURRENCY:
 						WriteToDumpStream(
@@ -303,10 +311,13 @@ namespace trdk {
 		}
 
 		void StoreParam(const boost::posix_time::ptime &time) {
-			StoreTypedParam(PT_PTIME, time);
+			StoreTypedParam(PT_TIME, time);
 		}
 		void StoreParam(const boost::posix_time::time_duration &time) {
 			StoreTypedParam(PT_TIME_DURATION, time);
+		}
+		void StoreParam(const boost::gregorian::date &date) {
+			StoreTypedParam(PT_DATE, date);
 		}
 
 		void StoreParam(const trdk::Lib::Currency &currency) {

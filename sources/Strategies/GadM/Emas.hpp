@@ -98,7 +98,6 @@ namespace trdk { namespace Strategies { namespace GadM {
 			return m_service == &service;
 		}
 		void DropLastPointCopy() const {
-			AssertNe(DropCopy::nDataSourceInstanceId, m_dropCopyDataSourceId);
 			m_service->DropLastPointCopy(m_dropCopyDataSourceId);
 		}
 	private:

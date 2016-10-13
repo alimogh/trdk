@@ -200,12 +200,17 @@ namespace EmaFuturesStrategy {
 		virtual void OnLevel1Update(
 				Security &security,
 				const Milestones &timeMeasurement) {
-			
+
+			Assert(security.IsActive());
 			Assert(m_security == &security);
 			UseUnused(security);
 
 			if (m_barService) {
 				m_barService->DropUncompletedBarCopy(m_barServiceId);
+			}
+
+			if (StartRollOver()) {
+				return;
 			}
 
 			if (!GetPositions().GetSize()) {
@@ -224,7 +229,7 @@ namespace EmaFuturesStrategy {
 		virtual void OnPositionUpdate(trdk::Position &position) {
 
 			Assert(m_security);
-			Assert(m_security->IsOnline());
+			Assert(m_security->IsActive());
 
 			auto &startegyPosition = dynamic_cast<Position &>(position);
 			CheckSlowOrderFilling(startegyPosition);
@@ -249,7 +254,11 @@ namespace EmaFuturesStrategy {
 				}
 			}
 
-			if (!m_security->IsOnline()) {
+			if (!m_security->IsActive()) {
+				return;
+			}
+
+			if (StartRollOver()) {
 				return;
 			}
 
@@ -298,7 +307,9 @@ namespace EmaFuturesStrategy {
 				return;
 			}
 
-			StartRollOver();
+			if (m_security->IsActive()) {
+				StartRollOver();
+			}
 
 		}
 
@@ -671,23 +682,29 @@ namespace EmaFuturesStrategy {
 
 		}
 
-		void StartRollOver() {
+		bool StartRollOver() {
 
 			if (!GetPositions().GetSize()) {
-				return;
+				return false;
 			}
 			
+			AssertEq(1, GetPositions().GetSize());
+
 			auto &position
 				= dynamic_cast<Position &>(*GetPositions().GetBegin());
 			if (position.HasActiveCloseOrders()) {
-				return;
+				return false;
+			}
+
+			if (position.GetExpiration() == m_security->GetExpiration()) {
+				return false;
 			}
 
 			GetTradingLog().Write(
 				"rollover\texpiration=%1%\tposition=%2%",
 				[&](TradingRecord &record) {
 					record
-						% pt::ptime(m_security->GetExpiration().GetDate())
+						% m_security->GetExpiration().GetDate()
 						% position.GetId();
 				});
 
@@ -695,6 +712,8 @@ namespace EmaFuturesStrategy {
 				INTENTION_CLOSE_PASSIVE,
 				Position::CLOSE_TYPE_ROLLOVER,
 				DIRECTION_LEVEL);
+
+			return true;
 
 		}
 

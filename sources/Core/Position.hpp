@@ -55,21 +55,21 @@ namespace trdk {
 
 		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
 		public:
-			explicit Exception(const char *what) throw();
+			explicit Exception(const char *what) noexcept;
 		};
 		
 		class TRDK_CORE_API AlreadyStartedError : public Exception {
 		public:
-			AlreadyStartedError() throw();
+			AlreadyStartedError() noexcept;
 		};
 		class TRDK_CORE_API NotOpenedError : public Exception {
 		public:
-			NotOpenedError() throw();
+			NotOpenedError() noexcept;
 		};
 		
 		class TRDK_CORE_API AlreadyClosedError : public Exception {
 		public:
-			AlreadyClosedError() throw();
+			AlreadyClosedError() noexcept;
 		};
 
 	public:
@@ -109,18 +109,20 @@ namespace trdk {
 		const boost::uuids::uuid & GetId() const;
 
 		virtual Type GetType() const = 0;
-		virtual const std::string & GetTypeStr() const throw() = 0;
+		virtual const std::string & GetTypeStr() const noexcept = 0;
+
+		const trdk::Lib::ContractExpiration & GetExpiration() const;
 
 	public:
 
 		const trdk::TradingSystem & GetTradingSystem() const;
 		trdk::TradingSystem & GetTradingSystem();
 
-		const trdk::Strategy & GetStrategy() const throw();
-		trdk::Strategy & GetStrategy() throw();
+		const trdk::Strategy & GetStrategy() const noexcept;
+		trdk::Strategy & GetStrategy() noexcept;
 
-		const trdk::Security & GetSecurity() const throw();
-		trdk::Security & GetSecurity() throw();
+		const trdk::Security & GetSecurity() const noexcept;
+		trdk::Security & GetSecurity() noexcept;
 
 		const trdk::Lib::Currency & GetCurrency() const;
 
@@ -128,31 +130,31 @@ namespace trdk {
 
 	public:
 
-		const CloseType & GetCloseType() const throw();
+		const CloseType & GetCloseType() const noexcept;
 		const std::string & GetCloseTypeStr() const;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
 		  */
-		bool IsOpened() const throw();
+		bool IsOpened() const noexcept;
 		//! Closed.
 		/** First was opened, then closed, doesn't have active quantity and
 		  * active orders.
 		  * @sa	IsOpened
 		  */
-		bool IsClosed() const throw();
+		bool IsClosed() const noexcept;
 
 		//! Started.
 		/** True if at least one of open-orders was sent.
 		/** @sa	IsCompleted
 		  */
-		bool IsStarted() const throw();
+		bool IsStarted() const noexcept;
 		//! Started and now doesn't have any orders and active qty or market as
 		//! completed.
 		/** @sa	IsStarted
 		  * @sa MarkAsCompleted
 		  */
-		bool IsCompleted() const throw();
+		bool IsCompleted() const noexcept;
 		//! Marks position as completed without real closing.
 		/** Call not thread-safe! Must be called only from event-methods, or if
 		  * strategy locked by GetMutex().
@@ -161,38 +163,38 @@ namespace trdk {
 		void MarkAsCompleted();
 
 		//! Open operation started, but error occurred at opening or closing.
-		bool IsError() const throw();
+		bool IsError() const noexcept;
 		//! Open operation started, but temporary error occurred at opening
 		//! or closing.
-		bool IsInactive() const throw();
+		bool IsInactive() const noexcept;
 		void ResetInactive();
 		//! All orders canceled, position will be closed or already closed.
-		bool IsCanceled() const throw();
+		bool IsCanceled() const noexcept;
 
-		bool HasActiveOrders() const throw();
-		bool HasActiveOpenOrders() const throw();
-		bool HasActiveCloseOrders() const throw();
+		bool HasActiveOrders() const noexcept;
+		bool HasActiveOpenOrders() const noexcept;
+		bool HasActiveCloseOrders() const noexcept;
 
 	public:
 
 		const trdk::Qty & GetPlanedQty() const;
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
 
-		const trdk::OrderId & GetOpenOrderId() const throw();
-		void SetOpenedQty(const trdk::Qty &) const throw();
-		const trdk::Qty & GetOpenedQty() const throw();
+		const trdk::OrderId & GetOpenOrderId() const noexcept;
+		void SetOpenedQty(const trdk::Qty &) const noexcept;
+		const trdk::Qty & GetOpenedQty() const noexcept;
 		trdk::ScaledPrice GetOpenPrice() const;
 		double GetOpenedVolume() const;
 		const boost::posix_time::ptime & GetOpenTime() const;
 
 		trdk::Qty GetNotOpenedQty() const;
-		trdk::Qty GetActiveQty() const throw();
+		trdk::Qty GetActiveQty() const noexcept;
 
-		const trdk::OrderId & GetCloseOrderId() const throw();
+		const trdk::OrderId & GetCloseOrderId() const noexcept;
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
 		trdk::ScaledPrice GetClosePrice() const;
-		const trdk::Qty & GetClosedQty() const throw();
+		const trdk::Qty & GetClosedQty() const noexcept;
 		double GetClosedVolume() const;
 		const boost::posix_time::ptime & GetCloseTime() const;
 
@@ -375,7 +377,7 @@ namespace trdk {
 	public:
 
 		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const throw();
+		virtual const std::string & GetTypeStr() const noexcept;
 
 	protected:
 
@@ -455,7 +457,7 @@ namespace trdk {
 	public:
 
 		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const throw();
+		virtual const std::string & GetTypeStr() const noexcept;
 
 	protected:
 

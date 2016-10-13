@@ -214,9 +214,23 @@ namespace trdk {
 
 		const trdk::Security::InstanceId & GetInstanceId() const;
 
-		//! Returns true if security has on-line data, not history.
+		//! Returns true if security is on-line, trading session is opend and
+		//! security has market data.
+		/** @sa IsOnline
+		  * @sa IsTradingSessionOpened
+		  */
+		bool IsActive() const;
+
+		//! Returns true if security is online.
+		/** @sa IsActive
+		  *	@sa IsTradingSessionOpened
+		  */
 		virtual bool IsOnline() const;
 
+		//! Returns true if trading session is active at this moment.
+		/** @sa IsActive
+		  * @sa IsOnline
+		  */
 		bool IsTradingSessionOpened() const;
 
 		//! Sets requested data start time if it is not later than existing.

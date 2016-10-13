@@ -46,7 +46,7 @@ namespace {
 		return IsSet(value.load());
 	}
 
-	void Unset(boost::atomic<Level1Value> &val) throw() {
+	void Unset(boost::atomic<Level1Value> &val) noexcept {
 		val = std::numeric_limits<Level1Value>::quiet_NaN();
 	}
 
@@ -291,7 +291,7 @@ public:
 			flush,
 			isPreviouslyChanged);
 		UpdateMarketDataStat(time);
-		if (IsLevel1Started()) {
+		if (CheckLevel1Start()) {
 			m_level1TickSignal(time, tick, flush);
 		}
 		return isChanged;
@@ -358,13 +358,13 @@ public:
 
 		UpdateMarketDataStat(time);
 
-		if (IsLevel1Started()) {
+		if (CheckLevel1Start()) {
 			m_level1UpdateSignal(timeMeasurement);
 		}
 
 	}
 
-	bool IsLevel1Started() const {
+	bool CheckLevel1Start() const {
 		if (m_isLevel1Started) {
 			return true;
 		}
@@ -388,6 +388,7 @@ public:
 	double GetLevel1Value(const Level1 &level1) const {
 		const Level1Value &value = level1[tick];
 		if (!IsSet(value)) {
+			Assert(IsSet(value));
 			boost::format message(
 				"Market data value \"%1%\" does not exists for %2%");
 			message % ConvertToPch(tick) % m_self;
@@ -466,6 +467,13 @@ pt::ptime Security::GetLastMarketDataTime() const {
 
 size_t Security::TakeNumberOfMarketDataUpdates() const {
 	return m_pimpl->m_numberOfMarketDataUpdates.exchange(0);
+}
+
+bool Security::IsActive() const {
+	return
+		m_pimpl->m_isOnline
+		&& IsTradingSessionOpened()
+		&& m_pimpl->m_isLevel1Started;
 }
 
 bool Security::IsOnline() const {
@@ -1047,6 +1055,7 @@ bool Security::SetExpiration(
 			m_pimpl->m_request = {};
 		}
 
+		m_pimpl->m_isLevel1Started = false;
 		m_pimpl->m_expiration = expiration;
 		for (auto &item: m_pimpl->m_level1) {
 			Unset(item);

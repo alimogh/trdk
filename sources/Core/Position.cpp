@@ -45,22 +45,22 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-Position::Exception::Exception(const char *what) throw()
+Position::Exception::Exception(const char *what) noexcept
 	: Lib::Exception(what) {
 	//...//
 }
 		
-Position::AlreadyStartedError::AlreadyStartedError() throw()
+Position::AlreadyStartedError::AlreadyStartedError() noexcept
 	: Exception("Position already started") {
 	//...//
 }
 
-Position::NotOpenedError::NotOpenedError() throw()
+Position::NotOpenedError::NotOpenedError() noexcept
 	: Exception("Position not opened") {
 	//...//
 }
 		
-Position::AlreadyClosedError::AlreadyClosedError() throw()
+Position::AlreadyClosedError::AlreadyClosedError() noexcept
 	: Exception("Position already closed") {
 	//...//
 }
@@ -546,7 +546,7 @@ public:
 
 public:
 
-	bool CancelIfSet() throw() {
+	bool CancelIfSet() noexcept {
 		
 		if (m_self.IsClosed() || m_cancelState != CANCEL_STATE_SCHEDULED) {
 			return false;
@@ -565,7 +565,7 @@ public:
 
 	}
 
-	void ReportOpeningStart(const char *eventDesc) const throw() {
+	void ReportOpeningStart(const char *eventDesc) const noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%\t%3%\t%4%\t%5%\t%6%.%7%"
 				"\tprice=%8$.8f\t%9%\tqty=%10$.8f",
@@ -589,7 +589,7 @@ public:
 			const std::string &tsOrderId,
 			const OrderStatus &orderStatus)
 			const
-			throw() {
+			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\t%1%\tpos=%1%\torder=%2%/%3%\topen-%4%->%5%\t%6%\t%7%\t%8%.%9%"
 				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
@@ -614,7 +614,7 @@ public:
 			});
 	}
 
-	void ReportClosingStart(const char *eventDesc) const throw() {
+	void ReportClosingStart(const char *eventDesc) const noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%\tclose-%3%\t%4%\t%5%\t%6%.%7%"
 				"\tprice=%8$.8f->%9$.8f\t%10%\tqty=%11$.8f",
@@ -639,7 +639,7 @@ public:
 			const std::string &tsOrderId,
 			const OrderStatus &orderStatus)
 			const
-			throw() {
+			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%->%5%\t%6%\t%7%\t%8%.%9%"
 				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
@@ -666,7 +666,7 @@ public:
 			bool isOpening,
 			const std::string &tsOrderId)
 			const
-			throw() {
+			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%\ttreplacing-%4%-order\t%5%",
 			[&](TradingRecord &record) {
@@ -1161,18 +1161,28 @@ const uuids::uuid & Position::GetId() const {
 	return m_pimpl->m_operationId;
 }
 
-const Strategy & Position::GetStrategy() const throw() {
+const ContractExpiration & Position::GetExpiration() const {
+	if (!m_pimpl->m_expiration) {
+		Assert(m_pimpl->m_expiration);
+		boost::format error("Position %1% %2% does not have expiration");
+		error % GetSecurity() % GetId();
+		throw LogicError(error.str().c_str());
+	}
+	return *m_pimpl->m_expiration;
+}
+
+const Strategy & Position::GetStrategy() const noexcept {
 	return const_cast<Position *>(this)->GetStrategy();
 }
 
-Strategy & Position::GetStrategy() throw() {
+Strategy & Position::GetStrategy() noexcept {
 	return m_pimpl->m_strategy;
 }
 
-const Security & Position::GetSecurity() const throw() {
+const Security & Position::GetSecurity() const noexcept {
 	return const_cast<Position *>(this)->GetSecurity();
 }
-Security & Position::GetSecurity() throw() {
+Security & Position::GetSecurity() noexcept {
 	return m_pimpl->m_security;
 }
 
@@ -1192,25 +1202,25 @@ const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 
-const Position::CloseType & Position::GetCloseType() const throw() {
+const Position::CloseType & Position::GetCloseType() const noexcept {
 	return m_pimpl->m_closeType;
 }
 
-bool Position::IsOpened() const throw() {
+bool Position::IsOpened() const noexcept {
 	return !HasActiveOpenOrders() && GetOpenedQty() > 0;
 }
-bool Position::IsClosed() const throw() {
+bool Position::IsClosed() const noexcept {
 	return
 		!HasActiveOrders()
 		&& GetOpenedQty() > 0
 		&& GetActiveQty() == 0;
 }
 
-bool Position::IsStarted() const throw() {
+bool Position::IsStarted() const noexcept {
 	return m_pimpl->m_opened.orderId != nOrderId;
 }
 
-bool Position::IsCompleted() const throw() {
+bool Position::IsCompleted() const noexcept {
 	return
 		m_pimpl->m_isMarketAsCompleted
 		|| (IsStarted() && !HasActiveOrders() && GetActiveQty() == 0);
@@ -1222,11 +1232,11 @@ void Position::MarkAsCompleted() {
 	m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
 
-bool Position::IsError() const throw() {
+bool Position::IsError() const noexcept {
 	return m_pimpl->m_isError;
 }
 
-bool Position::IsInactive() const throw() {
+bool Position::IsInactive() const noexcept {
 	return m_pimpl->m_isInactive;
 }
 
@@ -1235,17 +1245,17 @@ void Position::ResetInactive() {
 	m_pimpl->m_isInactive = false;
 }
 
-bool Position::IsCanceled() const throw() {
+bool Position::IsCanceled() const noexcept {
 	return m_pimpl->m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
 }
 
-bool Position::HasActiveOrders() const throw() {
+bool Position::HasActiveOrders() const noexcept {
 	return HasActiveCloseOrders() || HasActiveOpenOrders();
 }
-bool Position::HasActiveOpenOrders() const throw() {
+bool Position::HasActiveOpenOrders() const noexcept {
 	return m_pimpl->m_opened.hasActiveOrder;
 }
-bool Position::HasActiveCloseOrders() const throw() {
+bool Position::HasActiveCloseOrders() const noexcept {
 	return m_pimpl->m_closed.hasActiveOrder;
 }
 
@@ -1328,16 +1338,16 @@ Qty Position::GetNotOpenedQty() const {
 	return GetPlanedQty() - GetOpenedQty();
 }
 
-Qty Position::GetActiveQty() const throw() {
+Qty Position::GetActiveQty() const noexcept {
 	AssertGe(GetOpenedQty(), GetClosedQty());
 	return GetOpenedQty() - GetClosedQty();
 }
 
-const OrderId & Position::GetCloseOrderId() const throw() {
+const OrderId & Position::GetCloseOrderId() const noexcept {
 	return m_pimpl->m_closed.orderId;
 }
 
-const Qty & Position::GetClosedQty() const throw() {
+const Qty & Position::GetClosedQty() const noexcept {
 	return m_pimpl->m_closed.qty;
 }
 
@@ -1363,13 +1373,13 @@ const ScaledPrice & Position::GetOpenStartPrice() const {
 	return m_pimpl->m_openStartPrice;
 }
 
-const OrderId & Position::GetOpenOrderId() const throw() {
+const OrderId & Position::GetOpenOrderId() const noexcept {
 	return m_pimpl->m_opened.orderId;
 }
-const Qty & Position::GetOpenedQty() const throw() {
+const Qty & Position::GetOpenedQty() const noexcept {
 	return m_pimpl->m_opened.qty;
 }
-void Position::SetOpenedQty(const Qty &newQty) const throw() {
+void Position::SetOpenedQty(const Qty &newQty) const noexcept {
 	m_pimpl->m_opened.qty = newQty;
 	if (newQty > m_pimpl->m_planedQty) {
 		m_pimpl->m_planedQty = newQty;
@@ -1704,7 +1714,7 @@ LongPosition::Type LongPosition::GetType() const {
 namespace {
 	const std::string longPositionTypeName = "long";
 }
-const std::string & LongPosition::GetTypeStr() const throw() {
+const std::string & LongPosition::GetTypeStr() const noexcept {
 	return longPositionTypeName;
 }
 
@@ -2040,7 +2050,7 @@ ShortPosition::Type ShortPosition::GetType() const {
 namespace {
 	const std::string shortTypeName = "short";
 }
-const std::string & ShortPosition::GetTypeStr() const throw() {
+const std::string & ShortPosition::GetTypeStr() const noexcept {
 	return shortTypeName;
 }
 

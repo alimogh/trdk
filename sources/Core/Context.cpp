@@ -457,14 +457,21 @@ Context::TradingLog & Context::GetTradingLog() const throw() {
 
 void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 
-	AssertNe(pt::not_a_date_time, time); 
 	Assert(GetSettings().IsReplayMode());
 
-#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-	if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
+	if (time.is_not_a_date_time()) {
+		Assert(!time.is_not_a_date_time());
+		throw Exception("New current is not set");
+	} else if (
+			!m_pimpl->m_customCurrentTime.is_not_a_date_time()
+			&& time < m_pimpl->m_customCurrentTime) {
 		AssertLe(m_pimpl->m_customCurrentTime, time);
+		boost::format error(
+			"Failed to set new current time %1%"
+				" as it less the current %2%");
+		error % time % m_pimpl->m_customCurrentTime;
+		throw Exception(error.str().c_str());
 	}
-#	endif
 
 	if (signalAboutUpdate) {
 		if (m_pimpl->m_customCurrentTime == time) {
@@ -479,13 +486,16 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 		}
 	}
 
-#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		// Second test for changes in signal slot:
-		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
-			AssertLe(m_pimpl->m_customCurrentTime, time);
-		}
-#	endif
-
+	if (
+			!m_pimpl->m_customCurrentTime.is_not_a_date_time()
+			&& time < m_pimpl->m_customCurrentTime) {
+		AssertLe(m_pimpl->m_customCurrentTime, time);
+		boost::format error(
+			"Failed to set new current time %1%"
+				" as it set greater the current %2% (was set by callback)");
+		error % time % m_pimpl->m_customCurrentTime;
+		throw Exception(error.str().c_str());
+	}
 	m_pimpl->m_customCurrentTime = time;
 
 }
