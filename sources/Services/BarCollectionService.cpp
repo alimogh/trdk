@@ -292,7 +292,7 @@ public:
 					% *m_security
 					% m_unitsStr
 					% m_barSizeStr
-					% ConvertToFileName(dataStartTime + GetCstTimeZoneDiffLocal())
+					% ConvertToFileName(dataStartTime)
 					% ConvertToFileName(
 						m_service.GetContext().GetCurrentTime()))
 				.str(),
@@ -337,7 +337,7 @@ public:
 		}
 		*m_barsLog << m_session;
 		{
-			const auto date = (m_current.bar->time + GetCstTimeZoneDiffLocal()).date();
+			const auto date = m_current.bar->time.date();
 			*m_barsLog
 				<< csvDelimeter
 				<< date.year()
@@ -345,7 +345,7 @@ public:
 				<< '.' << std::setw(2) << date.day();
 		}
 		{
-			const auto time = (m_current.bar->time + GetCstTimeZoneDiffLocal()).time_of_day();
+			const auto &time = m_current.bar->time.time_of_day();
 			*m_barsLog
 				<< csvDelimeter
 				<< std::setw(2) << time.hours()
