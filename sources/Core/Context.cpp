@@ -514,11 +514,8 @@ const pt::ptime & Context::GetStartTime() const {
 pt::ptime Context::GetCurrentTime() const {
 	if (!GetSettings().IsReplayMode()) {
 		return GetLog().GetTime();
-	} else if (m_pimpl->m_customCurrentTime.is_not_a_date_time()) {
-		return pt::ptime(
-			boost::gregorian::date(1900, 1, 1),
-			pt::time_duration(0, 0, 0));
 	} else {
+		Assert(!m_pimpl->m_customCurrentTime.is_not_a_date_time());
 		return m_pimpl->m_customCurrentTime;
 	}
 }
