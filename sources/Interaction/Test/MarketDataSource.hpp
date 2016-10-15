@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/09/29 03:43:23
+ *   Created: 2016/10/15 14:11:13
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -16,7 +16,7 @@
 
 namespace trdk { namespace Interaction { namespace Test {
 
-	class CsvMarketDataSource : public trdk::MarketDataSource {
+	class MarketDataSource : public trdk::MarketDataSource {
 
 	public:
 
@@ -24,12 +24,12 @@ namespace trdk { namespace Interaction { namespace Test {
 
 	public:
 
-		CsvMarketDataSource(
+		MarketDataSource(
 				size_t index,
 				Context &context,
 				const std::string &tag,
 				const Lib::IniSectionRef &);
-		virtual ~CsvMarketDataSource();
+		virtual ~MarketDataSource();
 
 	public:
 
@@ -39,23 +39,19 @@ namespace trdk { namespace Interaction { namespace Test {
 
 	protected:
 
-		virtual trdk::Security & CreateNewSecurityObject(
-				const trdk::Lib::Symbol &);
+		virtual void Run() = 0;
 
-	private:
+		//! Should be called from each inherited destructor.
+		void Stop();
 
-		void NotificationThread();
-		bool ReadFile(
-				size_t fileNo,
-				boost::posix_time::ptime &currentTime,
-				boost::posix_time::ptime &requestTime);
+		bool IsStopped() const {
+			return m_stopFlag;
+		}
 
 	private:
 
 		boost::thread_group m_threads;
 		boost::atomic_bool m_stopFlag;
-
-		std::vector<boost::shared_ptr<Security>> m_securityList;
 
 	};
 

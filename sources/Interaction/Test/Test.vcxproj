@@ -303,7 +303,9 @@
     <TargetName>TestTradingSystems_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="CsvMarketDataSource.cpp" />
+    <ClCompile Include="CsvContinuousContractMarketDataSource.cpp" />
+    <ClCompile Include="CsvTickMarketDataSource.cpp" />
+    <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="RandomMarketDataSource.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -324,7 +326,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
-    <ClInclude Include="CsvMarketDataSource.hpp" />
+    <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="RandomMarketDataSource.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
