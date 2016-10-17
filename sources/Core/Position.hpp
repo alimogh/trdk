@@ -131,7 +131,6 @@ namespace trdk {
 	public:
 
 		const CloseType & GetCloseType() const noexcept;
-		const std::string & GetCloseTypeStr() const;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
@@ -340,6 +339,10 @@ namespace trdk {
 		Implementation *m_pimpl;
 
 	};
+
+	TRDK_CORE_API std::ostream & operator <<(
+			std::ostream &,
+			const trdk::Position::CloseType &);
 
 	//////////////////////////////////////////////////////////////////////////
 

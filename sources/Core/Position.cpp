@@ -1259,48 +1259,6 @@ bool Position::HasActiveCloseOrders() const noexcept {
 	return m_pimpl->m_closed.hasActiveOrder;
 }
 
-namespace { namespace CloseTypeStr {
-	const std::string none = "-";
-	const std::string takeProfit = "take profit";
-	const std::string stopLoss = "stop loss";
-	const std::string timeout = "timeout";
-	const std::string schedule = "schedule";
-	const std::string rollover = "rollover";
-	const std::string request = "request";
-	const std::string engineStop = "engine stop";
-	const std::string openFailed = "open failed";
-	const std::string systemError = "sys error";
-} }
-
-const std::string & Position::GetCloseTypeStr() const {
-	using namespace CloseTypeStr;
-	static_assert(numberOfCloseTypes == 10, "Close type list changed.");
-	switch (GetCloseType()) {
-		default:
-			AssertEq(CLOSE_TYPE_NONE, GetCloseType());
-		case CLOSE_TYPE_NONE:
-			return none;
-		case CLOSE_TYPE_TAKE_PROFIT:
-			return takeProfit;
-		case CLOSE_TYPE_STOP_LOSS:
-			return stopLoss;
-		case CLOSE_TYPE_TIMEOUT:
-			return timeout;
-		case CLOSE_TYPE_SCHEDULE:
-			return schedule;
-		case CLOSE_TYPE_ROLLOVER:
-			return rollover;
-		case CLOSE_TYPE_REQUEST:
-			return request;
-		case CLOSE_TYPE_ENGINE_STOP:
-			return engineStop;
-		case CLOSE_TYPE_OPEN_FAILED:
-			return openFailed;
-		case CLOSE_TYPE_SYSTEM_ERROR:
-			return systemError;
-	}
-}
-
 void Position::UpdateOpening(
 		const OrderId &orderId,
 		const std::string &tradingSystemOrderId,
@@ -1614,6 +1572,51 @@ bool Position::CancelAllOrders() {
 
 void Position::RestoreOpenState(OrderId openOrderId) {
 	m_pimpl->RestoreOpenState(openOrderId);
+}
+
+TRDK_CORE_API std::ostream & trdk::operator <<(
+		std::ostream &os,
+		const Position::CloseType &closeType) {
+	static_assert(
+		Position::numberOfCloseTypes == 10,
+		"Close type list changed.");
+	switch (closeType) {
+		default:
+			AssertEq(Position::CLOSE_TYPE_NONE, closeType);
+			os << "unknown";
+			break;
+		case Position::CLOSE_TYPE_NONE:
+			os << "-";
+			break;
+		case Position::CLOSE_TYPE_TAKE_PROFIT:
+			os << "take-profit";
+			break;
+		case Position::CLOSE_TYPE_STOP_LOSS:
+			os << "stop-loss";
+			break;
+		case Position::CLOSE_TYPE_TIMEOUT:
+			os << "timeout";
+			break;
+		case Position::CLOSE_TYPE_SCHEDULE:
+			os << "schedule";
+			break;
+		case Position::CLOSE_TYPE_ROLLOVER:
+			os << "rollover";
+			break;
+		case Position::CLOSE_TYPE_REQUEST:
+			os << "request";
+			break;
+		case Position::CLOSE_TYPE_ENGINE_STOP:
+			os << "engine stop";
+			break;
+		case Position::CLOSE_TYPE_OPEN_FAILED:
+			os << "open failed";
+			break;
+		case Position::CLOSE_TYPE_SYSTEM_ERROR:
+			os << "sys error";
+			break;
+	}
+	return os;
 }
 
 //////////////////////////////////////////////////////////////////////////
