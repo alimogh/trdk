@@ -472,7 +472,7 @@ public:
 					if (!trade) {
 						throw Exception("Filled order has no trade information");
 					}
-					AssertEq(trade->qty + remainingQty, m_opened.qty);
+					AssertLe(trade->qty + remainingQty, m_opened.qty);
 					AssertLe(m_closed.qty + trade->qty, m_opened.qty);
 					AssertLt(0, trade->price);
 					m_closed.price(trade->price);
@@ -614,11 +614,15 @@ public:
 			});
 	}
 
-	void ReportClosingStart(const char *eventDesc) const noexcept {
+	void ReportClosingStart(
+			const char *eventDesc,
+			const Qty &maxQty)
+			const
+			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%\tclose-%3%\t%4%\t%5%\t%6%.%7%"
-				"\tprice=%8$.8f->%9$.8f\t%10%\tqty=%11$.8f",
-			[this, eventDesc](TradingRecord &record) {
+				"\tprice=%8$.8f->%9$.8f\t%10%\tqty=(%11$.8f, %12$.8f)",
+			[this, eventDesc, &maxQty](TradingRecord &record) {
 				record
 					% m_operationId // 1
 					% m_closed.uuid // 2
@@ -630,7 +634,8 @@ public:
 					% m_security.DescalePrice(m_self.GetOpenPrice()) // 8
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 9
 					% m_self.GetCurrency() // 10
-					% m_self.GetOpenedQty(); // 11 and last
+					% maxQty // 11
+					% m_self.GetActiveQty(); // 12 and last
 			});
 	}
 
@@ -642,7 +647,7 @@ public:
 			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%->%5%\t%6%\t%7%\t%8%.%9%"
-				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
+				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f-%14$.8f=%15$.8f",
 			[this, eventDesc, &tsOrderId, &orderStatus](TradingRecord &record) {
 				record
 					% m_operationId // 1
@@ -658,7 +663,8 @@ public:
 					% m_security.DescalePrice(m_self.GetClosePrice()) // 11
 					% m_self.GetCurrency() // 12
 					% m_self.GetOpenedQty() // 13
-					% m_self.GetClosedQty(); // 14 and last
+					% m_self.GetClosedQty() // 14
+					% m_self.GetActiveQty(); // 15 and last
 			});
 	}
 
@@ -828,6 +834,7 @@ public:
 			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
+			const Qty &maxQty,
 			const OrderParams &orderParams,
 			bool hasPrice,
 			bool hasUuid) {
@@ -848,16 +855,17 @@ public:
 		if (!hasUuid) {
 			m_closed.uuid = generateUuid();
 		}
-		ReportClosingStart("pre");
+		ReportClosingStart("pre", maxQty);
 
+		const auto &qty = std::min(maxQty, m_self.GetActiveQty());
 
 		OrderId orderId;
 		if (m_expiration && !orderParams.expiration) {
 			OrderParams additionalOrderParams(orderParams);
 			additionalOrderParams.expiration = &*m_expiration;
-			orderId = closeImpl(m_self.GetActiveQty(), additionalOrderParams);
+			orderId = closeImpl(qty, additionalOrderParams);
 		} else {
-			orderId = closeImpl(m_self.GetActiveQty(), orderParams);
+			orderId = closeImpl(qty, orderParams);
 		}
 		m_closeType = closeType;
 		m_closed.hasPrice = hasPrice;
@@ -890,7 +898,7 @@ public:
 		}
 
 		m_closed.uuid = generateUuid();
-		ReportClosingStart("cancel-pre");
+		ReportClosingStart("cancel-pre", 0);
 
 		if (	m_self.IsClosed()
 				|| (	!m_self.IsOpened()
@@ -915,6 +923,7 @@ public:
 						closeType,
 						cancelMethodImpl,
 						timeInForce,
+						GetActiveQty(),
 						orderParams,
 						hasPrice,
 						true);
@@ -929,6 +938,7 @@ public:
 				closeType,
 				cancelMethodImpl,
 				timeInForce,
+				m_self.GetActiveQty(),
 				orderParams,
 				hasPrice,
 				true);
@@ -1461,18 +1471,34 @@ OrderId Position::CloseAtMarketPrice(
 			return DoCloseAtMarketPrice(qty, params);
 		},
 		TIME_IN_FORCE_DAY,
+		GetActiveQty(),
 		params,
 		false,
 		false);
 }
 
 OrderId Position::Close(const CloseType &closeType, const ScaledPrice &price) {
-	return Close(closeType, price, defaultOrderParams);
+	return Close(closeType, price, GetActiveQty(), defaultOrderParams);
 }
 
 OrderId Position::Close(
 		const CloseType &closeType,
 		const ScaledPrice &price,
+		const Qty &maxQty) {
+	return Close(closeType, price, maxQty, defaultOrderParams);
+}
+
+OrderId Position::Close(
+		const CloseType &closeType,
+		const ScaledPrice &price,
+		const OrderParams &params) {
+	return Close(closeType, price, GetActiveQty(), params);
+}
+
+OrderId Position::Close(
+		const CloseType &closeType,
+		const ScaledPrice &price,
+		const Qty &maxQty,
 		const OrderParams &params) {
 	return m_pimpl->Close(
 		closeType,
@@ -1480,6 +1506,7 @@ OrderId Position::Close(
 			return DoClose(qty, price, params);
 		},
 		TIME_IN_FORCE_DAY,
+		maxQty,
 		params,
 		true,
 		false);
@@ -1504,6 +1531,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
 		TIME_IN_FORCE_DAY,
+		GetActiveQty(),
 		params,
 		false,
 		false);
@@ -1525,6 +1553,7 @@ OrderId Position::CloseImmediatelyOrCancel(
 			return DoCloseImmediatelyOrCancel(qty, price, params);
 		},
 		TIME_IN_FORCE_IOC,
+		GetActiveQty(),
 		params,
 		true,
 		false);
@@ -1544,6 +1573,7 @@ OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
 			return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
 		},
 		TIME_IN_FORCE_IOC,
+		GetActiveQty(),
 		params,
 		false,
 		false);

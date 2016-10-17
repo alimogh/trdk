@@ -238,6 +238,15 @@ namespace trdk {
 		trdk::OrderId Close(
 				const CloseType &,
 				const trdk::ScaledPrice &,
+				const trdk::Qty &maxQty);
+		trdk::OrderId Close(
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
+		trdk::OrderId Close(
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &maxQty,
 				const trdk::OrderParams &);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
 				const CloseType &,
