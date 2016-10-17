@@ -776,7 +776,6 @@ public:
 		AssertNe(UNITS_TICKS, m_units);
 		Assert(!m_current.end.is_not_a_date_time());
 		AssertEq(0, m_countedBarSize);
-		Assert(!isBefore || m_current.end >= time);
 		return isBefore
 			?	m_current.end < time
 			:	m_current.end == time;
