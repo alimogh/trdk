@@ -57,11 +57,12 @@ namespace EmaFuturesStrategy {
 				pt::seconds(
 					conf.ReadTypedKey<unsigned int>(
 						"passive_order_max_lifetime_sec")))
-			, m_orderPriceDelta(conf.ReadTypedKey<double>("order_price_delta"))
+			, m_orderPriceMaxDelta(
+				conf.ReadTypedKey<double>("order_price_max_delta"))
 			, m_minProfitToActivateTakeProfit(
 				conf.ReadTypedKey<double>(
 					"min_profit_per_contract_to_activate_take_profit"))
-			, m_takeProfitTrailingPercentage(
+			, m_takeProfitTrailingRatio(
 				conf.ReadTypedKey<int>("take_profit_trailing_percentage") 
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
@@ -73,14 +74,14 @@ namespace EmaFuturesStrategy {
 			GetLog().Info(
 				"Number of contracts: %1%."
 					" Passive order max. lifetime: %2%."
-					" Order price delta: %3%."
+					" Order price max. delta: %3%."
 					" Take-profit trailing: %4%%%"
 						" will be activated after profit %5% * %6% = %7%."
 					" Max loss: %8% * %9% = %10%.",
 				m_numberOfContracts, // 1
 				m_passiveOrderMaxLifetime, // 2
-				m_orderPriceDelta, // 3
-				int(m_takeProfitTrailingPercentage * 100), // 4
+				m_orderPriceMaxDelta, // 3
+				int(m_takeProfitTrailingRatio * 100), // 4
 				m_minProfitToActivateTakeProfit, // 5
 				m_numberOfContracts, // 6
 				m_minProfitToActivateTakeProfit * m_numberOfContracts, // 7
@@ -222,7 +223,7 @@ namespace EmaFuturesStrategy {
 
 			CheckSlowOrderFilling(position);
 			CheckStopLoss(position, timeMeasurement)
-				&& CheckTakeProfit(position, timeMeasurement);
+				|| CheckTakeProfit(position, timeMeasurement);
 
 		}
 		
@@ -435,7 +436,7 @@ namespace EmaFuturesStrategy {
 			Assert(position.GetActiveQty());
 			const Position::PriceCheckResult result = position.CheckTakeProfit(
 				m_minProfitToActivateTakeProfit,
-				m_maxLossMoneyPerContract);
+				m_takeProfitTrailingRatio);
 			if (result.isAllowed) {
 				return false;
 			}
@@ -467,7 +468,7 @@ namespace EmaFuturesStrategy {
 			}
 			Assert(position.GetActiveQty());
 			const Position::PriceCheckResult result
-				= position.CheckStopLossByLoss(m_maxLossMoneyPerContract);
+				= position.CheckStopLoss(m_maxLossMoneyPerContract);
 			if (result.isAllowed) {
 				return false;
 			}
@@ -561,7 +562,7 @@ namespace EmaFuturesStrategy {
 		bool CheckOrderPrice(Position &position) {
 
 			const Position::PriceCheckResult &result
-				= position.CheckOrderPrice(m_orderPriceDelta);
+				= position.CheckOrderPrice(m_orderPriceMaxDelta);
 			if (result.isAllowed) {
 				return true;
 			}
@@ -751,9 +752,9 @@ namespace EmaFuturesStrategy {
 
 		const Qty m_numberOfContracts;
 		const pt::time_duration m_passiveOrderMaxLifetime;
-		const double m_orderPriceDelta;
+		const double m_orderPriceMaxDelta;
 		const double m_minProfitToActivateTakeProfit;
-		const double m_takeProfitTrailingPercentage;
+		const double m_takeProfitTrailingRatio;
 		const double m_maxLossMoneyPerContract;
 
 		Security *m_security;

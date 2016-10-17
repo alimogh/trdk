@@ -72,17 +72,13 @@ namespace EmaFuturesStrategy {
 		void Sync();
 
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
-		virtual PriceCheckResult CheckStopLossByPrice(
-				double priceDelta)
-				const
-				= 0;
-		virtual PriceCheckResult CheckStopLossByLoss(
+		virtual PriceCheckResult CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const
 				= 0;
 		PriceCheckResult CheckTakeProfit(
 				double minProfit,
-				double trailingPercentage);
+				double trailingRatio);
 
 		static void OpenReport(std::ostream &);
 
@@ -93,7 +89,9 @@ namespace EmaFuturesStrategy {
 		virtual ScaledPrice GetPassiveClosePrice() const = 0;
 		virtual ScaledPrice GetMarketClosePrice() const = 0;
 
-		virtual ScaledPrice CaclCurrentProfit() const = 0;
+		virtual ScaledPrice CaclCurrentPnl() const = 0;
+		virtual double GetFinalPnl() const = 0;
+		virtual double GetFinalPnlRatio() const = 0;
 
 		void Report() throw();
 
@@ -141,8 +139,7 @@ namespace EmaFuturesStrategy {
 		virtual ~LongPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByLoss(
+		virtual PriceCheckResult CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const;
 	protected:
@@ -150,7 +147,9 @@ namespace EmaFuturesStrategy {
 		virtual ScaledPrice GetMarketOpenPrice() const;
 		virtual ScaledPrice GetPassiveClosePrice() const;
 		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentProfit() const;
+		virtual ScaledPrice CaclCurrentPnl() const;
+		virtual double GetFinalPnl() const;
+		virtual double GetFinalPnlRatio() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -170,8 +169,7 @@ namespace EmaFuturesStrategy {
 		virtual ~ShortPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByLoss(
+		virtual PriceCheckResult CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const;
 	protected:
@@ -179,7 +177,9 @@ namespace EmaFuturesStrategy {
 		virtual ScaledPrice GetMarketOpenPrice() const;
 		virtual ScaledPrice GetPassiveClosePrice() const;
 		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentProfit() const;
+		virtual ScaledPrice CaclCurrentPnl() const;
+		virtual double GetFinalPnl() const;
+		virtual double GetFinalPnlRatio() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
