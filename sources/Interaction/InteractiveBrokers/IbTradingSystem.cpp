@@ -238,6 +238,8 @@ trdk::Security & ib::TradingSystem::CreateNewSecurityObject(
 			break;
 	}
 
+	result->SetTradingSessionState(pt::not_a_date_time, true);
+
 	m_unsubscribedSecurities.emplace_back(result);
 	return *result;
 }

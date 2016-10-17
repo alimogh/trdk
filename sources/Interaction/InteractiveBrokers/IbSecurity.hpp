@@ -101,6 +101,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		using Base::SetExpiration;
 		using Base::SetOnline;
+		using Base::SetTradingSessionState;
 
 	private:
 
