@@ -48,9 +48,9 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 			GetThreadId(),
 			nullptr,
 			boost::format(
-					"UTC: \"%1%\". EST: \"%2%\". CST: %3%."
-						" Build: \"" TRDK_BUILD_IDENTITY "\"."
-						" Build time: \"" __DATE__ " " __TIME__ "\".")
+					"UTC: %1%. EST: %2%. CST: %3%."
+						" Build: " TRDK_BUILD_IDENTITY "."
+						" Build time: " __DATE__ " " __TIME__ ".")
 				%	utc
 				%	(utc + GetEstTimeZoneDiff())
 				%	(utc + GetCstTimeZoneDiff()));
