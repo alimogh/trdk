@@ -140,17 +140,30 @@ public:
 		
 		ScaledPrice volume;
 		Qty qty;
+		size_t numberOfTrades;
 		std::vector<Order> orders;
 
 		explicit DirectionData(const ScaledPrice &startPrice)
 			: startPrice(startPrice)
 			, volume(0)
-			, qty(0) {
+			, qty(0)
+			, numberOfTrades(0) {
 			//...//
 		}
 
 		bool HasActiveOrders() const {
 			return !orders.empty() && orders.back().isActive;
+		}
+
+		void OnNewTrade(const TradingSystem::TradeInfo &trade) {
+			AssertLt(0, trade.price);
+			AssertLt(0, trade.qty);
+			Assert(!orders.empty());
+			auto &order = orders.back();
+			order.executedQty += trade.qty;
+			volume += ScaledPrice(trade.price * trade.qty);
+			qty += trade.qty;
+			++numberOfTrades;
 		}
 
 	};
@@ -274,24 +287,20 @@ public:
 				if (!trade) {
 					throw Exception("Filled order has no trade information");
 				}
-				AssertLt(0, trade->price);
-				AssertLt(0, trade->qty);
 				AssertEq(
 					order.executedQty + trade->qty + remainingQty,
 					order.qty);
-				order.executedQty += trade->qty;
-				m_open.volume += ScaledPrice(trade->price * trade->qty);
-				m_open.qty += trade->qty;
+				m_open.OnNewTrade(*trade);
 				ReportOpeningUpdate(
 					"filled",
 					tradingSystemOrderId,
 					orderStatus);
-				order.isActive = remainingQty > 0;
 				CopyTrade(
 					trade->id,
 					m_security.DescalePrice(trade->price),
 					trade->qty,
 					true);
+				order.isActive = remainingQty > 0;
 				break;
 			case ORDER_STATUS_INACTIVE:
 				order.isActive = false;
@@ -391,14 +400,10 @@ public:
 				if (!trade) {
 					throw Exception("Filled order has no trade information");
 				}
-				AssertLt(0, trade->price);
-				AssertLt(0, trade->qty);
 				AssertEq(
 					order.executedQty + trade->qty + remainingQty,
 					order.qty);
-				order.executedQty += trade->qty;
-				m_close.volume += ScaledPrice(trade->price * trade->qty);
-				m_close.qty += trade->qty;
+				m_close.OnNewTrade(*trade);
 				ReportClosingUpdate(
 					"filled",
 					tradingSystemOrderId,
@@ -1190,6 +1195,19 @@ double Position::GetRealizedPnlPercentage() const {
 
 double Position::GetPlannedPnl() const {
 	return GetUnrealizedPnl() + GetRealizedPnl();
+}
+
+bool Position::IsProfit() const {
+	const auto ratio = GetRealizedPnlRatio();
+	return ratio > 1.0 && !IsEqual(ratio, 1.0);
+}
+
+size_t Position::GetNumberOfOpenTrades() const {
+	return m_pimpl->m_open.numberOfTrades;
+}
+
+size_t Position::GetNumberOfCloseTrades() const {
+	return m_pimpl->m_close.numberOfTrades;
 }
 
 Position::StateUpdateConnection Position::Subscribe(

@@ -190,23 +190,31 @@ namespace trdk {
 
 		virtual double GetRealizedPnl() const = 0;
 		//! Returns realized PnL ratio.
-		/** If the value is 1.0 - no profit and no loss, if less then 1.0
-		  * - loss, if greater then 1.0 - profit.
+		/** @return	If the value is 1.0 - no profit and no loss, if less
+		  *			then 1.0 - loss, if greater then 1.0 - profit.
 		  */
 		virtual double GetRealizedPnlRatio() const = 0;
 		//! Returns percentage of profit.
-		/** If the value is zero - no profit and no loss, if less then zero
-		  * - loss, if greater then zero - profit.
+		/** @return	If the value is zero - no profit and no loss, if less then
+		  *			zero - loss, if greater then zero - profit.
 		  */
 		double GetRealizedPnlPercentage() const;
 		virtual double GetUnrealizedPnl() const = 0;
 		//! Realized PnL + unrealized PnL.
 		double GetPlannedPnl() const;
+		//! Returns true if position has profit by realized P&L.
+		/** @return	False if position has loss or does not have profit and
+		  *			does not have loss. True if position has profit.
+		  */
+		bool IsProfit() const;
 
 		virtual trdk::ScaledPrice GetMarketOpenPrice() const = 0;
 		virtual trdk::ScaledPrice GetMarketClosePrice() const = 0;
 		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
 		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
+
+		size_t GetNumberOfOpenTrades() const;
+		size_t GetNumberOfCloseTrades() const;
 
 	public:
 
