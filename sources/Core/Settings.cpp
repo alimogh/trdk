@@ -22,7 +22,9 @@ Settings::Settings(bool isReplayMode, const fs::path &logsDir)
 	: m_isLoaded(false),
 	m_isReplayMode(isReplayMode),
 	m_logsDir(logsDir) {
-	//...//
+	if (m_isReplayMode) {
+		m_logsDir /= "Replay";
+	}
 }
 
 void Settings::Update(const Ini &conf, Context::Log &log) {
@@ -84,4 +86,12 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 
 	m_values = values;
 
+}
+
+fs::path Settings::GetBarsDataLogDir() const {
+	return GetLogsDir() / "Bars";
+}
+
+fs::path Settings::GetPositionsLogDir() const {
+	return GetLogsDir() / "Positions";
 }

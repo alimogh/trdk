@@ -47,7 +47,6 @@
 
 #include "Common/Dll.hpp"
 #include "Common/Util.hpp"
-#include "Common/Defaults.hpp"
 #include "Common/UseUnused.hpp"
 #include "Common/Foreach.hpp"
 #include "Common/Ini.hpp"

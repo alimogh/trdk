@@ -93,8 +93,18 @@ namespace trdk {
 		//! Context setting with predefined key list and predefined behavior.
 		const trdk::Settings & GetSettings() const;
 
+		//! Context local start time.
+		/** Does not depend from replay mode, always actual start time for local 
+		  * time zone.
+		  * @sa GetCurrentTime
+		  */
 		const boost::posix_time::ptime & GetStartTime() const;
 
+		//! Current time.
+		/** Initialization, value and time zone depends from settings and replay
+		  * mode.
+		  * @sa GetStartTime
+		  */
 		boost::posix_time::ptime GetCurrentTime() const;
 
 		//! Sets current time (for replay mode).

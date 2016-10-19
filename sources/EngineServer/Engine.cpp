@@ -84,13 +84,12 @@ void Engine::Run(
 
 		settings.Update(ini, m_eventsLog);
 
-		m_context.reset(
-			new trdk::Engine::Context(
-				m_eventsLog,
-				m_tradingLog,
-				settings,
-				startTime,
-				ini));
+		m_context = boost::make_unique<trdk::Engine::Context>(
+			m_eventsLog,
+			m_tradingLog,
+			settings,
+			startTime,
+			ini);
 
 		m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 

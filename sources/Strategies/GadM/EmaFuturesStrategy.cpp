@@ -15,6 +15,7 @@
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/Settings.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
@@ -142,7 +143,6 @@ namespace EmaFuturesStrategy {
 			} else {
 				GetLog().Info("Profit level value is not set.");
 			}
-			OpenStartegyLog();
 		}
 		
 		virtual ~Strategy() {
@@ -269,6 +269,7 @@ namespace EmaFuturesStrategy {
 			}
 
 			if (!GetPositions().GetSize()) {
+				CheckStartegyLog();
 				return;
 			}
 
@@ -770,14 +771,37 @@ namespace EmaFuturesStrategy {
 				m_strategyLog);
 		}
 
+		void CheckStartegyLog() {
+			if (m_strategyLog.is_open()) {
+				return;
+			}
+			OpenStartegyLog();
+			Assert(m_strategyLog.is_open());
+		}
+
 		void OpenStartegyLog() {
 
-			fs::path path = Defaults::GetPositionsLogDir();
-			const auto &now = GetContext().GetCurrentTime();
-			path /= SymbolToFileName(
-				(boost::format("%1%_%2%") % GetTag() % ConvertToFileName(now))
-				.str(),
-				"csv");
+			Assert(!m_strategyLog.is_open());
+
+			fs::path path = GetContext().GetSettings().GetPositionsLogDir();
+
+			if (!GetContext().GetSettings().IsReplayMode()) {
+				boost::format fileName("%1%__%2%__%3%");
+				fileName
+					% GetTag()
+					% ConvertToFileName(GetContext().GetStartTime())
+					% GetId();
+				path /= SymbolToFileName(fileName.str(), "csv");
+			} else {
+				boost::format fileName("%1%__%2%__%3%__%4%");
+				fileName
+					% GetTag()
+					% ConvertToFileName(GetContext().GetCurrentTime())
+					% ConvertToFileName(GetContext().GetStartTime())
+					% GetId();
+				path /= SymbolToFileName(fileName.str(), "csv");
+			}
+			
 			fs::create_directories(path.branch_path());
 
 			m_strategyLog.open(

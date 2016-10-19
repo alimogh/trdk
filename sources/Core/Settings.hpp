@@ -53,6 +53,10 @@ namespace trdk {
 			return m_logsDir;
 		}
 
+		boost::filesystem::path GetBarsDataLogDir() const;
+
+		boost::filesystem::path GetPositionsLogDir() const;
+
 		//! Default security Currency.
 		/** Path: Defaults::currency
 		  * Ex.: "currency = USD"

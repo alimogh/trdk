@@ -249,7 +249,6 @@
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Currency.cpp" />
-    <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="ExpirationCalendar.cpp" />
     <ClCompile Include="ExpirationCalendarUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -324,7 +323,6 @@
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Currency.hpp" />
-    <ClInclude Include="Defaults.hpp" />
     <ClInclude Include="DisableBoostWarningsEnd.h" />
     <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
