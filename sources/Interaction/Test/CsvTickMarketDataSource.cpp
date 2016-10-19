@@ -38,11 +38,12 @@ namespace {
 				const IniSectionRef &conf)
 			: Base(index, context, tag, conf)
 			, m_filePath(conf.ReadFileSystemPath("source"))
-			, m_bidAskSpread(conf.ReadTypedKey<double>("bid_ask_spread"))  {
+			, m_halfOfBidAskSpread(
+				conf.ReadTypedKey<double>("bid_ask_spread") / 2) {
 			GetLog().Info(
 				"Source is %1%, bid-ask spread is %2%.",
 				m_filePath,
-				m_bidAskSpread);
+				m_halfOfBidAskSpread * 2);
 		}
 
 		virtual ~CsvTickMarketDataSource() {
@@ -99,6 +100,7 @@ namespace {
 			std::vector<std::string> fields;
 			std::string line;
 			size_t lineNo = 0;
+			ScaledPrice prevPrice = 0;
 			while (std::getline(file, line)) {
 
 				if (IsStopped()) {
@@ -136,13 +138,32 @@ namespace {
 
 				GetContext().SetCurrentTime(time, true);
 
+				auto spread
+					= m_security->ScalePrice(m_halfOfBidAskSpread);
+				auto bidSpread = spread;
+				auto askSpread = spread;
+				if (
+						!IsEqual(
+							m_security->DescalePrice(spread),
+							m_halfOfBidAskSpread)) {
+					spread = 0;
+					if (price < prevPrice) {
+						bidSpread = 1;
+						askSpread = 0;
+					} else {
+						bidSpread = 0;
+						askSpread = 1;
+					}
+				}
+				
+
 				m_security->SetLevel1(
 					time,
 					Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-						price - (m_bidAskSpread / 2)),
+						price - bidSpread),
 					Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(qty),
 					Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-						price +  (m_bidAskSpread / 2)),
+						price + askSpread),
 					Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(qty),
 					TimeMeasurement::Milestones());
 				m_security->AddTrade(
@@ -152,6 +173,8 @@ namespace {
 					TimeMeasurement::Milestones(),
 					true,
 					true);
+
+				prevPrice = price;
 
 				GetContext().SyncDispatching();
 
@@ -164,7 +187,7 @@ namespace {
 	private:
 
 		const boost::filesystem::path m_filePath;
-		const double m_bidAskSpread;
+		const double m_halfOfBidAskSpread;
 
 		boost::shared_ptr<Test::Security> m_security;
 
