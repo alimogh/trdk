@@ -58,9 +58,15 @@ void Engine::Run(
 			m_eventsLog.EnableStdOut();
 		}
 
-		trdk::Settings settings(
-			ini.ReadBoolKey("General", "is_replay_mode"),
-			ini.ReadFileSystemPath("General", "logs_dir"));
+		bool isReplayMode = ini.ReadBoolKey("General", "is_replay_mode");
+		auto logDir = ini.ReadFileSystemPath("General", "logs_dir");
+		if (isReplayMode) {
+			logDir /= "Replay_" + ConvertToFileName(startTime);
+		} else {
+			logDir /= ConvertToFileName(startTime);
+		}
+
+		trdk::Settings settings(isReplayMode, logDir);
 
 		fs::create_directories(settings.GetLogsDir());
 		{

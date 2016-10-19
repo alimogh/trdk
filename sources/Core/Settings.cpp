@@ -22,9 +22,7 @@ Settings::Settings(bool isReplayMode, const fs::path &logsDir)
 	: m_isLoaded(false),
 	m_isReplayMode(isReplayMode),
 	m_logsDir(logsDir) {
-	if (m_isReplayMode) {
-		m_logsDir /= "Replay";
-	}
+	//...//
 }
 
 void Settings::Update(const Ini &conf, Context::Log &log) {
