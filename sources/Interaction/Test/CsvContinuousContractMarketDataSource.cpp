@@ -229,10 +229,10 @@ namespace {
 						m_security->SetLevel1(
 							time,
 							Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-								price),
+								price - 1),
 							Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(1),
 							Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-								price),
+								price + 1),
 							Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(1),
 							TimeMeasurement::Milestones());
 					}
