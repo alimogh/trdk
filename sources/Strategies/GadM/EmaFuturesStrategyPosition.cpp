@@ -383,22 +383,26 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		/* 8	*/ << ",Type"
 		/* 9	*/ << ",P&L vol."
 		/* 10	*/ << ",P&L %"
-		/* 11	*/ << ",Qty"
-		/* 12	*/ << ",Entry Reason"
-		/* 13	*/ << ",Entry Price"
-		/* 14	*/ << ",Entry Volume"
-		/* 15	*/ << ",Entry Sig. Bid"
-		/* 16	*/ << ",Entry Sig. Ask"
-		/* 17	*/ << ",Entry Sig. Slow EMA"
-		/* 18	*/ << ",Entry Sig. Fast EMA"
-		/* 19	*/ << ",Exit Reason"
-		/* 20	*/ << ",Exit Price"
-		/* 21	*/ << ",Exit Volume"
-		/* 22	*/ << ",Exit Sig. Bid"
-		/* 23	*/ << ",Exit Sig. Ask"
-		/* 24	*/ << ",Exit Sig. Slow EMA"
-		/* 25	*/ << ",Exit Sig. Fast EMA"
-		/* 26	*/ << ",ID"
+		/* 11	*/ << ",Is Profit"
+		/* 12	*/ << ",Is Loss"
+		/* 13	*/ << ",Qty"
+		/* 14	*/ << ",Entry Reason"
+		/* 15	*/ << ",Entry Price"
+		/* 16	*/ << ",Entry Volume"
+		/* 17	*/ << ",Entry Tades"
+		/* 18	*/ << ",Entry Sig. Bid"
+		/* 19	*/ << ",Entry Sig. Ask"
+		/* 20	*/ << ",Entry Sig. Slow EMA"
+		/* 21	*/ << ",Entry Sig. Fast EMA"
+		/* 22	*/ << ",Exit Reason"
+		/* 23	*/ << ",Exit Price"
+		/* 24	*/ << ",Exit Volume"
+		/* 25	*/ << ",Exit Trades"
+		/* 26	*/ << ",Exit Sig. Bid"
+		/* 27	*/ << ",Exit Sig. Ask"
+		/* 28	*/ << ",Exit Sig. Slow EMA"
+		/* 29	*/ << ",Exit Sig. Fast EMA"
+		/* 30	*/ << ",ID"
 		<< std::endl;
 }
 
@@ -411,14 +415,13 @@ void EmaFuturesStrategy::Position::Report() throw() {
 	try {
 		GetStrategy().GetContext().InvokeDropCopy(
 			[this](DropCopy &dropCopy) {
-				const double pnlRatio = GetRealizedPnlRatio();
 				dropCopy.ReportOperationEnd(
 					GetId(),
 					GetCloseTime(),
-					IsEqual(pnlRatio, 1.0) || pnlRatio < 1.0
+					!IsProfit()
 						? OPERATION_RESULT_LOSS
 						: OPERATION_RESULT_PROFIT,
-					pnlRatio,
+					GetRealizedPnlRatio(),
 					boost::make_shared<FinancialResult>());
 			});
 	} catch (const std::exception &ex) {
@@ -456,10 +459,13 @@ void EmaFuturesStrategy::Position::Report() throw() {
 		// 10. pnl %:
 		m_reportStream << ',' << GetRealizedPnlPercentage();
 
-		// 11. qty:
+		// 11. is profit, 12. is loss: 
+		m_reportStream << (IsProfit() ? ",1,0" : ",0,1");
+
+		// 13. qty:
 		m_reportStream << ',' << GetOpenedQty();
 
-		// 12. entry reason:
+		// 14. entry reason:
 		m_reportStream << ',';
 		switch (m_reasons[0]) {
 			default:
@@ -475,22 +481,25 @@ void EmaFuturesStrategy::Position::Report() throw() {
 				break;
 		}
 
-		// 13. entry price, 14. entry volume
+		// 15. entry price, 16. entry volume
 		m_reportStream
 			<< ',' << GetSecurity().DescalePrice(GetOpenPrice())
 			<< ',' << GetOpenedVolume();
+
+		// 17. entry trades:
+		m_reportStream << ',' << GetNumberOfOpenTrades();
 		
-		// 15. entry bid, 16. entry ask,
+		// 18. entry bid, 19. entry ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[0].first
 			<< ',' << m_signalsBidAsk[0].second;
 
-		// 17. entry slow ema, 18. entry fast ema
+		// 20. entry slow ema, 21. entry fast ema
 		m_reportStream
 			<< ',' << m_signalsEmas[0].first
 			<< ',' << m_signalsEmas[0].second;
 
-		// 19. exit reason:
+		// 22. exit reason:
 		m_reportStream << ',';
 		if (m_closeType != CLOSE_TYPE_NONE) {
 			m_reportStream << m_closeType;
@@ -510,22 +519,25 @@ void EmaFuturesStrategy::Position::Report() throw() {
 			}
 		}
 
-		// 20. exit price, 21. exit volume,
+		// 23. exit price, 24. exit volume,
 		m_reportStream
 			<< ',' << GetSecurity().DescalePrice(GetClosePrice())
 			<< ',' << GetClosedVolume();
 
-		// 22. exit bid, 23. exit ask,
+		// 25. exit trades:
+		m_reportStream << ',' << GetNumberOfCloseTrades();
+
+		// 26. exit bid, 27. exit ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[1].first
 			<< ',' << m_signalsBidAsk[1].second;
 	
-		// 24. exit slow ema, 25. exit fast ema.
+		// 28. exit slow ema, 29. exit fast ema.
 		m_reportStream
 			<< ',' << m_signalsEmas[1].first
 			<< ',' << m_signalsEmas[1].second;
 
-		// 26. ID
+		// 30. ID
 		m_reportStream << ',' << GetId();
 
 		m_reportStream << std::endl;
