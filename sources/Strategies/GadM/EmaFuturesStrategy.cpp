@@ -820,7 +820,7 @@ namespace EmaFuturesStrategy {
 
 		bool StartRollOver() {
 
-			if (!GetPositions().GetSize()) {
+			if (!m_security->HasExpiration() || !GetPositions().GetSize()) {
 				return false;
 			}
 			
@@ -856,7 +856,8 @@ namespace EmaFuturesStrategy {
 		void FinishRollOver(Position &oldPosition) {
 
 			if (
-					!oldPosition.IsCompleted()
+					!m_security->HasExpiration()
+					|| !oldPosition.IsCompleted()
 					|| oldPosition.GetCloseType()
 						!= Position::CLOSE_TYPE_ROLLOVER) {
 				return;
