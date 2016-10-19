@@ -66,6 +66,11 @@ namespace EmaFuturesStrategy {
 				Intention,
 				const CloseType &,
 				const Direction &closeReason);
+		void SetIntention(
+				Intention,
+				const CloseType &,
+				const Direction &closeReason,
+				const Qty &intentionSize);
 
 		void MoveOrderToCurrentPrice();
 
@@ -78,20 +83,17 @@ namespace EmaFuturesStrategy {
 				= 0;
 		PriceCheckResult CheckTakeProfit(
 				double minProfit,
-				double trailingRatio);
+				double trailingRatio)
+				const;
+
+		//! Checks profit level.
+		/** @sa https://app.asana.com/0/196887491555385/192879506137993
+		  */
+		PriceCheckResult CheckProfitLevel(double levelProfitVolume) const;
 
 		static void OpenReport(std::ostream &);
 
 	protected:
-	
-		virtual ScaledPrice GetPassiveOpenPrice() const = 0;
-		virtual ScaledPrice GetMarketOpenPrice() const = 0;
-		virtual ScaledPrice GetPassiveClosePrice() const = 0;
-		virtual ScaledPrice GetMarketClosePrice() const = 0;
-
-		virtual ScaledPrice CaclCurrentPnl() const = 0;
-		virtual double GetFinalPnl() const = 0;
-		virtual double GetFinalPnlRatio() const = 0;
 
 		void Report() throw();
 
@@ -105,6 +107,7 @@ namespace EmaFuturesStrategy {
 		boost::posix_time::ptime m_closeStartTime;
 		
 		Intention m_intention;
+		boost::optional<std::pair<Qty, Qty>> m_intentionSize;
 		bool m_isSent;
 		bool m_isPassiveOpen;
 		bool m_isPassiveClose;
@@ -142,14 +145,6 @@ namespace EmaFuturesStrategy {
 		virtual PriceCheckResult CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const;
-	protected:
-		virtual ScaledPrice GetPassiveOpenPrice() const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentPnl() const;
-		virtual double GetFinalPnl() const;
-		virtual double GetFinalPnlRatio() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -172,14 +167,6 @@ namespace EmaFuturesStrategy {
 		virtual PriceCheckResult CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const;
-	protected:
-		virtual ScaledPrice GetPassiveOpenPrice() const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentPnl() const;
-		virtual double GetFinalPnl() const;
-		virtual double GetFinalPnlRatio() const;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

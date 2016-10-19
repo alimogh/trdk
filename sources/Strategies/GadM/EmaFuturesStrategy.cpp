@@ -27,6 +27,51 @@ namespace fs = boost::filesystem;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+	//! Profit taking level.
+	/** @sa https://app.asana.com/0/196887491555385/192879506137993
+	  */
+	struct ProfitLevel {
+		double volume;
+		size_t numberOfContracts;
+	};
+
+	boost::optional<ProfitLevel> ReadProfitLevelConf(
+			const IniSectionRef &conf) {
+		
+		const ProfitLevel result = {
+			conf.ReadTypedKey<double>("profit_level_volume", 0),
+			conf.ReadTypedKey<uint32_t>("profit_level_number_of_contracts", 0)
+		};
+		if (IsZero(result.volume) && !result.numberOfContracts) {
+			return boost::none;
+		}
+		if (IsZero(result.volume) != !result.numberOfContracts) {
+			throw Exception(
+				"Should be set both settings \"profit_level_volume\""
+					" and \"profit_level_number_of_contracts\"");
+		}
+
+		const auto numberOfContracts
+			= conf.ReadTypedKey<uint32_t>("number_of_contracts");
+		if (numberOfContracts < result.numberOfContracts) {
+			throw Exception(
+				"\"profit_level_number_of_contracts\" should be less than"
+					" \"number_of_contracts\"");
+		}
+		if (numberOfContracts % result.numberOfContracts) {
+			throw Exception(
+				"\"profit_level_number_of_contracts\" should be multiple"
+					" \"number_of_contracts\"");
+		}
+
+		return result;
+		
+	}
+
+}
+
 namespace trdk { namespace Strategies { namespace GadM {
 namespace EmaFuturesStrategy {
 
@@ -67,6 +112,7 @@ namespace EmaFuturesStrategy {
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
+			, m_profitLevel(ReadProfitLevelConf(conf))
 			, m_security(nullptr)
 			, m_barService(nullptr)
 			, m_barServiceId(DropCopy::nDataSourceInstanceId)
@@ -88,6 +134,14 @@ namespace EmaFuturesStrategy {
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
 				m_maxLossMoneyPerContract * m_numberOfContracts);
+			if (m_profitLevel) {
+				GetLog().Info(
+					"Profit level volume: %1%, profit value size: %2%.",
+					m_profitLevel->volume,
+					m_profitLevel->numberOfContracts);
+			} else {
+				GetLog().Info("Profit level value is not set.");
+			}
 			OpenStartegyLog();
 		}
 		
@@ -223,7 +277,8 @@ namespace EmaFuturesStrategy {
 
 			CheckSlowOrderFilling(position);
 			CheckStopLoss(position, timeMeasurement)
-				|| CheckTakeProfit(position, timeMeasurement);
+				|| CheckTakeProfit(position, timeMeasurement)
+				|| CheckProfitLevel(position, timeMeasurement);
 
 		}
 		
@@ -442,13 +497,22 @@ namespace EmaFuturesStrategy {
 			}
 			GetTradingLog().Write(
 				"slow-order\ttake-profit"
-					"\tstart=%1%\tmargin=%2%\tnow=%3%"
-					"\tbid=%4%\task=%5%",
+					"\tmax_profit=%1%\tmargin=%2%\tcurrent=%3%"
+					"\tpnl_rlz=%4%\tpnl_unr=%5%\tpnl_plan=%6%"
+					"\topen_vol=%7%\topen_price=%8%\tclose_vol=%9%"
+					"\tbid=%10%\task=%11%",
 			[&](TradingRecord &record) {
 				record
 					%	position.GetSecurity().DescalePrice(result.start)
 					%	position.GetSecurity().DescalePrice(result.margin)
 					%	position.GetSecurity().DescalePrice(result.current)
+					%	position.GetRealizedPnl()
+					%	position.GetUnrealizedPnl()
+					%	position.GetPlannedPnl()
+					%	position.GetOpenedVolume()
+					%	position.GetSecurity().DescalePrice(
+							position.GetOpenPrice())
+					%	position.GetClosedVolume()
 					%	position.GetSecurity().GetBidPrice()
 					%	position.GetSecurity().GetAskPrice();
 			});
@@ -456,6 +520,53 @@ namespace EmaFuturesStrategy {
 				INTENTION_CLOSE_PASSIVE,
 				Position::CLOSE_TYPE_TAKE_PROFIT,
 				DIRECTION_LEVEL);
+			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
+			return true;
+		}
+
+		bool CheckProfitLevel(
+				Position &position,
+				const Milestones &timeMeasurement) {
+			if (!m_profitLevel || position.GetIntention() != INTENTION_HOLD) {
+				return false;
+			}
+			Assert(position.GetActiveQty());
+			const Position::PriceCheckResult result = position.CheckProfitLevel(
+				m_profitLevel->volume);
+			if (result.isAllowed) {
+				return false;
+			}
+			Qty intentionSize = 1;
+			GetTradingLog().Write(
+				"slow-order\tprofit-level"
+					"\trealized=%1%\tmargin=%2%\tcurrent=%3%"
+					"\tint_size=%13%"
+					"\tpnl_rlz=%4%\tpnl_unr=%5%\tpnl_plan=%6%"
+					"\topen_vol=%7%\topen_price=%8%"
+					"\tclose_vol=%9%\tcur_vol=%10%"
+					"\tbid=%11%\task=%12%",
+			[&](TradingRecord &record) {
+				record
+					%	position.GetSecurity().DescalePrice(result.start)
+					%	position.GetSecurity().DescalePrice(result.margin)
+					%	position.GetSecurity().DescalePrice(result.current)
+					%	position.GetRealizedPnl()
+					%	position.GetUnrealizedPnl()
+					%	position.GetPlannedPnl()
+					%	position.GetOpenedVolume()
+					%	position.GetSecurity().DescalePrice(
+							position.GetOpenPrice())
+					%	position.GetClosedVolume()
+					%	position.GetActiveVolume()
+					%	position.GetSecurity().GetBidPrice()
+					%	position.GetSecurity().GetAskPrice()
+					%	intentionSize;
+			});
+			position.SetIntention(
+				INTENTION_CLOSE_PASSIVE,
+				Position::CLOSE_TYPE_TAKE_PROFIT,
+				DIRECTION_LEVEL,
+				intentionSize);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 			return true;
 		}
@@ -756,6 +867,7 @@ namespace EmaFuturesStrategy {
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingRatio;
 		const double m_maxLossMoneyPerContract;
+		const boost::optional<ProfitLevel> m_profitLevel;
 
 		Security *m_security;
 

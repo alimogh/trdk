@@ -85,16 +85,7 @@ namespace trdk {
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &
 					strategyTimeMeasurement);
-		explicit Position(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::Position &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &
-					strategyTimeMeasurement);
-	
+
 	protected:
 
 		//! Ctor only for virtual inheritance, always throws exception.
@@ -130,7 +121,7 @@ namespace trdk {
 
 	public:
 
-		const CloseType & GetCloseType() const noexcept;
+		CloseType GetCloseType() const noexcept;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
@@ -179,33 +170,45 @@ namespace trdk {
 		const trdk::Qty & GetPlanedQty() const;
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
 
-		const trdk::OrderId & GetOpenOrderId() const noexcept;
 		void SetOpenedQty(const trdk::Qty &) const noexcept;
 		const trdk::Qty & GetOpenedQty() const noexcept;
 		trdk::ScaledPrice GetOpenPrice() const;
 		double GetOpenedVolume() const;
+		//! Time of first trade.
 		const boost::posix_time::ptime & GetOpenTime() const;
 
-		trdk::Qty GetNotOpenedQty() const;
 		trdk::Qty GetActiveQty() const noexcept;
+		double GetActiveVolume() const;
 
-		const trdk::OrderId & GetCloseOrderId() const noexcept;
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
 		trdk::ScaledPrice GetClosePrice() const;
 		const trdk::Qty & GetClosedQty() const noexcept;
 		double GetClosedVolume() const;
+		//! Time of last trade.
 		const boost::posix_time::ptime & GetCloseTime() const;
 
-	public:
-
-		//! Restores position in open-state.
-		/** Just creates position in open state at current strategy, doesn't
-		  * make any trading actions.
-		  * @param openOrderId	User-defined ID for open-order, doesn't affect
-		  *						the engine logic.
+		virtual double GetRealizedPnl() const = 0;
+		//! Returns realized PnL ratio.
+		/** If the value is 1.0 - no profit and no loss, if less then 1.0
+		  * - loss, if greater then 1.0 - profit.
 		  */
-		void RestoreOpenState(trdk::OrderId openOrderId = 0);
+		virtual double GetRealizedPnlRatio() const = 0;
+		//! Returns percentage of profit.
+		/** If the value is zero - no profit and no loss, if less then zero
+		  * - loss, if greater then zero - profit.
+		  */
+		double GetRealizedPnlPercentage() const;
+		virtual double GetUnrealizedPnl() const = 0;
+		//! Realized PnL + unrealized PnL.
+		double GetPlannedPnl() const;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
+
+	public:
 
 		trdk::OrderId OpenAtMarketPrice();
 		trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
@@ -369,14 +372,6 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		explicit LongPosition(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::ShortPosition &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
 
@@ -390,6 +385,15 @@ namespace trdk {
 
 		virtual Type GetType() const;
 		virtual const std::string & GetTypeStr() const noexcept;
+
+		virtual double GetRealizedPnl() const;
+		virtual double GetRealizedPnlRatio() const;
+		virtual double GetUnrealizedPnl() const;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const;
 
 	protected:
 
@@ -449,14 +453,6 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		explicit ShortPosition(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::LongPosition &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
 
@@ -470,6 +466,15 @@ namespace trdk {
 
 		virtual Type GetType() const;
 		virtual const std::string & GetTypeStr() const noexcept;
+
+		virtual double GetRealizedPnl() const;
+		virtual double GetRealizedPnlRatio() const;
+		virtual double GetUnrealizedPnl() const;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const;
 
 	protected:
 
