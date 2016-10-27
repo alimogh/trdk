@@ -66,7 +66,7 @@ namespace trdk {
 		public:
 			NotOpenedError() noexcept;
 		};
-		
+
 		class TRDK_CORE_API AlreadyClosedError : public Exception {
 		public:
 			AlreadyClosedError() noexcept;
@@ -99,6 +99,7 @@ namespace trdk {
 
 		const boost::uuids::uuid & GetId() const;
 
+		bool IsLong() const;
 		virtual Type GetType() const = 0;
 		virtual const std::string & GetTypeStr() const noexcept = 0;
 
@@ -172,7 +173,8 @@ namespace trdk {
 
 		void SetOpenedQty(const trdk::Qty &) const noexcept;
 		const trdk::Qty & GetOpenedQty() const noexcept;
-		trdk::ScaledPrice GetOpenPrice() const;
+		trdk::ScaledPrice GetOpenAvgPrice() const;
+		const trdk::ScaledPrice & GetLastOpenTradePrice() const;
 		double GetOpenedVolume() const;
 		//! Time of first trade.
 		const boost::posix_time::ptime & GetOpenTime() const;
@@ -182,12 +184,15 @@ namespace trdk {
 
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
-		trdk::ScaledPrice GetClosePrice() const;
+		trdk::ScaledPrice GetCloseAvgPrice() const;
+		const trdk::ScaledPrice & GetLastCloseTradePrice() const;
 		const trdk::Qty & GetClosedQty() const noexcept;
 		double GetClosedVolume() const;
 		//! Time of last trade.
 		const boost::posix_time::ptime & GetCloseTime() const;
 
+		const trdk::ScaledPrice & GetLastTradePrice() const;
+		
 		virtual double GetRealizedPnl() const = 0;
 		//! Returns realized PnL ratio.
 		/** @return	If the value is 1.0 - no profit and no loss, if less

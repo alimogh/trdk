@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Emas.hpp"
+#include "ProfitLevels.hpp"
 #include "Core/Position.hpp"
 
 namespace trdk { namespace Strategies { namespace GadM {
@@ -89,7 +90,7 @@ namespace EmaFuturesStrategy {
 		//! Checks profit level.
 		/** @sa https://app.asana.com/0/196887491555385/192879506137993
 		  */
-		PriceCheckResult CheckProfitLevel(double levelProfitVolume) const;
+		Qty CheckProfitLevel(const ProfitLevels &) const;
 
 		static void OpenReport(std::ostream &);
 

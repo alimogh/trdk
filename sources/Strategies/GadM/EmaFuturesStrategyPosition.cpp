@@ -96,9 +96,8 @@ void EmaFuturesStrategy::Position::SetIntention(
 				% closeReason;
 		});
 
-	if (closeType != CLOSE_TYPE_NONE) {
-		m_closeType = closeType;
-	}
+	m_closeType = closeType;
+
 	if (closeReason != DIRECTION_LEVEL) {
 		m_reasons[1] = closeReason;
 	}
@@ -357,17 +356,60 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 	return result;
 }
 
-EmaFuturesStrategy::Position::PriceCheckResult
-EmaFuturesStrategy::Position::CheckProfitLevel(
-		double levelProfitVolume)
+Qty EmaFuturesStrategy::Position::CheckProfitLevel(
+		const ProfitLevels &profitLevels)
 		const {
-	PriceCheckResult result = {};
-	result.start = GetSecurity().ScalePrice(GetClosedQty() * levelProfitVolume);
-	result.current = GetSecurity().ScalePrice(GetPlannedPnl()) * 1000;
-	result.margin
-		= result.start
-		+ GetSecurity().ScalePrice(levelProfitVolume);
-	result.isAllowed = result.current < result.margin;
+
+	AssertLt(0, profitLevels.priceStep);
+	AssertLt(0, profitLevels.numberOfContractsPerLevel.size());
+
+	const auto minChange = GetSecurity().ScalePrice(profitLevels.priceStep);
+	const auto currentChange = IsLong()
+		?	GetMarketClosePrice() - GetLastTradePrice()
+		:	GetLastTradePrice() - GetMarketClosePrice();
+	if (currentChange < minChange) {
+		return 0;
+	}
+	size_t numberOfSteps = size_t(currentChange / minChange);
+	AssertLt(0, numberOfSteps);
+
+	Qty closedLevels = 0;
+	Qty result = 0;
+	for (auto levelIt = profitLevels.numberOfContractsPerLevel.cbegin(); ; ) {
+		const auto nextLevelSize
+			=	levelIt != profitLevels.numberOfContractsPerLevel.cend()
+				?	*levelIt
+				:	profitLevels.numberOfContractsPerLevel.back();
+		if (GetClosedQty() > closedLevels) {
+			closedLevels += nextLevelSize;
+			if (levelIt != profitLevels.numberOfContractsPerLevel.cend()) {
+				++levelIt;
+			}
+		} else {
+			result += nextLevelSize;
+			if (!--numberOfSteps) {
+				break;
+			}
+		}
+	}
+
+	GetStrategy().GetTradingLog().Write(
+		"slow-order\tprofit-level"
+			"\tcurrent=%1$.2f\tmin=%2$.2f\torder_qty=%3%"
+			"\tlast_price=%4$.2f\tclosed_qty=%5%\tactive_qty=%6%"
+			"\tbid=%7$.2f\task=%8$.2f",
+		[&](TradingRecord &record) {
+			record
+				% GetSecurity().DescalePrice(currentChange)
+				% GetSecurity().DescalePrice(minChange)
+				% result
+				% GetSecurity().DescalePrice(GetLastTradePrice())
+				% GetClosedQty()
+				% GetActiveQty()
+				% GetSecurity().GetBidPrice()
+				% GetSecurity().GetAskPrice();
+			});
+
 	return result;
 }
 
@@ -483,7 +525,7 @@ void EmaFuturesStrategy::Position::Report() throw() {
 
 		// 15. entry price, 16. entry volume
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetOpenPrice())
+			<< ',' << GetSecurity().DescalePrice(GetOpenAvgPrice())
 			<< ',' << GetOpenedVolume();
 
 		// 17. entry trades:
@@ -521,7 +563,7 @@ void EmaFuturesStrategy::Position::Report() throw() {
 
 		// 23. exit price, 24. exit volume,
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetClosePrice())
+			<< ',' << GetSecurity().DescalePrice(GetCloseAvgPrice())
 			<< ',' << GetClosedVolume();
 
 		// 25. exit trades:
@@ -610,10 +652,10 @@ EmaFuturesStrategy::LongPosition::PriceCheckResult
 EmaFuturesStrategy::LongPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
-	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetOpenAvgPrice()));
 	AssertEq(INTENTION_HOLD, GetIntention());
 	PriceCheckResult result = {};
-	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.start = ScaledPrice(GetOpenAvgPrice() * GetActiveQty());
 	result.margin
 		= result.start
 		- (ScaledPrice(GetActiveQty())
@@ -684,11 +726,11 @@ EmaFuturesStrategy::ShortPosition::PriceCheckResult
 EmaFuturesStrategy::ShortPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
-	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetOpenAvgPrice()));
 	Assert(!IsZero(GetActiveQty()));
 	AssertEq(INTENTION_HOLD, GetIntention());
 	PriceCheckResult result = {};
-	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.start = ScaledPrice(GetOpenAvgPrice() * GetActiveQty());
 	result.margin
 		= result.start
 		+	(ScaledPrice(GetActiveQty())

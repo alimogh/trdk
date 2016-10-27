@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/04/05 08:23:38
+ *   Created: 2016/10/27 18:22:25
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,20 +10,14 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
+namespace trdk { namespace Strategies { namespace GadM {
 
-#include "Prec.hpp"
+	//! Profit taking level.
+	/** @sa https://app.asana.com/0/196887491555385/192879506137993
+	  */
+	struct ProfitLevels {
+		double priceStep;
+		std::vector<size_t> numberOfContractsPerLevel;
+	};
 
-#include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/uuid/uuid_generators.hpp>
-#	include <boost/algorithm/string/join.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Core/Fwd.hpp"
-
-#include "Fwd.hpp"
-#include "Api.h"
-
-#include "Common/Assert.hpp"
+} } } 

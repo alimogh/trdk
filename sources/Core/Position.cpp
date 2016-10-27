@@ -99,7 +99,6 @@ public:
 
 		OrderId id;
 
-		ScaledPrice volume;
 		Qty executedQty;
 
 		explicit Order(double price, const Qty &qty, const uuids::uuid &&uuid)
@@ -108,7 +107,6 @@ public:
 			, qty(qty)
 			, uuid(std::move(uuid))
 			, id(0)
-			, volume(0)
 			, executedQty(0) {
 			//...//
 		}
@@ -141,13 +139,15 @@ public:
 		ScaledPrice volume;
 		Qty qty;
 		size_t numberOfTrades;
+		ScaledPrice lastTradePrice;
 		std::vector<Order> orders;
 
 		explicit DirectionData(const ScaledPrice &startPrice)
 			: startPrice(startPrice)
 			, volume(0)
 			, qty(0)
-			, numberOfTrades(0) {
+			, numberOfTrades(0)
+			, lastTradePrice(0) {
 			//...//
 		}
 
@@ -164,6 +164,7 @@ public:
 			volume += ScaledPrice(trade.price * trade.qty);
 			qty += trade.qty;
 			++numberOfTrades;
+			lastTradePrice = trade.price;
 		}
 
 	};
@@ -511,7 +512,7 @@ public:
 		Assert(!m_open.orders.empty());
 		m_strategy.GetTradingLog().Write(
 			"order\t%1%\tpos=%1%\torder=%2%/%3%\topen-%4%->%5%\t%6%\t%7%\t%8%.%9%"
-				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f->%14$.8f",
+				"\tprice=%10$.8f->%11$.8f(%12$.8f)\t%13%\tqty=%14$.8f->%15$.8f",
 			[this, eventDesc, &tsOrderId, &orderStatus](
 					TradingRecord &record) {
 				record
@@ -525,10 +526,11 @@ public:
 					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_self.GetOpenStartPrice()) // 10
-					% m_security.DescalePrice(m_self.GetOpenPrice()) // 11
-					% m_self.GetCurrency() // 12
-					% m_self.GetPlanedQty() // 13
-					% m_self.GetOpenedQty(); // 14 and last
+					% m_security.DescalePrice(m_open.lastTradePrice) // 11
+					% m_security.DescalePrice(m_self.GetOpenAvgPrice()) // 12
+					% m_self.GetCurrency() // 13
+					% m_self.GetPlanedQty() // 14
+					% m_self.GetOpenedQty(); // 15 and last
 					
 			});
 	}
@@ -541,7 +543,7 @@ public:
 			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%\tclose-%3%\t%4%\t%5%\t%6%.%7%"
-				"\tprice=%8$.8f->%9$.8f\t%10%\tqty=(%11$.8f, %12$.8f)",
+				"\tprice=%8$.8f->%9$.8f(%10$.8f)\t%11%\tqty=(%12$.8f, %13$.8f)",
 			[this, &uuid, eventDesc, &maxQty](TradingRecord &record) {
 				record
 					% m_operationId // 1
@@ -551,11 +553,12 @@ public:
 					% m_security.GetSymbol().GetSymbol() // 5
 					% m_self.GetTradingSystem().GetTag() // 6
 					% m_tradingSystem.GetMode() // 7
-					% m_security.DescalePrice(m_self.GetOpenPrice()) // 8
-					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 9
-					% m_self.GetCurrency() // 10
-					% maxQty // 11
-					% m_self.GetActiveQty(); // 12 and last
+					% m_security.DescalePrice(m_open.lastTradePrice) // 8
+					% m_security.DescalePrice(m_self.GetOpenAvgPrice()) // 9
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 10
+					% m_self.GetCurrency() // 11
+					% maxQty // 12
+					% m_self.GetActiveQty(); // 13 and last
 			});
 	}
 
@@ -568,7 +571,8 @@ public:
 		Assert(!m_close.orders.empty());
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%->%5%\t%6%\t%7%\t%8%.%9%"
-				"\tprice=%10$.8f->%11$.8f\t%12%\tqty=%13$.8f-%14$.8f=%15$.8f",
+				"\tprice=%10$.8f->%11$.8f(%12$.8f)\t%13%"
+				"\tqty=%14$.8f-%15$.8f=%16$.8f",
 			[this, eventDesc, &tsOrderId, &orderStatus](TradingRecord &record) {
 				record
 					% m_operationId // 1
@@ -581,11 +585,12 @@ public:
 					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 10
-					% m_security.DescalePrice(m_self.GetClosePrice()) // 11
-					% m_self.GetCurrency() // 12
-					% m_self.GetOpenedQty() // 13
-					% m_self.GetClosedQty() // 14
-					% m_self.GetActiveQty(); // 15 and last
+					% m_security.DescalePrice(m_close.lastTradePrice) // 11
+					% m_security.DescalePrice(m_self.GetCloseAvgPrice()) // 12
+					% m_self.GetCurrency() // 13
+					% m_self.GetOpenedQty() // 14
+					% m_self.GetClosedQty() // 15
+					% m_self.GetActiveQty(); // 16 and last
 			});
 	}
 
@@ -1022,6 +1027,14 @@ const uuids::uuid & Position::GetId() const {
 	return m_pimpl->m_operationId;
 }
 
+bool Position::IsLong() const {
+	static_assert(numberOfTypes == 2, "List changed.");
+	Assert(
+		GetType() == Position::TYPE_LONG
+		|| GetType() == Position::TYPE_SHORT);
+	return GetType() == Position::TYPE_LONG;
+}
+
 const ContractExpiration & Position::GetExpiration() const {
 	if (!m_pimpl->m_expiration) {
 		Assert(m_pimpl->m_expiration);
@@ -1185,6 +1198,16 @@ const pt::ptime & Position::GetCloseTime() const {
 	return m_pimpl->m_close.time;
 }
 
+const ScaledPrice & Position::GetLastTradePrice() const {
+	if (m_pimpl->m_close.numberOfTrades) {
+		return m_pimpl->m_close.lastTradePrice;
+	} else if (m_pimpl->m_open.numberOfTrades) {
+		return m_pimpl->m_open.lastTradePrice;
+	} else {
+		throw Exception("Position has no trades");
+	}
+}
+
 double Position::GetRealizedPnlPercentage() const {
 	const auto ratio = GetRealizedPnlRatio();
 	const auto result = ratio > 1 || IsEqual(ratio, 1.0)
@@ -1234,11 +1257,18 @@ void Position::SetOpenedQty(const Qty &newQty) const noexcept {
 	}
 }
 
-ScaledPrice Position::GetOpenPrice() const {
+ScaledPrice Position::GetOpenAvgPrice() const {
 	if (!m_pimpl->m_open.qty) {
-		return 0;
+		throw Exception("Position has no open price");
 	}
 	return ScaledPrice(m_pimpl->m_open.volume / m_pimpl->m_open.qty);
+}
+
+const ScaledPrice & Position::GetLastOpenTradePrice() const {
+	if (!m_pimpl->m_open.numberOfTrades) {
+		throw Exception("Position has no open trades");
+	}
+	return m_pimpl->m_open.lastTradePrice;
 }
 
 double Position::GetOpenedVolume() const {
@@ -1253,11 +1283,18 @@ void Position::SetCloseStartPrice(const ScaledPrice &price) {
 	m_pimpl->m_close.startPrice = price;
 }
 
-ScaledPrice Position::GetClosePrice() const {
+ScaledPrice Position::GetCloseAvgPrice() const {
 	if (!m_pimpl->m_close.qty) {
-		return 0;
+		throw Exception("Position has no close price");
 	}
 	return ScaledPrice(m_pimpl->m_close.volume / m_pimpl->m_close.qty);
+}
+
+const ScaledPrice & Position::GetLastCloseTradePrice() const {
+	if (!m_pimpl->m_close.numberOfTrades) {
+		throw Exception("Position has no close trades");
+	}
+	return m_pimpl->m_close.lastTradePrice;
 }
 
 OrderId Position::OpenAtMarketPrice() {
@@ -1598,7 +1635,7 @@ double LongPosition::GetRealizedPnl() const {
 	}
 	const auto openedVolume
 		= (GetOpenedQty() - activeQty) 
-			* GetSecurity().DescalePrice(GetOpenPrice());
+			* GetSecurity().DescalePrice(GetOpenAvgPrice());
 	return GetClosedVolume() - openedVolume;
 }
 
@@ -1610,7 +1647,7 @@ double LongPosition::GetRealizedPnlRatio() const {
 			?	0
 			:	GetClosedVolume() / openedVolume;
 	}
-	const auto openPrice = GetOpenPrice();
+	const auto openPrice = GetOpenAvgPrice();
 	if (!openPrice) {
 		return 0;
 	}
@@ -1950,7 +1987,7 @@ double ShortPosition::GetRealizedPnl() const {
 	}
 	const auto openedVolume
 		= (GetOpenedQty() - GetActiveQty())
-			* GetSecurity().DescalePrice(GetOpenPrice());
+			* GetSecurity().DescalePrice(GetOpenAvgPrice());
 	return openedVolume - GetClosedVolume();
 }
 double ShortPosition::GetRealizedPnlRatio() const {
@@ -1963,7 +2000,7 @@ double ShortPosition::GetRealizedPnlRatio() const {
 	}
 	const auto openedVolume
 		= (GetOpenedQty() - GetActiveQty())
-			* GetSecurity().DescalePrice(GetOpenPrice());
+			* GetSecurity().DescalePrice(GetOpenAvgPrice());
 	return openedVolume / closedVolume;
 }
 double ShortPosition::GetUnrealizedPnl() const {

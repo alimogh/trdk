@@ -187,12 +187,42 @@ namespace trdk { namespace Lib {
 				bool defaultValue)
 				const;
 
-		std::list<std::string> ReadList() const;
+		std::vector<std::string> ReadList() const;
 
-		std::list<std::string> ReadList(
+		std::vector<std::string> ReadList(
 				const std::string &section,
 				bool isRequired)
 				const;
+
+		std::vector<std::string> ReadList(
+				const std::string &section,
+				const std::string &key,
+				const std::string &delimiter,
+				bool isRequired)
+				const;
+
+		template<typename T>
+		std::vector<T> ReadTypedList(
+				const std::string &section,
+				const std::string &key,
+				const std::string &delimiter,
+				bool isRequired)
+				const {
+			const auto &source = ReadList(section, key, delimiter, isRequired);
+			std::vector<T> result;
+			result.reserve(source.size());
+			for (const auto &value: source) {
+				try {
+					result.emplace_back(boost::lexical_cast<T>(value));
+				} catch (const boost::bad_lexical_cast &ex) {
+					boost::format message(
+						"Wrong INI-file key (\"%1%:%2%:%3%\") format: \"%4%\"");
+					message % section % key % value % ex.what();
+					throw KeyFormatError(message.str().c_str());
+				}
+			}
+			return result;
+		}
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
 				const trdk::Lib::SecurityType &defSecurityType,
@@ -368,14 +398,31 @@ namespace trdk { namespace Lib {
 		bool ReadBoolKey(const std::string &key) const;
 		bool ReadBoolKey(const std::string &key, bool defaultValue) const;
 
-		std::list<std::string> ReadList(
+		std::vector<std::string> ReadList(
 				bool isRequired)
-			const;
+				const;
+		std::vector<std::string> ReadList(
+				const std::string &key,
+				const std::string &delimiter,
+				bool isRequired)
+				const;
+		template<typename T>
+		std::vector<T> ReadTypedList(
+				const std::string &key,
+				const std::string &delimiter,
+				bool isRequired)
+				const {
+			return GetBase().ReadTypedList<T>(
+				GetName(),
+				key,
+				delimiter,
+				isRequired);
+		}
 
 		std::set<trdk::Lib::Symbol> ReadSymbols(
-			const trdk::Lib::SecurityType &defSecurityType,
-			const trdk::Lib::Currency &defCurrency)
-			const;
+				const trdk::Lib::SecurityType &defSecurityType,
+				const trdk::Lib::Currency &defCurrency)
+				const;
 
 	private:
 

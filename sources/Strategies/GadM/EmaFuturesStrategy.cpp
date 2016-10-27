@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
 #include "Emas.hpp"
+#include "ProfitLevels.hpp"
 #include "Services/BarService.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -22,6 +23,8 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Services;
+using namespace trdk::Strategies;
+using namespace trdk::Strategies::GadM;
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -30,45 +33,30 @@ namespace fs = boost::filesystem;
 
 namespace {
 
-	//! Profit taking level.
-	/** @sa https://app.asana.com/0/196887491555385/192879506137993
-	  */
-	struct ProfitLevel {
-		double volume;
-		size_t numberOfContracts;
-	};
-
-	boost::optional<ProfitLevel> ReadProfitLevelConf(
+	boost::optional<ProfitLevels> ReadProfitLevelsConf(
 			const IniSectionRef &conf) {
 		
-		const ProfitLevel result = {
-			conf.ReadTypedKey<double>("profit_level_volume", 0),
-			conf.ReadTypedKey<uint32_t>("profit_level_number_of_contracts", 0)
+		ProfitLevels result = {
+			conf.ReadTypedKey<double>("profit_level_price_step", 0),
 		};
-		if (IsZero(result.volume) && !result.numberOfContracts) {
+		if (IsZero(result.priceStep)) {
 			return boost::none;
 		}
-		if (IsZero(result.volume) != !result.numberOfContracts) {
-			throw Exception(
-				"Should be set both settings \"profit_level_volume\""
-					" and \"profit_level_number_of_contracts\"");
-		}
-
-		const auto numberOfContracts
-			= conf.ReadTypedKey<uint32_t>("number_of_contracts");
-		if (numberOfContracts < result.numberOfContracts) {
-			throw Exception(
-				"\"profit_level_number_of_contracts\" should be less than"
-					" \"number_of_contracts\"");
-		}
-		if (numberOfContracts % result.numberOfContracts) {
-			throw Exception(
-				"\"profit_level_number_of_contracts\" should be multiple"
-					" \"number_of_contracts\"");
-		}
-
-		return result;
 		
+		result.numberOfContractsPerLevel
+			= conf.ReadTypedList<size_t>(
+				"profit_level_number_of_contracts",
+				",",
+				true);
+		for (const auto &size: result.numberOfContractsPerLevel) {
+			if (!size) {
+				throw Exception(
+				"Each \"profit_level_number_of_contracts\" item should be"
+					" greater than zero");
+			}
+		}
+		return result;
+
 	}
 
 }
@@ -113,7 +101,7 @@ namespace EmaFuturesStrategy {
 				/ 100.0)
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
-			, m_profitLevel(ReadProfitLevelConf(conf))
+			, m_profitLevels(ReadProfitLevelsConf(conf))
 			, m_security(nullptr)
 			, m_barService(nullptr)
 			, m_barServiceId(DropCopy::nDataSourceInstanceId)
@@ -121,10 +109,10 @@ namespace EmaFuturesStrategy {
 			GetLog().Info(
 				"Number of contracts: %1%."
 					" Passive order max. lifetime: %2%."
-					" Order price max. delta: %3%."
+					" Order price max. delta: %3$.2f."
 					" Take-profit trailing: %4%%%"
-						" will be activated after profit %5% * %6% = %7%."
-					" Max loss: %8% * %9% = %10%.",
+						" will be activated after profit %5$.2f * %6% = %7$.2f."
+					" Max loss: %8$.2f * %9% = %10$.2f.",
 				m_numberOfContracts, // 1
 				m_passiveOrderMaxLifetime, // 2
 				m_orderPriceMaxDelta, // 3
@@ -135,11 +123,15 @@ namespace EmaFuturesStrategy {
 				m_maxLossMoneyPerContract, // 8
 				m_numberOfContracts, // 9
 				m_maxLossMoneyPerContract * m_numberOfContracts);
-			if (m_profitLevel) {
+			if (m_profitLevels) {
+				std::vector<std::string> sizes;
+				for (const auto &i: m_profitLevels->numberOfContractsPerLevel) {
+					sizes.emplace_back(boost::lexical_cast<std::string>(i));
+				}
 				GetLog().Info(
-					"Profit level volume: %1%, profit value size: %2%.",
-					m_profitLevel->volume,
-					m_profitLevel->numberOfContracts);
+					"Profit level price step: %1%, orders sizes: %2%.",
+					m_profitLevels->priceStep,
+					boost::join(sizes, ", "));
 			} else {
 				GetLog().Info("Profit level value is not set.");
 			}
@@ -294,6 +286,10 @@ namespace EmaFuturesStrategy {
 
 			FinishRollOver(startegyPosition);
 
+			if (startegyPosition.IsCompleted()) {
+				CheckOppositePositionOpenSignal(startegyPosition);
+			}
+
 		}
 
 		virtual void OnServiceDataUpdate(
@@ -430,6 +426,69 @@ namespace EmaFuturesStrategy {
 
 		}
 
+		void CheckOppositePositionOpenSignal(const Position &prevPosition) {
+
+			Assert(m_security);
+			Assert(prevPosition.IsCompleted());
+			Assert(!prevPosition.HasActiveOrders());
+			AssertEq(0, prevPosition.GetActiveQty());
+
+			if (prevPosition.GetCloseType() != Position::CLOSE_TYPE_NONE) {
+				return;
+			}
+
+			AssertNe(m_fastEmaDirection, m_fastEmaDirectionPrev);
+			// If the movement in the same direction will be detected, it will
+			// not open the new position for the same direction as was, as it's
+			// unknown the base of signal to make such positions. For the
+			// opposite position, the base of signal is the signal that closed
+			// the previous position.
+			boost::shared_ptr<Position> position;
+			switch (m_fastEmaDirection) {
+				default:
+					AssertEq(DIRECTION_UP, m_fastEmaDirection);
+					throw LogicError("Internal error: Unknown direction");
+				case DIRECTION_UP:
+					if (prevPosition.IsLong()) {
+						return;
+					}
+					position = CreatePosition<LongPosition>(
+						DIRECTION_UP,
+						TimeMeasurement::Milestones());
+					break;
+				case DIRECTION_LEVEL:
+					if (m_fastEmaDirectionPrev == DIRECTION_DOWN) {
+						if (prevPosition.IsLong()) {
+							return;
+						}
+						position = CreatePosition<LongPosition>(
+							DIRECTION_UP,
+							TimeMeasurement::Milestones());
+					} else if (!prevPosition.IsLong()) {
+						return;
+					} else {
+						AssertEq(DIRECTION_UP, m_fastEmaDirectionPrev);
+						position = CreatePosition<ShortPosition>(
+							DIRECTION_DOWN,
+							TimeMeasurement::Milestones());
+					}
+					break;
+				case DIRECTION_DOWN:
+					if (!prevPosition.IsLong()) {
+						return;
+					}
+					position = CreatePosition<ShortPosition>(
+						DIRECTION_DOWN,
+						TimeMeasurement::Milestones());
+					break;
+			}
+			Assert(position);
+
+			position->Sync();
+			Assert(position->HasActiveOpenOrders());
+
+		}
+
 		void CheckPositionCloseSignal(
 				const Direction &signal,
 				const Milestones &timeMeasurement) {
@@ -498,10 +557,10 @@ namespace EmaFuturesStrategy {
 			}
 			GetTradingLog().Write(
 				"slow-order\ttake-profit"
-					"\tmax_profit=%1%\tmargin=%2%\tcurrent=%3%"
-					"\tpnl_rlz=%4%\tpnl_unr=%5%\tpnl_plan=%6%"
-					"\topen_vol=%7%\topen_price=%8%\tclose_vol=%9%"
-					"\tbid=%10%\task=%11%",
+					"\tmax_profit=%1$.2f\tmargin=%2$.2f\tcurrent=%3$.2f"
+					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
+					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
+					"\tbid=%10$.2f\task=%11$.2f",
 			[&](TradingRecord &record) {
 				record
 					%	position.GetSecurity().DescalePrice(result.start)
@@ -512,7 +571,7 @@ namespace EmaFuturesStrategy {
 					%	position.GetPlannedPnl()
 					%	position.GetOpenedVolume()
 					%	position.GetSecurity().DescalePrice(
-							position.GetOpenPrice())
+							position.GetOpenAvgPrice())
 					%	position.GetClosedVolume()
 					%	position.GetSecurity().GetBidPrice()
 					%	position.GetSecurity().GetAskPrice();
@@ -528,46 +587,19 @@ namespace EmaFuturesStrategy {
 		bool CheckProfitLevel(
 				Position &position,
 				const Milestones &timeMeasurement) {
-			if (!m_profitLevel || position.GetIntention() != INTENTION_HOLD) {
+			if (!m_profitLevels || position.GetIntention() != INTENTION_HOLD) {
 				return false;
 			}
 			Assert(position.GetActiveQty());
-			const Position::PriceCheckResult result = position.CheckProfitLevel(
-				m_profitLevel->volume);
-			if (result.isAllowed) {
+			const auto &orderSize = position.CheckProfitLevel(*m_profitLevels);
+			if (!orderSize) {
 				return false;
 			}
-			Qty intentionSize = 1;
-			GetTradingLog().Write(
-				"slow-order\tprofit-level"
-					"\trealized=%1%\tmargin=%2%\tcurrent=%3%"
-					"\tint_size=%13%"
-					"\tpnl_rlz=%4%\tpnl_unr=%5%\tpnl_plan=%6%"
-					"\topen_vol=%7%\topen_price=%8%"
-					"\tclose_vol=%9%\tcur_vol=%10%"
-					"\tbid=%11%\task=%12%",
-			[&](TradingRecord &record) {
-				record
-					%	position.GetSecurity().DescalePrice(result.start)
-					%	position.GetSecurity().DescalePrice(result.margin)
-					%	position.GetSecurity().DescalePrice(result.current)
-					%	position.GetRealizedPnl()
-					%	position.GetUnrealizedPnl()
-					%	position.GetPlannedPnl()
-					%	position.GetOpenedVolume()
-					%	position.GetSecurity().DescalePrice(
-							position.GetOpenPrice())
-					%	position.GetClosedVolume()
-					%	position.GetActiveVolume()
-					%	position.GetSecurity().GetBidPrice()
-					%	position.GetSecurity().GetAskPrice()
-					%	intentionSize;
-			});
 			position.SetIntention(
 				INTENTION_CLOSE_PASSIVE,
 				Position::CLOSE_TYPE_TAKE_PROFIT,
 				DIRECTION_LEVEL,
-				intentionSize);
+				orderSize);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 			return true;
 		}
@@ -586,8 +618,8 @@ namespace EmaFuturesStrategy {
 			}
 			GetTradingLog().Write(
 				"slow-order\tstop-loss"
-					"\tstart=%1%\tmargin=%2%\tnow=%3%"
-					"\tbid=%4%\task=%5%",
+					"\tstart=%1$.2f\tmargin=%2$.2f\tnow=%3$.2f"
+					"\tbid=%4$.2f\task=%5$.2f",
 			[&](TradingRecord &record) {
 				record
 					%	position.GetSecurity().DescalePrice(result.start)
@@ -644,7 +676,7 @@ namespace EmaFuturesStrategy {
 
 			GetTradingLog().Write(
 				"slow-order\ttime\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
-					"\tbid=%6%\task=%7%",
+					"\tbid=%6$.2f\task=%7$.2f",
 				[&](TradingRecord &record) {
 					record
 						%	startTime.time_of_day()
@@ -716,7 +748,9 @@ namespace EmaFuturesStrategy {
 			if (m_fastEmaDirection == fastEmaDirection) {
 				return DIRECTION_LEVEL;
 			}
+			AssertNe(m_fastEmaDirectionPrev, m_fastEmaDirection);
 
+			m_fastEmaDirectionPrev = m_fastEmaDirection;
 			std::swap(fastEmaDirection, m_fastEmaDirection);
 			GetTradingLog().Write(
 				"fast-ema\t%1%->%2%\tslow-ema=%3%\tfast-ema=%4%"
@@ -892,7 +926,7 @@ namespace EmaFuturesStrategy {
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingRatio;
 		const double m_maxLossMoneyPerContract;
-		const boost::optional<ProfitLevel> m_profitLevel;
+		const boost::optional<ProfitLevels> m_profitLevels;
 
 		Security *m_security;
 
@@ -901,6 +935,7 @@ namespace EmaFuturesStrategy {
 
 		SlowFastEmas m_ema;
 		Direction m_fastEmaDirection;
+		Direction m_fastEmaDirectionPrev;
 
 		boost::uuids::random_generator m_generateUuid;
 
