@@ -11,7 +11,6 @@
 #pragma once
 
 #include "TradingSystem.hpp"
-#include "Fwd.hpp"
 
 namespace trdk {
 

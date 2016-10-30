@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2014/10/19 23:40:52
+ *   Created: 2016/10/21 10:31:05
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,22 +10,8 @@
 
 #pragma once
 
-namespace trdk {
+namespace trdk { namespace Tests {
 
-	class TRDK_CORE_API Terminal : private boost::noncopyable {
+	int RunFuncTest(std::string &&);
 
-	public:
-
-		explicit Terminal(
-				const boost::filesystem::path &,
-				trdk::TradingSystem &);
-		~Terminal();
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
-	};
-
-}
+} }

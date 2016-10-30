@@ -13,7 +13,6 @@
 #include "Context.hpp"	//! @todo	remove context from TradingSystem as it
 						//!			can be one for all contexts.
 #include "Interactor.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {

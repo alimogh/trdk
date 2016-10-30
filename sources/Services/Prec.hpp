@@ -26,8 +26,6 @@
 #include "Common/Common.hpp"
 #include "Common/SegmentedVector.hpp"
 
-#include "Core/Fwd.hpp"
-
 #include <string>
 
 #include "Common/Assert.hpp"

@@ -16,8 +16,13 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Tests;
 
-DummyMarketDataSource::DummyMarketDataSource()
-	: MarketDataSource(0, DummyContext::GetInstance(), "Tag") {
+DummyMarketDataSource::DummyMarketDataSource(trdk::Context *context)
+	: MarketDataSource(
+		0,
+		context
+			?	*context
+			:	DummyContext::GetInstance(),
+		"Tag") {
 	//...//
 }
 

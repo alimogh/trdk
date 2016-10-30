@@ -18,21 +18,22 @@ namespace trdk { namespace Tests {
 
 	public:
 
-		DummyMarketDataSource();
+		explicit DummyMarketDataSource(trdk::Context * = nullptr);
 		virtual ~DummyMarketDataSource();
 
 		static DummyMarketDataSource & GetInstance();
 
 	public:
 
-		virtual void Connect(const trdk::Lib::IniSectionRef &);
+		virtual void Connect(const trdk::Lib::IniSectionRef &) override;
 
-		virtual void SubscribeToSecurities();
+		virtual void SubscribeToSecurities() override;
 
 	protected:
 
 		virtual trdk::Security & CreateNewSecurityObject(
-				const trdk::Lib::Symbol &);
+				const trdk::Lib::Symbol &)
+				override;
 
 	};
 

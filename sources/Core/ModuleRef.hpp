@@ -9,8 +9,6 @@
 
 #pragma once
 
-#include "Fwd.hpp"
-
 namespace trdk {
 	
 	template<typename Module>

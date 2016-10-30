@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Context.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {

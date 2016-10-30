@@ -351,6 +351,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DummyMarketDataSource.hpp" />
+    <ClInclude Include="FuncTestList.hpp" />
     <ClInclude Include="MockBarService.hpp" />
     <ClInclude Include="MockContext.hpp" />
     <ClInclude Include="MockDropCopy.hpp" />
@@ -366,6 +367,7 @@
     <ClCompile Include="DummyContext.cpp" />
     <ClCompile Include="DummyMarketDataSource.cpp" />
     <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
+    <ClCompile Include="FuncTestList.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />
     <ClCompile Include="..\Core\PriceBookUTest.cpp" />

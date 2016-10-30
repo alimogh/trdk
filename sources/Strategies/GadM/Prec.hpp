@@ -21,8 +21,6 @@
 
 #include "Common/Common.hpp"
 
-#include "Core/Fwd.hpp"
-
 #include "Fwd.hpp"
 #include "Api.h"
 

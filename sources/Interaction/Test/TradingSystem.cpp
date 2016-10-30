@@ -549,7 +549,10 @@ OrderId Test::TradingSystem::SendSellAtMarketPriceWithStopPrice(
 	AssertLt(0, qty);
 	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method is not implemented");
+	throw MethodDoesNotImplementedError(
+		"Has no implementation for"
+			" trdk::Interaction::Test"
+			"::TradingSystem::SendSellAtMarketPriceWithStopPrice");
 }
 
 OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
@@ -658,7 +661,10 @@ OrderId Test::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
 	AssertLt(0, qty);
 	AssertFail("Is not implemented.");
 	UseUnused(qty);
-	throw Exception("Method is not implemented");
+	throw MethodDoesNotImplementedError(
+		"Has no implementation for"
+			" trdk::Interaction::Test"
+			"::TradingSystem::SendBuyAtMarketPriceWithStopPrice");
 }
 
 OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
@@ -719,7 +725,10 @@ void Test::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 
 void Test::TradingSystem::SendCancelAllOrders(Security &) {
 	AssertFail("Is not implemented.");
-	throw Exception("Method is not implemented");
+	throw MethodDoesNotImplementedError(
+		"Has no implementation for"
+			" trdk::Interaction::Test"
+			"::TradingSystem::SendCancelAllOrders");
 }
 
 void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {

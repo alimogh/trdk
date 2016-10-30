@@ -8,8 +8,6 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Core/Fwd.hpp"
-
 namespace trdk { namespace EngineServer {
 
 	namespace Details {

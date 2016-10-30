@@ -13,7 +13,6 @@
 #include "Position.hpp"
 #include "Consumer.hpp"
 #include "DropCopy.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Module.hpp"
-#include "Fwd.hpp"
 
 namespace trdk {
 
