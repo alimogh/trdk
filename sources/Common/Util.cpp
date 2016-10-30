@@ -273,3 +273,96 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+#ifdef BOOST_WINDOWS
+
+	namespace {
+
+		std::string WideCharToMultiByte(
+				const unsigned int codePage,
+				const wchar_t *const source,
+				const size_t sourceLen) {
+			Assert(source);
+			AssertLt(0, sourceLen);
+			const int resultLen = ::WideCharToMultiByte(
+				codePage,
+				0,
+				source,
+				unsigned int(sourceLen),
+				NULL,
+				0,
+				0,
+				0);
+	 		if (resultLen == 0) {
+	 			const SysError error(GetLastError());
+				boost::format message(
+					"Failed to convert string to multi-byte string (%1%)");
+				message % error;
+	 			throw SystemException(message.str().c_str());
+	 		}
+			std::string result(resultLen, 0);
+			::WideCharToMultiByte(
+				codePage,
+				0,
+				source,
+				unsigned int(sourceLen),
+				reinterpret_cast<char *>(&result[0]),
+				int(result.size()),
+				0,
+				0);
+			return result;
+		}
+
+		template<class Source>
+		std::wstring MultiByteToWideChar(
+				const unsigned int codePage,
+				const Source *const source,
+				const size_t sourceLen) {
+			Assert(source);
+			AssertLt(0, sourceLen);
+			const auto resultLen = ::MultiByteToWideChar(
+				codePage,
+				0,
+				reinterpret_cast<const char *>(source),
+				int(sourceLen),
+				NULL,
+				0);
+	 		if (resultLen == 0) {
+	 			const SysError error(GetLastError());
+				boost::format message(
+					"Failed to convert string to wide-char string (%1%)");
+				message % error;
+	 			throw SystemException(message.str().c_str());
+	 		}
+			std::wstring result(resultLen, 0);
+			::MultiByteToWideChar(
+				codePage,
+				0,
+				reinterpret_cast<const char *>(source),
+				int(sourceLen),
+				&result[0],
+				int(result.size()));
+			return result;
+		}
+
+	}
+
+	std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
+		if (source.empty()) {
+			return std::string();
+		}
+		const auto &buffer
+			= MultiByteToWideChar(CP_UTF8, source.c_str(), source.size());
+		return WideCharToMultiByte(CP_ACP, buffer.c_str(), buffer.size());
+	}
+
+#else
+
+	std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
+		AssertFail("trdk::Lib::ConvertUtf8ToAscii is not implemented.");
+		return source;
+	}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////

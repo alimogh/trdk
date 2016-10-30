@@ -19,7 +19,7 @@ using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
-TradingSystem::Error::Error(const char *what) throw()
+TradingSystem::Error::Error(const char *what) noexcept
 	: Base::Error(what) {
 	//...//
 }
@@ -28,33 +28,36 @@ TradingSystem::OrderParamsError::OrderParamsError(
 		const char *what,
 		const Qty &,
 		const OrderParams &)
-	throw()
+	noexcept
 	: Error(what) {
 	//...//
 }
 
-TradingSystem::SendingError::SendingError() throw()
-		: Error("Failed to send data to trading system") {
+TradingSystem::SendingError::SendingError(const char *what) noexcept
+	: Error(what) {
+	//...//
+}
+
+TradingSystem::OrderIsUnknown::OrderIsUnknown(const char *what) noexcept
+	: Error(what) {
 	//...//
 }
 
 TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 		const char *what)
-	throw()
+		noexcept
 	: Error(what) {
 	//...//
 }
 
 TradingSystem::UnknownAccountError::UnknownAccountError(
 		const char *what)
-	throw()
+		noexcept
 	: Error(what) {
 	//...//
 }
 
-TradingSystem::PositionError::PositionError(
-		const char *what)
-	throw()
+TradingSystem::PositionError::PositionError(const char *what) noexcept
 	: Error(what) {
 	//...//
 }
@@ -291,51 +294,19 @@ const Context & TradingSystem::GetContext() const {
 	return const_cast<TradingSystem *>(this)->GetContext();
 }
 
-TradingSystem::Log & TradingSystem::GetLog() const throw() {
+TradingSystem::Log & TradingSystem::GetLog() const noexcept {
 	return m_pimpl->m_log;
 }
 
-TradingSystem::TradingLog & TradingSystem::GetTradingLog() const throw() {
+TradingSystem::TradingLog & TradingSystem::GetTradingLog() const noexcept {
 	return m_pimpl->m_tradingLog;
-}
-
-const char * TradingSystem::GetStringStatus(const OrderStatus &code) {
-
-	static_assert(
-		numberOfOrderStatuses == 9,
-		"Changed trading system order status list.");
-
-	switch (code) {
-		case ORDER_STATUS_SENT:
-			return "sent";
-		case ORDER_STATUS_REQUESTED_CANCEL:
-			return "req. cancel";
-		case ORDER_STATUS_SUBMITTED:
-			return "submitted";
-		case ORDER_STATUS_CANCELLED:
-			return "canceled";
-		case ORDER_STATUS_FILLED:
-			return "filled";
-		case ORDER_STATUS_FILLED_PARTIALLY:
-			return "filled part.";
-		case ORDER_STATUS_REJECTED:
-			return "rejected";
-		case ORDER_STATUS_INACTIVE:
-			return "inactive";
-		case ORDER_STATUS_ERROR:
-			return "error";
-		default:
-			AssertFail("Unknown order status code");
-			return "unknown";
-	}
-
 }
 
 const std::string & TradingSystem::GetTag() const {
 	return m_pimpl->m_tag;
 }
 
-const std::string & TradingSystem::GetStringId() const throw() {
+const std::string & TradingSystem::GetStringId() const noexcept {
 	return m_pimpl->m_stringId;
 }
 
@@ -393,7 +364,13 @@ OrderId TradingSystem::SellAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -460,7 +437,13 @@ OrderId TradingSystem::Sell(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				price,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -529,7 +512,12 @@ OrderId TradingSystem::SellAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[	&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement, 
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -596,7 +584,13 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				price,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -663,7 +657,13 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -730,7 +730,13 @@ OrderId TradingSystem::BuyAtMarketPrice(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -797,7 +803,13 @@ OrderId TradingSystem::Buy(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				price,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -866,7 +878,13 @@ OrderId TradingSystem::BuyAtMarketPriceWithStopPrice(
 			qty,
 			stopPrice,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -933,7 +951,13 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
 			qty,
 			price,
 			params,
-			[&, riskControlOperationId, currency, price, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				price,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -1000,7 +1024,13 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
 			currency,
 			qty,
 			params,
-			[&, riskControlOperationId, currency, supposedPrice, timeMeasurement, callback](
+			[
+				&,
+				riskControlOperationId,
+				currency,
+				supposedPrice,
+				timeMeasurement,
+				callback](
 					const OrderId &orderId,
 					const std::string &tradingSystemOrderId,
 					const OrderStatus &orderStatus,
@@ -1043,10 +1073,6 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
 
 void TradingSystem::CancelOrder(const OrderId &order) {
 	SendCancelOrder(order);
-}
-
-void TradingSystem::CancelAllOrders(Security &security) {
-	SendCancelAllOrders(security);
 }
 
 void TradingSystem::Test() {

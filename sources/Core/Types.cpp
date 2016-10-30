@@ -132,3 +132,32 @@ const std::string & trdk::ConvertToString(const TradingMode &mode) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+const char * trdk::ConvertToPch(const OrderStatus &status) {
+	static_assert(numberOfOrderStatuses == 9, "List changed.");
+	switch (status) {
+		default:
+			AssertEq(ORDER_STATUS_SENT, status);
+			return "unknown";
+		case ORDER_STATUS_SENT:
+			return "sent";
+		case ORDER_STATUS_REQUESTED_CANCEL:
+			return "req. cancel";
+		case ORDER_STATUS_SUBMITTED:
+			return "submitted";
+		case ORDER_STATUS_CANCELLED:
+			return "canceled";
+		case ORDER_STATUS_FILLED:
+			return "filled";
+		case ORDER_STATUS_FILLED_PARTIALLY:
+			return "filled part.";
+		case ORDER_STATUS_REJECTED:
+			return "rejected";
+		case ORDER_STATUS_INACTIVE:
+			return "inactive";
+		case ORDER_STATUS_ERROR:
+			return "error";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////

@@ -107,6 +107,8 @@ namespace trdk {
 
 	};
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	enum OrderStatus {
 		ORDER_STATUS_SENT = 100,
 		ORDER_STATUS_REQUESTED_CANCEL = 200,
@@ -119,6 +121,17 @@ namespace trdk {
 		ORDER_STATUS_ERROR = 900,
 		numberOfOrderStatuses = 9
 	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::OrderStatus &);
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::OrderStatus &status) {
+		os << trdk::ConvertToPch(status);
+		return os;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	enum OrderType {
 		ORDER_TYPE_LIMIT = 0,
@@ -176,7 +189,7 @@ namespace trdk {
 		typedef trdk::ScaledPrice Type;
 	};
 
-	const char * ConvertToPch(const Level1TickType &);
+	const char * ConvertToPch(const trdk::Level1TickType &);
 
 	class Level1TickValue {
 

@@ -292,14 +292,14 @@ trdk::OrderId ib::TradingSystem::SendSell(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const OrderParams &params,
-		const OrderStatusUpdateSlot &statusUpdateSlot) {
+		const OrderStatusUpdateSlot &&statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
 	UseUnused(currency);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceSellOrder(security, qty, rawPrice, params);
 	order.security = &security;
-	order.callback = statusUpdateSlot;
+	order.callback = std::move(statusUpdateSlot);
 	RegOrder(order);
 	return order.id;
 }
@@ -376,14 +376,14 @@ trdk::OrderId ib::TradingSystem::SendBuy(
 		const Qty &qty,
 		const ScaledPrice &price,
 		const OrderParams &params,
-		const OrderStatusUpdateSlot &statusUpdateSlot) {
+		const OrderStatusUpdateSlot &&statusUpdateSlot) {
 	AssertEq(security.GetSymbol().GetCurrency(), currency);
 	UseUnused(currency);
 	const auto rawPrice = security.DescalePrice(price);
 	PlacedOrder order = {};
 	order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, params);
 	order.security = &security;
-	order.callback = statusUpdateSlot;
+	order.callback = std::move(statusUpdateSlot);
 	RegOrder(order);
 	return order.id;
 }

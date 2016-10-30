@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Symbol.hpp"
-#include "Foreach.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -71,7 +70,7 @@ Symbol::Symbol(
 
 	std::vector<std::string> subs;
 	boost::split(subs, line, boost::is_any_of(":"));
-	foreach (auto &s, subs) {
+	for (auto &s: subs) {
 		boost::trim(s);
 	}
 	if (subs.empty() || subs.size() > 3 || line.empty()) {
@@ -106,7 +105,7 @@ Symbol::Symbol(
 	
 	std::vector<std::string> symbolSubs;
 	boost::split(symbolSubs, subs[0], boost::is_any_of("/"));
-	foreach (auto &s, symbolSubs) {
+	for (auto &s: symbolSubs) {
 		boost::trim(s);
 		if (s.empty()) {
 			throw StringFormatError("One or more symbol fields are empty");
@@ -177,7 +176,7 @@ Symbol::Symbol(
 		boost::split(exchangeSubs, subs[1], boost::is_any_of("/"));
 		if (!exchangeSubs.empty()) {
 		
-			foreach (auto &s, exchangeSubs) {
+			for (auto &s: exchangeSubs) {
 				boost::trim(s);
 				if (s.empty()) {
 					throw StringFormatError(

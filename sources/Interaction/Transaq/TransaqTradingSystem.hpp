@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2012/07/23 23:13:12
+ *   Created: 2016/10/30 17:45:19
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,32 +10,80 @@
 
 #pragma once
 
+#include "TransaqConnector.hpp"
+#include "TransaqConnectorContext.hpp"
 #include "Core/TradingSystem.hpp"
-#include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Test {
+namespace trdk { namespace Interaction { namespace Transaq {
+	
+	class TradingSystem
+		: public trdk::TradingSystem,
+		protected TradingConnector {
 
-	class TradingSystem : public trdk::TradingSystem {
+	private:
+
+		struct Order {
+			const Security *security;
+			OrderId id;
+			OrderStatusUpdateSlot callback;
+			Qty qty;
+			mutable Qty remainingQty;
+			mutable OrderStatus status;
+			mutable Lib::TimeMeasurement::Milestones replyDelayMeasurement;
+			TradingSystemOrderId tradingSystemOrderId;
+		};
+
+		struct ByOrderId {
+			//...//
+		};
+		struct ByTradingSystemOrderId {
+			//...//
+		};
+
+		typedef boost::multi_index_container<
+				Order,
+				boost::multi_index::indexed_by<
+					boost::multi_index::hashed_unique<
+						boost::multi_index::tag<ByOrderId>,
+						boost::multi_index::member<
+							Order,
+							OrderId,
+							&Order::id>>,
+					boost::multi_index::hashed_unique<
+						boost::multi_index::tag<ByTradingSystemOrderId>,
+						boost::multi_index::member<
+							Order,
+							TradingSystemOrderId,
+							&Order::tradingSystemOrderId>>>>
+			Orders;
+
+		typedef concurrency::critical_section OrdersMutex;
+		typedef OrdersMutex::scoped_lock OrdersLock;
 
 	public:
 
-		typedef trdk::TradingSystem Base;
-
-	public:
-
-		TradingSystem(
-				const trdk::TradingMode &,
-				size_t index,
-				Context &context,
-				const std::string &tag,
-				const Lib::IniSectionRef &);
+		explicit TradingSystem(
+			const trdk::TradingMode &,
+			size_t index,
+			trdk::Context &,
+			const std::string &tag,
+			const Lib::IniSectionRef &);
 		virtual ~TradingSystem();
+
+	public:
+
+		using trdk::TradingSystem::GetContext;
+		using trdk::TradingSystem::GetLog;
 
 	public:
 
 		virtual bool IsConnected() const override;
 
 	protected:
+
+		virtual void CreateConnection(
+				const trdk::Lib::IniSectionRef &)
+				override;
 
 		virtual OrderId SendSellAtMarketPrice(
 				trdk::Security &,
@@ -56,7 +104,7 @@ namespace trdk { namespace Interaction { namespace Test {
 				trdk::Security &,
 				const trdk::Lib::Currency &,
 				const trdk::Qty &,
-				const trdk::ScaledPrice &stopPrice,
+				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
 				const OrderStatusUpdateSlot &)
 				override;
@@ -117,18 +165,41 @@ namespace trdk { namespace Interaction { namespace Test {
 
 		virtual void SendCancelOrder(const OrderId &) override;
 
-	public:
+	protected:
 
-		virtual void CreateConnection(const Lib::IniSectionRef &) override;
+		virtual ConnectorContext & GetConnectorContext() override;
 
-	public:
+		virtual void OnOrderUpdate(
+				const OrderId &,
+				TradingSystemOrderId &&tradingSystemOrderId,
+				OrderStatus &&,
+				Qty &&remainingQty,
+				std::string &&tradingSystemMessage,
+				const Lib::TimeMeasurement::Milestones::TimePoint &)
+				override;
 
-		virtual void OnSettingsUpdate(const Lib::IniSectionRef &) override;
+		virtual void OnTrade(
+				std::string &&id,
+				TradingSystemOrderId &&,
+				double price,
+				Qty &&)
+				override;
 
 	private:
 
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
+		void RegisterOrder(
+				const Security &,
+				const OrderId &,
+				const Qty &,
+				const OrderStatusUpdateSlot &&,
+				const Lib::TimeMeasurement::Milestones &&);
+
+	private:
+
+		ConnectorContext m_connectorContext;
+
+		OrdersMutex m_ordersMutex;
+		Orders m_orders;
 
 	};
 

@@ -520,7 +520,7 @@ OrderId Test::TradingSystem::SendSell(
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
-			const OrderStatusUpdateSlot &statusUpdateSlot) {
+			const OrderStatusUpdateSlot &&statusUpdateSlot) {
 	AssertLt(0, price);
 	AssertLt(0, qty);
 	const auto &id = m_pimpl->TakeOrderId();
@@ -531,7 +531,7 @@ OrderId Test::TradingSystem::SendSell(
 			currency,
 			false,
 			id,
-			statusUpdateSlot,
+			std::move(statusUpdateSlot),
 			qty,
 			price,
 			params
@@ -632,7 +632,7 @@ OrderId Test::TradingSystem::SendBuy(
 			const Qty &qty,
 			const ScaledPrice &price,
 			const OrderParams &params,
-			const OrderStatusUpdateSlot &statusUpdateSlot) {
+			const OrderStatusUpdateSlot &&statusUpdateSlot) {
 	AssertLt(0, price);
 	AssertLt(0, qty);
 	const auto &id = m_pimpl->TakeOrderId();
@@ -643,7 +643,7 @@ OrderId Test::TradingSystem::SendBuy(
 			currency,
 			false,
 			id,
-			statusUpdateSlot,
+			std::move(statusUpdateSlot),
 			qty,
 			price,
 			params
@@ -721,14 +721,6 @@ void Test::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 		m_pimpl->m_cancels.emplace_back(orderId);
 	}
 	m_pimpl->m_condition.notify_all();
-}
-
-void Test::TradingSystem::SendCancelAllOrders(Security &) {
-	AssertFail("Is not implemented.");
-	throw MethodDoesNotImplementedError(
-		"Has no implementation for"
-			" trdk::Interaction::Test"
-			"::TradingSystem::SendCancelAllOrders");
 }
 
 void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {

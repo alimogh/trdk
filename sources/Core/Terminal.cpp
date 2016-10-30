@@ -195,7 +195,7 @@ private:
 				trade ? trade->qty : Qty(0),
 				remaining,
 				trade ? trade->price : 0,
-				TradingSystem::GetStringStatus(status),
+				status,
 				tradingSystemOrderId);
 		}
 		Currency GetCurrency() const {

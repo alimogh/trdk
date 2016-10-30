@@ -108,7 +108,7 @@ namespace trdk {
 
 		class TRDK_CORE_API Error : public Base::Error {
 		public:
-			explicit Error(const char *what) throw();
+			explicit Error(const char *what) noexcept;
 		};
 
 		class TRDK_CORE_API OrderParamsError : public Error {
@@ -117,29 +117,34 @@ namespace trdk {
 				const char *what,
 				const trdk::Qty &,
 				const trdk::OrderParams &)
-				throw();
+				noexcept;
 		};
 
 		class TRDK_CORE_API SendingError : public Error {
 		public:
-			SendingError() throw();
+			SendingError(const char *what) noexcept;
+		};
+
+		class TRDK_CORE_API OrderIsUnknown : public Error {
+		public:
+			explicit OrderIsUnknown(const char *what) noexcept;
 		};
 
 		class TRDK_CORE_API ConnectionDoesntExistError : public Error {
 		public:
-			explicit ConnectionDoesntExistError(const char *what) throw();
+			explicit ConnectionDoesntExistError(const char *what) noexcept;
 		};
 
 		//! Account is unknown or default account requested but hasn't been set.
 		class TRDK_CORE_API UnknownAccountError : public Error {
 		public:
-			explicit UnknownAccountError(const char *what) throw();
+			explicit UnknownAccountError(const char *what) noexcept;
 		};
 
 		//! Broker position error.
 		class TRDK_CORE_API PositionError : public Error {
 		public:
-			explicit PositionError(const char *what) throw();
+			explicit PositionError(const char *what) noexcept;
 		};
 
 	public:
@@ -157,10 +162,6 @@ namespace trdk {
 
 	public:
 
-		static const char * GetStringStatus(const OrderStatus &);
-
-	public:
-
 		const trdk::TradingMode & GetMode() const;
 
 		size_t GetIndex() const;
@@ -168,15 +169,15 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		trdk::TradingSystem::Log & GetLog() const throw();
-		trdk::TradingSystem::TradingLog & GetTradingLog() const throw();
+		trdk::TradingSystem::Log & GetLog() const noexcept;
+		trdk::TradingSystem::TradingLog & GetTradingLog() const noexcept;
 
 		//! Identifies Trading System object by verbose name. 
 		/** Trading System Tag unique, but can be empty for one of objects.
 		  */
 		const std::string & GetTag() const;
 
-		const std::string & GetStringId() const throw();
+		const std::string & GetStringId() const noexcept;
 
 	public:
 
@@ -299,7 +300,6 @@ namespace trdk {
 				const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
 		void CancelOrder(const OrderId &);
-		void CancelAllOrders(trdk::Security &);
 
 		virtual void Test();
 
@@ -326,7 +326,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &)
+				const OrderStatusUpdateSlot &&)
 			= 0;
 		virtual OrderId SendSellAtMarketPriceWithStopPrice(
 				trdk::Security &,
@@ -365,7 +365,7 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &)
+				const OrderStatusUpdateSlot &&)
 			= 0;
 		virtual OrderId SendBuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
@@ -392,7 +392,6 @@ namespace trdk {
 			= 0;
 
 		virtual void SendCancelOrder(const OrderId &) = 0;
-		virtual void SendCancelAllOrders(trdk::Security &) = 0;
 
 	private:
 

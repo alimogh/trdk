@@ -86,32 +86,28 @@ public:
 				new RiskControl(m_context, conf, TradingMode(i + 1)));
 		}
 
-		{
+		if (conf.IsSectionExist("Expiration")) {
 			const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
 				"Expiration",
-				"calendar_csv",
-				"");
-			if (!expirationCalendarFilePath.empty()) {
-				m_context.GetLog().Debug(
-					"Loading expiration calendar from %1%...",
-					expirationCalendarFilePath);
-				m_expirationCalendar.reset(new ExpirationCalendar);
-				m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
-				const ExpirationCalendar::Stat stat
-					= m_expirationCalendar->CalcStat();
-				const char *const message
-					= "Expiration calendar has %1% symbols"
-						" and %2% expirations.";
-				stat.numberOfExpirations && stat.numberOfSymbols
-					?	m_context.GetLog().Info(
-							message,
-							stat.numberOfSymbols,
-							stat.numberOfExpirations)
-					:	m_context.GetLog().Warn(
-							message,
-							stat.numberOfSymbols,
-							stat.numberOfExpirations);
-			}
+				"calendar_csv");
+			m_context.GetLog().Debug(
+				"Loading expiration calendar from %1%...",
+				expirationCalendarFilePath);
+			m_expirationCalendar.reset(new ExpirationCalendar);
+			m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+			const ExpirationCalendar::Stat stat
+				= m_expirationCalendar->CalcStat();
+			const char *const message
+				= "Expiration calendar has %1% symbols and %2% expirations.";
+			stat.numberOfExpirations && stat.numberOfSymbols
+				?	m_context.GetLog().Info(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations)
+				:	m_context.GetLog().Warn(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations);
 		}
 
 		BootContext(

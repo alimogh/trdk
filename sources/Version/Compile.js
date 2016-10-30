@@ -27,6 +27,7 @@ var requiredModules = [
 	, 'Engine'
 	, 'TestTradingSystems'
 	, 'InteractiveBrokers'
+	, 'Transaq'
 	, 'Services'
 	, 'TestStrategy'
 	, 'GadM'

@@ -324,7 +324,7 @@ public:
 			case ORDER_STATUS_REJECTED:
 				order.isActive = false;
 				ReportOpeningUpdate(
-					TradingSystem::GetStringStatus(orderStatus),
+					ConvertToPch(orderStatus),
 					tradingSystemOrderId,
 					orderStatus);
 				break;
@@ -431,7 +431,7 @@ public:
 			case ORDER_STATUS_CANCELLED:
 			case ORDER_STATUS_REJECTED:
 				ReportClosingUpdate(
-					TradingSystem::GetStringStatus(orderStatus),
+					ConvertToPch(orderStatus),
 					tradingSystemOrderId,
 					orderStatus);
 				break;
@@ -522,7 +522,7 @@ public:
 					% m_open.orders.back().uuid // 2
 					% tsOrderId // 3
 					% eventDesc // 4
-					% m_tradingSystem.GetStringStatus(orderStatus) // 5
+					% orderStatus // 5
 					% m_self.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol().c_str() // 7
 					% m_self.GetTradingSystem().GetTag().c_str() // 8
@@ -587,7 +587,7 @@ public:
 					% m_close.orders.back().uuid // 2
 					% tsOrderId // 3
 					% eventDesc // 4
-					% m_tradingSystem.GetStringStatus(orderStatus) // 5
+					% orderStatus // 5
 					% m_self.GetTypeStr() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
 					% m_self.GetTradingSystem().GetTag() // 8

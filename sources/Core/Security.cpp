@@ -430,7 +430,9 @@ public:
 	}
 
 	void UpdateMarketDataStat(const pt::ptime &time) {
-		Assert(!time.is_not_a_date_time());
+		if (time.is_not_a_date_time()) {
+			return;
+		}
 #		ifdef BOOST_ENABLE_ASSERT_HANDLER
 			if (!GetLastMarketDataTime().is_not_a_date_time()) {
 				AssertLe(GetLastMarketDataTime(), time);
