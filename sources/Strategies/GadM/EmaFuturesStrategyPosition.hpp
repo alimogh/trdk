@@ -29,6 +29,8 @@ namespace EmaFuturesStrategy {
 		numberOfIntentions
 	};
 
+	const char * ConvertToPch(const Intention &);
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	class Position : virtual public trdk::Position {

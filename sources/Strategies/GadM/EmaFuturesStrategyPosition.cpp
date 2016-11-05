@@ -26,6 +26,29 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char * EmaFuturesStrategy::ConvertToPch(const Intention &intention) {
+	static_assert(numberOfIntentions == 6, "List changed.");
+	switch (intention) {
+		default:
+			AssertEq(INTENTION_OPEN_PASSIVE, intention);
+			return "UNKNOWN";
+		case INTENTION_OPEN_PASSIVE:
+			return "open-passive";
+		case INTENTION_OPEN_AGGRESIVE:
+			return "open-aggresive";
+		case INTENTION_HOLD:
+			return "hold";
+		case INTENTION_DONOT_OPEN:
+			return "donot-open";
+		case INTENTION_CLOSE_PASSIVE:
+			return "close-passive";
+		case INTENTION_CLOSE_AGGRESIVE:
+			return "close-aggresive";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 EmaFuturesStrategy::Position::Position(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
@@ -87,16 +110,18 @@ void EmaFuturesStrategy::Position::SetIntention(
 		"intention\t%1%->%2%\t%3%\t%4%\t%5%\t%6%\t%7%",
 		[&](TradingRecord &record) {
 			record
-				% m_intention
-				% intention
+				% ConvertToPch(m_intention)
+				% ConvertToPch(intention)
 				% (m_isPassiveOpen ? "true" : "false")
 				% (m_isPassiveClose ? "true" : "false")
 				% (m_isSent ? "true" : "false")
 				% closeType
-				% closeReason;
+				% ConvertToPch(closeReason);
 		});
 
-	m_closeType = closeType;
+	if (closeType != CLOSE_TYPE_NONE) {
+		m_closeType = closeType;
+	}
 
 	if (closeReason != DIRECTION_LEVEL) {
 		m_reasons[1] = closeReason;
@@ -133,7 +158,10 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 		GetStrategy().GetTradingLog().Write(
 			"move\tis already started\t%1%\t%2%\t%3%",
 			[&](TradingRecord &record){
-				record % m_intention % m_closeType % m_reasons[1];
+				record
+					% ConvertToPch(m_intention)
+					% m_closeType
+					% ConvertToPch(m_reasons[1]);
 			});
 		return;
 	}
@@ -146,9 +174,9 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				[&](TradingRecord &record) {
 				record
 					% INTENTION_OPEN_PASSIVE
-					% m_intention
+					% ConvertToPch(m_intention)
 					% m_closeType
-					% m_reasons[1];
+					% ConvertToPch(m_reasons[1]);
 			});
 			break;
 		case INTENTION_CLOSE_PASSIVE:
@@ -158,16 +186,19 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				[&](TradingRecord &record) {
 					record
 						% INTENTION_CLOSE_PASSIVE
-						% m_intention
+						% ConvertToPch(m_intention)
 						% m_closeType
-						% m_reasons[1];
+						% ConvertToPch(m_reasons[1]);
 				});
 			break;
 		default:
 			GetStrategy().GetTradingLog().Write(
 				"move\t%1%\t%2%\t%3%",
 				[&](TradingRecord &record) {
-					record % m_intention % m_closeType % m_reasons[1];
+					record
+						% ConvertToPch(m_intention)
+						% m_closeType
+						% ConvertToPch(m_reasons[1]);
 				});
 	}
 	CancelAllOrders();
