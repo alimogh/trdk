@@ -332,7 +332,7 @@ namespace EmaFuturesStrategy {
 							% (signal == DIRECTION_UP ? "BUY" : "SELL")
 							% m_ema[SLOW].GetValue()
 							% m_ema[FAST].GetValue()
-							% ConvertToPch(m_fastEmaDirection)
+							% m_fastEmaDirection
 							% m_security->GetBidPrice()
 							% m_security->GetAskPrice();
 					});
@@ -526,7 +526,7 @@ namespace EmaFuturesStrategy {
 				Assert(position.HasActiveOpenOrders());
 				GetTradingLog().Write(
 					"slow-order\tsignal for empty order",
-					[&](const TradingRecord &) {});
+					[](const TradingRecord &) {});
 				position.SetIntention(
 					INTENTION_DONOT_OPEN,
 					Position::CLOSE_TYPE_OPEN_FAILED,
@@ -716,9 +716,9 @@ namespace EmaFuturesStrategy {
 					"\tbid=%6%\task=%7%",
 				[&](TradingRecord &record) {
 					record
-						% position.GetSecurity().DescalePrice(result.start)
-						% position.GetSecurity().DescalePrice(result.margin)
-						% position.GetSecurity().DescalePrice(result.current)
+						%	position.GetSecurity().DescalePrice(result.start)
+						%	position.GetSecurity().DescalePrice(result.margin)
+						%	position.GetSecurity().DescalePrice(result.current)
 						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
 								||	position.GetIntention()
 										== INTENTION_CLOSE_PASSIVE
@@ -757,8 +757,8 @@ namespace EmaFuturesStrategy {
 					"\tbid=%5%\task=%6%",
 				[&](TradingRecord &record) {
 					record
-						% ConvertToPch(fastEmaDirection)
-						% ConvertToPch(m_fastEmaDirection)
+						% fastEmaDirection
+						% m_fastEmaDirection
 						% m_ema[SLOW].GetValue()
 						% m_ema[FAST].GetValue()
 						% m_security->GetBidPrice()
