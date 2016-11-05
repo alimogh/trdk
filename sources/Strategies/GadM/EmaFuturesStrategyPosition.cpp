@@ -206,7 +206,6 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 			break;
 
 		case INTENTION_DONOT_OPEN:
-			Assert(!IsOpened());
 			if (HasActiveOpenOrders()) {
 				CancelAllOrders();
 				m_isSent = false;
@@ -214,6 +213,8 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
+				// Some position was opened by active order immediately after
+				// INTENTION_DONOT_OPEN intension set.
 				intention = INTENTION_HOLD;
 				m_isSent = false;
 			}
