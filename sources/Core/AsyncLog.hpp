@@ -535,7 +535,7 @@ namespace trdk {
 
 	public:
 
-		bool IsEnabled() const {
+		bool IsEnabled() const noexcept {
 			return m_log.IsEnabled();
 		}
 
@@ -562,7 +562,7 @@ namespace trdk {
 		  * @sa trdk::AsyncLog::AsyncLogRecord::Format 
 		  * @sa trdk::AsyncLog::AsyncLogRecord::operator %
 		  */
-		void WaitForFlush() const throw() {
+		void WaitForFlush() const noexcept {
 			try {
 				m_writeTask->WaitForFlush();
 			} catch (...) {
@@ -575,21 +575,26 @@ namespace trdk {
 		template<typename FormatCallback, typename... RecordParams>
 		void FormatAndWrite(
 				const FormatCallback &formatCallback,
-				const RecordParams &...recordParams) {
+				const RecordParams &...recordParams)
+				noexcept {
 			if (!IsEnabled()) {
 				return;
 			}
-			Record record(
-				m_log.GetTime(),
-				m_log.GetThreadId(),
-				recordParams...);
-			formatCallback(record);
-			{
-				const Lock lock(m_queue.mutex);
-				Assert(m_queue.activeBuffer);
-				m_queue.activeBuffer->emplace_back(std::move(record));
+			try {
+				Record record(
+					m_log.GetTime(),
+					m_log.GetThreadId(),
+					recordParams...);
+				formatCallback(record);
+				{
+					const Lock lock(m_queue.mutex);
+					Assert(m_queue.activeBuffer);
+					m_queue.activeBuffer->emplace_back(std::move(record));
+				}
+				m_queue.condition.notify_one();
+			} catch (...) {
+				AssertFailNoException();
 			}
-			m_queue.condition.notify_one();
 		}
 
 	private:

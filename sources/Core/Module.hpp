@@ -52,15 +52,15 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		const std::string & GetTypeName() const throw();
-		const std::string & GetName() const throw();
-		const std::string & GetTag() const throw();
-		const std::string & GetStringId() const throw();
+		const std::string & GetTypeName() const noexcept;
+		const std::string & GetName() const noexcept;
+		const std::string & GetTag() const noexcept;
+		const std::string & GetStringId() const noexcept;
 
 	public:
 
-		trdk::Module::Log & GetLog() const throw();
-		trdk::Module::TradingLog & GetTradingLog() const throw();
+		trdk::Module::Log & GetLog() const noexcept;
+		trdk::Module::TradingLog & GetTradingLog() const noexcept;
 
 		Lock LockForOtherThreads();
 

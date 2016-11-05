@@ -38,7 +38,7 @@ namespace trdk {
 
 	public:
 
-		bool IsEnabled() const {
+		bool IsEnabled() const noexcept {
 			return m_isStreamEnabled || m_isStdOutEnabled;
 		}
 

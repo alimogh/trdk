@@ -525,9 +525,15 @@ public:
 					% m_security.GetSymbol().GetSymbol() // 7
 					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_self.GetOpenStartPrice()) // 10
-					% m_security.DescalePrice(m_open.lastTradePrice) // 11
-					% m_security.DescalePrice(m_self.GetOpenAvgPrice()) // 12
+					% m_security.DescalePrice(m_self.GetOpenStartPrice()); // 10
+				if (m_self.GetOpenedQty()) {
+					record
+						% m_security.DescalePrice(m_open.lastTradePrice) // 11
+						% m_security.DescalePrice(m_self.GetOpenAvgPrice()); // 12
+				} else {
+					record % '-' % '-'; // 11, 12
+				}
+				record
 					% m_self.GetCurrency() // 13
 					% m_self.GetPlanedQty() // 14
 					% m_self.GetOpenedQty(); // 15 and last
@@ -584,9 +590,15 @@ public:
 					% m_security.GetSymbol().GetSymbol() // 7
 					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 10
-					% m_security.DescalePrice(m_close.lastTradePrice) // 11
-					% m_security.DescalePrice(m_self.GetCloseAvgPrice()) // 12
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 10
+				if (m_self.GetClosedQty()) {
+					record
+						% m_security.DescalePrice(m_close.lastTradePrice) // 11
+						% m_security.DescalePrice(m_self.GetCloseAvgPrice()); // 12
+				} else {
+					record % '-' % '-'; // 11, 12
+				}
+				record
 					% m_self.GetCurrency() // 13
 					% m_self.GetOpenedQty() // 14
 					% m_self.GetClosedQty() // 15

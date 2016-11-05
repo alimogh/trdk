@@ -84,7 +84,7 @@ namespace trdk {
 				record);
 		}
 		 
-		bool IsEnabled() const {
+		bool IsEnabled() const noexcept {
 			return m_log.IsEnabled();
 		}
 
@@ -129,7 +129,8 @@ namespace trdk {
 		void Write(
 				const char *tag,
 				const char *message,
-				const FormatCallback &formatCallback) {
+				const FormatCallback &formatCallback)
+				noexcept {
 			FormatAndWrite(formatCallback, tag, message);
 		}
 

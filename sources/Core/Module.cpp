@@ -221,19 +221,19 @@ Module::Lock Module::LockForOtherThreads() {
 	return Lock(m_pimpl->m_mutex);
 }
 
-const std::string & Module::GetTypeName() const throw() {
+const std::string & Module::GetTypeName() const noexcept {
 	return m_pimpl->m_typeName;
 }
 
-const std::string & Module::GetName() const throw() {
+const std::string & Module::GetName() const noexcept {
 	return m_pimpl->m_name;
 }
 
-const std::string & Module::GetTag() const throw() {
+const std::string & Module::GetTag() const noexcept {
 	return m_pimpl->m_tag;
 }
 
-const std::string & Module::GetStringId() const throw() {
+const std::string & Module::GetStringId() const noexcept {
 	return m_pimpl->m_stringId;
 }
 
@@ -245,11 +245,11 @@ const Context & Module::GetContext() const {
 	return const_cast<Module *>(this)->GetContext();
 }
 
-Module::Log & Module::GetLog() const throw() {
+Module::Log & Module::GetLog() const noexcept {
 	return m_pimpl->m_log;
 }
 
-Module::TradingLog & Module::GetTradingLog() const throw() {
+Module::TradingLog & Module::GetTradingLog() const noexcept {
 	return m_pimpl->m_tradingLog;
 }
 
