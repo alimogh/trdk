@@ -176,7 +176,7 @@ namespace EmaFuturesStrategy {
 						?	boost::lexical_cast<std::string>(dropCopySourceId)
 						:	std::string("not used");
 
-				if (boost::iends_with(maService->GetTag(), "fastema")) {
+				if (boost::icontains(maService->GetTag(), "fastema")) {
 					GetLog().Info(
 						"Using EMA service \"%1%\" as fast EMA"
 							" (drop copy ID: %2%)...",
@@ -187,7 +187,7 @@ namespace EmaFuturesStrategy {
 							"Strategy should have only one fast EMA service");
 					}
 					m_ema[FAST] = Ema(*maService, dropCopySourceId);
-				} else if (boost::iends_with(maService->GetTag(), "slowema")) {
+				} else if (boost::icontains(maService->GetTag(), "slowema")) {
 					GetLog().Info(
 						"Using EMA service \"%1%\" as slow EMA"
 							" (drop copy ID: %2%)...",
