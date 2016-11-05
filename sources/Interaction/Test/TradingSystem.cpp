@@ -224,7 +224,7 @@ public:
 						const OrderStatus &status,
 						const Qty &remainingQty,
 						const TradeInfo *trade) {
-					callback(id, uuid, status, remainingQty, trade);	
+					callback(id, uuid, status, remainingQty, trade);
 				};  
 		}
 
@@ -319,12 +319,12 @@ private:
 
 	void OnCurrentTimeChanged(const pt::ptime &newTime) {
 
-		{
-			const Lock lock(m_mutex);
-			LoadNewOrders();
-		}
-	
 		for (bool hasUpdates = true; hasUpdates; ) {
+
+			{
+				const Lock lock(m_mutex);
+				hasUpdates = LoadNewOrders();
+			}
 
 			while (!m_orders.empty()) {
 			
@@ -343,6 +343,10 @@ private:
 
 				if (ExecuteOrder(order)) {
 					m_self->GetContext().SyncDispatching();
+					{
+						const Lock lock(m_mutex);
+						LoadNewOrders();
+					}
 				} else {
 					const Lock lock(m_mutex);
 					m_orders.emplace(newTime, std::move(order));
@@ -351,11 +355,6 @@ private:
 
 				hasUpdates = true;
 		
-			}
-
-			{
-				const Lock lock(m_mutex);
-				hasUpdates = LoadNewOrders();
 			}
 
 		}
@@ -432,6 +431,9 @@ private:
 		bool hasUpdates = false;
 
 		for (const auto &order: m_newOrders) {
+			AssertLe(
+				m_self->GetContext().GetCurrentTime(),
+				order.first);
 			m_orders.emplace(std::move(order.first), std::move(order.second));
 			hasUpdates = true;
 		}
