@@ -825,7 +825,7 @@ public:
 				};
 			Assert(m_self.HasActiveOrders());
 			delayedCancelMethod.swap(m_cancelMethod);
-			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
+			AssertEq(CANCEL_STATE_CANCELED, m_cancelState);
 			m_cancelState = CANCEL_STATE_SCHEDULED;
 		} else {
 			Assert(!m_self.HasActiveOrders());
@@ -837,8 +837,7 @@ public:
 				m_self.GetActiveQty(),
 				orderParams,
 				std::move(uuid));
-			AssertEq(int(CANCEL_STATE_NOT_CANCELED), int(m_cancelState));
-			m_cancelState = CANCEL_STATE_CANCELED;
+			AssertEq(CANCEL_STATE_CANCELED, m_cancelState);
 		}
 
 		return true;
@@ -846,7 +845,15 @@ public:
 	}
 
 	bool CancelAllOrders() {
-		bool isCanceled = false;
+
+		if (m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED) {
+			return false;
+		}
+
+		Assert(
+			!m_open.HasActiveOrders()
+			|| m_open.HasActiveOrders() != m_close.HasActiveOrders());
+
 		if (m_open.HasActiveOrders()) {
 			Assert(!m_open.orders.empty());
 			Assert(m_open.orders.back().isActive);
@@ -864,8 +871,9 @@ public:
 						% m_tradingSystem.GetMode(); // 6
 				});
 			m_tradingSystem.CancelOrder(m_open.orders.back().id);
-			isCanceled = true;
+			m_cancelState = CANCEL_STATE_CANCELED;
 		}
+
 		if (m_close.HasActiveOrders()) {
 			Assert(!m_close.orders.empty());
 			Assert(m_close.orders.back().isActive);
@@ -881,11 +889,12 @@ public:
 						% m_self.GetTradingSystem().GetTag().c_str() // 5
 						% m_tradingSystem.GetMode(); // 6
 				});
-			Assert(!isCanceled);
 			m_tradingSystem.CancelOrder(m_close.orders.back().id);
-			isCanceled = true;
+			m_cancelState = CANCEL_STATE_CANCELED;
 		}
-		return isCanceled;
+
+		return m_cancelState == CANCEL_STATE_CANCELED;
+	
 	}
 
 private:
