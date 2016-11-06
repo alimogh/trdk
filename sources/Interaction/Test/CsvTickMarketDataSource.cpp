@@ -180,7 +180,7 @@ namespace {
 
 			}
 
-			GetLog().Info("Read %1% lines from \"%2%\".", lineNo, m_filePath);
+			GetLog().Info("Read %1% lines from %2%.", lineNo, m_filePath);
 
 		}
 
