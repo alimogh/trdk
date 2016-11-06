@@ -10,6 +10,8 @@
 
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
+#include "ProfitLevels.hpp"
+#include "TrailingStop.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/RiskControl.hpp"
@@ -59,7 +61,8 @@ EmaFuturesStrategy::Position::Position(
 	, m_isPassiveClose(true)
 	, m_emas(emas)
 	, m_closeType(CLOSE_TYPE_NONE)
-	, m_maxProfit(0)
+	, m_maxProfitTakeProfit(0)
+	, m_maxProfitTrailingStop(0)
 	, m_reportStream(reportStream) {
 
 	m_reasons[0] = openReason;
@@ -383,23 +386,61 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 	result.current = GetSecurity().ScalePrice(GetPlannedPnl());
 	const ScaledPrice minProfitVol
 		= GetSecurity().ScalePrice(minProfit * GetOpenedQty());
-	if (result.current > m_maxProfit) {
+	if (result.current > m_maxProfitTakeProfit) {
 		GetStrategy().GetTradingLog().Write(
-			"take-profit\tnew-max=%1$.2f->%2$.2f\tmin-req=%3$.2f(%4$.2f*%5%)",
+			"take-profit\tmax-profit = %1$.2f -> %2$.2f"
+				"\tmin-required = %3$.2f (%4$.2f * %5%)",
 			[&](TradingRecord &record) {
 				record
-					% GetSecurity().DescalePrice(m_maxProfit)
+					% GetSecurity().DescalePrice(m_maxProfitTakeProfit)
 					% GetSecurity().DescalePrice(result.current)
 					% GetSecurity().DescalePrice(minProfitVol)
 					% minProfit
 					% GetOpenedQty();
 			});
-		const_cast<ScaledPrice &>(m_maxProfit) = result.current;
+		const_cast<ScaledPrice &>(m_maxProfitTakeProfit) = result.current;
 	}
-	result.start = m_maxProfit;
-	result.margin = m_maxProfit - ScaledPrice(m_maxProfit * trailingRatio);
+	result.start = m_maxProfitTakeProfit;
+	result.margin
+		= m_maxProfitTakeProfit
+			- ScaledPrice(m_maxProfitTakeProfit * trailingRatio);
 	result.isAllowed
-		= m_maxProfit < minProfitVol || result.current > result.margin;
+		= m_maxProfitTakeProfit < minProfitVol
+			|| result.current > result.margin;
+	return result;
+}
+
+EmaFuturesStrategy::Position::PriceCheckResult
+EmaFuturesStrategy::Position::CheckTrailingStop(
+		const TrailingStop &trailingStop)
+		const {
+	PriceCheckResult result = {};
+	result.current = GetSecurity().ScalePrice(GetPlannedPnl());
+	const auto minProfitToActivate = GetSecurity().ScalePrice(
+		trailingStop.profitToActivate * GetOpenedQty());
+	result.margin = GetSecurity().ScalePrice(
+		trailingStop.minProfit * GetOpenedQty());
+	if (result.current > m_maxProfitTrailingStop) {
+		GetStrategy().GetTradingLog().Write(
+			"trailing-stop\tmax-profit = %1$.2f -> %2$.2f"
+				"\tmin-to-activate = %3$.2f (%4$.2f * %5%)"
+				"\tmin-required = %6$.2f(%7$.2f * %5%)",
+			[&](TradingRecord &record) {
+				record
+					% GetSecurity().DescalePrice(m_maxProfitTrailingStop)
+					% GetSecurity().DescalePrice(result.current)
+					% GetSecurity().DescalePrice(minProfitToActivate)
+					% trailingStop.profitToActivate
+					% GetOpenedQty()
+					% GetSecurity().DescalePrice(result.margin)
+					% trailingStop.minProfit;
+			});
+		const_cast<ScaledPrice &>(m_maxProfitTrailingStop) = result.current;
+	}
+	result.start = m_maxProfitTrailingStop;
+	result.isAllowed
+		= m_maxProfitTrailingStop < minProfitToActivate
+			|| result.current > result.margin;
 	return result;
 }
 
@@ -441,7 +482,7 @@ Qty EmaFuturesStrategy::Position::CheckProfitLevel(
 	}
 
 	GetStrategy().GetTradingLog().Write(
-		"slow-order\tprofit-level"
+		"profit-level"
 			"\tcurrent=%1$.2f\tmin=%2$.2f\torder_qty=%3%"
 			"\tlast_price=%4$.2f\tclosed_qty=%5%\tactive_qty=%6%"
 			"\tbid=%7$.2f\task=%8$.2f",

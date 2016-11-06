@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/04/05 08:21:52
+ *   Created: 2016/11/07 03:23:18
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,7 +12,12 @@
 
 namespace trdk { namespace Strategies { namespace GadM {
 
-	struct ProfitLevels;	
-	struct TrailingStop;
+	//! Trailing stop settings.
+	/** @sa https://app.asana.com/0/186349222941752/196887742980415
+	  */
+	struct TrailingStop {
+		double profitToActivate;
+		double minProfit;
+	};
 
-} } }
+} } } 

@@ -1538,7 +1538,7 @@ TRDK_CORE_API std::ostream & trdk::operator <<(
 		std::ostream &os,
 		const Position::CloseType &closeType) {
 	static_assert(
-		Position::numberOfCloseTypes == 10,
+		Position::numberOfCloseTypes == 11,
 		"Close type list changed.");
 	switch (closeType) {
 		default:
@@ -1550,6 +1550,9 @@ TRDK_CORE_API std::ostream & trdk::operator <<(
 			break;
 		case Position::CLOSE_TYPE_TAKE_PROFIT:
 			os << "take-profit";
+			break;
+		case Position::CLOSE_TYPE_TRAILING_STOP:
+			os << "trailing-stop";
 			break;
 		case Position::CLOSE_TYPE_STOP_LOSS:
 			os << "stop-loss";

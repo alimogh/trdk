@@ -292,6 +292,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="ProfitLevels.hpp" />
+    <ClInclude Include="TrailingStop.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">

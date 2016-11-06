@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Emas.hpp"
-#include "ProfitLevels.hpp"
 #include "Core/Position.hpp"
 
 namespace trdk { namespace Strategies { namespace GadM {
@@ -88,6 +87,10 @@ namespace EmaFuturesStrategy {
 				double minProfit,
 				double trailingRatio)
 				const;
+		//! Checks closing by trailing stop.
+		/** @sa https://app.asana.com/0/186349222941752/196887742980415
+		  */
+		PriceCheckResult CheckTrailingStop(const TrailingStop &) const;
 
 		//! Checks profit level.
 		/** @sa https://app.asana.com/0/196887491555385/192879506137993
@@ -122,7 +125,8 @@ namespace EmaFuturesStrategy {
 		boost::array<std::pair<double, double>, 2> m_signalsBidAsk;
 		boost::array<std::pair<double, double>, 2> m_signalsEmas;
 
-		ScaledPrice m_maxProfit;
+		ScaledPrice m_maxProfitTakeProfit;
+		ScaledPrice m_maxProfitTrailingStop;
 
 		std::ostream &m_reportStream;
 	

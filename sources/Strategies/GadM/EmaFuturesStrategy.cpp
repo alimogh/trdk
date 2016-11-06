@@ -12,6 +12,7 @@
 #include "EmaFuturesStrategyPosition.hpp"
 #include "Emas.hpp"
 #include "ProfitLevels.hpp"
+#include "TrailingStop.hpp"
 #include "Services/BarService.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -35,19 +36,24 @@ namespace {
 
 	boost::optional<ProfitLevels> ReadProfitLevelsConf(
 			const IniSectionRef &conf) {
-		
-		ProfitLevels result = {
-			conf.ReadTypedKey<double>("profit_level_price_step", 0),
-		};
-		if (IsZero(result.priceStep)) {
+
+		if (!conf.IsKeyExist("profit_level_price_step")) {
 			return boost::none;
 		}
-		
-		result.numberOfContractsPerLevel
-			= conf.ReadTypedList<size_t>(
+
+		const ProfitLevels result = {
+			conf.ReadTypedKey<double>("profit_level_price_step"),
+			conf.ReadTypedList<size_t>(
 				"profit_level_number_of_contracts",
 				",",
-				true);
+				true)
+		};
+
+		if (IsZero(result.priceStep) || result.priceStep < 0) {
+			throw Exception(
+				"Each \"profit_level_price_step\" should be greater than zero");
+		}
+
 		for (const auto &size: result.numberOfContractsPerLevel) {
 			if (!size) {
 				throw Exception(
@@ -55,6 +61,46 @@ namespace {
 					" greater than zero");
 			}
 		}
+
+		return result;
+
+	}
+
+	boost::optional<TrailingStop> ReadTrailingStopConf(
+			const IniSectionRef &conf) {
+
+		const char *const profitToActivateKeyName
+			= "min_profit_per_contract_to_activate_trailing_stop";
+		if (!conf.IsKeyExist(profitToActivateKeyName)) {
+			return boost::none;
+		}
+		
+		const char *const minProfitKeyName
+			= "trailing_stop_min_profit_per_contract";
+
+		const TrailingStop result = {
+			conf.ReadTypedKey<double>(profitToActivateKeyName),
+			conf.ReadTypedKey<double>(minProfitKeyName)
+		};
+
+		if (IsZero(result.profitToActivate) || result.profitToActivate < 0) {
+			boost::format message("\"%1%\" should be greater than zero");
+			message % profitToActivateKeyName;
+			throw Exception(message.str().c_str());
+		}
+
+		if (IsZero(result.minProfit) || result.minProfit < 0) {
+			boost::format message("\"%1%\" should be greater than zero");
+			message % minProfitKeyName;
+			throw Exception(message.str().c_str());
+		} else if (
+				!IsEqual(result.profitToActivate, result.minProfit)
+				&& result.profitToActivate < result.minProfit)  {
+			boost::format message("\"%1%\" should be greater than \"%2%\"");
+			message % profitToActivateKeyName % minProfitKeyName;
+			throw Exception(message.str().c_str());
+		}
+
 		return result;
 
 	}
@@ -99,6 +145,7 @@ namespace EmaFuturesStrategy {
 			, m_takeProfitTrailingRatio(
 				conf.ReadTypedKey<int>("take_profit_trailing_percentage") 
 				/ 100.0)
+			, m_trailingStop(ReadTrailingStopConf(conf))
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
 			, m_profitLevels(ReadProfitLevelsConf(conf))
@@ -106,35 +153,59 @@ namespace EmaFuturesStrategy {
 			, m_barService(nullptr)
 			, m_barServiceId(DropCopy::nDataSourceInstanceId)
 			, m_fastEmaDirection(DIRECTION_LEVEL) {
-			GetLog().Info(
+
+			boost::format info(
 				"Number of contracts: %1%."
 					" Passive order max. lifetime: %2%."
 					" Order price max. delta: %3$.2f."
-					" Take-profit trailing: %4%%%"
+					" Take profit trailing: %4%%%"
 						" will be activated after profit %5$.2f * %6% = %7$.2f."
-					" Max loss: %8$.2f * %9% = %10$.2f.",
-				m_numberOfContracts, // 1
-				m_passiveOrderMaxLifetime, // 2
-				m_orderPriceMaxDelta, // 3
-				int(m_takeProfitTrailingRatio * 100), // 4
-				m_minProfitToActivateTakeProfit, // 5
-				m_numberOfContracts, // 6
-				m_minProfitToActivateTakeProfit * m_numberOfContracts, // 7
-				m_maxLossMoneyPerContract, // 8
-				m_numberOfContracts, // 9
-				m_maxLossMoneyPerContract * m_numberOfContracts);
+					" Take profit levels: %8%."
+					" Thralling stop: %9%."
+					" Stop loss: %10$.2f * %11% = -%12$.2f.");
+			info
+				% m_numberOfContracts // 1
+				% m_passiveOrderMaxLifetime // 2
+				% m_orderPriceMaxDelta // 3
+				% int(m_takeProfitTrailingRatio * 100) // 4
+				% m_minProfitToActivateTakeProfit // 5
+				% m_numberOfContracts // 6
+				% (m_minProfitToActivateTakeProfit * m_numberOfContracts); // 7
 			if (m_profitLevels) {
 				std::vector<std::string> sizes;
 				for (const auto &i: m_profitLevels->numberOfContractsPerLevel) {
 					sizes.emplace_back(boost::lexical_cast<std::string>(i));
 				}
-				GetLog().Info(
-					"Profit level price step: %1%, orders sizes: %2%.",
-					m_profitLevels->priceStep,
-					boost::join(sizes, ", "));
+				boost::format levelsInfo(
+					"level price step: %1%, orders sizes: %2%");
+				levelsInfo
+					% m_profitLevels->priceStep
+					% boost::join(sizes, ", ");
+				info % levelsInfo.str(); // 8
 			} else {
-				GetLog().Info("Profit level value is not set.");
+				info % "not set"; // 8
 			}
+			if (m_trailingStop) {
+				boost::format trallingStopInfo(
+					"will be activated after profit %1$.2f * %2% = %3$.2f"
+						" to take minimal profit %4$.2f * %2% = %5$.2f");
+				trallingStopInfo
+					% m_trailingStop->profitToActivate
+					% m_numberOfContracts
+					% (m_trailingStop->profitToActivate
+						* m_numberOfContracts)
+					% m_trailingStop->minProfit
+					% (m_trailingStop->minProfit * m_numberOfContracts);
+				info % trallingStopInfo.str(); // 9
+			} else {
+				info % "not set"; // 9
+			}
+			info
+				% m_maxLossMoneyPerContract // 10
+				% m_numberOfContracts // 11
+				% (m_maxLossMoneyPerContract * m_numberOfContracts); // 12
+			GetLog().Info(info.str().c_str());
+
 		}
 		
 		virtual ~Strategy() {
@@ -270,6 +341,7 @@ namespace EmaFuturesStrategy {
 
 			CheckSlowOrderFilling(position);
 			CheckStopLoss(position, timeMeasurement)
+				|| CheckTrailingStop(position, timeMeasurement)
 				|| CheckTakeProfit(position, timeMeasurement)
 				|| CheckProfitLevel(position, timeMeasurement);
 
@@ -525,7 +597,7 @@ namespace EmaFuturesStrategy {
 				Assert(position.HasActiveOrders());
 				Assert(position.HasActiveOpenOrders());
 				GetTradingLog().Write(
-					"slow-order\tsignal for empty order",
+					"signal for empty order",
 					[](const TradingRecord &) {});
 				position.SetIntention(
 					INTENTION_DONOT_OPEN,
@@ -556,7 +628,7 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			GetTradingLog().Write(
-				"slow-order\ttake-profit"
+				"take-profit"
 					"\tmax_profit=%1$.2f\tmargin=%2$.2f\tcurrent=%3$.2f"
 					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
 					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
@@ -604,6 +676,50 @@ namespace EmaFuturesStrategy {
 			return true;
 		}
 
+		bool CheckTrailingStop(
+				Position &position,
+				const Milestones &timeMeasurement) {
+			if (
+					!m_trailingStop
+					|| position.GetIntention() != INTENTION_HOLD) {
+				return false;
+			}
+			Assert(position.GetActiveQty());
+			const Position::PriceCheckResult result
+				= position.CheckTrailingStop(
+					*m_trailingStop);
+			if (result.isAllowed) {
+				return false;
+			}
+			GetTradingLog().Write(
+				"trailing-stop"
+					"\tmax_profit=%1$.2f\tmargin=%2$.2f\tcurrent=%3$.2f"
+					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
+					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
+					"\tbid=%10$.2f\task=%11$.2f",
+			[&](TradingRecord &record) {
+				record
+					%	position.GetSecurity().DescalePrice(result.start)
+					%	position.GetSecurity().DescalePrice(result.margin)
+					%	position.GetSecurity().DescalePrice(result.current)
+					%	position.GetRealizedPnl()
+					%	position.GetUnrealizedPnl()
+					%	position.GetPlannedPnl()
+					%	position.GetOpenedVolume()
+					%	position.GetSecurity().DescalePrice(
+							position.GetOpenAvgPrice())
+					%	position.GetClosedVolume()
+					%	position.GetSecurity().GetBidPrice()
+					%	position.GetSecurity().GetAskPrice();
+			});
+			position.SetIntention(
+				INTENTION_CLOSE_AGGRESIVE,
+				Position::CLOSE_TYPE_TRAILING_STOP,
+				DIRECTION_LEVEL);
+			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
+			return true;
+		}
+
 		bool CheckStopLoss(
 				Position &position,
 				const Milestones &timeMeasurement) {
@@ -617,7 +733,7 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			GetTradingLog().Write(
-				"slow-order\tstop-loss"
+				"stop-loss"
 					"\tstart=%1$.2f\tmargin=%2$.2f\tnow=%3$.2f"
 					"\tbid=%4$.2f\task=%5$.2f",
 			[&](TradingRecord &record) {
@@ -712,7 +828,7 @@ namespace EmaFuturesStrategy {
 			}
 
 			GetTradingLog().Write(
-				"slow-order\tprice\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
+				"price-changed\tprice\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
 					"\tbid=%6%\task=%7%",
 				[&](TradingRecord &record) {
 					record
@@ -925,6 +1041,7 @@ namespace EmaFuturesStrategy {
 		const double m_orderPriceMaxDelta;
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingRatio;
+		const boost::optional<TrailingStop> m_trailingStop;
 		const double m_maxLossMoneyPerContract;
 		const boost::optional<ProfitLevels> m_profitLevels;
 
