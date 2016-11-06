@@ -381,13 +381,23 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 		const {
 	PriceCheckResult result = {};
 	result.current = GetSecurity().ScalePrice(GetPlannedPnl());
+	const ScaledPrice minProfitVol
+		= GetSecurity().ScalePrice(minProfit * GetOpenedQty());
 	if (result.current > m_maxProfit) {
+		GetStrategy().GetTradingLog().Write(
+			"take-profit\tnew-max=%1$.2f->%2$.2f\tmin-req=%3$.2f(%4$.2f*%5%)",
+			[&](TradingRecord &record) {
+				record
+					% GetSecurity().DescalePrice(m_maxProfit)
+					% GetSecurity().DescalePrice(result.current)
+					% GetSecurity().DescalePrice(minProfitVol)
+					% minProfit
+					% GetOpenedQty();
+			});
 		const_cast<ScaledPrice &>(m_maxProfit) = result.current;
 	}
 	result.start = m_maxProfit;
 	result.margin = m_maxProfit - ScaledPrice(m_maxProfit * trailingRatio);
-	const ScaledPrice minProfitVol
-		= GetSecurity().ScalePrice(minProfit) * ScaledPrice(GetActiveQty());
 	result.isAllowed
 		= m_maxProfit < minProfitVol || result.current > result.margin;
 	return result;
