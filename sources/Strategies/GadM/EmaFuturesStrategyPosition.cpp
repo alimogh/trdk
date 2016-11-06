@@ -87,7 +87,7 @@ const pt::ptime & EmaFuturesStrategy::Position::GetStartTime() const {
 }
 
 const pt::ptime & EmaFuturesStrategy::Position::GetCloseStartTime() const {
-	AssertNe(pt::not_a_date_time, m_closeStartTime);
+	Assert(m_closeStartTime != pt::not_a_date_time);
 	return m_closeStartTime;
 }
 
@@ -334,6 +334,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					m_isSent = false;
 				}
 			} else if (m_isSent) {
+				Assert(m_closeStartTime != pt::not_a_date_time);
 				if (!m_intentionSize) {
 					throw Exception(
 						"Order canceled by trading system without request");
@@ -348,6 +349,10 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 				SetCloseStartPrice(GetMarketClosePrice());
+				if (m_closeStartTime.is_not_a_date_time()) {
+					m_closeStartTime
+						= GetStrategy().GetContext().GetCurrentTime();
+				}
 				if (!m_intentionSize) {
 					Close(m_closeType, GetCloseStartPrice());
 				} else {

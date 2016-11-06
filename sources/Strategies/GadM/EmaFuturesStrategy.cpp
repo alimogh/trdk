@@ -629,7 +629,7 @@ namespace EmaFuturesStrategy {
 					%	position.GetSecurity().GetAskPrice();
 			});
 			position.SetIntention(
-				INTENTION_CLOSE_PASSIVE,
+				INTENTION_CLOSE_AGGRESIVE,
 				Position::CLOSE_TYPE_STOP_LOSS,
 				DIRECTION_LEVEL);
 			timeMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
