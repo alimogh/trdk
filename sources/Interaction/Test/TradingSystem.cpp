@@ -450,9 +450,7 @@ private:
 						break;
 					}
 				}
-				if (isFound) {
-					break;
-				} else {
+				if (!isFound) {
  					AssertFail("Implement error if cancel without order.");
 				}
 			}
