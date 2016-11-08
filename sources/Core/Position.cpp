@@ -281,6 +281,7 @@ public:
 				AssertEq(0, m_open.volume);
 				Assert(!trade);
 				AssertLt(0, remainingQty);
+				CopyOrder(&tradingSystemOrderId, true, orderStatus);
 				return;
 			case ORDER_STATUS_FILLED:
 			case ORDER_STATUS_FILLED_PARTIALLY:
@@ -394,6 +395,7 @@ public:
 			case ORDER_STATUS_SUBMITTED:
 				AssertEq(0, order.executedQty);
 				AssertLt(0, remainingQty);
+				CopyOrder(&tradingSystemOrderId, false, orderStatus);
 				return;
 			case ORDER_STATUS_FILLED:
 			case ORDER_STATUS_FILLED_PARTIALLY:
