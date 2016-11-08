@@ -133,14 +133,14 @@ namespace trdk {
 namespace trdk {
 
 	enum Level1TickType {
-		LEVEL1_TICK_LAST_PRICE,
-		LEVEL1_TICK_LAST_QTY,
-		LEVEL1_TICK_BID_PRICE,
-		LEVEL1_TICK_BID_QTY,
-		LEVEL1_TICK_ASK_PRICE,
-		LEVEL1_TICK_ASK_QTY,
-		LEVEL1_TICK_TRADING_VOLUME,
-		numberOfLevel1TickTypes
+		LEVEL1_TICK_LAST_PRICE = 0,
+		LEVEL1_TICK_LAST_QTY = 1,
+		LEVEL1_TICK_BID_PRICE = 2,
+		LEVEL1_TICK_BID_QTY = 3,
+		LEVEL1_TICK_ASK_PRICE = 4,
+		LEVEL1_TICK_ASK_QTY = 5,
+		LEVEL1_TICK_TRADING_VOLUME = 6,
+		numberOfLevel1TickTypes = 7
 	};
 
 	template<trdk::Level1TickType type>

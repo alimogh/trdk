@@ -44,8 +44,12 @@ namespace trdk {
 
 	public:
 
-		bool IsReplayMode() const throw() {
+		bool IsReplayMode() const noexcept {
 			return m_isReplayMode;
+		}
+
+		bool IsMarketDataLogEnabled() const {
+			return m_isMarketDataLogEnabled;
 		}
 
 		const boost::filesystem::path & GetLogsDir() const {
@@ -78,6 +82,7 @@ namespace trdk {
 		Values m_values;
 		bool m_isLoaded;
 		bool m_isReplayMode;
+		bool m_isMarketDataLogEnabled;
 		boost::filesystem::path m_logsDir;
 
 	};

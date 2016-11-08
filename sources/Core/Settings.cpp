@@ -19,9 +19,10 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 Settings::Settings(bool isReplayMode, const fs::path &logsDir)
-	: m_isLoaded(false),
-	m_isReplayMode(isReplayMode),
-	m_logsDir(logsDir) {
+	: m_isLoaded(false)
+	, m_isReplayMode(isReplayMode)
+	, m_isMarketDataLogEnabled(false)
+	, m_logsDir(logsDir) {
 	//...//
 }
 
@@ -37,6 +38,8 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 	Values values = {};
 
 	const IniSectionRef commonConf(conf, "General");
+
+	bool isMarketDataLogEnabled = commonConf.ReadBoolKey("market_data_log");
 
 	{
 		
@@ -74,15 +77,18 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 		}
 
 		log.Info(
-			"Default settings: %1% = \"%2%\"; %3% = \"%4%\";",
+			"Default settings: %1% = \"%2%\";"
+				" %3% = \"%4%\"; Market data log: %5%.",
 			currencyKey,
 			currency,
 			securityTypeKey,
-			securityType);
-	
+			securityType,
+			isMarketDataLogEnabled ? "enabled" : "disabled");
+
 	}
 
 	m_values = values;
+	m_isMarketDataLogEnabled = isMarketDataLogEnabled;
 
 }
 

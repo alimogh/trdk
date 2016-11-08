@@ -84,6 +84,166 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+ namespace { namespace MarketDataLog {
+
+	class Record : public AsyncLogRecord {
+
+	public:
+
+		explicit Record(const Log::Time &time, const Log::ThreadId &threadId)
+			: AsyncLogRecord(time, threadId) {
+			//...//
+		}
+
+	public:
+
+		const Record & operator >>(std::ostream &os) const {
+			Dump(os, ",");
+			return *this;
+		}
+
+	};
+
+	std::ostream & operator <<(std::ostream &os, const Record &record) {
+		record >> os;
+		return os;
+	}
+
+	class OutStream : private boost::noncopyable {
+	public:
+		void Write(const Record &record) {
+			m_log.Write(record);
+		}
+		bool IsEnabled() const {
+			return m_log.IsEnabled();
+		}
+		void EnableStream(std::ostream &os) {
+			m_log.EnableStream(os, false);
+		}
+		Log::Time GetTime() {
+			return m_log.GetTime();
+		}
+		Log::ThreadId GetThreadId() const {
+			return 0;
+		}
+	private:
+		Log m_log;
+	};
+
+	typedef AsyncLog<Record, OutStream, TRDK_CONCURRENCY_PROFILE> LogBase;
+
+	class Log : private LogBase {
+
+	public:
+
+		typedef LogBase Base;
+
+	public:
+
+		explicit Log(
+				const Symbol &symbol,
+				const Context &context) {
+
+			if (context.GetSettings().IsMarketDataLogEnabled()) {
+				
+				auto path = context.GetSettings().GetLogsDir();
+				path /= "MarketData";
+
+				if (!context.GetSettings().IsReplayMode()) {
+					boost::format fileName("%1%__%2%");
+					fileName
+						% symbol
+						% ConvertToFileName(context.GetStartTime());
+					path /= SymbolToFileName(fileName.str(), "csv");
+				} else {
+					boost::format fileName("%1%__%2%__%3%");
+					fileName
+						% symbol
+						% ConvertToFileName(context.GetCurrentTime())
+						% ConvertToFileName(context.GetStartTime());
+					path /= SymbolToFileName(fileName.str(), "csv");
+				}
+
+				fs::create_directories(path.branch_path());
+				m_file.open(
+					path.string(),
+					std::ios::out | std::ios::ate | std::ios::app);
+				if (!m_file.is_open()) {
+					context.GetLog().Error(
+						"Failed to open market data log file %1%",
+						path);
+					throw Exception("Failed to open market data log file");
+				}
+
+				EnableStream(m_file);
+
+				context.GetLog().Info(
+					"Market data log for %1%: %2%.",
+					symbol,
+					path);
+
+			}
+
+		}
+
+	public:
+
+		using Base::IsEnabled;
+
+		template<typename... Params>
+		void WriteLevel1Update(
+				const pt::ptime &time,
+				const Params &...params) {
+			FormatAndWrite(
+				[&](Record &record) {
+					record % record.GetTime() % time % "L1U";
+					InsertFirstLevel1Update(record, params...);
+				});
+		}
+
+		void WriteTrade(
+				const boost::posix_time::ptime &time,
+				const ScaledPrice &price,
+				const Qty &qty,
+				bool useAsLastTrade,
+				bool useForTradedVolume) {
+			FormatAndWrite(
+				[&](Record &record) {
+					record
+						% record.GetTime()
+						% time
+						% "T"
+						% price
+						% qty
+						% useAsLastTrade
+						% useForTradedVolume;
+				});
+		}
+
+	private:
+
+		template<typename... OtherParams>
+		void InsertFirstLevel1Update(
+				Record &record,
+				const Level1TickValue &tick,
+				const OtherParams &...otherParams) {
+			record % ConvertToPch(tick.GetType()) % tick.GetValue();
+			InsertFirstLevel1Update(record, otherParams...);
+		}
+		void InsertFirstLevel1Update(const Record &) {
+			//...//
+		}
+
+	private:
+
+		std::ofstream m_file;
+
+	};
+
+} }
+
+////////////////////////////////////////////////////////////////////////////////
+
 Security::Request::Request()
 	: m_numberOfTicks(0) {
 	//...//
@@ -231,6 +391,8 @@ public:
 
 	Request m_request;
 
+	MarketDataLog::Log m_marketDataLog;
+
 public:
 
 	Implementation(
@@ -250,7 +412,8 @@ public:
 		, m_supportedLevel1Types(supportedLevel1Types)
 		, m_isOnline(false)
 		, m_isOpened(false)
-		, m_request({}) {
+		, m_request({})
+		, m_marketDataLog(symbol, source.GetContext()) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -703,6 +866,7 @@ void Security::SetLevel1(
 			const Level1TickValue &tick,
 			const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->SetLevel1(time, tick, timeMeasurement, true, false);
+	m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick);
 }
 
 void Security::SetLevel1(
@@ -717,6 +881,7 @@ void Security::SetLevel1(
 		timeMeasurement,
 		true,
 		m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false));
+	m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2);
 }
 
 void Security::SetLevel1(
@@ -739,15 +904,16 @@ void Security::SetLevel1(
 			timeMeasurement,
 			false,
 			m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false)));
+	m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2, tick3);
 }
 
 void Security::SetLevel1(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const Level1TickValue &tick3,
-			const Level1TickValue &tick4,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const Level1TickValue &tick3,
+		const Level1TickValue &tick4,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	AssertNe(tick1.GetType(), tick2.GetType());
 	AssertNe(tick1.GetType(), tick3.GetType());
 	AssertNe(tick1.GetType(), tick4.GetType());
@@ -775,6 +941,12 @@ void Security::SetLevel1(
 					timeMeasurement,
 					false,
 					false))));
+	m_pimpl->m_marketDataLog.WriteLevel1Update(
+		time,
+		tick1,
+		tick2,
+		tick3,
+		tick4);
 }
 
 void Security::AddLevel1Tick(
@@ -918,6 +1090,13 @@ void Security::AddTrade(
 
 	m_pimpl->UpdateMarketDataStat(time);
 	m_pimpl->m_tradeSignal(time, price, qty);
+
+	m_pimpl->m_marketDataLog.WriteTrade(
+		time,
+		price,
+		qty,
+		useAsLastTrade,
+		useForTradedVolume);
 
 }
 
