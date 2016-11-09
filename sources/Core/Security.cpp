@@ -140,55 +140,8 @@ namespace {
 
 	public:
 
-		explicit Log(
-				const Symbol &symbol,
-				const Context &context) {
-
-			if (context.GetSettings().IsMarketDataLogEnabled()) {
-				
-				auto path = context.GetSettings().GetLogsDir();
-				path /= "MarketData";
-
-				if (!context.GetSettings().IsReplayMode()) {
-					boost::format fileName("%1%__%2%");
-					fileName
-						% symbol
-						% ConvertToFileName(context.GetStartTime());
-					path /= SymbolToFileName(fileName.str(), "csv");
-				} else {
-					boost::format fileName("%1%__%2%__%3%");
-					fileName
-						% symbol
-						% ConvertToFileName(context.GetCurrentTime())
-						% ConvertToFileName(context.GetStartTime());
-					path /= SymbolToFileName(fileName.str(), "csv");
-				}
-
-				fs::create_directories(path.branch_path());
-				m_file.open(
-					path.string(),
-					std::ios::out | std::ios::ate | std::ios::app);
-				if (!m_file.is_open()) {
-					context.GetLog().Error(
-						"Failed to open market data log file %1%",
-						path);
-					throw Exception("Failed to open market data log file");
-				}
-
-				EnableStream(m_file);
-
-				context.GetLog().Info(
-					"Market data log for %1%: %2%.",
-					symbol,
-					path);
-
-			}
-
-		}
-
-	public:
-
 		using Base::IsEnabled;
+		using Base::EnableStream;
 
 		template<typename... Params>
 		void WriteLevel1Update(
@@ -233,10 +186,6 @@ namespace {
 		void InsertFirstLevel1Update(const Record &) {
 			//...//
 		}
-
-	private:
-
-		std::ofstream m_file;
 
 	};
 
@@ -391,6 +340,7 @@ public:
 
 	Request m_request;
 
+	std::ofstream m_marketDataLogFile;
 	MarketDataLog::Log m_marketDataLog;
 
 public:
@@ -412,8 +362,7 @@ public:
 		, m_supportedLevel1Types(supportedLevel1Types)
 		, m_isOnline(false)
 		, m_isOpened(false)
-		, m_request({})
-		, m_marketDataLog(symbol, source.GetContext()) {
+		, m_request({}) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -425,6 +374,10 @@ public:
 	
 		for (auto &item: m_level1) {
 			Unset(item);
+		}
+
+		if (m_source.GetContext().GetSettings().IsMarketDataLogEnabled()) {
+			StartMarketDataLog();
 		}
 
 	}
@@ -561,6 +514,46 @@ public:
 		}
 		AssertLe(0, value);
 		return value;
+	}
+
+	void StartMarketDataLog() {
+
+		auto path = m_self.GetContext().GetSettings().GetLogsDir();
+		path /= "MarketData";
+
+		if (!m_self.GetContext().GetSettings().IsReplayMode()) {
+			boost::format fileName("%1%__%2%");
+			fileName
+				% m_self.GetSymbol()
+				% ConvertToFileName(m_self.GetContext().GetStartTime());
+			path /= SymbolToFileName(fileName.str(), "csv");
+		} else {
+			boost::format fileName("%1%__%2%__%3%");
+			fileName
+				% m_self.GetSymbol()
+				% ConvertToFileName(m_self.GetContext().GetCurrentTime())
+				% ConvertToFileName(m_self.GetContext().GetStartTime());
+			path /= SymbolToFileName(fileName.str(), "csv");
+		}
+
+		fs::create_directories(path.branch_path());
+		m_marketDataLogFile.open(
+			path.string(),
+			std::ios::out | std::ios::ate | std::ios::app);
+		if (!m_marketDataLogFile.is_open()) {
+			m_self.GetContext().GetLog().Error(
+				"Failed to open market data log file %1%",
+				path);
+			throw Exception("Failed to open market data log file");
+		}
+
+		m_marketDataLog.EnableStream(m_marketDataLogFile);
+
+		m_self.GetContext().GetLog().Info(
+			"Market data log for %1%: %2%.",
+			m_self,
+			path);
+
 	}
 
 };
