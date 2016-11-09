@@ -35,6 +35,7 @@ Transaq::MarketDataSource::MarketDataSource(
 Transaq::MarketDataSource::~MarketDataSource() {
 	// Each object, that implements CreateNewSecurityObject should wait for
 	// log flushing before destroying objects:
+	m_securities.clear();
 	GetTradingLog().WaitForFlush();
 }
 
