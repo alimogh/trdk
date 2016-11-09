@@ -60,6 +60,9 @@ void Engine::Run(
 
 		bool isReplayMode = ini.ReadBoolKey("General", "is_replay_mode");
 		auto logDir = ini.ReadFileSystemPath("General", "logs_dir");
+#		ifdef _DEBUG
+			logDir /= "DEBUG";
+#		endif
 		if (isReplayMode) {
 			logDir /= "Replay_" + ConvertToFileName(startTime);
 		} else {
