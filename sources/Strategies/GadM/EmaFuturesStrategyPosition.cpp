@@ -232,7 +232,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 						GetId(),
 						startTime);
 				});
-				Open(GetOpenStartPrice());
+				Open(GetMarketOpenOppositePrice());
 				m_isPassiveOpen = true;
 				m_isSent = true;
 				m_startTime = std::move(startTime);
@@ -300,8 +300,14 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 
-				SetCloseStartPrice(GetMarketCloseOppositePrice());
-				m_closeStartTime = GetStrategy().GetContext().GetCurrentTime();
+				if (!GetCloseStartPrice()) {
+					SetCloseStartPrice(GetMarketClosePrice());
+					AssertEq(m_closeStartTime, pt::not_a_date_time);
+					m_closeStartTime
+						= GetStrategy().GetContext().GetCurrentTime();
+				} else {
+					AssertNe(pt::not_a_date_time, m_closeStartTime);
+				}
 
 				m_signalsBidAsk[1] = std::make_pair(
 					GetSecurity().GetBidPrice(),
@@ -312,11 +318,11 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					m_emas[FAST].GetValue());
 
 				if (!m_intentionSize) {
-					Close(m_closeType, GetCloseStartPrice());
+					Close(m_closeType, GetMarketCloseOppositePrice());
 				} else {
 					Close(
 						m_closeType,
-						GetCloseStartPrice(),
+						GetMarketCloseOppositePrice(),
 						m_intentionSize->second);
 				}
 				m_isPassiveClose = true;
@@ -351,17 +357,20 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					Sync(intention);
 				}
 			} else {
-				SetCloseStartPrice(GetMarketClosePrice());
-				if (m_closeStartTime.is_not_a_date_time()) {
+				if (!GetCloseStartPrice()) {
+					SetCloseStartPrice(GetMarketClosePrice());	
+					AssertEq(m_closeStartTime, pt::not_a_date_time);
 					m_closeStartTime
 						= GetStrategy().GetContext().GetCurrentTime();
+				} else {
+					AssertNe(pt::not_a_date_time, m_closeStartTime);
 				}
 				if (!m_intentionSize) {
-					Close(m_closeType, GetCloseStartPrice());
+					Close(m_closeType, GetMarketClosePrice());
 				} else {
 					Close(
 						m_closeType,
-						GetCloseStartPrice(),
+						GetMarketClosePrice(),
 						m_intentionSize->second);
 				}
 				m_isPassiveClose = false;
@@ -701,7 +710,7 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		security,
 		security.GetSymbol().GetCurrency(),
 		qty,
-		security.GetBidPriceScaled(),
+		security.GetAskPriceScaled(),
 		strategyTimeMeasurement)
 	, Position(openReason, emas, reportStream) {
 	//...//
@@ -773,7 +782,7 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		security,
 		security.GetSymbol().GetCurrency(),
 		qty,
-		security.GetAskPriceScaled(),
+		security.GetBidPriceScaled(),
 		strategyTimeMeasurement)
 	, Position(openReason, emas, reportStream) {
 	//...//
