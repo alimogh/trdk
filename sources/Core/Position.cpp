@@ -924,15 +924,15 @@ private:
 				Qty bidQty;
 				double askPrice;
 				Qty askQty;
+				if (!orderTradeSystemId) {
+					orderTime = m_strategy.GetContext().GetCurrentTime();
+					bidPrice = m_security.GetBidPrice();
+					bidQty = m_security.GetBidQty();
+					askPrice = m_security.GetAskPrice();
+					askQty = m_security.GetAskQty();
+				}
 				static_assert(numberOfOrderStatuses == 9, "List changed");
 				switch (status) {
-					case ORDER_STATUS_SENT:
-						orderTime = m_strategy.GetContext().GetCurrentTime();
-						bidPrice = m_security.GetBidPrice();
-						bidQty = m_security.GetBidQty();
-						askPrice = m_security.GetAskPrice();
-						askQty = m_security.GetAskQty();
-						break;
 					case ORDER_STATUS_CANCELLED:
 					case ORDER_STATUS_FILLED:
 					case ORDER_STATUS_FILLED_PARTIALLY:
@@ -964,10 +964,10 @@ private:
 						?	&*orderParams->minTradeQty
 						:	nullptr,
 					order.executedQty,
-					status == ORDER_STATUS_SENT ? &bidPrice : nullptr,
-					status == ORDER_STATUS_SENT ? &bidQty : nullptr,
-					status == ORDER_STATUS_SENT ? &askPrice : nullptr,
-					status == ORDER_STATUS_SENT ? &askQty : nullptr);
+					!orderTradeSystemId ? &bidPrice : nullptr,
+					!orderTradeSystemId ? &bidQty : nullptr,
+					!orderTradeSystemId ? &askPrice : nullptr,
+					!orderTradeSystemId ? &askQty : nullptr);
 
 			});
 
