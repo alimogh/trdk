@@ -803,16 +803,20 @@ void MarketDataSourceConnector::OnQuotationsMessage(
 		for (const auto &node: message) {
 			AssertEq(std::string("quotation"), node.first);
 			const auto &update = node.second;
-			const auto &bid = update.get_optional<double>("bid");
-			const auto &ask = update.get_optional<double>("offer");
-			if (!bid && !ask) {
+			auto bidPrice = update.get_optional<double>("bid");
+			auto bidQty = update.get_optional<double>("biddepth");
+			auto askPrice = update.get_optional<double>("offer");
+			auto askQty = update.get_optional<double>("offerdepth");
+			if (!bidPrice && !bidQty && !askPrice && !askQty) {
 				continue;
 			}
 			OnLevel1Update(
 				update.get<std::string>("board"),
 				update.get<std::string>("seccode"),
-				bid,
-				ask,
+				std::move(bidPrice),
+				std::move(bidQty),
+				std::move(askPrice),
+				std::move(askQty),
 				delayMeasurement);
 		}
 	} catch (const ptr::ptree_error &ex) {

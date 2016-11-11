@@ -86,7 +86,9 @@ trdk::Security & Transaq::MarketDataSource::CreateNewSecurityObject(
 			.set(LEVEL1_TICK_LAST_PRICE)
 			.set(LEVEL1_TICK_LAST_QTY)
 			.set(LEVEL1_TICK_BID_PRICE)
+			.set(LEVEL1_TICK_BID_QTY)
 			.set(LEVEL1_TICK_ASK_PRICE)
+			.set(LEVEL1_TICK_ASK_QTY)
 			.set(LEVEL1_TICK_TRADING_VOLUME));
 
 	security->SetTradingSessionState(pt::not_a_date_time, true);
@@ -119,32 +121,32 @@ void Transaq::MarketDataSource::OnNewTick(
 void Transaq::MarketDataSource::OnLevel1Update(
 		const std::string &board,
 		const std::string &symbol,
-		const boost::optional<double> &bid,
-		const boost::optional<double> &ask,
+		boost::optional<double> &&bidPrice,
+		boost::optional<double> &&bidQty,
+		boost::optional<double> &&askPrice,
+		boost::optional<double> &&askQty,
 		const Milestones &delayMeasurement) {
-	Assert(bid || ask);
+	Assert(bidPrice || bidQty || askPrice || askQty);
 	auto &security = GetSecurity(board, symbol);
-	if (bid && ask) {
-		security.SetLevel1(
-			pt::not_a_date_time,
-			Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-				security.ScalePrice(*bid)),
-			Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-				security.ScalePrice(*ask)),
-			delayMeasurement);
-	} else if (bid) {
-		security.SetLevel1(
-			pt::not_a_date_time,
-			Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-				security.ScalePrice(*bid)),
-			delayMeasurement);
-	} else if (ask) {
-		security.SetLevel1(
-			pt::not_a_date_time,
-			Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-				security.ScalePrice(*ask)),
-			delayMeasurement);
+	std::vector<Level1TickValue> ticks;
+	ticks.reserve(4);
+	if (bidPrice) {
+		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+			security.ScalePrice(*bidPrice));
 	}
+	if (bidQty) {
+		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+			security.ScalePrice(*bidQty));
+	}
+	if (askPrice) {
+		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+			security.ScalePrice(*askPrice));
+	}
+	if (askQty) {
+		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+			security.ScalePrice(*askQty));
+	}
+	security.SetLevel1(pt::not_a_date_time, ticks, delayMeasurement);
 }
 
 Transaq::Security & Transaq::MarketDataSource::GetSecurity(

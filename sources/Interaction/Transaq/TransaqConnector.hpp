@@ -251,8 +251,10 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		virtual void OnLevel1Update(
 				const std::string &board,
 				const std::string &symbol,
-				const boost::optional<double> &bid,
-				const boost::optional<double> &ask,
+				boost::optional<double> &&bidPrice,
+				boost::optional<double> &&bidQty,
+				boost::optional<double> &&askPrice,
+				boost::optional<double> &&askQty,
 				const Lib::TimeMeasurement::Milestones &)
 			= 0;
 

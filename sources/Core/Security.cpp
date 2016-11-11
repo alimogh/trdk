@@ -154,6 +154,18 @@ namespace {
 				});
 		}
 
+		void WriteLevel1Update(
+				const pt::ptime &time,
+				const std::vector<Level1TickValue> &ticks) {
+			FormatAndWrite(
+				[&](Record &record) {
+					record % record.GetTime() % time % "L1U";
+					for (const auto &tick: ticks) {
+						record % ConvertToPch(tick.GetType()) % tick.GetValue();
+					}
+				});
+		}
+
 		void WriteTrade(
 				const boost::posix_time::ptime &time,
 				const ScaledPrice &price,
@@ -942,6 +954,23 @@ void Security::SetLevel1(
 		tick2,
 		tick3,
 		tick4);
+}
+
+void Security::SetLevel1(
+		const pt::ptime &time,
+		const std::vector<Level1TickValue> &ticks,
+		const TimeMeasurement::Milestones &delayMeasurement) {
+	size_t counter = 0;
+	bool isPreviousChanged = false;
+	for (const auto &tick: ticks) {
+		isPreviousChanged = m_pimpl->SetLevel1(
+			time,
+			tick,
+			delayMeasurement,
+			++counter >= ticks.size(),
+			isPreviousChanged);
+	}
+	m_pimpl->m_marketDataLog.WriteLevel1Update(time, ticks);
 }
 
 void Security::AddLevel1Tick(
