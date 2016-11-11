@@ -131,21 +131,26 @@ void Transaq::MarketDataSource::OnLevel1Update(
 	std::vector<Level1TickValue> ticks;
 	ticks.reserve(4);
 	if (bidPrice) {
-		Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-			security.ScalePrice(*bidPrice));
+		ticks.emplace_back(
+			Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+				security.ScalePrice(*bidPrice)));
 	}
 	if (bidQty) {
-		Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-			security.ScalePrice(*bidQty));
+		ticks.emplace_back(
+			Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+				security.ScalePrice(*bidQty)));
 	}
 	if (askPrice) {
-		Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-			security.ScalePrice(*askPrice));
+		ticks.emplace_back(
+			Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+				security.ScalePrice(*askPrice)));
 	}
 	if (askQty) {
-		Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-			security.ScalePrice(*askQty));
+		ticks.emplace_back(
+			Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+				security.ScalePrice(*askQty)));
 	}
+	Assert(!ticks.empty());
 	security.SetLevel1(pt::not_a_date_time, ticks, delayMeasurement);
 }
 
