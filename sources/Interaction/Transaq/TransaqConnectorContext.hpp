@@ -72,7 +72,9 @@ namespace trdk { namespace Interaction { namespace Transaq {
 	private:
 
 		bool OnNewData(const char *);
-		static bool RaiseNewDataEvent(const char *, ConnectorContext *);
+		static bool RaiseNewDataEvent(
+				const char *, ConnectorContext *)
+				noexcept;
 
 		void FreeMemory(const char *) const noexcept;
 

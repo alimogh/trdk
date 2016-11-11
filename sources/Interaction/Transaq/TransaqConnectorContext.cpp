@@ -107,12 +107,13 @@ void ConnectorContext::FreeMemory(const char *ptr) const noexcept {
 
 bool ConnectorContext::RaiseNewDataEvent(
 		const char *data,
-		ConnectorContext *context) {
+		ConnectorContext *context)
+		noexcept {
 	try {
 		return context->OnNewData(data);
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 
