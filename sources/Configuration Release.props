@@ -6,6 +6,7 @@
     <LinkIncremental>false</LinkIncremental>
     <_PropertySheetDisplayName>Configuration Release</_PropertySheetDisplayName>
     <TargetName>$(MSBuildProjectName)</TargetName>
+    <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\bin\standalone_release\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
