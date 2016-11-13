@@ -852,6 +852,11 @@ public:
 	bool CancelAllOrders() {
 
 		if (m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED) {
+			m_strategy.GetTradingLog().Write(
+				"order\tpos=%1%\ttry to cancel, but canceled (%2%)",
+				[this](TradingRecord &record) {
+					record % m_operationId % m_cancelState;
+				});
 			return false;
 		}
 
@@ -898,8 +903,17 @@ public:
 			m_cancelState = CANCEL_STATE_CANCELED;
 		}
 
-		return m_cancelState == CANCEL_STATE_CANCELED;
-	
+		if (m_cancelState != CANCEL_STATE_CANCELED) {
+			m_strategy.GetTradingLog().Write(
+				"order\tpos=%1%\ttry to cancel, but there are no active orders",
+				[this](TradingRecord &record) {
+					record % m_operationId;
+				});
+			return false;
+		}
+
+		return true;
+
 	}
 
 private:

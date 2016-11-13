@@ -176,7 +176,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				"move\t%1%->%2%\t%3%\t%4%",
 				[&](TradingRecord &record) {
 				record
-					% INTENTION_OPEN_PASSIVE
+					% ConvertToPch(INTENTION_OPEN_PASSIVE)
 					% ConvertToPch(m_intention)
 					% m_closeType
 					% ConvertToPch(m_reasons[1]);
@@ -188,7 +188,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				"move\t%1%->%2%\t%3%\t%4%",
 				[&](TradingRecord &record) {
 					record
-						% INTENTION_CLOSE_PASSIVE
+						% ConvertToPch(INTENTION_CLOSE_PASSIVE)
 						% ConvertToPch(m_intention)
 						% m_closeType
 						% ConvertToPch(m_reasons[1]);
@@ -203,8 +203,9 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 						% m_closeType
 						% ConvertToPch(m_reasons[1]);
 				});
+			break;
 	}
-	CancelAllOrders();
+	Verify(CancelAllOrders());
 }
 
 void EmaFuturesStrategy::Position::Sync(Intention &intention) {
