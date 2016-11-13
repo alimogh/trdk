@@ -725,14 +725,14 @@ EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetOpenStartPrice();
+		result.start = GetActiveOpenOrderPrice();
 		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
 		result.isAllowed = result.margin >= result.current;
 	} else {
-		result.start = GetCloseStartPrice();
+		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetMarketCloseOppositePrice()
@@ -799,14 +799,14 @@ EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetOpenStartPrice();
+		result.start = GetActiveOpenOrderPrice();
 		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
 		result.isAllowed = result.margin <= result.current;
 	} else {
-		result.start = GetCloseStartPrice();
+		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetMarketCloseOppositePrice()

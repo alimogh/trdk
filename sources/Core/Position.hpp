@@ -174,6 +174,18 @@ namespace trdk {
 		void SetOpenedQty(const trdk::Qty &) const noexcept;
 		const trdk::Qty & GetOpenedQty() const noexcept;
 		trdk::ScaledPrice GetOpenAvgPrice() const;
+		//! Returns price of active open-order.
+		/** Throws an exception if there is no active open-order at this moment
+		  * or if active open-order has no price (like market order).
+		  * @sa GetActiveOrderPrice
+		  * @sa GetActiveCloseOrderPrice
+		  */
+		const trdk::ScaledPrice & GetActiveOpenOrderPrice() const;
+		//! Returns price of last open-trade.
+		/** Throws an exception if there are no open-trades yet.
+		  * @sa GetLastTradePrice
+		  * @sa GetLastCloseTradePrice
+		  */
 		const trdk::ScaledPrice & GetLastOpenTradePrice() const;
 		double GetOpenedVolume() const;
 		//! Time of first trade.
@@ -185,12 +197,36 @@ namespace trdk {
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
 		trdk::ScaledPrice GetCloseAvgPrice() const;
+		//! Returns price of active close-order.
+		/** Throws an exception if there is no active close-order at this moment
+		  * or if active close-order has no price (like market order).
+		  * @sa GetActiveOrderPrice
+		  * @sa GetActiveOpenOrderPrice
+		  */
+		const trdk::ScaledPrice & GetActiveCloseOrderPrice() const;
+		//! Returns price of last close-trade.
+		/** Throws an exception if there are no close-trades yet.
+		  * @sa GetLastTradePrice
+		  * @sa GetLastOpenTradePrice
+		  */
 		const trdk::ScaledPrice & GetLastCloseTradePrice() const;
 		const trdk::Qty & GetClosedQty() const noexcept;
 		double GetClosedVolume() const;
 		//! Time of last trade.
 		const boost::posix_time::ptime & GetCloseTime() const;
 
+		//! Returns price of active order.
+		/** Throws an exception if there is no active order at this moment or
+		  * if active order has no price (like market order).
+		  * @sa GetActiveOpenOrderPrice
+		  * @sa GetActiveOpenClosePrice
+		  */
+		const trdk::ScaledPrice & GetActiveOrderPrice() const;
+		//! Returns price of last trade.
+		/** Throws an exception if there are no trades yet.
+		  * @sa GetLastOpenTradePrice
+		  * @sa GetLastCloseTradePrice
+		  */
 		const trdk::ScaledPrice & GetLastTradePrice() const;
 		
 		virtual double GetRealizedPnl() const = 0;

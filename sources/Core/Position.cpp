@@ -92,7 +92,7 @@ public:
 
 		bool isActive;
 
-		const double price;
+		const boost::optional<ScaledPrice> price;
 		const Qty qty;
 
 		uuids::uuid uuid;
@@ -101,9 +101,12 @@ public:
 
 		Qty executedQty;
 
-		explicit Order(double price, const Qty &qty, const uuids::uuid &&uuid)
+		explicit Order(
+				boost::optional<ScaledPrice> &&price,
+				const Qty &qty,
+				const uuids::uuid &&uuid)
 			: isActive(true)
-			, price(price)
+			, price(std::move(price))
 			, qty(qty)
 			, uuid(std::move(uuid))
 			, id(0)
@@ -118,11 +121,11 @@ public:
 		CloseType closeType;
 
 		explicit CloseOrder(
-				double price,
+				boost::optional<ScaledPrice> &&price,
 				const Qty &qty,
 				const CloseType &closeType,
 				const uuids::uuid &&uuid)
-			: Order(price, qty, std::move(uuid))
+			: Order(std::move(price), qty, std::move(uuid))
 			, closeType(closeType) {
 			//...//
 		}
@@ -615,7 +618,7 @@ public:
 			const OpenImpl &openImpl,
 			const TimeInForce &timeInForce,
 			const OrderParams &orderParams,
-			const ScaledPrice &price) {
+			boost::optional<ScaledPrice> &&price) {
 
 		if (!m_security.IsOnline()) {
 			throw Exception("Security is not online");
@@ -642,7 +645,7 @@ public:
 		}
 
 		m_open.orders.emplace_back(
-			m_security.DescalePrice(price),
+			std::move(price),
 			qty,
 			generateUuid());
 		ReportOpeningStart(action);
@@ -702,14 +705,14 @@ public:
 			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
-			const ScaledPrice &price,
+			boost::optional<ScaledPrice> &&price,
 			const Qty &maxQty,
 			const OrderParams &orderParams) {
 		return Close(
 			closeType,
 			closeImpl,
 			timeInForce,
-			price,
+			std::move(price),
 			maxQty,
 			orderParams,
 			generateUuid());
@@ -720,7 +723,7 @@ public:
 			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
-			const ScaledPrice &price,
+			boost::optional<ScaledPrice> &&price,
 			const Qty &maxQty,
 			const OrderParams &orderParams,
 			const uuids::uuid &&uuid) {
@@ -738,7 +741,7 @@ public:
 		Assert(!m_self.IsCompleted());
 
 		m_close.orders.emplace_back(
-			m_security.DescalePrice(price),
+			std::move(price),
 			std::min<Qty>(maxQty, m_self.GetActiveQty()),
 			closeType,
 			std::move(uuid));
@@ -820,7 +823,7 @@ public:
 						closeType,
 						cancelMethodImpl,
 						timeInForce,
-						0,
+						boost::none,
 						GetActiveQty(),
 						orderParams,
 						std::move(uuid));
@@ -835,7 +838,7 @@ public:
 				closeType,
 				cancelMethodImpl,
 				timeInForce,
-				0,
+				boost::none,
 				m_self.GetActiveQty(),
 				orderParams,
 				std::move(uuid));
@@ -918,6 +921,11 @@ private:
 					?	m_open.orders.back()
 					:	m_close.orders.back();
 
+				double orderPrice;
+				if (order.price) {
+					orderPrice = m_security.DescalePrice(*order.price);
+				}
+
 				pt::ptime orderTime;
 				pt::ptime execTime;
 				double bidPrice;
@@ -957,7 +965,7 @@ private:
 						?	(isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
 						:	(!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
 					order.qty,
-					!IsZero(order.price) ? &order.price : nullptr,
+					order.price ? &orderPrice : nullptr,
 					timeInForce,
 					m_self.GetCurrency(),
 					orderParams && orderParams->minTradeQty
@@ -1221,6 +1229,32 @@ const pt::ptime & Position::GetCloseTime() const {
 	return m_pimpl->m_close.time;
 }
 
+const ScaledPrice & Position::GetActiveOrderPrice() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (m_pimpl->m_close.HasActiveOrders()) {
+		Assert(!m_pimpl->m_open.HasActiveOrders());
+		const auto &price = m_pimpl->m_close.orders.back().price;
+		if (!price) {
+			throw Exception(
+				"Position current active close-order is order without price");
+		}
+		AssertEq(*price, GetActiveCloseOrderPrice());
+		return *price;
+	} else if (m_pimpl->m_open.HasActiveOrders()) {
+		const auto &price = m_pimpl->m_open.orders.back().price;
+		if (!price) {
+			throw Exception(
+				"Position current active open-order is order without price");
+		}
+		AssertEq(*price, GetActiveOpenOrderPrice());
+		return *price;
+	} else {
+		throw Exception("Position has no active order");
+	}
+}
+
 const ScaledPrice & Position::GetLastTradePrice() const {
 	if (m_pimpl->m_close.numberOfTrades) {
 		return m_pimpl->m_close.lastTradePrice;
@@ -1287,6 +1321,23 @@ ScaledPrice Position::GetOpenAvgPrice() const {
 	return ScaledPrice(m_pimpl->m_open.volume / m_pimpl->m_open.qty);
 }
 
+const ScaledPrice & Position::GetActiveOpenOrderPrice() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (!m_pimpl->m_open.HasActiveOrders()) {
+		throw Exception("Position has no active open-order");
+	}
+	Assert(!m_pimpl->m_close.HasActiveOrders());
+	const auto &price = m_pimpl->m_open.orders.back().price;
+	if (!price) {
+		throw Exception(
+			"Position current active open-order is order without price");
+	}
+	AssertEq(*price, GetActiveOrderPrice());
+	return *price;
+}
+
 const ScaledPrice & Position::GetLastOpenTradePrice() const {
 	if (!m_pimpl->m_open.numberOfTrades) {
 		throw Exception("Position has no open trades");
@@ -1313,6 +1364,23 @@ ScaledPrice Position::GetCloseAvgPrice() const {
 	return ScaledPrice(m_pimpl->m_close.volume / m_pimpl->m_close.qty);
 }
 
+const ScaledPrice & Position::GetActiveCloseOrderPrice() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (!m_pimpl->m_close.HasActiveOrders()) {
+		throw Exception("Position has no active close-order");
+	}
+	Assert(!m_pimpl->m_open.HasActiveOrders());
+	const auto &price = m_pimpl->m_close.orders.back().price;
+	if (!price) {
+		throw Exception(
+			"Possition current active close-order is order without price");
+	}
+	AssertEq(*price, GetActiveOrderPrice());
+	return *price;
+}
+
 const ScaledPrice & Position::GetLastCloseTradePrice() const {
 	if (!m_pimpl->m_close.numberOfTrades) {
 		throw Exception("Position has no close trades");
@@ -1331,7 +1399,7 @@ OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
 		},
 		TIME_IN_FORCE_DAY,
 		params,
-		false);
+		boost::none);
 }
 
 OrderId Position::Open(const ScaledPrice &price) {
@@ -1364,7 +1432,7 @@ OrderId Position::OpenAtMarketPriceWithStopPrice(
 		},
 		TIME_IN_FORCE_DAY,
 		params,
-		false);
+		boost::none);
 }
 
 OrderId Position::OpenImmediatelyOrCancel(
@@ -1381,7 +1449,7 @@ OrderId Position::OpenImmediatelyOrCancel(
 		},
 		TIME_IN_FORCE_IOC,
 		params,
-		true);
+		price);
 }
 
 OrderId Position::OpenAtMarketPriceImmediatelyOrCancel() {
@@ -1396,7 +1464,7 @@ OrderId Position::OpenAtMarketPriceImmediatelyOrCancel(
 		},
 		TIME_IN_FORCE_IOC,
 		params,
-		false);
+		boost::none);
 }
 
 OrderId Position::CloseAtMarketPrice(
@@ -1413,7 +1481,7 @@ OrderId Position::CloseAtMarketPrice(
 			return DoCloseAtMarketPrice(qty, params);
 		},
 		TIME_IN_FORCE_DAY,
-		0,
+		boost::none,
 		GetActiveQty(),
 		params);
 }
@@ -1471,7 +1539,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
 		TIME_IN_FORCE_DAY,
-		0,
+		boost::none,
 		GetActiveQty(),
 		params);
 }
@@ -1511,7 +1579,7 @@ OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
 			return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
 		},
 		TIME_IN_FORCE_IOC,
-		0,
+		boost::none,
 		GetActiveQty(),
 		params);
 }
