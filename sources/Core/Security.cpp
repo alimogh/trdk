@@ -143,6 +143,11 @@ namespace {
 		using Base::IsEnabled;
 		using Base::EnableStream;
 
+		explicit Log(const Security &security)
+			: m_security(security) {
+			//...//
+		}
+
 		template<typename... Params>
 		void WriteLevel1Update(
 				const pt::ptime &time,
@@ -161,7 +166,7 @@ namespace {
 				[&](Record &record) {
 					record % record.GetTime() % time % "L1U";
 					for (const auto &tick: ticks) {
-						record % ConvertToPch(tick.GetType()) % tick.GetValue();
+						WriteValue(record, tick);
 					}
 				});
 		}
@@ -178,7 +183,7 @@ namespace {
 						% record.GetTime()
 						% time
 						% "T"
-						% price
+						% m_security.DescalePrice(price)
 						% qty
 						% useAsLastTrade
 						% useForTradedVolume;
@@ -192,12 +197,34 @@ namespace {
 				Record &record,
 				const Level1TickValue &tick,
 				const OtherParams &...otherParams) {
-			record % ConvertToPch(tick.GetType()) % tick.GetValue();
+			WriteValue(record, tick);
 			InsertFirstLevel1Update(record, otherParams...);
 		}
 		void InsertFirstLevel1Update(const Record &) {
 			//...//
 		}
+
+		void WriteValue(Record &record, const Level1TickValue &tick) {
+
+			record % ConvertToPch(tick.GetType());
+
+			static_assert(numberOfLevel1TickTypes == 7, "List changed.");
+			switch (tick.GetType()) {
+				case LEVEL1_TICK_LAST_PRICE:
+				case LEVEL1_TICK_BID_PRICE:
+				case LEVEL1_TICK_ASK_PRICE:
+					record % m_security.DescalePrice(tick.GetValue());
+					break;
+				default:
+					record % tick.GetValue();
+					break;
+			}
+
+		}
+
+	private:
+
+		const Security &m_security;
 
 	};
 
@@ -374,7 +401,8 @@ public:
 		, m_supportedLevel1Types(supportedLevel1Types)
 		, m_isOnline(false)
 		, m_isOpened(false)
-		, m_request({}) {
+		, m_request({})
+		, m_marketDataLog(self) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
