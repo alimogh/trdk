@@ -169,7 +169,7 @@ namespace trdk { namespace EngineServer {
 
 	inline std::string ConvertToLogString(const DropCopyRecord &record) {
 		std::ostringstream result;
-		foreach (const auto &i, record) {
+		for (const auto &i: record) {
 			using namespace trdk::EngineServer::Details;
 			result
 				<< i.first << '='

@@ -552,9 +552,15 @@ void EmaFuturesStrategy::Position::Report() throw() {
 		return;
 	}
 
+	const auto pnl = GetRealizedPnlVolume();
 	try {
 		GetStrategy().GetContext().InvokeDropCopy(
-			[this](DropCopy &dropCopy) {
+			[this, pnl](DropCopy &dropCopy) {
+				FinancialResult financialResult;
+				financialResult.emplace_back(
+					std::make_pair(
+						GetSecurity().GetSymbol().GetCurrency(),
+						pnl));
 				dropCopy.ReportOperationEnd(
 					GetId(),
 					GetCloseTime(),
@@ -562,7 +568,7 @@ void EmaFuturesStrategy::Position::Report() throw() {
 						? OPERATION_RESULT_LOSS
 						: OPERATION_RESULT_PROFIT,
 					GetRealizedPnlRatio(),
-					boost::make_shared<FinancialResult>());
+					std::move(financialResult));
 			});
 	} catch (const std::exception &ex) {
 		GetStrategy().GetLog().Error(
@@ -594,7 +600,7 @@ void EmaFuturesStrategy::Position::Report() throw() {
 		m_reportStream << ',' << GetTypeStr();
 
 		// 10. pnl vol.:
-		m_reportStream << ',' << GetRealizedPnl();
+		m_reportStream << ',' << pnl;
 
 		// 10. pnl %:
 		m_reportStream << ',' << GetRealizedPnlPercentage();

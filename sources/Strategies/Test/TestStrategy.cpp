@@ -77,16 +77,15 @@ namespace trdk { namespace Strategies { namespace Test {
 				GetContext().InvokeDropCopy(
 					[this, &position](DropCopy &dropCopy) {
 
-						boost::shared_ptr<FinancialResult> financialResult(
-							new FinancialResult);
-						financialResult->emplace_back(
+						FinancialResult financialResult;
+						financialResult.emplace_back(
 							std::make_pair(
 								position
 									.GetSecurity()
 									.GetSymbol()
 									.GetFotBaseCurrency(),
 								m_generateFinResultRandom()));
-						financialResult->emplace_back(
+						financialResult.emplace_back(
 							std::make_pair(
 								position
 									.GetSecurity()
@@ -102,7 +101,7 @@ namespace trdk { namespace Strategies { namespace Test {
 								:	OPERATION_RESULT_PROFIT,
 							m_generateFinResultRandom()
 								/ m_generateFinResultRandom(),
-							financialResult);
+							std::move(financialResult));
 
 					});
 

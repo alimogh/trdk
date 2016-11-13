@@ -245,7 +245,7 @@ namespace trdk { namespace EngineServer {
 					const boost::posix_time::ptime &,
 					const trdk::OperationResult &,
 					double pnl,
-					const boost::shared_ptr<const trdk::FinancialResult> &);
+					trdk::FinancialResult &&);
 			virtual void CopyBook(
 					const trdk::Security &,
 					const trdk::PriceBook &);

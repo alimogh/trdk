@@ -240,6 +240,8 @@ namespace trdk {
 
 	public:
 
+		size_t GetLotSize() const;
+
 		uintmax_t GetPriceScale() const;
 		uint8_t GetPricePrecision() const throw();
 

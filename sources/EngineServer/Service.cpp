@@ -423,9 +423,11 @@ void EngineServer::Service::DropCopy::ReportOperationEnd(
 		const pt::ptime &time,
 		const OperationResult &result,
 		double pnl,
-		const boost::shared_ptr<const FinancialResult> &financialResult) {
+		FinancialResult &&financialResult) {
+	auto financialResultPtr = boost::make_shared<FinancialResult>(
+		std::move(financialResult));
 	m_queue.Enqueue(
-		[this, id, time, result, pnl, financialResult](
+		[this, id, time, result, pnl, financialResultPtr](
 				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
@@ -438,7 +440,7 @@ void EngineServer::Service::DropCopy::ReportOperationEnd(
 				time,
 				result,
 				pnl,
-				financialResult);
+				financialResultPtr);
 		});
 }
 

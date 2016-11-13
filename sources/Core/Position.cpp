@@ -1319,6 +1319,10 @@ const ScaledPrice & Position::GetLastTradePrice() const {
 	}
 }
 
+double Position::GetRealizedPnlVolume() const {
+	return GetRealizedPnl() * GetSecurity().GetLotSize();
+}
+
 double Position::GetRealizedPnlPercentage() const {
 	const auto ratio = GetRealizedPnlRatio();
 	const auto result = ratio > 1 || IsEqual(ratio, 1.0)

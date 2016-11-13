@@ -640,6 +640,11 @@ const MarketDataSource & Security::GetSource() const {
 	return m_pimpl->m_source;
 }
 
+size_t Security::GetLotSize() const {
+	Assert(boost::starts_with(GetSymbol().GetSymbol(), "BR"));
+	return 10;
+}
+
 uintmax_t Security::GetPriceScale() const {
 	return m_pimpl->m_priceScale;
 }

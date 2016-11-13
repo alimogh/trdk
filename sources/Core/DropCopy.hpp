@@ -112,7 +112,7 @@ namespace trdk {
 				const boost::posix_time::ptime &,
 				const trdk::OperationResult &,
 				double pnl,
-				const boost::shared_ptr<const trdk::FinancialResult> &)
+				trdk::FinancialResult &&)
 			= 0;
 
 		virtual void CopyBook(

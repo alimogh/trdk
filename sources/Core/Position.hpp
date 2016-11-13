@@ -230,6 +230,7 @@ namespace trdk {
 		const trdk::ScaledPrice & GetLastTradePrice() const;
 		
 		virtual double GetRealizedPnl() const = 0;
+		double GetRealizedPnlVolume() const;
 		//! Returns realized PnL ratio.
 		/** @return	If the value is 1.0 - no profit and no loss, if less
 		  *			then 1.0 - loss, if greater then 1.0 - profit.

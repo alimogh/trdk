@@ -90,6 +90,14 @@ namespace trdk { namespace Tests {
 				const trdk::Strategy &,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &));
+		void ReportOperationEnd(
+				const boost::uuids::uuid &id,
+				const boost::posix_time::ptime &time,
+				const trdk::OperationResult &result,
+				double pnl,
+				trdk::FinancialResult &&financialResult) {
+			ReportOperationEnd(id, time, result, pnl, financialResult);
+		}
 		MOCK_METHOD5(
 			ReportOperationEnd,
 			void(
@@ -97,7 +105,7 @@ namespace trdk { namespace Tests {
 				const boost::posix_time::ptime &,
 				const trdk::OperationResult &,
 				double pnl,
-				const boost::shared_ptr<const trdk::FinancialResult> &));
+				const trdk::FinancialResult &));
 
 		MOCK_METHOD2(
 			CopyBook,
