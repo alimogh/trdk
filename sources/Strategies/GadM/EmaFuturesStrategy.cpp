@@ -525,22 +525,7 @@ namespace EmaFuturesStrategy {
 						TimeMeasurement::Milestones());
 					break;
 				case DIRECTION_LEVEL:
-					if (m_fastEmaDirectionPrev == DIRECTION_DOWN) {
-						if (prevPosition.IsLong()) {
-							return;
-						}
-						position = CreatePosition<LongPosition>(
-							DIRECTION_UP,
-							TimeMeasurement::Milestones());
-					} else if (!prevPosition.IsLong()) {
-						return;
-					} else {
-						AssertEq(DIRECTION_UP, m_fastEmaDirectionPrev);
-						position = CreatePosition<ShortPosition>(
-							DIRECTION_DOWN,
-							TimeMeasurement::Milestones());
-					}
-					break;
+					return;
 				case DIRECTION_DOWN:
 					if (!prevPosition.IsLong()) {
 						return;
@@ -932,26 +917,7 @@ namespace EmaFuturesStrategy {
 						% m_security->GetAskPrice();
 				});
 
-			switch (fastEmaDirection) {
-				case  DIRECTION_LEVEL:
-					// Intersection was at previous update.
-					return DIRECTION_LEVEL;
-				default:
-					switch (m_fastEmaDirection) {
-						case DIRECTION_UP:
-						case DIRECTION_DOWN:
-							return m_fastEmaDirection;
-							break;
-						case DIRECTION_LEVEL:
-							return fastEmaDirection == DIRECTION_DOWN
-								?	DIRECTION_UP
-								:	DIRECTION_DOWN;
-							break;
-						default:
-							throw LogicError(
-								"Internal error: Unknown direction");
-					}
-			}
+			return m_fastEmaDirection;
 
 		}
 
