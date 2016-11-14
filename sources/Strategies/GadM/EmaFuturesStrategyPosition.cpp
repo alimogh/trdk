@@ -122,15 +122,29 @@ void EmaFuturesStrategy::Position::SetIntention(
 				% ConvertToPch(closeReason);
 		});
 
+	boost::optional<CloseType> prevCloseType;
 	if (closeType != CLOSE_TYPE_NONE) {
+		prevCloseType = m_closeType;
 		m_closeType = closeType;
 	}
 
+	boost::optional<Direction> prevCloseReason;
 	if (closeReason != DIRECTION_LEVEL) {
+		prevCloseReason = m_reasons[1];
 		m_reasons[1] = closeReason;
 	}
 
-	Sync(intention);
+	try {
+		Sync(intention);
+	} catch (...) {
+		if (prevCloseType) {
+			m_closeType = *prevCloseType;
+		}
+		if (prevCloseReason) {
+			m_reasons[1] = *prevCloseReason;
+		}
+		throw;
+	}
 
 	m_intention = intention;
 
@@ -297,7 +311,12 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					m_isPassiveClose = true;
 					intention = INTENTION_HOLD;
 				} else {
-					Sync(intention);
+					try {
+						Sync(intention);
+					} catch (...) {
+						m_isSent = true;
+						throw;
+					}
 				}
 			} else {
 
@@ -355,7 +374,12 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					m_isPassiveClose = true;
 					intention = INTENTION_HOLD;
 				} else {
-					Sync(intention);
+					try {
+						Sync(intention);
+					} catch (...) {
+						m_isSent = true;
+						throw;
+					}
 				}
 			} else {
 				if (!GetCloseStartPrice()) {
@@ -546,7 +570,7 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		<< std::endl;
 }
 
-void EmaFuturesStrategy::Position::Report() throw() {
+void EmaFuturesStrategy::Position::Report() noexcept {
 
 	if (!GetOpenedQty() || !IsCompleted()) {
 		return;

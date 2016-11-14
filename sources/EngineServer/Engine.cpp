@@ -65,7 +65,8 @@ void Engine::Run(
 			m_eventsLog->EnableStdOut();
 		}
 		{
-			const auto &logFilePath = settings.GetLogsInstanceDir() / "engine.log";
+			const auto &logFilePath
+				= settings.GetLogsInstanceDir() / "engine.log";
 			m_eventsLogFile.open(
 				logFilePath.string().c_str(),
 				std::ios::out | std::ios::ate | std::ios::app);

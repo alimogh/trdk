@@ -43,6 +43,13 @@ TradingSystem::OrderIsUnknown::OrderIsUnknown(const char *what) noexcept
 	//...//
 }
 
+TradingSystem::UnknownOrderCancelError::UnknownOrderCancelError(
+		const char *what)
+		noexcept
+	: OrderIsUnknown(what) {
+	//...//
+}
+
 TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 		const char *what)
 		noexcept

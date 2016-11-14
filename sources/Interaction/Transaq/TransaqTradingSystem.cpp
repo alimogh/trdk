@@ -247,7 +247,7 @@ void Transaq::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 			"Failed to cancel unknown order %1% as it never existed"
 				", already filled, canceled or rejected (local error)");
 		message % orderId;
-		throw OrderIsUnknown(message.str().c_str());
+		throw UnknownOrderCancelError(message.str().c_str());
 	}
 
 	bool isOrderFound = false;
@@ -264,7 +264,7 @@ void Transaq::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 				", already filled, canceled or rejected"
 				" (trading system error)");
 		message % orderId;
-		throw OrderIsUnknown(message.str().c_str());
+		throw UnknownOrderCancelError(message.str().c_str());
 	}
 
 }

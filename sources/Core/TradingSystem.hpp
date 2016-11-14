@@ -130,6 +130,11 @@ namespace trdk {
 			explicit OrderIsUnknown(const char *what) noexcept;
 		};
 
+		class TRDK_CORE_API UnknownOrderCancelError : public OrderIsUnknown {
+		public:
+			explicit UnknownOrderCancelError(const char *what) noexcept;
+		};
+
 		class TRDK_CORE_API ConnectionDoesntExistError : public Error {
 		public:
 			explicit ConnectionDoesntExistError(const char *what) noexcept;

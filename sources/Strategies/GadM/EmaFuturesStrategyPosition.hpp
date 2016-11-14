@@ -101,7 +101,7 @@ namespace EmaFuturesStrategy {
 
 	protected:
 
-		void Report() throw();
+		void Report() noexcept;
 
 	private:
 
