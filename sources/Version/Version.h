@@ -3,7 +3,7 @@
 
 #define TRDK_VERSION_RELEASE	2
 #define TRDK_VERSION_BUILD	0
-#define TRDK_VERSION_STATUS	5
+#define TRDK_VERSION_STATUS	6
 
 #define TRDK_VERSION_BRANCH		"master"
 #define TRDK_VERSION_BRANCH_W	L"master"
