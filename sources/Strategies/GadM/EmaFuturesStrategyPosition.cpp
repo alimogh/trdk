@@ -183,6 +183,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 		return;
 	}
 	m_isSent = false;
+	const auto prevIntention = m_intention;
 	switch (m_intention) {
 		case INTENTION_OPEN_PASSIVE:
 			m_intention = INTENTION_OPEN_AGGRESIVE;
@@ -219,7 +220,13 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				});
 			break;
 	}
-	Verify(CancelAllOrders());
+	try {
+		Verify(CancelAllOrders());
+	} catch (...) {
+		m_intention = prevIntention;
+		m_isSent = true;
+		throw;
+	}
 }
 
 void EmaFuturesStrategy::Position::Sync(Intention &intention) {

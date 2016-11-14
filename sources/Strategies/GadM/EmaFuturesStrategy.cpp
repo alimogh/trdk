@@ -895,7 +895,12 @@ namespace EmaFuturesStrategy {
 						%	position.GetSecurity().GetAskPrice();;
 				});
 			
-			position.MoveOrderToCurrentPrice();
+			try {
+				position.MoveOrderToCurrentPrice();
+			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
+				GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
+				return true;
+			}
 			
 			return false;
 
