@@ -441,12 +441,17 @@ void Transaq::TradingSystem::OnTrade(
 			it->status == ORDER_STATUS_SUBMITTED
 			|| it->status == ORDER_STATUS_FILLED);
 
-		AssertGe(it->remainingQty, qty);
+		if (it->remainingQty < qty) {
+			GetLog().Error(
+				"Protocol error: trade has quantity %1%"
+					", but order has remaining quantity %2%");
+			throw Exception("Wrong trade quantity");
+		}
 		it->remainingQty -= qty;
 
 		order = *it;
 
-		if (it->status == ORDER_STATUS_FILLED) {
+		if (it->status == ORDER_STATUS_FILLED && it->remainingQty == 0) {
 			index.erase(it);
 		}
 
