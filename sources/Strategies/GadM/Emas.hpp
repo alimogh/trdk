@@ -52,6 +52,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 	public:
 		Ema()
 			: m_value(0)
+			, m_security(nullptr)
 			, m_service(nullptr)
 			, m_numberOfUpdates(0)
 			, m_dropCopyDataSourceId(DropCopy::nDataSourceInstanceId) {
@@ -61,6 +62,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 				const Services::MovingAverageService &service,
 				const DropCopy::DataSourceInstanceId &dropCopyDataSourceId)
 			: m_value(0)
+			, m_security(nullptr)
 			, m_service(&service)
 			, m_numberOfUpdates(0)
 			, m_dropCopyDataSourceId(dropCopyDataSourceId) {
@@ -70,23 +72,27 @@ namespace trdk { namespace Strategies { namespace GadM {
 			return HasData();
 		}
 		bool HasSource() const {
-			return m_service ? true : false;
+			return m_service && m_security ? true : false;
 		}
 		bool HasData() const {
 			return !Lib::IsZero(m_value);
+		}
+		void SetSecurity(const Security &security) noexcept {
+			Assert(!m_security);
+			m_security = &security;
 		}
 		bool CheckSource(const Service &service, bool isStarted) {
 			Assert(HasSource());
 			if (m_service != &service) {
 				return false;
 			}
-			m_value = m_service->GetLastPoint().value;
+			m_value = m_security->ScalePrice(m_service->GetLastPoint().value);
 			if (isStarted) {
 				++m_numberOfUpdates;
 			}
 			return true;
 		}
-		double GetValue() const {
+		const ScaledPrice & GetValue() const {
 			Assert(HasSource());
 			Assert(HasData());
 			return m_value;
@@ -101,7 +107,8 @@ namespace trdk { namespace Strategies { namespace GadM {
 			m_service->DropLastPointCopy(m_dropCopyDataSourceId);
 		}
 	private:
-		double m_value;
+		ScaledPrice m_value;
+		const Security *m_security;
 		const Services::MovingAverageService *m_service;
 		size_t m_numberOfUpdates;
 		DropCopy::DataSourceInstanceId m_dropCopyDataSourceId;

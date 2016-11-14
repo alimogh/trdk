@@ -224,6 +224,9 @@ namespace EmaFuturesStrategy {
 				throw Exception(
 					"Strategy can not work with more than one security");
 			}
+			for (auto &ema: m_ema) {
+				ema.SetSecurity(*m_security);
+			}
 			Base::OnSecurityStart(security, request);
 		}
 
