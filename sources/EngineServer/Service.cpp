@@ -577,6 +577,8 @@ EngineServer::Service::Service(
 	}
 	GetLog().EnableStream(m_logFile, true);
 
+	settings->Log(GetLog());
+
 	m_dropCopy = boost::make_unique<DropCopy>(*this, *settings);
 	m_dropCopy->OpenDataLog(logsDir);
 	m_dropCopy->Start();
