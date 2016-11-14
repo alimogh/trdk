@@ -22,6 +22,7 @@ using namespace trdk::Lib;
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace sig = boost::signals2;
+namespace lt = boost::local_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +145,7 @@ namespace {
 			Assert(stream);
 
 			const fs::path &path
-					= m_context.GetSettings().GetLogsDir() / file;
+				= m_context.GetSettings().GetLogsInstanceDir() / file;
 			m_context.GetLog().Info(
 				"Reporting %1% to file %2% with period %3%...",
 				name,
@@ -164,7 +165,7 @@ namespace {
 				<< std::endl
 				<< "=========================================================================="
 				<< std::endl << "Started at "
-				<< pt::microsec_clock::universal_time() << " with period "
+				<< m_context.GetCurrentTime() << " with period "
 				<< m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
 				<< std::endl;
 
@@ -389,8 +390,6 @@ public:
 
 	Settings m_settings;
 
-	const pt::ptime m_startTime;
-
 	Params m_params;
 
 	std::unique_ptr<StatReport> m_statReport;
@@ -405,12 +404,10 @@ public:
 			Context &context,
 			Log &log,
 			TradingLog &tradingLog,
-			const Settings &settings,
-			const pt::ptime &startTime)
+			const Settings &settings)
 		: m_log(log)
 		, m_tradingLog(tradingLog)
 		, m_settings(settings)
-		, m_startTime(startTime)
 		, m_params(context) {
 		//...//
 	}
@@ -419,24 +416,14 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(
-		Log &log,
-		TradingLog &tradingLog,
-		const Settings &settings,
-		const pt::ptime &startTime) {
-	m_pimpl = new Implementation(
-		*this,
-		 log,
-		 tradingLog,
-		 settings,
-		 startTime);
-
-	m_pimpl->m_statReport.reset(new StatReport(*this));
-
+Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings)
+	: m_pimpl(
+		boost::make_unique<Implementation>(*this, log, tradingLog, settings)) {
+	m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
 }
 
 Context::~Context() {
-	delete m_pimpl;
+	//...//
 }
 
 void Context::OnStarted() {
@@ -508,12 +495,16 @@ Context::SubscribeToCurrentTimeChange(
 }
 
 const pt::ptime & Context::GetStartTime() const {
-	return m_pimpl->m_startTime;
+	return m_pimpl->m_settings.GetStartTime();
 }
 
 pt::ptime Context::GetCurrentTime() const {
+	return GetCurrentTime(m_pimpl->m_settings.GetTimeZone());
+}
+
+pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
 	if (!GetSettings().IsReplayMode()) {
-		return GetLog().GetTime();
+		return lt::local_microsec_clock::local_time(timeZone).local_time();
 	} else {
 		Assert(!m_pimpl->m_customCurrentTime.is_not_a_date_time());
 		return m_pimpl->m_customCurrentTime;
@@ -648,12 +639,12 @@ Context::Params::KeyDoesntExistError::~KeyDoesntExistError() {
 }
 
 Context::Params::Params(const Context &context)
-		: m_pimpl(new Implementation(context)) {
+	: m_pimpl(boost::make_unique<Implementation>(context)) {
 	//...//
 }
 
 Context::Params::~Params() {
-	delete m_pimpl;
+	//...//
 }
 
 std::string Context::Params::operator [](const std::string &key) const {

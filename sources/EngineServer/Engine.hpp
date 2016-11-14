@@ -49,10 +49,10 @@ namespace trdk { namespace EngineServer {
 	private:
 
 		std::ofstream m_eventsLogFile;
-		mutable trdk::Engine::Context::Log m_eventsLog;
+		std::unique_ptr<trdk::Engine::Context::Log> m_eventsLog;
 
 		std::ofstream m_tradingLogFile;
-		trdk::Engine::Context::TradingLog m_tradingLog;
+		std::unique_ptr<trdk::Engine::Context::TradingLog> m_tradingLog;
 
 		std::unique_ptr<trdk::Engine::Context> m_context;
 

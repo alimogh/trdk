@@ -64,8 +64,7 @@ namespace trdk {
 		explicit Context(
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
-				const trdk::Settings &,
-				const boost::posix_time::ptime &startTime);
+				const trdk::Settings &);
 		virtual ~Context();
 
 	public:
@@ -105,6 +104,14 @@ namespace trdk {
 		  * @sa GetStartTime
 		  */
 		boost::posix_time::ptime GetCurrentTime() const;
+		//! The current time in the specific timezone.
+		/** Initialization, value and time zone depends from settings and replay
+		  * mode.
+		  * @sa GetStartTime
+		  */
+		boost::posix_time::ptime GetCurrentTime(
+				const boost::local_time::time_zone_ptr &)
+				const;
 
 		//! Sets current time (for replay mode).
 		/** @param newTime				New time, can be only greater or equal
@@ -232,7 +239,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 
@@ -285,7 +292,7 @@ namespace trdk {
 	private:
 	
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 	
 	};
 

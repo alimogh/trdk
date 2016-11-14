@@ -39,14 +39,15 @@ namespace {
 	
 }
 
-EventsLog::EventsLog() {
+EventsLog::EventsLog(const boost::local_time::time_zone_ptr &timeZone)
+	: Log(timeZone) {
 	Refs &refs = GetRefs();
 	const Refs::Lock lock(refs.mutex);
 	Assert(refs.logs.find(this) == refs.logs.end());
 	refs.logs.insert(this);
 }
 
-EventsLog::~EventsLog() throw() {
+EventsLog::~EventsLog() {
 	try {
 		Refs &refs = GetRefs();
 		const Refs::Lock lock(refs.mutex);
@@ -57,7 +58,7 @@ EventsLog::~EventsLog() throw() {
 	}
 }
 
-void EventsLog::BroadcastCriticalError(const std::string &message) throw() {
+void EventsLog::BroadcastCriticalError(const std::string &message) noexcept {
 	try {
 		Refs &refs = GetRefs();
 		bool isReported = false;
@@ -122,9 +123,9 @@ namespace {
 
 		template<typename FirstParam, typename... OtherParams>
 		void Format(
-					boost::format &format,
-					const FirstParam &firstParam,
-					const OtherParams &...otherParams) {
+				boost::format &format,
+				const FirstParam &firstParam,
+				const OtherParams &...otherParams) {
 			format % firstParam;
 			Format(format, otherParams...);
 		}
@@ -138,10 +139,10 @@ namespace {
 }
 
 void EventsLog::BroadcastUnhandledException(
-			const char *function,
-			const char *file,
-			size_t line)
-		throw() {
+		const char *function,
+		const char *file,
+		size_t line)
+		noexcept {
 	
 	try {
 
@@ -187,10 +188,10 @@ void EventsLog::BroadcastUnhandledException(
 ////////////////////////////////////////////////////////////////////////////////
 
 ModuleEventsLog::ModuleEventsLog(
-			const std::string &name,
-			EventsLog &log)
-		: m_name(name),
-		m_log(log) {
+		const std::string &name,
+		EventsLog &log)
+	: m_name(name)
+	, m_log(log) {
 	//...//
 }
 

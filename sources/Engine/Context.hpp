@@ -28,7 +28,6 @@ namespace trdk { namespace Engine {
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
-				const boost::posix_time::ptime &startTime,
 				const trdk::Lib::Ini &);
 		virtual ~Context();
 

@@ -14,43 +14,45 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace lt = boost::local_time;
 
 using namespace trdk;
 using namespace trdk::Lib;
 
-Settings::Settings(bool isReplayMode, const fs::path &logsDir)
-	: m_isLoaded(false)
-	, m_isReplayMode(isReplayMode)
-	, m_isMarketDataLogEnabled(false)
-	, m_logsDir(logsDir) {
+Settings::Settings()
+	: m_defaultSecurityType(numberOfSecurityTypes)
+	, m_defaultCurrency(numberOfCurrencies)
+	, m_isReplayMode(false)
+	, m_isMarketDataLogEnabled(false) {
 	//...//
 }
 
-void Settings::Update(const Ini &conf, Context::Log &log) {
-	if (!m_isLoaded) {
-		UpdateStatic(conf, log);
-		m_isLoaded = true;
-	}
-}
-
-void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
-
-	Values values = {};
-
+Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
+	: m_defaultSecurityType(numberOfSecurityTypes)
+	, m_defaultCurrency(numberOfCurrencies)
+	, m_isReplayMode(false)
+	, m_isMarketDataLogEnabled(false) {
+	
 	const IniSectionRef commonConf(conf, "General");
+	const IniSectionRef defaultsConf(conf, "Defaults");
+	
+	const_cast<bool &>(m_isReplayMode)
+		= commonConf.ReadBoolKey("is_replay_mode");
 
-	bool isMarketDataLogEnabled = commonConf.ReadBoolKey("market_data_log");
+	const_cast<bool &>(m_isMarketDataLogEnabled)
+		= commonConf.ReadBoolKey("market_data_log");
+
+	const_cast<lt::time_zone_ptr &>(m_timeZone)
+		= boost::make_shared<lt::posix_time_zone>(
+			commonConf.ReadKey("timezone"));
 
 	{
-		
 		const char *const currencyKey = "currency";
-		const char *const securityTypeKey = "security_type";
-		const IniSectionRef defaultsConf(conf, "Defaults");
-
 		std::string currency = defaultsConf.ReadKey(currencyKey);
 		if (!currency.empty()) {
 			try {
-				values.defaultCurrency = ConvertCurrencyFromIso(currency);
+				const_cast<Currency &>(m_defaultCurrency)
+					= ConvertCurrencyFromIso(currency);
 			 } catch (const Exception &ex) {
 				boost::format error(
 					"Failed to parse default currency ISO 4217 code"
@@ -58,13 +60,14 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 				error % currency % ex.what();
 				throw Exception(error.str().c_str());
 			 }
-			 currency = ConvertToIso(values.defaultCurrency);
 		}
-
+	}
+	{
+		const char *const securityTypeKey = "security_type";
 		std::string securityType = defaultsConf.ReadKey(securityTypeKey);
 		if (!securityType.empty()) {
 			try {
-				values.defaultSecurityType
+				const_cast<SecurityType &>(m_defaultSecurityType)
 					= ConvertSecurityTypeFromString(securityType);
 			} catch (const Exception &ex) {
 				boost::format error(
@@ -73,29 +76,45 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 				error % securityType % ex.what();
 				throw Exception(error.str().c_str());
 			}
-			securityType = ConvertToString(values.defaultSecurityType);
 		}
-
-		log.Info(
-			"Default settings: %1% = \"%2%\";"
-				" %3% = \"%4%\"; Market data log: %5%.",
-			currencyKey,
-			currency,
-			securityTypeKey,
-			securityType,
-			isMarketDataLogEnabled ? "enabled" : "disabled");
-
 	}
 
-	m_values = values;
-	m_isMarketDataLogEnabled = isMarketDataLogEnabled;
+	const_cast<pt::ptime &>(m_startTime)
+		= lt::local_date_time(universalStartTime, m_timeZone).local_time();
 
+	const_cast<fs::path &>(m_logsRootDir)
+		= commonConf.ReadFileSystemPath("logs_dir");
+#	ifdef _DEBUG
+		const_cast<fs::path &>(m_logsRootDir) /= "DEBUG";
+#	endif
+	const_cast<fs::path &>(m_logsInstanceDir) = m_logsRootDir;
+	if (m_isReplayMode) {
+		const_cast<fs::path &>(m_logsInstanceDir)
+			/= "Replay_" + ConvertToFileName(m_startTime);
+	} else {
+		const_cast<fs::path &>(m_logsInstanceDir)
+			/= ConvertToFileName(m_startTime);
+	}
+
+}
+
+void Settings::Log(Context::Log &log) const {
+	if (m_isReplayMode) {
+		log.Info("======================= REPLAY MODE =======================");
+	}
+	log.Info(
+		"Time zone: %1%; Default currenct: %2%; Default security type: %3%;"
+			" Market data log: %4%.",
+		m_timeZone->to_posix_string(),
+		m_defaultCurrency,
+		m_defaultSecurityType,
+		m_isMarketDataLogEnabled ? "enabled" : "disabled");
 }
 
 fs::path Settings::GetBarsDataLogDir() const {
-	return GetLogsDir() / "Bars";
+	return GetLogsInstanceDir() / "Bars";
 }
 
 fs::path Settings::GetPositionsLogDir() const {
-	return GetLogsDir() / "Positions";
+	return GetLogsInstanceDir() / "Positions";
 }

@@ -27,7 +27,7 @@ namespace trdk {
 	public:
 
 		explicit TradingRecord(
-				const trdk::Log::Time &time,
+				const boost::posix_time::ptime &time,
 				const trdk::Log::ThreadId &threadId,
 				const char *tag,
 				const char *message)
@@ -70,8 +70,9 @@ namespace trdk {
 
 	public:
 
-		TradingLogOutStream()
-			: m_context(nullptr) {
+		explicit TradingLogOutStream(
+				const boost::local_time::time_zone_ptr &timeZone)
+			: m_log(timeZone) {
 			//...//
 		}
 
@@ -93,9 +94,9 @@ namespace trdk {
 			m_log.EnableStream(os, true);
 		}
 
-		trdk::Log::Time GetTime() {
+		boost::posix_time::ptime GetTime() {
 			TrdkAssert(m_context);
-			return m_context->GetCurrentTime();
+			return m_context->GetCurrentTime(m_log.GetTimeZone());
 		}
 
 		trdk::Log::ThreadId GetThreadId() const {
@@ -124,6 +125,11 @@ namespace trdk {
 		typedef TradingLogBase Base;
 
 	public:
+
+		explicit TradingLog(const boost::local_time::time_zone_ptr &timeZone)
+			: Base(timeZone) {
+			//...//
+		}
 
 		template<typename FormatCallback>
 		void Write(

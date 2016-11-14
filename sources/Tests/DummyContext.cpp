@@ -21,8 +21,7 @@ DummyContext::DummyContext()
 	: Context(
 		*static_cast<Log *>(nullptr),
 		*static_cast<TradingLog *>(nullptr),
-		Settings(false, boost::filesystem::path()),
-		boost::posix_time::not_a_date_time) {
+		Settings()) {
 	//...//
 }
 		

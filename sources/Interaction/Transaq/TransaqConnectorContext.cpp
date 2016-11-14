@@ -33,7 +33,8 @@ try
 	, m_freeMemory(m_dll.GetFunction<ApiFreeMemory>("FreeMemory"))
 	, m_unInitialize(m_dll.GetFunction<ApiUnInitialize>("UnInitialize")) {
 
-	const auto logPath = m_context.GetSettings().GetLogsDir() / "Transaq";
+	const auto logPath
+		= m_context.GetSettings().GetLogsInstanceDir() / "Transaq";
 	m_log.Info(
 		"Logging TRANSAQ Connector (%1%) into %2%...",
 		m_dll.GetFile(),

@@ -45,5 +45,7 @@
 
 #include "Common/Constants.h"
 
+#include "Core/Fwd.hpp"
+
 #include "Common/Assert.hpp"
 

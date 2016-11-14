@@ -18,8 +18,6 @@ namespace trdk {
 
 	public:
 
-		typedef boost::posix_time::ptime Time;
-
 #		ifdef BOOST_WINDOWS
 			typedef DWORD ThreadId;
 #		else
@@ -33,7 +31,7 @@ namespace trdk {
 
 	public:
 	
-		Log();
+		explicit Log(const boost::local_time::time_zone_ptr &);
 		~Log();
 
 	public:
@@ -44,7 +42,7 @@ namespace trdk {
 
 		void EnableStream(std::ostream &, bool writeStartInfo);
 
-		void DisableStream() throw() {
+		void DisableStream() noexcept {
 			m_isStreamEnabled = false;
 		}
 
@@ -52,7 +50,7 @@ namespace trdk {
 			m_isStdOutEnabled = true;
 		}
 
-		void DisableStdOut() throw() {
+		void DisableStdOut() noexcept {
 			m_isStdOutEnabled = false;
 		}
 
@@ -61,7 +59,7 @@ namespace trdk {
 		template<typename Message>
 		void Write(
 				const char *tag,
-				const Time &time,
+				const boost::posix_time::ptime &time,
 				const ThreadId &theadId,
 				const std::string *module,
 				const Message &message) {
@@ -91,8 +89,10 @@ namespace trdk {
 
 	public:
 
-		Time GetTime() const {
-			return boost::posix_time::microsec_clock::local_time();
+		boost::posix_time::ptime GetTime() const {
+			namespace lt = boost::local_time;
+			return lt::local_microsec_clock::local_time(GetTimeZone())
+				.local_time();
 		}
 
 		ThreadId GetThreadId() const {
@@ -103,12 +103,16 @@ namespace trdk {
 #			endif
 		}
 
+		const boost::local_time::time_zone_ptr & GetTimeZone() const {
+			return m_timeZone;
+		}
+
 	private:
 
 		template<typename Message>
 		static void AppendMessage(
 				const char *tag,
-				const Time &time,
+				const boost::posix_time::ptime &time,
 				const ThreadId &theadId,
 				const std::string *module,
 				const Message &message,
@@ -142,6 +146,8 @@ namespace trdk {
 		}
 
 	private:
+
+		const boost::local_time::time_zone_ptr m_timeZone;
 
 		Mutex m_streamMutex;
 		boost::atomic_bool m_isStreamEnabled;

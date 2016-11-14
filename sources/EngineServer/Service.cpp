@@ -14,6 +14,7 @@
 #include "Core/Strategy.hpp"
 #include "Core/PriceBook.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -221,10 +222,12 @@ EngineServer::Service::OrderCache::OrderCache(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EngineServer::Service::DropCopy::DropCopy(Service &service)
+EngineServer::Service::DropCopy::DropCopy(
+		Service &service,
+		const trdk::Settings &settings)
 	: m_service(service)
-	, m_log(m_service.m_log)
-	, m_queue(m_log)
+	, m_dataLog(settings.GetTimeZone())
+	, m_queue(service.GetLog())
 	, m_isSecondaryDataDisabled(false) {
 	//...//
 }
@@ -244,7 +247,7 @@ void EngineServer::Service::DropCopy::OpenDataLog(const fs::path &logsDir) {
 		dataLogFilePath.string().c_str(),
 		std::ios::out | std::ios::ate | std::ios::app);
 	if (!m_dataLogFile) {
-		m_log.Error(
+		GetLog().Error(
 			"Failed to open file %1% for Drop Copy logging.",
 			dataLogFilePath);
 		throw Exception("Failed to open file for Drop Copy logging");
@@ -252,7 +255,7 @@ void EngineServer::Service::DropCopy::OpenDataLog(const fs::path &logsDir) {
 
 	m_dataLog.EnableStream(m_dataLogFile, true);
 
-	m_log.Info("Logging Drop Copy into %1%.", dataLogFilePath);
+	GetLog().Info("Logging Drop Copy into %1%.", dataLogFilePath);
 
 }
 
@@ -457,7 +460,7 @@ void EngineServer::Service::DropCopy::CopyBook(
 	if (queueSize > maxQueueSize) {
 		if (!m_isSecondaryDataDisabled) {
 			m_isSecondaryDataDisabled = true;
-			m_log.Error(
+			GetLog().Error(
 				"Secondary Drop Copy data is disabled - queue is too big"
 					" (queue size %1% is greater than maximum allowed %2%).",
 				queueSize,
@@ -466,7 +469,7 @@ void EngineServer::Service::DropCopy::CopyBook(
 		return;
 	} else if (m_isSecondaryDataDisabled) {
 		m_isSecondaryDataDisabled = false;
-		m_log.Info(
+		GetLog().Info(
 			"Secondary Drop Copy data is enabled again (queue size is %1%).",
 			queueSize);
 	}
@@ -544,14 +547,24 @@ EngineServer::Service::Service(
 	, m_engineState(ENGINE_STATE_STOPPED)
 	, m_topics(m_config.id)
 	, m_numberOfReconnects(0)
-	, m_io(new io::io_service)
-	, m_dropCopy(*this) {
+	, m_io(new io::io_service) {
 
-	m_log.EnableStdOut();
+	std::unique_ptr<const trdk::Settings> settings;
+	try {
+		settings = boost::make_unique<trdk::Settings>(
+			IniFile(m_config.path),
+			pt::microsec_clock::universal_time());
+	} catch (const std::exception &ex) {
+		std::cerr
+			<< "Failed to read settings: \"" << ex.what() << "\"."
+			<< std::endl;
+		throw;
+	}
 
-	const IniFile settings(m_config.path);
+	m_log = boost::make_unique<EventsLog>(settings->GetTimeZone());
+	m_log->EnableStdOut();
 
-	const auto logsDir = settings.ReadFileSystemPath("General", "logs_dir");
+	const auto logsDir = settings->GetLogsRootDir();
 	fs::create_directories(logsDir);
 
 	const auto logFilePath = logsDir / "service.log";
@@ -559,15 +572,16 @@ EngineServer::Service::Service(
 		logFilePath.string().c_str(),
 		std::ios::out | std::ios::ate | std::ios::app);
 	if (!m_logFile) {
-		m_log.Error("Failed to open file %1% for logging.", logFilePath);
+		m_log->Error("Failed to open file %1% for logging.", logFilePath);
 		throw Exception("Failed to open file for logging");
 	}
-	m_log.EnableStream(m_logFile, true);
+	GetLog().EnableStream(m_logFile, true);
 
-	m_dropCopy.OpenDataLog(logsDir);
-	m_dropCopy.Start();
+	m_dropCopy = boost::make_unique<DropCopy>(*this, *settings);
+	m_dropCopy->OpenDataLog(logsDir);
+	m_dropCopy->Start();
 
-	m_log.Info(
+	GetLog().Info(
 		"Loaded engine from %1% for engine service \"%2%\".",
 		m_config.path,
 		m_config.name);
@@ -592,7 +606,7 @@ EngineServer::Service::Service(
 		}
 	}
 
-	m_log.Info("Engine service started.");
+	GetLog().Info("Engine service started.");
 
 }
 
@@ -610,14 +624,14 @@ EngineServer::Service::~Service() {
 
 boost::shared_ptr<EngineServer::Service::Connection> EngineServer::Service::Connect(
 		const pt::time_duration &startDelay) {
-	m_log.Debug(
+	GetLog().Debug(
 		"Connecting to TWS at %1%:%2%...",
 		m_config.twsHost,
 		m_config.twsPort);
 	auto connection = boost::make_shared<Connection>(
 		*m_io,
 		m_topics,
-		m_log,
+		GetLog(),
 		m_config.wampDebug);
 	connection->ScheduleIoTimeout(m_config.timeout);
 	connection->socket.async_connect(
@@ -637,7 +651,7 @@ void EngineServer::Service::OnConnected(
 		const pt::time_duration &startDelay) {
 
 	if (error) {
-		m_log.Error(
+		GetLog().Error(
 			"Failed to connect to TWS at %1%:%2%: \"%3%\" (%4%).",
 			m_config.twsHost,
 			m_config.twsPort,
@@ -645,7 +659,7 @@ void EngineServer::Service::OnConnected(
 			error.value());
 		throw ConnectError("Failed to connect to TWS");
 	}
-	m_log.Debug("Connected to TWS, starting session...");
+	GetLog().Debug("Connected to TWS, starting session...");
 
 	connection->ScheduleIoTimeout(m_config.timeout);
 	connection->sessionStartFuture = connection->session->start().then(
@@ -655,7 +669,7 @@ void EngineServer::Service::OnConnected(
 			try {
 				isStarted = isStartedFuture.get();
 			} catch (const std::exception &ex) {
-				m_log.Error(
+				GetLog().Error(
 					"Failed to start TWS session at \"%1%:%2%\": \"%3%\".",
 					m_config.twsHost,
 					m_config.twsPort,
@@ -677,7 +691,7 @@ void EngineServer::Service::OnSessionStarted(
 	if (!isStarted) {
 		throw ConnectError("TWS session not started");
 	}
-	m_log.Debug("TWS session started, joining...");
+	GetLog().Debug("TWS session started, joining...");
 
 	connection->ScheduleIoTimeout(m_config.timeout);
 	connection->sessionJoinFuture
@@ -689,7 +703,7 @@ void EngineServer::Service::OnSessionStarted(
 				try {
 					sessionId = sessionIdFuture.get();
 				} catch (const std::exception &ex) {
-					m_log.Error(
+					GetLog().Error(
 						"Failed to join to TWS session at \"%1%:%2%\": \"%3%\".",
 						m_config.twsHost,
 						m_config.twsPort,
@@ -711,17 +725,17 @@ void EngineServer::Service::OnSessionJoined(
 	if (!sessionId) {
 		throw ConnectError("Failed to join to TWS session");
 	}
-	m_log.Info(
+	GetLog().Info(
 		"Joined to TWS session %1% at \"%2%:%3%\".",
 		*sessionId,
 		m_config.twsHost,
 		m_config.twsPort);
 	if (!startDelay.is_not_a_date_time()) {
-		m_log.Info(
+		GetLog().Info(
 			"Waiting %1% for the engine instance registration...",
 			startDelay);
 		boost::this_thread::sleep(startDelay);
-		m_log.Debug("Registering...");
+		GetLog().Debug("Registering...");
 	}
 
 	const auto &engineInfo = std::make_tuple(
@@ -745,7 +759,7 @@ void EngineServer::Service::OnSessionJoined(
 				try {
 					instanceId = callResult.get().argument<uint64_t>(0);
 				} catch (const std::exception &ex) {
-					m_log.Error(
+					GetLog().Error(
 						"Failed to register TWS engine instance \"%1% %2%\""
 							" with ID \"%3%\": \"%4%\".",
 						std::get<1>(engineInfo),
@@ -793,9 +807,9 @@ void EngineServer::Service::OnEngineRegistered(
 			sessionId));
 	connection->ScheduleNextCurrentTimeNotification();
 
-	m_dropCopy.OnConnectionRestored();
+	m_dropCopy->OnConnectionRestored();
 
-	m_log.Info(
+	GetLog().Info(
 		"Registered TWS engine instance %1%"
 			" for engine \"%2% %3%\" with ID \"%4%\".",
 		*instanceId,
@@ -845,7 +859,7 @@ void EngineServer::Service::RepeatReconnection(
 		= pt::seconds(std::min(long(m_numberOfReconnects), long(30)));
 	timer->expires_from_now(sleepTime);
 
-	m_log.Warn(
+	GetLog().Warn(
 		"Failed to reconnect: \"%1%\". Trying again in %2% (%3% times)...",
 		prevReconnectError.what(),
 		sleepTime,
@@ -854,7 +868,7 @@ void EngineServer::Service::RepeatReconnection(
 	timer->async_wait(
 		[this, timer] (const sys::error_code &error) {
 			if (error) {
-				m_log.Debug(
+				GetLog().Debug(
 					"Reconnect canceled: \"%1%\" (%2%).",
 					error.message(),
 					error.value());
@@ -870,7 +884,7 @@ void EngineServer::Service::RunIoThread() {
 	m_thread = boost::thread(
 		[this]() {
 
-			m_log.Debug("Started TWS IO task.");
+			GetLog().Debug("Started TWS IO task.");
 
 			for ( ; ; ) {
 				try {
@@ -883,7 +897,7 @@ void EngineServer::Service::RunIoThread() {
 					m_io.reset(new io::io_service);
 					RepeatReconnection(ex);
 				} catch (const trdk::EngineServer::Service::Exception &ex) {
-					m_log.Error("TWS IO error: \"%1%\".", ex.what());
+					GetLog().Error("TWS IO error: \"%1%\".", ex.what());
 					m_connectionCondition.notify_all();
 					if (!m_instanceId) {
 						break;
@@ -891,13 +905,13 @@ void EngineServer::Service::RunIoThread() {
 					m_io.reset(new io::io_service);
 					RepeatReconnection(ex);
 				} catch (const trdk::EngineServer::Exception &ex) {
-					m_log.Error(
+					GetLog().Error(
 						"TWS IO task stopped with error: \"%1%\".",
 						ex.what());
 					m_connectionCondition.notify_all();
 					throw;
 				} catch (const sys::system_error &ex) {
-					m_log.Error(
+					GetLog().Error(
 						"TWS IO task stopped with error: \"%1%\" (%2%).",
 						ex.code().message(),
 						ex.code().value());
@@ -923,7 +937,7 @@ void EngineServer::Service::RunIoThread() {
 				}
 			}
 
-			m_log.Debug("TWS IO task completed.");
+			GetLog().Debug("TWS IO task completed.");
 
 		});
 
@@ -964,29 +978,29 @@ void EngineServer::Service::PublishState() const {
 
 void EngineServer::Service::StartEngine() {
 
-	m_log.Debug("Starting engine...");
+	GetLog().Debug("Starting engine...");
 
 	const EngineLock lock(m_engineMutex);
 
 	if (m_engineTask.IsActive()) {
-		m_log.Warn(
+		GetLog().Warn(
 			"Failed to start engine"
 				" - service performs task which can change engine state.");
 		throw Exception("Service performs task which can change engine state");
 	} else if (m_engine) {
-		m_log.Warn("Failed to start engine - engine already is started.");
+		GetLog().Warn("Failed to start engine - engine already is started.");
 		throw Exception("Engine already is started");
 	}
 	AssertEq(ENGINE_STATE_STOPPED, m_engineState);
 
-	if (!m_dropCopy.IsStarted()) {
-		m_log.Error("Failed to start engine - Drop Copy is not started.");
+	if (!m_dropCopy->IsStarted()) {
+		GetLog().Error("Failed to start engine - Drop Copy is not started.");
 		throw Exception("Drop Copy is not started");
 	}
 
 	m_engineTask.Start(
 		[this]() {
-			m_log.Debug("Started engine start task.");
+			GetLog().Debug("Started engine start task.");
 			try {
 				auto engine = boost::make_shared<Engine>(
 					m_config.path,
@@ -995,13 +1009,13 @@ void EngineServer::Service::StartEngine() {
 							const std::string *updateMessage) {
 						OnContextStateChanged(state, updateMessage);
 					},
-					m_dropCopy,
+					*m_dropCopy,
 					false);
 				{
 					const EngineLock lock(m_engineMutex);
 					Assert(!m_engine);
 					if (m_engineState != ENGINE_STATE_STARTED) {
-						m_log.Warn(
+						GetLog().Warn(
 							"Failed to start engine. Engine state is %1%.",
 							m_engineState);
 						return;
@@ -1009,7 +1023,7 @@ void EngineServer::Service::StartEngine() {
 					engine.swap(m_engine);
 				}
 			} catch (const trdk::Lib::Exception &ex) {
-				m_log.Warn("Failed to start engine: \"%1%\".", ex);
+				GetLog().Warn("Failed to start engine: \"%1%\".", ex);
 				m_engineState = ENGINE_STATE_STOPPED;
 				try {
 					PublishState();
@@ -1022,7 +1036,7 @@ void EngineServer::Service::StartEngine() {
 				AssertFailNoException();
 				throw;
 			}
-			m_log.Info("Engine started.");
+			GetLog().Info("Engine started.");
 		});
 
 	m_engineState = ENGINE_STATE_STARTING;
@@ -1037,24 +1051,24 @@ void EngineServer::Service::StartEngine() {
 
 void EngineServer::Service::StopEngine() {
 
-	m_log.Debug("Stopping engine...");
+	GetLog().Debug("Stopping engine...");
 
 	const EngineLock lock(m_engineMutex);
 
 	if (m_engineTask.IsActive()) {
-		m_log.Warn(
+		GetLog().Warn(
 			"Failed to stop engine"
 				" - service performs task which can change engine state.");
 		throw Exception("Service performs task which can change engine state");
 	} else if (!m_engine) {
-		m_log.Warn("Failed to stop engine - engine already is stopped.");
+		GetLog().Warn("Failed to stop engine - engine already is stopped.");
 		throw Exception("Engine already is stopped");
 	}
 	AssertEq(ENGINE_STATE_STARTED, m_engineState);
 
 	m_engineTask.Start(
 		[this]() {
-			m_log.Debug("Started engine stop task.");
+			GetLog().Debug("Started engine stop task.");
 			try {
 				m_engine->Stop(STOP_MODE_IMMEDIATELY);
 				const EngineLock lock(m_engineMutex);
@@ -1067,7 +1081,7 @@ void EngineServer::Service::StopEngine() {
 				AssertFailNoException();
 				throw;
 			}
-			m_log.Info("Engine stopped.");
+			GetLog().Info("Engine stopped.");
 		});
 
 	m_engineState = ENGINE_STATE_STOPPING;
@@ -1081,44 +1095,44 @@ void EngineServer::Service::StopEngine() {
 }
 
 void EngineServer::Service::StartDropCopy() {
-	m_log.Debug("Starting Drop Copy...");
+	GetLog().Debug("Starting Drop Copy...");
 	try {
-		m_dropCopy.Start();
+		m_dropCopy->Start();
 	} catch (const std::exception &ex) {
-		m_log.Warn("Failed to start Drop Copy: \"%1%\".", ex.what());
+		GetLog().Warn("Failed to start Drop Copy: \"%1%\".", ex.what());
 		throw;
 	} catch (...) {
 		AssertFailNoException();
 		throw;
 	}
-	m_log.Info("Drop Copy started.");
+	GetLog().Info("Drop Copy started.");
 }
 
 void EngineServer::Service::StopDropCopy() {
-	m_log.Debug("Stopping Drop Copy...");
+	GetLog().Debug("Stopping Drop Copy...");
 	const EngineLock lock(m_engineMutex);
 	if (m_dropCopyTask.IsActive()) {
-		m_log.Warn(
+		GetLog().Warn(
 			"Failed to stop Drop Copy"
 				" - service performs task which can change Drop Copy state.");
 		throw Exception(
 			"Service performs task which can change Drop Copy state");
 	}
 	try {
-		m_dropCopy.Stop(false);
+		m_dropCopy->Stop(false);
 		m_dropCopyTask.Start(
 			[this]() {
-				m_log.Debug("Started Drop Copy stop-task.");
+				GetLog().Debug("Started Drop Copy stop-task.");
 				try {
-					m_dropCopy.Stop(true);
+					m_dropCopy->Stop(true);
 				} catch (...) {
 					AssertFailNoException();
 					throw;
 				}
-				m_log.Info("Drop Copy stopped.");
+				GetLog().Info("Drop Copy stopped.");
 			});
 	} catch (const std::exception &ex) {
-		m_log.Warn("Failed to stop Drop Copy: \"%1%\".", ex.what());
+		GetLog().Warn("Failed to stop Drop Copy: \"%1%\".", ex.what());
 		throw;
 	} catch (...) {
 		AssertFailNoException();
@@ -1128,22 +1142,22 @@ void EngineServer::Service::StopDropCopy() {
 
 void EngineServer::Service::ClosePositions() {
 
-	m_log.Debug("Closing positions...");
+	GetLog().Debug("Closing positions...");
 
 	const EngineLock lock(m_engineMutex);
 
 	if (m_engineTask.IsActive()) {
-		m_log.Warn(
+		GetLog().Warn(
 			"Failed to close positions"
 				" - service performs task which can change engine state.");
 		throw Exception("Service performs task which can change engine state");
 	} else if (!m_engine) {
-		m_log.Warn("Failed to close positions - engine is stopped.");
+		GetLog().Warn("Failed to close positions - engine is stopped.");
 		throw Exception("Engine is stopped");
 	}
 
 	m_engine->ClosePositions();
-	m_log.Info("Positions closed.");
+	GetLog().Info("Positions closed.");
 
 }
 
@@ -1159,8 +1173,8 @@ void EngineServer::Service::OnContextStateChanged(
 		case Context::STATE_ENGINE_STARTED:
 
 			!updateMessage
-				?	m_log.Info("Engine changed state to \"started\".")
-				:	m_log.Info(
+				?	GetLog().Info("Engine changed state to \"started\".")
+				:	GetLog().Info(
 						"Engine changed state to \"started\": \"%s\".",
 						*updateMessage);
 			AssertEq(ENGINE_STATE_STARTING, m_engineState);
@@ -1187,17 +1201,17 @@ void EngineServer::Service::OnContextStateChanged(
 						 :	"Engine dispatcher task stopped with error: \"%s\".";
 				if (m_engineState == ENGINE_STATE_STOPPING) {
 					!updateMessage
-						?	m_log.Debug(logRecord)
-						:	m_log.Debug(logRecord, *updateMessage);
+						?	GetLog().Debug(logRecord)
+						:	GetLog().Debug(logRecord, *updateMessage);
 				} else if (
 						state == Context::STATE_DISPATCHER_TASK_STOPPED_ERROR) {
 					!updateMessage
-						?	m_log.Warn(logRecord)
-						:	m_log.Warn(logRecord, *updateMessage);
+						?	GetLog().Warn(logRecord)
+						:	GetLog().Warn(logRecord, *updateMessage);
 				} else {
 					!updateMessage
-						?	m_log.Info(logRecord)
-						:	m_log.Info(logRecord, *updateMessage);
+						?	GetLog().Info(logRecord)
+						:	GetLog().Info(logRecord, *updateMessage);
 				}
 			}
 
@@ -1208,7 +1222,7 @@ void EngineServer::Service::OnContextStateChanged(
 					// task stopped...
 					m_engineTask.Start(
 						[this]() {
-							m_log.Debug("Started engine d-tor task.");
+							GetLog().Debug("Started engine d-tor task.");
 							m_engine.reset();
 							try {
 								const EngineLock lock(m_engineMutex);
@@ -1218,7 +1232,7 @@ void EngineServer::Service::OnContextStateChanged(
 								AssertFailNoException();
 								throw;
 							}
-							m_log.Debug("Finished engine d-tor task.");
+							GetLog().Debug("Finished engine d-tor task.");
 						});
 					m_engineState = ENGINE_STATE_STOPPING;
 					PublishState();
@@ -1238,8 +1252,8 @@ void EngineServer::Service::OnContextStateChanged(
 		case Context::STATE_STRATEGY_BLOCKED:
 
 			!updateMessage
-				?	m_log.Warn("Engine notified about blocked strategy.")
-				:	m_log.Warn(
+				?	GetLog().Warn("Engine notified about blocked strategy.")
+				:	GetLog().Warn(
 						"Engine notified about blocked strategy: \"%s\".",
 						*updateMessage);
 
@@ -1260,7 +1274,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
 	record["start_time"] = strategy.GetContext().GetStartTime();
 
 	const auto &result = Request<DropCopy::StrategyInstanceId>(
-		m_dropCopy.TakeRecordNumber(),
+		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::registerStrategyInstance,
 		record);
@@ -1283,7 +1297,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
 	record["start_time"] = time;
 
 	const auto &result = Request<DropCopy::StrategyInstanceId>(
-		m_dropCopy.TakeRecordNumber(),
+		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::continueStrategyInstance,
 		record);
@@ -1307,7 +1321,7 @@ EngineServer::Service::RegisterDataSourceInstance(
 	record["strategy_instance_id"] = strategy.GetDropCopyInstanceId();
 
 	const auto &result = Request<DropCopy::DataSourceInstanceId>(
-		m_dropCopy.TakeRecordNumber(),
+		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::registerDataSourceInstance,
 		record);
@@ -1530,7 +1544,7 @@ bool EngineServer::Service::StoreRecord(
 
 	AssertLt(0, storeAttemptNo);
 	if (storeAttemptNo == 1) {
-		m_dropCopy.GetDataLog().Info(
+		m_dropCopy->GetDataLog().Info(
 			"store\t%1%\t%2%\t%3%\t%4%",
 			recordNumber,
 			storeAttemptNo,
@@ -1543,7 +1557,7 @@ bool EngineServer::Service::StoreRecord(
 
 		const ConnectionLock lock(m_connectionMutex);
 		if (!m_connection) {
-			m_dropCopy.GetDataLog().Warn(
+			m_dropCopy->GetDataLog().Warn(
 				"no connection\t%1%\t%2%\t%3%",
 				recordNumber,
 				storeAttemptNo,
@@ -1558,10 +1572,10 @@ bool EngineServer::Service::StoreRecord(
 				record,
 				m_config.callOptions);
 		} catch (const std::exception &ex) {
-			m_log.Error(
+			GetLog().Error(
 				"Failed to call TWS to store Drop Copy record: \"%1%\".",
 				ex.what());
-			m_dropCopy.GetDataLog().Error(
+			m_dropCopy->GetDataLog().Error(
 				"store error\t%1%\t%2%\t%3%\t%4%",
 				recordNumber,
 				storeAttemptNo,
@@ -1574,13 +1588,13 @@ bool EngineServer::Service::StoreRecord(
 
 	try {
 		if (callFuture.get().argument<bool>(0)) {
-			m_dropCopy.GetDataLog().Info(
+			m_dropCopy->GetDataLog().Info(
 				"stored\t%1%\t%2%\t%3%",
 				recordNumber,
 				storeAttemptNo,
 				m_connection->topics.*topic);
 		} else {
-			m_log.Error(
+			GetLog().Error(
 				"Failed to store Drop Copy record: TWS returned error."
 					" Record %1% will be skipped at attempt %2%.",
 				recordNumber,
@@ -1589,8 +1603,8 @@ bool EngineServer::Service::StoreRecord(
 		}
 		return true;
 	} catch (const std::exception &ex) {
-		m_log.Error("Failed to store Drop Copy record: \"%1%\".", ex.what());
-		m_dropCopy.GetDataLog().Error(
+		GetLog().Error("Failed to store Drop Copy record: \"%1%\".", ex.what());
+		m_dropCopy->GetDataLog().Error(
 			"store error\t%1%\t%2%\t%3%\t%4%",
 			recordNumber,
 			storeAttemptNo,
@@ -1607,7 +1621,7 @@ void EngineServer::Service::DumpRecord(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		const DropCopyRecord &record) {
-	m_dropCopy.GetDataLog().Error(
+	m_dropCopy->GetDataLog().Error(
 		"dump\t%1%\t%2%\t%3%\t%4%",
 		recordNumber,
 		storeAttemptNo,
@@ -1659,7 +1673,7 @@ bool EngineServer::Service::StoreBook(
 					book.GetAsk()),
 				m_config.callOptions);
 		} catch (const std::exception &ex) {
-			m_log.Error(
+			GetLog().Error(
 				"Failed to call TWS to store Price Book into Drop Copy storage"
 					 ": \"%1%\".",
 				ex.what());
@@ -1671,7 +1685,7 @@ bool EngineServer::Service::StoreBook(
 	try {
 		callFuture.wait();
 	} catch (const std::exception &ex) {
-		m_log.Error(
+		GetLog().Error(
 			"Failed to store Price Book into Drop Copy storage"
 				": \"%1%\".",
 			ex.what());
@@ -1688,7 +1702,7 @@ Result EngineServer::Service::Request(
 		const std::string Topics::*topic,
 		const DropCopyRecord &request) {
 
-	m_dropCopy.GetDataLog().Info(
+	m_dropCopy->GetDataLog().Info(
 		"request\t%1%\t%2%\t%3%\t%4%",
 		recordNumber,
 		storeAttemptNo,
@@ -1700,7 +1714,7 @@ Result EngineServer::Service::Request(
 
 		const ConnectionLock lock(m_connectionMutex);
 		if (!m_connection) {
-			m_dropCopy.GetDataLog().Warn(
+			m_dropCopy->GetDataLog().Warn(
 				"no connection\t%1%\t%2%\t%3%",
 				recordNumber,
 				storeAttemptNo,
@@ -1715,8 +1729,8 @@ Result EngineServer::Service::Request(
 				request,
 				m_config.callOptions);
 		} catch (const std::exception &ex) {
-			m_log.Error("Failed to request to TWS: \"%1%\".", ex.what());
-			m_dropCopy.GetDataLog().Error(
+			GetLog().Error("Failed to request to TWS: \"%1%\".", ex.what());
+			m_dropCopy->GetDataLog().Error(
 				"request error\t%1%\t%2%\t%3%\t%4%",
 				recordNumber,
 				storeAttemptNo,
@@ -1729,7 +1743,7 @@ Result EngineServer::Service::Request(
 
 	try {
 		const auto &result = callFuture.get().argument<Result>(0);
-		m_dropCopy.GetDataLog().Info(
+		m_dropCopy->GetDataLog().Info(
 			"request result\t%1%\t%2%\t%3%\t%4%",
 			recordNumber,
 			storeAttemptNo,
@@ -1737,10 +1751,10 @@ Result EngineServer::Service::Request(
 			result);
 		return result;
 	} catch (const std::exception &ex) {
-		m_log.Error(
+		GetLog().Error(
 			"Failed to request to TWS: \"%1%\".",
 			ex.what());
-		m_dropCopy.GetDataLog().Error(
+		m_dropCopy->GetDataLog().Error(
 			"request error\t%1%\t%2%\t%3%\t%4%",
 			recordNumber,
 			storeAttemptNo,
@@ -1748,7 +1762,7 @@ Result EngineServer::Service::Request(
 			ex.what());
 	}
 
-	m_log.Error("Failed to request to TWS: TWS returned error.");
+	GetLog().Error("Failed to request to TWS: TWS returned error.");
 	throw DropCopy::Exception("Failed to request to TWS");
 
 }

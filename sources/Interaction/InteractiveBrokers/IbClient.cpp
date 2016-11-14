@@ -1922,7 +1922,8 @@ void Client::FlushHistory(ib::Security &security) {
 
 	const auto &now = m_ts.GetContext().GetCurrentTime();
 
-	fs::path logPath = m_ts.GetContext().GetSettings().GetLogsDir() / "History";
+	fs::path logPath
+		= m_ts.GetContext().GetSettings().GetLogsInstanceDir() / "History";
 	logPath /= SymbolToFileName(
 		(boost::format("%1%_%2%%3%%4%_%5%%6%%7%")
 			 % security.GetSymbol()

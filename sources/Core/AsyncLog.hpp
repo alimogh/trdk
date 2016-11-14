@@ -63,7 +63,7 @@ namespace trdk {
 	public:
 
 		explicit AsyncLogRecord(
-				const trdk::Log::Time &time,
+				const boost::posix_time::ptime &time,
 				const trdk::Log::ThreadId &threadId)
 			: m_time(time),
 			m_threadId(threadId) {
@@ -101,7 +101,7 @@ namespace trdk {
 
 	public:
 
-		const trdk::Log::Time & GetTime() const {
+		const boost::posix_time::ptime & GetTime() const {
 			return m_time;
 		}
 
@@ -375,7 +375,7 @@ namespace trdk {
 
 	private:
 
-		trdk::Log::Time m_time;
+		boost::posix_time::ptime m_time;
 		trdk::Log::ThreadId m_threadId;
 
 		std::vector<boost::tuple<ParamType, boost::any>> m_params;
@@ -413,7 +413,6 @@ namespace trdk {
 
 		typedef RecordT Record;
 		typedef LogT Log;
-		typedef trdk::Log::Time Time;
 		typedef trdk::Log::ThreadId ThreadId;
 
 	private:
@@ -528,8 +527,10 @@ namespace trdk {
 
 	public:
 	
-		AsyncLog()
-			: m_writeTask(nullptr) {
+		template<typename... LogParams>
+		explicit AsyncLog(const LogParams &...logParams)
+			: m_log(logParams...)
+			, m_writeTask(nullptr) {
 			m_queue.activeBuffer = &m_queue.buffers.first;
 		}
 

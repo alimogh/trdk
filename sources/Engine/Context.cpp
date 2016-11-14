@@ -209,9 +209,8 @@ Engine::Context::Context(
 		Context::Log &log,
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
-		const pt::ptime &startTime,
 		const Lib::Ini &conf)
-	: Base(log, tradingLog, settings, startTime) {
+	: Base(log, tradingLog, settings) {
 	m_pimpl = new Implementation(*this, conf);
 }
 

@@ -180,10 +180,13 @@ namespace trdk { namespace EngineServer {
 
 		class DropCopy : public trdk::DropCopy {
 		public:
-			explicit DropCopy(Service &);
+			explicit DropCopy(Service &, const trdk::Settings &);
 			virtual ~DropCopy();
 		public:
 			void OpenDataLog(const boost::filesystem::path &logsDir);
+			EventsLog & GetLog() const {
+				return m_service.GetLog();
+			}
 			void OnConnectionRestored();
 			EventsLog & GetDataLog() {
 				return m_dataLog;
@@ -197,14 +200,17 @@ namespace trdk { namespace EngineServer {
 			virtual void Dump();
 		public:
 			virtual trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
-					const trdk::Strategy &);
+					const trdk::Strategy &)
+					override;
 			virtual trdk::DropCopy::StrategyInstanceId ContinueStrategyInstance(
 					const Strategy &,
-					const boost::posix_time::ptime &);
+					const boost::posix_time::ptime &)
+					override;
 			virtual DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
 					const trdk::Strategy &,
 					const boost::uuids::uuid &type,
-					const boost::uuids::uuid &id);
+					const boost::uuids::uuid &id)
+					override;
 			virtual void CopyOrder(
 					const boost::uuids::uuid &id,
 					const std::string *tradingSystemId,
@@ -225,7 +231,8 @@ namespace trdk { namespace EngineServer {
 					const double *bestBidPrice,
 					const trdk::Qty *bestBidQty,
 					const double *bestAskPrice,
-					const trdk::Qty *bestAskQty);
+					const trdk::Qty *bestAskQty)
+					override;
 			virtual void CopyTrade(
 					const boost::posix_time::ptime &,
 					const std::string &tradingSystemTradeId,
@@ -235,20 +242,24 @@ namespace trdk { namespace EngineServer {
 					double bestBidPrice,
 					const trdk::Qty &bestBidQty,
 					double bestAskPrice,
-					const trdk::Qty &bestAskQty);
+					const trdk::Qty &bestAskQty)
+					override;
 			virtual void ReportOperationStart(
 					const trdk::Strategy &,
 					const boost::uuids::uuid &id,
-					const boost::posix_time::ptime &);
+					const boost::posix_time::ptime &)
+					override;
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
 					const trdk::OperationResult &,
 					double pnl,
-					trdk::FinancialResult &&);
+					trdk::FinancialResult &&)
+					override;
 			virtual void CopyBook(
 					const trdk::Security &,
-					const trdk::PriceBook &);
+					const trdk::PriceBook &)
+					override;
 			virtual void CopyBar(
 					const trdk::DropCopy::DataSourceInstanceId &,
 					size_t index,
@@ -256,15 +267,16 @@ namespace trdk { namespace EngineServer {
 					double open,
 					double high,
 					double low,
-					double close);
+					double close)
+					override;
 			virtual void CopyAbstractData(
 					const trdk::DropCopy::DataSourceInstanceId &,
 					size_t index,
 					const boost::posix_time::ptime &,
-					double value);
+					double value)
+					override;
 		private:
 			Service &m_service;
-			EventsLog &m_log;
 			std::ofstream m_dataLogFile;
 			EventsLog m_dataLog;
 			QueueService m_queue;
@@ -307,6 +319,12 @@ namespace trdk { namespace EngineServer {
 				const boost::filesystem::path &engineConfigFilePath,
 				const boost::posix_time::time_duration &startDelay);
 		~Service();
+
+	public:
+
+		EventsLog & GetLog() const {
+			return *m_log;
+		}
 
 	private:
 
@@ -458,9 +476,9 @@ namespace trdk { namespace EngineServer {
 		/** Should be first to be removed last.
 		  */
 		std::ofstream m_logFile;
-		EventsLog m_log;
+		std::unique_ptr<EventsLog> m_log;
 
-		DropCopy m_dropCopy;
+		std::unique_ptr<DropCopy> m_dropCopy;
 		Task m_dropCopyTask;
 
 		mutable EngineMutex m_engineMutex;

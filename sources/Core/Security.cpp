@@ -90,7 +90,9 @@ namespace {
 
 	public:
 
-		explicit Record(const Log::Time &time, const Log::ThreadId &threadId)
+		explicit Record(
+				const boost::posix_time::ptime &time,
+				const Log::ThreadId &threadId)
 			: AsyncLogRecord(time, threadId) {
 			//...//
 		}
@@ -111,6 +113,10 @@ namespace {
 
 	class OutStream : private boost::noncopyable {
 	public:
+		explicit OutStream(const lt::time_zone_ptr &timeZone)
+			: m_log(timeZone) {
+			//...//
+		}
 		void Write(const Record &record) {
 			m_log.Write(record);
 		}
@@ -120,7 +126,7 @@ namespace {
 		void EnableStream(std::ostream &os) {
 			m_log.EnableStream(os, false);
 		}
-		Log::Time GetTime() {
+		boost::posix_time::ptime GetTime() const {
 			return m_log.GetTime();
 		}
 		Log::ThreadId GetThreadId() const {
@@ -143,8 +149,9 @@ namespace {
 		using Base::IsEnabled;
 		using Base::EnableStream;
 
-		explicit Log(const Security &security)
-			: m_security(security) {
+		explicit Log(const Context &context, const Security &security)
+			: Base(context.GetSettings().GetTimeZone())
+			, m_security(security) {
 			//...//
 		}
 
@@ -402,7 +409,7 @@ public:
 		, m_isOnline(false)
 		, m_isOpened(false)
 		, m_request({})
-		, m_marketDataLog(self) {
+		, m_marketDataLog(m_source.GetContext(), self) {
 		
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
@@ -558,23 +565,18 @@ public:
 
 	void StartMarketDataLog() {
 
-		auto path = m_self.GetContext().GetSettings().GetLogsDir();
+		auto path = m_self.GetContext().GetSettings().GetLogsInstanceDir();
 		path /= "MarketData";
 
-		if (!m_self.GetContext().GetSettings().IsReplayMode()) {
-			boost::format fileName("%1%__%2%");
-			fileName
-				% m_self.GetSymbol()
-				% ConvertToFileName(m_self.GetContext().GetStartTime());
-			path /= SymbolToFileName(fileName.str(), "csv");
-		} else {
-			boost::format fileName("%1%__%2%__%3%");
-			fileName
-				% m_self.GetSymbol()
-				% ConvertToFileName(m_self.GetContext().GetCurrentTime())
-				% ConvertToFileName(m_self.GetContext().GetStartTime());
-			path /= SymbolToFileName(fileName.str(), "csv");
+		if (m_self.GetContext().GetSettings().IsReplayMode()) {
+			throw Exception(
+				"Failed to start market data log file for replay mode");
 		}
+		boost::format fileName("%1%__%2%");
+		fileName
+			% m_self.GetSymbol()
+			% ConvertToFileName(m_self.GetContext().GetStartTime());
+		path /= SymbolToFileName(fileName.str(), "csv");
 
 		fs::create_directories(path.branch_path());
 		m_marketDataLogFile.open(

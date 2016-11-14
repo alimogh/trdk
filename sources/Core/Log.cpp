@@ -15,11 +15,13 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+namespace lt = boost::local_time;
 
-Log::Log()
-		: m_log(nullptr),
-		m_isStreamEnabled(false),
-		m_isStdOutEnabled(false) {
+Log::Log(const lt::time_zone_ptr &timeZone)
+	: m_timeZone(timeZone)
+	, m_log(nullptr)
+	, m_isStreamEnabled(false)
+	, m_isStdOutEnabled(false) {
 	//...//
 }
 

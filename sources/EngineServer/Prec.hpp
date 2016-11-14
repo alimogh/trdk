@@ -59,6 +59,6 @@
 
 #include "Common/Assert.hpp"
 
-#ifdef SendMessage
+#ifdef BOOST_WINDOWS
 #	undef SendMessage
 #endif
