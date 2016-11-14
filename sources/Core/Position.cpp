@@ -284,10 +284,7 @@ public:
 				AssertEq(0, m_open.volume);
 				Assert(!trade);
 				AssertLt(0, remainingQty);
-				ReportOpeningUpdate(
-					"submitted",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
 				CopyOrder(&tradingSystemOrderId, true, orderStatus);
 				return;
 			case ORDER_STATUS_FILLED:
@@ -300,10 +297,7 @@ public:
 					order.executedQty + trade->qty + remainingQty,
 					order.qty);
 				m_open.OnNewTrade(*trade);
-				ReportOpeningUpdate(
-					"filled",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
 				CopyTrade(
 					trade->id,
 					m_security.DescalePrice(trade->price),
@@ -313,27 +307,18 @@ public:
 				break;
 			case ORDER_STATUS_INACTIVE:
 				order.isActive = false;
-				ReportOpeningUpdate(
-					"inactive",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
 				m_isInactive = true;
 				break;
 			case ORDER_STATUS_ERROR:
 				order.isActive = false;
-				ReportOpeningUpdate(
-					"error",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
 				m_isError = true;
 				break;
 			case ORDER_STATUS_CANCELLED:
 			case ORDER_STATUS_REJECTED:
 				order.isActive = false;
-				ReportOpeningUpdate(
-					ConvertToPch(orderStatus),
-					tradingSystemOrderId,
-					orderStatus);
+				ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
 				break;
 		}
 
@@ -402,10 +387,7 @@ public:
 			case ORDER_STATUS_SUBMITTED:
 				AssertEq(0, order.executedQty);
 				AssertLt(0, remainingQty);
-				ReportClosingUpdate(
-					"submitted",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportClosingUpdate(tradingSystemOrderId, orderStatus);
 				CopyOrder(&tradingSystemOrderId, false, orderStatus);
 				return;
 			case ORDER_STATUS_FILLED:
@@ -418,10 +400,7 @@ public:
 					order.executedQty + trade->qty + remainingQty,
 					order.qty);
 				m_close.OnNewTrade(*trade);
-				ReportClosingUpdate(
-					"filled",
-					tradingSystemOrderId,
-					orderStatus);
+				ReportClosingUpdate(tradingSystemOrderId, orderStatus);
 				CopyTrade(
 					trade->id,
 					m_security.DescalePrice(trade->price),
@@ -432,19 +411,16 @@ public:
 				}
 				break;
 			case ORDER_STATUS_INACTIVE:
-				ReportClosingUpdate("error", tradingSystemOrderId, orderStatus);
+				ReportClosingUpdate(tradingSystemOrderId, orderStatus);
 				m_isInactive = true;
 				break;
 			case ORDER_STATUS_ERROR:
-				ReportClosingUpdate("error", tradingSystemOrderId, orderStatus);
+				ReportClosingUpdate(tradingSystemOrderId, orderStatus);
 				m_isError = true;
 				break;
 			case ORDER_STATUS_CANCELLED:
 			case ORDER_STATUS_REJECTED:
-				ReportClosingUpdate(
-					ConvertToPch(orderStatus),
-					tradingSystemOrderId,
-					orderStatus);
+				ReportClosingUpdate(tradingSystemOrderId, orderStatus);
 				break;
 		}
 	
@@ -522,46 +498,44 @@ public:
 	}
 
 	void ReportOpeningUpdate(
-			const char *eventDesc,
 			const std::string &tsOrderId,
 			const OrderStatus &orderStatus)
 			const
 			noexcept {
 		Assert(!m_open.orders.empty());
 		m_strategy.GetTradingLog().Write(
-			"order\t%1%\tpos=%1%\torder=%2%/%3%\topen-%4%->%5%\t%6%\t%7%"
-				"\t%8%.%9%\tprice=%10$.8f->%11$.8f->%12$.8f(avg=%13$.8f)\t%14%"
-				"\tqty=%15$.8f->%16$.8f",
-			[this, eventDesc, &tsOrderId, &orderStatus](
+			"order\t%1%\tpos=%1%\torder=%2%/%3%\topen->%4%\t%5%\t%6%"
+				"\t%7%.%8%\tprice=%9$.8f->%10$.8f->%11$.8f(avg=%12$.8f)\t%13%"
+				"\tqty=%14$.8f->%15$.8f",
+			[this, &tsOrderId, &orderStatus](
 					TradingRecord &record) {
 				const auto &order = m_open.orders.back();
 				record
 					% m_operationId // 1
 					% order.uuid // 2
 					% tsOrderId // 3
-					% eventDesc // 4
-					% orderStatus // 5
-					% m_self.GetTypeStr() // 6
-					% m_security.GetSymbol().GetSymbol().c_str() // 7
-					% m_self.GetTradingSystem().GetTag().c_str() // 8
-					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_self.GetOpenStartPrice()); // 10
+					% orderStatus // 4
+					% m_self.GetTypeStr() // 5
+					% m_security.GetSymbol().GetSymbol().c_str() // 6
+					% m_self.GetTradingSystem().GetTag().c_str() // 7
+					% m_tradingSystem.GetMode() // 8
+					% m_security.DescalePrice(m_self.GetOpenStartPrice()); // 9
 				if (order.price) {
-					record % *order.price; // 11
+					record % *order.price; // 10
 				} else {
-					record % '-'; // 11
+					record % '-'; // 10
 				}
 				if (m_self.GetOpenedQty()) {
 					record
-						% m_security.DescalePrice(m_open.lastTradePrice) // 12
-						% m_security.DescalePrice(m_self.GetOpenAvgPrice()); // 13
+						% m_security.DescalePrice(m_open.lastTradePrice) // 11
+						% m_security.DescalePrice(m_self.GetOpenAvgPrice()); // 12
 				} else {
-					record % '-' % '-'; // 12, 13
+					record % '-' % '-'; // 11, 12
 				}
 				record
-					% m_self.GetCurrency() // 14
-					% m_self.GetPlanedQty() // 15
-					% m_self.GetOpenedQty(); // 16 and last
+					% m_self.GetCurrency() // 13
+					% m_self.GetPlanedQty() // 14
+					% m_self.GetOpenedQty(); // 15 and last
 					
 			});
 	}
@@ -575,7 +549,7 @@ public:
 			const
 			noexcept {
 		m_strategy.GetTradingLog().Write(
-			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%\t%5%\t%6%\t%7%.%8%"
+			"order\tpos=%1%\torder=%2%/%3%\tclose->%4%\t%5%\t%6%\t%7%.%8%"
 				"\tclose-type=%9%\tprice=%10$.8f->%11$.8f(%12$.8f)\t%13%"
 				"\tqty=(%14$.8f, %15$.8f)",
 			[&](TradingRecord &record) {
@@ -604,46 +578,44 @@ public:
 	}
 
 	void ReportClosingUpdate(
-			const char *eventDesc,
 			const std::string &tsOrderId,
 			const OrderStatus &orderStatus)
 			const
 			noexcept {
 		Assert(!m_close.orders.empty());
 		m_strategy.GetTradingLog().Write(
-			"order\tpos=%1%\torder=%2%/%3%\tclose-%4%->%5%\t%6%\t%7%\t%8%.%9%"
-				"\tprice=%10$.8f->%11$.8f->%12$.8f(avg=%13$.8f)\t%14%"
-				"\tqty=%15$.8f-%16$.8f=%17$.8f",
-			[this, eventDesc, &tsOrderId, &orderStatus](TradingRecord &record) {
+			"order\tpos=%1%\torder=%2%/%3%\tclose->%4%\t%5%\t%6%\t%7%.%8%"
+				"\tprice=%9$.8f->%10$.8f->%11$.8f(avg=%12$.8f)\t%13%"
+				"\tqty=%14$.8f-%15$.8f=%16$.8f",
+			[this, &tsOrderId, &orderStatus](TradingRecord &record) {
 				const auto &order = m_close.orders.back();
 				record
 					% m_operationId // 1
 					% order.uuid // 2
 					% tsOrderId // 3
-					% eventDesc // 4
-					% orderStatus // 5
-					% m_self.GetTypeStr() // 6
-					% m_security.GetSymbol().GetSymbol() // 7
-					% m_self.GetTradingSystem().GetTag() // 8
-					% m_tradingSystem.GetMode() // 9
-					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 10
+					% orderStatus // 4
+					% m_self.GetTypeStr() // 5
+					% m_security.GetSymbol().GetSymbol() // 6
+					% m_self.GetTradingSystem().GetTag() // 7
+					% m_tradingSystem.GetMode() // 8
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 9
 				if (order.price) {
-					record % *order.price; // 11
+					record % *order.price; // 10
 				} else {
-					record % '-'; // 11
+					record % '-'; // 10
 				}
 				if (m_self.GetClosedQty()) {
 					record
-						% m_security.DescalePrice(m_close.lastTradePrice) // 12
-						% m_security.DescalePrice(m_self.GetCloseAvgPrice()); // 13
+						% m_security.DescalePrice(m_close.lastTradePrice) // 11
+						% m_security.DescalePrice(m_self.GetCloseAvgPrice()); // 12
 				} else {
-					record % '-' % '-'; // 12, 13
+					record % '-' % '-'; // 11, 12
 				}
 				record
-					% m_self.GetCurrency() // 14
-					% m_self.GetOpenedQty() // 15
-					% m_self.GetClosedQty() // 16
-					% m_self.GetActiveQty(); // 17 and last
+					% m_self.GetCurrency() // 13
+					% m_self.GetOpenedQty() // 14
+					% m_self.GetClosedQty() // 15
+					% m_self.GetActiveQty(); // 16 and last
 			});
 	}
 
@@ -734,6 +706,8 @@ public:
 			AssertFailNoException();
 		}
 
+		m_cancelState = CANCEL_STATE_NOT_CANCELED;
+
 		return order.id;
 
 	}
@@ -820,6 +794,8 @@ public:
 		} catch (...) {
 			AssertFailNoException();
 		}
+
+		m_cancelState = CANCEL_STATE_NOT_CANCELED;
 
 		return order.id;
 
