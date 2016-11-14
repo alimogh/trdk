@@ -527,19 +527,31 @@ namespace EmaFuturesStrategy {
 					if (prevPosition.IsLong()) {
 						return;
 					}
-					// Trend is confirmed.
 					position = CreatePosition<LongPosition>(
 						DIRECTION_UP,
 						TimeMeasurement::Milestones());
 					break;
 				case DIRECTION_LEVEL:
-					// Trend is lost.
-					return;
+					if (m_fastEmaDirectionPrev == DIRECTION_DOWN) {
+						if (prevPosition.IsLong()) {
+							return;
+						}
+						position = CreatePosition<LongPosition>(
+							DIRECTION_UP,
+							TimeMeasurement::Milestones());
+					} else if (!prevPosition.IsLong()) {
+						return;
+					} else {
+						AssertEq(DIRECTION_UP, m_fastEmaDirectionPrev);
+						position = CreatePosition<ShortPosition>(
+							DIRECTION_DOWN,
+							TimeMeasurement::Milestones());
+					}
+					break;
 				case DIRECTION_DOWN:
 					if (!prevPosition.IsLong()) {
 						return;
 					}
-					// Trend is confirmed.
 					position = CreatePosition<ShortPosition>(
 						DIRECTION_DOWN,
 						TimeMeasurement::Milestones());
@@ -921,13 +933,32 @@ namespace EmaFuturesStrategy {
 					record
 						% fastEmaDirection
 						% m_fastEmaDirection
-						% m_security->DescalePrice(m_ema[SLOW].GetValue())
-						% m_security->DescalePrice(m_ema[FAST].GetValue())
+						% m_ema[SLOW].GetValue()
+						% m_ema[FAST].GetValue()
 						% m_security->GetBidPrice()
 						% m_security->GetAskPrice();
 				});
 
-			return m_fastEmaDirection;
+			switch (fastEmaDirection) {
+				case  DIRECTION_LEVEL:
+					// Intersection was at previous update.
+					return DIRECTION_LEVEL;
+				default:
+					switch (m_fastEmaDirection) {
+						case DIRECTION_UP:
+						case DIRECTION_DOWN:
+							return m_fastEmaDirection;
+							break;
+						case DIRECTION_LEVEL:
+							return fastEmaDirection == DIRECTION_DOWN
+								?	DIRECTION_UP
+								:	DIRECTION_DOWN;
+							break;
+						default:
+							throw LogicError(
+								"Internal error: Unknown direction");
+					}
+			}
 
 		}
 
