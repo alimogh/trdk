@@ -1272,7 +1272,6 @@ const ScaledPrice & Position::GetActiveOrderPrice() const {
 			throw Exception(
 				"Position current active close-order is order without price");
 		}
-		AssertEq(*price, GetActiveCloseOrderPrice());
 		return *price;
 	} else if (m_pimpl->m_open.HasActiveOrders()) {
 		const auto &price = m_pimpl->m_open.orders.back().price;
@@ -1280,7 +1279,6 @@ const ScaledPrice & Position::GetActiveOrderPrice() const {
 			throw Exception(
 				"Position current active open-order is order without price");
 		}
-		AssertEq(*price, GetActiveOpenOrderPrice());
 		return *price;
 	} else {
 		throw Exception("Position has no active order");

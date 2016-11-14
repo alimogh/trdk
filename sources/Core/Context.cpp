@@ -162,12 +162,15 @@ namespace {
 			}
 
 			stream
-				<< std::endl
-				<< "=========================================================================="
-				<< std::endl << "Started at "
-				<< m_context.GetCurrentTime() << " with period "
-				<< m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
-				<< std::endl;
+				<<	std::endl
+				<<	"=========================================================================="
+				<<	std::endl << "Started at "
+				<<	lt::local_microsec_clock::local_time(
+							m_context.GetSettings().GetTimeZone())
+						.local_time()
+				<<	" with period "
+				<<	m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
+				<<	std::endl;
 
 		}
 
