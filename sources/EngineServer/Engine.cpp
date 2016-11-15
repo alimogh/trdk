@@ -117,9 +117,11 @@ void Engine::Run(
 		m_context->Start(ini, dropCopy);
 
 	} catch (const trdk::Lib::Exception &ex) {
-		m_eventsLog->Error(
-			"Failed to init engine context: \"%1%\".",
-			ex.what());
+		if (m_eventsLog) {
+			m_eventsLog->Error(
+				"Failed to init engine context: \"%1%\".",
+				ex.what());
+		}
 		boost::format message("Failed to init engine context: \"%1%\"");
 		message % ex.what();
 		throw Exception(message.str().c_str());
