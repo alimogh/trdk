@@ -189,18 +189,18 @@ namespace trdk {
 		typedef trdk::ScaledPrice Type;
 	};
 
-	const char * ConvertToPch(const trdk::Level1TickType &);
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Level1TickType &);
+	TRDK_CORE_API trdk::Level1TickType ConvertToLevel1TickType(
+			const std::string &);
 
 	class Level1TickValue {
 
-	private:
+	public:
 
 		explicit Level1TickValue(const Level1TickType &type, double value)
 			: m_type(type),
 			m_value(value) {
 		}
-
-	public:
 
 		template<trdk::Level1TickType type, typename Value>
 		static Level1TickValue Create(const Value &value) {

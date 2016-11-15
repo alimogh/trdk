@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
-#include "Api.h"
 #include "Core/TradingLog.hpp"
 #include "Core/Settings.hpp"
 #include "Common/ExpirationCalendar.hpp"

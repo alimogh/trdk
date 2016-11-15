@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "RandomMarketDataSource.hpp"
-#include "Api.h"
 #include "Core/TradingLog.hpp"
 #include "Core/PriceBook.hpp"
 #include "Common/ExpirationCalendar.hpp"

@@ -20,4 +20,6 @@
 
 #include "Common/Common.hpp"
 
+#include "Api.h"
+
 #include "Common/Assert.hpp"

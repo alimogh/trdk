@@ -69,6 +69,28 @@ const char * trdk::ConvertToPch(const Level1TickType &tickType) {
 	}
 }
 
+Level1TickType trdk::ConvertToLevel1TickType(const std::string &source) {
+	if (source == "last price") {
+		return LEVEL1_TICK_LAST_PRICE;
+	} else if (source == "last qty") {
+		return LEVEL1_TICK_LAST_QTY;
+	} else if (source == "bid price") {
+		return LEVEL1_TICK_BID_PRICE;
+	} else if (source == "bid qty") {
+		return LEVEL1_TICK_BID_QTY;
+	} else if (source == "ask price") {
+		return LEVEL1_TICK_ASK_PRICE;
+	} else if (source == "ask qty") {
+		return LEVEL1_TICK_ASK_QTY;
+	} else if (source == "trading volume") {
+		return LEVEL1_TICK_TRADING_VOLUME;
+	} else {
+		boost::format message("Unknown Level 1 Tick Type \"%1%\"");
+		message % source;
+		throw Exception(message.str().c_str());
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 TradingMode trdk::ConvertTradingModeFromString(const std::string &mode) {

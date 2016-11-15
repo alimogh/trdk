@@ -32,6 +32,9 @@
     <ClCompile Include="CsvContinuousContractMarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TrdkMarketDataLogSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RandomMarketDataSource.hpp">
