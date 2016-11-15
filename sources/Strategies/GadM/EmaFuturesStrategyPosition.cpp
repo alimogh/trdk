@@ -300,9 +300,30 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 			break;
 
 		case INTENTION_CLOSE_PASSIVE:
+			
 			Assert(IsOpened());
 			Assert(m_isPassiveClose);
 			Assert(!HasActiveOpenOrders());
+			
+			if (!GetCloseStartPrice()) {
+				SetCloseStartPrice(GetMarketClosePrice());
+				AssertEq(m_closeStartTime, pt::not_a_date_time);
+				m_closeStartTime
+					= GetStrategy().GetContext().GetCurrentTime();
+				Assert(IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(IsEqual(.0, m_signalsBidAsk[1].second));
+				m_signalsBidAsk[1] = std::make_pair(
+					GetSecurity().GetBidPrice(),
+					GetSecurity().GetAskPrice());
+				m_signalsEmas[1] = std::make_pair(
+					m_emas[SLOW].GetValue(),
+					m_emas[FAST].GetValue());
+			} else {
+				AssertNe(pt::not_a_date_time, m_closeStartTime);
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].second));
+			}
+
 			if (IsCompleted()) {
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
@@ -327,23 +348,6 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 
-				if (!GetCloseStartPrice()) {
-					SetCloseStartPrice(GetMarketClosePrice());
-					AssertEq(m_closeStartTime, pt::not_a_date_time);
-					m_closeStartTime
-						= GetStrategy().GetContext().GetCurrentTime();
-				} else {
-					AssertNe(pt::not_a_date_time, m_closeStartTime);
-				}
-
-				m_signalsBidAsk[1] = std::make_pair(
-					GetSecurity().GetBidPrice(),
-					GetSecurity().GetAskPrice());
-
-				m_signalsEmas[1] = std::make_pair(
-					m_emas[SLOW].GetValue(),
-					m_emas[FAST].GetValue());
-
 				if (!m_intentionSize) {
 					Close(m_closeType, GetMarketCloseOppositePrice());
 				} else {
@@ -356,11 +360,33 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				m_isSent = true;
 
 			}
+
 			break;
 
 		case INTENTION_CLOSE_AGGRESIVE:
+
 			Assert(IsOpened());
 			Assert(!HasActiveOpenOrders());
+		
+			if (!GetCloseStartPrice()) {
+				SetCloseStartPrice(GetMarketClosePrice());	
+				AssertEq(m_closeStartTime, pt::not_a_date_time);
+				m_closeStartTime
+					= GetStrategy().GetContext().GetCurrentTime();
+				Assert(IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(IsEqual(.0, m_signalsBidAsk[1].second));
+				m_signalsBidAsk[1] = std::make_pair(
+					GetSecurity().GetBidPrice(),
+					GetSecurity().GetAskPrice());
+				m_signalsEmas[1] = std::make_pair(
+					m_emas[SLOW].GetValue(),
+					m_emas[FAST].GetValue());
+			} else {
+				AssertNe(pt::not_a_date_time, m_closeStartTime);
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].second));
+			}
+		
 			if (IsCompleted()) {
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
@@ -389,14 +415,6 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					}
 				}
 			} else {
-				if (!GetCloseStartPrice()) {
-					SetCloseStartPrice(GetMarketClosePrice());	
-					AssertEq(m_closeStartTime, pt::not_a_date_time);
-					m_closeStartTime
-						= GetStrategy().GetContext().GetCurrentTime();
-				} else {
-					AssertNe(pt::not_a_date_time, m_closeStartTime);
-				}
 				if (!m_intentionSize) {
 					Close(m_closeType, GetMarketClosePrice());
 				} else {
@@ -408,6 +426,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				m_isPassiveClose = false;
 				m_isSent = true;
 			}
+
 			break;
 		
 		default:
