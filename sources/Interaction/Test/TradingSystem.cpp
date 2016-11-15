@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
-#include "Api.h"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 
@@ -141,7 +140,7 @@ public:
 
 	std::multimap<pt::ptime, Order> m_orders;
 	std::vector<std::pair<pt::ptime, Order>> m_newOrders;
-	std::vector<OrderId> m_cancels;
+	std::vector<std::pair<pt::ptime, OrderId>> m_cancels;
 
 	const std::string m_orderNumberSuffix;
 
@@ -236,8 +235,6 @@ public:
 	
 	}
 
-private:
-	
 	pt::time_duration ChooseExecutionDelay() const {
 		const SettingsReadLock lock(m_settingsMutex);
 		return pt::microseconds(m_delayGenerator.executionDelayGenerator());
@@ -370,23 +367,22 @@ private:
 
 			TradeInfo trade = {};
 			
-			bool isMatched = false;
-			if (order.isSell) {
-				trade.price = order.security->GetBidPriceScaled();
-				isMatched = order.price <= trade.price;
-			} else {
-				trade.price = order.security->GetAskPriceScaled();
-				isMatched = order.price >= trade.price;
-			}
-
+			bool isMatched = order.isSell
+				?	order.price <= order.security->GetBidPriceScaled()
+				:	order.price >= order.security->GetAskPriceScaled();
 			if (isMatched) {
 				isMatched = m_execChanceGenerator.HasChance();
 			}
 
 			if (isMatched) {
 
+				// For tests we are using the worst scenario. In the real -
+				// price could be better than order price (last trade price).
+				trade.price = order.price;
+
 				trade.id = tradingSystemOrderId;
 				trade.qty = order.qty;
+				
 				order.callback(
 					order.id,
 					tradingSystemOrderId,
@@ -441,11 +437,19 @@ private:
 
 		if (!m_cancels.empty()) {
 			
-			for (const OrderId orderId: m_cancels) {
+			for (const auto &cancel: m_cancels) {
 				bool isFound = false;
-				for (auto &order: m_orders) {
-					if (order.second.id == orderId) {
-						++order.second.isCanceled;
+				for (
+						auto order = m_orders.cbegin();
+						order != m_orders.cend();
+						++order) {
+					if (order->second.id == cancel.second) {
+						auto newOrder = order->second;
+						++newOrder.isCanceled;
+						m_orders.erase(order);
+						m_orders.emplace(
+							std::move(cancel.first),
+							std::move(newOrder));
 						isFound = true;
 						break;
 					}
@@ -529,7 +533,7 @@ OrderId Test::TradingSystem::SendSell(
 			false,
 			&security,
 			currency,
-			false,
+			true,
 			id,
 			std::move(statusUpdateSlot),
 			qty,
@@ -593,7 +597,7 @@ OrderId Test::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
 			true,
 			&security,
 			currency,
-			false,
+			true,
 			id,
 			statusUpdateSlot,
 			qty,
@@ -716,9 +720,11 @@ OrderId Test::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
 }
 
 void Test::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+	const auto &now = GetContext().GetCurrentTime();
+	auto execTime = now + m_pimpl->ChooseExecutionDelay();
 	{
 		const Implementation::Lock lock(m_pimpl->m_mutex);
-		m_pimpl->m_cancels.emplace_back(orderId);
+		m_pimpl->m_cancels.emplace_back(std::move(execTime), orderId);
 	}
 	m_pimpl->m_condition.notify_all();
 }
