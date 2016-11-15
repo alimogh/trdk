@@ -807,26 +807,52 @@ ScaledPrice Security::GetAskPriceScaled() const {
 	return ScaledPrice(
 		m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
 }
-
 double Security::GetAskPrice() const {
 	return DescalePrice(GetAskPriceScaled());
+}
+double Security::GetAskPriceValue() const {
+	try {
+		return GetAskPrice();
+	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {
+		return std::numeric_limits<double>::quiet_NaN();
+	}
 }
 
 Qty Security::GetAskQty() const {
 	return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
+}
+Qty Security::GetAskQtyValue() const {
+	try {
+		return GetAskQty();
+	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {
+		return Qty(std::numeric_limits<double>::quiet_NaN());
+	}
 }
 
 ScaledPrice Security::GetBidPriceScaled() const {
 	return ScaledPrice(
 		m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
 }
-
 double Security::GetBidPrice() const {
 	return DescalePrice(GetBidPriceScaled());
+}
+double Security::GetBidPriceValue() const {
+	try {
+		return GetBidPrice();
+	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {
+		return std::numeric_limits<double>::quiet_NaN();
+	}
 }
 
 Qty Security::GetBidQty() const {
 	return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
+}
+Qty Security::GetBidQtyValue() const {
+	try {
+		return GetBidQty();
+	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {
+		return Qty(std::numeric_limits<double>::quiet_NaN());
+	}
 }
 
 Qty Security::GetBrokerPosition() const {

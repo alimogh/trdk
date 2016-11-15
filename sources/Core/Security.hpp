@@ -262,11 +262,15 @@ namespace trdk {
 
 		trdk::ScaledPrice GetAskPriceScaled() const;
 		double GetAskPrice() const;
+		double GetAskPriceValue() const;
 		trdk::Qty GetAskQty() const;
+		trdk::Qty GetAskQtyValue() const;
 
 		trdk::ScaledPrice GetBidPriceScaled() const;
 		double GetBidPrice() const;
+		double GetBidPriceValue() const;
 		trdk::Qty GetBidQty() const;
+		trdk::Qty GetBidQtyValue() const;
 
 		trdk::Qty GetTradedVolume() const;
 

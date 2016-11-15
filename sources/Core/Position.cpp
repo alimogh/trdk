@@ -472,28 +472,43 @@ public:
 
 	}
 
-	void ReportOpeningStart(const boost::optional<OrderId> &id) const noexcept {
+	void ReportOpeningStart(
+			const char *eventDesc,
+			const boost::optional<OrderId> &id)
+			const
+			noexcept {
 		Assert(!m_open.orders.empty());
 		m_strategy.GetTradingLog().Write(
-			"order\tpos=%1%\torder=%2%/%3%/-\topen-start\t%4%\t%5%\t%6%.%7%"
-				"\tprice=%8$.8f\t%9%\tqty=%10$.8f",
-			[this, &id](TradingRecord &record) {
+			"order\tpos=%1%\torder=%2%/%3%/-\topen->%4%\t%5%\t%6%\t%7%.%8%"
+				"\tprice=%9$.8f->%10$.8f\t%11%\tqty=%12$.8f"
+				"\tbid/ask=%13$.8f/%14$.8f",
+			[this, eventDesc, &id](TradingRecord &record) {
+				const auto &order = m_open.orders.back();
 				record
 					% m_operationId // 1
-					% m_open.orders.back().uuid; // 2
+					% order.uuid; // 2
 				if (id) {
 					record % *id; // 3
 				} else {
 					record % '-'; // 3
 				}
 				record
-					% m_self.GetTypeStr() // 4
-					% m_security.GetSymbol().GetSymbol() // 5
-					% m_self.GetTradingSystem().GetTag() // 6
-					% m_tradingSystem.GetMode() // 7
-					% m_security.DescalePrice(m_open.startPrice) // 8
-					% m_self.GetCurrency() // 9
-					% m_self.GetPlanedQty(); // 10 and last
+					% eventDesc // 4
+					% m_self.GetTypeStr() // 5
+					% m_security.GetSymbol().GetSymbol() // 6
+					% m_self.GetTradingSystem().GetTag() // 7
+					% m_tradingSystem.GetMode() // 8
+					% m_security.DescalePrice(m_open.startPrice); // 9
+				if (order.price) {
+					record % m_security.DescalePrice(*order.price); // 10
+				} else {
+					record % '-'; // 10
+				}
+				record
+					% m_self.GetCurrency() // 11
+					% m_self.GetPlanedQty() // 12
+					% m_security.GetBidPriceValue() // 13
+					% m_security.GetAskPriceValue(); // 14 and last
 			});
 	}
 
@@ -506,7 +521,7 @@ public:
 		m_strategy.GetTradingLog().Write(
 			"order\t%1%\tpos=%1%\torder=%2%/%3%/%4%\topen->%5%\t%6%\t%7%"
 				"\t%8%.%9%\tprice=%10$.8f->%11$.8f->%12$.8f(avg=%13$.8f)\t%14%"
-				"\tqty=%15$.8f->%16$.8f",
+				"\tqty=%15$.8f->%16$.8f\tbid/ask=%17$.8f/%18$.8f",
 			[this, &tsOrderId, &orderStatus](
 					TradingRecord &record) {
 				const auto &order = m_open.orders.back();
@@ -522,7 +537,7 @@ public:
 					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_self.GetOpenStartPrice()); // 10
 				if (order.price) {
-					record % *order.price; // 11
+					record % m_security.DescalePrice(*order.price); // 11
 				} else {
 					record % '-'; // 11
 				}
@@ -536,8 +551,10 @@ public:
 				record
 					% m_self.GetCurrency() // 14
 					% m_self.GetPlanedQty() // 15
-					% m_self.GetOpenedQty(); // 16 and last
-					
+					% m_self.GetOpenedQty() // 16
+					% m_security.GetBidPriceValue() // 17
+					% m_security.GetAskPriceValue(); // 18 and last
+
 			});
 	}
 
@@ -551,8 +568,8 @@ public:
 			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%/-\tclose->%4%\t%5%\t%6%\t%7%.%8%"
-				"\tclose-type=%9%\tprice=%10$.8f->%11$.8f(%12$.8f)\t%13%"
-				"\tqty=(%14$.8f, %15$.8f)",
+				"\tclose-type=%9%\tprice=%10$.8f->%11$.8f\t%12%"
+				"\tqty=(%13$.8f, %14$.8f)\tbid/ask=%15$.8f/%16$.8f",
 			[&](TradingRecord &record) {
 				record
 					% m_operationId // 1
@@ -569,12 +586,19 @@ public:
 					% m_self.GetTradingSystem().GetTag().c_str() // 7
 					% m_tradingSystem.GetMode() // 8
 					% closeType // 9
-					% m_security.DescalePrice(m_open.lastTradePrice) // 10
-					% m_security.DescalePrice(m_self.GetOpenAvgPrice()) // 11
-					% m_security.DescalePrice(m_self.GetCloseStartPrice()) // 12
-					% m_self.GetCurrency() // 13
-					% maxQty // 14
-					% m_self.GetActiveQty(); // 15 and last
+					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 10
+				const auto &order = m_close.orders.back();
+				if (order.price) {
+					record % m_security.DescalePrice(*order.price); // 11
+				} else {
+					record % '-'; // 11
+				}
+				record
+					% m_self.GetCurrency() // 12
+					% maxQty // 13
+					% m_self.GetActiveQty() // 14
+					% m_security.GetBidPriceValue() // 15
+					% m_security.GetAskPriceValue(); // 16 and last
 			});
 	}
 
@@ -587,7 +611,7 @@ public:
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%/%4%\tclose->%5%\t%6%\t%7%\t%8%.%9%"
 				"\tprice=%10$.8f->%11$.8f->%12$.8f(avg=%13$.8f)\t%14%"
-				"\tqty=%15$.8f-%16$.8f=%17$.8f",
+				"\tqty=%15$.8f-%16$.8f=%17$.8f\tbid/ask=%18$.8f/%19$.8f",
 			[this, &tsOrderId, &orderStatus](TradingRecord &record) {
 				const auto &order = m_close.orders.back();
 				record
@@ -602,7 +626,7 @@ public:
 					% m_tradingSystem.GetMode() // 9
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 10
 				if (order.price) {
-					record % *order.price; // 11
+					record % m_security.DescalePrice(*order.price); // 11
 				} else {
 					record % '-'; // 11
 				}
@@ -617,7 +641,9 @@ public:
 					% m_self.GetCurrency() // 14
 					% m_self.GetOpenedQty() // 15
 					% m_self.GetClosedQty() // 16
-					% m_self.GetActiveQty(); // 17 and last
+					% m_self.GetActiveQty() // 17
+					% m_security.GetBidPriceValue() // 18
+					% m_security.GetAskPriceValue(); // 19 and last
 			});
 	}
 
@@ -657,7 +683,7 @@ public:
 			std::move(price),
 			qty,
 			generateUuid());
-		ReportOpeningStart(boost::none);
+		ReportOpeningStart("start", boost::none);
 		auto &order = m_open.orders.back();
 
 		try {
@@ -673,7 +699,7 @@ public:
 				order.id = openImpl(qty, orderParams);
 			}
 
-			ReportOpeningStart(order.id);
+			ReportOpeningStart("sent", order.id);
 
 			m_isRegistered = true;	// supporting prev. logic
 									// (when was m_strategy = nullptr),
@@ -966,10 +992,10 @@ private:
 				Qty askQty;
 				if (!orderTradeSystemId) {
 					orderTime = m_strategy.GetContext().GetCurrentTime();
-					bidPrice = m_security.GetBidPrice();
-					bidQty = m_security.GetBidQty();
-					askPrice = m_security.GetAskPrice();
-					askQty = m_security.GetAskQty();
+					bidPrice = m_security.GetBidPriceValue();
+					bidQty = m_security.GetBidQtyValue();
+					askPrice = m_security.GetAskPriceValue();
+					askQty = m_security.GetAskQtyValue();
 				}
 				static_assert(numberOfOrderStatuses == 9, "List changed");
 				switch (status) {
