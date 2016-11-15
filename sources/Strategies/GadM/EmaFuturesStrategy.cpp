@@ -405,8 +405,8 @@ namespace EmaFuturesStrategy {
 					[&](TradingRecord &record) {
 						record
 							% (signal == DIRECTION_UP ? "BUY" : "SELL")
-							% m_ema[SLOW].GetValue()
-							% m_ema[FAST].GetValue()
+							% m_security->DescalePrice(m_ema[SLOW].GetValue())
+							% m_security->DescalePrice(m_ema[FAST].GetValue())
 							% m_fastEmaDirection
 							% m_security->GetBidPrice()
 							% m_security->GetAskPrice();
@@ -933,8 +933,8 @@ namespace EmaFuturesStrategy {
 					record
 						% fastEmaDirection
 						% m_fastEmaDirection
-						% m_ema[SLOW].GetValue()
-						% m_ema[FAST].GetValue()
+						% m_security->DescalePrice(m_ema[SLOW].GetValue())
+						% m_security->DescalePrice(m_ema[FAST].GetValue())
 						% m_security->GetBidPrice()
 						% m_security->GetAskPrice();
 				});
