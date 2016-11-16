@@ -400,16 +400,9 @@ namespace EmaFuturesStrategy {
 			Assert(m_security);
 			if (signal != DIRECTION_LEVEL) {
 				GetTradingLog().Write(
-					"signal\t%1%\tslow-ema=%2%\tfast-ema=%3%"
-						"\t%4%\tbid=%5%\task=%6%",
+					"signal\t%1%",
 					[&](TradingRecord &record) {
-						record
-							% (signal == DIRECTION_UP ? "BUY" : "SELL")
-							% m_security->DescalePrice(m_ema[SLOW].GetValue())
-							% m_security->DescalePrice(m_ema[FAST].GetValue())
-							% m_fastEmaDirection
-							% m_security->GetBidPrice()
-							% m_security->GetAskPrice();
+						record % (signal == DIRECTION_UP ? "BUY" : "SELL");
 					});
 			}
 
@@ -928,11 +921,11 @@ namespace EmaFuturesStrategy {
 			std::swap(fastEmaDirection, m_fastEmaDirection);
 			GetTradingLog().Write(
 				"fast-ema\t%1%->%2%\tslow-ema=%3%\tfast-ema=%4%"
-					"\tbid=%5%\task=%6%",
+					"\tbid/ask=%5$.2f/%6$.2f",
 				[&](TradingRecord &record) {
 					record
-						% fastEmaDirection
-						% m_fastEmaDirection
+						% ConvertToPch(fastEmaDirection)
+						% ConvertToPch(m_fastEmaDirection)
 						% m_security->DescalePrice(m_ema[SLOW].GetValue())
 						% m_security->DescalePrice(m_ema[FAST].GetValue())
 						% m_security->GetBidPrice()

@@ -21,18 +21,15 @@ namespace trdk { namespace Strategies { namespace GadM {
 		DIRECTION_LEVEL,
 		DIRECTION_DOWN
 	};
-	
+
 	inline const char * ConvertToPch(const Direction &source) {
 		switch (source) {
 			case DIRECTION_UP:
 				return "UP";
-				break;
 			case DIRECTION_LEVEL:
 				return "LEVEL";
-				break;
 			case DIRECTION_DOWN:
 				return "DOWN";
-				break;
 			default:
 				AssertEq(DIRECTION_UP, source);
 				return "<UNKNOWN>";
