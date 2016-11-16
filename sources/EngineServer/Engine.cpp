@@ -59,6 +59,12 @@ void Engine::Run(
 			pt::microsec_clock::universal_time());
 
 		fs::create_directories(settings.GetLogsInstanceDir());
+
+		fs::copy_file(
+			path,
+			settings.GetLogsInstanceDir() / path.filename(),
+			fs::copy_option::fail_if_exists);
+
 		m_eventsLog = boost::make_unique<trdk::Engine::Context::Log>(
 			settings.GetTimeZone());
 		if (enableStdOutLog) {
