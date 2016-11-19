@@ -1664,52 +1664,37 @@ bool Position::CancelAllOrders() {
 	return m_pimpl->CancelAllOrders();
 }
 
-TRDK_CORE_API std::ostream & trdk::operator <<(
-		std::ostream &os,
-		const Position::CloseType &closeType) {
+const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
 	static_assert(
 		Position::numberOfCloseTypes == 11,
 		"Close type list changed.");
 	switch (closeType) {
 		default:
 			AssertEq(Position::CLOSE_TYPE_NONE, closeType);
-			os << "unknown";
-			break;
+			return "unknown";
 		case Position::CLOSE_TYPE_NONE:
-			os << "-";
-			break;
+			return "none";
 		case Position::CLOSE_TYPE_TAKE_PROFIT:
-			os << "take-profit";
-			break;
+			return "take-profit";
 		case Position::CLOSE_TYPE_TRAILING_STOP:
-			os << "trailing-stop";
-			break;
+			return "trailing-stop";
 		case Position::CLOSE_TYPE_STOP_LOSS:
-			os << "stop-loss";
-			break;
+			return "stop-loss";
 		case Position::CLOSE_TYPE_TIMEOUT:
-			os << "timeout";
-			break;
+			return "timeout";
 		case Position::CLOSE_TYPE_SCHEDULE:
-			os << "schedule";
-			break;
+			return "schedule";
 		case Position::CLOSE_TYPE_ROLLOVER:
-			os << "rollover";
-			break;
+			return "rollover";
 		case Position::CLOSE_TYPE_REQUEST:
-			os << "request";
-			break;
+			return "request";
 		case Position::CLOSE_TYPE_ENGINE_STOP:
-			os << "engine stop";
-			break;
+			return "engine stop";
 		case Position::CLOSE_TYPE_OPEN_FAILED:
-			os << "open failed";
-			break;
+			return "open failed";
 		case Position::CLOSE_TYPE_SYSTEM_ERROR:
-			os << "sys error";
-			break;
+			return "sys error";
 	}
-	return os;
 }
 
 //////////////////////////////////////////////////////////////////////////

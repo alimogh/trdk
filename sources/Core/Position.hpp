@@ -402,9 +402,13 @@ namespace trdk {
 
 	};
 
-	TRDK_CORE_API std::ostream & operator <<(
-			std::ostream &,
-			const trdk::Position::CloseType &);
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::CloseType &);
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::Position::CloseType &closeType) {
+		return os << trdk::ConvertToPch(closeType);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 
