@@ -499,10 +499,7 @@ public:
 		}
 	}
 
-	bool OnNewValue(
-			const Security &security,
-			const pt::ptime &valueTime,
-			double newValue) {
+	bool OnNewValue(const pt::ptime &valueTime, double newValue) {
 
 		if (IsZero(newValue)) {
 			if (
@@ -526,9 +523,7 @@ public:
 		const Point newPoint = {
 			valueTime,
 			newValue,
-			RoundByScale(
-				boost::apply_visitor(GetValueVisitor(), *m_acc),
-				security.GetPriceScale())
+			boost::apply_visitor(GetValueVisitor(), *m_acc)
 		};
 		m_lastValue = newPoint;
 		++m_lastValueNo;
@@ -579,12 +574,12 @@ void MovingAverageService::OnSecurityContractSwitched(
 }
 
 bool MovingAverageService::OnLevel1Tick(
-		const Security &security,
+		const Security &,
 		const pt::ptime &time,
 		const Level1TickValue &tick) {
 	const CheckTickValueVisitor visitor(tick);
 	return boost::apply_visitor(visitor, m_pimpl->m_sourceInfo)
-		?	m_pimpl->OnNewValue(security, time, tick.GetValue())
+		?	m_pimpl->OnNewValue(time, tick.GetValue())
 		:	false;
 }
 
@@ -594,7 +589,7 @@ bool MovingAverageService::OnNewBar(
  	const ExtractBarValueVisitor visitor(bar);
  	const auto &value = security.DescalePrice(
 		boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
- 	return m_pimpl->OnNewValue(security, bar.time, value);
+ 	return m_pimpl->OnNewValue(bar.time, value);
 }
 
 bool MovingAverageService::IsEmpty() const {
