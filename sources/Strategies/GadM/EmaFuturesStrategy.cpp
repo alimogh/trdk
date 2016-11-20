@@ -89,11 +89,7 @@ namespace {
 			throw Exception(message.str().c_str());
 		}
 
-		if (IsZero(result.minProfit) || result.minProfit < 0) {
-			boost::format message("\"%1%\" should be greater than zero");
-			message % minProfitKeyName;
-			throw Exception(message.str().c_str());
-		} else if (
+		if (
 				!IsEqual(result.profitToActivate, result.minProfit)
 				&& result.profitToActivate < result.minProfit)  {
 			boost::format message("\"%1%\" should be greater than \"%2%\"");
@@ -152,7 +148,8 @@ namespace EmaFuturesStrategy {
 			, m_security(nullptr)
 			, m_barService(nullptr)
 			, m_barServiceId(DropCopy::nDataSourceInstanceId)
-			, m_fastEmaDirection(DIRECTION_LEVEL) {
+			, m_fastEmaDirection(DIRECTION_LEVEL)
+			, m_lastTrendFastEmaDirection(DIRECTION_LEVEL) {
 
 			boost::format info(
 				"Number of contracts: %1%."
@@ -396,19 +393,35 @@ namespace EmaFuturesStrategy {
 				return;
 			}
 			
-			const Direction &signal = UpdateDirection();
-			Assert(m_security);
-			if (signal != DIRECTION_LEVEL) {
-				GetTradingLog().Write(
-					"signal\t%1%",
-					[&](TradingRecord &record) {
-						record % (signal == DIRECTION_UP ? "BUY" : "SELL");
-					});
-			}
+			if (GetPositions().GetSize() > 0) {
+			
+				const Direction &signal = UpdateDirection(false);
+				Assert(m_security);
+				if (signal != DIRECTION_LEVEL) {
+					GetTradingLog().Write(
+						"signal\tclose\t%1%",
+						[&](TradingRecord &record) {
+							record % (signal == DIRECTION_UP ? "buy" : "sell");
+						});
+				}
+			
+				CheckPositionCloseSignal(signal, timeMeasurement);
+			
+			} else {
 
-			GetPositions().GetSize() > 0
-				?	CheckPositionCloseSignal(signal, timeMeasurement)
-				:	CheckPositionOpenSignal(signal, timeMeasurement);
+				const Direction &signal = UpdateDirection(true);
+				Assert(m_security);
+				if (signal != DIRECTION_LEVEL) {
+					GetTradingLog().Write(
+						"signal\topen\t%1%",
+						[&](TradingRecord &record) {
+							record % (signal == DIRECTION_UP ? "buy" : "sell");
+						});
+				}
+
+				CheckPositionOpenSignal(signal, timeMeasurement);
+
+			}
 
 		}
 
@@ -505,7 +518,6 @@ namespace EmaFuturesStrategy {
 				return;
 			}
 
-			AssertNe(m_fastEmaDirection, m_fastEmaDirectionPrev);
 			// If the movement in the same direction will be detected, it will
 			// not open the new position for the same direction as was, as it's
 			// unknown the base of signal to make such positions. For the
@@ -624,26 +636,26 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			GetTradingLog().Write(
-				"take-profit"
+				"take-profit\tdecision"
 					"\tmax_profit=%1$.2f\tmargin=%2$.2f\tcurrent=%3$.2f"
 					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
 					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
 					"\tbid=%10$.2f\task=%11$.2f",
-			[&](TradingRecord &record) {
-				record
-					%	position.GetSecurity().DescalePrice(result.start)
-					%	position.GetSecurity().DescalePrice(result.margin)
-					%	position.GetSecurity().DescalePrice(result.current)
-					%	position.GetRealizedPnl()
-					%	position.GetUnrealizedPnl()
-					%	position.GetPlannedPnl()
-					%	position.GetOpenedVolume()
-					%	position.GetSecurity().DescalePrice(
-							position.GetOpenAvgPrice())
-					%	position.GetClosedVolume()
-					%	position.GetSecurity().GetBidPrice()
-					%	position.GetSecurity().GetAskPrice();
-			});
+				[&](TradingRecord &record) {
+					record
+						%	position.GetSecurity().DescalePrice(result.start)
+						%	position.GetSecurity().DescalePrice(result.margin)
+						%	position.GetSecurity().DescalePrice(result.current)
+						%	position.GetRealizedPnl()
+						%	position.GetUnrealizedPnl()
+						%	position.GetPlannedPnl()
+						%	position.GetOpenedVolume()
+						%	position.GetSecurity().DescalePrice(
+								position.GetOpenAvgPrice())
+						%	position.GetClosedVolume()
+						%	position.GetSecurity().GetBidPrice()
+						%	position.GetSecurity().GetAskPrice();
+				});
 			try {
 				position.SetIntention(
 					INTENTION_CLOSE_PASSIVE,
@@ -696,17 +708,16 @@ namespace EmaFuturesStrategy {
 			}
 			Assert(position.GetActiveQty());
 			const Position::PriceCheckResult result
-				= position.CheckTrailingStop(
-					*m_trailingStop);
+				= position.CheckTrailingStop(*m_trailingStop);
 			if (result.isAllowed) {
 				return false;
 			}
 			GetTradingLog().Write(
-				"trailing-stop"
+				"trailing-stop\tdecision\t"
 					"\tmax_profit=%1$.2f\tmargin=%2$.2f\tcurrent=%3$.2f"
 					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
 					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
-					"\tbid=%10$.2f\task=%11$.2f",
+					"\tbid/ask=%10$.2f/%11$.2f",
 			[&](TradingRecord &record) {
 				record
 					%	position.GetSecurity().DescalePrice(result.start)
@@ -750,17 +761,17 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			GetTradingLog().Write(
-				"stop-loss"
+				"stop-loss\tdecision"
 					"\tstart=%1$.2f\tmargin=%2$.2f\tnow=%3$.2f"
-					"\tbid=%4$.2f\task=%5$.2f",
-			[&](TradingRecord &record) {
-				record
-					%	position.GetSecurity().DescalePrice(result.start)
-					%	position.GetSecurity().DescalePrice(result.margin)
-					%	position.GetSecurity().DescalePrice(result.current)
-					%	position.GetSecurity().GetBidPrice()
-					%	position.GetSecurity().GetAskPrice();
-			});
+					"\tbid/ask=%4$.2f/%5$.2f",
+				[&](TradingRecord &record) {
+					record
+						%	position.GetSecurity().DescalePrice(result.start)
+						%	position.GetSecurity().DescalePrice(result.margin)
+						%	position.GetSecurity().DescalePrice(result.current)
+						%	position.GetSecurity().GetBidPrice()
+						%	position.GetSecurity().GetAskPrice();
+				});
 			try {
 				position.SetIntention(
 					INTENTION_CLOSE_AGGRESIVE,
@@ -815,21 +826,16 @@ namespace EmaFuturesStrategy {
 			}
 
 			GetTradingLog().Write(
-				"slow-order\ttime\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
-					"\tbid=%6$.2f\task=%7$.2f",
+				"order-time\tstart=%1%\tmargin=%2%\tnow=%3%\tintention=%4%"
+					"\tbid/ask=%5$.2f/%6$.2f",
 				[&](TradingRecord &record) {
 					record
 						%	startTime.time_of_day()
 						%	orderExpirationTime.time_of_day()
 						%	now.time_of_day()
-						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
-								||	position.GetIntention()
-										== INTENTION_CLOSE_PASSIVE
-							?	"passive"
-							:	"aggressive")
-						%	position.GetIntention()
-						%	position.GetSecurity().GetBidPrice()
-						%	position.GetSecurity().GetAskPrice();
+						%	ConvertToPch(position.GetIntention())
+						%	position.GetSecurity().GetBidPriceValue()
+						%	position.GetSecurity().GetBidPriceValue();
 				});
 
 			try {
@@ -854,28 +860,25 @@ namespace EmaFuturesStrategy {
 
 			const Position::PriceCheckResult &result
 				= position.CheckOrderPrice(m_orderPriceMaxDelta);
+
 			if (result.isAllowed) {
 				return true;
 			}
 
 			GetTradingLog().Write(
-				"price-changed\tprice\tstart=%1%\tmargin=%2%\tnow=%3%\t%4%(%5%)"
-					"\tbid=%6%\task=%7%",
+				"order-price\tdecision"
+					"\tstart=%1%\tmargin=%2%\tcurrent=%3%"
+					"\tintention=%4%\tbid/ask=%5$.2f/%6$.2f",
 				[&](TradingRecord &record) {
 					record
 						%	position.GetSecurity().DescalePrice(result.start)
 						%	position.GetSecurity().DescalePrice(result.margin)
 						%	position.GetSecurity().DescalePrice(result.current)
-						%	(position.GetIntention() == INTENTION_OPEN_PASSIVE
-								||	position.GetIntention()
-										== INTENTION_CLOSE_PASSIVE
-							?	"passive"
-							:	"aggressive")
-						%	position.GetIntention()
+						%	ConvertToPch(position.GetIntention())
 						%	position.GetSecurity().GetBidPrice()
-						%	position.GetSecurity().GetAskPrice();;
+						%	position.GetSecurity().GetAskPrice();
 				});
-			
+
 			try {
 				position.MoveOrderToCurrentPrice();
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
@@ -888,7 +891,7 @@ namespace EmaFuturesStrategy {
 
 		}
 
-		Direction UpdateDirection() {
+		Direction UpdateDirection(bool isStrongOnly) {
 			
 			auto fastEmaDirection
 				= IsEqual(m_ema[FAST].GetValue(), m_ema[SLOW].GetValue())
@@ -898,25 +901,56 @@ namespace EmaFuturesStrategy {
 						:	DIRECTION_DOWN;
 
 			if (m_fastEmaDirection == fastEmaDirection) {
+				if (GetPositions().GetSize()) {
+					GetTradingLog().Write(
+						"fast-ema\t%1%\tlast-trend=%2%"
+							"\tema=%3$.8f/%4$.8f\t\tbid/ask=%5$.2f/%6$.2f",
+						[&](TradingRecord &record) {
+							record
+								% ConvertToPch(m_fastEmaDirection)
+								% ConvertToPch(m_lastTrendFastEmaDirection)
+								% m_ema[FAST].GetValue()
+								% m_ema[SLOW].GetValue()
+								% m_security->GetBidPriceValue()
+								% m_security->GetAskPriceValue();
+						});
+				}
 				return DIRECTION_LEVEL;
 			}
-			AssertNe(m_fastEmaDirectionPrev, m_fastEmaDirection);
 
-			m_fastEmaDirectionPrev = m_fastEmaDirection;
 			std::swap(fastEmaDirection, m_fastEmaDirection);
 			GetTradingLog().Write(
-				"fast-ema\t%1%->%2%\tslow-ema=%3%\tfast-ema=%4%"
-					"\tbid/ask=%5$.2f/%6$.2f",
+				"fast-ema\t%1%->%2%\tlast-trend=%3%\tema=%4$.8f/%5$.8f"
+					"\tbid/ask=%6$.2f/%7$.2f",
 				[&](TradingRecord &record) {
 					record
 						% ConvertToPch(fastEmaDirection)
 						% ConvertToPch(m_fastEmaDirection)
-						% m_security->DescalePrice(m_ema[SLOW].GetValue())
-						% m_security->DescalePrice(m_ema[FAST].GetValue())
-						% m_security->GetBidPrice()
-						% m_security->GetAskPrice();
+						% ConvertToPch(m_lastTrendFastEmaDirection)
+						% m_ema[FAST].GetValue()
+						% m_ema[SLOW].GetValue()
+						% m_security->GetBidPriceValue()
+						% m_security->GetAskPriceValue();
 				});
 
+			if (isStrongOnly) {
+				if (
+						m_fastEmaDirection == DIRECTION_LEVEL
+						|| m_fastEmaDirection == m_lastTrendFastEmaDirection) {
+					return DIRECTION_LEVEL;
+				}
+			} else if (m_fastEmaDirection == DIRECTION_LEVEL) {
+				return fastEmaDirection == DIRECTION_UP
+					?	DIRECTION_DOWN
+					:	DIRECTION_UP;
+			}
+
+			if (m_lastTrendFastEmaDirection == DIRECTION_LEVEL) {
+				m_lastTrendFastEmaDirection = m_fastEmaDirection;
+				return DIRECTION_LEVEL;
+			}
+
+			m_lastTrendFastEmaDirection = m_fastEmaDirection;
 			return m_fastEmaDirection;
 
 		}
@@ -1076,7 +1110,7 @@ namespace EmaFuturesStrategy {
 
 		SlowFastEmas m_ema;
 		Direction m_fastEmaDirection;
-		Direction m_fastEmaDirectionPrev;
+		Direction m_lastTrendFastEmaDirection;
 
 		boost::uuids::random_generator m_generateUuid;
 

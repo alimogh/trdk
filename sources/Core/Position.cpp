@@ -494,7 +494,7 @@ public:
 				}
 				record
 					% eventDesc // 4
-					% m_self.GetTypeStr() // 5
+					% m_self.GetOpenOrderSide() // 5
 					% m_security.GetSymbol().GetSymbol() // 6
 					% m_self.GetTradingSystem().GetTag() // 7
 					% m_tradingSystem.GetMode() // 8
@@ -531,7 +531,7 @@ public:
 					% order.id // 3
 					% tsOrderId // 4
 					% orderStatus // 5
-					% m_self.GetTypeStr() // 6
+					% m_self.GetOpenOrderSide() // 6
 					% m_security.GetSymbol().GetSymbol().c_str() // 7
 					% m_self.GetTradingSystem().GetTag().c_str() // 8
 					% m_tradingSystem.GetMode() // 9
@@ -581,7 +581,7 @@ public:
 				}
 				record
 					% eventDesc // 4
-					% m_self.GetTypeStr() // 5
+					% m_self.GetCloseOrderSide() // 5
 					% m_security.GetSymbol().GetSymbol().c_str() // 6
 					% m_self.GetTradingSystem().GetTag().c_str() // 7
 					% m_tradingSystem.GetMode() // 8
@@ -620,7 +620,7 @@ public:
 					% order.id // 3
 					% tsOrderId // 4
 					% orderStatus // 5
-					% m_self.GetTypeStr() // 6
+					% m_self.GetCloseOrderSide() // 6
 					% m_security.GetSymbol().GetSymbol() // 7
 					% m_self.GetTradingSystem().GetTag() // 8
 					% m_tradingSystem.GetMode() // 9
@@ -1084,20 +1084,20 @@ Position::Position(
 		const Currency &currency,
 		const Qty &qty,
 		const ScaledPrice &startPrice,
-		const TimeMeasurement::Milestones &timeMeasurement) {
+		const TimeMeasurement::Milestones &timeMeasurement)
+	: m_pimpl(
+		std::make_unique<Implementation>(
+			*this,
+			tradingSystem,
+			strategy,
+			operationId,
+			subOperationId,
+			security,
+			currency,
+			qty,
+			startPrice,
+			timeMeasurement)) {
 	Assert(!strategy.IsBlocked());
-	m_pimpl = new Implementation(
-		*this,
-		tradingSystem,
-		strategy,
-		operationId,
-		subOperationId,
-		security,
-		currency,
-		qty,
-		startPrice,
-		timeMeasurement);
-	//...//
 }
 
 #pragma warning(push)
@@ -1109,7 +1109,7 @@ Position::Position() {
 #pragma warning(pop)
 
 Position::~Position() {
-	delete m_pimpl;
+	//...//
 }
 
 const uuids::uuid & Position::GetId() const {
@@ -1760,11 +1760,12 @@ LongPosition::Type LongPosition::GetType() const {
 	return TYPE_LONG;
 }
 
-namespace {
-	const std::string longPositionTypeName = "long";
+OrderSide LongPosition::GetOpenOrderSide() const {
+	return ORDER_SIDE_BUY;
 }
-const std::string & LongPosition::GetTypeStr() const noexcept {
-	return longPositionTypeName;
+
+OrderSide LongPosition::GetCloseOrderSide() const {
+	return ORDER_SIDE_SELL;
 }
 
 double LongPosition::GetRealizedPnl() const {
@@ -2113,11 +2114,12 @@ ShortPosition::Type ShortPosition::GetType() const {
 	return TYPE_SHORT;
 }
 
-namespace {
-	const std::string shortTypeName = "short";
+OrderSide ShortPosition::GetOpenOrderSide() const {
+	return ORDER_SIDE_SELL;
 }
-const std::string & ShortPosition::GetTypeStr() const noexcept {
-	return shortTypeName;
+
+OrderSide ShortPosition::GetCloseOrderSide() const {
+	return ORDER_SIDE_BUY;
 }
 
 double ShortPosition::GetRealizedPnl() const {

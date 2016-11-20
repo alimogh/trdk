@@ -100,8 +100,9 @@ namespace trdk {
 		const boost::uuids::uuid & GetId() const;
 
 		bool IsLong() const;
-		virtual Type GetType() const = 0;
-		virtual const std::string & GetTypeStr() const noexcept = 0;
+		virtual trdk::Position::Type GetType() const = 0;
+		virtual trdk::OrderSide GetOpenOrderSide() const = 0;
+		virtual trdk::OrderSide GetCloseOrderSide() const = 0;
 
 		const trdk::Lib::ContractExpiration & GetExpiration() const;
 
@@ -398,7 +399,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 
@@ -437,57 +438,68 @@ namespace trdk {
 
 	public:
 
-		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const noexcept;
+		virtual trdk::Position::Type GetType() const override;
+		virtual trdk::OrderSide GetOpenOrderSide() const override;
+		virtual trdk::OrderSide GetCloseOrderSide() const override;
 
-		virtual double GetRealizedPnl() const;
-		virtual double GetRealizedPnlRatio() const;
-		virtual double GetUnrealizedPnl() const;
+		virtual double GetRealizedPnl() const override;
+		virtual double GetRealizedPnlRatio() const override;
+		virtual double GetUnrealizedPnl() const override;
 
-		virtual trdk::ScaledPrice GetMarketOpenPrice() const;
-		virtual trdk::ScaledPrice GetMarketClosePrice() const;
-		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const;
-		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const;
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const override;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
 
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				 override;
 		virtual trdk::OrderId DoOpen(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoClose(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 	};
 
@@ -518,57 +530,68 @@ namespace trdk {
 
 	public:
 
-		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const noexcept;
+		virtual trdk::Position::Type GetType() const override;
+		virtual trdk::OrderSide GetOpenOrderSide() const override;
+		virtual trdk::OrderSide GetCloseOrderSide() const override;
 
-		virtual double GetRealizedPnl() const;
-		virtual double GetRealizedPnlRatio() const;
-		virtual double GetUnrealizedPnl() const;
+		virtual double GetRealizedPnl() const override;
+		virtual double GetRealizedPnlRatio() const override;
+		virtual double GetUnrealizedPnl() const override;
 
-		virtual trdk::ScaledPrice GetMarketOpenPrice() const;
-		virtual trdk::ScaledPrice GetMarketClosePrice() const;
-		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const;
-		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const;
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const override;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
 
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpen(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoClose(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 	};
 

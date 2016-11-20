@@ -25,11 +25,11 @@ namespace trdk { namespace Strategies { namespace GadM {
 	inline const char * ConvertToPch(const Direction &source) {
 		switch (source) {
 			case DIRECTION_UP:
-				return "UP";
+				return "up";
 			case DIRECTION_LEVEL:
-				return "LEVEL";
+				return "level";
 			case DIRECTION_DOWN:
-				return "DOWN";
+				return "down";
 			default:
 				AssertEq(DIRECTION_UP, source);
 				return "<UNKNOWN>";
@@ -83,13 +83,13 @@ namespace trdk { namespace Strategies { namespace GadM {
 			if (m_service != &service) {
 				return false;
 			}
-			m_value = m_security->ScalePrice(m_service->GetLastPoint().value);
+			m_value = m_service->GetLastPoint().value;
 			if (isStarted) {
 				++m_numberOfUpdates;
 			}
 			return true;
 		}
-		const ScaledPrice & GetValue() const {
+		double GetValue() const {
 			Assert(HasSource());
 			Assert(HasData());
 			return m_value;
@@ -104,7 +104,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 			m_service->DropLastPointCopy(m_dropCopyDataSourceId);
 		}
 	private:
-		ScaledPrice m_value;
+		double m_value;
 		const Security *m_security;
 		const Services::MovingAverageService *m_service;
 		size_t m_numberOfUpdates;

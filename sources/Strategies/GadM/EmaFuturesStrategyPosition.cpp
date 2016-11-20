@@ -37,7 +37,7 @@ const char * EmaFuturesStrategy::ConvertToPch(const Intention &intention) {
 		case INTENTION_OPEN_PASSIVE:
 			return "open-passive";
 		case INTENTION_OPEN_AGGRESIVE:
-			return "open-aggresive";
+			return "open-aggressive";
 		case INTENTION_HOLD:
 			return "hold";
 		case INTENTION_DONOT_OPEN:
@@ -45,7 +45,7 @@ const char * EmaFuturesStrategy::ConvertToPch(const Intention &intention) {
 		case INTENTION_CLOSE_PASSIVE:
 			return "close-passive";
 		case INTENTION_CLOSE_AGGRESIVE:
-			return "close-aggresive";
+			return "close-aggressive";
 	}
 }
 
@@ -110,16 +110,22 @@ void EmaFuturesStrategy::Position::SetIntention(
 	AssertNe(m_intention, intention);
 	AssertNe(INTENTION_OPEN_PASSIVE, intention);
 	GetStrategy().GetTradingLog().Write(
-		"intention\t%1%->%2%\t%3%\t%4%\t%5%\t%6%\t%7%",
+		"intention"
+			"\t%1%->%2%"
+			"\tis-passive-open=%3%\tis-passive-close=%4%"
+			"\tis-sent=%5%\tclose-type=%6%\tclose-reason=%7%"
+			"\tbid/ask=%8$.2f/%9$.2f",
 		[&](TradingRecord &record) {
 			record
 				% ConvertToPch(m_intention)
 				% ConvertToPch(intention)
-				% (m_isPassiveOpen ? "true" : "false")
-				% (m_isPassiveClose ? "true" : "false")
-				% (m_isSent ? "true" : "false")
-				% closeType
-				% ConvertToPch(closeReason);
+				% (m_isPassiveOpen ? "yes" : "no")
+				% (m_isPassiveClose ? "yes" : "no")
+				% (m_isSent ? "yes" : "no")
+				% ConvertToPch(closeType)
+				% ConvertToPch(closeReason)
+				% GetSecurity().GetBidPriceValue()
+				% GetSecurity().GetAskPriceValue();
 		});
 
 	boost::optional<CloseType> prevCloseType;
@@ -177,7 +183,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 			[&](TradingRecord &record){
 				record
 					% ConvertToPch(m_intention)
-					% m_closeType
+					% ConvertToPch(m_closeType)
 					% ConvertToPch(m_reasons[1]);
 			});
 		return;
@@ -193,7 +199,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				record
 					% ConvertToPch(INTENTION_OPEN_PASSIVE)
 					% ConvertToPch(m_intention)
-					% m_closeType
+					% ConvertToPch(m_closeType)
 					% ConvertToPch(m_reasons[1]);
 			});
 			break;
@@ -205,7 +211,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 					record
 						% ConvertToPch(INTENTION_CLOSE_PASSIVE)
 						% ConvertToPch(m_intention)
-						% m_closeType
+						% ConvertToPch(m_closeType)
 						% ConvertToPch(m_reasons[1]);
 				});
 			break;
@@ -215,7 +221,7 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				[&](TradingRecord &record) {
 					record
 						% ConvertToPch(m_intention)
-						% m_closeType
+						% ConvertToPch(m_closeType)
 						% ConvertToPch(m_reasons[1]);
 				});
 			break;
@@ -448,8 +454,8 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 		= GetSecurity().ScalePrice(minProfit * GetOpenedQty());
 	if (result.current > m_maxProfitTakeProfit) {
 		GetStrategy().GetTradingLog().Write(
-			"take-profit\tmax-profit = %1$.2f -> %2$.2f"
-				"\tmin-required = %3$.2f (%4$.2f * %5%)",
+			"take-profit\tstat\tmax-profit=%1$.2f->%2$.2f"
+				"\tmin-required=%3$.2f(%4$.2f*%5%)",
 			[&](TradingRecord &record) {
 				record
 					% GetSecurity().DescalePrice(m_maxProfitTakeProfit)
@@ -482,9 +488,10 @@ EmaFuturesStrategy::Position::CheckTrailingStop(
 		trailingStop.minProfit * GetOpenedQty());
 	if (result.current > m_maxProfitTrailingStop) {
 		GetStrategy().GetTradingLog().Write(
-			"trailing-stop\tmax-profit = %1$.2f -> %2$.2f"
-				"\tmin-to-activate = %3$.2f (%4$.2f * %5%)"
-				"\tmin-required = %6$.2f(%7$.2f * %5%)",
+			"trailing-stop\tstat\tmax-profit=%1$.2f->%2$.2f"
+				"\tmin-to-activate=%3$.2f(%4$.2f*%5%)"
+				"\tmin-required=%6$.2f(%7$.2f*%5%)"
+				"\tbid/ask=%8$.2f/%9$.2f",
 			[&](TradingRecord &record) {
 				record
 					% GetSecurity().DescalePrice(m_maxProfitTrailingStop)
@@ -493,7 +500,9 @@ EmaFuturesStrategy::Position::CheckTrailingStop(
 					% trailingStop.profitToActivate
 					% GetOpenedQty()
 					% GetSecurity().DescalePrice(result.margin)
-					% trailingStop.minProfit;
+					% trailingStop.minProfit
+					% GetSecurity().GetBidPriceValue()
+					% GetSecurity().GetAskPriceValue();
 			});
 		const_cast<ScaledPrice &>(m_maxProfitTrailingStop) = result.current;
 	}
@@ -578,21 +587,19 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		/* 13	*/ << ",Qty"
 		/* 14	*/ << ",Entry Reason"
 		/* 15	*/ << ",Entry Price"
-		/* 16	*/ << ",Entry Volume"
-		/* 17	*/ << ",Entry Tades"
-		/* 18	*/ << ",Entry Sig. Bid"
-		/* 19	*/ << ",Entry Sig. Ask"
-		/* 20	*/ << ",Entry Sig. Slow EMA"
-		/* 21	*/ << ",Entry Sig. Fast EMA"
-		/* 22	*/ << ",Exit Reason"
-		/* 23	*/ << ",Exit Price"
-		/* 24	*/ << ",Exit Volume"
-		/* 25	*/ << ",Exit Trades"
-		/* 26	*/ << ",Exit Sig. Bid"
-		/* 27	*/ << ",Exit Sig. Ask"
-		/* 28	*/ << ",Exit Sig. Slow EMA"
-		/* 29	*/ << ",Exit Sig. Fast EMA"
-		/* 30	*/ << ",ID"
+		/* 16	*/ << ",Entry Tades"
+		/* 17	*/ << ",Entry Sig. Bid"
+		/* 18	*/ << ",Entry Sig. Ask"
+		/* 19	*/ << ",Entry Sig. Slow EMA"
+		/* 20	*/ << ",Entry Sig. Fast EMA"
+		/* 21	*/ << ",Exit Reason"
+		/* 22	*/ << ",Exit Price"
+		/* 23	*/ << ",Exit Trades"
+		/* 24	*/ << ",Exit Sig. Bid"
+		/* 25	*/ << ",Exit Sig. Ask"
+		/* 26	*/ << ",Exit Sig. Slow EMA"
+		/* 27	*/ << ",Exit Sig. Fast EMA"
+		/* 28	*/ << ",ID"
 		<< std::endl;
 }
 
@@ -647,7 +654,7 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 		m_reportStream << ',' << (GetCloseTime() - GetOpenTime());
 
 		// 8. Type:
-		m_reportStream << ',' << GetTypeStr();
+		m_reportStream << ',' << GetType();
 
 		// 10. pnl vol.:
 		m_reportStream << ',' << pnl;
@@ -677,25 +684,28 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 				break;
 		}
 
-		// 15. entry price, 16. entry volume
+		// 15. entry price
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetOpenAvgPrice())
-			<< ',' << GetOpenedVolume();
+			<< ',' << GetSecurity().DescalePrice(GetOpenAvgPrice());
 
-		// 17. entry trades:
+		// 16. entry trades:
 		m_reportStream << ',' << GetNumberOfOpenTrades();
 		
-		// 18. entry bid, 19. entry ask,
+		// 17. entry bid, 18. entry ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[0].first
 			<< ',' << m_signalsBidAsk[0].second;
 
-		// 20. entry slow ema, 21. entry fast ema
+		// 19. entry slow ema, 20. entry fast ema
 		m_reportStream
-			<< ',' << m_signalsEmas[0].first
-			<< ',' << m_signalsEmas[0].second;
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[0].first
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[0].second;
 
-		// 22. exit reason:
+		// 21. exit reason:
 		m_reportStream << ',';
 		if (m_closeType != CLOSE_TYPE_NONE) {
 			m_reportStream << m_closeType;
@@ -715,25 +725,28 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 			}
 		}
 
-		// 23. exit price, 24. exit volume,
+		// 22. exit price
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetCloseAvgPrice())
-			<< ',' << GetClosedVolume();
+			<< ',' << GetSecurity().DescalePrice(GetCloseAvgPrice());
 
-		// 25. exit trades:
+		// 23. exit trades:
 		m_reportStream << ',' << GetNumberOfCloseTrades();
 
-		// 26. exit bid, 27. exit ask,
+		// 24. exit bid, 25. exit ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[1].first
 			<< ',' << m_signalsBidAsk[1].second;
 	
-		// 28. exit slow ema, 29. exit fast ema.
+		// 26. exit slow ema, 27. exit fast ema.
 		m_reportStream
-			<< ',' << m_signalsEmas[1].first
-			<< ',' << m_signalsEmas[1].second;
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[1].first
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[1].second;
 
-		// 30. ID
+		// 28. ID
 		m_reportStream << ',' << GetId();
 
 		m_reportStream << std::endl;
