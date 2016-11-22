@@ -256,7 +256,10 @@ namespace trdk {
 		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
 		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
 
+		size_t GetNumberOfOpenOrders() const;
 		size_t GetNumberOfOpenTrades() const;
+		
+		size_t GetNumberOfCloseOrders() const;
 		size_t GetNumberOfCloseTrades() const;
 
 	public:

@@ -1342,10 +1342,16 @@ bool Position::IsProfit() const {
 	return ratio > 1.0 && !IsEqual(ratio, 1.0);
 }
 
+size_t Position::GetNumberOfOpenOrders() const {
+	return m_pimpl->m_open.orders.size();
+}
 size_t Position::GetNumberOfOpenTrades() const {
 	return m_pimpl->m_open.numberOfTrades;
 }
 
+size_t Position::GetNumberOfCloseOrders() const {
+	return m_pimpl->m_close.orders.size();
+}
 size_t Position::GetNumberOfCloseTrades() const {
 	return m_pimpl->m_close.numberOfTrades;
 }

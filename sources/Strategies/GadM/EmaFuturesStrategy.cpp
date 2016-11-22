@@ -612,9 +612,7 @@ namespace EmaFuturesStrategy {
 					Position::CLOSE_TYPE_NONE,
 					signal);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
-				GetLog().Warn(
-					"Failed to cancel order: \"%1%\".",
-					ex.what());
+				GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
 				return;
 			}
 			
@@ -846,9 +844,7 @@ namespace EmaFuturesStrategy {
 					Position::CLOSE_TYPE_NONE,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
-				GetLog().Warn(
-					"Failed to cancel order: \"%1%\".",
-					ex.what());
+				GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
 				return true;
 			}
 

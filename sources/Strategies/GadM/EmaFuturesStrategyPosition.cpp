@@ -587,19 +587,21 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		/* 13	*/ << ",Qty"
 		/* 14	*/ << ",Entry Reason"
 		/* 15	*/ << ",Entry Price"
-		/* 16	*/ << ",Entry Tades"
-		/* 17	*/ << ",Entry Sig. Bid"
-		/* 18	*/ << ",Entry Sig. Ask"
-		/* 19	*/ << ",Entry Sig. Slow EMA"
-		/* 20	*/ << ",Entry Sig. Fast EMA"
-		/* 21	*/ << ",Exit Reason"
-		/* 22	*/ << ",Exit Price"
-		/* 23	*/ << ",Exit Trades"
-		/* 24	*/ << ",Exit Sig. Bid"
-		/* 25	*/ << ",Exit Sig. Ask"
-		/* 26	*/ << ",Exit Sig. Slow EMA"
-		/* 27	*/ << ",Exit Sig. Fast EMA"
-		/* 28	*/ << ",ID"
+		/* 16	*/ << ",Entry Orders"
+		/* 17	*/ << ",Entry Trades"
+		/* 18	*/ << ",Entry Sig. Bid"
+		/* 19	*/ << ",Entry Sig. Ask"
+		/* 20	*/ << ",Entry Sig. Slow EMA"
+		/* 21	*/ << ",Entry Sig. Fast EMA"
+		/* 22	*/ << ",Exit Reason"
+		/* 23	*/ << ",Exit Price"
+		/* 24	*/ << ",Exit Orders"
+		/* 25	*/ << ",Exit Trades"
+		/* 26	*/ << ",Exit Sig. Bid"
+		/* 27	*/ << ",Exit Sig. Ask"
+		/* 28	*/ << ",Exit Sig. Slow EMA"
+		/* 29	*/ << ",Exit Sig. Fast EMA"
+		/* 30	*/ << ",ID"
 		<< std::endl;
 }
 
@@ -688,15 +690,17 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 		m_reportStream
 			<< ',' << GetSecurity().DescalePrice(GetOpenAvgPrice());
 
-		// 16. entry trades:
-		m_reportStream << ',' << GetNumberOfOpenTrades();
+		// 16. entry orders, 17. entry trades:
+		m_reportStream
+			<< ',' << GetNumberOfOpenOrders()
+			<< ',' << GetNumberOfOpenTrades();
 		
-		// 17. entry bid, 18. entry ask,
+		// 18. entry bid, 19. entry ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[0].first
 			<< ',' << m_signalsBidAsk[0].second;
 
-		// 19. entry slow ema, 20. entry fast ema
+		// 20. entry slow ema, 21. entry fast ema
 		m_reportStream
 			<< ','
 				<< std::fixed << std::setprecision(8)
@@ -705,7 +709,7 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 				<< std::fixed << std::setprecision(8)
 				<< m_signalsEmas[0].second;
 
-		// 21. exit reason:
+		// 22. exit reason:
 		m_reportStream << ',';
 		if (m_closeType != CLOSE_TYPE_NONE) {
 			m_reportStream << m_closeType;
@@ -725,19 +729,21 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 			}
 		}
 
-		// 22. exit price
+		// 23. exit price
 		m_reportStream
 			<< ',' << GetSecurity().DescalePrice(GetCloseAvgPrice());
 
-		// 23. exit trades:
-		m_reportStream << ',' << GetNumberOfCloseTrades();
+		// 24. exit orders, 25. exit trades:
+		m_reportStream
+			<< ',' << GetNumberOfCloseOrders()
+			<< ',' << GetNumberOfCloseTrades();
 
-		// 24. exit bid, 25. exit ask,
+		// 26. exit bid, 27. exit ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[1].first
 			<< ',' << m_signalsBidAsk[1].second;
 	
-		// 26. exit slow ema, 27. exit fast ema.
+		// 28. exit slow ema, 29. exit fast ema.
 		m_reportStream
 			<< ','
 				<< std::fixed << std::setprecision(8)
@@ -746,7 +752,7 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 				<< std::fixed << std::setprecision(8)
 				<< m_signalsEmas[1].second;
 
-		// 28. ID
+		// 30. ID
 		m_reportStream << ',' << GetId();
 
 		m_reportStream << std::endl;
