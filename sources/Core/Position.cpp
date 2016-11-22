@@ -1697,6 +1697,19 @@ const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
 	}
 }
 
+const char * trdk::ConvertToPch(const Position::Type &type) {
+	static_assert(Position::numberOfTypes == 2, "Close type list changed.");
+	switch (type) {
+		default:
+			AssertEq(Position::TYPE_LONG, type);
+			return "unknown";
+		case Position::TYPE_LONG:
+			return "long";
+		case Position::TYPE_SHORT:
+			return "short";
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 LongPosition::LongPosition(
