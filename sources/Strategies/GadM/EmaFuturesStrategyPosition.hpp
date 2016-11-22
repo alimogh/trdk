@@ -50,7 +50,8 @@ namespace EmaFuturesStrategy {
 		explicit Position(
 			const Direction &openReason,
 			const SlowFastEmas &emas,
-			std::ostream &reportStream);
+			std::ostream &reportStream,
+			bool isSuperAggressiveClosing);
 		virtual ~Position();
 
 	public:
@@ -129,6 +130,8 @@ namespace EmaFuturesStrategy {
 		ScaledPrice m_maxProfitTrailingStop;
 
 		std::ostream &m_reportStream;
+
+		const bool m_isSuperAggressiveClosing;
 	
 	};
 
@@ -145,7 +148,8 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &,
 				const Direction &openReason,
 				const SlowFastEmas &emas,
-				std::ostream &reportStream);
+				std::ostream &reportStream,
+				bool isSuperAggressiveClosing);
 		virtual ~LongPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
@@ -167,7 +171,8 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &,
 				const Direction &openReason,
 				const SlowFastEmas &emas,
-				std::ostream &reportStream);
+				std::ostream &reportStream,
+				bool isSuperAggressiveClosing);
 		virtual ~ShortPosition();
 	public:
 		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;

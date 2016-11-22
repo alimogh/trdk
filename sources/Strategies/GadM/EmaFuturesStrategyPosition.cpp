@@ -54,7 +54,8 @@ const char * EmaFuturesStrategy::ConvertToPch(const Intention &intention) {
 EmaFuturesStrategy::Position::Position(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
+		std::ostream &reportStream,
+		bool isSuperAggressiveClosing)
 	: m_intention(INTENTION_OPEN_PASSIVE)
 	, m_isSent(false)
 	, m_isPassiveOpen(true)
@@ -63,7 +64,8 @@ EmaFuturesStrategy::Position::Position(
 	, m_closeType(CLOSE_TYPE_NONE)
 	, m_maxProfitTakeProfit(0)
 	, m_maxProfitTrailingStop(0)
-	, m_reportStream(reportStream) {
+	, m_reportStream(reportStream)
+	, m_isSuperAggressiveClosing(isSuperAggressiveClosing) {
 
 	m_reasons[0] = openReason;
 	AssertNe(DIRECTION_LEVEL, m_reasons[0]);
@@ -422,7 +424,12 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 				if (!m_intentionSize) {
-					Close(m_closeType, GetMarketClosePrice());
+					const auto closePrice
+						= !m_isSuperAggressiveClosing
+								|| m_closeType != CLOSE_TYPE_NONE
+							?	GetMarketClosePrice()
+							:	GetOpenAvgPrice();
+					Close(m_closeType, closePrice);
 				} else {
 					Close(
 						m_closeType,
@@ -777,7 +784,8 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		const Milestones &strategyTimeMeasurement,
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
+		std::ostream &reportStream,
+		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
 		operationId,
@@ -788,7 +796,7 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		qty,
 		security.GetAskPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream) {
+	, Position(openReason, emas, reportStream, isSuperAggressiveClosing) {
 	//...//
 }
 
@@ -849,7 +857,8 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		const Milestones &strategyTimeMeasurement,
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
+		std::ostream &reportStream,
+		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
 		operationId,
@@ -860,7 +869,7 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		qty,
 		security.GetBidPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream) {
+	, Position(openReason, emas, reportStream, isSuperAggressiveClosing) {
 	//...//
 }
 

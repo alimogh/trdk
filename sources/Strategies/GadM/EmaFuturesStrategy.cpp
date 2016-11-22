@@ -145,6 +145,8 @@ namespace EmaFuturesStrategy {
 			, m_maxLossMoneyPerContract(
 				conf.ReadTypedKey<double>("max_loss_per_contract"))
 			, m_profitLevels(ReadProfitLevelsConf(conf))
+			, m_isSuperAggressiveClosing(
+				conf.ReadBoolKey("is_super_aggressive_closing"))
 			, m_security(nullptr)
 			, m_barService(nullptr)
 			, m_barServiceId(DropCopy::nDataSourceInstanceId)
@@ -159,7 +161,8 @@ namespace EmaFuturesStrategy {
 						" will be activated after profit %5$.2f * %6% = %7$.2f."
 					" Take profit levels: %8%."
 					" Thralling stop: %9%."
-					" Stop loss: %10$.2f * %11% = -%12$.2f.");
+					" Stop loss: %10$.2f * %11% = -%12$.2f."
+					" Is super aggressive closing: %13%.");
 			info
 				% m_numberOfContracts // 1
 				% m_passiveOrderMaxLifetime // 2
@@ -200,7 +203,8 @@ namespace EmaFuturesStrategy {
 			info
 				% m_maxLossMoneyPerContract // 10
 				% m_numberOfContracts // 11
-				% (m_maxLossMoneyPerContract * m_numberOfContracts); // 12
+				% (m_maxLossMoneyPerContract * m_numberOfContracts) // 12
+				% (m_isSuperAggressiveClosing ? "yes" : "no"); // 13
 			GetLog().Info(info.str().c_str());
 
 		}
@@ -833,7 +837,7 @@ namespace EmaFuturesStrategy {
 						%	now.time_of_day()
 						%	ConvertToPch(position.GetIntention())
 						%	position.GetSecurity().GetBidPriceValue()
-						%	position.GetSecurity().GetBidPriceValue();
+						%	position.GetSecurity().GetAskPriceValue();
 				});
 
 			try {
@@ -965,7 +969,8 @@ namespace EmaFuturesStrategy {
 				timeMeasurement,
 				reason,
 				m_ema,
-				m_strategyLog);
+				m_strategyLog,
+				m_isSuperAggressiveClosing);
 		}
 
 		void CheckStartegyLog() {
@@ -1098,6 +1103,7 @@ namespace EmaFuturesStrategy {
 		const boost::optional<TrailingStop> m_trailingStop;
 		const double m_maxLossMoneyPerContract;
 		const boost::optional<ProfitLevels> m_profitLevels;
+		const bool m_isSuperAggressiveClosing;
 
 		Security *m_security;
 
