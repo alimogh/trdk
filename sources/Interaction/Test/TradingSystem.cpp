@@ -376,13 +376,12 @@ private:
 
 			if (isMatched) {
 
-				// For tests we are using the worst scenario. In the real -
-				// price could be better than order price (last trade price).
-				trade.price = order.price;
-
+				trade.price = order.isSell	
+					?	order.security->GetBidPriceScaled()
+					:	order.security->GetAskPriceScaled();
 				trade.id = tradingSystemOrderId;
 				trade.qty = order.qty;
-				
+
 				order.callback(
 					order.id,
 					tradingSystemOrderId,
