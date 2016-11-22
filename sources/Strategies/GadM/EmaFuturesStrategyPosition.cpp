@@ -55,8 +55,9 @@ EmaFuturesStrategy::Position::Position(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
 		std::ostream &reportStream,
+		const Intention &openIntention,
 		bool isSuperAggressiveClosing)
-	: m_intention(INTENTION_OPEN_PASSIVE)
+	: m_intention(openIntention)
 	, m_isSent(false)
 	, m_isPassiveOpen(true)
 	, m_isPassiveClose(true)
@@ -66,6 +67,10 @@ EmaFuturesStrategy::Position::Position(
 	, m_maxProfitTrailingStop(0)
 	, m_reportStream(reportStream)
 	, m_isSuperAggressiveClosing(isSuperAggressiveClosing) {
+
+	Assert(
+		m_intention == INTENTION_OPEN_PASSIVE
+		|| m_intention == INTENTION_OPEN_AGGRESIVE);
 
 	m_reasons[0] = openReason;
 	AssertNe(DIRECTION_LEVEL, m_reasons[0]);
@@ -265,6 +270,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				Open(GetMarketOpenOppositePrice());
 				m_isPassiveOpen = true;
 				m_isSent = true;
+				AssertEq(m_startTime, pt::not_a_date_time);
 				m_startTime = std::move(startTime);
 			}
 			break;
@@ -297,6 +303,18 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
+				if (m_startTime == pt::not_a_date_time) {
+					const auto startTime
+						= GetStrategy().GetContext().GetCurrentTime();
+					GetStrategy().GetContext().InvokeDropCopy(
+						[this, &startTime](DropCopy &dropCopy) {
+							dropCopy.ReportOperationStart(
+								GetStrategy(),
+								GetId(),
+								startTime);
+						});
+					m_startTime = std::move(startTime);
+				}
 				Open(GetMarketOpenPrice());
 				m_isPassiveOpen = false;
 				m_isSent = true;
@@ -785,6 +803,7 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
 		std::ostream &reportStream,
+		const Intention &openIntention,
 		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
@@ -796,7 +815,12 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		qty,
 		security.GetAskPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream, isSuperAggressiveClosing) {
+	, Position(
+		openReason,
+		emas,
+		reportStream,
+		openIntention,
+		isSuperAggressiveClosing) {
 	//...//
 }
 
@@ -858,6 +882,7 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
 		std::ostream &reportStream,
+		const Intention &openIntention,
 		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
@@ -869,7 +894,12 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		qty,
 		security.GetBidPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream, isSuperAggressiveClosing) {
+	, Position(
+		openReason,
+		emas,
+		reportStream,
+		openIntention,
+		isSuperAggressiveClosing) {
 	//...//
 }
 

@@ -101,6 +101,16 @@ namespace {
 
 	}
 
+	pt::time_duration ReadPassiveOrderMaxLifetime(
+			const IniSectionRef &conf,
+			const char *key) {
+		const auto value = conf.ReadTypedKey<unsigned int>(key);
+		if (!value) {
+			return pt::not_a_date_time;
+		}
+		return pt::seconds(value);
+	}
+
 }
 
 namespace trdk { namespace Strategies { namespace GadM {
@@ -129,10 +139,14 @@ namespace EmaFuturesStrategy {
 				conf)
 			, m_numberOfContracts(
 				conf.ReadTypedKey<uint32_t>("number_of_contracts"))
-			, m_passiveOrderMaxLifetime(
-				pt::seconds(
-					conf.ReadTypedKey<unsigned int>(
-						"passive_order_max_lifetime_sec")))
+			, m_passiveOpenOrderMaxLifetime(
+				ReadPassiveOrderMaxLifetime(
+					conf,
+					"passive_open_order_max_lifetime_sec"))
+			, m_passiveCloseOrderMaxLifetime(
+				ReadPassiveOrderMaxLifetime(
+					conf,
+					"passive_close_order_max_lifetime_sec"))
 			, m_orderPriceMaxDelta(
 				conf.ReadTypedKey<double>("order_price_max_delta"))
 			, m_minProfitToActivateTakeProfit(
@@ -155,22 +169,23 @@ namespace EmaFuturesStrategy {
 
 			boost::format info(
 				"Number of contracts: %1%."
-					" Passive order max. lifetime: %2%."
-					" Order price max. delta: %3$.2f."
-					" Take profit trailing: %4%%%"
-						" will be activated after profit %5$.2f * %6% = %7$.2f."
-					" Take profit levels: %8%."
-					" Thralling stop: %9%."
-					" Stop loss: %10$.2f * %11% = -%12$.2f."
-					" Is super aggressive closing: %13%.");
+					" Passive order max. lifetime: %2% / %3%."
+					" Order price max. delta: %4$.2f."
+					" Take profit trailing: %5%%%"
+						" will be activated after profit %6$.2f * %7% = %8$.2f."
+					" Take profit levels: %9%."
+					" Thralling stop: %10%."
+					" Stop loss: %11$.2f * %12% = -%13$.2f."
+					" Is super aggressive closing: %14%.");
 			info
 				% m_numberOfContracts // 1
-				% m_passiveOrderMaxLifetime // 2
-				% m_orderPriceMaxDelta // 3
-				% int(m_takeProfitTrailingRatio * 100) // 4
-				% m_minProfitToActivateTakeProfit // 5
-				% m_numberOfContracts // 6
-				% (m_minProfitToActivateTakeProfit * m_numberOfContracts); // 7
+				% m_passiveOpenOrderMaxLifetime // 2
+				% m_passiveCloseOrderMaxLifetime // 3
+				% m_orderPriceMaxDelta // 4
+				% int(m_takeProfitTrailingRatio * 100) // 5
+				% m_minProfitToActivateTakeProfit // 6
+				% m_numberOfContracts // 7
+				% (m_minProfitToActivateTakeProfit * m_numberOfContracts); // 8
 			if (m_profitLevels) {
 				std::vector<std::string> sizes;
 				for (const auto &i: m_profitLevels->numberOfContractsPerLevel) {
@@ -181,9 +196,9 @@ namespace EmaFuturesStrategy {
 				levelsInfo
 					% m_profitLevels->priceStep
 					% boost::join(sizes, ", ");
-				info % levelsInfo.str(); // 8
+				info % levelsInfo.str(); // 9
 			} else {
-				info % "not set"; // 8
+				info % "not set"; // 9
 			}
 			if (m_trailingStop) {
 				boost::format trallingStopInfo(
@@ -196,15 +211,15 @@ namespace EmaFuturesStrategy {
 						* m_numberOfContracts)
 					% m_trailingStop->minProfit
 					% (m_trailingStop->minProfit * m_numberOfContracts);
-				info % trallingStopInfo.str(); // 9
+				info % trallingStopInfo.str(); // 10
 			} else {
-				info % "not set"; // 9
+				info % "not set"; // 10
 			}
 			info
-				% m_maxLossMoneyPerContract // 10
-				% m_numberOfContracts // 11
-				% (m_maxLossMoneyPerContract * m_numberOfContracts) // 12
-				% (m_isSuperAggressiveClosing ? "yes" : "no"); // 13
+				% m_maxLossMoneyPerContract // 11
+				% m_numberOfContracts // 12
+				% (m_maxLossMoneyPerContract * m_numberOfContracts) // 13
+				% (m_isSuperAggressiveClosing ? "yes" : "no"); // 14
 			GetLog().Info(info.str().c_str());
 
 		}
@@ -612,7 +627,9 @@ namespace EmaFuturesStrategy {
 
 			try {
 				position.SetIntention(
-					INTENTION_CLOSE_PASSIVE,
+					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+						?	INTENTION_CLOSE_PASSIVE
+						:	INTENTION_CLOSE_AGGRESIVE,
 					Position::CLOSE_TYPE_NONE,
 					signal);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
@@ -660,7 +677,9 @@ namespace EmaFuturesStrategy {
 				});
 			try {
 				position.SetIntention(
-					INTENTION_CLOSE_PASSIVE,
+					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+						?	INTENTION_CLOSE_PASSIVE
+						:	INTENTION_CLOSE_AGGRESIVE,
 					Position::CLOSE_TYPE_TAKE_PROFIT,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
@@ -686,7 +705,9 @@ namespace EmaFuturesStrategy {
 			}
 			try {
 				position.SetIntention(
-					INTENTION_CLOSE_PASSIVE,
+					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+						?	INTENTION_CLOSE_PASSIVE
+						:	INTENTION_CLOSE_AGGRESIVE,
 					Position::CLOSE_TYPE_TAKE_PROFIT,
 					DIRECTION_LEVEL,
 					orderSize);
@@ -821,7 +842,10 @@ namespace EmaFuturesStrategy {
 				?	position.GetCloseStartTime()
 				:	position.GetStartTime();
 			const auto orderExpirationTime
-				=  startTime + m_passiveOrderMaxLifetime;
+				=  startTime
+				+ (position.GetIntention() == INTENTION_OPEN_PASSIVE
+					?	m_passiveOpenOrderMaxLifetime
+					:	m_passiveCloseOrderMaxLifetime);
 			const auto &now = GetContext().GetCurrentTime();
 			if (orderExpirationTime > now) {
 				return true;
@@ -970,6 +994,9 @@ namespace EmaFuturesStrategy {
 				reason,
 				m_ema,
 				m_strategyLog,
+				m_passiveOpenOrderMaxLifetime != pt::not_a_date_time
+					?	INTENTION_OPEN_PASSIVE
+					:	INTENTION_OPEN_AGGRESIVE,
 				m_isSuperAggressiveClosing);
 		}
 
@@ -1048,7 +1075,9 @@ namespace EmaFuturesStrategy {
 
 			try {
 				position.SetIntention(
-					INTENTION_CLOSE_PASSIVE,
+					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+						?	INTENTION_CLOSE_PASSIVE
+						:	INTENTION_CLOSE_AGGRESIVE,
 					Position::CLOSE_TYPE_ROLLOVER,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
@@ -1096,7 +1125,8 @@ namespace EmaFuturesStrategy {
 	private:
 
 		const Qty m_numberOfContracts;
-		const pt::time_duration m_passiveOrderMaxLifetime;
+		const pt::time_duration m_passiveOpenOrderMaxLifetime;
+		const pt::time_duration m_passiveCloseOrderMaxLifetime;
 		const double m_orderPriceMaxDelta;
 		const double m_minProfitToActivateTakeProfit;
 		const double m_takeProfitTrailingRatio;

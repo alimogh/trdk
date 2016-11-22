@@ -51,6 +51,7 @@ namespace EmaFuturesStrategy {
 			const Direction &openReason,
 			const SlowFastEmas &emas,
 			std::ostream &reportStream,
+			const Intention &openIntention,
 			bool isSuperAggressiveClosing);
 		virtual ~Position();
 
@@ -149,6 +150,7 @@ namespace EmaFuturesStrategy {
 				const Direction &openReason,
 				const SlowFastEmas &emas,
 				std::ostream &reportStream,
+				const Intention &openIntention,
 				bool isSuperAggressiveClosing);
 		virtual ~LongPosition();
 	public:
@@ -172,6 +174,7 @@ namespace EmaFuturesStrategy {
 				const Direction &openReason,
 				const SlowFastEmas &emas,
 				std::ostream &reportStream,
+				const Intention &openIntention,
 				bool isSuperAggressiveClosing);
 		virtual ~ShortPosition();
 	public:
