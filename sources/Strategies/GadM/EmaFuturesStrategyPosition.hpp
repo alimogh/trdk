@@ -39,7 +39,6 @@ namespace EmaFuturesStrategy {
 		typedef trdk::Position Base;
 
 		struct PriceCheckResult {
-			bool isAllowed;
 			ScaledPrice start;
 			ScaledPrice margin;
 			ScaledPrice current;
@@ -65,6 +64,8 @@ namespace EmaFuturesStrategy {
 		const Direction & GetOpenReason() const;
 
 		const Intention & GetIntention() const;
+
+		bool IsSuperAggressiveClosing() const;
 		
 		void SetIntention(
 				Intention,
@@ -80,19 +81,24 @@ namespace EmaFuturesStrategy {
 
 		void Sync();
 
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
-		virtual PriceCheckResult CheckStopLoss(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
+				double priceDelta)
+				const
+			= 0;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const
-				= 0;
-		PriceCheckResult CheckTakeProfit(
+			= 0;
+		boost::optional<PriceCheckResult> CheckTakeProfit(
 				double minProfit,
 				double trailingRatio)
 				const;
 		//! Checks closing by trailing stop.
 		/** @sa https://app.asana.com/0/186349222941752/196887742980415
 		  */
-		PriceCheckResult CheckTrailingStop(const TrailingStop &) const;
+		boost::optional<PriceCheckResult> CheckTrailingStop(
+				const TrailingStop &)
+				const;
 
 		//! Checks profit level.
 		/** @sa https://app.asana.com/0/196887491555385/192879506137993
@@ -108,6 +114,8 @@ namespace EmaFuturesStrategy {
 	private:
 
 		void Sync(Intention &);
+
+		bool IsSuperAggressiveClosing(const Intention &) const;
 
 	private:
 
@@ -132,7 +140,7 @@ namespace EmaFuturesStrategy {
 
 		std::ostream &m_reportStream;
 
-		const bool m_isSuperAggressiveClosing;
+		bool m_isSuperAggressiveClosing;
 	
 	};
 
@@ -154,10 +162,14 @@ namespace EmaFuturesStrategy {
 				bool isSuperAggressiveClosing);
 		virtual ~LongPosition();
 	public:
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLoss(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
+				double priceDelta)
+				const
+				override;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
-				const;
+				const
+				override;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -178,10 +190,14 @@ namespace EmaFuturesStrategy {
 				bool isSuperAggressiveClosing);
 		virtual ~ShortPosition();
 	public:
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLoss(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
+				double priceDelta)
+				const
+				override;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
-				const;
+				const
+				override;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

@@ -648,10 +648,10 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			Assert(position.GetActiveQty());
-			const Position::PriceCheckResult result = position.CheckTakeProfit(
+			const auto &result = position.CheckTakeProfit(
 				m_minProfitToActivateTakeProfit,
 				m_takeProfitTrailingRatio);
-			if (result.isAllowed) {
+			if (!result) {
 				return false;
 			}
 			GetTradingLog().Write(
@@ -660,11 +660,11 @@ namespace EmaFuturesStrategy {
 					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
 					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
 					"\tbid=%10$.2f\task=%11$.2f",
-				[&](TradingRecord &record) {
+				[this, &position, &result](TradingRecord &record) {
 					record
-						%	position.GetSecurity().DescalePrice(result.start)
-						%	position.GetSecurity().DescalePrice(result.margin)
-						%	position.GetSecurity().DescalePrice(result.current)
+						%	position.GetSecurity().DescalePrice(result->start)
+						%	position.GetSecurity().DescalePrice(result->margin)
+						%	position.GetSecurity().DescalePrice(result->current)
 						%	position.GetRealizedPnl()
 						%	position.GetUnrealizedPnl()
 						%	position.GetPlannedPnl()
@@ -730,9 +730,8 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			Assert(position.GetActiveQty());
-			const Position::PriceCheckResult result
-				= position.CheckTrailingStop(*m_trailingStop);
-			if (result.isAllowed) {
+			const auto &result = position.CheckTrailingStop(*m_trailingStop);
+			if (!result) {
 				return false;
 			}
 			GetTradingLog().Write(
@@ -741,11 +740,11 @@ namespace EmaFuturesStrategy {
 					"\tpnl_rlz=%4$.2f\tpnl_unr=%5$.2f\tpnl_plan=%6$.2f"
 					"\topen_vol=%7$.2f\topen_price=%8$.2f\tclose_vol=%9$.2f"
 					"\tbid/ask=%10$.2f/%11$.2f",
-			[&](TradingRecord &record) {
+			[this, &position, &result](TradingRecord &record) {
 				record
-					%	position.GetSecurity().DescalePrice(result.start)
-					%	position.GetSecurity().DescalePrice(result.margin)
-					%	position.GetSecurity().DescalePrice(result.current)
+					%	position.GetSecurity().DescalePrice(result->start)
+					%	position.GetSecurity().DescalePrice(result->margin)
+					%	position.GetSecurity().DescalePrice(result->current)
 					%	position.GetRealizedPnl()
 					%	position.GetUnrealizedPnl()
 					%	position.GetPlannedPnl()
@@ -778,20 +777,20 @@ namespace EmaFuturesStrategy {
 				return false;
 			}
 			Assert(position.GetActiveQty());
-			const Position::PriceCheckResult result
+			const auto &result
 				= position.CheckStopLoss(m_maxLossMoneyPerContract);
-			if (result.isAllowed) {
+			if (!result) {
 				return false;
 			}
 			GetTradingLog().Write(
 				"stop-loss\tdecision"
 					"\tstart=%1$.2f\tmargin=%2$.2f\tnow=%3$.2f"
 					"\tbid/ask=%4$.2f/%5$.2f",
-				[&](TradingRecord &record) {
+				[this, &position, &result](TradingRecord &record) {
 					record
-						%	position.GetSecurity().DescalePrice(result.start)
-						%	position.GetSecurity().DescalePrice(result.margin)
-						%	position.GetSecurity().DescalePrice(result.current)
+						%	position.GetSecurity().DescalePrice(result->start)
+						%	position.GetSecurity().DescalePrice(result->margin)
+						%	position.GetSecurity().DescalePrice(result->current)
 						%	position.GetSecurity().GetBidPrice()
 						%	position.GetSecurity().GetAskPrice();
 				});
@@ -882,10 +881,17 @@ namespace EmaFuturesStrategy {
 
 		bool CheckOrderPrice(Position &position) {
 
-			const Position::PriceCheckResult &result
-				= position.CheckOrderPrice(m_orderPriceMaxDelta);
+			switch (position.GetIntention()) {
+				case INTENTION_OPEN_PASSIVE:
+				case INTENTION_CLOSE_PASSIVE:
+					return true;
+			}
+			if (position.IsSuperAggressiveClosing()) {
+				return true;
+			}
 
-			if (result.isAllowed) {
+			const auto &result = position.CheckOrderPrice(m_orderPriceMaxDelta);
+			if (!result) {
 				return true;
 			}
 
@@ -893,11 +899,11 @@ namespace EmaFuturesStrategy {
 				"order-price\tdecision"
 					"\tstart=%1%\tmargin=%2%\tcurrent=%3%"
 					"\tintention=%4%\tbid/ask=%5$.2f/%6$.2f",
-				[&](TradingRecord &record) {
+				[this, &position, &result](TradingRecord &record) {
 					record
-						%	position.GetSecurity().DescalePrice(result.start)
-						%	position.GetSecurity().DescalePrice(result.margin)
-						%	position.GetSecurity().DescalePrice(result.current)
+						%	position.GetSecurity().DescalePrice(result->start)
+						%	position.GetSecurity().DescalePrice(result->margin)
+						%	position.GetSecurity().DescalePrice(result->current)
 						%	ConvertToPch(position.GetIntention())
 						%	position.GetSecurity().GetBidPrice()
 						%	position.GetSecurity().GetAskPrice();

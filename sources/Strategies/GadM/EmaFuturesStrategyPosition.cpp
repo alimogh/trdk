@@ -442,12 +442,11 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 				if (!m_intentionSize) {
-					const auto closePrice
-						= !m_isSuperAggressiveClosing
-								|| m_closeType != CLOSE_TYPE_NONE
-							?	GetMarketClosePrice()
-							:	GetOpenAvgPrice();
-					Close(m_closeType, closePrice);
+					Close(
+						m_closeType,
+						IsSuperAggressiveClosing(intention)
+							?	GetOpenAvgPrice()
+							:	GetMarketClosePrice());
 				} else {
 					Close(
 						m_closeType,
@@ -468,7 +467,19 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 
 }
 
-EmaFuturesStrategy::Position::PriceCheckResult
+bool EmaFuturesStrategy::Position::IsSuperAggressiveClosing() const {
+	return IsSuperAggressiveClosing(m_intention);
+}
+
+bool EmaFuturesStrategy::Position::IsSuperAggressiveClosing(
+		const Intention &intention) const {
+	return
+		intention == INTENTION_CLOSE_AGGRESIVE
+		&& m_isSuperAggressiveClosing
+		&& m_closeType == CLOSE_TYPE_NONE;
+}
+
+boost::optional<EmaFuturesStrategy::Position::PriceCheckResult>
 EmaFuturesStrategy::Position::CheckTakeProfit(
 		double minProfit,
 		double trailingRatio)
@@ -495,13 +506,15 @@ EmaFuturesStrategy::Position::CheckTakeProfit(
 	result.margin
 		= m_maxProfitTakeProfit
 			- ScaledPrice(m_maxProfitTakeProfit * trailingRatio);
-	result.isAllowed
-		= m_maxProfitTakeProfit < minProfitVol
-			|| result.current > result.margin;
+	if (
+			m_maxProfitTakeProfit < minProfitVol
+			|| result.current > result.margin) {
+		return boost::none;
+	}
 	return result;
 }
 
-EmaFuturesStrategy::Position::PriceCheckResult
+boost::optional<EmaFuturesStrategy::Position::PriceCheckResult>
 EmaFuturesStrategy::Position::CheckTrailingStop(
 		const TrailingStop &trailingStop)
 		const {
@@ -532,9 +545,11 @@ EmaFuturesStrategy::Position::CheckTrailingStop(
 		const_cast<ScaledPrice &>(m_maxProfitTrailingStop) = result.current;
 	}
 	result.start = m_maxProfitTrailingStop;
-	result.isAllowed
-		= m_maxProfitTrailingStop < minProfitToActivate
-			|| result.current > result.margin;
+	if (
+			m_maxProfitTrailingStop < minProfitToActivate
+			|| result.current > result.margin) {
+		return boost::none;
+	}
 	return result;
 }
 
@@ -828,7 +843,7 @@ EmaFuturesStrategy::LongPosition::~LongPosition() {
 	Report();
 }
 
-EmaFuturesStrategy::LongPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::LongPosition::PriceCheckResult>
 EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
@@ -838,14 +853,18 @@ EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed = result.margin >= result.current;
+		if (result.margin >= result.current) {
+			return boost::none;
+		}
 	} else {
 		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetMarketCloseOppositePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed = result.margin <= result.current;
+		if (result.margin <= result.current) {
+			return boost::none;
+		}
 	}
 	Assert(!IsZero(result.start));
 	Assert(!IsZero(result.margin));
@@ -853,7 +872,7 @@ EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	return result;
 }
 
-EmaFuturesStrategy::LongPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::LongPosition::PriceCheckResult>
 EmaFuturesStrategy::LongPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
@@ -866,7 +885,9 @@ EmaFuturesStrategy::LongPosition::CheckStopLoss(
 		- (ScaledPrice(GetActiveQty())
 			* GetSecurity().ScalePrice(maxLossMoneyPerContract));
 	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
-	result.isAllowed = result.current >= result.margin;
+	if (result.current >= result.margin) {
+		return boost::none;
+	}
 	return result;
 }
 
@@ -907,7 +928,7 @@ EmaFuturesStrategy::ShortPosition::~ShortPosition() {
 	Report();
 }
 
-EmaFuturesStrategy::ShortPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::ShortPosition::PriceCheckResult>
 EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 		double priceDelta)
 		const {
@@ -919,14 +940,18 @@ EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
 			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed = result.margin <= result.current;
+		if (result.margin <= result.current) {
+			return boost::none;
+		}
 	} else {
 		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
 			?	GetMarketCloseOppositePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed = result.margin >= result.current;
+		if (result.margin >= result.current) {
+			return boost::none;
+		}
 	}
 	Assert(!IsZero(result.start));
 	Assert(!IsZero(result.margin));
@@ -934,7 +959,7 @@ EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 	return result;
 }
 
-EmaFuturesStrategy::ShortPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::ShortPosition::PriceCheckResult>
 EmaFuturesStrategy::ShortPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
@@ -948,7 +973,9 @@ EmaFuturesStrategy::ShortPosition::CheckStopLoss(
 		+	(ScaledPrice(GetActiveQty())
 			* GetSecurity().ScalePrice(maxLossMoneyPerContract));
 	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
-	result.isAllowed = result.current <= result.margin;
+	if (result.current <= result.margin) {
+		return boost::none;
+	}
 	return result;
 }
 
