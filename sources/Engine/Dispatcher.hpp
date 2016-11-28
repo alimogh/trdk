@@ -120,7 +120,7 @@ namespace trdk { namespace Engine {
 				, m_taksState(TASK_STATE_INACTIVE)
 				, m_queueSizeConstrolLevel(
 					!m_context.GetSettings().IsReplayMode()
-						?	50
+						?	10
 						:	10000) {
 				//...//
 			}
@@ -180,7 +180,7 @@ namespace trdk { namespace Engine {
 			}
 
 			template<typename Event>
-			void Queue(const Event &event, bool flush) {
+			void Queue(Event &&event, bool flush) {
 				Assert(m_sync);
 				const SharedSyncLock syncLock(m_sync->syncMutex);
 				{
@@ -191,7 +191,7 @@ namespace trdk { namespace Engine {
 					Assert(
 						m_current == &m_lists.first
 						|| m_current == &m_lists.second);
-					if (!Dispatcher::QueueEvent(event, *m_current)) {
+					if (!Dispatcher::QueueEvent(std::move(event), *m_current)) {
 						flush = false;
 					}
 					if (flush) {
@@ -285,18 +285,16 @@ namespace trdk { namespace Engine {
 
 		typedef boost::tuple<
 				SubscriberPtrWrapper::Level1Tick,
-				SubscriberPtrWrapper>
+				SubscriberPtrWrapper,
+				Lib::TimeMeasurement::Milestones>
 			Level1TickEvent;
-		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
-		//!			std::list.
 		typedef EventQueue<std::vector<Level1TickEvent>> Level1TicksEventQueue;
 
 		typedef boost::tuple<
 				SubscriberPtrWrapper::Trade,
-				SubscriberPtrWrapper>
+				SubscriberPtrWrapper,
+				Lib::TimeMeasurement::Milestones>
 			NewTradeEvent;
-		//! @todo	HAVY OPTIMIZATION!!! Use preallocated buffer here instead
-		//!			std::list.
 		typedef EventQueue<std::vector<NewTradeEvent>> NewTradeEventQueue;
 
 		//! Increasing position references count for safety work in core (which
@@ -377,13 +375,15 @@ namespace trdk { namespace Engine {
 				Security &,
 				const boost::posix_time::ptime &,
 				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &,
 				bool flush);
 		void SignalNewTrade(
 				SubscriberPtrWrapper &,
 				Security &,
 				const boost::posix_time::ptime &,
 				const ScaledPrice &,
-				const Qty &);
+				const Qty &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
 		void SignalBrokerPositionUpdate(
 				SubscriberPtrWrapper &,
@@ -419,7 +419,7 @@ namespace trdk { namespace Engine {
 		}
 
 		template<typename Event, typename EventList>
-		static bool QueueEvent(const Event &, EventList &) {
+		static bool QueueEvent(Event &&, EventList &) {
 #			if !defined(__GNUG__)
 				static_assert(
 					false,
@@ -430,38 +430,42 @@ namespace trdk { namespace Engine {
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const Level1UpdateEvent &event,
+				Level1UpdateEvent &&updateEvent,
 				EventList &eventList) {
 			//! @todo place for optimization
 			for (const auto &it: boost::adaptors::reverse(eventList)) {
 				if (
-						boost::get<0>(event) == boost::get<0>(it)
-						&& boost::get<1>(event) == boost::get<1>(it)) {
+						boost::get<0>(updateEvent) == boost::get<0>(it)
+						&& boost::get<1>(updateEvent) == boost::get<1>(it)) {
 					return false;
 				}
 			}
-			eventList.emplace_back(event);
-			boost::get<2>(event)
+			eventList.emplace_back(std::move(updateEvent));
+			boost::get<2>(eventList.back())
 				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const Level1TickEvent &tick,
+				Level1TickEvent &&tick,
 				EventList &eventList) {
-			eventList.emplace_back(tick);
+			eventList.emplace_back(std::move(tick));
+			boost::get<2>(eventList.back())
+				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const NewTradeEvent &newTradeEvent,
+				NewTradeEvent &&newTradeEvent,
 				EventList &eventList) {
-			eventList.emplace_back(newTradeEvent);
+			eventList.emplace_back(std::move(newTradeEvent));
+			boost::get<2>(eventList.back())
+				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const PositionUpdateEvent &positionUpdateEvent,
+				PositionUpdateEvent &&positionUpdateEvent,
 				EventList &eventList) {
 			//! @todo place for optimization
 			const auto &end = eventList.cend();
@@ -472,29 +476,29 @@ namespace trdk { namespace Engine {
 			if (pos != end) {
 				return false;
 			}
-			eventList.emplace_back(positionUpdateEvent);
+			eventList.emplace_back(std::move(positionUpdateEvent));
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const BrokerPositionUpdateEvent &positionUpdateEvent,
+				BrokerPositionUpdateEvent &&positionUpdateEvent,
 				EventList &eventList) {
-			eventList.emplace_back(positionUpdateEvent);
+			eventList.emplace_back(std::move(positionUpdateEvent));
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const NewBarEvent &newBarEvent,
+				NewBarEvent &&newBarEvent,
 				EventList &eventList) {
-			eventList.emplace_back(newBarEvent);
+			eventList.emplace_back(std::move(newBarEvent));
 			return true;
 		}
 		template<typename EventList>
 		static bool QueueEvent(
-				const BookUpdateTickEvent &bookUpdateTickEvent,
+				BookUpdateTickEvent &&bookUpdateTickEvent,
 				EventList &eventList) {
-			eventList.emplace_back(bookUpdateTickEvent);
-			boost::get<2>(bookUpdateTickEvent)
+			eventList.emplace_back(std::move(bookUpdateTickEvent));
+			boost::get<2>(eventList.back())
 				.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_ENQUEUE);
 			return true;
 		}

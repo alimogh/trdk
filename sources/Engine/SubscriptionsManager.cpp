@@ -99,9 +99,9 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 }
 
 void SubscriptionsManager::SubscribeToLevel1Ticks(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<sig::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::Level1TickSlot(
 		boost::bind(
 			&Dispatcher::SignalLevel1Tick,
@@ -110,7 +110,8 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 			boost::ref(security),
 			_1,
 			_2,
-			_3));
+			_3,
+			_4));
 	const auto &connection = security.SubscribeToLevel1Ticks(slot);
 	try {
 		slotConnections.push_back(connection);
@@ -127,9 +128,9 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 }
 
 void SubscriptionsManager::SubscribeToTrades(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<sig::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::NewTradeSlot(
 		boost::bind(
 			&Dispatcher::SignalNewTrade,
@@ -138,7 +139,8 @@ void SubscriptionsManager::SubscribeToTrades(
 			boost::ref(security),
 			_1,
 			_2,
-			_3));
+			_3,
+			_4));
 	const auto &connection = security.SubscribeToTrades(slot);
 	try {
 		slotConnections.push_back(connection);
@@ -155,9 +157,9 @@ void SubscriptionsManager::SubscribeToTrades(
 }
 
 void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<sig::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::BrokerPositionUpdateSlot(
 		boost::bind(
 			&Dispatcher::SignalBrokerPositionUpdate,
@@ -182,9 +184,9 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 }
 
 void SubscriptionsManager::SubscribeToBars(
-			Security &security,
-			const SubscriberPtrWrapper &subscriber,
-			std::list<sig::connection> &slotConnections) {
+		Security &security,
+		const SubscriberPtrWrapper &subscriber,
+		std::list<sig::connection> &slotConnections) {
 	const auto slot = Security::NewBarSlot(
 		boost::bind(
 			&Dispatcher::SignalNewBar,

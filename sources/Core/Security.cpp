@@ -457,7 +457,7 @@ public:
 			isPreviouslyChanged);
 		UpdateMarketDataStat(time);
 		if (CheckLevel1Start()) {
-			m_level1TickSignal(time, tick, flush);
+			m_level1TickSignal(time, tick, timeMeasurement, flush);
 		}
 		return isChanged;
 	}
@@ -930,18 +930,18 @@ bool Security::IsBarsRequired() const {
 }
 
 void Security::SetLevel1(
-			const pt::ptime &time,
-			const Level1TickValue &tick,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->SetLevel1(time, tick, timeMeasurement, true, false);
 	m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick);
 }
 
 void Security::SetLevel1(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	AssertNe(tick1.GetType(), tick2.GetType());
 	m_pimpl->SetLevel1(
 		time,
@@ -953,11 +953,11 @@ void Security::SetLevel1(
 }
 
 void Security::SetLevel1(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const Level1TickValue &tick3,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const Level1TickValue &tick3,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	AssertNe(tick1.GetType(), tick2.GetType());
 	AssertNe(tick1.GetType(), tick3.GetType());
 	AssertNe(tick2.GetType(), tick3.GetType());
@@ -1035,17 +1035,17 @@ void Security::SetLevel1(
 }
 
 void Security::AddLevel1Tick(
-			const pt::ptime &time,
-			const Level1TickValue &tick,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->AddLevel1Tick(time, tick, timeMeasurement, true, false);
 }
 
 void Security::AddLevel1Tick(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick2,
@@ -1055,11 +1055,11 @@ void Security::AddLevel1Tick(
 }
 
 void Security::AddLevel1Tick(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const Level1TickValue &tick3,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const Level1TickValue &tick3,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick3,
@@ -1079,12 +1079,12 @@ void Security::AddLevel1Tick(
 }
 
 void Security::AddLevel1Tick(
-			const pt::ptime &time,
-			const Level1TickValue &tick1,
-			const Level1TickValue &tick2,
-			const Level1TickValue &tick3,
-			const Level1TickValue &tick4,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		const pt::ptime &time,
+		const Level1TickValue &tick1,
+		const Level1TickValue &tick2,
+		const Level1TickValue &tick3,
+		const Level1TickValue &tick4,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	m_pimpl->AddLevel1Tick(
 		time,
 		tick4,
@@ -1125,19 +1125,19 @@ void Security::AddLevel1Tick(
 }
 
 void Security::AddTrade(
-			const boost::posix_time::ptime &time,
-			const ScaledPrice &price,
-			const Qty &qty,
-			const TimeMeasurement::Milestones &timeMeasurement,
-			bool useAsLastTrade,
-			bool useForTradedVolume) {
+		const boost::posix_time::ptime &time,
+		const ScaledPrice &price,
+		const Qty &qty,
+		const TimeMeasurement::Milestones &delayMeasurement,
+		bool useAsLastTrade,
+		bool useForTradedVolume) {
 
 	bool isLevel1Changed = false;
 	if (useAsLastTrade) {
 		if (m_pimpl->SetLevel1(
 				time,
 				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
-				timeMeasurement,
+				delayMeasurement,
 				false,
 				false)) {
 			isLevel1Changed = true;
@@ -1145,7 +1145,7 @@ void Security::AddTrade(
 		if (m_pimpl->SetLevel1(
 				time,
 				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
-				timeMeasurement,
+				delayMeasurement,
 				!useForTradedVolume,
 				isLevel1Changed)) {
 			isLevel1Changed = true;
@@ -1165,7 +1165,7 @@ void Security::AddTrade(
 						time,
 						newVal,
 						prevVal,
-						timeMeasurement,
+						delayMeasurement,
 						true,
 						isLevel1Changed)) {
 				break;
@@ -1174,7 +1174,7 @@ void Security::AddTrade(
 	}
 
 	m_pimpl->UpdateMarketDataStat(time);
-	m_pimpl->m_tradeSignal(time, price, qty);
+	m_pimpl->m_tradeSignal(time, price, qty, delayMeasurement);
 
 	m_pimpl->m_marketDataLog.WriteTrade(
 		time,

@@ -60,6 +60,7 @@ namespace trdk {
 		typedef void(Level1TickSlotSignature)(
 				const boost::posix_time::ptime &,
 				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &,
 				bool flush);
 		typedef boost::function<Level1TickSlotSignature> Level1TickSlot;
 		typedef boost::signals2::connection Level1TickSlotConnection;
@@ -67,7 +68,8 @@ namespace trdk {
 		typedef void(NewTradeSlotSignature)(
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &);
+				const trdk::Qty &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
