@@ -99,7 +99,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
-		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M16"), it->GetContract(false));
 		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 		EXPECT_FALSE(++it);
 	}
@@ -111,7 +111,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 20), it->GetDate());
-		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M16"), it->GetContract(false));
 		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 		EXPECT_FALSE(++it);
 	}
@@ -125,7 +125,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
 		EXPECT_EQ(2015, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
-		EXPECT_EQ(std::string("Z2015"), it->GetContract(false));
+		EXPECT_EQ(std::string("Z15"), it->GetContract(false));
 		EXPECT_EQ(std::string("Z5"), it->GetContract(true));
 		EXPECT_TRUE(++it);
 	}
@@ -146,7 +146,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
-		EXPECT_EQ(std::string("H2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("H16"), it->GetContract(false));
 		EXPECT_EQ(std::string("H6"), it->GetContract(true));
 		EXPECT_TRUE(++it);
 	}
@@ -161,7 +161,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_DECEMBER, it->GetCode());
 		EXPECT_EQ(2015, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Nov, 10), it->GetDate());
-		EXPECT_EQ(std::string("Z2015"), it->GetContract(false));
+		EXPECT_EQ(std::string("Z15"), it->GetContract(false));
 		EXPECT_EQ(std::string("Z5"), it->GetContract(true));
 			
 		// {"XXX2", 20151225},
@@ -169,7 +169,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_JANUARY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2015, gr::Dec, 25), it->GetDate());
-		EXPECT_EQ(std::string("F2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("F16"), it->GetContract(false));
 		EXPECT_EQ(std::string("F6"), it->GetContract(true));
 
 		// {"XXX2", 20160118},
@@ -177,7 +177,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_FEBRUARY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Jan, 18), it->GetDate());
-		EXPECT_EQ(std::string("G2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("G16"), it->GetContract(false));
 		EXPECT_EQ(std::string("G6"), it->GetContract(true));
 		
 		// {"XXX2", 20160219},
@@ -185,7 +185,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_MARCH, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Feb, 19), it->GetDate());
-		EXPECT_EQ(std::string("H2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("H16"), it->GetContract(false));
 		EXPECT_EQ(std::string("H6"), it->GetContract(true));
 
 		// {"XXX2", 20160317},
@@ -193,7 +193,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_APRIL, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Mar, 17), it->GetDate());
-		EXPECT_EQ(std::string("J2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("J16"), it->GetContract(false));
 		EXPECT_EQ(std::string("J6"), it->GetContract(true));
 
 		// {"XXX2", 20160420},
@@ -201,7 +201,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_MAY, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::Apr, 20), it->GetDate());
-		EXPECT_EQ(std::string("K2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("K16"), it->GetContract(false));
 		EXPECT_EQ(std::string("K6"), it->GetContract(true));
 
 		// {"XXX2", 20160521},
@@ -209,7 +209,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
 		EXPECT_EQ(Expiration::CODE_JUNE, it->GetCode());
 		EXPECT_EQ(2016, it->GetYear());
 		EXPECT_EQ(gr::date(2016, gr::May, 21), it->GetDate());
-		EXPECT_EQ(std::string("M2016"), it->GetContract(false));
+		EXPECT_EQ(std::string("M16"), it->GetContract(false));
 		EXPECT_EQ(std::string("M6"), it->GetContract(true));
 
 		ASSERT_FALSE(++it);

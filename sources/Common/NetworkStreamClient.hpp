@@ -24,26 +24,26 @@ namespace trdk { namespace Lib {
 
 		class Exception : public trdk::Lib::Exception {
 		public:
-			explicit Exception(const char *what) throw();
+			explicit Exception(const char *what) noexcept;
 		};
 
 		class ConnectError : public trdk::Lib::NetworkStreamClient::Exception {
 		public:
-			explicit ConnectError(const char *what) throw();
+			explicit ConnectError(const char *what) noexcept;
 		};
 
 		class ProtocolError : public trdk::Lib::NetworkStreamClient::Exception {
 		public:
 			explicit ProtocolError(
 					const char *what,
-					const char *bufferAddres,
+					const char *bufferAddress,
 					char expectedByte)
-					throw();
+					noexcept;
 		public:
 			const char * GetBufferAddress() const;
 			char GetExpectedByte() const;
 		private:
-			const char *m_bufferAddres;
+			const char *m_bufferAddress;
 			char m_expectedByte;
 		};
 
@@ -122,7 +122,7 @@ namespace trdk { namespace Lib {
 		virtual trdk::Lib::NetworkStreamClientService & GetService();
 		virtual const trdk::Lib::NetworkStreamClientService & GetService() const;
 
-		void Send(const std::string &&);
+		void Send(std::string &&);
 
 		bool CheckResponceSynchronously(
 				const char *actionName,

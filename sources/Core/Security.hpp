@@ -92,8 +92,6 @@ namespace trdk {
 
 		 	//! Bar start time.
 			boost::posix_time::ptime time;
-			//! Bar size (time).
-			boost::posix_time::time_duration size;
 			//! Data type.
 			Type type;
 			
@@ -109,15 +107,20 @@ namespace trdk {
 			
 			//! The volume during the time covered by the bar.
 			boost::optional<trdk::Qty> volume;
-			
-			//! When TRADES historical data is returned, represents the number
-			//! of trades that occurred during the time period the bar covers.
-			boost::optional<size_t> count;
+
+			//! Bar size (if bar-by-time). If period is not set - this is
+			//! bar-by-points.
+			/** @sa numberOfPoints
+			  */
+			boost::optional<boost::posix_time::time_duration> period;
+			//! Number of points (if existent).
+			/** @sa period
+			  */
+			boost::optional<size_t> numberOfPoints;
 
 			explicit Bar(
 		 			const boost::posix_time::ptime &,
-					const boost::posix_time::time_duration &,
-					Type);
+					const Type &);
 
 		};
 		typedef void (NewBarSlotSignature)(const Bar &);
@@ -458,7 +461,7 @@ namespace trdk {
 				bool useAsLastTrade,
 				bool useForTradedVolume);
 
-		void AddBar(const Bar &);
+		void AddBar(Bar &&);
 
 		//! Sets security broker position info.
 		/** Subscribers will be notified only if parameter will be changed.

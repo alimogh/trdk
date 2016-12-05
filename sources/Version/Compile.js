@@ -28,6 +28,7 @@ var requiredModules = [
 	, 'TestTradingSystems'
 	, 'InteractiveBrokers'
 	, 'Transaq'
+	, 'IqFeed'
 	, 'Services'
 	, 'TestStrategy'
 	, 'GadM'

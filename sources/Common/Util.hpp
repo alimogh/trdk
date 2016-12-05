@@ -115,13 +115,18 @@ namespace trdk { namespace Lib {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	const boost::posix_time::time_duration & GetEstTimeZoneDiff();
-	const boost::posix_time::time_duration & GetEstTimeZoneDiffLocal();
+	boost::posix_time::time_duration GetEstTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
 
 	//! CST - Central Standard Time / Central Time (Standard Time).
-	const boost::posix_time::time_duration & GetCstTimeZoneDiff();
-	//! CST - Central Standard Time / Central Time (Standard Time).
-	const boost::posix_time::time_duration & GetCstTimeZoneDiffLocal();
+	boost::posix_time::time_duration GetCstTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
+
+	//! MSK -  Moscow Standard Time (Standard Time)
+	boost::posix_time::time_duration GetMskTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	int64_t ConvertToMicroseconds(const boost::gregorian::date &);
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);

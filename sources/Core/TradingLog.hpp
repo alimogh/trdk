@@ -159,7 +159,7 @@ namespace trdk {
 
 	public:
 
-		void WaitForFlush() const throw() {
+		void WaitForFlush() const noexcept {
 			m_log.WaitForFlush();
 		}
 

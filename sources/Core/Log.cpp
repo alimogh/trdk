@@ -43,19 +43,25 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 		m_isStreamEnabled = true;
 	}
 	if (isStarted && writeStartInfo) {
-		const auto &utc = pt::microsec_clock::universal_time();
+		const auto &now = GetTime();
 		Write(
 			"Start",
 			GetTime(),
 			GetThreadId(),
 			nullptr,
 			boost::format(
-					"UTC: %1%. EST: %2%. CST: %3%."
-						" Build: " TRDK_BUILD_IDENTITY "."
-						" Build time: " __DATE__ " " __TIME__ ".")
-				%	utc
-				%	(utc + GetEstTimeZoneDiff())
-				%	(utc + GetCstTimeZoneDiff()));
+					" Build: " TRDK_BUILD_IDENTITY "."
+						" Build time: " __DATE__ " " __TIME__ "."
+						" Timezone: %1%. UTC: %2%. EST: %3% (%4%)."
+						" CST: %5% (%6%). MSK: %7% (%8%).")
+				%	GetTimeZone()->to_posix_string()
+				%	pt::microsec_clock::universal_time()
+				%	(now + GetEstTimeZoneDiff(GetTimeZone()))
+				%	GetEstTimeZoneDiff(GetTimeZone())
+				%	(now + GetCstTimeZoneDiff(GetTimeZone()))
+				%	GetCstTimeZoneDiff(GetTimeZone())
+				%	(now + GetMskTimeZoneDiff(GetTimeZone()))
+				%	GetMskTimeZoneDiff(GetTimeZone()));
 	}
 }
 

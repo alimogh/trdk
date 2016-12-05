@@ -85,7 +85,7 @@ void SubscriptionsManager::SubscribeToLevel1Updates(
 			_1));
 	const auto connection = security.SubscribeToLevel1Updates(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -113,7 +113,7 @@ void SubscriptionsManager::SubscribeToLevel1Ticks(
 			_3));
 	const auto &connection = security.SubscribeToLevel1Ticks(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -141,7 +141,7 @@ void SubscriptionsManager::SubscribeToTrades(
 			_3));
 	const auto &connection = security.SubscribeToTrades(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -168,7 +168,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
 			_2));
 	const auto &connection = security.SubscribeToBrokerPositionUpdates(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -194,7 +194,7 @@ void SubscriptionsManager::SubscribeToBars(
 			_1));
 	const auto &connection = security.SubscribeToBars(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -221,7 +221,7 @@ void SubscriptionsManager::SubscribeToBookUpdateTicks(
 			_2));
 	const auto &connection = security.SubscribeToBookUpdateTicks(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -259,7 +259,7 @@ void SubscriptionsManager::SubscribeToSecurityContractSwitching(
 		boost::bind(callback, subscriber, _1, _2));
 	const auto &connection = security.SubscribeToContractSwitching(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -288,7 +288,7 @@ void SubscriptionsManager::SubscribeToSecurityServiceEvents(
 			_2));
 	const auto &connection = security.SubscribeToServiceEvents(slot);
 	try {
-		slotConnections.push_back(connection);
+		slotConnections.emplace_back(connection);
 	} catch (...) {
 		try {
 			connection.disconnect();
@@ -725,7 +725,7 @@ void SubscriptionsManager::Subscribe(
 					_1));
 
 		try {
-			slotConnections.push_back(positionUpdateConnection);
+			slotConnections.emplace_back(positionUpdateConnection);
 			subscribeImpl(
 				security,
 				SubscriberPtrWrapper(strategy),
@@ -782,7 +782,7 @@ void SubscriptionsManager::Subscribe(
 						SubscriberPtrWrapper(strategy),
 						_1));
 			try {
-				m_connections.push_back(positionUpdateConnection);
+				m_connections.emplace_back(positionUpdateConnection);
 			} catch (...) {
 				try {
 					positionUpdateConnection.disconnect();

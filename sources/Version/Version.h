@@ -30,5 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
-#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "TestTradingSystems", "InteractiveBrokers", "Transaq", "Services", "TestStrategy", "GadM", };
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "TestTradingSystems", "InteractiveBrokers", "Transaq", "IqFeed", "Services", "TestStrategy", "GadM", };
 

@@ -101,20 +101,17 @@ const gr::date & ContractExpiration::GetDate() const {
 }
 
 std::string ContractExpiration::GetContract(bool isShort) const {
-	
+
 	std::ostringstream result;
 	
 	result << GetCode();
 	
-	auto year = GetYear();
-	if (isShort) {
-		if (year > 2019 || year < 2010) {
-			throw MethodDoesNotImplementedError(
-				"Work with features from < 2010 or > 2019 is not implemented");
-		}
-		year -= 2010;
+	const auto &year = GetYear();
+	if (year > 2019 || year < 2010) {
+		throw MethodDoesNotImplementedError(
+			"Work with features from < 2010 or > 2019 is not implemented");
 	}
-	result << year;
+	result << (year - (isShort ? 2010 : 2000));
 
 	return result.str();
 

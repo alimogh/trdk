@@ -91,8 +91,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		}
 
 
-		void AddBar(const Bar &bar) {
-			Base::AddBar(bar);
+		void AddBar(Bar &&bar) {
+			Base::AddBar(std::move(bar));
 		}
 
 		void SetBrokerPosition(Qty qty, bool isInitial) {

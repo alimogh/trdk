@@ -84,6 +84,10 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				boost::property_tree::ptree &&,
 				const Lib::TimeMeasurement::Milestones &);
 
+		const boost::posix_time::time_duration & GetTimeZoneDiff() const {
+			return m_timeZoneDiff;
+		}
+
 	private:
 
 		void OnNewDataMessage(
@@ -124,6 +128,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		
 		boost::optional<bool> m_isConnected;
 		boost::condition_variable m_connectCondition;
+
+		const boost::posix_time::time_duration m_timeZoneDiff;
 
 	};
 

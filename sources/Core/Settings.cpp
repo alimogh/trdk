@@ -103,7 +103,7 @@ void Settings::Log(Context::Log &log) const {
 		log.Info("======================= REPLAY MODE =======================");
 	}
 	log.Info(
-		"Time zone: %1%; Default currenct: %2%; Default security type: %3%;"
+		"Timezone: %1%. Default currenct: %2%. Default security type: %3%."
 			" Market data log: %4%.",
 		m_timeZone->to_posix_string(),
 		m_defaultCurrency,

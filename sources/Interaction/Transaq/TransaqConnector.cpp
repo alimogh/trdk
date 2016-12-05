@@ -12,6 +12,7 @@
 #include "TransaqConnector.hpp"
 #include "TransaqConnectorContext.hpp"
 #include "Core/Context.hpp"
+#include "Core/Settings.hpp"
 #include "Core/EventsLog.hpp"
 
 using namespace trdk;
@@ -25,16 +26,25 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-	pt::ptime ConvertTransacStringToPtime(const std::string &source) {
-		static const std::locale loc(
-			std::locale::classic(),
-			new pt::time_input_facet("%d.%m.%Y %H:%M:%S%f"));
-		std::istringstream is(source);
-		is.imbue(loc);
-		boost::posix_time::ptime t;
+	template<typename Source>
+	pt::ptime ConvertTransacStringToPtime(
+			const Source &source,
+			const pt::time_duration &timeZoneDiff) {
+
+		boost::iostreams::stream_buffer<boost::iostreams::array_source> buffer(
+			&*boost::begin(source), &*boost::end(source));
+		std::istream stream(&buffer);
+
+		{
+			static const std::locale locale(
+				std::locale::classic(),
+				new pt::time_input_facet("%d.%m.%Y %H:%M:%S%f"));
+			stream.imbue(locale);
+		}
+		
 		pt::ptime result;
-		is >> result;
-		return result;
+		stream >> result;
+		return result - timeZoneDiff;
 	}
 
 	std::string ConvertToTransaqPriceString(double val) {
@@ -54,7 +64,8 @@ namespace {
 
 Connector::Connector(const Context &context, ModuleEventsLog &log)
 	: m_context(context)
-	, m_log(log) {
+	, m_log(log)
+	, m_timeZoneDiff(GetMskTimeZoneDiff(context.GetSettings().GetTimeZone())) {
 	//...//
 }
 
@@ -381,7 +392,7 @@ void Connector::OnServerStatusMessage(
 		if (isConnected) {
 
 			m_log.Info(
-				"Connected to the TRANSAQ server%1% with time zone \"%2%\".",
+				"Connected to the TRANSAQ server%1% with timezone \"%2%\".",
 				id,
 				message.get<std::string>("<xmlattr>.server_tz"));
 		
@@ -649,7 +660,9 @@ void TradingConnector::OnOrdersMessage(
 					continue;
 				}
 				AssertNe(
-					ConvertTransacStringToPtime(withdrawTime),
+					ConvertTransacStringToPtime(
+						withdrawTime,
+						GetTimeZoneDiff()),
 					pt::not_a_date_time);
 			
 			} else {
@@ -782,7 +795,9 @@ void MarketDataSourceConnector::OnTicksMessage(
 			AssertEq(std::string("trade"), node.first);
 			const auto &tick = node.second;
 			OnNewTick(
-				ConvertTransacStringToPtime(tick.get<std::string>("time")),
+				ConvertTransacStringToPtime(
+					tick.get<std::string>("time"),
+					GetTimeZoneDiff()),
 				tick.get<std::string>("board"),
 				tick.get<std::string>("seccode"),
 				tick.get<double>("price"),

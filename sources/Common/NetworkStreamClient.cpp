@@ -23,27 +23,28 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-NetworkStreamClient::Exception::Exception(const char *what) throw()
+NetworkStreamClient::Exception::Exception(const char *what) noexcept
 	: Lib::Exception(what) {
 	//...//
 }
 
-NetworkStreamClient::ConnectError::ConnectError(const char *what) throw()
+NetworkStreamClient::ConnectError::ConnectError(const char *what) noexcept
 	: Exception(what) {
 	//...//
 }
 
 NetworkStreamClient::ProtocolError::ProtocolError(
 		const char *what,
-		const char *bufferAddres,
+		const char *bufferAddress,
 		char expectedByte)
+		noexcept
 	: Exception(what)
-	, m_bufferAddres(bufferAddres)
+	, m_bufferAddress(bufferAddress)
 	, m_expectedByte(expectedByte) {
 	//...//
 }
 const char * NetworkStreamClient::ProtocolError::GetBufferAddress() const {
-	return m_bufferAddres;
+	return m_bufferAddress;
 }
 char NetworkStreamClient::ProtocolError::GetExpectedByte() const {
 	return m_expectedByte;
@@ -553,7 +554,7 @@ bool NetworkStreamClient::CheckResponceSynchronously(
 
 }
 
-void NetworkStreamClient::Send(const std::string &&message) {
+void NetworkStreamClient::Send(std::string &&message) {
 
 	Assert(!message.empty());
 

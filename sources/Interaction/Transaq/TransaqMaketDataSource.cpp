@@ -91,8 +91,8 @@ trdk::Security & Transaq::MarketDataSource::CreateNewSecurityObject(
 			.set(LEVEL1_TICK_ASK_QTY)
 			.set(LEVEL1_TICK_TRADING_VOLUME));
 
-	security->SetTradingSessionState(pt::not_a_date_time, true);
-	security->SetOnline(pt::not_a_date_time, true);
+	security->SetTradingSessionState(GetContext().GetCurrentTime(), true);
+	security->SetOnline(GetContext().GetCurrentTime(), true);
 
 	const auto &key = std::make_pair(symbol.GetExchange(), symbol.GetSymbol());
 	Verify(m_securities.emplace(key, security).second);

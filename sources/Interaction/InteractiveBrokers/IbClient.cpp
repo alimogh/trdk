@@ -1740,7 +1740,7 @@ void Client::historicalData(
 		double lowPrice,
 		double closePrice,
 		int volume,
-		int barCount,
+		int /*barCount*/,
 		double /*WAP*/,
 		int /*hasGaps*/) {
 
@@ -1802,18 +1802,16 @@ void Client::historicalData(
 	
 		if (isRequiredTime && request->security->IsBarsRequired()) {
 			AssertFail("History bars is not supported anymore");
-			ib::Security::Bar bar(
-				time,
-				//! See request for detail about frame size:
-				pt::seconds(request->security->IsLevel1Required() ? 1 : 5),
-				ib::Security::Bar::TRADES);
+			ib::Security::Bar bar(time, ib::Security::Bar::TRADES);
 			bar.openPrice = request->security->ScalePrice(openPrice);
 			bar.highPrice = request->security->ScalePrice(highPrice);
 			bar.lowPrice = request->security->ScalePrice(lowPrice);
 			bar.closePrice = request->security->ScalePrice(closePrice);
 			bar.volume = volume;
-			bar.count = barCount;
-			request->security->AddBar(bar);
+			//! See request for detail about frame size:
+			bar.period = pt::seconds(
+				request->security->IsLevel1Required() ? 1 : 5);
+			request->security->AddBar(std::move(bar));
 		}
 
 		return;

@@ -494,14 +494,15 @@ public:
 			const Security &security,
 			const Security::Bar &sourceBar) {
 		
-			AssertGe(m_timedBarSize, sourceBar.size);
-			if (m_timedBarSize < sourceBar.size) {
-				m_service.GetLog().Error(
-				"Can't work with source bar size %1% as service bar size %2%.",
-					sourceBar.size,
-					m_timedBarSize);
-				throw MethodDoesNotSupportBySettings("Wrong source bar size");
-			}
+		Assert(sourceBar.period);
+		AssertGe(m_timedBarSize, *sourceBar.period);
+		if (m_timedBarSize < *sourceBar.period) {
+			m_service.GetLog().Error(
+			"Can't work with source bar size %1% as service bar size %2%.",
+				*sourceBar.period,
+				m_timedBarSize);
+			throw MethodDoesNotSupportBySettings("Wrong source bar size");
+		}
 
 		const auto &setOpen = [](
 				const Security::Bar &sourceBar,

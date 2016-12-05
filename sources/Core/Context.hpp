@@ -105,7 +105,7 @@ namespace trdk {
 		  */
 		boost::posix_time::ptime GetCurrentTime() const;
 		//! The current time in the specific timezone.
-		/** Initialization, value and time zone depends from settings and replay
+		/** Initialization, value and timezone depends from settings and replay
 		  * mode.
 		  * @sa GetStartTime
 		  */

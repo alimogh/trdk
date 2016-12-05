@@ -197,6 +197,70 @@ namespace {
 				});
 		}
 
+		void WriteBar(const Security::Bar &bar) {
+
+			FormatAndWrite(
+				[this, &bar](Record &record) {
+					record
+						% record.GetTime()
+						% bar.time
+						% "B";
+					static_assert(
+						Security::Bar::numberOfTypes == 3,
+						"List changed.");
+					switch (bar.type) {
+						default:
+							AssertEq(Security::Bar::TRADES, bar.type);
+							record % bar.type;
+							break;
+						case Security::Bar::TRADES:
+							record % 'T';
+							break;
+						case Security::Bar::BID:
+							record % 'B';
+							break;
+						case Security::Bar::ASK:
+							record % 'A';
+							break;
+					}
+					if (bar.openPrice) {
+						record % m_security.DescalePrice(*bar.openPrice);
+					} else {
+						record % '-';
+					}
+					if (bar.highPrice) {
+						record % m_security.DescalePrice(*bar.highPrice);
+					} else {
+						record % '-';
+					}
+					if (bar.lowPrice) {
+						record % m_security.DescalePrice(*bar.lowPrice);
+					} else {
+						record % '-';
+					}
+					if (bar.closePrice) {
+						record % m_security.DescalePrice(*bar.closePrice);
+					} else {
+						record % '-';
+					}
+					if (bar.volume) {
+						record % *bar.volume;
+					} else {
+						record % '-';
+					}
+					if (bar.period) {
+						record % *bar.period;
+					} else {
+						record % '-';
+					}
+					if (bar.numberOfPoints) {
+						record % *bar.numberOfPoints;
+					} else {
+						record % '-';
+					}
+				});
+		}
+
 	private:
 
 		template<typename... OtherParams>
@@ -299,12 +363,8 @@ const pt::ptime & Security::Request::GetTime() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Security::Bar::Bar(
-		const pt::ptime &time,
-		const pt::time_duration &size,
-		Type type)
+Security::Bar::Bar(const pt::ptime &time, const Type &type)
 	: time(time)
-	, size(size)
 	, type(type) {
 	//...//
 }
@@ -1185,9 +1245,10 @@ void Security::AddTrade(
 
 }
 
-void Security::AddBar(const Bar &bar) {
+void Security::AddBar(Bar &&bar) {
 	m_pimpl->UpdateMarketDataStat(bar.time);
 	m_pimpl->m_barSignal(bar);
+	m_pimpl->m_marketDataLog.WriteBar(bar);
 }
 
 void Security::SetBrokerPosition(const Qty &qty, bool isInitial) {
