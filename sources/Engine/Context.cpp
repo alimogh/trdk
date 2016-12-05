@@ -86,32 +86,28 @@ public:
 				new RiskControl(m_context, conf, TradingMode(i + 1)));
 		}
 
-		{
+		if (conf.IsSectionExist("Expiration")) {
 			const auto &expirationCalendarFilePath = conf.ReadFileSystemPath(
 				"Expiration",
-				"calendar_csv",
-				"");
-			if (!expirationCalendarFilePath.empty()) {
-				m_context.GetLog().Debug(
-					"Loading expiration calendar from %1%...",
-					expirationCalendarFilePath);
-				m_expirationCalendar.reset(new ExpirationCalendar);
-				m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
-				const ExpirationCalendar::Stat stat
-					= m_expirationCalendar->CalcStat();
-				const char *const message
-					= "Expiration calendar has %1% symbols"
-						" and %2% expirations.";
-				stat.numberOfExpirations && stat.numberOfSymbols
-					?	m_context.GetLog().Info(
-							message,
-							stat.numberOfSymbols,
-							stat.numberOfExpirations)
-					:	m_context.GetLog().Warn(
-							message,
-							stat.numberOfSymbols,
-							stat.numberOfExpirations);
-			}
+				"calendar_csv");
+			m_context.GetLog().Debug(
+				"Loading expiration calendar from %1%...",
+				expirationCalendarFilePath);
+			m_expirationCalendar.reset(new ExpirationCalendar);
+			m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+			const ExpirationCalendar::Stat stat
+				= m_expirationCalendar->CalcStat();
+			const char *const message
+				= "Expiration calendar has %1% symbols and %2% expirations.";
+			stat.numberOfExpirations && stat.numberOfSymbols
+				?	m_context.GetLog().Info(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations)
+				:	m_context.GetLog().Warn(
+						message,
+						stat.numberOfSymbols,
+						stat.numberOfExpirations);
 		}
 
 		BootContext(
@@ -213,9 +209,8 @@ Engine::Context::Context(
 		Context::Log &log,
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
-		const pt::ptime &startTime,
 		const Lib::Ini &conf)
-	: Base(log, tradingLog, settings, startTime) {
+	: Base(log, tradingLog, settings) {
 	m_pimpl = new Implementation(*this, conf);
 }
 
@@ -487,8 +482,23 @@ void Engine::Context::Update(const Lib::Ini &conf) {
 
 }
 
-void Engine::Context::SyncDispatching() {
-	m_pimpl->m_state->subscriptionsManager.SyncDispatching();
+std::unique_ptr<Engine::Context::DispatchingLock>
+Engine::Context::SyncDispatching()
+		const {
+	
+	class Lock : public DispatchingLock {
+	public:
+		explicit Lock(Dispatcher::UniqueSyncLock &&lock)
+			: m_lock(std::move(lock)) {
+			//...//
+		}
+	private:
+		Dispatcher::UniqueSyncLock m_lock;
+	};
+
+	return boost::make_unique<Lock>(
+		m_pimpl->m_state->subscriptionsManager.SyncDispatching());
+
 }
 
 DropCopy * Engine::Context::GetDropCopy() const {

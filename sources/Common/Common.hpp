@@ -47,7 +47,6 @@
 
 #include "Common/Dll.hpp"
 #include "Common/Util.hpp"
-#include "Common/Defaults.hpp"
 #include "Common/UseUnused.hpp"
 #include "Common/Foreach.hpp"
 #include "Common/Ini.hpp"
@@ -59,5 +58,10 @@
 #include "Common/Spin.hpp"
 #include "Common/Numeric.hpp"
 
+#include "Core/Fwd.hpp"
 #include "Core/Types.hpp"
 #include "Core/Log.hpp"
+
+#ifdef BOOST_WINDOWS
+#	undef GetCurrentTime
+#endif

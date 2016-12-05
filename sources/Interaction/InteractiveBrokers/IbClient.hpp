@@ -173,6 +173,25 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		
 		};
 
+		template<typename SlotSignature>
+		struct SignalTrait {
+			typedef boost::signals2::signal<
+				SlotSignature,
+				boost::signals2::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename boost::signals2::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				boost::signals2::dummy_mutex>
+			Signal;
+		};
+
 	public:
 
 		Client(

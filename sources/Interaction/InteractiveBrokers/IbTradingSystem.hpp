@@ -199,7 +199,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
+				const OrderStatusUpdateSlot &&)
+				override;
 		virtual OrderId SendSellAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				const trdk::Lib::Currency &,
@@ -233,7 +234,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &,
-				const OrderStatusUpdateSlot &);
+				const OrderStatusUpdateSlot &&)
+				override;
 		virtual OrderId SendBuyAtMarketPriceWithStopPrice(
 				trdk::Security &,
 				const trdk::Lib::Currency &,

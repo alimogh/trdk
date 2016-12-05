@@ -19,6 +19,8 @@
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
+namespace sig = boost::signals2;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -285,10 +287,30 @@ public:
 
 	};
 
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
+
 public:
 
 	Strategy &m_strategy;
-	const boost::uuids::uuid m_id;
+	const uuids::uuid m_typeId;
+	const uuids::uuid m_id;
 	const std::string m_title;
 	const TradingMode m_tradingMode;
 
@@ -303,25 +325,32 @@ public:
 	StopMode m_stopMode;
 
 	PositionList m_positions;
-	boost::signals2::signal<PositionUpdateSlotSignature> m_positionUpdateSignal;
+	SignalTrait<PositionUpdateSlotSignature>::Signal m_positionUpdateSignal;
 
 	boost::array<const Position *, 3> m_delayedPositionToForget;
 
+	DropCopy::StrategyInstanceId m_dropCopyInstanceId;
+
 public:
 
-	explicit Implementation(Strategy &strategy, const IniSectionRef &conf)
-		: m_strategy(strategy),
-		m_id(boost::uuids::string_generator()(conf.ReadKey("id"))),
-		m_title(conf.ReadKey("title")),
-		m_tradingMode(
-			ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
-		m_isEnabled(conf.ReadBoolKey("is_enabled")),
-		m_isBlocked(false),
-		m_riskControlScope(
+	explicit Implementation(
+			Strategy &strategy,
+			const uuids::uuid &typeId,
+			const IniSectionRef &conf)
+		: m_strategy(strategy)
+		, m_typeId(typeId)
+		, m_id(uuids::string_generator()(conf.ReadKey("id")))
+		, m_title(conf.ReadKey("title"))
+		, m_tradingMode(
+			ConvertTradingModeFromString(conf.ReadKey("trading_mode")))
+		, m_isEnabled(conf.ReadBoolKey("is_enabled"))
+		, m_isBlocked(false)
+		, m_riskControlScope(
 			m_strategy.GetContext().GetRiskControl(m_tradingMode).CreateScope(
 				m_strategy.GetTag(),
-				conf)),
-		m_stopMode(STOP_MODE_UNKNOWN) {
+				conf))
+		, m_stopMode(STOP_MODE_UNKNOWN)
+		, m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
 		m_delayedPositionToForget.fill(nullptr);
 	}
 
@@ -373,15 +402,32 @@ public:
 
 Strategy::Strategy(
 		trdk::Context &context,
+		const uuids::uuid &typeId,
 		const std::string &name,
 		const std::string &tag,
 		const IniSectionRef &conf)
 	: Consumer(context, "Strategy", name, tag) {
-	m_pimpl = new Implementation(*this, conf);
+
+	m_pimpl = new Implementation(*this, typeId, conf);
+
+	std::string dropCopyInstanceIdStr = "not used";
+	GetContext().InvokeDropCopy(
+		[this, &dropCopyInstanceIdStr](DropCopy &dropCopy) {
+			m_pimpl->m_dropCopyInstanceId
+				= dropCopy.RegisterStrategyInstance(*this);
+			AssertNe(
+				DropCopy::nStrategyInstanceId,
+				m_pimpl->m_dropCopyInstanceId);
+			dropCopyInstanceIdStr = boost::lexical_cast<std::string>(
+				m_pimpl->m_dropCopyInstanceId);
+		});
+	
 	GetLog().Info(
-		"%1%, %2% mode.",
+		"%1%, %2% mode, drop copy ID: %3%.",
 		m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED",
-		boost::to_upper_copy(ConvertToString(GetTradingMode())));
+		boost::to_upper_copy(ConvertToString(GetTradingMode())),
+		dropCopyInstanceIdStr);
+
 }
 
 Strategy::~Strategy() {
@@ -397,7 +443,11 @@ Strategy::~Strategy() {
 	delete m_pimpl;
 }
 
-const boost::uuids::uuid & Strategy::GetId() const {
+const uuids::uuid & Strategy::GetTypeId() const {
+	return m_pimpl->m_typeId;
+}
+
+const uuids::uuid & Strategy::GetId() const {
 	return m_pimpl->m_id;
 }
 
@@ -407,6 +457,11 @@ const std::string & Strategy::GetTitle() const {
 
 TradingMode Strategy::GetTradingMode() const {
 	return m_pimpl->m_tradingMode;
+}
+
+const DropCopy::StrategyInstanceId & Strategy::GetDropCopyInstanceId() const {
+	AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
+	return m_pimpl->m_dropCopyInstanceId;
 }
 
 RiskControlScope & Strategy::GetRiskControlScope() {
@@ -467,7 +522,7 @@ void Strategy::Unregister(Position &position) throw() {
 void Strategy::RaiseLevel1UpdateEvent(
 			Security &security,
 			const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -486,7 +541,7 @@ void Strategy::RaiseLevel1TickEvent(
 		trdk::Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -504,9 +559,8 @@ void Strategy::RaiseNewTradeEvent(
 		Security &service,
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty,
-		const OrderSide &side) {
-	const Lock lock(GetMutex());
+		const Qty &qty) {
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -514,7 +568,7 @@ void Strategy::RaiseNewTradeEvent(
 		return;
 	}
 	try {
-		OnNewTrade(service, time, price, qty, side);
+		OnNewTrade(service, time, price, qty);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "new trade");
 	}
@@ -523,7 +577,7 @@ void Strategy::RaiseNewTradeEvent(
 void Strategy::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -541,7 +595,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	
 	Assert(position.IsStarted());
 
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 
 	Assert(m_pimpl->m_delayedPositionToForget[0] == nullptr);
 	Assert(m_pimpl->m_delayedPositionToForget[1] == nullptr);
@@ -612,11 +666,29 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 	}
 }
 
+void Strategy::RaiseSecurityContractSwitchedEvent(
+		const pt::ptime &time,
+		Security &security,
+		Security::Request &request) {
+	const auto lock = LockForOtherThreads();
+	// 1st time already checked: before enqueue event (without locking),
+	// here - control check (under mutex as blocking and enabling - under
+	// the mutex too):
+	if (IsBlocked()) {
+		return;
+	}
+	try {
+		OnSecurityContractSwitched(time, security, request);
+	} catch (const ::trdk::Lib::RiskControlException &ex) {
+		m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
+	}
+}
+
 void Strategy::RaiseBrokerPositionUpdateEvent(
 		Security &security,
 		const Qty &qty,
 		bool isInitial) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -631,7 +703,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(
 }
 
 void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -649,7 +721,7 @@ void Strategy::RaiseBookUpdateTickEvent(
 		Security &security,
 		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -665,9 +737,10 @@ void Strategy::RaiseBookUpdateTickEvent(
 }
 
 void Strategy::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		Security &security,
 		const Security::ServiceEvent &event) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
 	// the mutex too):
@@ -675,7 +748,7 @@ void Strategy::RaiseSecurityServiceEvent(
 		return;
 	}
 	try {
-		OnSecurityServiceEvent(security, event);
+		OnSecurityServiceEvent(time, security, event);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "security service event");
 	}

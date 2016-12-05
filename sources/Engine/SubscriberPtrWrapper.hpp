@@ -21,21 +21,9 @@ namespace trdk { namespace Engine {
 	public:
 
 		struct Level1Tick {
-			
 			trdk::Security *security;
 			boost::posix_time::ptime time;
 			trdk::Level1TickValue value;
-			
-			explicit Level1Tick(
-					trdk::Security &security,
-					const boost::posix_time::ptime &time,
-					const trdk::Level1TickValue &value)
-				: security(&security),
-				time(time),
-				value(value) {
-				//...//
-			}
-
 		};
 
 		struct Trade {
@@ -43,7 +31,6 @@ namespace trdk { namespace Engine {
 			boost::posix_time::ptime time;
 			ScaledPrice price;
 			Qty qty;
-			OrderSide side;
 		};
 
 		struct BrokerPosition {
@@ -56,7 +43,7 @@ namespace trdk { namespace Engine {
 
 		template<typename Module>
 		explicit SubscriberPtrWrapper(Module &observer)
-				: m_subscriber(ModuleRef(observer)) {
+			: m_subscriber(ModuleRef(observer)) {
 			//...//
 		}
 
@@ -74,6 +61,10 @@ namespace trdk { namespace Engine {
 
 	public:
 
+		void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				Security &,
+				Security::Request &);
 		void RaiseLevel1UpdateEvent(
 				Security &,
 				const Lib::TimeMeasurement::Milestones &)
@@ -102,6 +93,7 @@ namespace trdk { namespace Engine {
 				const Lib::TimeMeasurement::Milestones &)
 				const;
 		void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				Security &,
 				const Security::ServiceEvent &)
 				const;

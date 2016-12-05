@@ -12,7 +12,6 @@
 
 #include "Security.hpp"
 #include "Context.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,8 +28,6 @@ namespace trdk {
 		class TRDK_CORE_API SecurityList;
 
 		typedef uintmax_t InstanceId;
-
-	protected:
 
 		typedef boost::mutex Mutex;
 		typedef Mutex::scoped_lock Lock;
@@ -55,31 +52,26 @@ namespace trdk {
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		const std::string & GetTypeName() const throw();
-		const std::string & GetName() const throw();
-		const std::string & GetTag() const throw();
-		const std::string & GetStringId() const throw();
+		const std::string & GetTypeName() const noexcept;
+		const std::string & GetName() const noexcept;
+		const std::string & GetTag() const noexcept;
+		const std::string & GetStringId() const noexcept;
 
 	public:
 
-		trdk::Module::Log & GetLog() const throw();
-		trdk::Module::TradingLog & GetTradingLog() const throw();
+		trdk::Module::Log & GetLog() const noexcept;
+		trdk::Module::TradingLog & GetTradingLog() const noexcept;
+
+		Lock LockForOtherThreads();
 
 	public:
 
 		//! Returns list of required services.
 		virtual std::string GetRequiredSuppliers() const;
 
-	public:
-
 		void RaiseSettingsUpdateEvent(const trdk::Lib::IniSectionRef &);
 
 		virtual void OnServiceStart(const trdk::Service &);
-
-	protected:
-
-		Mutex & GetMutex() const;
-		Lock LockForOtherThreads() const;
 
 	protected:
 
@@ -88,7 +80,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

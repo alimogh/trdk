@@ -12,16 +12,19 @@
 
 namespace trdk { namespace Lib {
 
+	//! Security types.
 	enum SecurityType {
+		//! Stock.
 		SECURITY_TYPE_STOCK,
-		// Future Contract.
+		//! Future Contract.
 		SECURITY_TYPE_FUTURES,
-		// Future Option Contract.
+		//! Future Option Contract.
 		SECURITY_TYPE_FUTURES_OPTIONS,
 		//! Foreign Exchange Contract.
 		SECURITY_TYPE_FOR,
-		//! Foreign Exchange Contract.
+		//! Future Option Contract for Foreign Exchange Contract.
 		SECURITY_TYPE_FOR_FUTURES_OPTIONS,
+		//! Number of security types.
 		numberOfSecurityTypes
 	};
 

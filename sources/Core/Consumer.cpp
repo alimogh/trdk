@@ -40,11 +40,23 @@ Consumer::Consumer(
 }
 
 Consumer::~Consumer() {
-	delete m_pimpl;
+	//...//
 }
 
-pt::ptime Consumer::OnSecurityStart(Security &) {
-	return pt::not_a_date_time;
+void Consumer::OnSecurityStart(Security &, Security::Request &) {
+	//...//
+}
+
+void Consumer::OnSecurityContractSwitched(
+		const pt::ptime &,
+		Security &security,
+		Security::Request &) {
+	GetLog().Error(
+		"Subscribed to %1% contract switch event, but can't work with it"
+			" (doesn't have OnSecurityContractSwitched method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to contract switch event, but can't work with it");
 }
 
 void Consumer::OnLevel1Tick(
@@ -52,7 +64,7 @@ void Consumer::OnLevel1Tick(
 		const pt::ptime &,
 		const Level1TickValue &) {
 	GetLog().Error(
-		"Subscribed to %1% Level 1 Ticks, but can't work with it"
+		"Subscribed to %1% level 1 ticks, but can't work with it"
 			" (doesn't have OnLevel1Tick method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
@@ -63,8 +75,7 @@ void Consumer::OnNewTrade(
 		Security &security,
 		const pt::ptime &,
 		const ScaledPrice &,
-		const Qty &,
-		const OrderSide &) {
+		const Qty &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (doesn't have OnNewTrade method implementation).",
@@ -89,7 +100,7 @@ void Consumer::OnBrokerPositionUpdate(
 		const Qty &,
 		bool /*isInitial*/) {
 	GetLog().Error(
-		"Subscribed to %1% Broker Positions Updates, but can't work with it"
+		"Subscribed to %1% broker positions updates, but can't work with it"
 			" (doesn't have OnBrokerPositionUpdate method implementation).",
 		security);
 	throw MethodDoesNotImplementedError(
@@ -106,26 +117,19 @@ void Consumer::OnNewBar(Security &security, const Security::Bar &) {
 }
 
 void Consumer::OnSecurityServiceEvent(
-		Security &security,
-		const Security::ServiceEvent &event) {
-	GetLog().Error(
-		"Subscribed to security service event from %1%"
-			", but can't work with event %2%"
-			" (doesn't have OnSecurityServiceEvent method implementation).",
-		security,
-		event);
-	throw MethodDoesNotImplementedError(
-		"Subscribed to security service event, but can't work with it");
+		const pt::ptime &,
+		Security &,
+		const Security::ServiceEvent &) {
+	//...//
 }
 
 void Consumer::RegisterSource(Security &security) {
 	if (!m_pimpl->m_securities.Insert(security)) {
 		return;
 	}
-	const auto dataStart = OnSecurityStart(security);
-	if (dataStart != pt::not_a_date_time) {
-		security.SetRequestedDataStartTime(dataStart);
-	}
+	Security::Request request;
+	OnSecurityStart(security, request);
+	security.SetRequest(request);
 }
 
 Consumer::SecurityList & Consumer::GetSecurities() {

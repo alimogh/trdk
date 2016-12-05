@@ -18,6 +18,7 @@ namespace trdk { namespace EngineServer {
 			boost::uuids::uuid,
 			boost::posix_time::ptime,
 			double,
+			int32_t,
 			intmax_t,
 			uintmax_t,
 			Qty,
@@ -168,7 +169,7 @@ namespace trdk { namespace EngineServer {
 
 	inline std::string ConvertToLogString(const DropCopyRecord &record) {
 		std::ostringstream result;
-		foreach (const auto &i, record) {
+		for (const auto &i: record) {
 			using namespace trdk::EngineServer::Details;
 			result
 				<< i.first << '='

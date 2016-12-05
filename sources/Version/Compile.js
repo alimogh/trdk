@@ -26,7 +26,7 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'InteractiveBrokers'
-	, 'DdfPlus'
+	, 'IqFeed'
 	, 'Services'
 	, 'GadM'
 ]

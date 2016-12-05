@@ -109,12 +109,6 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			//...//
 		}
 
-		Milestones(Milestones &&rhs)
-			: m_start(std::move(rhs.m_start)),
-			m_stat(std::move(rhs.m_stat)) {
-			//...//
-		}
-
 		Milestones & operator =(const Milestones &rhs) {
 			m_start = rhs.m_start;
 			m_stat = rhs.m_stat;
@@ -177,10 +171,10 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	public:
 		
 		MilestoneStat()
-			: m_min(0),
-			m_max(0),
-			m_sum(0),
-			m_size(0) {
+			: m_min(0)
+			, m_max(0)
+			, m_sum(0)
+			, m_size(0) {
 			//...//
 		}
 
@@ -198,8 +192,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 						|| m_min.compare_exchange_weak(
 								prev,
 								measurement,
-                                boost::memory_order_release,
-                                boost::memory_order_relaxed)) {
+								boost::memory_order_release,
+								boost::memory_order_relaxed)) {
 					break;
 				}
 			}
@@ -210,8 +204,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 						|| m_max.compare_exchange_weak(
 								prev,
 								measurement,
-                                boost::memory_order_release,
-                                boost::memory_order_relaxed)) {
+								boost::memory_order_release,
+								boost::memory_order_relaxed)) {
 					break;
 				}
 			}
@@ -223,7 +217,7 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 							prev,
 							sum,
 							boost::memory_order_release,
-                            boost::memory_order_relaxed)) {
+							boost::memory_order_relaxed)) {
 					break;
 				}
 			}
@@ -231,14 +225,9 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 			return *this;
 		}
 
-		friend std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Lib::TimeMeasurement::MilestoneStat &);
-		friend std::wostream & operator <<(
-				std::wostream &,
-				const trdk::Lib::TimeMeasurement::MilestoneStat &);
-
 	public:
+
+		void Dump(std::ostream &, size_t numberOfSubPeriods) const;
 
 		size_t GetSize() const {
 			return m_size;

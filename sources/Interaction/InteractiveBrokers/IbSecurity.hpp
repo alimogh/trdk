@@ -91,8 +91,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 		}
 
 
-		void AddBar(const Bar &bar) {
-			Base::AddBar(bar);
+		void AddBar(Bar &&bar) {
+			Base::AddBar(std::move(bar));
 		}
 
 		void SetBrokerPosition(Qty qty, bool isInitial) {
@@ -101,6 +101,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 
 		using Base::SetExpiration;
 		using Base::SetOnline;
+		using Base::SetTradingSessionState;
 
 	private:
 
@@ -131,7 +132,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						}
 						AddTrade(
 							time,
-							ORDER_SIDE_SELL,
 							ScaledPrice(tick.GetValue()),
 							lastQty,
 							timeMeasurement,
@@ -158,7 +158,6 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 						}
 						AddTrade(
 							time,
-							ORDER_SIDE_BUY,
 							lastPrice,
 							tick.GetValue(),
 							timeMeasurement,

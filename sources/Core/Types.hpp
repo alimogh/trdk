@@ -22,6 +22,8 @@ namespace trdk {
 
 	typedef boost::uint64_t OrderId;
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	//! Order side
 	/** https://mbcm.robotdk.com:8443/display/API/Constants
 	  */
@@ -35,6 +37,16 @@ namespace trdk {
 		ORDER_SIDE_SHORT = ORDER_SIDE_SELL,
 		numberOfOrderSides
 	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::OrderSide &);
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::OrderSide &side) {
+		return os << trdk::ConvertToPch(side);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	//! Time in Force
 	/** https://mbcm.robotdk.com:8443/display/API/Constants
@@ -107,6 +119,8 @@ namespace trdk {
 
 	};
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	enum OrderStatus {
 		ORDER_STATUS_SENT = 100,
 		ORDER_STATUS_REQUESTED_CANCEL = 200,
@@ -119,6 +133,17 @@ namespace trdk {
 		ORDER_STATUS_ERROR = 900,
 		numberOfOrderStatuses = 9
 	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::OrderStatus &);
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::OrderStatus &status) {
+		os << trdk::ConvertToPch(status);
+		return os;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	enum OrderType {
 		ORDER_TYPE_LIMIT = 0,
@@ -133,14 +158,14 @@ namespace trdk {
 namespace trdk {
 
 	enum Level1TickType {
-		LEVEL1_TICK_LAST_PRICE,
-		LEVEL1_TICK_LAST_QTY,
-		LEVEL1_TICK_BID_PRICE,
-		LEVEL1_TICK_BID_QTY,
-		LEVEL1_TICK_ASK_PRICE,
-		LEVEL1_TICK_ASK_QTY,
-		LEVEL1_TICK_TRADING_VOLUME,
-		numberOfLevel1TickTypes
+		LEVEL1_TICK_LAST_PRICE = 0,
+		LEVEL1_TICK_LAST_QTY = 1,
+		LEVEL1_TICK_BID_PRICE = 2,
+		LEVEL1_TICK_BID_QTY = 3,
+		LEVEL1_TICK_ASK_PRICE = 4,
+		LEVEL1_TICK_ASK_QTY = 5,
+		LEVEL1_TICK_TRADING_VOLUME = 6,
+		numberOfLevel1TickTypes = 7
 	};
 
 	template<trdk::Level1TickType type>
@@ -176,18 +201,18 @@ namespace trdk {
 		typedef trdk::ScaledPrice Type;
 	};
 
-	const char * ConvertToPch(const Level1TickType &);
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Level1TickType &);
+	TRDK_CORE_API trdk::Level1TickType ConvertToLevel1TickType(
+			const std::string &);
 
 	class Level1TickValue {
 
-	private:
+	public:
 
 		explicit Level1TickValue(const Level1TickType &type, double value)
 			: m_type(type),
 			m_value(value) {
 		}
-
-	public:
 
 		template<trdk::Level1TickType type, typename Value>
 		static Level1TickValue Create(const Value &value) {

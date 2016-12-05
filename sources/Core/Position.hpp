@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Security.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -31,8 +30,6 @@ namespace trdk {
 		typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
 		typedef boost::signals2::connection StateUpdateConnection;
 
-		typedef boost::posix_time::ptime Time;
-
 		enum Type {
 			TYPE_LONG,
 			TYPE_SHORT,
@@ -42,6 +39,7 @@ namespace trdk {
 		enum CloseType {
 			CLOSE_TYPE_NONE,
 			CLOSE_TYPE_TAKE_PROFIT,
+			CLOSE_TYPE_TRAILING_STOP,
 			CLOSE_TYPE_STOP_LOSS,
 			CLOSE_TYPE_TIMEOUT,
 			CLOSE_TYPE_SCHEDULE,
@@ -55,23 +53,23 @@ namespace trdk {
 			numberOfCloseTypes
 		};
 
-		class TRDK_CORE_API LogicError : public trdk::Lib::LogicError {
+		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
 		public:
-			explicit LogicError(const char *what) throw();
+			explicit Exception(const char *what) noexcept;
 		};
 		
-		class TRDK_CORE_API AlreadyStartedError : public LogicError {
+		class TRDK_CORE_API AlreadyStartedError : public Exception {
 		public:
-			AlreadyStartedError() throw();
+			AlreadyStartedError() noexcept;
 		};
-		class TRDK_CORE_API NotOpenedError : public LogicError {
+		class TRDK_CORE_API NotOpenedError : public Exception {
 		public:
-			NotOpenedError() throw();
+			NotOpenedError() noexcept;
 		};
-		
-		class TRDK_CORE_API AlreadyClosedError : public LogicError {
+
+		class TRDK_CORE_API AlreadyClosedError : public Exception {
 		public:
-			AlreadyClosedError() throw();
+			AlreadyClosedError() noexcept;
 		};
 
 	public:
@@ -87,16 +85,7 @@ namespace trdk {
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &
 					strategyTimeMeasurement);
-		explicit Position(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::Position &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &
-					strategyTimeMeasurement);
-	
+
 	protected:
 
 		//! Ctor only for virtual inheritance, always throws exception.
@@ -110,19 +99,23 @@ namespace trdk {
 
 		const boost::uuids::uuid & GetId() const;
 
-		virtual Type GetType() const = 0;
-		virtual const std::string & GetTypeStr() const throw() = 0;
+		bool IsLong() const;
+		virtual trdk::Position::Type GetType() const = 0;
+		virtual trdk::OrderSide GetOpenOrderSide() const = 0;
+		virtual trdk::OrderSide GetCloseOrderSide() const = 0;
+
+		const trdk::Lib::ContractExpiration & GetExpiration() const;
 
 	public:
 
 		const trdk::TradingSystem & GetTradingSystem() const;
 		trdk::TradingSystem & GetTradingSystem();
 
-		const trdk::Strategy & GetStrategy() const throw();
-		trdk::Strategy & GetStrategy() throw();
+		const trdk::Strategy & GetStrategy() const noexcept;
+		trdk::Strategy & GetStrategy() noexcept;
 
-		const trdk::Security & GetSecurity() const throw();
-		trdk::Security & GetSecurity() throw();
+		const trdk::Security & GetSecurity() const noexcept;
+		trdk::Security & GetSecurity() noexcept;
 
 		const trdk::Lib::Currency & GetCurrency() const;
 
@@ -130,31 +123,30 @@ namespace trdk {
 
 	public:
 
-		CloseType GetCloseType() const throw();
-		const std::string & GetCloseTypeStr() const;
+		CloseType GetCloseType() const noexcept;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
 		  */
-		bool IsOpened() const throw();
+		bool IsOpened() const noexcept;
 		//! Closed.
 		/** First was opened, then closed, doesn't have active quantity and
 		  * active orders.
 		  * @sa	IsOpened
 		  */
-		bool IsClosed() const throw();
+		bool IsClosed() const noexcept;
 
 		//! Started.
 		/** True if at least one of open-orders was sent.
 		/** @sa	IsCompleted
 		  */
-		bool IsStarted() const throw();
+		bool IsStarted() const noexcept;
 		//! Started and now doesn't have any orders and active qty or market as
 		//! completed.
 		/** @sa	IsStarted
 		  * @sa MarkAsCompleted
 		  */
-		bool IsCompleted() const throw();
+		bool IsCompleted() const noexcept;
 		//! Marks position as completed without real closing.
 		/** Call not thread-safe! Must be called only from event-methods, or if
 		  * strategy locked by GetMutex().
@@ -163,52 +155,114 @@ namespace trdk {
 		void MarkAsCompleted();
 
 		//! Open operation started, but error occurred at opening or closing.
-		bool IsError() const throw();
+		bool IsError() const noexcept;
 		//! Open operation started, but temporary error occurred at opening
 		//! or closing.
-		bool IsInactive() const throw();
+		bool IsInactive() const noexcept;
 		void ResetInactive();
 		//! All orders canceled, position will be closed or already closed.
-		bool IsCanceled() const throw();
+		bool IsCanceled() const noexcept;
 
-		bool HasActiveOrders() const throw();
-		bool HasActiveOpenOrders() const throw();
-		bool HasActiveCloseOrders() const throw();
+		bool HasActiveOrders() const noexcept;
+		bool HasActiveOpenOrders() const noexcept;
+		bool HasActiveCloseOrders() const noexcept;
 
 	public:
 
-		trdk::Qty GetPlanedQty() const;
+		const trdk::Qty & GetPlanedQty() const;
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
 
-		trdk::OrderId GetOpenOrderId() const throw();
-		void SetOpenedQty(const trdk::Qty &) const throw();
-		trdk::Qty GetOpenedQty() const throw();
-		trdk::ScaledPrice GetOpenPrice() const;
+		void SetOpenedQty(const trdk::Qty &) const noexcept;
+		const trdk::Qty & GetOpenedQty() const noexcept;
+		trdk::ScaledPrice GetOpenAvgPrice() const;
+		//! Returns price of active open-order.
+		/** Throws an exception if there is no active open-order at this moment
+		  * or if active open-order has no price (like market order).
+		  * @sa GetActiveOrderPrice
+		  * @sa GetActiveCloseOrderPrice
+		  */
+		const trdk::ScaledPrice & GetActiveOpenOrderPrice() const;
+		//! Returns price of last open-trade.
+		/** Throws an exception if there are no open-trades yet.
+		  * @sa GetLastTradePrice
+		  * @sa GetLastCloseTradePrice
+		  */
+		const trdk::ScaledPrice & GetLastOpenTradePrice() const;
 		double GetOpenedVolume() const;
-		Time GetOpenTime() const;
+		//! Time of first trade.
+		const boost::posix_time::ptime & GetOpenTime() const;
 
-		trdk::Qty GetNotOpenedQty() const;
-		trdk::Qty GetActiveQty() const throw();
+		trdk::Qty GetActiveQty() const noexcept;
+		double GetActiveVolume() const;
 
-		trdk::OrderId GetCloseOrderId() const throw();
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
-		trdk::ScaledPrice GetCloseStartPrice() const;
-		trdk::ScaledPrice GetClosePrice() const;
-		trdk::Qty GetClosedQty() const throw();
+		const trdk::ScaledPrice & GetCloseStartPrice() const;
+		trdk::ScaledPrice GetCloseAvgPrice() const;
+		//! Returns price of active close-order.
+		/** Throws an exception if there is no active close-order at this moment
+		  * or if active close-order has no price (like market order).
+		  * @sa GetActiveOrderPrice
+		  * @sa GetActiveOpenOrderPrice
+		  */
+		const trdk::ScaledPrice & GetActiveCloseOrderPrice() const;
+		//! Returns price of last close-trade.
+		/** Throws an exception if there are no close-trades yet.
+		  * @sa GetLastTradePrice
+		  * @sa GetLastOpenTradePrice
+		  */
+		const trdk::ScaledPrice & GetLastCloseTradePrice() const;
+		const trdk::Qty & GetClosedQty() const noexcept;
 		double GetClosedVolume() const;
-		Time GetCloseTime() const;
+		//! Time of last trade.
+		const boost::posix_time::ptime & GetCloseTime() const;
 
-		trdk::ScaledPrice GetCommission() const;
+		//! Returns price of active order.
+		/** Throws an exception if there is no active order at this moment or
+		  * if active order has no price (like market order).
+		  * @sa GetActiveOpenOrderPrice
+		  * @sa GetActiveOpenClosePrice
+		  */
+		const trdk::ScaledPrice & GetActiveOrderPrice() const;
+		//! Returns price of last trade.
+		/** Throws an exception if there are no trades yet.
+		  * @sa GetLastOpenTradePrice
+		  * @sa GetLastCloseTradePrice
+		  */
+		const trdk::ScaledPrice & GetLastTradePrice() const;
+		
+		virtual double GetRealizedPnl() const = 0;
+		double GetRealizedPnlVolume() const;
+		//! Returns realized PnL ratio.
+		/** @return	If the value is 1.0 - no profit and no loss, if less
+		  *			then 1.0 - loss, if greater then 1.0 - profit.
+		  */
+		virtual double GetRealizedPnlRatio() const = 0;
+		//! Returns percentage of profit.
+		/** @return	If the value is zero - no profit and no loss, if less then
+		  *			zero - loss, if greater then zero - profit.
+		  */
+		double GetRealizedPnlPercentage() const;
+		virtual double GetUnrealizedPnl() const = 0;
+		//! Realized PnL + unrealized PnL.
+		double GetPlannedPnl() const;
+		//! Returns true if position has profit by realized P&L.
+		/** @return	False if position has loss or does not have profit and
+		  *			does not have loss. True if position has profit.
+		  */
+		bool IsProfit() const;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
+
+		size_t GetNumberOfOpenOrders() const;
+		size_t GetNumberOfOpenTrades() const;
+		
+		size_t GetNumberOfCloseOrders() const;
+		size_t GetNumberOfCloseTrades() const;
 
 	public:
-
-		//! Restores position in open-state.
-		/** Just creates position in open state at current strategy, doesn't
-		  * make any trading actions.
-		  * @param openOrderId	User-defined ID for open-order, doesn't affect
-		  *						the engine logic.
-		  */
-		void RestoreOpenState(trdk::OrderId openOrderId = 0);
 
 		trdk::OrderId OpenAtMarketPrice();
 		trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
@@ -241,6 +295,15 @@ namespace trdk {
 		trdk::OrderId Close(
 				const CloseType &,
 				const trdk::ScaledPrice &,
+				const trdk::Qty &maxQty);
+		trdk::OrderId Close(
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::OrderParams &);
+		trdk::OrderId Close(
+				const CloseType &,
+				const trdk::ScaledPrice &,
+				const trdk::Qty &maxQty,
 				const trdk::OrderParams &);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
 				const CloseType &,
@@ -339,9 +402,23 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::CloseType &);
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::Position::CloseType &closeType) {
+		return os << trdk::ConvertToPch(closeType);
+	}
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::Type &);
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::Position::Type &positionType) {
+		return os << trdk::ConvertToPch(positionType);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -359,14 +436,6 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		explicit LongPosition(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::ShortPosition &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
 
@@ -378,48 +447,68 @@ namespace trdk {
 
 	public:
 
-		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const throw();
+		virtual trdk::Position::Type GetType() const override;
+		virtual trdk::OrderSide GetOpenOrderSide() const override;
+		virtual trdk::OrderSide GetCloseOrderSide() const override;
+
+		virtual double GetRealizedPnl() const override;
+		virtual double GetRealizedPnlRatio() const override;
+		virtual double GetUnrealizedPnl() const override;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const override;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
 
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				 override;
 		virtual trdk::OrderId DoOpen(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoClose(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 	};
 
@@ -439,14 +528,6 @@ namespace trdk {
 				const trdk::Qty &,
 				const trdk::ScaledPrice &startPrice,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		explicit ShortPosition(
-				trdk::Strategy &,
-				const boost::uuids::uuid &operationId,
-				int64_t subOperationId,
-				trdk::LongPosition &,
-				const trdk::Qty &,
-				const trdk::ScaledPrice &startPrice,
-				const trdk::Lib::TimeMeasurement::Milestones &);
 
 	protected:
 
@@ -458,48 +539,68 @@ namespace trdk {
 
 	public:
 
-		virtual Type GetType() const;
-		virtual const std::string & GetTypeStr() const throw();
+		virtual trdk::Position::Type GetType() const override;
+		virtual trdk::OrderSide GetOpenOrderSide() const override;
+		virtual trdk::OrderSide GetCloseOrderSide() const override;
+
+		virtual double GetRealizedPnl() const override;
+		virtual double GetRealizedPnlRatio() const override;
+		virtual double GetUnrealizedPnl() const override;
+
+		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
+		virtual trdk::ScaledPrice GetMarketClosePrice() const override;
+		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
+		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
 
 	protected:
 
 		virtual trdk::OrderId DoOpenAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpen(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 		virtual trdk::OrderId DoCloseAtMarketPrice(
 				const trdk::Qty &qty,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoClose(
 				const trdk::Qty &qty,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &stopPrice,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseImmediatelyOrCancel(
 				const trdk::Qty &,
 				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 		virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
 				const trdk::Qty &,
-				const trdk::OrderParams &);
+				const trdk::OrderParams &)
+				override;
 
 	};
 

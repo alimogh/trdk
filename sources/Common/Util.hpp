@@ -96,6 +96,10 @@ namespace trdk { namespace Lib {
 				const std::string &symbol,
 				const std::string &);
 
+	std::string ConvertToFileName(const boost::posix_time::ptime &);
+	std::string ConvertToFileName(const boost::posix_time::time_duration &);
+	std::string ConvertToFileName(const boost::gregorian::date &);
+
 	//////////////////////////////////////////////////////////////////////////
 
 	boost::filesystem::path GetExeFilePath();
@@ -106,13 +110,23 @@ namespace trdk { namespace Lib {
 
 	boost::filesystem::path Normalize(const boost::filesystem::path &);
 	boost::filesystem::path Normalize(
-				const boost::filesystem::path &pathToNormilize,
-				const boost::filesystem::path &workingDir);
+			const boost::filesystem::path &pathToNormilize,
+			const boost::filesystem::path &workingDir);
 
 	//////////////////////////////////////////////////////////////////////////
 
-	const boost::posix_time::time_duration & GetEstDiff();
-	const boost::posix_time::time_duration & GetEstDiffLocal();
+	boost::posix_time::time_duration GetEstTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
+
+	//! CST - Central Standard Time / Central Time (Standard Time).
+	boost::posix_time::time_duration GetCstTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
+
+	//! MSK -  Moscow Standard Time (Standard Time)
+	boost::posix_time::time_duration GetMskTimeZoneDiff(
+			const boost::local_time::time_zone_ptr &localTimeZone);
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	int64_t ConvertToMicroseconds(const boost::gregorian::date &);
 	time_t ConvertToTimeT(const boost::posix_time::ptime &);
@@ -120,5 +134,9 @@ namespace trdk { namespace Lib {
 	boost::posix_time::ptime ConvertToPTimeFromMicroseconds(int64_t);
 
 	//////////////////////////////////////////////////////////////////////////
+
+	std::string ConvertUtf8ToAscii(const std::string &);
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } }

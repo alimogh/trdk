@@ -1,4 +1,5 @@
 
 EXPORTS
 	CreateBarService
+	CreateContinuousContractBarService
 	CreateMovingAverageService

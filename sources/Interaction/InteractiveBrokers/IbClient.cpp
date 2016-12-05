@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "IbClient.hpp"
 #include "IbTradingSystem.hpp"
+#include "Core/Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -71,15 +72,7 @@ namespace {
 	IBString FormatLocalSymbol(
 			std::string symbol,
 			const ContractExpiration &expirationInfo) {
-		if (
-				expirationInfo.GetYear() > 2019
-				|| expirationInfo.GetYear() < 2010) {
-			throw MethodDoesNotImplementedError(
-				"Work with features from < 2010 or > 2019 is not implemented");
-		}
-		symbol.push_back(char(expirationInfo.GetCode()));
-		symbol += boost::lexical_cast<IBString>(
-			expirationInfo.GetYear() - 2010);
+		symbol += expirationInfo.GetContract(true);
 		return symbol;
 	}
 
@@ -244,7 +237,6 @@ Contract Client::GetContract(
 			contract.primaryExchange = symbol.GetPrimaryExchange();
 			break;
 		case SECURITY_TYPE_FUTURES:
-			Assert(!customContractExpiration);
 			contract.secType = "FUT";
 			contract.includeExpired = true;
 			contract.localSymbol = !symbol.IsExplicit()
@@ -491,7 +483,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 			request.tickerId);
 
 		if (!request.security->IsOnline()) {
-			request.security->SetOnline();
+			request.security->SetOnline(pt::not_a_date_time, true);
 		} else {
 			Assert(m_securityInSwitching);
 		}
@@ -530,7 +522,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 				request.tickerId);
 
 			if (!request.security->IsOnline()) {
-				request.security->SetOnline();
+				request.security->SetOnline(pt::not_a_date_time, true);
 			}
 
 			requests.swap(m_barsRequest);
@@ -543,7 +535,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 
 bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
 	Assert(!m_isNoHistoryMode);
-	const auto &requestedDataStartTime = security.GetRequestedDataStartTime();
+	const auto &requestedDataStartTime = security.GetRequest().GetTime();
 	if (requestedDataStartTime == pt::not_a_date_time) {
 		return false;
 	}
@@ -594,7 +586,9 @@ bool Client::SendMarketDataHistoryRequest(
 					= m_ts
 					.GetContext()
 					.GetExpirationCalendar()
-					.Find(request.security->GetSymbol(), request.subRequestEnd);
+					.Find(
+						request.security->GetSymbol(),
+						request.subRequestEnd.date());
 				;) {
 			if (!request.expiration) {
 				boost::format error(
@@ -1347,9 +1341,9 @@ void Client::orderStatus(
 	if (statusPos->second == ORDER_STATUS_ERROR) {
 		m_ts.GetTsLog().Error(
 			"Order %1% has been accepted by the system (simulated orders)"
-			 " or an exchange (native orders) but that currently the order"
-			 " is inactive due to system, exchange or other issues."
-			 " Trading system order status: \"%2%\".",
+				" or an exchange (native orders) but that currently the order"
+				" is inactive due to system, exchange or other issues."
+				" Trading system order status: \"%2%\".",
 		id,
 		statusText);
 	}
@@ -1749,7 +1743,7 @@ void Client::historicalData(
 		double lowPrice,
 		double closePrice,
 		int volume,
-		int barCount,
+		int /*barCount*/,
 		double /*WAP*/,
 		int /*hasGaps*/) {
 
@@ -1797,33 +1791,30 @@ void Client::historicalData(
 							time);
 					}
 #				endif
-				const HistoryUpdate update = {
-					time,
-					openPrice,
-					highPrice,
-					lowPrice,
-					closePrice,
-					request->expiration
-				};
-				m_historyUpdates[request->security]
-					.emplace_back(std::move(update));
+				m_historyUpdates[request->security].emplace_back(
+					HistoryUpdate{
+						time,
+						openPrice,
+						highPrice,
+						lowPrice,
+						closePrice,
+						request->expiration
+					});
 			}
 		}
 	
 		if (isRequiredTime && request->security->IsBarsRequired()) {
 			AssertFail("History bars is not supported anymore");
-			ib::Security::Bar bar(
-				time,
-				//! See request for detail about frame size:
-				pt::seconds(request->security->IsLevel1Required() ? 1 : 5),
-				ib::Security::Bar::TRADES);
+			ib::Security::Bar bar(time, ib::Security::Bar::TRADES);
 			bar.openPrice = request->security->ScalePrice(openPrice);
 			bar.highPrice = request->security->ScalePrice(highPrice);
 			bar.lowPrice = request->security->ScalePrice(lowPrice);
 			bar.closePrice = request->security->ScalePrice(closePrice);
 			bar.volume = volume;
-			bar.count = barCount;
-			request->security->AddBar(bar);
+			//! See request for detail about frame size:
+			bar.period = pt::seconds(
+				request->security->IsLevel1Required() ? 1 : 5);
+			request->security->AddBar(std::move(bar));
 		}
 
 		return;
@@ -1843,12 +1834,11 @@ void Client::historicalData(
 			m_ts.GetMdsLog().Debug(
 				"Finished Level I"
 					" market data history contract request"
-					" for \"%1%\" (%2%%3%%4%, expiration: %5%"
-						", ticker ID: %6%).",
+					" for \"%1%\" (%2%%3%, expiration: %4%"
+						", ticker ID: %5%).",
 				*request->security,
 				request->security->GetSymbol().GetSymbol(),
-				char(request->expiration->GetCode()),
-				request->expiration->GetYear() - 2010,
+				request->expiration->GetContract(true),
 				request->expiration->GetDate(),
 				request->tickerId);
 		}
@@ -1893,7 +1883,7 @@ namespace {
 
 		log
 			<< raw.time
-			<< ',' << char(expiration.GetCode()) << (expiration.GetYear() - 2010)
+			<< ',' << expiration.GetContract(true)
 			<< ',' << expiration.GetDate()
 			<< ',' << adjustRatio
 			<< ',' << raw.openPrice
@@ -1933,7 +1923,8 @@ void Client::FlushHistory(ib::Security &security) {
 
 	const auto &now = m_ts.GetContext().GetCurrentTime();
 
-	fs::path logPath = Defaults::GetLogFilePath() / "History";
+	fs::path logPath
+		= m_ts.GetContext().GetSettings().GetLogsInstanceDir() / "History";
 	logPath /= SymbolToFileName(
 		(boost::format("%1%_%2%%3%%4%_%5%%6%%7%")
 			 % security.GetSymbol()
@@ -2245,7 +2236,7 @@ void Client::SwitchToNextContract(ib::Security &security) {
 
 	const auto prevExpiration = m_ts.GetContext().GetExpirationCalendar().Find(
 		security.GetSymbol(),
-		m_ts.GetContext().GetCurrentTime());
+		m_ts.GetContext().GetCurrentTime().date());
 	if (!prevExpiration) {
 		boost::format error(
 			"Failed to find current expiration info for \"%1%\"");
@@ -2284,7 +2275,7 @@ void Client::SwitchToNextContract(ib::Security &security) {
 
 		m_securityInSwitching = &security;
 	
-		security.SetExpiration(*nextExpiration);
+		security.SetExpiration(pt::not_a_date_time, *nextExpiration);
 		SendMarketDataRequest(security);
 
 	}

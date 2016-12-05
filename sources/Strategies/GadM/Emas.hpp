@@ -21,18 +21,15 @@ namespace trdk { namespace Strategies { namespace GadM {
 		DIRECTION_LEVEL,
 		DIRECTION_DOWN
 	};
-	
+
 	inline const char * ConvertToPch(const Direction &source) {
 		switch (source) {
 			case DIRECTION_UP:
-				return "UP";
-				break;
+				return "up";
 			case DIRECTION_LEVEL:
-				return "LEVEL";
-				break;
+				return "level";
 			case DIRECTION_DOWN:
-				return "DOWN";
-				break;
+				return "down";
 			default:
 				AssertEq(DIRECTION_UP, source);
 				return "<UNKNOWN>";
@@ -52,24 +49,34 @@ namespace trdk { namespace Strategies { namespace GadM {
 	public:
 		Ema()
 			: m_value(0)
+			, m_security(nullptr)
 			, m_service(nullptr)
-			, m_numberOfUpdates(0) {
+			, m_numberOfUpdates(0)
+			, m_dropCopyDataSourceId(DropCopy::nDataSourceInstanceId) {
 			//...//
 		}
-		explicit Ema(const Services::MovingAverageService &service)
+		explicit Ema(
+				const Services::MovingAverageService &service,
+				const DropCopy::DataSourceInstanceId &dropCopyDataSourceId)
 			: m_value(0)
+			, m_security(nullptr)
 			, m_service(&service)
-			, m_numberOfUpdates(0) {
+			, m_numberOfUpdates(0)
+			, m_dropCopyDataSourceId(dropCopyDataSourceId) {
 			//...//
 		}
 		operator bool() const {
 			return HasData();
 		}
 		bool HasSource() const {
-			return m_service ? true : false;
+			return m_service && m_security ? true : false;
 		}
 		bool HasData() const {
 			return !Lib::IsZero(m_value);
+		}
+		void SetSecurity(const Security &security) noexcept {
+			Assert(!m_security);
+			m_security = &security;
 		}
 		bool CheckSource(const Service &service, bool isStarted) {
 			Assert(HasSource());
@@ -90,10 +97,18 @@ namespace trdk { namespace Strategies { namespace GadM {
 		size_t GetNumberOfUpdates() const {
 			return m_numberOfUpdates;
 		}
+		bool IsSame(const Service &service) const {
+			return m_service == &service;
+		}
+		void DropLastPointCopy() const {
+			m_service->DropLastPointCopy(m_dropCopyDataSourceId);
+		}
 	private:
 		double m_value;
+		const Security *m_security;
 		const Services::MovingAverageService *m_service;
 		size_t m_numberOfUpdates;
+		DropCopy::DataSourceInstanceId m_dropCopyDataSourceId;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

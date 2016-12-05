@@ -142,13 +142,12 @@ namespace {
 			}
 
 			try {
-				engine.reset(
-					new Engine(
-						GetIniFilePath(argv[2]),
-						[](const trdk::Context::State &, const std::string *) {
-							//...//
-						},
-						true));
+				engine = boost::make_unique<Engine>(
+					GetIniFilePath(argv[2]),
+					[](const trdk::Context::State &, const std::string *) {
+						//...//
+					},
+					true);
 			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to start engine: \"" << ex << "\"."

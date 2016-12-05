@@ -158,7 +158,7 @@ namespace {
 			result << '.' << tag;
 		}
 		result << '.' << instanceId;
-		return std::move(result.str());
+		return result.str();
 	}
 
 }
@@ -204,39 +204,36 @@ Module::Module(
 		const std::string &typeName,
 		const std::string &name,
 		const std::string &tag)
-	: m_pimpl(new Implementation(context, typeName, name, tag)) {
+	: m_pimpl(
+		boost::make_unique<Implementation>(context, typeName, name, tag)) {
 	//...//
 }
 
 Module::~Module() {
-	delete m_pimpl;
+	//...//
 }
 
 const Module::InstanceId & Module::GetInstanceId() const {
 	return m_pimpl->m_instanceId;
 }
 
-Module::Mutex & Module::GetMutex() const {
-	return m_pimpl->m_mutex;
-}
-
-Module::Lock Module::LockForOtherThreads() const {
+Module::Lock Module::LockForOtherThreads() {
 	return Lock(m_pimpl->m_mutex);
 }
 
-const std::string & Module::GetTypeName() const throw() {
+const std::string & Module::GetTypeName() const noexcept {
 	return m_pimpl->m_typeName;
 }
 
-const std::string & Module::GetName() const throw() {
+const std::string & Module::GetName() const noexcept {
 	return m_pimpl->m_name;
 }
 
-const std::string & Module::GetTag() const throw() {
+const std::string & Module::GetTag() const noexcept {
 	return m_pimpl->m_tag;
 }
 
-const std::string & Module::GetStringId() const throw() {
+const std::string & Module::GetStringId() const noexcept {
 	return m_pimpl->m_stringId;
 }
 
@@ -248,16 +245,16 @@ const Context & Module::GetContext() const {
 	return const_cast<Module *>(this)->GetContext();
 }
 
-Module::Log & Module::GetLog() const throw() {
+Module::Log & Module::GetLog() const noexcept {
 	return m_pimpl->m_log;
 }
 
-Module::TradingLog & Module::GetTradingLog() const throw() {
+Module::TradingLog & Module::GetTradingLog() const noexcept {
 	return m_pimpl->m_tradingLog;
 }
 
 std::string Module::GetRequiredSuppliers() const {
-	return std::move(std::string());
+	return std::string();
 }
 
 void Module::OnServiceStart(const Service &) {
@@ -269,7 +266,7 @@ void Module::OnSettingsUpdate(const trdk::Lib::IniSectionRef &) {
 }
 
 void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnSettingsUpdate(conf);
 }
 

@@ -10,6 +10,8 @@
 
 #include "Prec.hpp"
 #include "EmaFuturesStrategyPosition.hpp"
+#include "ProfitLevels.hpp"
+#include "TrailingStop.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/RiskControl.hpp"
@@ -26,18 +28,49 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char * EmaFuturesStrategy::ConvertToPch(const Intention &intention) {
+	static_assert(numberOfIntentions == 6, "List changed.");
+	switch (intention) {
+		default:
+			AssertEq(INTENTION_OPEN_PASSIVE, intention);
+			return "UNKNOWN";
+		case INTENTION_OPEN_PASSIVE:
+			return "open-passive";
+		case INTENTION_OPEN_AGGRESIVE:
+			return "open-aggressive";
+		case INTENTION_HOLD:
+			return "hold";
+		case INTENTION_DONOT_OPEN:
+			return "donot-open";
+		case INTENTION_CLOSE_PASSIVE:
+			return "close-passive";
+		case INTENTION_CLOSE_AGGRESIVE:
+			return "close-aggressive";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 EmaFuturesStrategy::Position::Position(
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
-	: m_intention(INTENTION_OPEN_PASSIVE)
+		std::ostream &reportStream,
+		const Intention &openIntention,
+		bool isSuperAggressiveClosing)
+	: m_intention(openIntention)
 	, m_isSent(false)
 	, m_isPassiveOpen(true)
 	, m_isPassiveClose(true)
 	, m_emas(emas)
 	, m_closeType(CLOSE_TYPE_NONE)
-	, m_maxProfit(0)
-	, m_reportStream(reportStream) {
+	, m_maxProfitTakeProfit(0)
+	, m_maxProfitTrailingStop(0)
+	, m_reportStream(reportStream)
+	, m_isSuperAggressiveClosing(isSuperAggressiveClosing) {
+
+	Assert(
+		m_intention == INTENTION_OPEN_PASSIVE
+		|| m_intention == INTENTION_OPEN_AGGRESIVE);
 
 	m_reasons[0] = openReason;
 	AssertNe(DIRECTION_LEVEL, m_reasons[0]);
@@ -59,14 +92,12 @@ EmaFuturesStrategy::Position::~Position() {
 	//...//
 }
 
-const EmaFuturesStrategy::Position::Time &
-EmaFuturesStrategy::Position::GetStartTime() const {
+const pt::ptime & EmaFuturesStrategy::Position::GetStartTime() const {
 	return m_startTime;
 }
 
-const EmaFuturesStrategy::Position::Time &
-EmaFuturesStrategy::Position::GetCloseStartTime() const {
-	AssertNe(pt::not_a_date_time, m_closeStartTime);
+const pt::ptime & EmaFuturesStrategy::Position::GetCloseStartTime() const {
+	Assert(m_closeStartTime != pt::not_a_date_time);
 	return m_closeStartTime;
 }
 
@@ -86,29 +117,65 @@ void EmaFuturesStrategy::Position::SetIntention(
 	AssertNe(m_intention, intention);
 	AssertNe(INTENTION_OPEN_PASSIVE, intention);
 	GetStrategy().GetTradingLog().Write(
-		"intention\t%1%->%2%\t%3%\t%4%\t%5%\t%6%\t%7%",
+		"intention"
+			"\t%1%->%2%"
+			"\tis-passive-open=%3%\tis-passive-close=%4%"
+			"\tis-sent=%5%\tclose-type=%6%\tclose-reason=%7%"
+			"\tbid/ask=%8$.2f/%9$.2f",
 		[&](TradingRecord &record) {
 			record
-				% m_intention
-				% intention
-				% (m_isPassiveOpen ? "true" : "false")
-				% (m_isPassiveClose ? "true" : "false")
-				% (m_isSent ? "true" : "false")
-				% closeType
-				% closeReason;
+				% ConvertToPch(m_intention)
+				% ConvertToPch(intention)
+				% (m_isPassiveOpen ? "yes" : "no")
+				% (m_isPassiveClose ? "yes" : "no")
+				% (m_isSent ? "yes" : "no")
+				% ConvertToPch(closeType)
+				% ConvertToPch(closeReason)
+				% GetSecurity().GetBidPriceValue()
+				% GetSecurity().GetAskPriceValue();
 		});
 
+	boost::optional<CloseType> prevCloseType;
 	if (closeType != CLOSE_TYPE_NONE) {
+		prevCloseType = m_closeType;
 		m_closeType = closeType;
 	}
+
+	boost::optional<Direction> prevCloseReason;
 	if (closeReason != DIRECTION_LEVEL) {
+		prevCloseReason = m_reasons[1];
 		m_reasons[1] = closeReason;
 	}
 
-	Sync(intention);
+	try {
+		Sync(intention);
+	} catch (...) {
+		if (prevCloseType) {
+			m_closeType = *prevCloseType;
+		}
+		if (prevCloseReason) {
+			m_reasons[1] = *prevCloseReason;
+		}
+		throw;
+	}
 
 	m_intention = intention;
 
+}
+
+void EmaFuturesStrategy::Position::SetIntention(
+		Intention intention,
+		const CloseType &type,
+		const Direction &closeReason,
+		const Qty &intentionSize) {
+	Assert(!m_intentionSize);
+	m_intentionSize = std::make_pair(GetActiveQty(), intentionSize);
+	GetStrategy().GetTradingLog().Write(
+		"intention\tpartial\t%1% - %2%",
+		[this](TradingRecord &record) {
+			record % m_intentionSize->first % m_intentionSize->second;
+		});
+	SetIntention(intention, type, closeReason);
 }
 
 void EmaFuturesStrategy::Position::Sync() {
@@ -121,11 +188,15 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 		GetStrategy().GetTradingLog().Write(
 			"move\tis already started\t%1%\t%2%\t%3%",
 			[&](TradingRecord &record){
-				record % m_intention % m_closeType % m_reasons[1];
+				record
+					% ConvertToPch(m_intention)
+					% ConvertToPch(m_closeType)
+					% ConvertToPch(m_reasons[1]);
 			});
 		return;
 	}
 	m_isSent = false;
+	const auto prevIntention = m_intention;
 	switch (m_intention) {
 		case INTENTION_OPEN_PASSIVE:
 			m_intention = INTENTION_OPEN_AGGRESIVE;
@@ -133,10 +204,10 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				"move\t%1%->%2%\t%3%\t%4%",
 				[&](TradingRecord &record) {
 				record
-					% INTENTION_OPEN_PASSIVE
-					% m_intention
-					% m_closeType
-					% m_reasons[1];
+					% ConvertToPch(INTENTION_OPEN_PASSIVE)
+					% ConvertToPch(m_intention)
+					% ConvertToPch(m_closeType)
+					% ConvertToPch(m_reasons[1]);
 			});
 			break;
 		case INTENTION_CLOSE_PASSIVE:
@@ -145,20 +216,30 @@ void EmaFuturesStrategy::Position::MoveOrderToCurrentPrice() {
 				"move\t%1%->%2%\t%3%\t%4%",
 				[&](TradingRecord &record) {
 					record
-						% INTENTION_CLOSE_PASSIVE
-						% m_intention
-						% m_closeType
-						% m_reasons[1];
+						% ConvertToPch(INTENTION_CLOSE_PASSIVE)
+						% ConvertToPch(m_intention)
+						% ConvertToPch(m_closeType)
+						% ConvertToPch(m_reasons[1]);
 				});
 			break;
 		default:
 			GetStrategy().GetTradingLog().Write(
 				"move\t%1%\t%2%\t%3%",
 				[&](TradingRecord &record) {
-					record % m_intention % m_closeType % m_reasons[1];
+					record
+						% ConvertToPch(m_intention)
+						% ConvertToPch(m_closeType)
+						% ConvertToPch(m_reasons[1]);
 				});
+			break;
 	}
-	CancelAllOrders();
+	try {
+		Verify(CancelAllOrders());
+	} catch (...) {
+		m_intention = prevIntention;
+		m_isSent = true;
+		throw;
+	}
 }
 
 void EmaFuturesStrategy::Position::Sync(Intention &intention) {
@@ -182,19 +263,19 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				GetStrategy().GetContext().InvokeDropCopy(
 					[this, &startTime](DropCopy &dropCopy) {
 					dropCopy.ReportOperationStart(
+						GetStrategy(),
 						GetId(),
-						startTime,
-						GetStrategy());
+						startTime);
 				});
-				Open(GetOpenStartPrice());
+				Open(GetMarketOpenOppositePrice());
 				m_isPassiveOpen = true;
 				m_isSent = true;
+				AssertEq(m_startTime, pt::not_a_date_time);
 				m_startTime = std::move(startTime);
 			}
 			break;
 
 		case INTENTION_DONOT_OPEN:
-			Assert(!IsOpened());
 			if (HasActiveOpenOrders()) {
 				CancelAllOrders();
 				m_isSent = false;
@@ -202,6 +283,8 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
+				// Some position was opened by active order immediately after
+				// INTENTION_DONOT_OPEN intension set.
 				intention = INTENTION_HOLD;
 				m_isSent = false;
 			}
@@ -220,6 +303,18 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				throw Exception(
 					"Order canceled by trading system without request");
 			} else {
+				if (m_startTime == pt::not_a_date_time) {
+					const auto startTime
+						= GetStrategy().GetContext().GetCurrentTime();
+					GetStrategy().GetContext().InvokeDropCopy(
+						[this, &startTime](DropCopy &dropCopy) {
+							dropCopy.ReportOperationStart(
+								GetStrategy(),
+								GetId(),
+								startTime);
+						});
+					m_startTime = std::move(startTime);
+				}
 				Open(GetMarketOpenPrice());
 				m_isPassiveOpen = false;
 				m_isSent = true;
@@ -231,44 +326,93 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 			break;
 
 		case INTENTION_CLOSE_PASSIVE:
+			
 			Assert(IsOpened());
 			Assert(m_isPassiveClose);
 			Assert(!HasActiveOpenOrders());
+			
+			if (!GetCloseStartPrice()) {
+				SetCloseStartPrice(GetMarketClosePrice());
+				AssertEq(m_closeStartTime, pt::not_a_date_time);
+				m_closeStartTime
+					= GetStrategy().GetContext().GetCurrentTime();
+				Assert(IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(IsEqual(.0, m_signalsBidAsk[1].second));
+				m_signalsBidAsk[1] = std::make_pair(
+					GetSecurity().GetBidPrice(),
+					GetSecurity().GetAskPrice());
+				m_signalsEmas[1] = std::make_pair(
+					m_emas[SLOW].GetValue(),
+					m_emas[FAST].GetValue());
+			} else {
+				AssertNe(pt::not_a_date_time, m_closeStartTime);
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].second));
+			}
+
 			if (IsCompleted()) {
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
 				Assert(!HasActiveOpenOrders());
 			} else if (m_isSent) {
-				throw Exception(
-					"Order canceled by trading system without request");
+				if (!m_intentionSize) {
+					throw Exception(
+						"Order canceled by trading system without request");
+				}
+				m_isSent = false;
+				if (m_intentionSize->first > GetActiveQty()) {
+					m_intentionSize = boost::none;
+					m_isPassiveClose = true;
+					intention = INTENTION_HOLD;
+				} else {
+					try {
+						Sync(intention);
+					} catch (...) {
+						m_isSent = true;
+						throw;
+					}
+				}
 			} else {
 
-				SetCloseStartPrice(GetPassiveClosePrice());
-				AssertEq(m_closeStartTime, pt::not_a_date_time);
-				m_closeStartTime = GetStrategy().GetContext().GetCurrentTime();
-
-				Assert(IsZero(m_signalsBidAsk[1].first));
-				Assert(IsZero(m_signalsBidAsk[1].second));
-				m_signalsBidAsk[1] = std::make_pair(
-					GetSecurity().GetBidPrice(),
-					GetSecurity().GetAskPrice());
-
-				Assert(IsZero(m_signalsEmas[1].first));
-				Assert(IsZero(m_signalsEmas[1].second));
-				m_signalsEmas[1] = std::make_pair(
-					m_emas[SLOW].GetValue(),
-					m_emas[FAST].GetValue());
-
-				Close(m_closeType, GetCloseStartPrice());
+				if (!m_intentionSize) {
+					Close(m_closeType, GetMarketCloseOppositePrice());
+				} else {
+					Close(
+						m_closeType,
+						GetMarketCloseOppositePrice(),
+						m_intentionSize->second);
+				}
 				m_isPassiveClose = true;
 				m_isSent = true;
 
 			}
+
 			break;
 
 		case INTENTION_CLOSE_AGGRESIVE:
+
 			Assert(IsOpened());
 			Assert(!HasActiveOpenOrders());
+		
+			if (!GetCloseStartPrice()) {
+				SetCloseStartPrice(GetMarketClosePrice());	
+				AssertEq(m_closeStartTime, pt::not_a_date_time);
+				m_closeStartTime
+					= GetStrategy().GetContext().GetCurrentTime();
+				Assert(IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(IsEqual(.0, m_signalsBidAsk[1].second));
+				m_signalsBidAsk[1] = std::make_pair(
+					GetSecurity().GetBidPrice(),
+					GetSecurity().GetAskPrice());
+				m_signalsEmas[1] = std::make_pair(
+					m_emas[SLOW].GetValue(),
+					m_emas[FAST].GetValue());
+			} else {
+				AssertNe(pt::not_a_date_time, m_closeStartTime);
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].first));
+				Assert(!IsEqual(.0, m_signalsBidAsk[1].second));
+			}
+		
 			if (IsCompleted()) {
 				intention = INTENTION_HOLD;
 			} else if (HasActiveOrders()) {
@@ -278,14 +422,41 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					m_isSent = false;
 				}
 			} else if (m_isSent) {
-				throw Exception(
-					"Order canceled by trading system without request");
+				Assert(m_closeStartTime != pt::not_a_date_time);
+				if (!m_intentionSize) {
+					throw Exception(
+						"Order canceled by trading system without request");
+				}
+				m_isSent = false;
+				if (m_intentionSize->first > GetActiveQty()) {
+					m_intentionSize = boost::none;
+					m_isPassiveClose = true;
+					intention = INTENTION_HOLD;
+				} else {
+					try {
+						Sync(intention);
+					} catch (...) {
+						m_isSent = true;
+						throw;
+					}
+				}
 			} else {
-				SetCloseStartPrice(GetMarketClosePrice());
-				Close(m_closeType, GetCloseStartPrice());
+				if (!m_intentionSize) {
+					Close(
+						m_closeType,
+						IsSuperAggressiveClosing(intention)
+							?	GetOpenAvgPrice()
+							:	GetMarketClosePrice());
+				} else {
+					Close(
+						m_closeType,
+						GetMarketClosePrice(),
+						m_intentionSize->second);
+				}
 				m_isPassiveClose = false;
 				m_isSent = true;
 			}
+
 			break;
 		
 		default:
@@ -296,22 +467,146 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 
 }
 
-EmaFuturesStrategy::Position::PriceCheckResult
+bool EmaFuturesStrategy::Position::IsSuperAggressiveClosing() const {
+	return IsSuperAggressiveClosing(m_intention);
+}
+
+bool EmaFuturesStrategy::Position::IsSuperAggressiveClosing(
+		const Intention &intention) const {
+	return
+		intention == INTENTION_CLOSE_AGGRESIVE
+		&& m_isSuperAggressiveClosing
+		&& m_closeType == CLOSE_TYPE_NONE;
+}
+
+boost::optional<EmaFuturesStrategy::Position::PriceCheckResult>
 EmaFuturesStrategy::Position::CheckTakeProfit(
 		double minProfit,
-		double trailingPercentage) {
+		double trailingRatio)
+		const {
 	PriceCheckResult result = {};
-	result.current = CaclCurrentProfit();
-	if (result.current > m_maxProfit) {
-		m_maxProfit = result.current;
-	}
-	result.start = m_maxProfit;
-	result.margin = ScaledPrice(m_maxProfit * trailingPercentage);
+	result.current = GetSecurity().ScalePrice(GetPlannedPnl());
 	const ScaledPrice minProfitVol
-		= GetSecurity().ScalePrice(minProfit) * ScaledPrice(GetActiveQty());
-	result.isAllowed
-		= m_maxProfit < minProfitVol
-		|| result.current > result.margin;
+		= GetSecurity().ScalePrice(minProfit * GetOpenedQty());
+	if (result.current > m_maxProfitTakeProfit) {
+		GetStrategy().GetTradingLog().Write(
+			"take-profit\tstat\tmax-profit=%1$.2f->%2$.2f"
+				"\tmin-required=%3$.2f(%4$.2f*%5%)",
+			[&](TradingRecord &record) {
+				record
+					% GetSecurity().DescalePrice(m_maxProfitTakeProfit)
+					% GetSecurity().DescalePrice(result.current)
+					% GetSecurity().DescalePrice(minProfitVol)
+					% minProfit
+					% GetOpenedQty();
+			});
+		const_cast<ScaledPrice &>(m_maxProfitTakeProfit) = result.current;
+	}
+	result.start = m_maxProfitTakeProfit;
+	result.margin
+		= m_maxProfitTakeProfit
+			- ScaledPrice(m_maxProfitTakeProfit * trailingRatio);
+	if (
+			m_maxProfitTakeProfit < minProfitVol
+			|| result.current > result.margin) {
+		return boost::none;
+	}
+	return result;
+}
+
+boost::optional<EmaFuturesStrategy::Position::PriceCheckResult>
+EmaFuturesStrategy::Position::CheckTrailingStop(
+		const TrailingStop &trailingStop)
+		const {
+	PriceCheckResult result = {};
+	result.current = GetSecurity().ScalePrice(GetPlannedPnl());
+	const auto minProfitToActivate = GetSecurity().ScalePrice(
+		trailingStop.profitToActivate * GetOpenedQty());
+	result.margin = GetSecurity().ScalePrice(
+		trailingStop.minProfit * GetOpenedQty());
+	if (result.current > m_maxProfitTrailingStop) {
+		GetStrategy().GetTradingLog().Write(
+			"trailing-stop\tstat\tmax-profit=%1$.2f->%2$.2f"
+				"\tmin-to-activate=%3$.2f(%4$.2f*%5%)"
+				"\tmin-required=%6$.2f(%7$.2f*%5%)"
+				"\tbid/ask=%8$.2f/%9$.2f",
+			[&](TradingRecord &record) {
+				record
+					% GetSecurity().DescalePrice(m_maxProfitTrailingStop)
+					% GetSecurity().DescalePrice(result.current)
+					% GetSecurity().DescalePrice(minProfitToActivate)
+					% trailingStop.profitToActivate
+					% GetOpenedQty()
+					% GetSecurity().DescalePrice(result.margin)
+					% trailingStop.minProfit
+					% GetSecurity().GetBidPriceValue()
+					% GetSecurity().GetAskPriceValue();
+			});
+		const_cast<ScaledPrice &>(m_maxProfitTrailingStop) = result.current;
+	}
+	result.start = m_maxProfitTrailingStop;
+	if (
+			m_maxProfitTrailingStop < minProfitToActivate
+			|| result.current > result.margin) {
+		return boost::none;
+	}
+	return result;
+}
+
+Qty EmaFuturesStrategy::Position::CheckProfitLevel(
+		const ProfitLevels &profitLevels)
+		const {
+
+	AssertLt(0, profitLevels.priceStep);
+	AssertLt(0, profitLevels.numberOfContractsPerLevel.size());
+
+	const auto minChange = GetSecurity().ScalePrice(profitLevels.priceStep);
+	const auto currentChange = IsLong()
+		?	GetMarketClosePrice() - GetLastTradePrice()
+		:	GetLastTradePrice() - GetMarketClosePrice();
+	if (currentChange < minChange) {
+		return 0;
+	}
+	size_t numberOfSteps = size_t(currentChange / minChange);
+	AssertLt(0, numberOfSteps);
+
+	Qty closedLevels = 0;
+	Qty result = 0;
+	for (auto levelIt = profitLevels.numberOfContractsPerLevel.cbegin(); ; ) {
+		const auto nextLevelSize
+			=	levelIt != profitLevels.numberOfContractsPerLevel.cend()
+				?	*levelIt
+				:	profitLevels.numberOfContractsPerLevel.back();
+		if (GetClosedQty() > closedLevels) {
+			closedLevels += nextLevelSize;
+			if (levelIt != profitLevels.numberOfContractsPerLevel.cend()) {
+				++levelIt;
+			}
+		} else {
+			result += nextLevelSize;
+			if (!--numberOfSteps) {
+				break;
+			}
+		}
+	}
+
+	GetStrategy().GetTradingLog().Write(
+		"profit-level"
+			"\tcurrent=%1$.2f\tmin=%2$.2f\torder_qty=%3%"
+			"\tlast_price=%4$.2f\tclosed_qty=%5%\tactive_qty=%6%"
+			"\tbid=%7$.2f\task=%8$.2f",
+		[&](TradingRecord &record) {
+			record
+				% GetSecurity().DescalePrice(currentChange)
+				% GetSecurity().DescalePrice(minChange)
+				% result
+				% GetSecurity().DescalePrice(GetLastTradePrice())
+				% GetClosedQty()
+				% GetActiveQty()
+				% GetSecurity().GetBidPrice()
+				% GetSecurity().GetAskPrice();
+			});
+
 	return result;
 }
 
@@ -325,46 +620,54 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		/* 6	*/ << ",Closing Duration"
 		/* 7	*/ << ",Position Duration"
 		/* 8	*/ << ",Type"
-		/* 9	*/ << ",P&L"
-		/* 10	*/ << ",Qty"
-		/* 11	*/ << ",Entry Reason"
-		/* 12	*/ << ",Entry Price"
-		/* 13	*/ << ",Entry Volume"
-		/* 14	*/ << ",Entry Sig. Bid"
-		/* 15	*/ << ",Entry Sig. Ask"
-		/* 16	*/ << ",Entry Sig. Slow EMA"
-		/* 17	*/ << ",Entry Sig. Fast EMA"
-		/* 18	*/ << ",Exit Reason"
-		/* 19	*/ << ",Exit Price"
-		/* 20	*/ << ",Exit Volume"
-		/* 21	*/ << ",Exit Sig. Bid"
-		/* 22	*/ << ",Exit Sig. Ask"
-		/* 23	*/ << ",Exit Sig. Slow EMA"
-		/* 24	*/ << ",Exit Sig. Fast EMA"
-		/* 25	*/ << ",ID"
+		/* 9	*/ << ",P&L vol."
+		/* 10	*/ << ",P&L %"
+		/* 11	*/ << ",Is Profit"
+		/* 12	*/ << ",Is Loss"
+		/* 13	*/ << ",Qty"
+		/* 14	*/ << ",Entry Reason"
+		/* 15	*/ << ",Entry Price"
+		/* 16	*/ << ",Entry Orders"
+		/* 17	*/ << ",Entry Trades"
+		/* 18	*/ << ",Entry Sig. Bid"
+		/* 19	*/ << ",Entry Sig. Ask"
+		/* 20	*/ << ",Entry Sig. Slow EMA"
+		/* 21	*/ << ",Entry Sig. Fast EMA"
+		/* 22	*/ << ",Exit Reason"
+		/* 23	*/ << ",Exit Price"
+		/* 24	*/ << ",Exit Orders"
+		/* 25	*/ << ",Exit Trades"
+		/* 26	*/ << ",Exit Sig. Bid"
+		/* 27	*/ << ",Exit Sig. Ask"
+		/* 28	*/ << ",Exit Sig. Slow EMA"
+		/* 29	*/ << ",Exit Sig. Fast EMA"
+		/* 30	*/ << ",ID"
 		<< std::endl;
 }
 
-void EmaFuturesStrategy::Position::Report() throw() {
+void EmaFuturesStrategy::Position::Report() noexcept {
 
 	if (!GetOpenedQty() || !IsCompleted()) {
 		return;
 	}
 
+	const auto pnl = GetRealizedPnlVolume();
 	try {
 		GetStrategy().GetContext().InvokeDropCopy(
-			[this](DropCopy &dropCopy) {
-				const double pnl = GetType() == TYPE_LONG
-					? GetOpenedVolume() / GetClosedVolume()
-					: GetClosedVolume() / GetOpenedVolume();
+			[this, pnl](DropCopy &dropCopy) {
+				FinancialResult financialResult;
+				financialResult.emplace_back(
+					std::make_pair(
+						GetSecurity().GetSymbol().GetCurrency(),
+						pnl));
 				dropCopy.ReportOperationEnd(
 					GetId(),
 					GetCloseTime(),
-					IsEqual(pnl, 1.0) || pnl < 1.0
+					!IsProfit()
 						? OPERATION_RESULT_LOSS
 						: OPERATION_RESULT_PROFIT,
-					pnl,
-					boost::make_shared<FinancialResult>());
+					GetRealizedPnlRatio(),
+					std::move(financialResult));
 			});
 	} catch (const std::exception &ex) {
 		GetStrategy().GetLog().Error(
@@ -393,18 +696,21 @@ void EmaFuturesStrategy::Position::Report() throw() {
 		m_reportStream << ',' << (GetCloseTime() - GetOpenTime());
 
 		// 8. Type:
-		m_reportStream << ',' << GetTypeStr();
+		m_reportStream << ',' << GetType();
 
-		// 8. pnl:
-		m_reportStream << ',';
-		m_reportStream << (GetType() == TYPE_LONG
-			?	GetClosedVolume() - GetOpenedVolume()
-			:	GetOpenedVolume() - GetClosedVolume());
+		// 10. pnl vol.:
+		m_reportStream << ',' << pnl;
 
-		// 9. qty:
+		// 10. pnl %:
+		m_reportStream << ',' << GetRealizedPnlPercentage();
+
+		// 11. is profit, 12. is loss: 
+		m_reportStream << (IsProfit() ? ",1,0" : ",0,1");
+
+		// 13. qty:
 		m_reportStream << ',' << GetOpenedQty();
 
-		// 10. entry reason:
+		// 14. entry reason:
 		m_reportStream << ',';
 		switch (m_reasons[0]) {
 			default:
@@ -420,57 +726,76 @@ void EmaFuturesStrategy::Position::Report() throw() {
 				break;
 		}
 
-		// 11. entry price, 12. entry volume
+		// 15. entry price
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetOpenPrice())
-			<< ',' << GetOpenedVolume();
+			<< ',' << GetSecurity().DescalePrice(GetOpenAvgPrice());
+
+		// 16. entry orders, 17. entry trades:
+		m_reportStream
+			<< ',' << GetNumberOfOpenOrders()
+			<< ',' << GetNumberOfOpenTrades();
 		
-		// 13. entry bid, 14. entry ask,
+		// 18. entry bid, 19. entry ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[0].first
 			<< ',' << m_signalsBidAsk[0].second;
 
-		// 15. entry slow ema, 16. entry fast ema
+		// 20. entry slow ema, 21. entry fast ema
 		m_reportStream
-			<< ',' << m_signalsEmas[0].first
-			<< ',' << m_signalsEmas[0].second;
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[0].first
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[0].second;
 
-		// 17. exit reason:
+		// 22. exit reason:
 		m_reportStream << ',';
-		switch (m_reasons[1]) {
-			default:
-				AssertEq(DIRECTION_UP, m_reasons[1]);
-			case DIRECTION_LEVEL:
-				m_reportStream << GetCloseTypeStr();
-				break;
-			case DIRECTION_UP:
-				m_reportStream << "fast EMA grows";
-				break;
-			case DIRECTION_DOWN:
-				m_reportStream << "fast EMA falls";
-				break;
+		if (m_closeType != CLOSE_TYPE_NONE) {
+			m_reportStream << m_closeType;
+		} else {
+			switch (m_reasons[1]) {
+				default:
+					AssertEq(DIRECTION_UP, m_reasons[1]);
+				case DIRECTION_LEVEL:
+					m_reportStream << "UNKNOWN";
+					break;
+				case DIRECTION_UP:
+					m_reportStream << "fast EMA grows";
+					break;
+				case DIRECTION_DOWN:
+					m_reportStream << "fast EMA falls";
+					break;
+			}
 		}
 
-		// 18. exit price, 19. exit volume,
+		// 23. exit price
 		m_reportStream
-			<< ',' << GetSecurity().DescalePrice(GetClosePrice())
-			<< ',' << GetClosedVolume();
+			<< ',' << GetSecurity().DescalePrice(GetCloseAvgPrice());
 
-		// 20. exit bid, 21. exit ask,
+		// 24. exit orders, 25. exit trades:
+		m_reportStream
+			<< ',' << GetNumberOfCloseOrders()
+			<< ',' << GetNumberOfCloseTrades();
+
+		// 26. exit bid, 27. exit ask,
 		m_reportStream
 			<< ',' << m_signalsBidAsk[1].first
 			<< ',' << m_signalsBidAsk[1].second;
 	
-		// 22. exit slow ema, 23. exit fast ema.
+		// 28. exit slow ema, 29. exit fast ema.
 		m_reportStream
-			<< ',' << m_signalsEmas[1].first
-			<< ',' << m_signalsEmas[1].second;
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[1].first
+			<< ','
+				<< std::fixed << std::setprecision(8)
+				<< m_signalsEmas[1].second;
 
-		// 24. ID
+		// 30. ID
 		m_reportStream << ',' << GetId();
 
 		m_reportStream << std::endl;
-
 
 	} catch (const std::exception &) {
 		AssertFailNoException();
@@ -492,7 +817,9 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		const Milestones &strategyTimeMeasurement,
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
+		std::ostream &reportStream,
+		const Intention &openIntention,
+		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
 		operationId,
@@ -501,9 +828,14 @@ EmaFuturesStrategy::LongPosition::LongPosition(
 		security,
 		security.GetSymbol().GetCurrency(),
 		qty,
-		security.GetBidPriceScaled(),
+		security.GetAskPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream) {
+	, Position(
+		openReason,
+		emas,
+		reportStream,
+		openIntention,
+		isSuperAggressiveClosing) {
 	//...//
 }
 
@@ -511,40 +843,28 @@ EmaFuturesStrategy::LongPosition::~LongPosition() {
 	Report();
 }
 
-ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketOpenPrice() const {
-	return GetSecurity().GetAskPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::LongPosition::GetMarketClosePrice() const {
-	return GetSecurity().GetBidPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::LongPosition::GetPassiveOpenPrice() const {
-	return GetSecurity().GetBidPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::LongPosition::GetPassiveClosePrice() const {
-	return GetSecurity().GetAskPriceScaled();
-}
-
-EmaFuturesStrategy::LongPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::LongPosition::PriceCheckResult>
 EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetOpenStartPrice();
+		result.start = GetActiveOpenOrderPrice();
 		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
-			?	GetPassiveOpenPrice()
+			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed = result.margin >= result.current;
+		if (result.margin >= result.current) {
+			return boost::none;
+		}
 	} else {
-		result.start = GetCloseStartPrice();
+		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
-			?	GetPassiveClosePrice()
+			?	GetMarketCloseOppositePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed = result.margin <= result.current;
+		if (result.margin <= result.current) {
+			return boost::none;
+		}
 	}
 	Assert(!IsZero(result.start));
 	Assert(!IsZero(result.margin));
@@ -552,44 +872,23 @@ EmaFuturesStrategy::LongPosition::CheckOrderPrice(double priceDelta) const {
 	return result;
 }
 
-EmaFuturesStrategy::LongPosition::PriceCheckResult
-EmaFuturesStrategy::LongPosition::CheckStopLossByPrice(
-		double priceDelta)
-		const {
-	Assert(!IsZero(GetOpenPrice()));
-	AssertEq(INTENTION_HOLD, GetIntention());
-	PriceCheckResult result = {};
-	result.start = GetOpenPrice();
-	result.margin = result.start - GetSecurity().ScalePrice(priceDelta);;
-	result.current = GetMarketClosePrice();
-	result.isAllowed = result.current >= result.margin;
-	return result;
-}
-
-EmaFuturesStrategy::LongPosition::PriceCheckResult
-EmaFuturesStrategy::LongPosition::CheckStopLossByLoss(
+boost::optional<EmaFuturesStrategy::LongPosition::PriceCheckResult>
+EmaFuturesStrategy::LongPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
-	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetOpenAvgPrice()));
 	AssertEq(INTENTION_HOLD, GetIntention());
 	PriceCheckResult result = {};
-	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.start = ScaledPrice(GetOpenAvgPrice() * GetActiveQty());
 	result.margin
 		= result.start
 		- (ScaledPrice(GetActiveQty())
-		* GetSecurity().ScalePrice(maxLossMoneyPerContract));
+			* GetSecurity().ScalePrice(maxLossMoneyPerContract));
 	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
-	result.isAllowed = result.current >= result.margin;
+	if (result.current >= result.margin) {
+		return boost::none;
+	}
 	return result;
-}
-
-ScaledPrice EmaFuturesStrategy::LongPosition::CaclCurrentProfit() const {
-	Assert(!IsZero(GetOpenPrice()));
-	Assert(!IsZero(GetActiveQty()));
-	AssertEq(INTENTION_HOLD, GetIntention());
-	return 
-		ScaledPrice(GetOpenPrice() * GetActiveQty())
-		- ScaledPrice(GetActiveQty() * GetMarketClosePrice());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -603,7 +902,9 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		const Milestones &strategyTimeMeasurement,
 		const Direction &openReason,
 		const SlowFastEmas &emas,
-		std::ostream &reportStream)
+		std::ostream &reportStream,
+		const Intention &openIntention,
+		bool isSuperAggressiveClosing)
 	: trdk::Position(
 		startegy,
 		operationId,
@@ -612,9 +913,14 @@ EmaFuturesStrategy::ShortPosition::ShortPosition(
 		security,
 		security.GetSymbol().GetCurrency(),
 		qty,
-		security.GetAskPriceScaled(),
+		security.GetBidPriceScaled(),
 		strategyTimeMeasurement)
-	, Position(openReason, emas, reportStream) {
+	, Position(
+		openReason,
+		emas,
+		reportStream,
+		openIntention,
+		isSuperAggressiveClosing) {
 	//...//
 }
 
@@ -622,42 +928,30 @@ EmaFuturesStrategy::ShortPosition::~ShortPosition() {
 	Report();
 }
 
-ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketOpenPrice() const {
-	return GetSecurity().GetBidPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::ShortPosition::GetMarketClosePrice() const {
-	return GetSecurity().GetAskPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::ShortPosition::GetPassiveOpenPrice() const {
-	return GetSecurity().GetAskPriceScaled();
-}
-
-ScaledPrice EmaFuturesStrategy::ShortPosition::GetPassiveClosePrice() const {
-	return GetSecurity().GetBidPriceScaled();
-}
-
-EmaFuturesStrategy::ShortPosition::PriceCheckResult
+boost::optional<EmaFuturesStrategy::ShortPosition::PriceCheckResult>
 EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 		double priceDelta)
 		const {
 	Assert(HasActiveOrders());
 	PriceCheckResult result = {};
 	if (HasActiveOpenOrders()) {
-		result.start = GetOpenStartPrice();
+		result.start = GetActiveOpenOrderPrice();
 		result.margin = result.start - GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_OPEN_PASSIVE
-			?	GetPassiveOpenPrice()
+			?	GetMarketOpenOppositePrice()
 			:	GetMarketOpenPrice();
-		result.isAllowed = result.margin <= result.current;
+		if (result.margin <= result.current) {
+			return boost::none;
+		}
 	} else {
-		result.start = GetCloseStartPrice();
+		result.start = GetActiveCloseOrderPrice();
 		result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
 		result.current = GetIntention() == INTENTION_CLOSE_PASSIVE
-			?	GetPassiveClosePrice()
+			?	GetMarketCloseOppositePrice()
 			:	GetMarketClosePrice();
-		result.isAllowed = result.margin >= result.current;
+		if (result.margin >= result.current) {
+			return boost::none;
+		}
 	}
 	Assert(!IsZero(result.start));
 	Assert(!IsZero(result.margin));
@@ -665,46 +959,24 @@ EmaFuturesStrategy::ShortPosition::CheckOrderPrice(
 	return result;
 }
 
-EmaFuturesStrategy::ShortPosition::PriceCheckResult
-EmaFuturesStrategy::ShortPosition::CheckStopLossByPrice(
-		double priceDelta)
-		const {
-	Assert(!IsZero(GetOpenPrice()));
-	AssertEq(INTENTION_HOLD, GetIntention());
-	PriceCheckResult result = {};
-	result.start = GetOpenPrice();
-	result.margin = result.start + GetSecurity().ScalePrice(priceDelta);
-	result.current = GetMarketClosePrice();
-	result.isAllowed = result.current <= result.margin;
-	return result;
-}
-
-EmaFuturesStrategy::ShortPosition::PriceCheckResult
-EmaFuturesStrategy::ShortPosition::CheckStopLossByLoss(
+boost::optional<EmaFuturesStrategy::ShortPosition::PriceCheckResult>
+EmaFuturesStrategy::ShortPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
-	Assert(!IsZero(GetOpenPrice()));
+	Assert(!IsZero(GetOpenAvgPrice()));
 	Assert(!IsZero(GetActiveQty()));
 	AssertEq(INTENTION_HOLD, GetIntention());
 	PriceCheckResult result = {};
-	result.start = ScaledPrice(GetOpenPrice() * GetActiveQty());
+	result.start = ScaledPrice(GetOpenAvgPrice() * GetActiveQty());
 	result.margin
 		= result.start
 		+	(ScaledPrice(GetActiveQty())
 			* GetSecurity().ScalePrice(maxLossMoneyPerContract));
 	result.current = ScaledPrice(GetActiveQty() * GetMarketClosePrice());
-	result.isAllowed = result.current <= result.margin;
+	if (result.current <= result.margin) {
+		return boost::none;
+	}
 	return result;
-}
-
-ScaledPrice EmaFuturesStrategy::ShortPosition::CaclCurrentProfit() const {
-	Assert(!IsZero(GetOpenPrice()));
-	Assert(!IsZero(GetActiveQty()));
-	AssertEq(INTENTION_HOLD, GetIntention());
-	return 
-		ScaledPrice(GetActiveQty() * GetMarketClosePrice())
-		- ScaledPrice(GetOpenPrice() * GetActiveQty());
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

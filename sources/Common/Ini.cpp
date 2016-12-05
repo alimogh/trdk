@@ -356,8 +356,8 @@ bool Ini::ReadBoolKey(
 	}
 }
 
-std::list<std::string> Ini::ReadList() const {
-	std::list<std::string> result;
+std::vector<std::string> Ini::ReadList() const {
+	std::vector<std::string> result;
 	const_cast<Ini *>(this)->Reset();
 	auto &source = GetSource();
 	while (!source.eof() && !source.fail()) {
@@ -370,18 +370,49 @@ std::list<std::string> Ini::ReadList() const {
 	return result;
 }
 
-std::list<std::string> Ini::ReadList(
+std::vector<std::string> Ini::ReadList(
 		const std::string &section,
 		bool isRequired)
 		const {
-	std::list<std::string> result;
+	std::vector<std::string> result;
 	ReadSection(
 		section,
 		[&result](const std::string &line) -> bool {
-			result.push_back(line);
+			result.emplace_back(line);
 			return true;
 		},
 		isRequired);
+	return result;
+}
+
+std::vector<std::string> Ini::ReadList(
+		const std::string &section,
+		const std::string &key,
+		const std::string &delimiter,
+		bool isRequired)
+		const {
+	const auto &keyValue = isRequired
+		?	ReadKey(section, key)
+		:	ReadKey(section, key, std::string());
+	Assert(!isRequired || !key.empty());
+	std::vector<std::string> result;
+	result.reserve(keyValue.size());
+	typedef boost::split_iterator<std::string::const_iterator> It;
+	for (
+			It it = boost::make_split_iterator(
+				keyValue,
+				boost::first_finder(delimiter, boost::is_iequal()));
+			it != It();
+			++it) {
+		result.emplace_back(boost::copy_range<std::string>(*it));
+		boost::trim(result.back());
+		if (result.back().empty()) {
+			boost::format message("Empty INI-key list value (\"%1%:%2%\")");
+			message % section % key;
+			throw KeyFormatError(message.str().c_str());
+		}
+	}
+	Assert(!isRequired || !result.empty());
 	return result;
 }
 
@@ -390,8 +421,8 @@ std::set<Symbol> Ini::ReadSymbols(
 		const Currency &defCurrency)
 		const {
 	std::set<Symbol> result;
-	foreach (const auto &l, ReadList())  {
-		result.insert(Symbol(l, defSecurityType, defCurrency));
+	for (const auto &l: ReadList())  {
+		result.emplace(l, defSecurityType, defCurrency);
 	}
 	return result;
 }
@@ -402,8 +433,8 @@ std::set<Symbol> Ini::ReadSymbols(
 		const Currency &defCurrency)
 		const {
 	std::set<Symbol> result;
-	foreach (const auto &l, ReadList(section, true))  {
-		result.insert(Symbol(l, defSecurityType, defCurrency));
+	for (const auto &l: ReadList(section, true))  {
+		result.emplace(l, defSecurityType, defCurrency);
 	}
 	return result;
 }
@@ -507,7 +538,7 @@ bool IniSectionRef::ReadBoolKey(
 	return GetBase().ReadBoolKey(GetName(), key, defaultValue);
 }
 
-std::list<std::string> IniSectionRef::ReadList(bool isRequired) const {
+std::vector<std::string> IniSectionRef::ReadList(bool isRequired) const {
 	return GetBase().ReadList(GetName(), isRequired);
 }
 

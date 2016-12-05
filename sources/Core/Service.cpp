@@ -15,6 +15,7 @@
 #include "Strategy.hpp"
 
 namespace pt = boost::posix_time;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -91,13 +92,19 @@ private:
 public:
 
 	Service &m_service;
-	bool m_hasNewData;
+	const uuids::uuid m_typeId;
+	const uuids::uuid m_id;
 
 	ModuleSecurityList m_securities;
 	SubscriberList m_subscribers;
 
-	explicit Implementation(Service &service)
-		: m_service(service) {
+	explicit Implementation(
+			Service &service,
+			const uuids::uuid &typeId,
+			const IniSectionRef &conf)
+		: m_service(service)
+		, m_typeId(typeId)
+		, m_id(uuids::string_generator()(conf.ReadKey("id"))) {
 		//...//
 	}
 
@@ -139,22 +146,52 @@ public:
 
 Service::Service(
 		Context &context,
+		const uuids::uuid &typeId,
 		const std::string &name,
-		const std::string &tag)
+		const std::string &tag,
+		const IniSectionRef &conf)
 	: Module(context, "Service", name, tag) {
-	m_pimpl = new Implementation(*this);
+	m_pimpl.reset(new Implementation(*this, typeId, conf));
 }
 
 Service::~Service() {
-	delete m_pimpl;
+	//...//
 }
 
-pt::ptime Service::OnSecurityStart(const Security &) {
-	return pt::not_a_date_time;
+const uuids::uuid & Service::GetTypeId() const {
+	return m_pimpl->m_typeId;
+}
+
+const uuids::uuid & Service::GetId() const {
+	return m_pimpl->m_id;
+}
+
+void Service::OnSecurityStart(const Security &, Security::Request &) {
+	//...//
+}
+
+void Service::OnSecurityContractSwitched(
+		const pt::ptime &,
+		const Security &security,
+		Security::Request &) {
+	GetLog().Error(
+		"Subscribed to %1% contract switch event, but can't work with it"
+			" (doesn't have OnSecurityContractSwitched method implementation).",
+		security);
+	throw MethodDoesNotImplementedError(
+		"Module subscribed to contract switch event, but can't work with it");
+}
+
+void Service::RaiseSecurityContractSwitchedEvent(
+		const pt::ptime &time,
+		const Security &security,
+		Security::Request &request) {
+	const auto lock = LockForOtherThreads();
+	OnSecurityContractSwitched(time, security, request);
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnLevel1Update(security);
 }
 
@@ -162,7 +199,7 @@ bool Service::RaiseLevel1TickEvent(
 		const Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnLevel1Tick(security, time, value);
 }
 
@@ -170,16 +207,15 @@ bool Service::RaiseNewTradeEvent(
 		const Security &security,
 		const boost::posix_time::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty,
-		const OrderSide &side) {
-	const Lock lock(GetMutex());
-	return OnNewTrade(security, time, price, qty, side);
+		const Qty &qty) {
+	const auto lock = LockForOtherThreads();
+	return OnNewTrade(security, time, price, qty);
 }
 
 bool Service::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnServiceDataUpdate(service, timeMeasurement);
 }
 
@@ -187,14 +223,14 @@ bool Service::RaiseBrokerPositionUpdateEvent(
 		const Security &security,
 		const Qty &qty,
 		bool isInitial) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
 bool Service::RaiseNewBarEvent(
 		const Security &security,
 		const Security::Bar &bar) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnNewBar(security, bar);
 }
 
@@ -202,16 +238,17 @@ bool Service::RaiseBookUpdateTickEvent(
 		const Security &security,
 		const PriceBook &book,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	return OnBookUpdateTick(security, book, timeMeasurement);
 }
 
-void Service::RaiseSecurityServiceEvent(
+bool Service::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		const Security &security,
-		const Security::ServiceEvent &event) {
-	const Lock lock(GetMutex());
-	return OnSecurityServiceEvent(security, event);
+		const Security::ServiceEvent &securityEvent) {
+	const auto lock = LockForOtherThreads();
+	return OnSecurityServiceEvent(time, security, securityEvent);
 }
 
 bool Service::OnLevel1Update(const Security &security) {
@@ -239,8 +276,7 @@ bool Service::OnNewTrade(
 		const Security &security,
 		const boost::posix_time::ptime &,
 		const ScaledPrice &,
-		const Qty &,
-		const OrderSide &) {
+		const Qty &) {
 	GetLog().Error(
 		"Subscribed to %1% new trades, but can't work with it"
 			" (doesn't have OnNewTrade method implementation).",
@@ -294,17 +330,11 @@ bool Service::OnBookUpdateTick(
 		"Service subscribed to book update ticks, but can't work with it");
 }
 
-void Service::OnSecurityServiceEvent(
-		const Security &security,
-		const Security::ServiceEvent &event) {
-	GetLog().Error(
-		"Subscribed to security service event from %1%"
-			", but can't work with event %2%"
-			" (doesn't have OnSecurityServiceEvent method implementation).",
-		security,
-		event);
-	throw MethodDoesNotImplementedError(
-		"Subscribed to security service event, but can't work with it");
+bool Service::OnSecurityServiceEvent(
+		const pt::ptime &,
+		const Security &,
+		const Security::ServiceEvent &) {
+	return false;
 }
 
 void Service::RegisterSubscriber(Strategy &module) {
@@ -327,10 +357,9 @@ void Service::RegisterSource(Security &security) {
 	if (!m_pimpl->m_securities.Insert(security)) {
 		return;
 	}
-	const auto dataStart = OnSecurityStart(security);
-	if (dataStart != pt::not_a_date_time) {
-		security.SetRequestedDataStartTime(dataStart);
-	}
+	Security::Request request;
+	OnSecurityStart(security, request);
+	security.SetRequest(request);
 }
 
 const Service::SecurityList & Service::GetSecurities() const {

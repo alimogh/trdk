@@ -27,7 +27,7 @@ namespace trdk {
 	public:
 
 		explicit TradingRecord(
-				const trdk::Log::Time &time,
+				const boost::posix_time::ptime &time,
 				const trdk::Log::ThreadId &threadId,
 				const char *tag,
 				const char *message)
@@ -70,8 +70,9 @@ namespace trdk {
 
 	public:
 
-		TradingLogOutStream()
-			: m_context(nullptr) {
+		explicit TradingLogOutStream(
+				const boost::local_time::time_zone_ptr &timeZone)
+			: m_log(timeZone) {
 			//...//
 		}
 
@@ -84,7 +85,7 @@ namespace trdk {
 				record);
 		}
 		 
-		bool IsEnabled() const {
+		bool IsEnabled() const noexcept {
 			return m_log.IsEnabled();
 		}
 
@@ -93,13 +94,13 @@ namespace trdk {
 			m_log.EnableStream(os, true);
 		}
 
-		trdk::Log::Time GetTime() {
+		boost::posix_time::ptime GetTime() {
 			TrdkAssert(m_context);
-			return std::move(m_context->GetCurrentTime());
+			return m_context->GetCurrentTime(m_log.GetTimeZone());
 		}
 
 		trdk::Log::ThreadId GetThreadId() const {
-			return std::move(m_log.GetThreadId());
+			return m_log.GetThreadId();
 		}
 
 	private:
@@ -125,11 +126,17 @@ namespace trdk {
 
 	public:
 
+		explicit TradingLog(const boost::local_time::time_zone_ptr &timeZone)
+			: Base(timeZone) {
+			//...//
+		}
+
 		template<typename FormatCallback>
 		void Write(
 				const char *tag,
 				const char *message,
-				const FormatCallback &formatCallback) {
+				const FormatCallback &formatCallback)
+				noexcept {
 			FormatAndWrite(formatCallback, tag, message);
 		}
 
@@ -152,7 +159,7 @@ namespace trdk {
 
 	public:
 
-		void WaitForFlush() const throw() {
+		void WaitForFlush() const noexcept {
 			m_log.WaitForFlush();
 		}
 

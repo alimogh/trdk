@@ -16,6 +16,21 @@ using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char * trdk::ConvertToPch(const OrderSide &side) {
+	static_assert(numberOfOrderSides == 2, "List changed.");
+	switch (side) {
+		default:
+			AssertEq(ORDER_SIDE_BUY, side);
+			return "unknown";
+		case ORDER_SIDE_BUY:
+			return "buy";
+		case ORDER_SIDE_SELL:
+			return "sell";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 	template<typename Param>
@@ -66,6 +81,28 @@ const char * trdk::ConvertToPch(const Level1TickType &tickType) {
 			return "ask qty";
 		case LEVEL1_TICK_TRADING_VOLUME:
 			return "trading volume";
+	}
+}
+
+Level1TickType trdk::ConvertToLevel1TickType(const std::string &source) {
+	if (source == "last price") {
+		return LEVEL1_TICK_LAST_PRICE;
+	} else if (source == "last qty") {
+		return LEVEL1_TICK_LAST_QTY;
+	} else if (source == "bid price") {
+		return LEVEL1_TICK_BID_PRICE;
+	} else if (source == "bid qty") {
+		return LEVEL1_TICK_BID_QTY;
+	} else if (source == "ask price") {
+		return LEVEL1_TICK_ASK_PRICE;
+	} else if (source == "ask qty") {
+		return LEVEL1_TICK_ASK_QTY;
+	} else if (source == "trading volume") {
+		return LEVEL1_TICK_TRADING_VOLUME;
+	} else {
+		boost::format message("Unknown Level 1 Tick Type \"%1%\"");
+		message % source;
+		throw Exception(message.str().c_str());
 	}
 }
 
@@ -132,3 +169,32 @@ const std::string & trdk::ConvertToString(const TradingMode &mode) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+const char * trdk::ConvertToPch(const OrderStatus &status) {
+	static_assert(numberOfOrderStatuses == 9, "List changed.");
+	switch (status) {
+		default:
+			AssertEq(ORDER_STATUS_SENT, status);
+			return "unknown";
+		case ORDER_STATUS_SENT:
+			return "sent";
+		case ORDER_STATUS_REQUESTED_CANCEL:
+			return "req. cancel";
+		case ORDER_STATUS_SUBMITTED:
+			return "submitted";
+		case ORDER_STATUS_CANCELLED:
+			return "canceled";
+		case ORDER_STATUS_FILLED:
+			return "filled";
+		case ORDER_STATUS_FILLED_PARTIALLY:
+			return "filled part.";
+		case ORDER_STATUS_REJECTED:
+			return "rejected";
+		case ORDER_STATUS_INACTIVE:
+			return "inactive";
+		case ORDER_STATUS_ERROR:
+			return "error";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////

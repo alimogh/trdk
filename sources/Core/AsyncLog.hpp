@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -43,15 +42,19 @@ namespace trdk {
 			PT_STRING,
 			PT_PCHAR,
 
-			PT_PTIME,
+			PT_TIME,
 			PT_TIME_DURATION,
+			PT_DATE,
 
 			PT_CURRENCY,
 			
 			PT_SECURITY,
 			
 			PT_TRADING_MODE,
-
+			
+			PT_ORDER_STATUS,
+			PT_ORDER_SIDE,
+			
 			PT_UUID,
 
 			numberOfParamTypes
@@ -61,17 +64,10 @@ namespace trdk {
 	public:
 
 		explicit AsyncLogRecord(
-				const trdk::Log::Time &time,
+				const boost::posix_time::ptime &time,
 				const trdk::Log::ThreadId &threadId)
 			: m_time(time),
 			m_threadId(threadId) {
-			//...//
-		}
-
-		AsyncLogRecord(AsyncLogRecord &&rhs)
-			: m_time(std::move(rhs.m_time)),
-			m_threadId(std::move(rhs.m_threadId)),
-			m_params(std::move(rhs.m_params)) {
 			//...//
 		}
 
@@ -106,7 +102,7 @@ namespace trdk {
 
 	public:
 
-		const trdk::Log::Time & GetTime() const {
+		const boost::posix_time::ptime & GetTime() const {
 			return m_time;
 		}
 
@@ -151,7 +147,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 19,
+					numberOfParamTypes == 22,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -209,7 +205,7 @@ namespace trdk {
 							os);
 						break;
 
-					case PT_PTIME:
+					case PT_TIME:
 						namespace pt = boost::posix_time;
 						WriteToDumpStream(
 							boost::any_cast<const pt::ptime &>(val),
@@ -221,6 +217,13 @@ namespace trdk {
 							boost::any_cast<const pt::time_duration &>(val),
 							os);
 						break;
+					case PT_DATE:
+						namespace gr = boost::gregorian;
+						WriteToDumpStream(
+							boost::any_cast<const gr::date &>(val),
+							os);
+						break;
+
 
 					case PT_CURRENCY:
 						WriteToDumpStream(
@@ -237,6 +240,17 @@ namespace trdk {
 					case PT_TRADING_MODE:
 						WriteToDumpStream(
 							boost::any_cast<const TradingMode &>(val),
+							os);
+						break;
+
+					case PT_ORDER_STATUS:
+						WriteToDumpStream(
+							boost::any_cast<const OrderStatus &>(val),
+							os);
+						break;
+					case PT_ORDER_SIDE:
+						WriteToDumpStream(
+							boost::any_cast<const OrderSide &>(val),
 							os);
 						break;
 
@@ -310,10 +324,13 @@ namespace trdk {
 		}
 
 		void StoreParam(const boost::posix_time::ptime &time) {
-			StoreTypedParam(PT_PTIME, time);
+			StoreTypedParam(PT_TIME, time);
 		}
 		void StoreParam(const boost::posix_time::time_duration &time) {
 			StoreTypedParam(PT_TIME_DURATION, time);
+		}
+		void StoreParam(const boost::gregorian::date &date) {
+			StoreTypedParam(PT_DATE, date);
 		}
 
 		void StoreParam(const trdk::Lib::Currency &currency) {
@@ -326,6 +343,14 @@ namespace trdk {
 
 		void StoreParam(const trdk::TradingMode &tradingMode) {
 			StoreTypedParam(PT_TRADING_MODE, tradingMode);
+		}
+
+		void StoreParam(const trdk::OrderStatus &orderStatus) {
+			StoreTypedParam(PT_ORDER_STATUS, orderStatus);
+		}
+
+		void StoreParam(const trdk::OrderSide &orderSide) {
+			StoreTypedParam(PT_ORDER_SIDE, orderSide);
 		}
 
 		void StoreParam(const boost::uuids::uuid &val) {
@@ -360,7 +385,7 @@ namespace trdk {
 
 	private:
 
-		trdk::Log::Time m_time;
+		boost::posix_time::ptime m_time;
 		trdk::Log::ThreadId m_threadId;
 
 		std::vector<boost::tuple<ParamType, boost::any>> m_params;
@@ -398,7 +423,6 @@ namespace trdk {
 
 		typedef RecordT Record;
 		typedef LogT Log;
-		typedef trdk::Log::Time Time;
 		typedef trdk::Log::ThreadId ThreadId;
 
 	private:
@@ -475,7 +499,7 @@ namespace trdk {
 								:	&m_queue.buffers.first;
 
 						lock.unlock();
-						foreach (const Record &record, buffer) {
+						for (const Record &record: buffer) {
 							m_log.Write(record);
 						}
 						buffer.clear();
@@ -513,8 +537,10 @@ namespace trdk {
 
 	public:
 	
-		AsyncLog()
-			: m_writeTask(nullptr) {
+		template<typename... LogParams>
+		explicit AsyncLog(const LogParams &...logParams)
+			: m_log(logParams...)
+			, m_writeTask(nullptr) {
 			m_queue.activeBuffer = &m_queue.buffers.first;
 		}
 
@@ -532,7 +558,7 @@ namespace trdk {
 
 	public:
 
-		bool IsEnabled() const {
+		bool IsEnabled() const noexcept {
 			return m_log.IsEnabled();
 		}
 
@@ -559,7 +585,7 @@ namespace trdk {
 		  * @sa trdk::AsyncLog::AsyncLogRecord::Format 
 		  * @sa trdk::AsyncLog::AsyncLogRecord::operator %
 		  */
-		void WaitForFlush() const throw() {
+		void WaitForFlush() const noexcept {
 			try {
 				m_writeTask->WaitForFlush();
 			} catch (...) {
@@ -572,20 +598,25 @@ namespace trdk {
 		template<typename FormatCallback, typename... RecordParams>
 		void FormatAndWrite(
 				const FormatCallback &formatCallback,
-				const RecordParams &...recordParams) {
+				const RecordParams &...recordParams)
+				noexcept {
 			if (!IsEnabled()) {
 				return;
 			}
-			Record record(
-				m_log.GetTime(),
-				m_log.GetThreadId(),
-				recordParams...);
-			formatCallback(record);
-			{
-				const Lock lock(m_queue.mutex);
-				Assert(m_queue.activeBuffer);
-				m_queue.activeBuffer->push_back(std::move(record));
+			try {
+				Record record(
+					m_log.GetTime(),
+					m_log.GetThreadId(),
+					recordParams...);
+				formatCallback(record);
+				{
+					const Lock lock(m_queue.mutex);
+					Assert(m_queue.activeBuffer);
+					m_queue.activeBuffer->emplace_back(std::move(record));
+				}
 				m_queue.condition.notify_one();
+			} catch (...) {
+				AssertFailNoException();
 			}
 		}
 

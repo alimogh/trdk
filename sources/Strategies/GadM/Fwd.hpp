@@ -12,4 +12,7 @@
 
 namespace trdk { namespace Strategies { namespace GadM {
 
+	struct ProfitLevels;	
+	struct TrailingStop;
+
 } } }

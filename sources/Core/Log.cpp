@@ -15,11 +15,13 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+namespace lt = boost::local_time;
 
-Log::Log()
-		: m_log(nullptr),
-		m_isStreamEnabled(false),
-		m_isStdOutEnabled(false) {
+Log::Log(const lt::time_zone_ptr &timeZone)
+	: m_timeZone(timeZone)
+	, m_log(nullptr)
+	, m_isStreamEnabled(false)
+	, m_isStdOutEnabled(false) {
 	//...//
 }
 
@@ -41,18 +43,25 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 		m_isStreamEnabled = true;
 	}
 	if (isStarted && writeStartInfo) {
-		const auto &utc = pt::microsec_clock::universal_time();
+		const auto &now = GetTime();
 		Write(
 			"Start",
 			GetTime(),
 			GetThreadId(),
 			nullptr,
 			boost::format(
-					"UTC: \"%1%\". EST: \"%2%\"."
-						" Build: \"" TRDK_BUILD_IDENTITY "\"."
-						" Build time: \"" __DATE__ " " __TIME__ "\".")
-				%	utc
-				%	(utc + GetEstDiff()));
+					" Build: " TRDK_BUILD_IDENTITY "."
+						" Build time: " __DATE__ " " __TIME__ "."
+						" Timezone: %1%. UTC: %2%. EST: %3% (%4%)."
+						" CST: %5% (%6%). MSK: %7% (%8%).")
+				%	GetTimeZone()->to_posix_string()
+				%	pt::microsec_clock::universal_time()
+				%	(now + GetEstTimeZoneDiff(GetTimeZone()))
+				%	GetEstTimeZoneDiff(GetTimeZone())
+				%	(now + GetCstTimeZoneDiff(GetTimeZone()))
+				%	GetCstTimeZoneDiff(GetTimeZone())
+				%	(now + GetMskTimeZoneDiff(GetTimeZone()))
+				%	GetMskTimeZoneDiff(GetTimeZone()));
 	}
 }
 
@@ -68,13 +77,13 @@ void Log::AppendRecordHead(
 	if (tag) {
 		os << '[' << tag << "]\t";
 	}
-	os << time;
-#			ifdef BOOST_WINDOWS
-	os << "\t[";
-#			else
-	os << "\t[0x" << std::ios::hex;
-#			endif
-	os << threadId << "]:\t";
+	os << time << " [";
+#	ifdef BOOST_WINDOWS
+		os << std::setw(5);
+#	else
+		os << std::ios::hex;
+#	endif
+	os << threadId << "]: ";
 	if (module) {
 		os << '[' << *module << "] ";
 	}

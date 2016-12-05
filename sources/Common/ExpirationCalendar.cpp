@@ -24,8 +24,36 @@ ContractExpiration::ContractExpiration(const gr::date &date)
 	//...//
 }
 
+bool ContractExpiration::operator ==(const ContractExpiration &rhs) const {
+	return m_date == rhs.m_date;
+}
+
+bool ContractExpiration::operator !=(const ContractExpiration &rhs) const {
+	return m_date != rhs.m_date;
+}
+
 bool ContractExpiration::operator <(const ContractExpiration &rhs) const {
 	return m_date < rhs.m_date;
+}
+
+bool ContractExpiration::operator >(const ContractExpiration &rhs) const {
+	return m_date > rhs.m_date;
+}
+
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &os,
+		const ContractExpiration &expiration) {
+	os
+		<< expiration.m_date
+		<< " (" << expiration.GetContract(true) << ')';
+	return os;
+}
+
+std::ostream & trdk::Lib::operator <<(
+		std::ostream &os,
+		const ContractExpiration::Code &code) {
+	os << char(code);
+	return os;
 }
 
 ContractExpiration::Code ContractExpiration::GetCode() const {
@@ -70,6 +98,23 @@ std::uint16_t ContractExpiration::GetYear() const {
 
 const gr::date & ContractExpiration::GetDate() const {
 	return m_date;
+}
+
+std::string ContractExpiration::GetContract(bool isShort) const {
+
+	std::ostringstream result;
+	
+	result << GetCode();
+	
+	const auto &year = GetYear();
+	if (year > 2019 || year < 2010) {
+		throw MethodDoesNotImplementedError(
+			"Work with features from < 2010 or > 2019 is not implemented");
+	}
+	result << (year - (isShort ? 2010 : 2000));
+
+	return result.str();
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +180,7 @@ ExpirationCalendar::Iterator::Iterator(
 
 ExpirationCalendar::Iterator::Iterator(const Iterator &rhs) {
 	if (rhs.m_pimpl) {
-		m_pimpl.reset(new IteratorImplementation(*rhs.m_pimpl));
+		m_pimpl = boost::make_unique<IteratorImplementation>(*rhs.m_pimpl);
 	}
 }
 
@@ -201,12 +246,12 @@ public:
 };
 
 ExpirationCalendar::ExpirationCalendar()
-	: m_pimpl(new Implementation) {
+	: m_pimpl(boost::make_unique<Implementation>()) {
 	//...//
 }
 
 ExpirationCalendar::ExpirationCalendar(const ExpirationCalendar &rhs)
-	: m_pimpl(new Implementation(*rhs.m_pimpl)) {
+	: m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {
 	//...//
 }
 
@@ -338,7 +383,7 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
 
 ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		const Symbol &symbol,
-		const pt::ptime &startTime)
+		const gr::date &startDate)
 		const {
 
 	if (symbol.GetSecurityType() != SECURITY_TYPE_FUTURES) {
@@ -353,7 +398,6 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 		return Iterator();
 	}
 
-	const gr::date &startDate = startTime.date();
 	const auto &contract = contractPos->second.get<ByExpirationDate>();
 	const auto &begin = contract.lower_bound(startDate);
 	if (begin == contract.end() || begin->GetDate() < startDate) {
@@ -361,9 +405,19 @@ ExpirationCalendar::Iterator ExpirationCalendar::Find(
 	}
 
 	return Iterator(
-		std::unique_ptr<IteratorImplementation>(
-			new IteratorImplementation(contract, begin)));
+		boost::make_unique<IteratorImplementation>(contract, begin));
 
+}
+
+ExpirationCalendar::Iterator ExpirationCalendar::Find(
+		const Symbol &symbol,
+		pt::ptime contractStartTime,
+		const pt::time_duration &sessionOpeningTime)
+		const {
+	if (contractStartTime.time_of_day() < sessionOpeningTime) {
+		contractStartTime -= pt::hours(24);
+	}
+	return Find(symbol, contractStartTime.date());
 }
 
 ExpirationCalendar::Stat ExpirationCalendar::CalcStat() const {
@@ -373,6 +427,12 @@ ExpirationCalendar::Stat ExpirationCalendar::CalcStat() const {
 		result.numberOfExpirations += symbol.second.size();
 	}
 	return result;
+}
+
+void ExpirationCalendar::Insert(
+		const Symbol &symbol,
+		const ContractExpiration &expiration) {
+	m_pimpl->m_contracts[symbol.GetSymbol()].emplace(expiration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

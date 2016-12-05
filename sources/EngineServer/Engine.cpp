@@ -15,6 +15,7 @@
 #include "Common/VersionInfo.hpp"
 
 namespace fs = boost::filesystem;
+namespace pt = boost::posix_time;
 
 using namespace trdk::EngineServer;
 using namespace trdk::Lib;
@@ -47,24 +48,31 @@ void Engine::Run(
 		bool enableStdOutLog) {
 
 	Assert(!m_context);
+	Assert(!m_eventsLog);
+	Assert(!m_tradingLog);
 
 	try {
 
-		const auto &startTime = m_eventsLog.GetTime();
-
 		const IniFile ini(path);
+		const trdk::Settings settings(
+			ini,
+			pt::microsec_clock::universal_time());
 
+		fs::create_directories(settings.GetLogsInstanceDir());
+
+		fs::copy_file(
+			path,
+			settings.GetLogsInstanceDir() / path.filename(),
+			fs::copy_option::fail_if_exists);
+
+		m_eventsLog = boost::make_unique<trdk::Engine::Context::Log>(
+			settings.GetTimeZone());
 		if (enableStdOutLog) {
-			m_eventsLog.EnableStdOut();
+			m_eventsLog->EnableStdOut();
 		}
-
-		trdk::Settings settings(
-			ini.ReadBoolKey("General", "is_replay_mode"),
-			ini.ReadFileSystemPath("General", "logs_dir"));
-
-		fs::create_directories(settings.GetLogsDir());
 		{
-			const auto &logFilePath = settings.GetLogsDir() / "engine.log";
+			const auto &logFilePath
+				= settings.GetLogsInstanceDir() / "engine.log";
 			m_eventsLogFile.open(
 				logFilePath.string().c_str(),
 				std::ios::out | std::ios::ate | std::ios::app);
@@ -73,30 +81,26 @@ void Engine::Run(
 				error % logFilePath;
 				throw EngineServer::Exception(error.str().c_str());
 			}
-			m_eventsLog.EnableStream(m_eventsLogFile, true);
+			m_eventsLog->EnableStream(m_eventsLogFile, true);
 		}
-
-		if (settings.IsReplayMode()) {
-			m_eventsLog.Warn("Replay mode.");
-		}
+		settings.Log(*m_eventsLog);
 
 		VerifyModules();
 
-		settings.Update(ini, m_eventsLog);
+		m_tradingLog = boost::make_unique<trdk::Engine::Context::TradingLog>(
+			settings.GetTimeZone());
 
-		m_context.reset(
-			new trdk::Engine::Context(
-				m_eventsLog,
-				m_tradingLog,
-				settings,
-				startTime,
-				ini));
+		m_context = boost::make_unique<trdk::Engine::Context>(
+			*m_eventsLog,
+			*m_tradingLog,
+			settings,
+			ini);
 
 		m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 
 		{
 			const auto &tradingLogFilePath
-				= settings.GetLogsDir() / "trading.log";
+				= settings.GetLogsInstanceDir() / "trading.log";
 			if (ini.ReadBoolKey("General", "trading_log")) {
 				m_tradingLogFile.open(
 					tradingLogFilePath.string().c_str(),
@@ -107,21 +111,23 @@ void Engine::Run(
 					error % tradingLogFilePath;
 					throw EngineServer::Exception(error.str().c_str());
 				}
-				m_eventsLog.Info("Trading log: %1%.", tradingLogFilePath);
-				m_tradingLog.EnableStream(
+				m_eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
+				m_tradingLog->EnableStream(
 					m_tradingLogFile,
 					*m_context);
 			} else {
-				m_eventsLog.Info("Trading log: DISABLED.");
+				m_eventsLog->Info("Trading log: DISABLED.");
 			}
 		}
 
 		m_context->Start(ini, dropCopy);
 
 	} catch (const trdk::Lib::Exception &ex) {
-		m_eventsLog.Error(
-			"Failed to init engine context: \"%1%\".",
-			ex.what());
+		if (m_eventsLog) {
+			m_eventsLog->Error(
+				"Failed to init engine context: \"%1%\".",
+				ex.what());
+		}
 		boost::format message("Failed to init engine context: \"%1%\"");
 		message % ex.what();
 		throw Exception(message.str().c_str());
@@ -171,13 +177,13 @@ void Engine::VerifyModules() const {
 	{
 		const std::string requiredModuleList[]
 			= TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST();
-		foreach (const auto &module, requiredModuleList) {
+		for (const auto &module: requiredModuleList) {
 			AssertEq(1, moduleList.count(module));
 			moduleList[module] = true;
 		}
 	}
 	
-	foreach (const auto &module, moduleList) {
+	for (const auto &module: moduleList) {
 
 		try {
 			
@@ -191,7 +197,7 @@ void Engine::VerifyModules() const {
 			getVerInfo(&realModuleVersion);
 			const VersionInfoV1 expectedModuleVersion(module.first);
 			if (realModuleVersion != expectedModuleVersion) {
-				m_eventsLog.Error(
+				m_eventsLog->Error(
 					"Module %1% has wrong version"
 						": \"%2%\", but must be \"%3%\".",
 					dll.GetFile(),
@@ -200,7 +206,7 @@ void Engine::VerifyModules() const {
 				throw EngineServer::Exception("Module has wrong version");
 			}
 
-			m_eventsLog.Debug("Found module %1%.", dll.GetFile());
+			m_eventsLog->Debug("Found module %1%.", dll.GetFile());
 		
 		} catch (const Dll::Error &ex) {
 			
@@ -208,7 +214,7 @@ void Engine::VerifyModules() const {
 				continue;
 			}
 			
-			m_eventsLog.Error(
+			m_eventsLog->Error(
 				"Failed to verify the version of the required module \"%1%\""
 					": \"%2%\".",
 				module.first,

@@ -18,17 +18,16 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Tests;
 
+namespace lt = boost::local_time;
+
 namespace {
-	Context::Log contextLog;
-	Context::TradingLog tradingLog;
+	const lt::time_zone_ptr timeZone;
+	Context::Log contextLog(timeZone);
+	Context::TradingLog tradingLog(timeZone);
 }
 
 MockContext::MockContext()
-	: Context(
-		contextLog,
-		tradingLog,
-		Settings(false, boost::filesystem::path()),
-		boost::posix_time::microsec_clock::local_time()) {
+	: Context(contextLog, tradingLog, Settings()) {
 	//...//
 }
 

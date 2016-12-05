@@ -16,11 +16,10 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/uuid/uuid_generators.hpp>
+#	include <boost/algorithm/string/join.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
-
-#include "Core/Fwd.hpp"
 
 #include "Fwd.hpp"
 #include "Api.h"

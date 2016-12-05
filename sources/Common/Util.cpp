@@ -40,8 +40,18 @@ fs::path Lib::SymbolToFileName(
 namespace {
 	
 	boost::shared_ptr<lt::posix_time_zone> GetEstTimeZone() {
-		static const lt::posix_time_zone estTimeZone("EST-5EDT,M4.1.0,M10.5.0");
-		return boost::make_shared<lt::posix_time_zone>(estTimeZone);
+		static const lt::posix_time_zone timeZone("EST-5");
+		return boost::make_shared<lt::posix_time_zone>(timeZone);
+	}
+
+	boost::shared_ptr<lt::posix_time_zone> GetCstTimeZone() {
+		static const lt::posix_time_zone timeZone("CST-6");
+		return boost::make_shared<lt::posix_time_zone>(timeZone);
+	}
+
+	boost::shared_ptr<lt::posix_time_zone> GetMskTimeZone() {
+		static const lt::posix_time_zone timeZone("MSK+3");
+		return boost::make_shared<lt::posix_time_zone>(timeZone);
 	}
 
 	pt::time_duration CalcTimeZoneOffset(
@@ -59,7 +69,7 @@ namespace {
 					0);
 			} else {
 				AssertFail(
-					"Time zone offset with 15 and 30 mins is not supported.");
+					"Timezone offset with 15 and 30 minutes is not supported.");
 			}
 		}
 		return result;
@@ -67,24 +77,57 @@ namespace {
 
 }
 
-const pt::time_duration & Lib::GetEstDiff() {
-	static const pt::time_duration result = CalcTimeZoneOffset(
-		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
-			.local_time(),
-		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
-			.utc_time());
-	return result;
+std::string Lib::ConvertToFileName(const pt::ptime &source) {
+	return
+		ConvertToFileName(source.date())
+		+ '_'
+		+ ConvertToFileName(source.time_of_day());
 }
 
-const pt::time_duration & Lib::GetEstDiffLocal() {
-	static const pt::time_duration result = CalcTimeZoneOffset(
+std::string Lib::ConvertToFileName(const pt::time_duration &source) {
+	std::ostringstream result;
+	result
+		<< std::setfill('0')
+		<< std::setw(2) << source.hours()
+		<< std::setw(2) << source.minutes()
+		<< std::setw(2) << source.seconds();
+	return result.str();
+}
+
+std::string Lib::ConvertToFileName(const gr::date &source) {
+	std::ostringstream result;
+	result
+		<< std::setfill('0') 
+		<< source.year()
+		<< std::setw(2) << source.month().as_number()
+		<< std::setw(2) << source.day();
+	return result.str();
+}
+
+pt::time_duration Lib::GetEstTimeZoneDiff(
+		const lt::time_zone_ptr &localTimeZone) {
+	return CalcTimeZoneOffset(
 		lt::local_date_time(boost::get_system_time(), GetEstTimeZone())
 			.local_time(),
-		lt::local_date_time(
-				pt::second_clock::local_time(),
-				lt::time_zone_ptr())
+		lt::local_date_time(boost::get_system_time(), localTimeZone)
 			.local_time());
-	return result;
+}
+
+pt::time_duration Lib::GetCstTimeZoneDiff(
+		const lt::time_zone_ptr &localTimeZone) {
+	return CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetCstTimeZone())
+			.local_time(),
+		lt::local_date_time(boost::get_system_time(), localTimeZone)
+			.local_time());
+}
+
+pt::time_duration Lib::GetMskTimeZoneDiff(const lt::time_zone_ptr &localTimeZone) {
+	return CalcTimeZoneOffset(
+		lt::local_date_time(boost::get_system_time(), GetMskTimeZone())
+			.local_time(),
+		lt::local_date_time(boost::get_system_time(), localTimeZone)
+			.local_time());
 }
 
 namespace {
@@ -221,3 +264,96 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+#ifdef BOOST_WINDOWS
+
+	namespace {
+
+		std::string WideCharToMultiByte(
+				const unsigned int codePage,
+				const wchar_t *const source,
+				const size_t sourceLen) {
+			Assert(source);
+			AssertLt(0, sourceLen);
+			const int resultLen = ::WideCharToMultiByte(
+				codePage,
+				0,
+				source,
+				unsigned int(sourceLen),
+				NULL,
+				0,
+				0,
+				0);
+	 		if (resultLen == 0) {
+	 			const SysError error(GetLastError());
+				boost::format message(
+					"Failed to convert string to multi-byte string (%1%)");
+				message % error;
+	 			throw SystemException(message.str().c_str());
+	 		}
+			std::string result(resultLen, 0);
+			::WideCharToMultiByte(
+				codePage,
+				0,
+				source,
+				unsigned int(sourceLen),
+				reinterpret_cast<char *>(&result[0]),
+				int(result.size()),
+				0,
+				0);
+			return result;
+		}
+
+		template<class Source>
+		std::wstring MultiByteToWideChar(
+				const unsigned int codePage,
+				const Source *const source,
+				const size_t sourceLen) {
+			Assert(source);
+			AssertLt(0, sourceLen);
+			const auto resultLen = ::MultiByteToWideChar(
+				codePage,
+				0,
+				reinterpret_cast<const char *>(source),
+				int(sourceLen),
+				NULL,
+				0);
+	 		if (resultLen == 0) {
+	 			const SysError error(GetLastError());
+				boost::format message(
+					"Failed to convert string to wide-char string (%1%)");
+				message % error;
+	 			throw SystemException(message.str().c_str());
+	 		}
+			std::wstring result(resultLen, 0);
+			::MultiByteToWideChar(
+				codePage,
+				0,
+				reinterpret_cast<const char *>(source),
+				int(sourceLen),
+				&result[0],
+				int(result.size()));
+			return result;
+		}
+
+	}
+
+	std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
+		if (source.empty()) {
+			return std::string();
+		}
+		const auto &buffer
+			= MultiByteToWideChar(CP_UTF8, source.c_str(), source.size());
+		return WideCharToMultiByte(CP_ACP, buffer.c_str(), buffer.size());
+	}
+
+#else
+
+	std::string Lib::ConvertUtf8ToAscii(const std::string &source) {
+		AssertFail("trdk::Lib::ConvertUtf8ToAscii is not implemented.");
+		return source;
+	}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////

@@ -12,7 +12,6 @@
 
 #include "Context.hpp"
 #include "Interactor.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {

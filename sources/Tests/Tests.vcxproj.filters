@@ -9,8 +9,14 @@
       <UniqueIdentifier>{67d44935-2554-4781-b7e2-20f7280d0316}</UniqueIdentifier>
       <Extensions>Mock*.cpp;Mock*.hpp;Mock*.h;</Extensions>
     </Filter>
-    <Filter Include="Tests">
+    <Filter Include="Dummies">
+      <UniqueIdentifier>{41fea1af-e367-461a-ad3e-7207c4030c41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Unit Tests">
       <UniqueIdentifier>{4669332f-e99e-471a-92ee-eaecea72e893}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Func Tests">
+      <UniqueIdentifier>{dc672552-1ea9-431f-a573-f527d7f12639}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -21,10 +27,26 @@
       <Filter>Mocks</Filter>
     </ClInclude>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="MockDropCopy.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="MockBarService.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="MockSecurity.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyContext.hpp">
+      <Filter>Dummies</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyMarketDataSource.hpp">
+      <Filter>Dummies</Filter>
+    </ClInclude>
+    <ClInclude Include="FuncTestList.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MovingAverageServiceTest.cpp">
-      <Filter>Tests</Filter>
+    <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp">
+      <Filter>Unit Tests</Filter>
     </ClCompile>
     <ClCompile Include="PriceBookTest.cpp">
       <Filter>Tests</Filter>
@@ -37,21 +59,37 @@
     </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
-    <ClCompile Include="SymbolTest.cpp">
-      <Filter>Tests</Filter>
+    <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp">
+      <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="BarServiceTest.cpp">
-      <Filter>Tests</Filter>
+    <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp">
+      <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="ExpirationCalendarTest.cpp">
-      <Filter>Tests</Filter>
+    <ClCompile Include="DummyContext.cpp">
+      <Filter>Dummies</Filter>
     </ClCompile>
+    <ClCompile Include="DummyMarketDataSource.cpp">
+      <Filter>Dummies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\SecurityUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\SymbolUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\UtilUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\PriceBookUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="FuncTestList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Indicators.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\output\x86\lib\Debug DLL\Services_dbg.lib">

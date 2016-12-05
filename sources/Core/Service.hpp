@@ -27,9 +27,16 @@ namespace trdk {
 
 		explicit Service(
 			trdk::Context &,
+			const boost::uuids::uuid &typeId,
 			const std::string &name,
-			const std::string &tag);
+			const std::string &tag,
+			const trdk::Lib::IniSectionRef &);
 		virtual ~Service();
+
+	public:
+
+		const boost::uuids::uuid & GetTypeId() const;
+		const boost::uuids::uuid & Service::GetId() const;
 
 	public:
 
@@ -43,6 +50,10 @@ namespace trdk {
 
 	public:
 
+		void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				const Security &,
+				Security::Request &);
 		bool RaiseLevel1UpdateEvent(const trdk::Security &);
 		bool RaiseLevel1TickEvent(
 				const trdk::Security &,
@@ -52,8 +63,7 @@ namespace trdk {
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		bool RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
@@ -68,18 +78,25 @@ namespace trdk {
 				const trdk::Security &,
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
-		virtual void RaiseSecurityServiceEvent(
+		bool RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
-	protected:
+	public:
 
 		//! Notifies about new security start.
-		/** @return Return desired security data start. Can be
-		  * boost::posix_time::not_a_date_time.
+		virtual void OnSecurityStart(
+				const trdk::Security &,
+				trdk::Security::Request &);
+		//! Notifies when security switched to another contract.
+		/** All marked data for security will be reset (so if security just
+		  * started).
 		  */
-		virtual boost::posix_time::ptime OnSecurityStart(
-				const trdk::Security &);
+		virtual void OnSecurityContractSwitched(
+				const boost::posix_time::ptime &,
+				const trdk::Security &,
+				trdk::Security::Request &);
 
 		virtual bool OnLevel1Update(const trdk::Security &);
 
@@ -92,8 +109,7 @@ namespace trdk {
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 
 		virtual bool OnServiceDataUpdate(
 				const trdk::Service &,
@@ -119,14 +135,15 @@ namespace trdk {
 				const trdk::PriceBook &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
-		virtual void OnSecurityServiceEvent(
+		virtual bool OnSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				const trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

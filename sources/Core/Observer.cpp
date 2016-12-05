@@ -15,6 +15,8 @@
 using namespace trdk;
 using namespace trdk::Lib;
 
+namespace pt = boost::posix_time;
+
 Observer::Observer(
 		Context &context,
 		const std::string &name,
@@ -40,19 +42,19 @@ void Observer::RaiseBrokerPositionUpdateEvent(
 		Security &security,
 		const Qty &qty,
 		bool isInitial) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
 void Observer::RaiseNewBarEvent(
 		Security &security,
 		const Security::Bar &bar) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	return OnNewBar(security, bar);
 }
 
 void Observer::RaiseLevel1UpdateEvent(Security &security) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnLevel1Update(security);
 }
 
@@ -60,7 +62,7 @@ void Observer::RaiseLevel1TickEvent(
 		Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnLevel1Tick(security, time, value);
 }
 
@@ -68,22 +70,22 @@ void Observer::RaiseNewTradeEvent(
 		Security &security,
 		const boost::posix_time::ptime &time,
 		const trdk::ScaledPrice &price,
-		const trdk::Qty &qty,
-		const trdk::OrderSide &side) {
-	const Lock lock(GetMutex());
-	OnNewTrade(security, time, price, qty, side);
+		const trdk::Qty &qty) {
+	const auto lock = LockForOtherThreads();
+	OnNewTrade(security, time, price, qty);
 }
 
 void Observer::RaiseServiceDataUpdateEvent(
 		const Service &service,
 		const TimeMeasurement::Milestones &timeMeasurement) {
-	const Lock lock(GetMutex());
+	const auto lock = LockForOtherThreads();
 	OnServiceDataUpdate(service, timeMeasurement);
 }
 
 void Observer::RaiseSecurityServiceEvent(
+		const pt::ptime &time,
 		Security &security,
-		const Security::ServiceEvent &event) {
-	const Lock lock(GetMutex());
-	OnSecurityServiceEvent(security, event);
+		const Security::ServiceEvent &securityEvent) {
+	const auto lock = LockForOtherThreads();
+	OnSecurityServiceEvent(time, security, securityEvent);
 }

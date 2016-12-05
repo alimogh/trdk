@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Fwd.hpp"
-
 namespace trdk {
 
 	class TRDK_CORE_API Terminal : private boost::noncopyable {

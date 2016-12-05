@@ -25,7 +25,7 @@ namespace trdk { namespace Tests {
 
 	public:
 
-		MOCK_METHOD0(SyncDispatching, void());
+		MOCK_CONST_METHOD0(SyncDispatching, std::unique_ptr<DispatchingLock>());
 		
 		virtual RiskControl & GetRiskControl(const trdk::TradingMode &);
 		virtual const RiskControl & GetRiskControl(

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "EventsLog.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -36,8 +35,13 @@ namespace trdk {
 
 		class TRDK_CORE_API Params;
 
+		class TRDK_CORE_API DispatchingLock : private boost::noncopyable {
+		public:
+			virtual ~DispatchingLock() = 0;
+		};
+
 		typedef void (CurrentTimeChangeSlotSignature)(
-					const boost::posix_time::ptime &newTime);
+				const boost::posix_time::ptime &newTime);
 		typedef boost::function<CurrentTimeChangeSlotSignature>
 			CurrentTimeChangeSlot;
 		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
@@ -60,8 +64,7 @@ namespace trdk {
 		explicit Context(
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
-				const trdk::Settings &,
-				const boost::posix_time::ptime &startTime);
+				const trdk::Settings &);
 		virtual ~Context();
 
 	public:
@@ -88,13 +91,30 @@ namespace trdk {
 		//! Context setting with predefined key list and predefined behavior.
 		const trdk::Settings & GetSettings() const;
 
+		//! Context local start time.
+		/** Does not depend from replay mode, always actual start time for local 
+		  * time zone.
+		  * @sa GetCurrentTime
+		  */
 		const boost::posix_time::ptime & GetStartTime() const;
 
+		//! Current time.
+		/** Initialization, value and time zone depends from settings and replay
+		  * mode.
+		  * @sa GetStartTime
+		  */
 		boost::posix_time::ptime GetCurrentTime() const;
+		//! The current time in the specific timezone.
+		/** Initialization, value and timezone depends from settings and replay
+		  * mode.
+		  * @sa GetStartTime
+		  */
+		boost::posix_time::ptime GetCurrentTime(
+				const boost::local_time::time_zone_ptr &)
+				const;
 
-		//! Sets current time.
-		/** If current time set  one time - real time will be used more.
-		  * @param newTime				New time, can be only greater or equal
+		//! Sets current time (for replay mode).
+		/** @param newTime				New time, can be only greater or equal
 		  *								then current.
 		  * @param signalAboutUpdate	If true - signal about update will be
 		  *								sent for all subscribers.
@@ -103,7 +123,7 @@ namespace trdk {
 		void SetCurrentTime(
 				const boost::posix_time::ptime &newTime,
 				bool signalAboutUpdate);
-		//! Subscribes to time change by SetCurrentTime.
+		//! Subscribes to a time change by SetCurrentTime.
 		/** Signals before new time will be set for context.
 		  * @sa SetCurrentTime
 		  */
@@ -113,7 +133,7 @@ namespace trdk {
 
 		//! Waits until each of dispatching queue will be empty (but not all
 		//! at the same moment).
-		virtual void SyncDispatching() = 0;
+		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const = 0;
 
 		virtual RiskControl & GetRiskControl(const trdk::TradingMode &) = 0;
 		virtual const RiskControl & GetRiskControl(
@@ -219,7 +239,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 
@@ -272,7 +292,7 @@ namespace trdk {
 	private:
 	
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 	
 	};
 

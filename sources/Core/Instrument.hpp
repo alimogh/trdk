@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {

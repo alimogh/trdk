@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Context.hpp"
-#include "Fwd.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -19,46 +18,47 @@ namespace trdk {
 	class TRDK_CORE_API Settings {
 
 	public:
-
-		typedef boost::posix_time::ptime Time;
-
-	private:
-
-		struct Values {
-			trdk::Lib::SecurityType defaultSecurityType;
-			trdk::Lib::Currency defaultCurrency;
-		};
-
-	public:
 	
+		Settings();
 		explicit Settings(
-				bool isReplayMode,
-				const boost::filesystem::path &logsDir);
+				const trdk::Lib::Ini &,
+				const boost::posix_time::ptime &universalStartTime);
 
 	public:
 
-		void Update(const trdk::Lib::Ini &, trdk::Context::Log &);
-
-	private:
-
-		void UpdateStatic(const trdk::Lib::Ini &, trdk::Context::Log &);
+		void Log(trdk::Context::Log &) const;
 
 	public:
 
-		bool IsReplayMode() const throw() {
+		const boost::posix_time::ptime & GetStartTime() const {
+			return m_startTime;
+		}
+
+		bool IsReplayMode() const noexcept {
 			return m_isReplayMode;
 		}
 
-		const boost::filesystem::path & GetLogsDir() const {
-			return m_logsDir;
+		bool IsMarketDataLogEnabled() const {
+			return m_isMarketDataLogEnabled;
 		}
+
+		const boost::filesystem::path & GetLogsRootDir() const {
+			return m_logsRootDir;
+		}
+		const boost::filesystem::path & GetLogsInstanceDir() const {
+			return m_logsInstanceDir;
+		}
+
+		boost::filesystem::path GetBarsDataLogDir() const;
+
+		boost::filesystem::path GetPositionsLogDir() const;
 
 		//! Default security Currency.
 		/** Path: Defaults::currency
 		  * Ex.: "currency = USD"
 		  */
 		const trdk::Lib::Currency & GetDefaultCurrency() const {
-			return m_values.defaultCurrency;
+			return m_defaultCurrency;
 		}
 
 		//! Default security Security Type.
@@ -67,15 +67,23 @@ namespace trdk {
 		  * Ex.: "security_type = FOP"
 		  */
 		const trdk::Lib::SecurityType & GetDefaultSecurityType() const {
-			return m_values.defaultSecurityType;
+			return m_defaultSecurityType;
+		}
+
+		const boost::local_time::time_zone_ptr & GetTimeZone() const {
+			return m_timeZone;
 		}
 
 	private:
 
-		Values m_values;
-		bool m_isLoaded;
-		bool m_isReplayMode;
-		boost::filesystem::path m_logsDir;
+		const trdk::Lib::SecurityType m_defaultSecurityType;
+		const trdk::Lib::Currency m_defaultCurrency;
+		const bool m_isReplayMode;
+		const bool m_isMarketDataLogEnabled;
+		const boost::posix_time::ptime m_startTime;
+		const boost::filesystem::path m_logsRootDir;
+		const boost::filesystem::path m_logsInstanceDir;
+		const boost::local_time::time_zone_ptr m_timeZone;
 
 	};
 

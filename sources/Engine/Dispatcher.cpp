@@ -19,10 +19,13 @@ namespace pt = boost::posix_time;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Engine;
+using namespace trdk::Engine::Details;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+	////////////////////////////////////////////////////////////////////////////////
 	
 	struct NoMeasurementPolicy {
 		static TimeMeasurement::Milestones StartDispatchingTimeMeasurement(
@@ -38,6 +41,45 @@ namespace {
 		}
 	};
 
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct StopVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Stop();
+		}
+	};
+
+	struct ActivateVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Activate();
+		}
+	};
+
+	struct SuspendVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Suspend();
+		}
+	};
+
+	struct IsActiveVisitor : public boost::static_visitor<bool> {
+		template<typename T>
+		bool operator ()(const T *obj) const {
+			return obj->IsActive();
+		}
+	};
+
+	struct SyncVisitor : public boost::static_visitor<> {
+		template<typename T>
+		void operator ()(T *obj) const {
+			obj->Sync();
+		}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,15 +92,20 @@ Dispatcher::Dispatcher(Engine::Context &context)
 	, m_positionsUpdates("Positions", m_context)
 	, m_brokerPositionsUpdates("Broker positions", m_context)
 	, m_newBars("Bars", m_context)
-	, m_bookUpdateTicks("Book update ticks", m_context)
-	, m_securityServiceEvents("Security service events", m_context) {
+	, m_bookUpdateTicks("Book update ticks", m_context) {
+
+	m_queues.emplace_back(&m_level1Updates);
+	m_queues.emplace_back(&m_level1Ticks);
+	m_queues.emplace_back(&m_newTrades);
+	m_queues.emplace_back(&m_positionsUpdates);
+	m_queues.emplace_back(&m_brokerPositionsUpdates);
+	m_queues.emplace_back(&m_newBars);
+	m_queues.emplace_back(&m_bookUpdateTicks);
+	m_queues.shrink_to_fit();
+
 	unsigned int threadsCount = 1;
 	boost::shared_ptr<boost::barrier> startBarrier(
 		new boost::barrier(threadsCount + 1));
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::Suspend
-	// @sa Dispatcher::IsActive
 	StartNotificationTask<DispatchingTimeMeasurementPolicy>(
 		startBarrier,
 		m_level1Updates,
@@ -68,27 +115,18 @@ Dispatcher::Dispatcher(Engine::Context &context)
 		m_positionsUpdates,
 		m_newBars,
 		m_brokerPositionsUpdates,
-		m_securityServiceEvents,
 		threadsCount);
 	AssertEq(0, threadsCount);
 	startBarrier->wait();
+
 }
 
 Dispatcher::~Dispatcher() {
 	try {
 		m_context.GetLog().Debug("Stopping events dispatching...");
-		// @sa Dispatcher::Dispatcher
-		// @sa Dispatcher::Activate
-		// @sa Dispatcher::Suspend
-		// @sa Dispatcher::IsActive
-		m_level1Updates.Stop();
-		m_level1Ticks.Stop();
-		m_bookUpdateTicks.Stop();
-		m_newTrades.Stop();
-		m_positionsUpdates.Stop();
-		m_newBars.Stop();
-		m_brokerPositionsUpdates.Stop();
-		m_securityServiceEvents.Stop();
+		for (auto &queue: m_queues) {
+			boost::apply_visitor(StopVisitor(), queue);
+		}
 		m_threads.join_all();
 		m_context.GetLog().Debug("Events dispatching stopped.");
 	} catch (...) {
@@ -99,64 +137,53 @@ Dispatcher::~Dispatcher() {
 
 void Dispatcher::Activate() {
 	m_context.GetLog().Debug("Starting events dispatching...");
-	// @sa Dispatcher::Dispatcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Suspend
-	// @sa Dispatcher::IsActive
-	m_level1Updates.Activate();
-	m_level1Ticks.Activate();
-	m_bookUpdateTicks.Activate();
-	m_newTrades.Activate();
-	m_positionsUpdates.Activate();
-	m_newBars.Activate();
-	m_brokerPositionsUpdates.Activate();
-	m_securityServiceEvents.Activate();
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(ActivateVisitor(), queue);
+	}
 	m_context.GetLog().Debug("Events dispatching started.");
 }
 
 void Dispatcher::Suspend() {
 	m_context.GetLog().Debug("Suspending events dispatching...");
-	// @sa Dispatcher::Disptcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::IsActive
-	m_level1Updates.Suspend();
-	m_level1Ticks.Suspend();
-	m_bookUpdateTicks.Suspend();
-	m_newTrades.Suspend();
-	m_positionsUpdates.Suspend();
-	m_newBars.Suspend();
-	m_brokerPositionsUpdates.Suspend();
-	m_securityServiceEvents.Suspend();
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(SuspendVisitor(), queue);
+	}
 	m_context.GetLog().Debug("Events dispatching suspended.");
 }
 
+Dispatcher::UniqueSyncLock Dispatcher::SyncDispatching() const {
+	UniqueSyncLock lock(m_syncMutex);
+	for (auto &queue: m_queues) {
+		boost::apply_visitor(SyncVisitor(), queue);
+	}
+	return lock;
+}
+
 bool Dispatcher::IsActive() const {
-	// @sa Dispatcher::Disptcher
-	// @sa Dispatcher::~Dispatcher
-	// @sa Dispatcher::Activate
-	// @sa Dispatcher::Suspend
-	return
-		m_level1Updates.IsActive()
-		|| m_level1Ticks.IsActive()
-		|| m_bookUpdateTicks.IsActive()
-		|| m_newTrades.IsActive()
-		|| m_positionsUpdates.IsActive()
-		|| m_newBars.IsActive()
-		|| m_brokerPositionsUpdates.IsActive()
-		|| m_securityServiceEvents.IsActive();
+	for (auto &queue: m_queues) {
+		if (!boost::apply_visitor(IsActiveVisitor(), queue)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void Dispatcher::SignalLevel1Update(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
-		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (subscriber.IsBlocked()) {
-		return;
+		const TimeMeasurement::Milestones &delayMeasurement) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_level1Updates.Queue(
+			boost::make_tuple(&security, subscriber, delayMeasurement),
+			true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
 	}
-	m_level1Updates.Queue(
-		boost::make_tuple(&security, subscriber, timeMeasurement),
-		true);
 }
 
 void Dispatcher::SignalLevel1Tick(
@@ -164,14 +191,17 @@ void Dispatcher::SignalLevel1Tick(
 		Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value,
+		const TimeMeasurement::Milestones &delayMeasurement,
 		bool flush) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		const SubscriberPtrWrapper::Level1Tick tick(security, time, value);
 		m_level1Ticks.Queue(
-			boost::make_tuple(tick, subscriber),
+			boost::make_tuple(
+				SubscriberPtrWrapper::Level1Tick{&security, time, value},
+				subscriber,
+				delayMeasurement),
 			flush);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
@@ -186,18 +216,17 @@ void Dispatcher::SignalNewTrade(
 		const pt::ptime &time,
 		const ScaledPrice &price,
 		const Qty &qty,
-		const OrderSide &side) {
+		const TimeMeasurement::Milestones &delayMeasurement) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		const SubscriberPtrWrapper::Trade trade = {
-			&security,
-			time,
-			price,
-			qty,
-			side};
-		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
+		m_newTrades.Queue(
+			boost::make_tuple(
+				SubscriberPtrWrapper::Trade{&security, time, price, qty},
+				subscriber,
+				delayMeasurement),
+			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();
@@ -225,13 +254,10 @@ void Dispatcher::SignalBrokerPositionUpdate(
 		const Qty &qty,
 		bool isInitial) {
 	try {
-		const SubscriberPtrWrapper::BrokerPosition position = {
-			&security,
-			qty,
-			isInitial
-		};
 		m_brokerPositionsUpdates.Queue(
-			boost::make_tuple(position , subscriber),
+			boost::make_tuple(
+				SubscriberPtrWrapper::BrokerPosition{&security, qty, isInitial},
+				subscriber),
 			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
@@ -281,15 +307,33 @@ void Dispatcher::SignalBookUpdateTick(
 
 void Dispatcher::SignalSecurityServiceEvents(
 		SubscriberPtrWrapper &subscriber,
+		const pt::ptime &time,
 		Security &security,
 		const Security::ServiceEvent &serviceEvent) {
+	Assert(!m_syncMutex.try_lock_shared());
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		m_securityServiceEvents.Queue(
-			boost::make_tuple(&security, serviceEvent, subscriber),
-			true);
+		subscriber.RaiseSecurityServiceEvent(time, security, serviceEvent);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
+	}
+}
+
+void Dispatcher::SignalSecurityContractSwitched(
+		SubscriberPtrWrapper &subscriber,
+		const pt::ptime &time,
+		Security &security,
+		Security::Request &request) {
+	Assert(!m_syncMutex.try_lock_shared());
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		subscriber.RaiseSecurityContractSwitchedEvent(time, security, request);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();

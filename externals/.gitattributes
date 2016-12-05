@@ -1,0 +1,2 @@
+install_local		eol=lf
+install_system		eol=lf

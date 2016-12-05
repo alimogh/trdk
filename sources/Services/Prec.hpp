@@ -18,15 +18,13 @@
 #	include <boost/accumulators/statistics.hpp>
 #	include <boost/accumulators/statistics/rolling_mean.hpp>
 #	include <boost/variant.hpp>
-#	include <boost/optional.hpp>
 #	include <boost/unordered_map.hpp>
 #	include <boost/uuid/string_generator.hpp>
+#	include <boost/range/adaptor/reversed.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"
 #include "Common/SegmentedVector.hpp"
-
-#include "Core/Fwd.hpp"
 
 #include <string>
 

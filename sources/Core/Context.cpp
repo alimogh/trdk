@@ -21,6 +21,14 @@ using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace sig = boost::signals2;
+namespace lt = boost::local_time;
+
+////////////////////////////////////////////////////////////////////////////////
+
+Context::DispatchingLock::~DispatchingLock() {
+	//...//
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +68,7 @@ namespace {
 		
 		explicit StatReport(Context &context)
 			: m_reportPeriod(pt::seconds(30))
-            , m_strategyIndex(0)
+			, m_strategyIndex(0)
 			, m_tsIndex(0)
 			, m_dispatchingIndex(0)
 			, m_isSecurititesStatStopped(true)
@@ -137,7 +145,7 @@ namespace {
 			Assert(stream);
 
 			const fs::path &path
-					= m_context.GetSettings().GetLogsDir() / file;
+				= m_context.GetSettings().GetLogsInstanceDir() / file;
 			m_context.GetLog().Info(
 				"Reporting %1% to file %2% with period %3%...",
 				name,
@@ -154,12 +162,15 @@ namespace {
 			}
 
 			stream
-				<< std::endl
-				<< "=========================================================================="
-				<< std::endl << "Started at "
-				<< pt::microsec_clock::universal_time() << " with period "
-				<< m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
-				<< std::endl;
+				<<	std::endl
+				<<	"=========================================================================="
+				<<	std::endl << "Started at "
+				<<	lt::local_microsec_clock::local_time(
+							m_context.GetSettings().GetTimeZone())
+						.local_time()
+				<<	" with period "
+				<<	m_reportPeriod << " (" << TRDK_BUILD_IDENTITY << ")."
+				<<	std::endl;
 
 		}
 
@@ -284,8 +295,9 @@ namespace {
 				destination
 					<< index << '\t' << now << '\t' << tag 
 					<< '\t' << GetMilestoneName(id)
-					<< '\t' << stat
-					<< std::endl;
+					<< '\t';
+				stat.Dump(destination, m_reportPeriod.total_seconds());
+				destination << std::endl;
 			}
 
 			accum.Reset();
@@ -306,7 +318,7 @@ namespace {
 					<< '\t' << security.GetSource().GetTag()
 					<< '\t' << security.GetSymbol().GetSymbol()
 					<< '\t' << numberOfMarketDataUpdates
-					<< '\t' << security.GetLastMarketDataTime().time_of_day()
+					<< '\t' << security.GetLastMarketDataTime()
 					<< std::endl;
 			}
 			return !IsZero(numberOfMarketDataUpdates);
@@ -353,45 +365,53 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace {
-	typedef boost::shared_mutex CustomTimeMutex;
-	typedef boost::shared_lock<CustomTimeMutex> CustomTimeReadLock;
-	typedef boost::unique_lock<CustomTimeMutex> CustomTimeWriteLock;
-}
-
 class Context::Implementation : private boost::noncopyable {
 
 public:
+
+	template<typename SlotSignature>
+	struct SignalTrait {
+		typedef sig::signal<
+				SlotSignature,
+				sig::optional_last_value<
+					typename boost::function_traits<
+							SlotSignature>
+						::result_type>,
+				int,
+				std::less<int>,
+				boost::function<SlotSignature>,
+				typename sig::detail::extended_signature<
+						boost::function_traits<SlotSignature>::arity,
+						SlotSignature>
+					::function_type,
+				sig::dummy_mutex>
+			Signal;
+	};
 
 	Context::Log &m_log;
 	Context::TradingLog &m_tradingLog;
 
 	Settings m_settings;
 
-	const pt::ptime m_startTime;
-
 	Params m_params;
 
 	std::unique_ptr<StatReport> m_statReport;
 
-	CustomTimeMutex m_customCurrentTimeMutex;
 	pt::ptime m_customCurrentTime;
-	boost::signals2::signal<CurrentTimeChangeSlotSignature>
+	SignalTrait<CurrentTimeChangeSlotSignature>::Signal
 		m_customCurrentTimeChangeSignal;
 
-	boost::signals2::signal<StateUpdateSlotSignature> m_stateUpdateSignal;
+	SignalTrait<StateUpdateSlotSignature>::Signal m_stateUpdateSignal;
 	
 	explicit Implementation(
 			Context &context,
 			Log &log,
 			TradingLog &tradingLog,
-			const Settings &settings,
-			const pt::ptime &startTime)
-		: m_log(log),
-		m_tradingLog(tradingLog),
-		m_settings(settings),
-		m_startTime(startTime),
-		m_params(context) {
+			const Settings &settings)
+		: m_log(log)
+		, m_tradingLog(tradingLog)
+		, m_settings(settings)
+		, m_params(context) {
 		//...//
 	}
 
@@ -399,24 +419,14 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(
-		Log &log,
-		TradingLog &tradingLog,
-		const Settings &settings,
-		const pt::ptime &startTime) {
-	m_pimpl = new Implementation(
-		*this,
-		 log,
-		 tradingLog,
-		 settings,
-		 startTime);
-
-	m_pimpl->m_statReport.reset(new StatReport(*this));
-
+Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings)
+	: m_pimpl(
+		boost::make_unique<Implementation>(*this, log, tradingLog, settings)) {
+	m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
 }
 
 Context::~Context() {
-	delete m_pimpl;
+	//...//
 }
 
 void Context::OnStarted() {
@@ -437,25 +447,28 @@ Context::TradingLog & Context::GetTradingLog() const throw() {
 
 void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 
-	AssertNe(pt::not_a_date_time, time); 
-#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
-			AssertLe(m_pimpl->m_customCurrentTime, time);
-		}
-#	endif
+	Assert(GetSettings().IsReplayMode());
+
+	if (time.is_not_a_date_time()) {
+		Assert(!time.is_not_a_date_time());
+		throw Exception("New current is not set");
+	} else if (
+			!m_pimpl->m_customCurrentTime.is_not_a_date_time()
+			&& time < m_pimpl->m_customCurrentTime) {
+		AssertLe(m_pimpl->m_customCurrentTime, time);
+		boost::format error(
+			"Failed to set new current time %1%"
+				" as it less the current %2%");
+		error % time % m_pimpl->m_customCurrentTime;
+		throw Exception(error.str().c_str());
+	}
 
 	if (signalAboutUpdate) {
-		pt::ptime prevCurrentTime;
-		{
-			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
-			if (m_pimpl->m_customCurrentTime == time) {
-				return;
-			}
-			prevCurrentTime = m_pimpl->m_customCurrentTime;
+		if (m_pimpl->m_customCurrentTime == time) {
+			return;
 		}
-		for ( ; ; ) {
+		for (pt::ptime prevCurrentTime = m_pimpl->m_customCurrentTime; ; ) {
 			m_pimpl->m_customCurrentTimeChangeSignal(time);
-			const CustomTimeReadLock readLock(m_pimpl->m_customCurrentTimeMutex);
 			if (prevCurrentTime == m_pimpl->m_customCurrentTime) {
 				break;
 			}
@@ -463,14 +476,18 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 		}
 	}
 
-	const CustomTimeWriteLock lock(m_pimpl->m_customCurrentTimeMutex);
-#	ifdef BOOST_ENABLE_ASSERT_HANDLER
-		// Second test for changes in signal slot:
-		if (m_pimpl->m_customCurrentTime != pt::not_a_date_time) {
-			AssertLe(m_pimpl->m_customCurrentTime, time);
-		}
-#	endif
+	if (
+			!m_pimpl->m_customCurrentTime.is_not_a_date_time()
+			&& time < m_pimpl->m_customCurrentTime) {
+		AssertLe(m_pimpl->m_customCurrentTime, time);
+		boost::format error(
+			"Failed to set new current time %1%"
+				" as it set greater the current %2% (was set by callback)");
+		error % time % m_pimpl->m_customCurrentTime;
+		throw Exception(error.str().c_str());
+	}
 	m_pimpl->m_customCurrentTime = time;
+
 }
 
 Context::CurrentTimeChangeSlotConnection
@@ -481,14 +498,18 @@ Context::SubscribeToCurrentTimeChange(
 }
 
 const pt::ptime & Context::GetStartTime() const {
-	return m_pimpl->m_startTime;
+	return m_pimpl->m_settings.GetStartTime();
 }
 
 pt::ptime Context::GetCurrentTime() const {
+	return GetCurrentTime(m_pimpl->m_settings.GetTimeZone());
+}
+
+pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
 	if (!GetSettings().IsReplayMode()) {
-		return GetLog().GetTime();
+		return lt::local_microsec_clock::local_time(timeZone).local_time();
 	} else {
-		const CustomTimeReadLock lock(m_pimpl->m_customCurrentTimeMutex);
+		Assert(!m_pimpl->m_customCurrentTime.is_not_a_date_time());
 		return m_pimpl->m_customCurrentTime;
 	}
 }
@@ -621,12 +642,12 @@ Context::Params::KeyDoesntExistError::~KeyDoesntExistError() {
 }
 
 Context::Params::Params(const Context &context)
-		: m_pimpl(new Implementation(context)) {
+	: m_pimpl(boost::make_unique<Implementation>(context)) {
 	//...//
 }
 
 Context::Params::~Params() {
-	delete m_pimpl;
+	//...//
 }
 
 std::string Context::Params::operator [](const std::string &key) const {

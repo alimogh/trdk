@@ -28,7 +28,6 @@ namespace trdk { namespace Engine {
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
-				const boost::posix_time::ptime &startTime,
 				const trdk::Lib::Ini &);
 		virtual ~Context();
 
@@ -42,7 +41,7 @@ namespace trdk { namespace Engine {
 
 		void ClosePositions();
 
-		virtual void SyncDispatching();
+		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
 
 	public:
 

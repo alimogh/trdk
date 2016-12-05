@@ -28,6 +28,8 @@ namespace EmaFuturesStrategy {
 		numberOfIntentions
 	};
 
+	const char * ConvertToPch(const Intention &);
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	class Position : virtual public trdk::Position {
@@ -37,7 +39,6 @@ namespace EmaFuturesStrategy {
 		typedef trdk::Position Base;
 
 		struct PriceCheckResult {
-			bool isAllowed;
 			ScaledPrice start;
 			ScaledPrice margin;
 			ScaledPrice current;
@@ -48,65 +49,81 @@ namespace EmaFuturesStrategy {
 		explicit Position(
 			const Direction &openReason,
 			const SlowFastEmas &emas,
-			std::ostream &reportStream);
+			std::ostream &reportStream,
+			const Intention &openIntention,
+			bool isSuperAggressiveClosing);
 		virtual ~Position();
 
 	public:
 
-		const Time & GetStartTime() const;
-		const Time & GetCloseStartTime() const;
+		const boost::posix_time::ptime & GetStartTime() const;
+		const boost::posix_time::ptime & GetCloseStartTime() const;
 
 		const CloseType & GetOpenType() const;
 
 		const Direction & GetOpenReason() const;
 
 		const Intention & GetIntention() const;
+
+		bool IsSuperAggressiveClosing() const;
 		
 		void SetIntention(
 				Intention,
 				const CloseType &,
 				const Direction &closeReason);
+		void SetIntention(
+				Intention,
+				const CloseType &,
+				const Direction &closeReason,
+				const Qty &intentionSize);
 
 		void MoveOrderToCurrentPrice();
 
 		void Sync();
 
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const = 0;
-		virtual PriceCheckResult CheckStopLossByPrice(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
 				double priceDelta)
 				const
-				= 0;
-		virtual PriceCheckResult CheckStopLossByLoss(
+			= 0;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
 				const
-				= 0;
-		PriceCheckResult CheckTakeProfit(
+			= 0;
+		boost::optional<PriceCheckResult> CheckTakeProfit(
 				double minProfit,
-				double trailingPercentage);
+				double trailingRatio)
+				const;
+		//! Checks closing by trailing stop.
+		/** @sa https://app.asana.com/0/186349222941752/196887742980415
+		  */
+		boost::optional<PriceCheckResult> CheckTrailingStop(
+				const TrailingStop &)
+				const;
+
+		//! Checks profit level.
+		/** @sa https://app.asana.com/0/196887491555385/192879506137993
+		  */
+		Qty CheckProfitLevel(const ProfitLevels &) const;
 
 		static void OpenReport(std::ostream &);
 
 	protected:
-	
-		virtual ScaledPrice GetPassiveOpenPrice() const = 0;
-		virtual ScaledPrice GetMarketOpenPrice() const = 0;
-		virtual ScaledPrice GetPassiveClosePrice() const = 0;
-		virtual ScaledPrice GetMarketClosePrice() const = 0;
 
-		virtual ScaledPrice CaclCurrentProfit() const = 0;
-
-		void Report() throw();
+		void Report() noexcept;
 
 	private:
 
 		void Sync(Intention &);
 
+		bool IsSuperAggressiveClosing(const Intention &) const;
+
 	private:
 
-		Time m_startTime;
-		Time m_closeStartTime;
+		boost::posix_time::ptime m_startTime;
+		boost::posix_time::ptime m_closeStartTime;
 		
 		Intention m_intention;
+		boost::optional<std::pair<Qty, Qty>> m_intentionSize;
 		bool m_isSent;
 		bool m_isPassiveOpen;
 		bool m_isPassiveClose;
@@ -118,9 +135,12 @@ namespace EmaFuturesStrategy {
 		boost::array<std::pair<double, double>, 2> m_signalsBidAsk;
 		boost::array<std::pair<double, double>, 2> m_signalsEmas;
 
-		ScaledPrice m_maxProfit;
+		ScaledPrice m_maxProfitTakeProfit;
+		ScaledPrice m_maxProfitTrailingStop;
 
 		std::ostream &m_reportStream;
+
+		bool m_isSuperAggressiveClosing;
 	
 	};
 
@@ -137,20 +157,19 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &,
 				const Direction &openReason,
 				const SlowFastEmas &emas,
-				std::ostream &reportStream);
+				std::ostream &reportStream,
+				const Intention &openIntention,
+				bool isSuperAggressiveClosing);
 		virtual ~LongPosition();
 	public:
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByLoss(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
+				double priceDelta)
+				const
+				override;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
-				const;
-	protected:
-		virtual ScaledPrice GetPassiveOpenPrice() const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentProfit() const;
+				const
+				override;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -166,20 +185,19 @@ namespace EmaFuturesStrategy {
 				const Lib::TimeMeasurement::Milestones &,
 				const Direction &openReason,
 				const SlowFastEmas &emas,
-				std::ostream &reportStream);
+				std::ostream &reportStream,
+				const Intention &openIntention,
+				bool isSuperAggressiveClosing);
 		virtual ~ShortPosition();
 	public:
-		virtual PriceCheckResult CheckOrderPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByPrice(double priceDelta) const;
-		virtual PriceCheckResult CheckStopLossByLoss(
+		virtual boost::optional<PriceCheckResult> CheckOrderPrice(
+				double priceDelta)
+				const
+				override;
+		virtual boost::optional<PriceCheckResult> CheckStopLoss(
 				double maxLossMoneyPerContract)
-				const;
-	protected:
-		virtual ScaledPrice GetPassiveOpenPrice() const;
-		virtual ScaledPrice GetMarketOpenPrice() const;
-		virtual ScaledPrice GetPassiveClosePrice() const;
-		virtual ScaledPrice GetMarketClosePrice() const;
-		virtual ScaledPrice CaclCurrentProfit() const;
+				const
+				override;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

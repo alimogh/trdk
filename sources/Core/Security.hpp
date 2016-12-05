@@ -24,37 +24,59 @@ namespace trdk {
 
 		typedef uint32_t InstanceId;
 
+		class TRDK_CORE_API Request {
+		public:
+			Request();
+			operator bool() const;
+			void Swap(Request &) throw();
+			//! Returns true if one or more fields have earlier value.
+			/** Does not cancel the reverse.
+			  */
+			bool IsEarlier(const Request &) const;
+		public:
+			void RequestNumberOfTicks(size_t);
+			void RequestTime(const boost::posix_time::ptime &);
+			void Merge(const Request &);
+		public:
+			size_t GetNumberOfTicks() const;
+			const boost::posix_time::ptime & GetTime() const;
+		private:
+			boost::posix_time::ptime m_time;
+			size_t m_numberOfTicks;
+		};
+
 		typedef trdk::TradingSystem::OrderStatusUpdateSlot
 			OrderStatusUpdateSlot;
 
 		typedef std::bitset<trdk::numberOfLevel1TickTypes> SupportedLevel1Types;
 
-		typedef void (Level1UpdateSlotSignature)(
+		typedef void(Level1UpdateSlotSignature)(
 				const trdk::Lib::TimeMeasurement::Milestones &);
 		//! Update one of more from following values:
 		//! best bid, best ask, last trade.
 		typedef boost::function<Level1UpdateSlotSignature> Level1UpdateSlot;
 		typedef boost::signals2::connection Level1UpdateSlotConnection;
 
-		typedef void (Level1TickSlotSignature)(
+		typedef void(Level1TickSlotSignature)(
 				const boost::posix_time::ptime &,
 				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &,
 				bool flush);
 		typedef boost::function<Level1TickSlotSignature> Level1TickSlot;
 		typedef boost::signals2::connection Level1TickSlotConnection;
 
-		typedef void (NewTradeSlotSignature)(
+		typedef void(NewTradeSlotSignature)(
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
 				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Lib::TimeMeasurement::Milestones &);
 		typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
 		typedef boost::signals2::connection NewTradeSlotConnection;
 
 		//! Security broker position info.
 		/** Information from broker, not relevant to trdk::Position.
 		  */
-		typedef void (BrokerPositionUpdateSlotSignature)(
+		typedef void(BrokerPositionUpdateSlotSignature)(
 				const trdk::Qty &,
 				bool isInitial);
 		typedef boost::function<BrokerPositionUpdateSlotSignature>
@@ -72,8 +94,6 @@ namespace trdk {
 
 		 	//! Bar start time.
 			boost::posix_time::ptime time;
-			//! Bar size (time).
-			boost::posix_time::time_duration size;
 			//! Data type.
 			Type type;
 			
@@ -89,15 +109,20 @@ namespace trdk {
 			
 			//! The volume during the time covered by the bar.
 			boost::optional<trdk::Qty> volume;
-			
-			//! When TRADES historical data is returned, represents the number
-			//! of trades that occurred during the time period the bar covers.
-			boost::optional<size_t> count;
+
+			//! Bar size (if bar-by-time). If period is not set - this is
+			//! bar-by-points.
+			/** @sa numberOfPoints
+			  */
+			boost::optional<boost::posix_time::time_duration> period;
+			//! Number of points (if existent).
+			/** @sa period
+			  */
+			boost::optional<size_t> numberOfPoints;
 
 			explicit Bar(
 		 			const boost::posix_time::ptime &,
-					const boost::posix_time::time_duration &,
-					Type);
+					const Type &);
 
 		};
 		typedef void (NewBarSlotSignature)(const Bar &);
@@ -127,16 +152,48 @@ namespace trdk {
 
 		////////////////////////////////////////////////////////////////////////////////
 
+		//! Security service event code.
+		/** Notifies about system event for the specified security. Synchronous. 
+		  * 
+		  * @sa SubscribeToServiceEvents
+		  */
 		enum ServiceEvent {
-			//! Security switched to another contract.
-			SERVICE_EVENT_CONTRACT_SWITCHED,
+			//! History data is loaded, security is online now.
+			/** @sa SERVICE_EVENT_OFFLINE
+			  */
+			SERVICE_EVENT_ONLINE,
+			//! Security is offline.
+			/** @sa SERVICE_EVENT_ONLINE
+			  */
+			SERVICE_EVENT_OFFLINE,
+			//! The current trading session is opened.
+			/** @sa SERVICE_EVENT_TRADING_SESSION_CLOSED
+			  */
+			SERVICE_EVENT_TRADING_SESSION_OPENED,
+			//! The current trading session is closed.
+			/** There are no any special system limitation to trade or to get
+			  * information if the session is closed.
+			  * @sa SERVICE_EVENT_TRADING_SESSION_OPENED
+			  */
+			SERVICE_EVENT_TRADING_SESSION_CLOSED,
+			//! Number of events.
 			numberOfServiceEvents
 		};
 
 		typedef void (ServiceEventSlotSignature)(
+			const boost::posix_time::ptime &,
 			const trdk::Security::ServiceEvent &);
 		typedef boost::function<ServiceEventSlotSignature> ServiceEventSlot;
 		typedef boost::signals2::connection ServiceEventSlotConnection;
+
+		////////////////////////////////////////////////////////////////////////////////
+
+		typedef void (ContractSwitchingSlotSignature)(
+			const boost::posix_time::ptime &,
+			const trdk::Security::Request &);
+		typedef boost::function<ContractSwitchingSlotSignature>
+			ContractSwitchingSlot;
+		typedef boost::signals2::connection ContractSwitchingSlotConnection;
 
 		////////////////////////////////////////////////////////////////////////////////
 
@@ -146,7 +203,6 @@ namespace trdk {
 				trdk::Context &,
 				const trdk::Lib::Symbol &,
 				trdk::MarketDataSource &,
-				bool isOnline,
 				const SupportedLevel1Types &);
 		virtual ~Security();
 
@@ -163,22 +219,33 @@ namespace trdk {
 
 		const trdk::Security::InstanceId & GetInstanceId() const;
 
-		//! Check security for valid market data and state.
-		bool IsStarted() const;
-		bool IsLevel1Started() const;
-
-		//! Returns true if security has on-line data, not history.
-		bool IsOnline() const;
-
-		//! Sets requested data start time if it not later than existing.
-		void SetRequestedDataStartTime(const boost::posix_time::ptime &);
-		//! Returns requested data start time.
-		/** @return	Requested time or boost::posix_time::not_a_date_time if not
-		  *			set.
+		//! Returns true if security is on-line, trading session is opend and
+		//! security has market data.
+		/** @sa IsOnline
+		  * @sa IsTradingSessionOpened
 		  */
-		const boost::posix_time::ptime & GetRequestedDataStartTime() const;
+		bool IsActive() const;
+
+		//! Returns true if security is online.
+		/** @sa IsActive
+		  *	@sa IsTradingSessionOpened
+		  */
+		virtual bool IsOnline() const;
+
+		//! Returns true if trading session is active at this moment.
+		/** @sa IsActive
+		  * @sa IsOnline
+		  */
+		bool IsTradingSessionOpened() const;
+
+		//! Sets requested data start time if it is not later than existing.
+		void SetRequest(const trdk::Security::Request &);
+		//! Returns requested data start.
+		const trdk::Security::Request & GetRequest() const;
 
 	public:
+
+		size_t GetLotSize() const;
 
 		uintmax_t GetPriceScale() const;
 		uint8_t GetPricePrecision() const throw();
@@ -200,11 +267,15 @@ namespace trdk {
 
 		trdk::ScaledPrice GetAskPriceScaled() const;
 		double GetAskPrice() const;
+		double GetAskPriceValue() const;
 		trdk::Qty GetAskQty() const;
+		trdk::Qty GetAskQtyValue() const;
 
 		trdk::ScaledPrice GetBidPriceScaled() const;
 		double GetBidPrice() const;
+		double GetBidPriceValue() const;
 		trdk::Qty GetBidQty() const;
+		trdk::Qty GetBidQtyValue() const;
 
 		trdk::Qty GetTradedVolume() const;
 
@@ -217,9 +288,19 @@ namespace trdk {
 		/** Throws exception if expiration is not provided.
 		  * @sa GetExpiration
 		  */
-		trdk::Lib::ContractExpiration GetExpiration() const;
+		virtual const trdk::Lib::ContractExpiration & GetExpiration() const;
+
+		bool HasExpiration() const;
 
 	public:
+
+		//! Subscribes to contract switching event.
+		/** Notification should be synchronous. Notification generator will wait
+		  * until the event will be handled by each subscriber.
+		  */
+		ContractSwitchingSlotConnection SubscribeToContractSwitching(
+				const ContractSwitchingSlot &)
+				const;
 
 		Level1UpdateSlotConnection SubscribeToLevel1Updates(
 				const Level1UpdateSlot &)
@@ -241,13 +322,21 @@ namespace trdk {
 				const BookUpdateTickSlot &)
 				const;
 
+		//! Subscribes to security service event.
+		/** Notification should be synchronous. Notification generator will wait
+		  * until the event will be handled by each subscriber.
+		  */
 		ServiceEventSlotConnection SubscribeToServiceEvents(
 				const ServiceEventSlot &)
 				const;
 
 	protected:
 
-		void SetOnline();
+		void SetOnline(const boost::posix_time::ptime &, bool isOnline);
+		void SetTradingSessionState(
+				const boost::posix_time::ptime &,
+				bool isOpened);
+		void SwitchTradingSession(const boost::posix_time::ptime &);
 
 		bool IsLevel1Required() const;
 		bool IsLevel1UpdatesRequired() const;
@@ -256,9 +345,6 @@ namespace trdk {
 		bool IsBrokerPositionRequired() const;
 		bool IsBarsRequired() const;
 
-		//! Allows forcibly start Level 1 notification,
-		//! even if not all Level 1 data received.
-		void StartLevel1();
 		//! Sets one Level I parameter.
 		/** Subscribers will be notified about Level I Update only if parameter
 		  * will bee changed.
@@ -299,6 +385,15 @@ namespace trdk {
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
 				const trdk::Level1TickValue &,
+				const trdk::Lib::TimeMeasurement::Milestones &);
+		//! Sets many Level I parameters and one operation.
+		/** More optimal than call "set one parameter" several times.
+		  *	Subscribers will be notified about Level I Update only if parameter
+		  *	will bee changed.
+		  */
+		void SetLevel1(
+				const boost::posix_time::ptime &,
+				const std::vector<trdk::Level1TickValue> &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
 
 		//! Adds one Level I parameter tick.
@@ -362,14 +457,13 @@ namespace trdk {
 
 		void AddTrade(
 				const boost::posix_time::ptime &,
-				const trdk::OrderSide &,
 				const trdk::ScaledPrice &,
 				const trdk::Qty &,
 				const trdk::Lib::TimeMeasurement::Milestones &,
 				bool useAsLastTrade,
 				bool useForTradedVolume);
 
-		void AddBar(const Bar &);
+		void AddBar(Bar &&);
 
 		//! Sets security broker position info.
 		/** Subscribers will be notified only if parameter will be changed.
@@ -390,14 +484,29 @@ namespace trdk {
 				const trdk::Lib::TimeMeasurement::Milestones &timeMeasurement);
 
 		//! Sets new expiration.
-		/** @sa GetExpiration
+		/** All marked data for security will be reset (so if security just
+		  * started). The request will be reset. The request can be set new at
+		  * the event handling.
+		  * 
+		  * @sa GetExpiration
+		  * 
+		  * @param time[in] Event time.
+		  * @param expiration[in] New contract expiration.
+		  * 
+		  * @return	true if security has new request. Security will not have
+		  *			new request if no one subscriber request or if the new
+		  *			contract is first contract for security (if security
+		  *			did not have expiration before) and if new request after
+		  *			switching "is not earlier" the existing.
 		  */
-		void SetExpiration(const trdk::Lib::ContractExpiration &);
+		bool SetExpiration(
+				const boost::posix_time::ptime &time,
+				const trdk::Lib::ContractExpiration &expiration);
 
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

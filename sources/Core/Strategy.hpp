@@ -12,7 +12,7 @@
 
 #include "Position.hpp"
 #include "Consumer.hpp"
-#include "Fwd.hpp"
+#include "DropCopy.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -106,6 +106,7 @@ namespace trdk {
 
 		explicit Strategy(
 				trdk::Context &,
+				const boost::uuids::uuid &typeId,
 				const std::string &name,
 				const std::string &tag,
 				const trdk::Lib::IniSectionRef &);
@@ -113,9 +114,12 @@ namespace trdk {
 
 	public:
 
+		const boost::uuids::uuid & GetTypeId() const;
 		const boost::uuids::uuid & GetId() const;
 		const std::string & GetTitle() const;
 		trdk::TradingMode GetTradingMode() const;
+		const trdk::DropCopy::StrategyInstanceId & GetDropCopyInstanceId()
+				const;
 
 	public:
 
@@ -137,6 +141,11 @@ namespace trdk {
 
 	public:
 
+		virtual void RaiseSecurityContractSwitchedEvent(
+				const boost::posix_time::ptime &,
+				Security &,
+				Security::Request &);
+
 		virtual void RaiseBrokerPositionUpdateEvent(
 				trdk::Security &,
 				const trdk::Qty &,
@@ -147,6 +156,7 @@ namespace trdk {
 				const trdk::Security::Bar &);
 
 		virtual void RaiseSecurityServiceEvent(
+				const boost::posix_time::ptime &,
 				trdk::Security &,
 				const trdk::Security::ServiceEvent &);
 
@@ -161,8 +171,7 @@ namespace trdk {
 				trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &,
-				const trdk::OrderSide &);
+				const trdk::Qty &);
 		void RaiseServiceDataUpdateEvent(
 				const trdk::Service &,
 				const trdk::Lib::TimeMeasurement::Milestones &);
