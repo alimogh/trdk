@@ -340,10 +340,10 @@ namespace {
 					",SELECT UPDATE FIELDS"
 					",Ask,Ask Size,Ask Time" // 1, 2, 3
 					",Bid,Bid Size,Bid Time" // 4, 5, 6
-					",Most Recent Trade,Most Recent Trade Time" // 7, 8
-					",Most Recent Trade Date" // 9
-					",Total Volume" // 10
-					",Market Open" // 11
+					",Most Recent Trade,Most Recent Trade Size" // 7, 8
+					",Most Recent Trade Time,Most Recent Trade Date" // 9, 10
+					",Total Volume" // 11
+					",Market Open" // 12
 					"\r\n",
 				"SELECT UPDATE FIELDS");
 		}
@@ -561,8 +561,8 @@ namespace {
 					"Symbol"
 					",Ask,Ask Size,Ask Time"
 					",Bid,Bid Size,Bid Time"
-					",Most Recent Trade,Most Recent Trade Time"
-					",Most Recent Trade Date"
+					",Most Recent Trade,Most Recent Trade Size"
+					",Most Recent Trade Time,Most Recent Trade Date"
 					",Total Volume"
 					",Market Open");
 				if (message != controlContent) {
@@ -575,7 +575,7 @@ namespace {
 						"%1%Custom field set: \"%2%\".",
 						GetService().GetLogTag(),
 						boost::copy_range<std::string>(message));
-					m_level1SymbolBuffer.reserve(6);
+					m_level1SymbolBuffer.reserve(7);
 				}
 				return boost::end(message);
 			} else if (*field == std::string("CURRENT PROTOCOL")) {
@@ -644,7 +644,7 @@ namespace {
 			AssertEq('\n', *bufferEnd);
 			AssertLt(0, std::distance(messageBegin, bufferEnd));
 			
-			if (m_level1SymbolBuffer.capacity() != 6) {
+			if (m_level1SymbolBuffer.capacity() != 7) {
 				throw Exception("Field set is not set");
 			}
 			Assert(m_level1SymbolBuffer.empty());
@@ -659,6 +659,7 @@ namespace {
 
 			IqFeed::Security *security = nullptr;
 			pt::ptime time;
+			pt::ptime tradeTime;
 			bool isMarketOpened;
 			for (size_t i = 0; field != Iterator(); ++field, ++i) {
 
@@ -717,17 +718,22 @@ namespace {
 								security->ScalePrice(
 									boost::lexical_cast<double>(*field)));
 							break;
-
-						case 9: // Last trade date
+						case 8: // Last trade size
+							m_level1SymbolBuffer.emplace_back(
+								LEVEL1_TICK_LAST_QTY,
+								boost::lexical_cast<double>(*field));
 							break;
 
-						case 10: // Total Volume
+						case 10: // Last trade date
+							break;
+
+						case 11: // Total Volume
 							m_level1SymbolBuffer.emplace_back(
 								LEVEL1_TICK_TRADING_VOLUME,
 								boost::lexical_cast<double>(*field));
 							break;
 
-						case 11: // Market Open
+						case 12: // Market Open
 							// 1 = market open, 0 = market closed NOTE: This
 							// field is valid for Futures and Future Options
 							// only.
@@ -738,10 +744,13 @@ namespace {
 
 						case 3: // Ask Time
 						case 6: // Bid Time
-						case 8: // Last Time
+						case 9: // Last Time
 							{
 								const auto &newTime
 									= ConvertIqFeedStringToPtime(*field, now);
+								if (i == 9) {
+									tradeTime = newTime;
+								}
 								Assert(newTime != pt::not_a_date_time);
 								if (
 										time == pt::not_a_date_time
@@ -751,7 +760,7 @@ namespace {
 							}
 							break;
 
-						case 12:
+						case 13:
 							if (!field->empty()) {
 								throw ProtocolError(
 									"Symbol update message has not"
@@ -772,21 +781,52 @@ namespace {
 
 					if (*boost::end(*field) == '\n') {
 						
-						if (i != 12) {
+						if (i != 13) {
 							throw ProtocolError(
 								"Symbol update has too few fields",
 								&*boost::end(*field),
 								0);
 						}
 						Assert(security);
-						AssertEq(6, m_level1SymbolBuffer.size());
+						AssertEq(7, m_level1SymbolBuffer.size());
+						AssertEq(
+							LEVEL1_TICK_LAST_PRICE,
+							m_level1SymbolBuffer[4].GetType());
+						AssertEq(
+							LEVEL1_TICK_LAST_QTY,
+							m_level1SymbolBuffer[5].GetType());
 						Assert(time != pt::not_a_date_time);
+						Assert(tradeTime != pt::not_a_date_time);
 
-						if (time >= security->GetLastMarketDataTime()) {
+						if (time >= tradeTime) {
+							if (
+									tradeTime
+										>= security->GetLastMarketDataTime()) {
+								security->AddTrade(
+									tradeTime,
+									ScaledPrice(
+										m_level1SymbolBuffer[4].GetValue()),
+									m_level1SymbolBuffer[5].GetValue(),
+									measurement,
+									false,
+									false);
+								security->SetLevel1(
+									time,
+									m_level1SymbolBuffer,
+									measurement);
+							}
+						} else if (time >= security->GetLastMarketDataTime()) {
 							security->SetLevel1(
 								time,
 								m_level1SymbolBuffer,
 								measurement);
+							security->AddTrade(
+								tradeTime,
+								ScaledPrice(m_level1SymbolBuffer[4].GetValue()),
+								m_level1SymbolBuffer[5].GetValue(),
+								measurement,
+								false,
+								false);
 						}
 						m_level1SymbolBuffer.clear();
 

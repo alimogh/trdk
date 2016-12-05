@@ -287,7 +287,7 @@ private:
 					const auto &execTime = it->first;
 					const Order &order = it->second;
 					Assert(order.callback);
-					Assert(!order.price);
+					Assert(order.price);
 					
 					const auto &now = m_self->GetContext().GetCurrentTime();
 					if (now < execTime) {
