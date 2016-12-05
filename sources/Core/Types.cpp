@@ -16,6 +16,21 @@ using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char * trdk::ConvertToPch(const OrderSide &side) {
+	static_assert(numberOfOrderSides == 2, "List changed.");
+	switch (side) {
+		default:
+			AssertEq(ORDER_SIDE_BUY, side);
+			return "unknown";
+		case ORDER_SIDE_BUY:
+			return "buy";
+		case ORDER_SIDE_SELL:
+			return "sell";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 	template<typename Param>

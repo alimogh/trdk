@@ -171,13 +171,19 @@ bool Dispatcher::IsActive() const {
 void Dispatcher::SignalLevel1Update(
 		SubscriberPtrWrapper &subscriber,
 		Security &security,
-		const TimeMeasurement::Milestones &timeMeasurement) {
-	if (subscriber.IsBlocked()) {
-		return;
+		const TimeMeasurement::Milestones &delayMeasurement) {
+	try {
+		if (subscriber.IsBlocked()) {
+			return;
+		}
+		m_level1Updates.Queue(
+			boost::make_tuple(&security, subscriber, delayMeasurement),
+			true);
+	} catch (...) {
+		//! Blocking as irreversible error, data loss.
+		subscriber.Block();
+		throw;
 	}
-	m_level1Updates.Queue(
-		boost::make_tuple(&security, subscriber, timeMeasurement),
-		true);
 }
 
 void Dispatcher::SignalLevel1Tick(
@@ -185,14 +191,17 @@ void Dispatcher::SignalLevel1Tick(
 		Security &security,
 		const boost::posix_time::ptime &time,
 		const Level1TickValue &value,
+		const TimeMeasurement::Milestones &delayMeasurement,
 		bool flush) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		const SubscriberPtrWrapper::Level1Tick tick(security, time, value);
 		m_level1Ticks.Queue(
-			boost::make_tuple(tick, subscriber),
+			boost::make_tuple(
+				SubscriberPtrWrapper::Level1Tick{&security, time, value},
+				subscriber,
+				delayMeasurement),
 			flush);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
@@ -206,17 +215,18 @@ void Dispatcher::SignalNewTrade(
 		Security &security,
 		const pt::ptime &time,
 		const ScaledPrice &price,
-		const Qty &qty) {
+		const Qty &qty,
+		const TimeMeasurement::Milestones &delayMeasurement) {
 	try {
 		if (subscriber.IsBlocked()) {
 			return;
 		}
-		const SubscriberPtrWrapper::Trade trade = {
-			&security,
-			time,
-			price,
-			qty};
-		m_newTrades.Queue(boost::make_tuple(trade, subscriber), true);
+		m_newTrades.Queue(
+			boost::make_tuple(
+				SubscriberPtrWrapper::Trade{&security, time, price, qty},
+				subscriber,
+				delayMeasurement),
+			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.
 		subscriber.Block();
@@ -244,13 +254,10 @@ void Dispatcher::SignalBrokerPositionUpdate(
 		const Qty &qty,
 		bool isInitial) {
 	try {
-		const SubscriberPtrWrapper::BrokerPosition position = {
-			&security,
-			qty,
-			isInitial
-		};
 		m_brokerPositionsUpdates.Queue(
-			boost::make_tuple(position , subscriber),
+			boost::make_tuple(
+				SubscriberPtrWrapper::BrokerPosition{&security, qty, isInitial},
+				subscriber),
 			true);
 	} catch (...) {
 		//! Blocking as irreversible error, data loss.

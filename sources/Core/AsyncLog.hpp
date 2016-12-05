@@ -53,6 +53,7 @@ namespace trdk {
 			PT_TRADING_MODE,
 			
 			PT_ORDER_STATUS,
+			PT_ORDER_SIDE,
 			
 			PT_UUID,
 
@@ -146,7 +147,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 21,
+					numberOfParamTypes == 22,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -247,6 +248,11 @@ namespace trdk {
 							boost::any_cast<const OrderStatus &>(val),
 							os);
 						break;
+					case PT_ORDER_SIDE:
+						WriteToDumpStream(
+							boost::any_cast<const OrderSide &>(val),
+							os);
+						break;
 
 					case PT_UUID:
 						WriteToDumpStream(
@@ -341,6 +347,10 @@ namespace trdk {
 
 		void StoreParam(const trdk::OrderStatus &orderStatus) {
 			StoreTypedParam(PT_ORDER_STATUS, orderStatus);
+		}
+
+		void StoreParam(const trdk::OrderSide &orderSide) {
+			StoreTypedParam(PT_ORDER_SIDE, orderSide);
 		}
 
 		void StoreParam(const boost::uuids::uuid &val) {

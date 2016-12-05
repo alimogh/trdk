@@ -21,21 +21,9 @@ namespace trdk { namespace Engine {
 	public:
 
 		struct Level1Tick {
-			
 			trdk::Security *security;
 			boost::posix_time::ptime time;
 			trdk::Level1TickValue value;
-			
-			explicit Level1Tick(
-					trdk::Security &security,
-					const boost::posix_time::ptime &time,
-					const trdk::Level1TickValue &value)
-				: security(&security),
-				time(time),
-				value(value) {
-				//...//
-			}
-
 		};
 
 		struct Trade {
@@ -55,7 +43,7 @@ namespace trdk { namespace Engine {
 
 		template<typename Module>
 		explicit SubscriberPtrWrapper(Module &observer)
-				: m_subscriber(ModuleRef(observer)) {
+			: m_subscriber(ModuleRef(observer)) {
 			//...//
 		}
 

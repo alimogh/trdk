@@ -22,6 +22,8 @@ namespace trdk {
 
 	typedef boost::uint64_t OrderId;
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	//! Order side
 	/** https://mbcm.robotdk.com:8443/display/API/Constants
 	  */
@@ -35,6 +37,16 @@ namespace trdk {
 		ORDER_SIDE_SHORT = ORDER_SIDE_SELL,
 		numberOfOrderSides
 	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::OrderSide &);
+
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::OrderSide &side) {
+		return os << trdk::ConvertToPch(side);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	//! Time in Force
 	/** https://mbcm.robotdk.com:8443/display/API/Constants

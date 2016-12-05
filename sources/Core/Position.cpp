@@ -1342,10 +1342,16 @@ bool Position::IsProfit() const {
 	return ratio > 1.0 && !IsEqual(ratio, 1.0);
 }
 
+size_t Position::GetNumberOfOpenOrders() const {
+	return m_pimpl->m_open.orders.size();
+}
 size_t Position::GetNumberOfOpenTrades() const {
 	return m_pimpl->m_open.numberOfTrades;
 }
 
+size_t Position::GetNumberOfCloseOrders() const {
+	return m_pimpl->m_close.orders.size();
+}
 size_t Position::GetNumberOfCloseTrades() const {
 	return m_pimpl->m_close.numberOfTrades;
 }
@@ -1694,6 +1700,19 @@ const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
 			return "open failed";
 		case Position::CLOSE_TYPE_SYSTEM_ERROR:
 			return "sys error";
+	}
+}
+
+const char * trdk::ConvertToPch(const Position::Type &type) {
+	static_assert(Position::numberOfTypes == 2, "Close type list changed.");
+	switch (type) {
+		default:
+			AssertEq(Position::TYPE_LONG, type);
+			return "unknown";
+		case Position::TYPE_LONG:
+			return "long";
+		case Position::TYPE_SHORT:
+			return "short";
 	}
 }
 

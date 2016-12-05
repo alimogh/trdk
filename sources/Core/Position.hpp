@@ -256,7 +256,10 @@ namespace trdk {
 		virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
 		virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
 
+		size_t GetNumberOfOpenOrders() const;
 		size_t GetNumberOfOpenTrades() const;
+		
+		size_t GetNumberOfCloseOrders() const;
 		size_t GetNumberOfCloseTrades() const;
 
 	public:
@@ -404,11 +407,17 @@ namespace trdk {
 	};
 
 	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::CloseType &);
-
 	inline std::ostream & operator <<(
 			std::ostream &os,
 			const trdk::Position::CloseType &closeType) {
 		return os << trdk::ConvertToPch(closeType);
+	}
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::Type &);
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::Position::Type &positionType) {
+		return os << trdk::ConvertToPch(positionType);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
