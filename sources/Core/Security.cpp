@@ -50,8 +50,26 @@ namespace {
 		val = std::numeric_limits<Level1Value>::quiet_NaN();
 	}
 
+	std::string GetFutureSymbol(const Symbol &symbol) {
+		AssertEq(SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
+		if (!symbol.IsExplicit()) {
+			return symbol.GetSymbol();
+		}
+		boost::smatch match;
+		const boost::regex expr("([a-z]+)[a-z]\\d+", boost::regex::icase);
+		if (!boost::regex_match(symbol.GetSymbol(), match, expr)) {
+			boost::format message(
+				"Failed to parse explicit future symbol \"%1%\"");
+			message % symbol.GetSymbol();
+			throw Exception(message.str().c_str());
+		}
+		return match[1];
+	}
+
 	//! Returns symbol price precision.
-	uint8_t GetPrecision(const Symbol &symbol, const MarketDataSource &source) {
+	uint8_t GetPrecisionBySymbol(
+			const Symbol &symbol,
+			const MarketDataSource &source) {
 		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
 			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
@@ -78,6 +96,24 @@ namespace {
 				int(result));
 			return result;
 		}
+	}
+
+	size_t GetLotSizeBySymbol(const Symbol &symbol) {
+		switch (symbol.GetSecurityType()) {
+			case SECURITY_TYPE_FUTURES:
+				{
+					const auto &symbolStr = GetFutureSymbol(symbol);
+					if (symbolStr == "CL") {
+						return 100;
+					} else if (symbolStr == "BR") {
+						return 10;
+					}
+					break;
+				}
+		}
+		boost::format message("Unknown symbol \"%1%\" to get lot size");
+		message % symbol;
+		throw Exception(message.str().c_str());
 	}
 
 }
@@ -420,6 +456,7 @@ public:
 
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
+	const size_t m_lotSize;
 
 	mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
 	mutable SignalTrait<Level1TickSlotSignature>::Signal m_level1TickSignal;
@@ -459,8 +496,9 @@ public:
 		: m_self(self)
 		, m_instanceId(m_nextInstanceId++)
 		, m_source(source)
-		, m_pricePrecision(GetPrecision(symbol, source))
+		, m_pricePrecision(GetPrecisionBySymbol(symbol, source))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
+		, m_lotSize(GetLotSizeBySymbol(symbol))
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
@@ -703,8 +741,7 @@ const MarketDataSource & Security::GetSource() const {
 }
 
 size_t Security::GetLotSize() const {
-	Assert(boost::starts_with(GetSymbol().GetSymbol(), "BR"));
-	return 10;
+	return m_pimpl->m_lotSize;
 }
 
 uintmax_t Security::GetPriceScale() const {
