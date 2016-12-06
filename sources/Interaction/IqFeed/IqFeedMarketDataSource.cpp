@@ -25,8 +25,8 @@ namespace {
 
 	IqFeed::Settings ReadSettings(const IniSectionRef &conf) {
 		const IqFeed::Settings result = {
+			conf.ReadTypedKey<size_t>("history_bar_size"),
 			conf.ReadTypedKey<size_t>("history_depth"),
-			conf.ReadTypedKey<size_t>("history_bar_size")
 		};
 		return result;
 	}
