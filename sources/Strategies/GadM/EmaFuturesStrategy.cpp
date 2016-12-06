@@ -318,7 +318,7 @@ namespace EmaFuturesStrategy {
 							"Using Bar Service \"%1%\" with instance ID %2%"
 								" to drop bars copies...",
 							m_barServiceId,
-							*m_barService);
+							*barService);
 					});
 				m_barService = barService;
 
