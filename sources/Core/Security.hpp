@@ -219,7 +219,7 @@ namespace trdk {
 
 		const trdk::Security::InstanceId & GetInstanceId() const;
 
-		//! Returns true if security is on-line, trading session is opend and
+		//! Returns true if security is online, trading session is opend and
 		//! security has market data.
 		/** @sa IsOnline
 		  * @sa IsTradingSessionOpened
@@ -460,8 +460,7 @@ namespace trdk {
 				const trdk::ScaledPrice &,
 				const trdk::Qty &,
 				const trdk::Lib::TimeMeasurement::Milestones &,
-				bool useAsLastTrade,
-				bool useForTradedVolume);
+				bool useAsLastTrade);
 
 		void AddBar(Bar &&);
 

@@ -243,7 +243,7 @@ public:
 					_2,
 					_3);
 			m_onNewBar
-				= boost::bind(&Implementation::HandleNewBar, this, _1, _2);
+				= boost::bind(&Implementation::HandleNewTimedBar, this, _1, _2);
 			
 			m_service.GetLog().Info(
 				"Stated with size \"%1%\" (number of history bars: %2%).",
@@ -266,7 +266,7 @@ public:
 					_3);
 			m_onNewBar
 				= boost::bind(
-					&Implementation::ThrowNewBarSupportError, this, _1, _2);
+					&Implementation::HandleNewCountedBar, this, _1, _2);
 
 			m_service.GetLog().Info(
 				"Stated with size \"%1% %2%\".",
@@ -490,15 +490,18 @@ public:
 
 	}
 
-	bool HandleNewBar(
+	bool HandleNewTimedBar(
 			const Security &security,
 			const Security::Bar &sourceBar) {
 		
-		Assert(sourceBar.period);
-		AssertGe(m_timedBarSize, *sourceBar.period);
-		if (m_timedBarSize < *sourceBar.period) {
+		if (!sourceBar.period) {
 			m_service.GetLog().Error(
-			"Can't work with source bar size %1% as service bar size %2%.",
+				"Can't work with not timed source bar size.");
+			throw MethodDoesNotSupportBySettings("Wrong source bar size");
+		} else if (m_timedBarSize < *sourceBar.period) {
+			m_service.GetLog().Error(
+				"Can't work with source bar size %1%"
+					" as service bar size is %2%.",
 				*sourceBar.period,
 				m_timedBarSize);
 			throw MethodDoesNotSupportBySettings("Wrong source bar size");
@@ -567,10 +570,68 @@ public:
 
 	}
 
-	bool ThrowNewBarSupportError(const Security &, const Security::Bar &) {
-		throw MethodDoesNotSupportBySettings(
-			"Bar service does not support work with incoming bars"
-				" by the current settings (only timed bars supported)");
+	bool HandleNewCountedBar(
+			const Security &security,
+			const Security::Bar &source) {
+
+		if (source.period || !source.numberOfPoints) {
+			m_service.GetLog().Error(
+				"Can't work with not counted source bar size.");
+			throw MethodDoesNotSupportBySettings("Wrong source bar size");
+		} else if (m_countedBarSize < *source.numberOfPoints) {
+			m_service.GetLog().Error(
+				"Can't work with source bar size %1%"
+					" as service bar size is %2%.",
+				*source.numberOfPoints,
+				m_countedBarSize);
+			throw MethodDoesNotSupportBySettings("Wrong source bar size");
+		}
+
+		return AppendStat(
+			security,
+			source.time,
+			[this, &source](Bar &dest) {
+				static_assert(
+					Security::Bar::numberOfTypes == 3,
+					"Bar type list changed.");
+				const auto count = m_current.count + *source.numberOfPoints;
+				if (count > m_countedBarSize) {
+					m_service.GetLog().Error(
+						"New bar adds too many ticks %1%"
+							", but service bar size is %2%.",
+						count,
+						m_countedBarSize);
+					throw MethodDoesNotSupportBySettings(
+						"Wrong source bar size");
+				}
+				m_current.count = count;
+				switch (source.type) {
+					case Security::Bar::TRADES:
+						if (source.openPrice && !dest.openTradePrice) {
+							dest.openTradePrice = *source.openPrice;
+						}
+						if (source.closePrice) {
+							dest.closeTradePrice = *source.closePrice;
+						}
+						if (source.highPrice) {
+							dest.highTradePrice = std::max(
+								dest.highTradePrice,
+								*source.highPrice);
+						}
+						if (source.lowPrice) {
+							dest.lowTradePrice = dest.lowTradePrice
+								?	std::min(
+										dest.lowTradePrice,
+										*source.lowPrice)
+								:	*source.lowPrice;
+						}
+						break;
+					default:
+						AssertEq(Security::Bar::TRADES, source.type);
+						return;
+				}
+			});
+
 	}
 
 	bool HandleLevel1Tick(

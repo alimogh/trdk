@@ -25,8 +25,8 @@ namespace {
 
 	IqFeed::Settings ReadSettings(const IniSectionRef &conf) {
 		const IqFeed::Settings result = {
+			conf.ReadTypedKey<size_t>("history_bar_size"),
 			conf.ReadTypedKey<size_t>("history_depth"),
-			conf.ReadTypedKey<size_t>("history_bar_size")
 		};
 		return result;
 	}
@@ -162,13 +162,13 @@ IqFeed::Security * IqFeed::MarketDataSource::FindSecurityBySymbolString(
 void IqFeed::MarketDataSource::OnHistoryLoadCompleted(
 		IqFeed::Security &security) {
 	GetLog().Debug(
-		"%1% history loaded, sending on-line market data request...",
+		"%1% history loaded, sending online market data request...",
 		security);
 	security.SetOnline(security.GetLastMarketDataTime(), true);
 	security.SetTradingSessionState(security.GetLastMarketDataTime(), true);
 	m_stream->SubscribeToMarketData(security);
 	GetLog().Info(
-		"%1% history loaded, on-line market data request sent.",
+		"%1% history loaded, online market data request sent.",
 		security);
 }
 

@@ -50,8 +50,26 @@ namespace {
 		val = std::numeric_limits<Level1Value>::quiet_NaN();
 	}
 
+	std::string GetFutureSymbol(const Symbol &symbol) {
+		AssertEq(SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
+		if (!symbol.IsExplicit()) {
+			return symbol.GetSymbol();
+		}
+		boost::smatch match;
+		const boost::regex expr("([a-z]+)[a-z]\\d+", boost::regex::icase);
+		if (!boost::regex_match(symbol.GetSymbol(), match, expr)) {
+			boost::format message(
+				"Failed to parse explicit future symbol \"%1%\"");
+			message % symbol.GetSymbol();
+			throw Exception(message.str().c_str());
+		}
+		return match[1];
+	}
+
 	//! Returns symbol price precision.
-	uint8_t GetPrecision(const Symbol &symbol, const MarketDataSource &source) {
+	uint8_t GetPrecisionBySymbol(
+			const Symbol &symbol,
+			const MarketDataSource &source) {
 		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
 			return 5;
 		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
@@ -78,6 +96,24 @@ namespace {
 				int(result));
 			return result;
 		}
+	}
+
+	size_t GetLotSizeBySymbol(const Symbol &symbol) {
+		switch (symbol.GetSecurityType()) {
+			case SECURITY_TYPE_FUTURES:
+				{
+					const auto &symbolStr = GetFutureSymbol(symbol);
+					if (symbolStr == "CL") {
+						return 100;
+					} else if (symbolStr == "BR") {
+						return 10;
+					}
+					break;
+				}
+		}
+		boost::format message("Unknown symbol \"%1%\" to get lot size");
+		message % symbol;
+		throw Exception(message.str().c_str());
 	}
 
 }
@@ -182,8 +218,7 @@ namespace {
 				const boost::posix_time::ptime &time,
 				const ScaledPrice &price,
 				const Qty &qty,
-				bool useAsLastTrade,
-				bool useForTradedVolume) {
+				bool useAsLastTrade) {
 			FormatAndWrite(
 				[&](Record &record) {
 					record
@@ -192,8 +227,7 @@ namespace {
 						% "T"
 						% m_security.DescalePrice(price)
 						% qty
-						% useAsLastTrade
-						% useForTradedVolume;
+						% useAsLastTrade;
 				});
 		}
 
@@ -420,6 +454,7 @@ public:
 
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
+	const size_t m_lotSize;
 
 	mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
 	mutable SignalTrait<Level1TickSlotSignature>::Signal m_level1TickSignal;
@@ -459,8 +494,9 @@ public:
 		: m_self(self)
 		, m_instanceId(m_nextInstanceId++)
 		, m_source(source)
-		, m_pricePrecision(GetPrecision(symbol, source))
+		, m_pricePrecision(GetPrecisionBySymbol(symbol, source))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
+		, m_lotSize(GetLotSizeBySymbol(symbol))
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
@@ -703,8 +739,7 @@ const MarketDataSource & Security::GetSource() const {
 }
 
 size_t Security::GetLotSize() const {
-	Assert(boost::starts_with(GetSymbol().GetSymbol(), "BR"));
-	return 10;
+	return m_pimpl->m_lotSize;
 }
 
 uintmax_t Security::GetPriceScale() const {
@@ -1189,59 +1224,29 @@ void Security::AddTrade(
 		const ScaledPrice &price,
 		const Qty &qty,
 		const TimeMeasurement::Milestones &delayMeasurement,
-		bool useAsLastTrade,
-		bool useForTradedVolume) {
+		bool useAsLastTrade) {
 
-	bool isLevel1Changed = false;
-	if (useAsLastTrade) {
-		if (m_pimpl->SetLevel1(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
-				delayMeasurement,
-				false,
-				false)) {
-			isLevel1Changed = true;
-		}
-		if (m_pimpl->SetLevel1(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
-				delayMeasurement,
-				!useForTradedVolume,
-				isLevel1Changed)) {
-			isLevel1Changed = true;
-		}
-	}
-	
+	AssertLt(0, price);
 	AssertLt(0, qty);
-	if (useForTradedVolume && qty > 0) {
-		for ( ; ; ) {
-			const auto &prevVal
-				= m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME].load();
-			const auto newVal
-				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(
-					IsSet(prevVal) ? Qty(prevVal + qty) : qty);
-			if (
-					m_pimpl->CompareAndSetLevel1(
-						time,
-						newVal,
-						prevVal,
-						delayMeasurement,
-						true,
-						isLevel1Changed)) {
-				break;
-			}
-		}
-	}
 
 	m_pimpl->UpdateMarketDataStat(time);
 	m_pimpl->m_tradeSignal(time, price, qty, delayMeasurement);
 
-	m_pimpl->m_marketDataLog.WriteTrade(
-		time,
-		price,
-		qty,
-		useAsLastTrade,
-		useForTradedVolume);
+	if (useAsLastTrade) {
+		m_pimpl->SetLevel1(
+			time,
+			Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
+			delayMeasurement,
+			true,
+			m_pimpl->SetLevel1(
+				time,
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
+				delayMeasurement,
+				false,
+				false));
+	}
+
+	m_pimpl->m_marketDataLog.WriteTrade(time, price, qty, useAsLastTrade);
 
 }
 

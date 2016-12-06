@@ -157,7 +157,7 @@ namespace {
 		void OnTick(
 				const pt::ptime &time,
 				const std::vector<std::string> &fields) {
-			if (fields.size() != 7) {
+			if (fields.size() != 7 && fields.size() != 6) {
 				throw Exception("Tick record has wrong number of fields");
 			}
 			m_security->AddTrade(
@@ -165,8 +165,7 @@ namespace {
 				m_security->ScalePrice(boost::lexical_cast<double>(fields[3])),
 				boost::lexical_cast<double>(fields[4]),
 				TimeMeasurement::Milestones(),
-				boost::lexical_cast<bool>(fields[5]),
-				boost::lexical_cast<bool>(fields[6]));
+				boost::lexical_cast<bool>(fields[5]));
 		}
 
 		void OnLevel1Update(

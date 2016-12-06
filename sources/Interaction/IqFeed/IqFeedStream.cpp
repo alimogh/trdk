@@ -338,12 +338,13 @@ namespace {
 			SendSynchronously(
 				"S"
 					",SELECT UPDATE FIELDS"
-					",Ask,Ask Size,Ask Time" // 1, 2, 3
-					",Bid,Bid Size,Bid Time" // 4, 5, 6
-					",Most Recent Trade,Most Recent Trade Size" // 7, 8
-					",Most Recent Trade Time,Most Recent Trade Date" // 9, 10
-					",Total Volume" // 11
-					",Market Open" // 12
+					",Message Contents" // 1
+					",Ask,Ask Size,Ask Time" // 2, 3, 4
+					",Bid,Bid Size,Bid Time" // 5, 6, 7
+					",Most Recent Trade,Most Recent Trade Size" // 8, 9
+					",Most Recent Trade Time,Most Recent Trade Date" // 10, 11
+					",Total Volume" // 12
+					",Market Open" // 13
 					"\r\n",
 				"SELECT UPDATE FIELDS");
 		}
@@ -465,7 +466,7 @@ namespace {
 				if (++field == Iterator() || *boost::end(*field) != '\n') {
 					throw ProtocolError(
 						"Service message \"KEY\" has invalid format",
-						&*boost::end(*field),
+						&*messageBegin,
 						'\n');
 				}
 				return boost::end(*field);
@@ -518,7 +519,7 @@ namespace {
 					if (++field == Iterator()) {
 						throw ProtocolError(
 							"Service message \"CUST\" has invalid format",
-							&*boost::end(*field),
+							&*messageBegin,
 							0);
 					}
 					message % boost::copy_range<std::string>(*field);
@@ -544,13 +545,13 @@ namespace {
 					throw ProtocolError(
 						"Service message \"SELECT UPDATE FIELDS\""
 							" has invalid format",
-						&*boost::end(*field),
+						&*messageBegin,
 						',');
 				}
 				const auto &message = boost::make_iterator_range(
 					boost::begin(*field),
 					std::find(boost::end(*field), bufferEnd, '\n'));
-				if (m_level1SymbolBuffer.capacity()) {
+				if (m_level1Buffer.capacity()) {
 					GetLog().Error(
 						"%1%Wrong field set: \"%2%\".",
 						GetService().GetLogTag(),
@@ -559,6 +560,7 @@ namespace {
 				}
 				const std::string controlContent(
 					"Symbol"
+					",Message Contents"
 					",Ask,Ask Size,Ask Time"
 					",Bid,Bid Size,Bid Time"
 					",Most Recent Trade,Most Recent Trade Size"
@@ -575,7 +577,7 @@ namespace {
 						"%1%Custom field set: \"%2%\".",
 						GetService().GetLogTag(),
 						boost::copy_range<std::string>(message));
-					m_level1SymbolBuffer.reserve(7);
+					m_level1Buffer.reserve(7);
 				}
 				return boost::end(message);
 			} else if (*field == std::string("CURRENT PROTOCOL")) {
@@ -583,7 +585,7 @@ namespace {
 					throw ProtocolError(
 						"Service message \"CURRENT PROTOCOL\""
 							" has invalid format",
-						&*boost::end(*field),
+						&*messageBegin,
 						',');
 				}
 				const auto &message = boost::make_iterator_range(
@@ -644,10 +646,10 @@ namespace {
 			AssertEq('\n', *bufferEnd);
 			AssertLt(0, std::distance(messageBegin, bufferEnd));
 			
-			if (m_level1SymbolBuffer.capacity() != 7) {
+			if (m_level1Buffer.capacity() != 7) {
 				throw Exception("Field set is not set");
 			}
-			Assert(m_level1SymbolBuffer.empty());
+			Assert(m_level1Buffer.empty());
 
 			typedef boost::split_iterator<Buffer::const_iterator>
 				Iterator;
@@ -657,83 +659,122 @@ namespace {
 				it,
 				boost::token_finder(boost::is_any_of(",\n")));
 
+			Iterator symbol;
 			IqFeed::Security *security = nullptr;
-			pt::ptime time;
+			pt::ptime level1Time;
 			pt::ptime tradeTime;
-			bool isMarketOpened;
+			ScaledPrice tradePrice = 0;
+			Qty tradeQty = 0;
+			bool isMarketOpened = false;
+			
+			std::bitset<numberOfLevel1TickTypes> updateType;
+
 			for (size_t i = 0; field != Iterator(); ++field, ++i) {
+
+				if (i == 0) {
+					Assert(symbol == Iterator());
+					Assert(!security);
+					Assert(!updateType.any());
+					symbol = field;
+					continue;
+				} else if (i == 1) {
+					Assert(symbol != Iterator());
+					Assert(!security);
+					Assert(!updateType.any());
+					updateType = ParseMessageContents(*field);
+					if (!updateType.any()) {
+						return std::find(field->begin(), bufferEnd, '\n');
+					}
+					security = &ResolveSecurity(*symbol);
+					Assert(security);
+					continue;
+				}
 
 				try {
 
 					switch (i) {
 
-						case 0:
+						case 2: // Ask
+							if (updateType[LEVEL1_TICK_ASK_PRICE]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_ASK_PRICE,
+									security->ScalePrice(
+										boost::lexical_cast<double>(*field)));
+							}
+							break;
+						case 3: // Ask Size
+							if (updateType[LEVEL1_TICK_ASK_QTY]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_ASK_QTY,
+									boost::lexical_cast<double>(*field));
+							}
+							break;
+
+						case 5: // Bid
+							if (updateType[LEVEL1_TICK_BID_PRICE]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_BID_PRICE,
+									security->ScalePrice(
+										boost::lexical_cast<double>(*field)));
+							}
+							break;
+						case 6: // Bid Size
+							if (updateType[LEVEL1_TICK_BID_QTY]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_BID_QTY,
+									boost::lexical_cast<double>(*field));
+							}
+							break;
+
+						case 4: // Ask Time
+						case 7: // Bid Time
 							if (
-									std::distance(field->begin(), field->end())
-										< 5) {
-								throw Exception("Symbol format is wrong");
-							}
-							security
-								= GetService()
-								.GetSource()
-								.FindSecurityBySymbolString(
-									std::string(
-										field->begin() + 1,
-										field->end() - 3));
-							if (!security) {
-								throw Exception(
-									"Symbol update has unknown symbol");
+									updateType[LEVEL1_TICK_ASK_PRICE]
+									|| updateType[LEVEL1_TICK_BID_PRICE]
+									|| updateType[LEVEL1_TICK_ASK_QTY]
+									|| updateType[LEVEL1_TICK_BID_QTY]) {
+								const auto &time
+									= ConvertIqFeedStringToPtime(*field, now);
+								if (
+										level1Time == pt::not_a_date_time
+										|| level1Time < time) {
+									level1Time = std::move(time);
+								}
 							}
 							break;
 
-						case 1: // Ask
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_ASK_PRICE,
-								security->ScalePrice(
-									boost::lexical_cast<double>(*field)));
+						case 8: // Last trade price
+							if (updateType[LEVEL1_TICK_LAST_PRICE]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_LAST_PRICE,
+									security->ScalePrice(
+										boost::lexical_cast<double>(*field)));
+								tradePrice = ScaledPrice(
+									m_level1Buffer.back().GetValue());
+							}
+							break;
+						case 9: // Last trade size
+							if (updateType[LEVEL1_TICK_LAST_QTY]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_LAST_QTY,
+									boost::lexical_cast<double>(*field));
+								tradeQty
+									= m_level1Buffer.back().GetValue();
+							}
 							break;
 
-						case 2: // Ask Size
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_ASK_QTY,
-								boost::lexical_cast<double>(*field));
+						case 11: // Last trade date
 							break;
 
-						case 4: // Bid
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_BID_PRICE,
-								security->ScalePrice(
-									boost::lexical_cast<double>(*field)));
+						case 12: // Total Volume
+							if (updateType[LEVEL1_TICK_TRADING_VOLUME]) {
+								m_level1Buffer.emplace_back(
+									LEVEL1_TICK_TRADING_VOLUME,
+									boost::lexical_cast<double>(*field));
+							}
 							break;
 
-						case 5: // Bid Size
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_BID_QTY,
-								boost::lexical_cast<double>(*field));
-							break;
-
-						case 7: // Last trade price
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_LAST_PRICE,
-								security->ScalePrice(
-									boost::lexical_cast<double>(*field)));
-							break;
-						case 8: // Last trade size
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_LAST_QTY,
-								boost::lexical_cast<double>(*field));
-							break;
-
-						case 10: // Last trade date
-							break;
-
-						case 11: // Total Volume
-							m_level1SymbolBuffer.emplace_back(
-								LEVEL1_TICK_TRADING_VOLUME,
-								boost::lexical_cast<double>(*field));
-							break;
-
-						case 12: // Market Open
+						case 13: // Market Open
 							// 1 = market open, 0 = market closed NOTE: This
 							// field is valid for Futures and Future Options
 							// only.
@@ -742,30 +783,30 @@ namespace {
 								: false;
 							break;
 
-						case 3: // Ask Time
-						case 6: // Bid Time
-						case 9: // Last Time
-							{
-								const auto &newTime
+						
+						case 10: // Last Time
+							if (
+									(updateType[LEVEL1_TICK_LAST_PRICE]
+										&& updateType[LEVEL1_TICK_LAST_QTY])
+									|| updateType[LEVEL1_TICK_TRADING_VOLUME]) {
+								AssertEq(tradeTime, pt::not_a_date_time);
+								tradeTime
 									= ConvertIqFeedStringToPtime(*field, now);
-								if (i == 9) {
-									tradeTime = newTime;
-								}
-								Assert(newTime != pt::not_a_date_time);
 								if (
-										time == pt::not_a_date_time
-										|| time < newTime) {
-									time = std::move(newTime);
+										updateType[LEVEL1_TICK_TRADING_VOLUME]
+										&& (level1Time == pt::not_a_date_time
+											|| level1Time < tradeTime)) {
+									level1Time = tradeTime;
 								}
 							}
 							break;
 
-						case 13:
+						case 14:
 							if (!field->empty()) {
 								throw ProtocolError(
 									"Symbol update message has not"
 										"last empty field",
-									&*field->end(),
+									&*messageBegin,
 									'\r');
 							}
 							break;
@@ -774,64 +815,47 @@ namespace {
 
 							throw ProtocolError(
 								"Symbol update has too many fields",
-								&*boost::end(*field),
+								&*messageBegin,
 								0);
 
 					}
 
 					if (*boost::end(*field) == '\n') {
-						
-						if (i != 13) {
+						if (i != 14) {
 							throw ProtocolError(
 								"Symbol update has too few fields",
 								&*boost::end(*field),
 								0);
 						}
 						Assert(security);
-						AssertEq(7, m_level1SymbolBuffer.size());
-						AssertEq(
-							LEVEL1_TICK_LAST_PRICE,
-							m_level1SymbolBuffer[4].GetType());
-						AssertEq(
-							LEVEL1_TICK_LAST_QTY,
-							m_level1SymbolBuffer[5].GetType());
-						Assert(time != pt::not_a_date_time);
-						Assert(tradeTime != pt::not_a_date_time);
-
-						if (time >= tradeTime) {
-							if (
-									tradeTime
-										>= security->GetLastMarketDataTime()) {
-								security->AddTrade(
+						Assert(updateType.any());
+						if (
+								updateType[LEVEL1_TICK_LAST_PRICE]
+								&& updateType[LEVEL1_TICK_LAST_QTY]) {
+							updateType.count() > 2
+								?	SetLevel1AndAddTrade(
+										*security,
+										level1Time,
+										m_level1Buffer,
+										tradeTime,
+										tradePrice,
+										tradeQty,
+										measurement)
+								: AddTrade(
+									*security,
 									tradeTime,
-									ScaledPrice(
-										m_level1SymbolBuffer[4].GetValue()),
-									m_level1SymbolBuffer[5].GetValue(),
-									measurement,
-									false,
-									false);
-								security->SetLevel1(
-									time,
-									m_level1SymbolBuffer,
+									tradePrice,
+									tradeQty,
 									measurement);
-							}
-						} else if (time >= security->GetLastMarketDataTime()) {
-							security->SetLevel1(
-								time,
-								m_level1SymbolBuffer,
+						} else {
+							SetLevel1(
+								*security,
+								level1Time,
+								m_level1Buffer,
 								measurement);
-							security->AddTrade(
-								tradeTime,
-								ScaledPrice(m_level1SymbolBuffer[4].GetValue()),
-								m_level1SymbolBuffer[5].GetValue(),
-								measurement,
-								false,
-								false);
 						}
-						m_level1SymbolBuffer.clear();
-
+						m_level1Buffer.clear();
 						return boost::end(*field);
-					
 					}
 
 				} catch (const boost::bad_lexical_cast &) {
@@ -853,7 +877,7 @@ namespace {
 
 					throw ProtocolError(
 						"Symbol update message field has invalid format",
-						&*boost::end(*field),
+						&*messageBegin,
 						0);
 
 				}
@@ -862,14 +886,148 @@ namespace {
 
 			throw ProtocolError(
 				"Symbol update message has invalid format",
-				&*bufferEnd,
+				&*messageBegin,
 				'\n');
 
 		}
 
+		template<typename Field>
+		std::bitset<numberOfLevel1TickTypes> ParseMessageContents(
+				const Field &field)
+				const {
+			std::bitset<numberOfLevel1TickTypes> result;
+			for (const auto &ch: field) {
+				switch (ch) {
+					case 'C': // Last Qualified Trade.
+					case 'E': //Extended Trade = Form T trade.
+					case 'O':	// Other Trade = Any trade not accounted for
+								// by C or E.
+						Assert(!result[LEVEL1_TICK_LAST_PRICE]);
+						Assert(!result[LEVEL1_TICK_LAST_QTY]);
+						result
+							.set(LEVEL1_TICK_LAST_PRICE)
+							.set(LEVEL1_TICK_LAST_QTY);
+						break;
+					case 'b': // A bid update occurred.
+						Assert(!result[LEVEL1_TICK_BID_PRICE]);
+						Assert(!result[LEVEL1_TICK_BID_QTY]);
+						result
+							.set(LEVEL1_TICK_BID_PRICE)
+							.set(LEVEL1_TICK_BID_QTY);
+						break;
+					case 'a': // An ask update occurred.
+						Assert(!result[LEVEL1_TICK_ASK_PRICE]);
+						Assert(!result[LEVEL1_TICK_ASK_QTY]);
+						result
+							.set(LEVEL1_TICK_ASK_PRICE)
+							.set(LEVEL1_TICK_ASK_QTY);
+						break;
+					case 'o': //An Open occurred.
+					case 'h': // A High occurred.
+					case 'l': // A Low occurred.
+					case 'c': // A Close occurred.
+					case 's': // A Settlement occurred.
+						break;
+					case 'v': // A volume update occurred.
+						Assert(!result[LEVEL1_TICK_TRADING_VOLUME]);
+						result.set(LEVEL1_TICK_TRADING_VOLUME);
+						break;
+					default:
+						throw ProtocolError(
+							"Unknown message content type",
+							&ch,
+							0);
+				}
+			}
+			return result;
+		}
+
+		template<typename Field>
+		IqFeed::Security & ResolveSecurity(const Field &field) {
+
+			if (std::distance(field.begin(), field.end()) < 5) {
+				throw Exception("Symbol format is wrong");
+			}
+
+			IqFeed::Security *const result
+				= GetService()
+				.GetSource()
+				.FindSecurityBySymbolString(
+					std::string(field.begin() + 1, field.end() - 3));
+			if (!result) {
+				throw Exception("Symbol update has unknown symbol");
+			}
+			
+			return *result;
+
+		}
+
+		static void SetLevel1AndAddTrade(
+				IqFeed::Security &security,
+				const pt::ptime &level1Time,
+				const std::vector<trdk::Level1TickValue> &level1Data,
+				const pt::ptime &tradeTime,
+				const ScaledPrice &tradePrice,
+				const Qty &tradeQty,
+				const Milestones &measurement) {
+			AssertLe(2, level1Data.size());
+			Assert(level1Time != pt::not_a_date_time);
+			Assert(tradeTime != pt::not_a_date_time);
+			AssertLt(0, tradePrice);
+			AssertLt(0, tradeQty);
+			if (level1Time >= tradeTime) {
+				if (tradeTime < security.GetLastMarketDataTime()) {
+					return;
+				}
+				security.AddTrade(
+					tradeTime,
+					tradePrice,
+					tradeQty,
+					measurement,
+					false);
+				security.SetLevel1(level1Time, level1Data, measurement);
+			} else if (level1Time >= security.GetLastMarketDataTime()) {
+				security.SetLevel1(level1Time, level1Data, measurement);
+				security.AddTrade(
+					tradeTime,
+					tradePrice,
+					tradeQty,
+					measurement,
+					false);
+			}
+		}
+
+		static void SetLevel1(
+				IqFeed::Security &security,
+				const pt::ptime &time,
+				const std::vector<trdk::Level1TickValue> &data,
+				const Milestones &measurement) {
+			AssertLe(1, data.size());
+			Assert(time != pt::not_a_date_time);
+			if (time < security.GetLastMarketDataTime()) {
+				return;
+			}
+			security.SetLevel1(time, data, measurement);
+		}
+
+		static void AddTrade(
+				IqFeed::Security &security,
+				const pt::ptime &time,
+				const ScaledPrice &price,
+				const Qty &qty,
+				const Milestones &measurement) {
+			Assert(time != pt::not_a_date_time);
+			AssertLt(0, price);
+			AssertLt(0, qty);
+			if (time < security.GetLastMarketDataTime()) {
+				return;
+			}
+			security.AddTrade(time, price, qty, measurement, true);
+		}
+
 	private:
 
-		std::vector<trdk::Level1TickValue> m_level1SymbolBuffer;
+		std::vector<trdk::Level1TickValue> m_level1Buffer;
 		pt::ptime m_lastTimeReportTime;
 
 	};
@@ -1010,17 +1168,18 @@ namespace {
 			if (field == Iterator()) {
 				throw ProtocolError(
 					"Received empty history message, no one field",
-					&*boost::end(*field),
+					&*message.begin(),
 					',');
 			}
 
 			const auto &getNext
-				= [&field]() -> boost::iterator_range<Message::iterator> {
+				= [&field, &message]()
+						-> boost::iterator_range<Message::iterator> {
 					Assert(field != Iterator());
 					if (++field == Iterator()) {
 						throw ProtocolError(
 							"Failed to extract history message field",
-							&*boost::end(*field),
+							&*message.begin(),
 							',');
 					}
 #					ifdef DEV_VER
@@ -1057,7 +1216,7 @@ namespace {
 					if (!last.empty()) {
 						throw ProtocolError(
 							"History message has wrong format",
-							&*boost::end(last),
+							&*message.begin(),
 							'\r');
 					}
 					GetService().GetSource().OnHistoryLoadCompleted(*security);
@@ -1086,7 +1245,7 @@ namespace {
 					if (!last.empty()) {
 						throw ProtocolError(
 							"History message has wrong format",
-							&*boost::end(last),
+							&*message.begin(),
 							'\r');
 					}
 				}

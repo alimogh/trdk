@@ -141,7 +141,6 @@ void RandomMarketDataSource::NotificationThread() {
 							RoundByScale(tradePrice, s->GetPriceScale())),
 						(generateTopRandom() + 1) * 10,
 						timeMeasurement,
-						true,
 						true);
 				}
 #				endif

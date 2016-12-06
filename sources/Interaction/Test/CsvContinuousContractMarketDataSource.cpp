@@ -245,28 +245,24 @@ namespace {
 						m_security->ScalePrice(v1),
 						1,
 						TimeMeasurement::Milestones(),
-						m_security->IsOnline(),
 						m_security->IsOnline());
 					m_security->AddTrade(
 						time,
 						m_security->ScalePrice(v2),
 						1,
 						TimeMeasurement::Milestones(),
-						m_security->IsOnline(),
 						m_security->IsOnline());
 					m_security->AddTrade(
 						time,
 						m_security->ScalePrice(v3),
 						1,
 						TimeMeasurement::Milestones(),
-						m_security->IsOnline(),
 						m_security->IsOnline());
 					m_security->AddTrade(
 						time,
 						m_security->ScalePrice(v4),
 						1,
 						TimeMeasurement::Milestones(),
-						m_security->IsOnline(),
 						m_security->IsOnline());
 				}
 #				endif

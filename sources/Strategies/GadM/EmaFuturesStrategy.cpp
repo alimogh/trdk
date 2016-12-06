@@ -314,13 +314,13 @@ namespace EmaFuturesStrategy {
 							*this,
 							barService->GetTypeId(),
 							barService->GetId());
-						m_barService = barService;
 						GetLog().Info(
 							"Using Bar Service \"%1%\" with instance ID %2%"
 								" to drop bars copies...",
 							m_barServiceId,
 							*m_barService);
 					});
+				m_barService = barService;
 
 				return;
 
