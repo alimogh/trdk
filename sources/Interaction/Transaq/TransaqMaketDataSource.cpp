@@ -114,7 +114,6 @@ void Transaq::MarketDataSource::OnNewTick(
 		security.ScalePrice(price),
 		qty,
 		delayMeasurement,
-		true,
 		true);
 }
 

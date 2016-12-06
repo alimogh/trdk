@@ -325,6 +325,7 @@ public:
 			
 		ss << " Active buffer: [ ";
 		Assert(&*begin < ex.GetBufferAddress());
+		Assert(ex.GetBufferAddress() <= &*(end));
 		Assert(ex.GetBufferAddress() < &*(end));
 		for (auto it = begin; it < end; ++it) {
 			const bool isHighlighted = &*it == ex.GetBufferAddress();

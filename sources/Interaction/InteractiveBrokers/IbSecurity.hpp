@@ -135,8 +135,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 							ScaledPrice(tick.GetValue()),
 							lastQty,
 							timeMeasurement,
-							false,
-							true);
+							false);
 					}
 					break;
 				case LEVEL1_TICK_LAST_QTY:
@@ -161,8 +160,7 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 							lastPrice,
 							tick.GetValue(),
 							timeMeasurement,
-							false,
-							true);
+							false);
 					}
 					break;
 				default:

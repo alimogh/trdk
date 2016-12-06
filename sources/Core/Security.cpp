@@ -218,8 +218,7 @@ namespace {
 				const boost::posix_time::ptime &time,
 				const ScaledPrice &price,
 				const Qty &qty,
-				bool useAsLastTrade,
-				bool useForTradedVolume) {
+				bool useAsLastTrade) {
 			FormatAndWrite(
 				[&](Record &record) {
 					record
@@ -228,8 +227,7 @@ namespace {
 						% "T"
 						% m_security.DescalePrice(price)
 						% qty
-						% useAsLastTrade
-						% useForTradedVolume;
+						% useAsLastTrade;
 				});
 		}
 
@@ -1226,59 +1224,29 @@ void Security::AddTrade(
 		const ScaledPrice &price,
 		const Qty &qty,
 		const TimeMeasurement::Milestones &delayMeasurement,
-		bool useAsLastTrade,
-		bool useForTradedVolume) {
+		bool useAsLastTrade) {
 
-	bool isLevel1Changed = false;
-	if (useAsLastTrade) {
-		if (m_pimpl->SetLevel1(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
-				delayMeasurement,
-				false,
-				false)) {
-			isLevel1Changed = true;
-		}
-		if (m_pimpl->SetLevel1(
-				time,
-				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
-				delayMeasurement,
-				!useForTradedVolume,
-				isLevel1Changed)) {
-			isLevel1Changed = true;
-		}
-	}
-	
+	AssertLt(0, price);
 	AssertLt(0, qty);
-	if (useForTradedVolume && qty > 0) {
-		for ( ; ; ) {
-			const auto &prevVal
-				= m_pimpl->m_level1[LEVEL1_TICK_TRADING_VOLUME].load();
-			const auto newVal
-				= Level1TickValue::Create<LEVEL1_TICK_TRADING_VOLUME>(
-					IsSet(prevVal) ? Qty(prevVal + qty) : qty);
-			if (
-					m_pimpl->CompareAndSetLevel1(
-						time,
-						newVal,
-						prevVal,
-						delayMeasurement,
-						true,
-						isLevel1Changed)) {
-				break;
-			}
-		}
-	}
 
 	m_pimpl->UpdateMarketDataStat(time);
 	m_pimpl->m_tradeSignal(time, price, qty, delayMeasurement);
 
-	m_pimpl->m_marketDataLog.WriteTrade(
-		time,
-		price,
-		qty,
-		useAsLastTrade,
-		useForTradedVolume);
+	if (useAsLastTrade) {
+		m_pimpl->SetLevel1(
+			time,
+			Level1TickValue::Create<LEVEL1_TICK_LAST_QTY>(qty),
+			delayMeasurement,
+			true,
+			m_pimpl->SetLevel1(
+				time,
+				Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(price),
+				delayMeasurement,
+				false,
+				false));
+	}
+
+	m_pimpl->m_marketDataLog.WriteTrade(time, price, qty, useAsLastTrade);
 
 }
 

@@ -170,7 +170,6 @@ namespace {
 					price,
 					qty,
 					TimeMeasurement::Milestones(),
-					true,
 					true);
 
 				prevPrice = price;
