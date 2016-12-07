@@ -98,7 +98,8 @@ public:
 			const ExpirationCalendar::Stat stat
 				= m_expirationCalendar->CalcStat();
 			const char *const message
-				= "Expiration calendar has %1% symbols and %2% expirations.";
+				= "Expiration calendar has %1% symbol(s)"
+					" and %2% expiration(s).";
 			stat.numberOfExpirations && stat.numberOfSymbols
 				?	m_context.GetLog().Info(
 						message,

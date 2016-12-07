@@ -1006,7 +1006,7 @@ void EngineServer::Service::StartEngine() {
 			try {
 				auto engine = boost::make_shared<Engine>(
 					m_config.path,
-						[this](
+					[this](
 							const Context::State &state,
 							const std::string *updateMessage) {
 						OnContextStateChanged(state, updateMessage);
