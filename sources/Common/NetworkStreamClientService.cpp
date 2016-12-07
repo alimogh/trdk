@@ -118,6 +118,7 @@ public:
 					boost::format message("%1%Fatal error: \"%2%\".");
 					message % m_logTag % ex;
 					m_self.LogError(message.str());
+					m_self.OnStopByError(message.str());
 					if (m_client) {
 						auto client = m_client;
 						// See OnDisconnect to know why it should be reset here.

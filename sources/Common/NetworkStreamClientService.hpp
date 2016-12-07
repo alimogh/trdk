@@ -65,6 +65,7 @@ namespace trdk { namespace Lib {
 		virtual void LogError(const std::string &) const = 0;
 
 		virtual void OnConnectionRestored() = 0;
+		virtual void OnStopByError(const std::string &message) = 0;
 
 	protected:
 

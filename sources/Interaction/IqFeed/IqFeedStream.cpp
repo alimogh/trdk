@@ -270,6 +270,12 @@ void ClientService::OnConnectionRestored() {
 	m_source.ResubscribeToSecurities();
 }
 
+void ClientService::OnStopByError(const std::string &message) {
+	m_source.GetContext().RaiseStateUpdate(
+		Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+		message);
+}
+
 void ClientService::SubscribeToMarketData(const IqFeed::Security &security) {
 	InvokeClient<Client>(
 		boost::bind(&Client::SubscribeToMarketData, _1, boost::cref(security)));
