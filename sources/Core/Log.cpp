@@ -50,10 +50,10 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
 			GetThreadId(),
 			nullptr,
 			boost::format(
-					" Build: " TRDK_BUILD_IDENTITY "."
-						" Build time: " __DATE__ " " __TIME__ "."
-						" Timezone: %1%. UTC: %2%. EST: %3% (%4%)."
-						" CST: %5% (%6%). MSK: %7% (%8%).")
+				"Build: " TRDK_BUILD_IDENTITY "."
+					" Build time: " __DATE__ " " __TIME__ "."
+					" Timezone: %1%. UTC: %2%. EST: %3% (%4%)."
+					" CST: %5% (%6%). MSK: %7% (%8%).")
 				%	GetTimeZone()->to_posix_string()
 				%	pt::microsec_clock::universal_time()
 				%	(now + GetEstTimeZoneDiff(GetTimeZone()))

@@ -133,6 +133,12 @@ namespace trdk { namespace Lib {
 	int64_t ConvertToMicroseconds(const boost::posix_time::ptime &);
 	boost::posix_time::ptime ConvertToPTimeFromMicroseconds(int64_t);
 
+	//! Sets date for time of day.
+	boost::posix_time::ptime GetTimeByTimeOfDayAndDate(
+			const boost::posix_time::time_duration &source,
+			const boost::posix_time::ptime &controlTime,
+			const boost::posix_time::time_duration &sourceTimeZoneDiff);
+
 	//////////////////////////////////////////////////////////////////////////
 
 	std::string ConvertUtf8ToAscii(const std::string &);

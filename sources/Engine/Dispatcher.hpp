@@ -120,7 +120,7 @@ namespace trdk { namespace Engine {
 				, m_taksState(TASK_STATE_INACTIVE)
 				, m_queueSizeConstrolLevel(
 					!m_context.GetSettings().IsReplayMode()
-						?	10
+						?	50
 						:	10000) {
 				//...//
 			}

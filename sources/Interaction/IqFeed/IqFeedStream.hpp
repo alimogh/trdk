@@ -41,6 +41,7 @@ namespace trdk { namespace Interaction { namespace IqFeed {
 		virtual void LogError(const std::string &) const override;
 
 		virtual void OnConnectionRestored() override;
+		virtual void OnStopByError(const std::string &) override;
 
 	private:
 

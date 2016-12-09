@@ -99,6 +99,9 @@ namespace {
 	}
 
 	size_t GetLotSizeBySymbol(const Symbol &symbol) {
+		if (symbol.GetSymbol() == "TEST_SCALE2") {
+			return 1;
+		}
 		switch (symbol.GetSecurityType()) {
 			case SECURITY_TYPE_FUTURES:
 				{

@@ -163,8 +163,11 @@ namespace boost { namespace accumulators {
 				if (!m_isStarted) {
 					m_sum = rolling_mean(args);
 					m_isStarted = true;
+					return;
 				}
-				m_sum = m_smoothingConstant * (args[sample] - m_sum) + m_sum;
+				m_sum
+					= (args[sample] * m_smoothingConstant)
+					+ (m_sum * (1 - m_smoothingConstant));
  			}
 
 			result_type result(dont_care) const {
@@ -574,13 +577,14 @@ void MovingAverageService::OnSecurityContractSwitched(
 }
 
 bool MovingAverageService::OnLevel1Tick(
-		const Security &,
+		const Security &security,
 		const pt::ptime &time,
 		const Level1TickValue &tick) {
 	const CheckTickValueVisitor visitor(tick);
-	return boost::apply_visitor(visitor, m_pimpl->m_sourceInfo)
-		?	m_pimpl->OnNewValue(time, tick.GetValue())
-		:	false;
+	if (!boost::apply_visitor(visitor, m_pimpl->m_sourceInfo)) {
+		return false;
+	}
+	return m_pimpl->OnNewValue(time, security.DescalePrice(tick.GetValue()));
 }
 
 bool MovingAverageService::OnNewBar(

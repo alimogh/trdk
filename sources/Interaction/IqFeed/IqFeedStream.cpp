@@ -23,6 +23,133 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::IqFeed;
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	template<typename Source>
+	pt::ptime ConvertIqFeedStringToPtime(
+			const Source &source,
+			const pt::time_duration &timeZoneDiff) {
+
+		boost::iostreams::stream_buffer<boost::iostreams::array_source> buffer(
+			&*boost::begin(source), &*boost::end(source));
+		std::istream stream(&buffer);
+
+		{
+			static const std::locale locale(
+				std::locale::classic(),
+				new pt::time_input_facet("%Y-%m-%d %H:%M:%S%f"));
+			stream.imbue(locale);
+		}
+		
+		pt::ptime result;
+		stream >> result;
+
+		if (result == pt::not_a_date_time) {
+			boost::format message("Failed to parse time value \"%1%\"");
+			message % boost::copy_range<std::string>(source);
+			throw NetworkStreamClient::Exception(message.str().c_str());
+		}
+
+		return result - timeZoneDiff;
+
+	}
+
+	template<typename Source>
+	pt::ptime ConvertIqFeedStringToTime(
+			const Source &source,
+			pt::ptime lastTradeTime,
+			const pt::time_duration &timeZoneDiff) {
+
+		typedef boost::iostreams::stream_buffer<
+				boost::iostreams::array_source>
+			SourceBuffer;
+		SourceBuffer buffer(&*boost::begin(source), &*boost::end(source));
+		std::istream stream(&buffer);
+
+		{
+			static const std::locale locale(
+				std::locale::classic(),
+				new pt::time_input_facet("%H:%M:%S%f"));
+			stream.imbue(locale);
+		}
+		
+		pt::time_duration time;
+		stream >> time;
+
+		if (time == pt::not_a_date_time) {
+			boost::format message(
+				"Failed to parse time of day value \"%1%\"");
+			message % boost::copy_range<std::string>(source);
+			throw NetworkStreamClient::Exception(message.str().c_str());
+		}
+
+		return GetTimeByTimeOfDayAndDate(time, lastTradeTime, timeZoneDiff);
+
+	}
+
+	template<typename Source>
+	gr::date ConvertIqFeedStringToDate(const Source &source) {
+		
+		typedef boost::iostreams::stream_buffer<
+				boost::iostreams::array_source>
+			SourceBuffer;
+		SourceBuffer buffer(&*boost::begin(source), &*boost::end(source));
+		std::istream stream(&buffer);
+
+		{
+			static const std::locale locale(
+				std::locale::classic(),
+				new gr::date_input_facet("%m/%d/%Y"));
+			stream.imbue(locale);
+		}
+
+		gr::date result;
+		stream >> result;
+
+		if (result.is_not_a_date()) {
+			boost::format message("Failed to parse date value \"%1%\"");
+			message % boost::copy_range<std::string>(source);
+			throw NetworkStreamClient::Exception(message.str().c_str());
+		}
+
+		return result;
+
+	}
+
+	template<typename Source>
+	pt::time_duration ConvertIqFeedStringToTimeOfDay(const Source &source) {
+
+		typedef boost::iostreams::stream_buffer<
+				boost::iostreams::array_source>
+			SourceBuffer;
+		SourceBuffer buffer(&*boost::begin(source), &*boost::end(source));
+		std::istream stream(&buffer);
+
+		{
+			static const std::locale locale(
+				std::locale::classic(),
+				new pt::time_input_facet("%H:%M:%S%f"));
+			stream.imbue(locale);
+		}
+		
+		pt::time_duration result;
+		stream >> result;
+
+		if (result == pt::not_a_date_time) {
+			boost::format message("Failed to parse time of day value \"%1%\"");
+			message % boost::copy_range<std::string>(source);
+			throw NetworkStreamClient::Exception(message.str().c_str());
+		}
+
+		return result;
+
+	}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -105,115 +232,8 @@ namespace {
 			GetLog().Error(message.c_str());
 		}
 
-	protected:
-
-		template<typename Source>
-		pt::ptime ConvertIqFeedStringToPtime(const Source &source) const {
-
-			boost::iostreams::stream_buffer<boost::iostreams::array_source> buffer(
-				&*boost::begin(source), &*boost::end(source));
-			std::istream stream(&buffer);
-
-			{
-				static const std::locale locale(
-					std::locale::classic(),
-					new pt::time_input_facet("%Y-%m-%d %H:%M:%S%f"));
-				stream.imbue(locale);
-			}
-		
-			pt::ptime result;
-			stream >> result;
-
-			if (result == pt::not_a_date_time) {
-				boost::format message("Failed to parse time value \"%1%\"");
-				message % boost::copy_range<std::string>(source);
-				throw NetworkStreamClient::Exception(message.str().c_str());
-			}
-
-			return result - m_timeZoneDiff;
-
-		}
-
-		template<typename Source>
-		pt::ptime ConvertIqFeedStringToPtime(
-				const Source &source,
-				const pt::ptime &now) {
-
-			boost::iostreams::stream_buffer<boost::iostreams::array_source> buffer(
-				&*boost::begin(source), &*boost::end(source));
-			std::istream stream(&buffer);
-
-			{
-				static const std::locale locale(
-					std::locale::classic(),
-					new pt::time_input_facet("%H:%M:%S%f"));
-				stream.imbue(locale);
-			}
-		
-			pt::time_duration result;
-			stream >> result;
-
-			if (result == pt::not_a_date_time) {
-				boost::format message(
-					"Failed to parse time of day value \"%1%\"");
-				message % boost::copy_range<std::string>(source);
-				throw NetworkStreamClient::Exception(message.str().c_str());
-			}
-
-			switch (result.hours()) {
-				case 0:
-					{
-						const auto nowTz = now + m_timeZoneDiff;
-						switch (nowTz.time_of_day().hours()) {
-							case 23:
-								return
-									pt::ptime(
-										(nowTz + pt::hours(1)).date(),
-										result)
-									- m_timeZoneDiff;
-						case 0:
-							break;
-						default:
-							{
-								boost::format message(
-									"Time of day %1%"
-										" differs from the current time %2%");
-								message % result % nowTz;
-								throw NetworkStreamClient::Exception(
-									message.str().c_str());
-							}
-						}
-					}
-					break;
-				case 23:
-					{
-						const auto nowTz = now + m_timeZoneDiff;
-						switch (nowTz.time_of_day().hours()) {
-							case 0:
-								return
-									pt::ptime(
-										(nowTz - pt::hours(1)).date(),
-										result)
-									- m_timeZoneDiff;
-							case 22:
-							case 23:
-								break;
-							default:
-								{
-									boost::format message(
-										"Time of day %1% differs"
-											" from the current time %2%");
-									message % result % nowTz;
-									throw NetworkStreamClient::Exception(
-										message.str().c_str());
-								}
-						}
-						break;
-					}
-			}
-
-			return pt::ptime(now.date(), result) - m_timeZoneDiff;
-
+		const pt::time_duration & GetTimeZoneDiff() const {
+			return m_timeZoneDiff;
 		}
 
 	private:
@@ -268,6 +288,12 @@ void ClientService::LogError(const std::string &message) const {
 
 void ClientService::OnConnectionRestored() {
 	m_source.ResubscribeToSecurities();
+}
+
+void ClientService::OnStopByError(const std::string &message) {
+	m_source.GetContext().RaiseStateUpdate(
+		Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+		message);
 }
 
 void ClientService::SubscribeToMarketData(const IqFeed::Security &security) {
@@ -339,10 +365,10 @@ namespace {
 				"S"
 					",SELECT UPDATE FIELDS"
 					",Message Contents" // 1
-					",Ask,Ask Size,Ask Time" // 2, 3, 4
-					",Bid,Bid Size,Bid Time" // 5, 6, 7
-					",Most Recent Trade,Most Recent Trade Size" // 8, 9
-					",Most Recent Trade Time,Most Recent Trade Date" // 10, 11
+					",Most Recent Trade Date,Most Recent Trade Time" // 2, 3
+					",Ask,Ask Size,Ask Time" // 4, 5, 6
+					",Bid,Bid Size,Bid Time" // 7, 8, 9
+					",Most Recent Trade,Most Recent Trade Size" // 10, 11
 					",Total Volume" // 12
 					",Market Open" // 13
 					"\r\n",
@@ -403,7 +429,7 @@ namespace {
 						AssertEq('\n', *it);
 						break;
 					case 'Q':
-						it = OnSymbolUpdateMessage(time, it, end, measurement);
+						it = OnSymbolUpdateMessage(it, end, measurement);
 						AssertEq('\n', *it);
 						break;
 					case 'F':
@@ -560,12 +586,12 @@ namespace {
 				}
 				const std::string controlContent(
 					"Symbol"
-					",Message Contents"
-					",Ask,Ask Size,Ask Time"
-					",Bid,Bid Size,Bid Time"
-					",Most Recent Trade,Most Recent Trade Size"
-					",Most Recent Trade Time,Most Recent Trade Date"
-					",Total Volume"
+					",Message Contents" // 1
+					",Most Recent Trade Date,Most Recent Trade Time" // 2, 3
+					",Ask,Ask Size,Ask Time" // 4, 5, 6
+					",Bid,Bid Size,Bid Time" // 7, 8, 9
+					",Most Recent Trade,Most Recent Trade Size" // 10, 11
+					",Total Volume" // 12
 					",Market Open");
 				if (message != controlContent) {
 					GetLog().Debug(
@@ -638,7 +664,6 @@ namespace {
 		}
 
 		Buffer::const_iterator OnSymbolUpdateMessage(
-			const pt::ptime &now,
 				const Buffer::const_iterator &messageBegin,
 				const Buffer::const_iterator &bufferEnd,
 				const Milestones &measurement) {
@@ -659,33 +684,32 @@ namespace {
 				it,
 				boost::token_finder(boost::is_any_of(",\n")));
 
-			Iterator symbol;
+			Iterator symbolField;
 			IqFeed::Security *security = nullptr;
-			pt::ptime level1Time;
 			pt::ptime tradeTime;
+			Iterator tradeDateField;
+			pt::ptime level1Time;
 			ScaledPrice tradePrice = 0;
 			Qty tradeQty = 0;
 			bool isMarketOpened = false;
-			
 			std::bitset<numberOfLevel1TickTypes> updateType;
-
 			for (size_t i = 0; field != Iterator(); ++field, ++i) {
 
 				if (i == 0) {
-					Assert(symbol == Iterator());
+					Assert(symbolField == Iterator());
 					Assert(!security);
 					Assert(!updateType.any());
-					symbol = field;
+					symbolField = field;
 					continue;
 				} else if (i == 1) {
-					Assert(symbol != Iterator());
+					Assert(symbolField != Iterator());
 					Assert(!security);
 					Assert(!updateType.any());
 					updateType = ParseMessageContents(*field);
 					if (!updateType.any()) {
 						return std::find(field->begin(), bufferEnd, '\n');
 					}
-					security = &ResolveSecurity(*symbol);
+					security = &ResolveSecurity(*symbolField);
 					Assert(security);
 					continue;
 				}
@@ -694,7 +718,25 @@ namespace {
 
 					switch (i) {
 
-						case 2: // Ask
+						case 2: // Last trade date
+							Assert(tradeDateField == Iterator());
+							AssertEq(tradeTime, pt::not_a_date_time);
+							tradeDateField = field;
+							break;
+						case 3: // Last Time
+							Assert(tradeDateField != Iterator());
+							AssertEq(tradeTime, pt::not_a_date_time);
+							tradeTime = pt::ptime(
+								ConvertIqFeedStringToDate(*tradeDateField),
+								ConvertIqFeedStringToTimeOfDay(*field));
+							tradeTime -= GetTimeZoneDiff();
+							if (updateType[LEVEL1_TICK_TRADING_VOLUME]) {
+								AssertEq(level1Time, pt::not_a_date_time);
+								level1Time = tradeTime;
+							}
+							break;
+
+						case 4: // Ask
 							if (updateType[LEVEL1_TICK_ASK_PRICE]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_ASK_PRICE,
@@ -702,7 +744,7 @@ namespace {
 										boost::lexical_cast<double>(*field)));
 							}
 							break;
-						case 3: // Ask Size
+						case 5: // Ask Size
 							if (updateType[LEVEL1_TICK_ASK_QTY]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_ASK_QTY,
@@ -710,7 +752,7 @@ namespace {
 							}
 							break;
 
-						case 5: // Bid
+						case 7: // Bid
 							if (updateType[LEVEL1_TICK_BID_PRICE]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_BID_PRICE,
@@ -718,7 +760,7 @@ namespace {
 										boost::lexical_cast<double>(*field)));
 							}
 							break;
-						case 6: // Bid Size
+						case 8: // Bid Size
 							if (updateType[LEVEL1_TICK_BID_QTY]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_BID_QTY,
@@ -726,15 +768,18 @@ namespace {
 							}
 							break;
 
-						case 4: // Ask Time
-						case 7: // Bid Time
+						case 6: // Ask Time
+						case 9: // Bid Time
+							AssertNe(tradeTime, pt::not_a_date_time);
 							if (
 									updateType[LEVEL1_TICK_ASK_PRICE]
 									|| updateType[LEVEL1_TICK_BID_PRICE]
 									|| updateType[LEVEL1_TICK_ASK_QTY]
 									|| updateType[LEVEL1_TICK_BID_QTY]) {
-								const auto &time
-									= ConvertIqFeedStringToPtime(*field, now);
+								const auto &time = ConvertIqFeedStringToTime(
+									*field,
+									tradeTime,
+									GetTimeZoneDiff());
 								if (
 										level1Time == pt::not_a_date_time
 										|| level1Time < time) {
@@ -743,7 +788,7 @@ namespace {
 							}
 							break;
 
-						case 8: // Last trade price
+						case 10: // Last trade price
 							if (updateType[LEVEL1_TICK_LAST_PRICE]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_LAST_PRICE,
@@ -753,7 +798,7 @@ namespace {
 									m_level1Buffer.back().GetValue());
 							}
 							break;
-						case 9: // Last trade size
+						case 11: // Last trade size
 							if (updateType[LEVEL1_TICK_LAST_QTY]) {
 								m_level1Buffer.emplace_back(
 									LEVEL1_TICK_LAST_QTY,
@@ -761,9 +806,6 @@ namespace {
 								tradeQty
 									= m_level1Buffer.back().GetValue();
 							}
-							break;
-
-						case 11: // Last trade date
 							break;
 
 						case 12: // Total Volume
@@ -781,24 +823,6 @@ namespace {
 							isMarketOpened = boost::lexical_cast<int>(*field)
 								? true
 								: false;
-							break;
-
-						
-						case 10: // Last Time
-							if (
-									(updateType[LEVEL1_TICK_LAST_PRICE]
-										&& updateType[LEVEL1_TICK_LAST_QTY])
-									|| updateType[LEVEL1_TICK_TRADING_VOLUME]) {
-								AssertEq(tradeTime, pt::not_a_date_time);
-								tradeTime
-									= ConvertIqFeedStringToPtime(*field, now);
-								if (
-										updateType[LEVEL1_TICK_TRADING_VOLUME]
-										&& (level1Time == pt::not_a_date_time
-											|| level1Time < tradeTime)) {
-									level1Time = tradeTime;
-								}
-							}
 							break;
 
 						case 14:
@@ -1075,10 +1099,10 @@ namespace {
 				override{
 
 			GetLog().Info(
-				"%1%Sending %2% (%3% per bar) market data history points"
-					" request for %4% (%5%)...",
+				"%1%Sending %2% history bars request (%3% points in bar)"
+					" for %4% (%5%)...",
 				GetService().GetLogTag(),
-				GetService().GetSource().GetSettings().historyDepth,
+				GetService().GetSource().GetSettings().historyhNumberOfBars,
 				GetService().GetSource().GetSettings().historyBarSize,
 				security,
 				security.GetSymbol().GetSymbol());
@@ -1103,7 +1127,7 @@ namespace {
 			command
 				% security.GetSymbol().GetSymbol()
 				% GetService().GetSource().GetSettings().historyBarSize
-				% GetService().GetSource().GetSettings().historyDepth;
+				% GetService().GetSource().GetSettings().historyhNumberOfBars;
 			Send(command.str());
 
 		}
@@ -1224,7 +1248,7 @@ namespace {
 				}
 
 				IqFeed::Security::Bar bar(
-					ConvertIqFeedStringToPtime(secondField),
+					ConvertIqFeedStringToPtime(secondField, GetTimeZoneDiff()),
 					IqFeed::Security::Bar::TRADES);
 				bar.highPrice = security->ScalePrice(
 					boost::lexical_cast<double>(getNext()));

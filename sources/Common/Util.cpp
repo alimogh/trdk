@@ -164,6 +164,29 @@ pt::ptime Lib::ConvertToPTimeFromMicroseconds(int64_t source) {
 	return unixEpochStart + pt::microseconds(source);
 }
 
+pt::ptime Lib::GetTimeByTimeOfDayAndDate(
+		const pt::time_duration &source,
+		const pt::ptime &controlTime,
+		const pt::time_duration &sourceTimeZoneDiff) {
+
+	Assert(source != pt::not_a_date_time);
+	Assert(controlTime != pt::not_a_date_time);
+	Assert(sourceTimeZoneDiff != pt::not_a_date_time);
+	
+	pt::ptime result((controlTime + sourceTimeZoneDiff).date(), source);
+	result -= sourceTimeZoneDiff;
+
+	const auto diff = result - controlTime;
+	if (diff >= pt::hours(12)) {
+		result -= pt::hours(24);
+	} else if (diff <= pt::hours(-12)) {
+		result += pt::hours(24);
+	}
+
+	return result;
+
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
