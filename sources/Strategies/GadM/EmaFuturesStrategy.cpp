@@ -1021,19 +1021,21 @@ namespace EmaFuturesStrategy {
 			fs::path path = GetContext().GetSettings().GetPositionsLogDir();
 
 			if (!GetContext().GetSettings().IsReplayMode()) {
-				boost::format fileName("%1%__%2%__%3%");
+				boost::format fileName("%1%__%2%__%3%_4%");
 				fileName
 					% GetTag()
 					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId();
+					% GetId()
+					% GetInstanceId();
 				path /= SymbolToFileName(fileName.str(), "csv");
 			} else {
-				boost::format fileName("%1%__%2%__%3%__%4%");
+				boost::format fileName("%1%__%2%__%3%__%4%_%5%");
 				fileName
 					% GetTag()
 					% ConvertToFileName(GetContext().GetCurrentTime())
 					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId();
+					% GetId()
+					% GetInstanceId();
 				path /= SymbolToFileName(fileName.str(), "csv");
 			}
 			
