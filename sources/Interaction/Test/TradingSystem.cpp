@@ -224,7 +224,7 @@ public:
 						const Qty &remainingQty,
 						const TradeInfo *trade) {
 					callback(id, uuid, status, remainingQty, trade);
-				};  
+				};
 		}
 
 		{
@@ -429,6 +429,9 @@ private:
 			AssertLe(
 				m_self->GetContext().GetCurrentTime(),
 				order.first);
+			Assert(
+				m_orders.empty()
+				|| m_orders.begin()->first < order.first);
 			m_orders.emplace(std::move(order.first), std::move(order.second));
 			hasUpdates = true;
 		}

@@ -169,6 +169,10 @@ namespace trdk { namespace Lib { namespace Concurrency {
 #define TRDK_STRATEGY_GADM_DLL_FILE_NAME \
 	TRDK_STRATEGY_GADM_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
+#define TRDK_STRATEGY_INTRADAYTREND_FILE_NAME "IntradayTrend"
+#define TRDK_STRATEGY_INTRADAYTREND_DLL_FILE_NAME \
+	TRDK_STRATEGY_INTRADAYTREND_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
 #define TRDK_GET_MODUE_FILE_NAME_LIST() { \
 		TRDK_CORE_FILE_NAME, \
 		TRDK_SERVICES_FILE_NAME, \
@@ -191,6 +195,7 @@ namespace trdk { namespace Lib { namespace Concurrency {
 		TRDK_STRATEGY_TEST_FILE_NAME, \
 		TRDK_STRATEGY_FXMB_FILE_NAME, \
 		TRDK_STRATEGY_GADM_FILE_NAME, \
+		TRDK_STRATEGY_INTRADAYTREND_FILE_NAME, \
 	}
 
 ////////////////////////////////////////////////////////////////////////////////

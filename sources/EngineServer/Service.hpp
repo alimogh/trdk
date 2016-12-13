@@ -135,7 +135,7 @@ namespace trdk { namespace EngineServer {
 
 			boost::uuids::uuid id;
 			boost::optional<std::string> tradingSystemId;
-			boost::optional<boost::posix_time::ptime> orderTime;
+			boost::posix_time::ptime orderTime;
 			boost::optional<boost::posix_time::ptime> executionTime;
 			OrderStatus status;
 			boost::uuids::uuid operationId;
@@ -157,7 +157,7 @@ namespace trdk { namespace EngineServer {
 			explicit OrderCache(
 					const boost::uuids::uuid &id,
 					const std::string *tradingSystemId,
-					const boost::posix_time::ptime *orderTime,
+					const boost::posix_time::ptime &orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const OrderStatus &status,
 					const boost::uuids::uuid &operationId,
@@ -214,7 +214,7 @@ namespace trdk { namespace EngineServer {
 			virtual void CopyOrder(
 					const boost::uuids::uuid &id,
 					const std::string *tradingSystemId,
-					const boost::posix_time::ptime *orderTime,
+					const boost::posix_time::ptime &orderTime,
 					const boost::posix_time::ptime *executionTime,
 					const trdk::OrderStatus &,
 					const boost::uuids::uuid &operationId,

@@ -49,7 +49,7 @@ namespace trdk { namespace Tests {
 		virtual void CopyOrder(
 				const boost::uuids::uuid &,
 				const std::string *,
-				const boost::posix_time::ptime *,
+				const boost::posix_time::ptime &,
 				const boost::posix_time::ptime *,
 				const trdk::OrderStatus &,
 				const boost::uuids::uuid &,

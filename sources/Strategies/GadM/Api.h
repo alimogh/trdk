@@ -8,6 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
+#pragma once
+
 #ifdef BOOST_WINDOWS
 #	define TRDK_STRATEGY_GADM_API
 #else

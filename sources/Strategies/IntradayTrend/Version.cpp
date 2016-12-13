@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/10/30 17:00:41
+ *   Created: 2016/12/12 22:29:07
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,18 +8,10 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-#ifdef TRDK_INTERACTION_TRANSAQ
-#	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllexport)
-#	else
-#		define TRDK_INTERACTION_TRANSAQ_API
-#	endif
-#else
-#	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllimport)
-#	else
-#		define TRDK_INTERACTION_TRANSAQ_API
-#	endif
-#endif
+extern "C" TRDK_STRATEGY_INTRADAYTREND_API void GetTrdkModuleVersionInfoV1(
+		trdk::Lib::VersionInfoV1 *result) {
+	*result = trdk::Lib::VersionInfoV1(TRDK_STRATEGY_INTRADAYTREND_FILE_NAME);
+}

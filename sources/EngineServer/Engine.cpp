@@ -169,7 +169,7 @@ void Engine::VerifyModules() const {
 	{
 		const std::string fullModuleList[]
 			= TRDK_GET_MODUE_FILE_NAME_LIST();
-		foreach (const auto &module, fullModuleList) {
+		for (const auto &module: fullModuleList) {
 			Assert(moduleList.count(module) == 0);
 			moduleList[module] = false;
 		}

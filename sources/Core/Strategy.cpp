@@ -21,6 +21,7 @@ namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
 namespace uuids = boost::uuids;
+namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -902,6 +903,44 @@ void Strategy::ClosePositions() {
 	const auto lock = LockForOtherThreads();
 	GetLog().Info("Closing positions by request...");
 	OnPostionsCloseRequest();
+}
+
+std::ofstream Strategy::CreateLog(const std::string &fileExtension) const {
+
+	fs::path path = GetContext().GetSettings().GetPositionsLogDir();
+	if (!GetContext().GetSettings().IsReplayMode()) {
+		boost::format fileName("%1%__%2%__%3%_%4%");
+		fileName
+			% GetTag()
+			% ConvertToFileName(GetContext().GetStartTime())
+			% GetId()
+			% GetInstanceId();
+		path /= SymbolToFileName(fileName.str(), fileExtension);
+	} else {
+		boost::format fileName("%1%__%2%__%3%__%4%_%5%");
+		fileName
+			% GetTag()
+			% ConvertToFileName(GetContext().GetCurrentTime())
+			% ConvertToFileName(GetContext().GetStartTime())
+			% GetId()
+			% GetInstanceId();
+		path /= SymbolToFileName(fileName.str(), fileExtension);
+	}
+
+	fs::create_directories(path.branch_path());
+
+	std::ofstream result(
+		path.string(),
+		std::ios::out | std::ios::ate | std::ios::app);
+	if (!result) {
+		GetLog().Error("Failed to open strategy log file %1%", path);
+		throw Exception("Failed to open strategy log file");
+	} else {
+		GetLog().Info("Strategy log: %1%.", path);
+	}
+
+	return result;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

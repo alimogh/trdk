@@ -32,6 +32,7 @@ var requiredModules = [
 	, 'Services'
 	, 'TestStrategy'
 	, 'GadM'
+	, 'IntradayTrend'
 ]
 
 //////////////////////////////////////////////////////////////////////////

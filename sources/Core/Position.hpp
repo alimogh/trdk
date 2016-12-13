@@ -38,6 +38,7 @@ namespace trdk {
 
 		enum CloseType {
 			CLOSE_TYPE_NONE,
+			CLOSE_TYPE_SIGNAL,
 			CLOSE_TYPE_TAKE_PROFIT,
 			CLOSE_TYPE_TRAILING_STOP,
 			CLOSE_TYPE_STOP_LOSS,
@@ -160,8 +161,6 @@ namespace trdk {
 		//! or closing.
 		bool IsInactive() const noexcept;
 		void ResetInactive();
-		//! All orders canceled, position will be closed or already closed.
-		bool IsCanceled() const noexcept;
 
 		bool HasActiveOrders() const noexcept;
 		bool HasActiveOpenOrders() const noexcept;
@@ -171,6 +170,12 @@ namespace trdk {
 
 		const trdk::Qty & GetPlanedQty() const;
 		const trdk::ScaledPrice & GetOpenStartPrice() const;
+		//! Returns time of first order.
+		/** Throws an exception if there is no open-order at this moment.
+		  * @sa GetCloseStartTime()
+		  * @sa GetActiveOrderTime()
+		  */
+		const boost::posix_time::ptime & GetOpenStartTime() const;
 
 		void SetOpenedQty(const trdk::Qty &) const noexcept;
 		const trdk::Qty & GetOpenedQty() const noexcept;
@@ -182,6 +187,13 @@ namespace trdk {
 		  * @sa GetActiveCloseOrderPrice
 		  */
 		const trdk::ScaledPrice & GetActiveOpenOrderPrice() const;
+		//! Returns time of active open-order.
+		/** Throws an exception if there is no active open-order at this moment.
+		  * @sa GetActiveOrderTime
+		  * @sa GetOpenStartTime
+		  * @sa GetActiveCloseOrderTime
+		  */
+		const boost::posix_time::ptime & GetActiveOpenOrderTime() const;
 		//! Returns price of last open-trade.
 		/** Throws an exception if there are no open-trades yet.
 		  * @sa GetLastTradePrice
@@ -197,6 +209,12 @@ namespace trdk {
 
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
+		//! Returns time of first close-order.
+		/** Throws an exception if there is no close-order at this moment.
+		  * @sa GetOpenStartTime()
+		  * @sa GetActiveCloseTime()
+		  */
+		const boost::posix_time::ptime & GetCloseStartTime() const;
 		trdk::ScaledPrice GetCloseAvgPrice() const;
 		//! Returns price of active close-order.
 		/** Throws an exception if there is no active close-order at this moment
@@ -205,6 +223,14 @@ namespace trdk {
 		  * @sa GetActiveOpenOrderPrice
 		  */
 		const trdk::ScaledPrice & GetActiveCloseOrderPrice() const;
+		//! Returns time of active close-order.
+		/** Throws an exception if there is no active close-order at this
+		  * moment.
+		  * @sa GetActiveOrderTime
+		  * @sa GetActiveOpenOrderTime
+		  * @sa GetActiveCloseTime
+		  */
+		const boost::posix_time::ptime & GetActiveCloseOrderTime() const;
 		//! Returns price of last close-trade.
 		/** Throws an exception if there are no close-trades yet.
 		  * @sa GetLastTradePrice
@@ -223,6 +249,12 @@ namespace trdk {
 		  * @sa GetActiveOpenClosePrice
 		  */
 		const trdk::ScaledPrice & GetActiveOrderPrice() const;
+		//! Returns time of active order.
+		/** Throws an exception if there is no active order at this moment.
+		  * @sa GetActiveOpenOrderTime
+		  * @sa GetActiveOpenCloseTime
+		  */
+		const boost::posix_time::ptime & GetActiveOrderTime() const;
 		//! Returns price of last trade.
 		/** Throws an exception if there are no trades yet.
 		  * @sa GetLastOpenTradePrice
@@ -324,11 +356,15 @@ namespace trdk {
 				const CloseType &,
 				const trdk::OrderParams &);
 
-		bool CancelAtMarketPrice(const CloseType &);
-		bool CancelAtMarketPrice(
-				const CloseType &,
-				const trdk::OrderParams &);
+		//! Cancels all active orders.
+		/** @sa IsCancelling
+		  * @return True if sent cancel request for one or more orders.
+		  */
 		bool CancelAllOrders();
+		//! One cancel request was sent by it is not executed yet.
+		/** @sa CancelAllOrders
+		  */
+		bool IsCancelling() const;
 
 	public:
 

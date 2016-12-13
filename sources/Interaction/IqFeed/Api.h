@@ -8,6 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
  
+#pragma once
+
 #ifdef TRDK_INTERACTION_IQFEED
 #	ifdef BOOST_WINDOWS
 #		define TRDK_INTERACTION_IQFEED_API __declspec(dllexport)

@@ -70,7 +70,7 @@ namespace trdk {
 		virtual void CopyOrder(
 				const boost::uuids::uuid &id,
 				const std::string *tradingSystemId,
-				const boost::posix_time::ptime *orderTime,
+				const boost::posix_time::ptime &orderTime,
 				const boost::posix_time::ptime *executionTime,
 				const trdk::OrderStatus &,
 				const boost::uuids::uuid &operationId,

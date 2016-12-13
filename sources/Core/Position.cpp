@@ -90,7 +90,10 @@ public:
 
 	struct Order {
 
+		const pt::ptime time;
+
 		bool isActive;
+		bool isCanceled;
 
 		const boost::optional<ScaledPrice> price;
 		const Qty qty;
@@ -102,10 +105,13 @@ public:
 		Qty executedQty;
 
 		explicit Order(
+				const pt::ptime &&time,
 				boost::optional<ScaledPrice> &&price,
 				const Qty &qty,
 				const uuids::uuid &&uuid)
-			: isActive(true)
+			: time(std::move(time))
+			, isActive(true)
+			, isCanceled(false)
 			, price(std::move(price))
 			, qty(qty)
 			, uuid(std::move(uuid))
@@ -121,11 +127,12 @@ public:
 		CloseType closeType;
 
 		explicit CloseOrder(
+				const pt::ptime &&time,
 				boost::optional<ScaledPrice> &&price,
 				const Qty &qty,
 				const CloseType &closeType,
 				const uuids::uuid &&uuid)
-			: Order(std::move(price), qty, std::move(uuid))
+			: Order(std::move(time), std::move(price), qty, std::move(uuid))
 			, closeType(closeType) {
 			//...//
 		}
@@ -158,6 +165,10 @@ public:
 			return !orders.empty() && orders.back().isActive;
 		}
 
+		bool IsCanceling() const {
+			return HasActiveOrders() && orders.back().isCanceled;
+		}
+
 		void OnNewTrade(const TradingSystem::TradeInfo &trade) {
 			AssertLt(0, trade.price);
 			AssertLt(0, trade.qty);
@@ -174,12 +185,6 @@ public:
 
 	typedef DirectionData<Order> OpenData;
 	typedef DirectionData<CloseOrder> CloseData;
-
-	enum CancelState {
-		CANCEL_STATE_NOT_CANCELED,
-		CANCEL_STATE_SCHEDULED,
-		CANCEL_STATE_CANCELED,
-	};
 
 public:
 
@@ -204,9 +209,6 @@ public:
 
 	bool m_isError;
 	bool m_isInactive;
-
-	CancelState m_cancelState;
-	boost::function<void ()> m_cancelMethod;
 
 	TimeMeasurement::Milestones m_timeMeasurement;
 
@@ -236,7 +238,6 @@ public:
 		, m_isMarketAsCompleted(false)
 		, m_isError(false)
 		, m_isInactive(false)
-		, m_cancelState(CANCEL_STATE_NOT_CANCELED)
 		, m_timeMeasurement(timeMeasurement)
 		, m_open(startPrice)
 		, m_close(0) {
@@ -331,10 +332,6 @@ public:
 
 			if (order.qty && m_open.time.is_not_a_date_time()) {
 				m_open.time = m_security.GetContext().GetCurrentTime();
-			}
-
-			if (CancelIfSet()) {
-				return;
 			}
 
 		}
@@ -437,10 +434,6 @@ public:
 
 		CopyOrder(&tradingSystemOrderId, false, orderStatus);
 
-		if (CancelIfSet()) {
-			return;
-		}
-
 		lock.unlock();
 		
 		SignalUpdate();
@@ -452,25 +445,6 @@ public:
 	}
 
 public:
-
-	bool CancelIfSet() noexcept {
-		
-		if (m_self.IsClosed() || m_cancelState != CANCEL_STATE_SCHEDULED) {
-			return false;
-		}
-
-		m_cancelState = CANCEL_STATE_CANCELED;
-
-		try {
-			m_cancelMethod();
-			return true;
-		} catch (...) {
-			m_isError = true;
-			AssertFailNoException();
-			return false;
-		}
-
-	}
 
 	void ReportOpeningStart(
 			const char *eventDesc,
@@ -656,14 +630,17 @@ public:
 			const OrderParams &orderParams,
 			boost::optional<ScaledPrice> &&price) {
 
+		const auto now = m_strategy.GetContext().GetCurrentTime();
+
 		if (!m_security.IsOnline()) {
 			throw Exception("Security is not online");
-		}
-		if (!m_security.IsTradingSessionOpened()) {
+		} else if (!m_security.IsTradingSessionOpened()) {
 			throw Exception("Security trading session is closed");
-		}
-		if (!m_close.orders.empty()) {
+		} else if (!m_close.orders.empty()) {
 			throw AlreadyStartedError();
+		} else if (m_self.IsCancelling()) {
+			throw Exception(
+				"Failed to start opening as canceling is not completed");
 		}
 
 		Assert(!m_self.IsOpened());
@@ -680,6 +657,7 @@ public:
 		}
 
 		m_open.orders.emplace_back(
+			std::move(now),
 			std::move(price),
 			qty,
 			generateUuid());
@@ -734,8 +712,6 @@ public:
 			AssertFailNoException();
 		}
 
-		m_cancelState = CANCEL_STATE_NOT_CANCELED;
-
 		return order.id;
 
 	}
@@ -767,11 +743,16 @@ public:
 			const Qty &maxQty,
 			const OrderParams &orderParams,
 			const uuids::uuid &&uuid) {
+
+		const auto now = m_strategy.GetContext().GetCurrentTime();
 		
 		if (!m_self.IsOpened()) {
 			throw NotOpenedError();
 		} else if (m_self.HasActiveCloseOrders() || m_self.IsClosed()) {
 			throw AlreadyClosedError();
+		} else if (m_self.IsCancelling()) {
+			throw Exception(
+				"Failed to start closing as canceling is not completed");
 		}
 
 		Assert(m_isRegistered);
@@ -781,6 +762,7 @@ public:
 		Assert(!m_self.IsCompleted());
 
 		m_close.orders.emplace_back(
+			std::move(now),
 			std::move(price),
 			std::min<Qty>(maxQty, m_self.GetActiveQty()),
 			closeType,
@@ -823,141 +805,35 @@ public:
 			AssertFailNoException();
 		}
 
-		m_cancelState = CANCEL_STATE_NOT_CANCELED;
-
 		return order.id;
 
 	}
 
-	template<typename CancelMethodImpl>
-	bool CancelAtMarketPrice(
-			const CloseType &closeType,
-			const CancelMethodImpl &cancelMethodImpl,
-			const TimeInForce &timeInForce,
-			const OrderParams &orderParams) {
-		
-		if (m_self.IsCanceled()) {
-			Assert(!m_self.HasActiveOpenOrders());
-			Assert(!m_self.HasActiveCloseOrders());
+	template<typename Orders>
+	bool CancelOrder(Orders &orders, const char *const direction) {
+		if (!orders.HasActiveOrders() || m_open.IsCanceling()) {
 			return false;
 		}
-
-		const auto &uuid = generateUuid();
-		ReportClosingStart("cancel-start", uuid, boost::none, 0, closeType);
-
-		if (	m_self.IsClosed()
-				|| (!m_self.IsOpened() && !m_self.HasActiveOpenOrders())) {
-			return false;
-		}
-
-		if (CancelAllOrders()) {
-			boost::function<void ()> delayedCancelMethod
-				= [
-						this,
-						&uuid,
-						closeType,
-						cancelMethodImpl,
-						timeInForce,
-						orderParams]() {
-					if (!m_self.IsOpened() || m_self.IsClosed()) {
-						SignalUpdate();
-						return;
-					}
-					Close<CancelMethodImpl>(
-						closeType,
-						cancelMethodImpl,
-						timeInForce,
-						boost::none,
-						GetActiveQty(),
-						orderParams,
-						std::move(uuid));
-				};
-			Assert(m_self.HasActiveOrders());
-			delayedCancelMethod.swap(m_cancelMethod);
-			AssertEq(CANCEL_STATE_CANCELED, m_cancelState);
-			m_cancelState = CANCEL_STATE_SCHEDULED;
-		} else {
-			Assert(!m_self.HasActiveOrders());
-			Close<CancelMethodImpl>(
-				closeType,
-				cancelMethodImpl,
-				timeInForce,
-				boost::none,
-				m_self.GetActiveQty(),
-				orderParams,
-				std::move(uuid));
-			AssertEq(CANCEL_STATE_CANCELED, m_cancelState);
-		}
-
+		Assert(!orders.orders.empty());
+		auto &order = orders.orders.back();
+		Assert(order.isActive);
+		Assert(!order.isCanceled);
+		m_strategy.GetTradingLog().Write(
+			"order\tpos=%1%\torder=%2%/%3%\tcancel-all\t%4%-order"
+				"\t%5%\t%6%\t%7%",
+			[this, &order, &direction](TradingRecord &record) {
+				record
+					% m_operationId // 1
+					% order.uuid // 2
+					% order.id // 3
+					% direction // 4
+					% m_security.GetSymbol().GetSymbol().c_str() // 5
+					% m_self.GetTradingSystem().GetTag().c_str() // 6
+					% m_tradingSystem.GetMode(); // 7
+			});
+		m_tradingSystem.CancelOrder(order.id);
+		order.isCanceled = true;
 		return true;
-	
-	}
-
-	bool CancelAllOrders() {
-
-		if (m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED) {
-			m_strategy.GetTradingLog().Write(
-				"order\tpos=%1%\ttry to cancel, but canceled (%2%)",
-				[this](TradingRecord &record) {
-					record % m_operationId % m_cancelState;
-				});
-			return false;
-		}
-
-		Assert(
-			!m_open.HasActiveOrders()
-			|| m_open.HasActiveOrders() != m_close.HasActiveOrders());
-
-		if (m_open.HasActiveOrders()) {
-			Assert(!m_open.orders.empty());
-			Assert(m_open.orders.back().isActive);
-			m_strategy.GetTradingLog().Write(
-				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\topen-order"
-					"\t%4%\t%5%\t%6%"
-					,
-				[this](TradingRecord &record) {
-					record
-						% m_operationId // 1
-						% m_open.orders.back().uuid // 2
-						% m_open.orders.back().id // 3
-						% m_security.GetSymbol().GetSymbol().c_str() // 4
-						% m_self.GetTradingSystem().GetTag().c_str() // 5
-						% m_tradingSystem.GetMode(); // 6
-				});
-			m_tradingSystem.CancelOrder(m_open.orders.back().id);
-			m_cancelState = CANCEL_STATE_CANCELED;
-		}
-
-		if (m_close.HasActiveOrders()) {
-			Assert(!m_close.orders.empty());
-			Assert(m_close.orders.back().isActive);
-			m_strategy.GetTradingLog().Write(
-				"order\tpos=%1%\torder=%2%/%3%\tcancel-all\tclose-order"
-					"\t%4%\t%5%\t%6%",
-				[this](TradingRecord &record) {
-					record
-						% m_operationId // 1
-						% m_close.orders.back().uuid // 2
-						% m_close.orders.back().id // 3
-						% m_security.GetSymbol().GetSymbol().c_str() // 4
-						% m_self.GetTradingSystem().GetTag().c_str() // 5
-						% m_tradingSystem.GetMode(); // 6
-				});
-			m_tradingSystem.CancelOrder(m_close.orders.back().id);
-			m_cancelState = CANCEL_STATE_CANCELED;
-		}
-
-		if (m_cancelState != CANCEL_STATE_CANCELED) {
-			m_strategy.GetTradingLog().Write(
-				"order\tpos=%1%\ttry to cancel, but there are no active orders",
-				[this](TradingRecord &record) {
-					record % m_operationId;
-				});
-			return false;
-		}
-
-		return true;
-
 	}
 
 private:
@@ -984,14 +860,12 @@ private:
 					orderPrice = m_security.DescalePrice(*order.price);
 				}
 
-				pt::ptime orderTime;
 				pt::ptime execTime;
 				double bidPrice;
 				Qty bidQty;
 				double askPrice;
 				Qty askQty;
 				if (!orderTradeSystemId) {
-					orderTime = m_strategy.GetContext().GetCurrentTime();
 					bidPrice = m_security.GetBidPriceValue();
 					bidQty = m_security.GetBidQtyValue();
 					askPrice = m_security.GetAskPriceValue();
@@ -1012,7 +886,7 @@ private:
 				dropCopy.CopyOrder(
 					order.uuid,
 					orderTradeSystemId,
-					!orderTime.is_not_a_date_time() ? &orderTime : nullptr,
+					order.time,
 					!execTime.is_not_a_date_time() ? &execTime : nullptr,
 					status,
 					m_operationId,
@@ -1169,7 +1043,7 @@ Position::CloseType Position::GetCloseType() const noexcept {
 	if (m_pimpl->m_close.orders.empty()) {
 		return CLOSE_TYPE_NONE;
 	}
-	return m_pimpl->m_close.orders.back().closeType;
+	return m_pimpl->m_close.orders.front().closeType;
 }
 
 bool Position::IsOpened() const noexcept {
@@ -1211,8 +1085,10 @@ void Position::ResetInactive() {
 	m_pimpl->m_isInactive = false;
 }
 
-bool Position::IsCanceled() const noexcept {
-	return m_pimpl->m_cancelState != Implementation::CANCEL_STATE_NOT_CANCELED;
+bool Position::IsCancelling() const {
+	return
+		m_pimpl->m_open.IsCanceling()
+		|| m_pimpl->m_close.IsCanceling();
 }
 
 bool Position::HasActiveOrders() const noexcept {
@@ -1311,6 +1187,20 @@ const ScaledPrice & Position::GetActiveOrderPrice() const {
 	}
 }
 
+const pt::ptime & Position::GetActiveOrderTime() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (m_pimpl->m_close.HasActiveOrders()) {
+		Assert(!m_pimpl->m_open.HasActiveOrders());
+		return m_pimpl->m_close.orders.back().time;
+	} else if (m_pimpl->m_open.HasActiveOrders()) {
+		return m_pimpl->m_open.orders.back().time;
+	} else {
+		throw Exception("Position has no active order");
+	}
+}
+
 const ScaledPrice & Position::GetLastTradePrice() const {
 	if (m_pimpl->m_close.numberOfTrades) {
 		return m_pimpl->m_close.lastTradePrice;
@@ -1370,6 +1260,13 @@ const ScaledPrice & Position::GetOpenStartPrice() const {
 	return m_pimpl->m_open.startPrice;
 }
 
+const pt::ptime & Position::GetOpenStartTime() const {
+	if (m_pimpl->m_open.orders.empty()) {
+		throw Exception("Position has no open-order");
+	}
+	return m_pimpl->m_open.orders.front().time;
+}
+
 const Qty & Position::GetOpenedQty() const noexcept {
 	return m_pimpl->m_open.qty;
 }
@@ -1404,6 +1301,17 @@ const ScaledPrice & Position::GetActiveOpenOrderPrice() const {
 	return *price;
 }
 
+const pt::ptime & Position::GetActiveOpenOrderTime() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (!m_pimpl->m_open.HasActiveOrders()) {
+		throw Exception("Position has no active open-order");
+	}
+	Assert(!m_pimpl->m_close.HasActiveOrders());
+	return m_pimpl->m_open.orders.back().time;
+}
+
 const ScaledPrice & Position::GetLastOpenTradePrice() const {
 	if (!m_pimpl->m_open.numberOfTrades) {
 		throw Exception("Position has no open trades");
@@ -1417,6 +1325,13 @@ double Position::GetOpenedVolume() const {
 
 const ScaledPrice & Position::GetCloseStartPrice() const {
 	return m_pimpl->m_close.startPrice;
+}
+
+const pt::ptime & Position::GetCloseStartTime() const {
+	if (m_pimpl->m_close.orders.empty()) {
+		throw Exception("Position has no close-order");
+	}
+	return m_pimpl->m_close.orders.front().time;
 }
 
 void Position::SetCloseStartPrice(const ScaledPrice &price) {
@@ -1441,10 +1356,21 @@ const ScaledPrice & Position::GetActiveCloseOrderPrice() const {
 	const auto &price = m_pimpl->m_close.orders.back().price;
 	if (!price) {
 		throw Exception(
-			"Possition current active close-order is order without price");
+			"Position current active close-order is order without price");
 	}
 	AssertEq(*price, GetActiveOrderPrice());
 	return *price;
+}
+
+const pt::ptime & Position::GetActiveCloseOrderTime() const {
+	Assert(
+		!m_pimpl->m_open.HasActiveOrders()
+		|| !m_pimpl->m_close.HasActiveOrders());
+	if (!m_pimpl->m_close.HasActiveOrders()) {
+		throw Exception("Position has no active close-order");
+	}
+	Assert(!m_pimpl->m_open.HasActiveOrders());
+	return m_pimpl->m_close.orders.back().time;
 }
 
 const ScaledPrice & Position::GetLastCloseTradePrice() const {
@@ -1650,29 +1576,17 @@ OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
 		params);
 }
 
-bool Position::CancelAtMarketPrice(const CloseType &closeType) {
-	return CancelAtMarketPrice(closeType, defaultOrderParams);
-}
-
-bool Position::CancelAtMarketPrice(
-		const CloseType &closeType,
-		const OrderParams &params) {
-	return m_pimpl->CancelAtMarketPrice(
-		closeType,
-		[this](const Qty &qty, const OrderParams &params) {
-			return DoCloseAtMarketPrice(qty, params);
-		},
-		TIME_IN_FORCE_DAY,
-		params);
-}
-
 bool Position::CancelAllOrders() {
-	return m_pimpl->CancelAllOrders();
+	bool isCancelRequestSent = m_pimpl->CancelOrder(m_pimpl->m_open, "open");
+	if (m_pimpl->CancelOrder(m_pimpl->m_close, "close")) {
+		isCancelRequestSent = true;
+	}
+	return isCancelRequestSent;
 }
 
 const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
 	static_assert(
-		Position::numberOfCloseTypes == 11,
+		Position::numberOfCloseTypes == 12,
 		"Close type list changed.");
 	switch (closeType) {
 		default:
@@ -1680,6 +1594,8 @@ const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
 			return "unknown";
 		case Position::CLOSE_TYPE_NONE:
 			return "none";
+		case Position::CLOSE_TYPE_SIGNAL:
+			return "signal";
 		case Position::CLOSE_TYPE_TAKE_PROFIT:
 			return "take-profit";
 		case Position::CLOSE_TYPE_TRAILING_STOP:

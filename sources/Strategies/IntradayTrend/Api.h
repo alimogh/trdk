@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/10/30 17:00:41
+ *   Created: 2016/12/12 22:26:02
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,17 +9,17 @@
  **************************************************************************/
 
 #pragma once
-
-#ifdef TRDK_INTERACTION_TRANSAQ
+ 
+#ifdef TRDK_STRATEGY_INTRADAYTREND
 #	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllexport)
+#		define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllexport)
 #	else
-#		define TRDK_INTERACTION_TRANSAQ_API
+#		define TRDK_STRATEGY_INTRADAYTREND_API
 #	endif
 #else
 #	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllimport)
+#		define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllimport)
 #	else
-#		define TRDK_INTERACTION_TRANSAQ_API
+#		define TRDK_STRATEGY_INTRADAYTREND_API
 #	endif
 #endif

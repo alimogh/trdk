@@ -121,6 +121,9 @@ namespace trdk {
 		const trdk::DropCopy::StrategyInstanceId & GetDropCopyInstanceId()
 				const;
 
+		//! Opens strategy log file stream and reports file path.
+		std::ofstream CreateLog(const std::string &fileExtension) const;
+
 	public:
 
 		trdk::RiskControlScope & GetRiskControlScope();

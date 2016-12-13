@@ -134,7 +134,7 @@ namespace EmaFuturesStrategy {
 				context,
 				boost::uuids::string_generator()(
 					"{E316A97B-1C1F-433B-88BF-4DB788E94208}"),
-				"EmaFutures",
+				"GadmEmaFutures",
 				tag,
 				conf)
 			, m_numberOfContracts(
@@ -1010,44 +1010,10 @@ namespace EmaFuturesStrategy {
 		}
 
 		void OpenStartegyLog() {
-
 			Assert(!m_strategyLog.is_open());
-
-			fs::path path = GetContext().GetSettings().GetPositionsLogDir();
-
-			if (!GetContext().GetSettings().IsReplayMode()) {
-				boost::format fileName("%1%__%2%__%3%_%4%");
-				fileName
-					% GetTag()
-					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId()
-					% GetInstanceId();
-				path /= SymbolToFileName(fileName.str(), "csv");
-			} else {
-				boost::format fileName("%1%__%2%__%3%__%4%_%5%");
-				fileName
-					% GetTag()
-					% ConvertToFileName(GetContext().GetCurrentTime())
-					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId()
-					% GetInstanceId();
-				path /= SymbolToFileName(fileName.str(), "csv");
-			}
-			
-			fs::create_directories(path.branch_path());
-
-			m_strategyLog.open(
-				path.string(),
-				std::ios::out | std::ios::ate | std::ios::app);
-			if (!m_strategyLog) {
-				GetLog().Error("Failed to open strategy log file %1%", path);
-				throw Exception("Failed to open strategy log file");
-			} else {
-				GetLog().Info("Strategy log: %1%.", path);
-			}
-
+			m_strategyLog = CreateLog("csv");
+			Assert(m_strategyLog.is_open());
 			Position::OpenReport(m_strategyLog);
-
 		}
 
 		bool StartRollOver() {

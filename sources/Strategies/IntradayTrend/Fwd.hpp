@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/10/30 17:00:41
+ *   Created: 2016/12/12 22:27:29
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,16 +10,6 @@
 
 #pragma once
 
-#ifdef TRDK_INTERACTION_TRANSAQ
-#	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllexport)
-#	else
-#		define TRDK_INTERACTION_TRANSAQ_API
-#	endif
-#else
-#	ifdef BOOST_WINDOWS
-#		define TRDK_INTERACTION_TRANSAQ_API __declspec(dllimport)
-#	else
-#		define TRDK_INTERACTION_TRANSAQ_API
-#	endif
-#endif
+namespace trdk { namespace Strategies { namespace IntradayTrend {
+	//...//
+} } }

@@ -158,7 +158,7 @@ void EngineServer::Service::Connection::StopIoTimeout() {
 EngineServer::Service::OrderCache::OrderCache(
 		const uuids::uuid &id,
 		const std::string *tradingSystemId,
-		const pt::ptime *orderTime,
+		const pt::ptime &orderTime,
 		const pt::ptime *executionTime,
 		const OrderStatus &status,
 		const uuids::uuid &operationId,
@@ -177,6 +177,7 @@ EngineServer::Service::OrderCache::OrderCache(
 		const double *bestAskPrice,
 		const Qty *bestAskQty)
 	: id(id)
+	, orderTime(orderTime)
 	, status(status)
 	, operationId(operationId)
 	, security(&security)
@@ -187,9 +188,6 @@ EngineServer::Service::OrderCache::OrderCache(
 	, executedQty(executedQty) {
 	if (tradingSystemId) {
 		this->tradingSystemId = *tradingSystemId;
-	}
-	if (orderTime) {
-		this->orderTime = *orderTime;
 	}
 	if (executionTime) {
 		this->executionTime = *executionTime;
@@ -311,7 +309,7 @@ EngineServer::Service::DropCopy::RegisterDataSourceInstance(
 void EngineServer::Service::DropCopy::CopyOrder(
 		const uuids::uuid &id,
 		const std::string *tradingSystemId,
-		const pt::ptime *orderTime,
+		const pt::ptime &orderTime,
 		const pt::ptime *executionTime,
 		const OrderStatus &status,
 		const uuids::uuid &operationId,
@@ -1395,9 +1393,7 @@ bool EngineServer::Service::StoreOrder(
 	if (order.tradingSystemId) {
 		record["trade_system_id"] = *order.tradingSystemId;
 	}
-	if (order.orderTime) {
-		record["order_time"] = *order.orderTime;
-	}
+	record["order_time"] = order.orderTime;
 	if (order.executionTime) {
 		record["execution_time"] = *order.executionTime;
 	}

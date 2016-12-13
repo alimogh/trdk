@@ -620,7 +620,7 @@ void EmaFuturesStrategy::Position::OpenReport(std::ostream &reportStream) {
 		/* 6	*/ << ",Closing Duration"
 		/* 7	*/ << ",Position Duration"
 		/* 8	*/ << ",Type"
-		/* 9	*/ << ",P&L vol."
+		/* 9	*/ << ",P&L Vol."
 		/* 10	*/ << ",P&L %"
 		/* 11	*/ << ",Is Profit"
 		/* 12	*/ << ",Is Loss"
@@ -682,18 +682,19 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 
 		// 1. Open Start Time, 2. Open Time, 3. Opening Duration:
 		m_reportStream
-			<< GetStartTime()
-			<< ',' << GetOpenTime()
-			<< ',' << (GetOpenTime() - GetStartTime());
+			<< "\"=\"\"" << GetStartTime() << "\"\"\""
+			<< ",\"=\"\"" << GetOpenTime() << "\"\"\""
+			<< ",\"=\"\"" << (GetOpenTime() - GetStartTime()) << "\"\"\"";
 
 		// 4. Close Start Time, 5. Close Time, 6. Closing Duration:
 		m_reportStream
-			<< ',' << GetCloseStartTime()
-			<< ',' << GetCloseTime()
-			<< ',' << (GetCloseTime() - GetCloseStartTime());
+			<< ",\"=\"\"" << GetCloseStartTime() << "\"\"\""
+			<< ",\"=\"\"" << GetCloseTime() << "\"\"\""
+			<< ",\"=\"\"" << (GetCloseTime() - GetCloseStartTime()) << "\"\"\"";
 
 		// 7. Position Duration:
-		m_reportStream << ',' << (GetCloseTime() - GetOpenTime());
+		m_reportStream
+			<< ",\"=\"\"" << (GetCloseTime() - GetOpenTime());
 
 		// 8. Type:
 		m_reportStream << ',' << GetType();
