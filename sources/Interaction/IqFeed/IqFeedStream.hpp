@@ -61,7 +61,7 @@ namespace trdk { namespace Interaction { namespace IqFeed {
 	protected:
 
 		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient()
-				override;	
+				override;
 
 	};
 
@@ -77,7 +77,7 @@ namespace trdk { namespace Interaction { namespace IqFeed {
 	protected:
 
 		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient()
-				override;	
+				override;
 
 	};
 
