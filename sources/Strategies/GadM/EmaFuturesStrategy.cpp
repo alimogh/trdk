@@ -1016,7 +1016,7 @@ namespace EmaFuturesStrategy {
 			fs::path path = GetContext().GetSettings().GetPositionsLogDir();
 
 			if (!GetContext().GetSettings().IsReplayMode()) {
-				boost::format fileName("%1%__%2%__%3%_4%");
+				boost::format fileName("%1%__%2%__%3%_%4%");
 				fileName
 					% GetTag()
 					% ConvertToFileName(GetContext().GetStartTime())
