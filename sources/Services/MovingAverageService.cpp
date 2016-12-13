@@ -11,10 +11,12 @@
 #include "Prec.hpp"
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
 namespace uuids = boost::uuids;
+namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -377,6 +379,8 @@ public:
 
 	pt::ptime m_lastZeroTime;
 
+	std::ofstream m_pointsLog;
+
 public:
 
 	explicit Implementation(
@@ -477,6 +481,75 @@ public:
 			Configuration::Keys::isHistoryOn,
 			m_history ? "yes" : "no");
 
+		{
+			const std::string logType = configuration.ReadKey("log");
+			if (boost::iequals(logType, "none")) {
+				m_service.GetLog().Info("Values logging is disabled.");
+			} else if (!boost::iequals(logType, "csv")) {
+				m_service.GetLog().Error(
+					"Wrong values log type settings: \"%1%\". Unknown type."
+						" Supported: none and CSV.",
+					logType);
+				throw Error("Wrong values log type");
+			} else {
+				OpenPointsLog();
+			}
+		}
+
+	}
+
+	void OpenPointsLog() {
+
+		Assert(!m_pointsLog.is_open());
+
+		const fs::path path
+			= m_service.GetContext().GetSettings().GetLogsInstanceDir()
+			/ "MA"
+			/ (
+					boost::format("%1%__%2%_%3%.csv")
+						% m_period
+						% m_service.GetId()
+						% m_service.GetInstanceId())
+				.str();
+
+		fs::create_directories(path.branch_path());
+		m_pointsLog.open(
+			path.string(),
+			std::ios::out | std::ios::ate | std::ios::app);
+		if (!m_pointsLog.is_open()) {
+			m_service.GetLog().Error("Failed to open log file %1%", path);
+			throw Error("Failed to open log file");
+		}
+
+		m_pointsLog << "Date,Time,Source,Value" << std::endl;
+
+		m_pointsLog << std::setfill('0');
+
+		m_service.GetLog().Info("Logging into %1%.", path);
+
+	}
+
+	void LogEmptyPoint(const pt::ptime &time) {
+		if (!m_pointsLog.is_open()) {
+			return;
+		}
+		m_pointsLog
+			<< time.date()
+			<< ',' << time.time_of_day()
+			<< ",,"
+			<< std::endl;
+	}
+
+	void LogPoint(const Point &point) {
+		if (!m_pointsLog.is_open()) {
+			return;
+		}
+		m_pointsLog
+			<< point.time.date()
+			<< ',' << point.time.time_of_day()
+			<< ',' << point.source
+			<< ',' << point.value
+			<< std::endl;
 	}
 
 	const BarService & CastToBarService(const Service &service) const {
@@ -513,6 +586,7 @@ public:
 				}
 				m_lastZeroTime = valueTime;
 			}
+			LogEmptyPoint(valueTime);
 			return false;
 		}
 		m_lastZeroTime = pt::not_a_date_time;
@@ -520,6 +594,7 @@ public:
 		boost::apply_visitor(accumVisitor, *m_acc);
 
 		if (boost::apply_visitor(GetAccSizeVisitor(), *m_acc) < m_period) {
+			LogEmptyPoint(valueTime);
 			return false;
 		}
 
@@ -528,12 +603,14 @@ public:
 			newValue,
 			boost::apply_visitor(GetValueVisitor(), *m_acc)
 		};
-		m_lastValue = newPoint;
-		++m_lastValueNo;
 
 		if (m_history) {
 			m_history->PushBack(newPoint);
 		}
+		LogPoint(newPoint);
+
+		m_lastValue = std::move(newPoint);
+		++m_lastValueNo;
 
 		return true;
 

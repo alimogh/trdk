@@ -108,7 +108,6 @@ public:
 		, m_security(nullptr)
 		, m_numberOfHistoryBars(1)
 		, m_countedBarSize(0)
-		, m_barsLog(nullptr)
 		, m_session(1) {
 
 		{
@@ -288,23 +287,25 @@ public:
 		fs::path path
 			= m_service.GetContext().GetSettings().GetBarsDataLogDir();
 		if (!m_service.GetContext().GetSettings().IsReplayMode()) {
-			boost::format fileName("%1%_%2%%3%_%4%_%5%");
-			fileName
-				% *m_security
-				% m_unitsStr
-				% m_barSizeStr
-				% ConvertToFileName(dataStartTime)
-				% m_service.GetId();
-			path /= SymbolToFileName(fileName.str(), "csv");
-		} else {
 			boost::format fileName("%1%_%2%%3%_%4%_%5%_%6%");
 			fileName
 				% *m_security
 				% m_unitsStr
 				% m_barSizeStr
 				% ConvertToFileName(dataStartTime)
+				% m_service.GetId()
+				% m_service.GetInstanceId();
+			path /= SymbolToFileName(fileName.str(), "csv");
+		} else {
+			boost::format fileName("%1%_%2%%3%_%4%_%5%_%6%_%7%");
+			fileName
+				% *m_security
+				% m_unitsStr
+				% m_barSizeStr
+				% ConvertToFileName(dataStartTime)
 				% ConvertToFileName(m_service.GetContext().GetStartTime())
-				% m_service.GetId();
+				% m_service.GetId()
+				% m_service.GetInstanceId();
 			path /= SymbolToFileName(fileName.str(), "csv");
 		}
 

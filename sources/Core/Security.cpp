@@ -107,7 +107,7 @@ namespace {
 				{
 					const auto &symbolStr = GetFutureSymbol(symbol);
 					if (symbolStr == "CL") {
-						return 100;
+						return 1000;
 					} else if (symbolStr == "BR") {
 						return 10;
 					}

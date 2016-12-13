@@ -27,6 +27,7 @@ namespace {
 		const IqFeed::Settings result = {
 			conf.ReadTypedKey<size_t>("history_bar_size"),
 			conf.ReadTypedKey<size_t>("history_number_of_bars"),
+			conf.ReadBoolKey("online_continuous_contract"),
 		};
 		return result;
 	}

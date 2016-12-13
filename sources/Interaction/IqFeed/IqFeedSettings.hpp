@@ -15,6 +15,7 @@ namespace trdk { namespace Interaction { namespace IqFeed {
 	struct Settings {
 		size_t historyBarSize;
 		size_t historyhNumberOfBars;
+		bool onlineContinuousContract;
 	};
 
 } } }

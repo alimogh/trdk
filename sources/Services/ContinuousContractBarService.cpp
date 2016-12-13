@@ -102,19 +102,21 @@ public:
 		fs::path path = m_self.GetContext().GetSettings().GetBarsDataLogDir();
 		if (!m_self.GetContext().GetSettings().IsReplayMode()) {
 			path /= SymbolToFileName(
-				(boost::format("ContinuousContract_%1%__%2%__%3%__%4%")
+				(boost::format("ContinuousContract_%1%__%2%__%3%__%4%_%5%")
 						% m_self.GetSecurity()
 						% ConvertToFileName(m_bars.back().time)
 						% ConvertToFileName(m_self.GetContext().GetStartTime())
-						% m_self.GetId())
+						% m_self.GetId()
+						% m_self.GetInstanceId())
 					.str(),
 				"csv");
 		} else {
 			path /= SymbolToFileName(
-				(boost::format("ContinuousContract_%1%__%2%__%3%")
+				(boost::format("ContinuousContract_%1%__%2%__%3%_%4%")
 						% m_self.GetSecurity()
 						% ConvertToFileName(m_bars.back().time)
-						% m_self.GetId())
+						% m_self.GetId()
+						% m_self.GetInstanceId())
 					.str(),
 				"csv");
 		}

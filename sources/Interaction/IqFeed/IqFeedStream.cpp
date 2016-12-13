@@ -328,12 +328,6 @@ namespace {
 				const IqFeed::Security &security)
 				override {
 
-			GetLog().Info(
-				"%1%Sending market data request for %2% (%3%)...",
-				GetService().GetLogTag(),
-				security,
-				security.GetSymbol().GetSymbol());
-
 			if (security.GetSymbol().IsExplicit()) {
 				throw Exception("Source works only with not explicit symbols");
 			}
@@ -349,9 +343,22 @@ namespace {
 
 			// http://iqfeed.net/symbolguide/index.cfm?symbolguide=guide&displayaction=support&section=guide&web=iqfeed&guide=commod&web=IQFeed&symbolguide=guide&displayaction=support&section=guide&type=cme&type2=cme-mini&type3=cme_gbx
 			boost::format command("wQ%1%%2%\r\n");
-			command
-				% security.GetSymbol().GetSymbol()
-				% security.GetExpiration().GetContract(false);
+			command % security.GetSymbol().GetSymbol();
+			if (
+					GetService()
+						.GetSource()
+						.GetSettings()
+						.onlineContinuousContract) {
+				command % "#C";
+			} else {
+				command % security.GetExpiration().GetContract(false);
+			}
+
+			GetLog().Info(
+				"%1%Sending market data request for %2% (%3%)...",
+				GetService().GetLogTag(),
+				security,
+				boost::trim_right_copy(command.str()));
 			Send(command.str());
 
 		}
@@ -977,7 +984,9 @@ namespace {
 				= GetService()
 				.GetSource()
 				.FindSecurityBySymbolString(
-					std::string(field.begin() + 1, field.end() - 3));
+					std::string(
+						field.begin() + 1,
+						field.end() - (*(field.end() - 1) != 'C' ? 3 : 2)));
 			if (!result) {
 				throw Exception("Symbol update has unknown symbol");
 			}

@@ -881,11 +881,6 @@ namespace EmaFuturesStrategy {
 
 		bool CheckOrderPrice(Position &position) {
 
-			switch (position.GetIntention()) {
-				case INTENTION_OPEN_PASSIVE:
-				case INTENTION_CLOSE_PASSIVE:
-					return true;
-			}
 			if (position.IsSuperAggressiveClosing()) {
 				return true;
 			}
@@ -1021,19 +1016,21 @@ namespace EmaFuturesStrategy {
 			fs::path path = GetContext().GetSettings().GetPositionsLogDir();
 
 			if (!GetContext().GetSettings().IsReplayMode()) {
-				boost::format fileName("%1%__%2%__%3%");
+				boost::format fileName("%1%__%2%__%3%_%4%");
 				fileName
 					% GetTag()
 					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId();
+					% GetId()
+					% GetInstanceId();
 				path /= SymbolToFileName(fileName.str(), "csv");
 			} else {
-				boost::format fileName("%1%__%2%__%3%__%4%");
+				boost::format fileName("%1%__%2%__%3%__%4%_%5%");
 				fileName
 					% GetTag()
 					% ConvertToFileName(GetContext().GetCurrentTime())
 					% ConvertToFileName(GetContext().GetStartTime())
-					% GetId();
+					% GetId()
+					% GetInstanceId();
 				path /= SymbolToFileName(fileName.str(), "csv");
 			}
 			
