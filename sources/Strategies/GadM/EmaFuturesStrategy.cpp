@@ -881,11 +881,6 @@ namespace EmaFuturesStrategy {
 
 		bool CheckOrderPrice(Position &position) {
 
-			switch (position.GetIntention()) {
-				case INTENTION_OPEN_PASSIVE:
-				case INTENTION_CLOSE_PASSIVE:
-					return true;
-			}
 			if (position.IsSuperAggressiveClosing()) {
 				return true;
 			}
