@@ -81,34 +81,34 @@ namespace trdk { namespace Lib {
 
 		template<typename AnotherValueType>
 		bool operator <(const AnotherValueType &rhs) const {
-			return m_value < rhs;
+			return operator <(Numeric(rhs));
 		}
 		bool operator <(const Numeric &rhs) const {
-			return m_value < rhs.m_value;
+			return m_value < rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
 		}
 
 		template<typename AnotherValueType>
 		bool operator <=(const AnotherValueType &rhs) const {
-			return m_value <= rhs;
+			return operator <=(Numeric(rhs));
 		}
 		bool operator <=(const Numeric &rhs) const {
-			return m_value <= rhs.m_value;
+			return m_value < rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
 		}
 
 		template<typename AnotherValueType>
 		bool operator >(const AnotherValueType &rhs) const {
-			return m_value > rhs;
+			return operator >(Numeric(rhs));
 		}
 		bool operator >(const Numeric &rhs) const {
-			return m_value > rhs.m_value;
+			return m_value > rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
 		}
 
 		template<typename AnotherValueType>
 		bool operator >=(const AnotherValueType &rhs) const {
-			return m_value >= rhs;
+			return operator >=(Numeric(rhs));
 		}
 		bool operator >=(const Numeric &rhs) const {
-			return m_value >= rhs.m_value;
+			return m_value > rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
 		}
 
 	public:
