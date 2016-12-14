@@ -13,6 +13,7 @@
 #include "TradingSystem.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
+#include "Context.hpp"
 #include "Common/FileSystemChangeNotificator.hpp"
 
 namespace fs = boost::filesystem;

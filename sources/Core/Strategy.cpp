@@ -521,8 +521,8 @@ void Strategy::Unregister(Position &position) throw() {
 }
 
 void Strategy::RaiseLevel1UpdateEvent(
-			Security &security,
-			const TimeMeasurement::Milestones &timeMeasurement) {
+		Security &security,
+		const TimeMeasurement::Milestones &timeMeasurement) {
 	const auto lock = LockForOtherThreads();
 	// 1st time already checked: before enqueue event (without locking),
 	// here - control check (under mutex as blocking and enabling - under
@@ -532,6 +532,13 @@ void Strategy::RaiseLevel1UpdateEvent(
 	}
 	timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
 	try {
+		{
+			auto &positions = GetPositions();
+			const auto &end = positions.GetEnd();
+			for (auto it = positions.GetBegin(); it != end; ++it) {
+				it->RunAlgos();
+			}
+		}
 		OnLevel1Update(security, timeMeasurement);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
@@ -620,8 +627,9 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 			blockPeriod);
 		Block(blockPeriod);
 	}
-	
+
 	try {
+		position.RunAlgos();
 		OnPositionUpdate(position);
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "position update");

@@ -9,7 +9,9 @@
  **************************************************************************/
 
 #pragma once
+
 #include "AsyncLog.hpp"
+#include "Context.hpp"
 
 namespace trdk {
 

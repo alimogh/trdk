@@ -73,6 +73,19 @@ namespace trdk {
 			AlreadyClosedError() noexcept;
 		};
 
+		class TRDK_CORE_API Algo : private boost::noncopyable {
+		public:
+			virtual ~Algo() noexcept;
+		public:
+			//! Runs algorithm iteration.
+			/** Will be called only if position is not "completed" or
+			  * not in "canceling state".
+			  * @sa IsCancelling
+			  * @sa IsCompleted
+			  */
+			virtual void Run() = 0;
+		};
+
 	public:
 
 		explicit Position(
@@ -97,6 +110,8 @@ namespace trdk {
 		virtual ~Position();
 
 	public:
+
+		void AttachAlgo(std::unique_ptr<Algo> &&);
 
 		const boost::uuids::uuid & GetId() const;
 
@@ -361,7 +376,7 @@ namespace trdk {
 		  * @return True if sent cancel request for one or more orders.
 		  */
 		bool CancelAllOrders();
-		//! One cancel request was sent by it is not executed yet.
+		//! Cancel request was sent by it is not executed yet.
 		/** @sa CancelAllOrders
 		  */
 		bool IsCancelling() const;
@@ -369,6 +384,12 @@ namespace trdk {
 	public:
 
 		StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
+
+		//! Runs each attached algorithm.
+		/** @sa AttachAlgo
+		  * @sa Algo
+		  */
+		void RunAlgos();
 
 	protected:
 

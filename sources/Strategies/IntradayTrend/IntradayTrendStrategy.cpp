@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "TradingLib/StopLoss.hpp"
 #include "Services/BarService.hpp"
 #include "Services/MovingAverageService.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -18,6 +19,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 using namespace trdk::Services;
 
 namespace pt = boost::posix_time;
@@ -390,7 +392,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		void CheckOrder(
 				Position &position,
 				const Milestones &delayMeasurement) {
-			
+
 			Assert(position.HasActiveOrders());
 			AssertLt(0, position.GetNumberOfOpenOrders());
 			Assert(!position.IsCancelling());
@@ -576,6 +578,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				:	CreatePosition<ShortPosition>(
 						m_security->GetBidPriceScaled(),
 						delayMeasurement);
+			position->AttachAlgo(
+				boost::make_unique<StopLoss>(0.01, *position));
 			Assert(position);
 			ContinuePosition(*position);
 		}

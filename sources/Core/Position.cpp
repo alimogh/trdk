@@ -62,6 +62,12 @@ Position::AlreadyClosedError::AlreadyClosedError() noexcept
 	//...//
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+Position::Algo::~Algo() {
+	//...//
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 class Position::Implementation : private boost::noncopyable {
@@ -214,6 +220,8 @@ public:
 
 	OpenData m_open;
 	CloseData m_close;
+
+	std::vector<boost::shared_ptr<Algo>> m_algos;
 
 	explicit Implementation(
 			Position &position,
@@ -1250,6 +1258,19 @@ Position::StateUpdateConnection Position::Subscribe(
 		const StateUpdateSlot &slot)
 		const {
 	return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
+}
+
+void Position::AttachAlgo(std::unique_ptr<Algo> &&algo) {
+	m_pimpl->m_algos.emplace_back(std::move(algo));
+}
+
+void Position::RunAlgos() {
+	if (IsCancelling() || IsCompleted()) {
+		return;
+	}
+	for (const auto &algo: m_pimpl->m_algos) {
+		algo->Run();
+	}
 }
 
 const Qty & Position::GetPlanedQty() const {
