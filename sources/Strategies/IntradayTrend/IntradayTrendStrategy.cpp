@@ -44,26 +44,95 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		Order open;
 		Order close;
 
-		size_t numberOfTrendPoints;
-		uint8_t trendPrecision;
+		size_t trendSize;
+		uint16_t trendPrecision;
 
 		double maxLossPerQty;
 
-		explicit Settings(const IniSectionRef &)
-			: qty(1)
-			, open(Order{pt::seconds(180), 0.01, 0})
-			, close(Order{pt::seconds(180), 0.01, 0})
-			, numberOfTrendPoints(3)
-			, trendPrecision(6)
-			, maxLossPerQty(0.05) {
-			//...//
+		explicit Settings(const IniSectionRef &conf)
+			: qty(conf.ReadTypedKey<Qty>("qty"))
+			, open(
+				Order{
+					ReadOrderMaxLifetime(
+						conf,
+						"passive_open_order_max_lifetime_sec"),
+					conf.ReadTypedKey<double>("open_order_price_max_delta")
+				})
+			, close(
+				Order{
+					ReadOrderMaxLifetime(
+						conf,
+						"passive_close_order_max_lifetime_sec"),
+					conf.ReadTypedKey<double>("close_order_price_max_delta")
+				})
+			, trendSize(conf.ReadTypedKey<size_t>("trend_size"))
+			, trendPrecision(conf.ReadTypedKey<uint16_t>("trend_precision"))
+			, maxLossPerQty(
+				conf.ReadTypedKey<double>("max_loss_per_contract")) {
+		
+			if (qty < 1) {
+				throw Exception("Position size is not set");
+			}
+
+			if (IsZero(open.maxPriceDelta)) {
+				throw Exception("Open-order price delta is not set");
+			}
+			if (IsZero(close.maxPriceDelta)) {
+				throw Exception("Close-order price delta is not set");
+			}
+
+			if (trendSize < 2) {
+				throw Exception("Trend size is too small");
+			}
+
 		}
 
 		void OnSecurity(const Security &security) const {
+			
 			const_cast<Settings *>(this)->open.maxPriceScaledDelta
 				= security.ScalePrice(open.maxPriceDelta);
+			if (!open.maxPriceScaledDelta) {
+				throw Exception("Open-order price delta is too small");
+			}
+
 			const_cast<Settings *>(this)->close.maxPriceScaledDelta
 				= security.ScalePrice(close.maxPriceDelta);
+			if (!close.maxPriceScaledDelta) {
+				throw Exception("Close-order price delta is too small");
+			}
+
+		}
+
+		void Log(Module::Log &log) const {
+		
+			boost::format info(
+				"Position size: %1%."
+					" Passive order max. lifetime: %2% / %3%."
+					" Order price max. delta: %4$.8f / %5$.8f."
+					" Max loss: %6$.8f."
+					" Trend: %7% points, precision %8%.");
+			info
+				% qty // 1
+				% open.passiveMaxLifetime % close.passiveMaxLifetime// 2, 3
+				% open.maxPriceDelta % close.maxPriceDelta // 4, 5
+				% maxLossPerQty // 6
+				% trendSize % trendPrecision // 7, 8
+				;
+
+			log.Info(info.str().c_str());
+
+		}
+
+	private:
+
+		pt::time_duration ReadOrderMaxLifetime(
+				const IniSectionRef &conf,
+				const char *key) {
+			const auto value = conf.ReadTypedKey<unsigned int>(key);
+			if (!value) {
+				return pt::not_a_date_time;
+			}
+			return pt::seconds(value);
 		}
 
 	};
@@ -74,7 +143,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 	public:
 
-		explicit Trend(size_t historySize, uint8_t precision)
+		explicit Trend(size_t historySize, uint16_t precision)
 			: m_scale(size_t(pow(10, precision)))
 			, m_history(historySize)
 			, m_isRising(boost::indeterminate)
@@ -193,10 +262,12 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			, m_ma(nullptr)
 			, m_maServiceDropCopyId(DropCopy::nDataSourceInstanceId)
 			, m_trend(
-				m_settings.numberOfTrendPoints,
+				m_settings.trendSize,
 				m_settings.trendPrecision)
 			, m_stat(Stat{}) {
-			//...//
+			
+			m_settings.Log(GetLog());
+
 		}
 
 		virtual ~Strategy() {
