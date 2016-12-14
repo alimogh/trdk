@@ -36,24 +36,6 @@ namespace trdk {
 			numberOfTypes
 		};
 
-		enum CloseType {
-			CLOSE_TYPE_NONE,
-			CLOSE_TYPE_SIGNAL,
-			CLOSE_TYPE_TAKE_PROFIT,
-			CLOSE_TYPE_TRAILING_STOP,
-			CLOSE_TYPE_STOP_LOSS,
-			CLOSE_TYPE_TIMEOUT,
-			CLOSE_TYPE_SCHEDULE,
-			CLOSE_TYPE_ROLLOVER,
-			//! Closed by request, not by logic or error.
-			CLOSE_TYPE_REQUEST,
-			//! Closed by engine stop.
-			CLOSE_TYPE_ENGINE_STOP,
-			CLOSE_TYPE_OPEN_FAILED,
-			CLOSE_TYPE_SYSTEM_ERROR,
-			numberOfCloseTypes
-		};
-
 		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
 		public:
 			explicit Exception(const char *what) noexcept;
@@ -139,7 +121,9 @@ namespace trdk {
 
 	public:
 
-		CloseType GetCloseType() const noexcept;
+		const CloseType & GetCloseType() const noexcept;
+		void SetCloseType(const CloseType &) noexcept;
+		void ResetCloseType(const CloseType & = CLOSE_TYPE_NONE) noexcept;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed
@@ -331,44 +315,27 @@ namespace trdk {
 		trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(
 				const trdk::OrderParams &);
 
-		trdk::OrderId CloseAtMarketPrice(
-				const CloseType &);
-		trdk::OrderId CloseAtMarketPrice(
-				const CloseType &,
-				const trdk::OrderParams &);
+		trdk::OrderId CloseAtMarketPrice();
+		trdk::OrderId CloseAtMarketPrice(const trdk::OrderParams &);
+		trdk::OrderId Close(const trdk::ScaledPrice &);
+		trdk::OrderId Close(const trdk::ScaledPrice &, const trdk::Qty &maxQty);
+		trdk::OrderId Close(const trdk::ScaledPrice &, const trdk::OrderParams &);
 		trdk::OrderId Close(
-				const CloseType &,
-				const trdk::ScaledPrice &);
-		trdk::OrderId Close(
-				const CloseType &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &maxQty);
-		trdk::OrderId Close(
-				const CloseType &,
-				const trdk::ScaledPrice &,
-				const trdk::OrderParams &);
-		trdk::OrderId Close(
-				const CloseType &,
 				const trdk::ScaledPrice &,
 				const trdk::Qty &maxQty,
 				const trdk::OrderParams &);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
-				const CloseType &,
 				const trdk::ScaledPrice &stopPrice);
 		trdk::OrderId CloseAtMarketPriceWithStopPrice(
-				const CloseType &,
 				const trdk::ScaledPrice &stopPrice,
 				const trdk::OrderParams &);
 		trdk::OrderId CloseImmediatelyOrCancel(
-				const CloseType &,
 				const trdk::ScaledPrice &);
 		trdk::OrderId CloseImmediatelyOrCancel(
-				const CloseType &,
 				const trdk::ScaledPrice &,
 				const trdk::OrderParams &);
-		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(const CloseType &);
+		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel();
 		trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
-				const CloseType &,
 				const trdk::OrderParams &);
 
 		//! Cancels all active orders.
@@ -462,13 +429,6 @@ namespace trdk {
 		std::unique_ptr<Implementation> m_pimpl;
 
 	};
-
-	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::CloseType &);
-	inline std::ostream & operator <<(
-			std::ostream &os,
-			const trdk::Position::CloseType &closeType) {
-		return os << trdk::ConvertToPch(closeType);
-	}
 
 	TRDK_CORE_API const char * ConvertToPch(const trdk::Position::Type &);
 	inline std::ostream & operator <<(

@@ -198,3 +198,40 @@ const char * trdk::ConvertToPch(const OrderStatus &status) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+const char * trdk::ConvertToPch(const CloseType &closeType) {
+	static_assert(
+		numberOfCloseTypes == 12,
+		"Close type list changed.");
+	switch (closeType) {
+		default:
+			AssertEq(CLOSE_TYPE_NONE, closeType);
+			return "unknown";
+		case CLOSE_TYPE_NONE:
+			return "none";
+		case CLOSE_TYPE_SIGNAL:
+			return "signal";
+		case CLOSE_TYPE_TAKE_PROFIT:
+			return "take-profit";
+		case CLOSE_TYPE_TRAILING_STOP:
+			return "trailing-stop";
+		case CLOSE_TYPE_STOP_LOSS:
+			return "stop-loss";
+		case CLOSE_TYPE_TIMEOUT:
+			return "timeout";
+		case CLOSE_TYPE_SCHEDULE:
+			return "schedule";
+		case CLOSE_TYPE_ROLLOVER:
+			return "rollover";
+		case CLOSE_TYPE_REQUEST:
+			return "request";
+		case CLOSE_TYPE_ENGINE_STOP:
+			return "engine stop";
+		case CLOSE_TYPE_OPEN_FAILED:
+			return "open failed";
+		case CLOSE_TYPE_SYSTEM_ERROR:
+			return "sys error";
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////

@@ -31,6 +31,45 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	struct Settings {
+
+		struct Order {
+			pt::time_duration passiveMaxLifetime;
+			double maxPriceDelta;
+			ScaledPrice maxPriceScaledDelta;
+		};
+
+		const Qty qty;
+
+		Order open;
+		Order close;
+
+		size_t numberOfTrendPoints;
+		uint8_t trendPrecision;
+
+		double maxLossPerQty;
+
+		explicit Settings(const IniSectionRef &)
+			: qty(1)
+			, open(Order{pt::seconds(180), 0.01, 0})
+			, close(Order{pt::seconds(180), 0.01, 0})
+			, numberOfTrendPoints(3)
+			, trendPrecision(6)
+			, maxLossPerQty(0.05) {
+			//...//
+		}
+
+		void OnSecurity(const Security &security) const {
+			const_cast<Settings *>(this)->open.maxPriceScaledDelta
+				= security.ScalePrice(open.maxPriceDelta);
+			const_cast<Settings *>(this)->close.maxPriceScaledDelta
+				= security.ScalePrice(close.maxPriceDelta);
+		}
+
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	class Trend {
 
 	public:
@@ -147,19 +186,15 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				"IntradayTrend",
 				tag,
 				conf)
-			, m_positionQty(1)
-			, m_passiveOpenOrderMaxLifetime(pt::seconds(180))
-			, m_passiveCloseOrderMaxLifetime(pt::seconds(180))
-			, m_openOrderMaxPriceDelta(0.01)
-			, m_openOrderMaxPriceScaledDelta(0)
-			, m_closeOrderMaxPriceDelta(0.01)
-			, m_closeOrderMaxPriceScaledDelta(0)
+			, m_settings(conf)
 			, m_security(nullptr)
 			, m_bars(nullptr)
 			, m_barServiceDropCopyId(DropCopy::nDataSourceInstanceId)
 			, m_ma(nullptr)
 			, m_maServiceDropCopyId(DropCopy::nDataSourceInstanceId)
-			, m_trend(3, 3)
+			, m_trend(
+				m_settings.numberOfTrendPoints,
+				m_settings.trendPrecision)
 			, m_stat(Stat{}) {
 			//...//
 		}
@@ -175,10 +210,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				Security::Request &request)
 				override {
 			if (!m_security) {
-				m_openOrderMaxPriceScaledDelta
-					= security.ScalePrice(m_openOrderMaxPriceDelta);
-				m_closeOrderMaxPriceScaledDelta
-					= security.ScalePrice(m_closeOrderMaxPriceDelta);
+				m_settings.OnSecurity(security);
 				m_security = &security;
 				GetLog().Info("Using \"%1%\" to trade...", *m_security);
 			} else if (m_security != &security) {
@@ -214,9 +246,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		virtual void OnPositionUpdate(Position &position) override {
 
 			AssertLt(0, position.GetNumberOfOpenOrders());
-			// Cancel doesn't notify about cancel start or cancel process:
-			Assert(!position.IsCancelling());
-		
+
 			if (position.IsCompleted()) {
 
 				// No active order, no active qty...
@@ -242,14 +272,15 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				// Position closing started.
 
 				Assert(!position.HasActiveOpenOrders());
+				AssertNe(CLOSE_TYPE_NONE, position.GetCloseType());
 
 				if (position.HasActiveCloseOrders()) {
 					// Closing in progress.
 					CheckOrder(position, Milestones());
-				} else {
+				} else if (position.GetCloseType() != CLOSE_TYPE_NONE) {
 					// Close order was canceled by some condition. Sending
 					// new close order.
-					ClosePosition(position, Position::CLOSE_TYPE_NONE);
+					ClosePosition(position);
 				}
 
 			} else if (position.HasActiveOrders() ) {
@@ -262,7 +293,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					CheckOrder(position, Milestones());
 				} else {
 					// Close signal received, closing position...
-					ClosePosition(position, Position::CLOSE_TYPE_SIGNAL);
+					ClosePosition(position);
 				}
 
 			} else if (m_trend.IsRising() == position.IsLong()) {
@@ -277,7 +308,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 				AssertLt(0, position.GetActiveQty());
 
-				ClosePosition(position, Position::CLOSE_TYPE_SIGNAL);
+				ClosePosition(position);
 
 			}
 
@@ -407,29 +438,31 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				AssertLt(0, position.GetNumberOfOpenOrders());
 				AssertEq(0, position.GetNumberOfCloseOrders());
 				startPrice
-					= m_passiveOpenOrderMaxLifetime != pt::not_a_date_time
+					= m_settings.open.passiveMaxLifetime != pt::not_a_date_time
 						&& position.GetNumberOfOpenOrders() == 1
 					?	position.GetOpenStartPrice()
 					:	position.GetActiveOpenOrderPrice();
 				actualPrice = position.GetMarketOpenPrice();
-				priceAllowedDelta = m_openOrderMaxPriceScaledDelta;
+				priceAllowedDelta = m_settings.open.maxPriceScaledDelta;
 				if (position.GetNumberOfOpenOrders() == 1) {
-					allowedTime = m_passiveOpenOrderMaxLifetime;
+					allowedTime = m_settings.open.passiveMaxLifetime;
 				}
 				isBuy = position.IsLong();
 			} else {
 				Assert(position.HasActiveCloseOrders());
 				AssertLt(0, position.GetNumberOfOpenOrders());
 				AssertLt(0, position.GetNumberOfCloseOrders());
+				AssertNe(CLOSE_TYPE_NONE, position.GetCloseType());
 				startPrice
-					= m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+					= m_settings.close.passiveMaxLifetime != pt::not_a_date_time
 							&& position.GetNumberOfCloseOrders() == 1
+							&& position.GetCloseType() == CLOSE_TYPE_SIGNAL
 					?	position.GetCloseStartPrice()
 					:	position.GetActiveCloseOrderPrice();
 				actualPrice = position.GetMarketClosePrice();
-				priceAllowedDelta = m_closeOrderMaxPriceScaledDelta;
+				priceAllowedDelta = m_settings.close.maxPriceScaledDelta;
 				if (position.GetNumberOfCloseOrders() == 1) {
-					allowedTime = m_passiveCloseOrderMaxLifetime;
+					allowedTime = m_settings.close.passiveMaxLifetime;
 				}
 				isBuy = !position.IsLong();
 			}
@@ -441,7 +474,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
 					GetTradingLog().Write(
 						"price is out of range\tbuy"
-							"\t(%1$.2f+%2$.2f=%3$.2f)>=%4$.2f"
+							"\t(%1$.2f+%2$.2f=%3$.2f)<=%4$.2f"
 							"\t%5%"
 							"\tbid/ask=%6$.2f/%7$.2f",
 						[&](TradingRecord &record) {
@@ -467,7 +500,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
 				GetTradingLog().Write(
 					"price is out of range\tsell"
-						"\t(%1$.2f-%2$.2f=%3$.2f)<=%4$.2f"
+						"\t(%1$.2f-%2$.2f=%3$.2f)>=%4$.2f"
 						"\t%5%"
 						"\tbid/ask=%6$.2f/%7$.2f",
 					[&](TradingRecord &record) {
@@ -563,7 +596,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			} else if (position->HasActiveOpenOrders()) {
 				Verify(position->CancelAllOrders());
 			} else {
-				ClosePosition(*position, Position::CLOSE_TYPE_SIGNAL);
+				ClosePosition(*position);
 			}
 
 			delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
@@ -579,7 +612,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						m_security->GetBidPriceScaled(),
 						delayMeasurement);
 			position->AttachAlgo(
-				boost::make_unique<StopLoss>(0.01, *position));
+				boost::make_unique<StopLoss>(
+					m_settings.maxLossPerQty,
+					*position));
 			Assert(position);
 			ContinuePosition(*position);
 		}
@@ -595,7 +630,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				GetTradingSystem(m_security->GetSource().GetIndex()),
 				*m_security,
 				m_security->GetSymbol().GetCurrency(),
-				m_positionQty,
+				m_settings.qty,
 				price,
 				delayMeasurement);
 		}
@@ -604,25 +639,22 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			Assert(!position.HasActiveOrders());
 			const auto price
 				= position.GetNumberOfOpenOrders() == 0
-					&& m_passiveOpenOrderMaxLifetime != pt::not_a_date_time
+					&& m_settings.open.passiveMaxLifetime != pt::not_a_date_time
 				?	position.GetMarketOpenOppositePrice()
 				:	position.GetMarketOpenPrice();
 			position.Open(price);
 		}
 
-		void ClosePosition(
-				Position &position,
-				const Position::CloseType &closeType) {
+		void ClosePosition(Position &position) {
 			Assert(!position.HasActiveOrders());
-			if (!position.GetCloseStartPrice()) {
-				position.SetCloseStartPrice(position.GetMarketClosePrice());
-			}
 			const auto price
 				= position.GetNumberOfCloseOrders() == 0
-					&& m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
+					&&	m_settings.close.passiveMaxLifetime
+							!= pt::not_a_date_time
 				?	position.GetMarketCloseOppositePrice()
 				:	position.GetMarketClosePrice();
-			position.Close(closeType, price);
+			position.SetCloseType(CLOSE_TYPE_SIGNAL);
+			position.Close(price);
 		}
 
 		void LogTrend(const char *tag) {
@@ -741,13 +773,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 	private:
 
-		const Qty m_positionQty;
-		const pt::time_duration m_passiveOpenOrderMaxLifetime;
-		const pt::time_duration m_passiveCloseOrderMaxLifetime;
-		const double m_openOrderMaxPriceDelta;
-		ScaledPrice m_openOrderMaxPriceScaledDelta;
-		const double m_closeOrderMaxPriceDelta;
-		ScaledPrice m_closeOrderMaxPriceScaledDelta;
+		const Settings m_settings;
 
 		Security *m_security;
 

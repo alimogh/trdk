@@ -130,16 +130,12 @@ public:
 
 	struct CloseOrder : public Order {
 		
-		CloseType closeType;
-
 		explicit CloseOrder(
 				const pt::ptime &&time,
 				boost::optional<ScaledPrice> &&price,
 				const Qty &qty,
-				const CloseType &closeType,
 				const uuids::uuid &&uuid)
-			: Order(std::move(time), std::move(price), qty, std::move(uuid))
-			, closeType(closeType) {
+			: Order(std::move(time), std::move(price), qty, std::move(uuid)) {
 			//...//
 		}
 
@@ -221,6 +217,8 @@ public:
 	OpenData m_open;
 	CloseData m_close;
 
+	CloseType m_closeType;
+
 	std::vector<boost::shared_ptr<Algo>> m_algos;
 
 	explicit Implementation(
@@ -248,7 +246,8 @@ public:
 		, m_isInactive(false)
 		, m_timeMeasurement(timeMeasurement)
 		, m_open(startPrice)
-		, m_close(0) {
+		, m_close(0)
+		, m_closeType(CLOSE_TYPE_NONE) {
 		AssertLt(0, m_planedQty);
 	}
 
@@ -544,14 +543,13 @@ public:
 			const char *eventDesc,
 			const uuids::uuid &uuid,
 			const boost::optional<OrderId> &id,
-			const Qty &maxQty,
-			const CloseType &closeType)
+			const Qty &maxQty)
 			const
 			noexcept {
 		m_strategy.GetTradingLog().Write(
 			"order\tpos=%1%\torder=%2%/%3%/-\tclose->%4%\t%5%\t%6%\t%7%.%8%"
 				"\tclose-type=%9%\tprice=%10$.8f->%11$.8f\t%12%"
-				"\tqty=(%13$.8f, %14$.8f)\tbid/ask=%15$.8f/%16$.8f",
+				"\tmax-qty=%13$.8f\tactive-qty=%14$.8f\tbid/ask=%15$.8f/%16$.8f",
 			[&](TradingRecord &record) {
 				record
 					% m_operationId // 1
@@ -567,7 +565,7 @@ public:
 					% m_security.GetSymbol().GetSymbol().c_str() // 6
 					% m_self.GetTradingSystem().GetTag().c_str() // 7
 					% m_tradingSystem.GetMode() // 8
-					% closeType // 9
+					% m_closeType // 9
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 10
 				const auto &order = m_close.orders.back();
 				if (order.price) {
@@ -664,6 +662,10 @@ public:
 			// don't know why set flag in other place.
 		}
 
+		if (!m_close.startPrice) {
+			m_close.startPrice = m_self.GetMarketClosePrice();
+		}
+
 		m_open.orders.emplace_back(
 			std::move(now),
 			std::move(price),
@@ -726,14 +728,12 @@ public:
 
 	template<typename CloseImpl>
 	OrderId Close(
-			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
 			boost::optional<ScaledPrice> &&price,
 			const Qty &maxQty,
 			const OrderParams &orderParams) {
 		return Close(
-			closeType,
 			closeImpl,
 			timeInForce,
 			std::move(price),
@@ -744,7 +744,6 @@ public:
 
 	template<typename CloseImpl>
 	OrderId Close(
-			const CloseType &closeType,
 			const CloseImpl &closeImpl,
 			const TimeInForce &timeInForce,
 			boost::optional<ScaledPrice> &&price,
@@ -752,8 +751,10 @@ public:
 			const OrderParams &orderParams,
 			const uuids::uuid &&uuid) {
 
+		AssertNe(CLOSE_TYPE_NONE, m_closeType);
+
 		const auto now = m_strategy.GetContext().GetCurrentTime();
-		
+
 		if (!m_self.IsOpened()) {
 			throw NotOpenedError();
 		} else if (m_self.HasActiveCloseOrders() || m_self.IsClosed()) {
@@ -773,11 +774,10 @@ public:
 			std::move(now),
 			std::move(price),
 			std::min<Qty>(maxQty, m_self.GetActiveQty()),
-			closeType,
 			std::move(uuid));
 		Order &order = m_close.orders.back();
 
-		ReportClosingStart("start", order.uuid, boost::none, maxQty, closeType);
+		ReportClosingStart("start", order.uuid, boost::none, maxQty);
 
 		try {
 
@@ -789,7 +789,7 @@ public:
 				order.id = closeImpl(order.qty, orderParams);
 			}
 
-			ReportClosingStart("sent", order.uuid, order.id, maxQty, closeType);
+			ReportClosingStart("sent", order.uuid, order.id, maxQty);
 
 		} catch (...) {
 			CopyOrder(
@@ -1047,11 +1047,20 @@ const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 
-Position::CloseType Position::GetCloseType() const noexcept {
-	if (m_pimpl->m_close.orders.empty()) {
-		return CLOSE_TYPE_NONE;
+const CloseType & Position::GetCloseType() const noexcept {
+	return m_pimpl->m_closeType;
+}
+
+void Position::SetCloseType(const CloseType &newCloseType) noexcept {
+	AssertNe(CLOSE_TYPE_NONE, newCloseType);
+	if (m_pimpl->m_closeType != CLOSE_TYPE_NONE) {
+		return;
 	}
-	return m_pimpl->m_close.orders.front().closeType;
+	m_pimpl->m_closeType = newCloseType;
+}
+
+void Position::ResetCloseType(const CloseType &newType) noexcept {
+	m_pimpl->m_closeType = newType;
 }
 
 bool Position::IsOpened() const noexcept {
@@ -1156,7 +1165,9 @@ double Position::GetActiveVolume() const {
 		return 0;
 	}
 	// approximate:
-	return activeQty * (GetOpenedVolume() / m_pimpl->m_open.qty);
+	return RoundByScale(
+		activeQty * (GetOpenedVolume() / m_pimpl->m_open.qty),
+		GetSecurity().GetPriceScale());
 }
 
 const Qty & Position::GetClosedQty() const noexcept {
@@ -1220,7 +1231,9 @@ const ScaledPrice & Position::GetLastTradePrice() const {
 }
 
 double Position::GetRealizedPnlVolume() const {
-	return GetRealizedPnl() * GetSecurity().GetLotSize();
+	return RoundByScale(
+		GetRealizedPnl() * GetSecurity().GetLotSize(),
+		GetSecurity().GetPriceScale());
 }
 
 double Position::GetRealizedPnlPercentage() const {
@@ -1232,7 +1245,9 @@ double Position::GetRealizedPnlPercentage() const {
 }
 
 double Position::GetPlannedPnl() const {
-	return GetUnrealizedPnl() + GetRealizedPnl();
+	return RoundByScale(
+		GetUnrealizedPnl() + GetRealizedPnl(),
+		GetSecurity().GetPriceScale());
 }
 
 bool Position::IsProfit() const {
@@ -1480,16 +1495,12 @@ OrderId Position::OpenAtMarketPriceImmediatelyOrCancel(
 		boost::none);
 }
 
-OrderId Position::CloseAtMarketPrice(
-		const CloseType &closeType) {
-	return CloseAtMarketPrice(closeType, defaultOrderParams);
+OrderId Position::CloseAtMarketPrice() {
+	return CloseAtMarketPrice(defaultOrderParams);
 }
 
-OrderId Position::CloseAtMarketPrice(
-		const CloseType &closeType,
-		const OrderParams &params) {
+OrderId Position::CloseAtMarketPrice(const OrderParams &params) {
 	return m_pimpl->Close(
-		closeType,
 		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPrice(qty, params);
 		},
@@ -1499,31 +1510,23 @@ OrderId Position::CloseAtMarketPrice(
 		params);
 }
 
-OrderId Position::Close(const CloseType &closeType, const ScaledPrice &price) {
-	return Close(closeType, price, GetActiveQty(), defaultOrderParams);
+OrderId Position::Close(const ScaledPrice &price) {
+	return Close(price, GetActiveQty(), defaultOrderParams);
+}
+
+OrderId Position::Close(const ScaledPrice &price, const Qty &maxQty) {
+	return Close(price, maxQty, defaultOrderParams);
+}
+
+OrderId Position::Close(const ScaledPrice &price, const OrderParams &params) {
+	return Close(price, GetActiveQty(), params);
 }
 
 OrderId Position::Close(
-		const CloseType &closeType,
-		const ScaledPrice &price,
-		const Qty &maxQty) {
-	return Close(closeType, price, maxQty, defaultOrderParams);
-}
-
-OrderId Position::Close(
-		const CloseType &closeType,
-		const ScaledPrice &price,
-		const OrderParams &params) {
-	return Close(closeType, price, GetActiveQty(), params);
-}
-
-OrderId Position::Close(
-		const CloseType &closeType,
 		const ScaledPrice &price,
 		const Qty &maxQty,
 		const OrderParams &params) {
 	return m_pimpl->Close(
-		closeType,
 		[this, &price](const Qty &qty, const OrderParams &params) {
 			return DoClose(qty, price, params);
 		},
@@ -1534,20 +1537,14 @@ OrderId Position::Close(
 }
 
 OrderId Position::CloseAtMarketPriceWithStopPrice(
-		const CloseType &closeType,
 		const ScaledPrice &stopPrice) {
-	return CloseAtMarketPriceWithStopPrice(
-		closeType,
-		stopPrice,
-		defaultOrderParams);
+	return CloseAtMarketPriceWithStopPrice(stopPrice, defaultOrderParams);
 }
 
 OrderId Position::CloseAtMarketPriceWithStopPrice(
-		const CloseType &closeType,
 		const ScaledPrice &stopPrice,
 		const OrderParams &params) {
 	return m_pimpl->Close(
-		closeType,
 		[this, stopPrice](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
@@ -1557,18 +1554,14 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		params);
 }
 
-OrderId Position::CloseImmediatelyOrCancel(
-		const CloseType &closeType,
-		const ScaledPrice &price) {
-	return CloseImmediatelyOrCancel(closeType, price, defaultOrderParams);
+OrderId Position::CloseImmediatelyOrCancel(const ScaledPrice &price) {
+	return CloseImmediatelyOrCancel(price, defaultOrderParams);
 }
 
 OrderId Position::CloseImmediatelyOrCancel(
-		const CloseType &closeType,
 		const ScaledPrice &price,
 		const OrderParams &params) {
 	return m_pimpl->Close(
-		closeType,
 		[this, price](const Qty &qty, const OrderParams &params) {
 			return DoCloseImmediatelyOrCancel(qty, price, params);
 		},
@@ -1578,16 +1571,13 @@ OrderId Position::CloseImmediatelyOrCancel(
 		params);
 }
 
-OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
-		const CloseType &closeType) {
-	return CloseAtMarketPriceImmediatelyOrCancel(closeType, defaultOrderParams);
+OrderId Position::CloseAtMarketPriceImmediatelyOrCancel() {
+	return CloseAtMarketPriceImmediatelyOrCancel(defaultOrderParams);
 }
 
 OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
-		const CloseType &closeType,
 		const OrderParams &params) {
 	return m_pimpl->Close(
-		closeType,
 		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
 		},
@@ -1603,41 +1593,6 @@ bool Position::CancelAllOrders() {
 		isCancelRequestSent = true;
 	}
 	return isCancelRequestSent;
-}
-
-const char * trdk::ConvertToPch(const Position::CloseType &closeType) {
-	static_assert(
-		Position::numberOfCloseTypes == 12,
-		"Close type list changed.");
-	switch (closeType) {
-		default:
-			AssertEq(Position::CLOSE_TYPE_NONE, closeType);
-			return "unknown";
-		case Position::CLOSE_TYPE_NONE:
-			return "none";
-		case Position::CLOSE_TYPE_SIGNAL:
-			return "signal";
-		case Position::CLOSE_TYPE_TAKE_PROFIT:
-			return "take-profit";
-		case Position::CLOSE_TYPE_TRAILING_STOP:
-			return "trailing-stop";
-		case Position::CLOSE_TYPE_STOP_LOSS:
-			return "stop-loss";
-		case Position::CLOSE_TYPE_TIMEOUT:
-			return "timeout";
-		case Position::CLOSE_TYPE_SCHEDULE:
-			return "schedule";
-		case Position::CLOSE_TYPE_ROLLOVER:
-			return "rollover";
-		case Position::CLOSE_TYPE_REQUEST:
-			return "request";
-		case Position::CLOSE_TYPE_ENGINE_STOP:
-			return "engine stop";
-		case Position::CLOSE_TYPE_OPEN_FAILED:
-			return "open failed";
-		case Position::CLOSE_TYPE_SYSTEM_ERROR:
-			return "sys error";
-	}
 }
 
 const char * trdk::ConvertToPch(const Position::Type &type) {
@@ -1727,12 +1682,16 @@ OrderSide LongPosition::GetCloseOrderSide() const {
 double LongPosition::GetRealizedPnl() const {
 	const auto &activeQty = GetActiveQty();
 	if (activeQty == 0) {
-		return GetClosedVolume() - GetOpenedVolume();
+		return RoundByScale(
+			GetClosedVolume() - GetOpenedVolume(),
+			GetSecurity().GetPriceScale());
 	}
 	const auto openedVolume
 		= (GetOpenedQty() - activeQty) 
 			* GetSecurity().DescalePrice(GetOpenAvgPrice());
-	return GetClosedVolume() - openedVolume;
+	return RoundByScale(
+		GetClosedVolume() - openedVolume,
+		GetSecurity().GetPriceScale());
 }
 
 double LongPosition::GetRealizedPnlRatio() const {
@@ -1754,7 +1713,9 @@ double LongPosition::GetRealizedPnlRatio() const {
 }
 
 double LongPosition::GetUnrealizedPnl() const {
-	return (GetActiveQty() * GetSecurity().GetBidPrice()) - GetActiveVolume();
+	return RoundByScale(
+		(GetActiveQty() * GetSecurity().GetBidPrice()) - GetActiveVolume(),
+		GetSecurity().GetPriceScale());
 }
 
 ScaledPrice LongPosition::GetMarketOpenPrice() const {
@@ -2080,12 +2041,16 @@ OrderSide ShortPosition::GetCloseOrderSide() const {
 
 double ShortPosition::GetRealizedPnl() const {
 	if (GetActiveQty() == 0) {
-		return GetOpenedVolume() - GetClosedVolume();
+		return RoundByScale(
+			GetOpenedVolume() - GetClosedVolume(),
+			GetSecurity().GetPriceScale());
 	}
 	const auto openedVolume
 		= (GetOpenedQty() - GetActiveQty())
 			* GetSecurity().DescalePrice(GetOpenAvgPrice());
-	return openedVolume - GetClosedVolume();
+	return RoundByScale(
+		openedVolume - GetClosedVolume(),
+		GetSecurity().GetPriceScale());
 }
 double ShortPosition::GetRealizedPnlRatio() const {
 	const auto closedVolume = GetClosedVolume();
@@ -2101,7 +2066,9 @@ double ShortPosition::GetRealizedPnlRatio() const {
 	return openedVolume / closedVolume;
 }
 double ShortPosition::GetUnrealizedPnl() const {
-	return GetActiveVolume() - (GetActiveQty() * GetSecurity().GetAskPrice());
+	return RoundByScale(
+		GetActiveVolume() - (GetActiveQty() * GetSecurity().GetAskPrice()),
+		GetSecurity().GetPriceScale());
 }
 
 ScaledPrice ShortPosition::GetMarketOpenPrice() const {

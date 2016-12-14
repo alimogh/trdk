@@ -18,7 +18,7 @@ namespace trdk { namespace TradingLib {
 
 	public:
 
-		explicit StopLoss(const ScaledPrice &maxLossPerQty, trdk::Position &);
+		explicit StopLoss(double maxLossPerQty, trdk::Position &);
 		virtual ~StopLoss();
 
 	public:
@@ -36,7 +36,7 @@ namespace trdk { namespace TradingLib {
 
 	private:
 
-		const trdk::ScaledPrice m_maxLossPerQty;
+		const double m_maxLossPerQty;
 		trdk::Position & m_position;
 
 	};

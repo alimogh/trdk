@@ -374,11 +374,11 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 
+				ResetCloseType(m_closeType);
 				if (!m_intentionSize) {
-					Close(m_closeType, GetMarketCloseOppositePrice());
+					Close(GetMarketCloseOppositePrice());
 				} else {
 					Close(
-						m_closeType,
 						GetMarketCloseOppositePrice(),
 						m_intentionSize->second);
 				}
@@ -441,15 +441,14 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					}
 				}
 			} else {
+				ResetCloseType(m_closeType);
 				if (!m_intentionSize) {
 					Close(
-						m_closeType,
 						IsSuperAggressiveClosing(intention)
 							?	GetOpenAvgPrice()
 							:	GetMarketClosePrice());
 				} else {
 					Close(
-						m_closeType,
 						GetMarketClosePrice(),
 						m_intentionSize->second);
 				}

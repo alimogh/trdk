@@ -151,6 +151,35 @@ namespace trdk {
 		numberOfOrderTypes = 2
 	};
 
+	////////////////////////////////////////////////////////////////////////////////
+
+	enum CloseType {
+		CLOSE_TYPE_NONE,
+		CLOSE_TYPE_SIGNAL,
+		CLOSE_TYPE_TAKE_PROFIT,
+		CLOSE_TYPE_TRAILING_STOP,
+		CLOSE_TYPE_STOP_LOSS,
+		CLOSE_TYPE_TIMEOUT,
+		CLOSE_TYPE_SCHEDULE,
+		CLOSE_TYPE_ROLLOVER,
+		//! Closed by request, not by logic or error.
+		CLOSE_TYPE_REQUEST,
+		//! Closed by engine stop.
+		CLOSE_TYPE_ENGINE_STOP,
+		CLOSE_TYPE_OPEN_FAILED,
+		CLOSE_TYPE_SYSTEM_ERROR,
+		numberOfCloseTypes
+	};
+
+	TRDK_CORE_API const char * ConvertToPch(const trdk::CloseType &);
+	inline std::ostream & operator <<(
+			std::ostream &os,
+			const trdk::CloseType &closeType) {
+		return os << trdk::ConvertToPch(closeType);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -57,6 +57,8 @@ namespace trdk {
 			
 			PT_UUID,
 
+			PT_CLOSE_TYPE,
+
 			numberOfParamTypes
 				
 		};
@@ -147,7 +149,7 @@ namespace trdk {
 				}
 	
 				static_assert(
-					numberOfParamTypes == 22,
+					numberOfParamTypes == 23,
 					"Parameter type list changed.");
 				switch (type) {
 
@@ -260,6 +262,12 @@ namespace trdk {
 							os);
 						break;
 
+					case PT_CLOSE_TYPE:
+						WriteToDumpStream(
+							boost::any_cast<const trdk::CloseType &>(val),
+							os);
+						break;
+
 					default:
 						AssertEq(PT_UINT64, type);
 				}
@@ -355,6 +363,10 @@ namespace trdk {
 
 		void StoreParam(const boost::uuids::uuid &val) {
 			StoreTypedParam(PT_UUID, val);
+		}
+
+		void StoreParam(const trdk::CloseType &closeType) {
+			StoreTypedParam(PT_CLOSE_TYPE, closeType);
 		}
 
         template<typename T>

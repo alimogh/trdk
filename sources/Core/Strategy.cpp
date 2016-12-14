@@ -629,8 +629,11 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
 	}
 
 	try {
+		Assert(!position.IsCancelling());
 		position.RunAlgos();
-		OnPositionUpdate(position);
+		if (!position.IsCancelling()) {
+			OnPositionUpdate(position);
+		}
 	} catch (const ::trdk::Lib::RiskControlException &ex) {
 		m_pimpl->BlockByRiskControlEvent(ex, "position update");
 		return;
