@@ -239,6 +239,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			Assert(m_security == &security);
 			UseUnused(security);
 
+			UpdateStat();
 			CheckOrder(delayMeasurement);
 
 		}
@@ -406,6 +407,29 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			}
 			CheckSignal(m_ma->GetLastPoint().value, delayMeasurement);
 			m_ma->DropLastPointCopy(m_maServiceDropCopyId);
+		}
+
+		void UpdateStat() {
+			if (GetPositions().IsEmpty()) {
+				return;
+			}
+			AssertEq(1, GetPositions().GetSize());
+			Position &position = *GetPositions().GetBegin();
+			if (position.IsCompleted()) {
+				return;
+			}
+			const auto &close = position.GetMarketClosePrice();
+			const auto &open = position.GetOpenStartPrice();
+			const auto delta = position.IsLong()
+				?	close - open
+				:	open - close;
+			if (delta > 0) {
+				if (delta > m_stat.maxProfitPriceDelta) {
+					m_stat.maxProfitPriceDelta = delta;
+				}
+			} else if (delta < 0 && delta < m_stat.maxLossPriceDelta) {
+				m_stat.maxLossPriceDelta = delta;
+			}
 		}
 
 		void CheckOrder(const Milestones &delayMeasurement) {
@@ -604,6 +628,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		}
 
 		void OpenPosition(bool isLong, const Milestones &delayMeasurement) {
+
 			boost::shared_ptr<Position> position = isLong
 				?	CreatePosition<LongPosition>(
 						m_security->GetAskPriceScaled(),
@@ -615,8 +640,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				boost::make_unique<StopLoss>(
 					m_settings.maxLossPerQty,
 					*position));
-			Assert(position);
+
 			ContinuePosition(*position);
+
+			m_stat.maxProfitPriceDelta
+				= m_stat.maxLossPriceDelta
+				= 0;
+
 		}
 
 		template<typename PositionType>
@@ -721,6 +751,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					<< ",Position Duration"
 					<< ",Type"
 					<< ",P&L Volume,P&L %,P&L Total"
+					<< ",Unr. P&L Price"
+					<< ",Unr. Profit Price"
+					<< ",Unr. Loss Price"
 					<< ",Is Profit,Is Loss"
 					<< ",Winners,Losers,Winners %,Losers %"
 					<< ",Qty"
@@ -750,6 +783,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					<< (pos.GetCloseTime() - pos.GetOpenTime()) << "\"\"\""
 				<< ',' << pos.GetType()
 				<< ',' << pnlVolume << ',' << pnlRatio << ',' << m_stat.pnl
+				<< ','
+					<< m_security->DescalePrice(
+						(m_stat.maxProfitPriceDelta + m_stat.maxLossPriceDelta))
+				<< ',' << m_security->DescalePrice(m_stat.maxProfitPriceDelta)
+				<< ','
+					<< std::abs(
+						m_security->DescalePrice(m_stat.maxLossPriceDelta))
 				<< (pos.IsProfit() ? ",1,0" : ",0,1")
 				<< ',' << m_stat.numberOfWinners << ',' << m_stat.numberOfLosers
 				<< ','
@@ -790,9 +830,14 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		std::ofstream m_strategyLog;
 
 		struct Stat {
+
 			double pnl;
 			size_t numberOfWinners;
 			size_t numberOfLosers;
+
+			ScaledPrice maxProfitPriceDelta;
+			ScaledPrice maxLossPriceDelta;
+
 		} m_stat;
 
 	};
