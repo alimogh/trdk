@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "TradingLib/TrailingStop.hpp"
+#include "TradingLib/TakeProfit.hpp"
 #include "Services/BarService.hpp"
 #include "Services/MovingAverageService.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -157,13 +158,40 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		} trailingStop;
 
+		struct TakeProfit {
+
+			Double minProfitPerLotToActivate;
+			Double minProfitRatioToClose;
+
+			explicit TakeProfit(const IniSectionRef &conf)
+				: minProfitPerLotToActivate(
+					conf.ReadTypedKey<double>(
+						"take_profit.activation.min_profit.per_lot"))
+				, minProfitRatioToClose(
+						conf.ReadTypedKey<double>(
+							"take_profit.closing.min_profit.percents")
+						/ 100) {
+				//...//
+			}
+
+			void Validate() const {
+				if (minProfitRatioToClose > 1) {
+					throw Exception(
+						"Min profit ratio to close position by take profit"
+							" must be less than or equal to 100%");
+				}
+			}
+
+		} takeProfit;
+
 		explicit Settings(const IniSectionRef &conf)
 			: qty(conf.ReadTypedKey<Qty>("qty"))
 			, open(true, conf)
 			, close(false, conf)
 			, trend(conf)
 			, stopLoss(conf)
-			, trailingStop(conf) {
+			, trailingStop(conf)
+			, takeProfit(conf) {
 			//...//
 		}
 
@@ -176,6 +204,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			trend.Validate();
 			stopLoss.Validate();
 			trailingStop.Validate();
+			takeProfit.Validate();
 		}
 
 		void OnSecurity(const Security &security) const {
@@ -191,7 +220,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					" Order price max. delta: %4$.8f / %5$.8f."
 					" Trend: %6% points, precision %7%."
 					" Stop loss: %8$.8f."
-					" Trailing stop: %9% -> %10%.");
+					" Trailing stop: %9% -> %10%."
+					" Take profit: %11% -> %12%%%.");
 			info
 				% qty // 1
 				% open.passiveMaxLifetime % close.passiveMaxLifetime// 2, 3
@@ -199,7 +229,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				% trend.size % trend.precision // 6, 7
 				% stopLoss.maxLossPerLot // 8
 				% trailingStop.minProfitPerLotToActivate // 9
-				% trailingStop.minProfitPerLotToClose; // 10
+				% trailingStop.minProfitPerLotToClose // 10
+				% takeProfit.minProfitPerLotToActivate // 11
+				% (takeProfit.minProfitRatioToClose * 100); // 12
 
 			log.Info(info.str().c_str());
 
@@ -737,7 +769,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				if (position->IsCompleted()) {
 					position = nullptr;
 				} else if (m_trend.IsRising() == position->IsLong()) {
-					LogTrend("trend confirmed");
+					LogTrend("trend restored");
 					delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
 					return;
 				}
@@ -785,6 +817,11 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				boost::make_unique<TrailingStop>(
 					m_settings.trailingStop.minProfitPerLotToActivate,
 					m_settings.trailingStop.minProfitPerLotToClose,
+					*position));
+			position->AttachAlgo(
+				boost::make_unique<TakeProfit>(
+					m_settings.takeProfit.minProfitPerLotToActivate,
+					m_settings.takeProfit.minProfitRatioToClose,
 					*position));
 
 			ContinuePosition(*position);

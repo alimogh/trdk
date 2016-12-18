@@ -264,12 +264,14 @@
     </ClCompile>
     <ClCompile Include="StopLoss.cpp" />
     <ClCompile Include="StopOrder.cpp" />
+    <ClCompile Include="TakeProfit.cpp" />
     <ClCompile Include="TrailingStop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="StopLoss.hpp" />
     <ClInclude Include="StopOrder.hpp" />
+    <ClInclude Include="TakeProfit.hpp" />
     <ClInclude Include="TrailingStop.hpp" />
   </ItemGroup>
   <ItemGroup>
