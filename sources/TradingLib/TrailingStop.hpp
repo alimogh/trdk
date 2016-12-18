@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/12/14 02:51:16
+ *   Created: 2016/12/15 04:15:18
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -14,12 +14,15 @@
 
 namespace trdk { namespace TradingLib {
 
-	class StopLoss : public trdk::TradingLib::StopOrder {
+	class TrailingStop : public trdk::TradingLib::StopOrder {
 
 	public:
 
-		explicit StopLoss(double maxLossPerLot, trdk::Position &);
-		virtual ~StopLoss();
+		explicit TrailingStop(
+				double minProfitPerLotToActivate,
+				double minProfitPerLotToClose,
+				trdk::Position &);
+		virtual ~TrailingStop();
 
 	public:
 
@@ -30,8 +33,18 @@ namespace trdk { namespace TradingLib {
 		virtual const char * GetName() const override;
 
 	private:
+		
+		bool CheckSignal();
+		bool Activate(const trdk::Volume &plannedPnl);
 
-		const trdk::Lib::Double m_maxLossPerLot;
+	private:
+
+		const trdk::Lib::Double m_minProfitPerLotToActivate;
+		const trdk::Lib::Double m_minProfitPerLotToClose;
+
+		bool m_isActivated;
+		boost::optional<trdk::Lib::Double> m_maxProfit;
+		boost::optional<trdk::Lib::Double> m_minProfit;
 
 	};
 

@@ -10,16 +10,15 @@
 
 #include "Prec.hpp"
 #include "StopLoss.hpp"
-#include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
-StopLoss::StopLoss(double maxLossPerQty, Position &position)
-	: m_maxLossPerQty(maxLossPerQty)
-	, m_position(position) {
+StopLoss::StopLoss(double maxLossPerLot, Position &position)
+	: StopOrder(position)
+	, m_maxLossPerLot(maxLossPerLot) {
 	//...//
 }
 
@@ -27,96 +26,58 @@ StopLoss::~StopLoss() {
 	//...//
 }
 
+const char * StopLoss::GetName() const {
+	return "stop loss";
+}
+
 void StopLoss::Run() {
 
-	if (!m_position.IsOpened()) {
+	if (!GetPosition().IsOpened()) {
 		return;
 	}
 
-	if (m_position.GetCloseType() != CLOSE_TYPE_STOP_LOSS) {
-		
-		const Qty maxLoss = m_position.GetOpenedQty() * -m_maxLossPerQty;
-		const auto &plannedPnl = m_position.GetPlannedPnl();
+	static_assert(numberOfCloseTypes == 12, "List changed.");
+	switch (GetPosition().GetCloseType()) {
 
-		if (maxLoss < plannedPnl) {
+		case CLOSE_TYPE_STOP_LOSS:
+			break;
+
+		case CLOSE_TYPE_TRAILING_STOP:
 			return;
-		}
 
-		m_position.GetStrategy().GetTradingLog().Write(
-			"stop loss\thit"
-				"\tplanned-pnl=%1$.8f\tmax-loss=%2$.8f*%3$.8f=%4$.8f"
-				"\tbid/ask=%5$.8f/%6$.8f"
-				"\tpos=%7%",
-			[&](TradingRecord &record) {
-				record
-					% plannedPnl
-					% m_position.GetOpenedQty()
-					% m_maxLossPerQty
-					% maxLoss
-					% m_position.GetSecurity().GetBidPriceValue()
-					% m_position.GetSecurity().GetAskPriceValue()
-					% m_position.GetId();
-			});
+		default:
+			{
 
-		m_position.ResetCloseType(CLOSE_TYPE_STOP_LOSS);
+				const Double maxLoss
+					= GetPosition().GetOpenedQty() * -m_maxLossPerLot;
+				const auto &plannedPnl = GetPosition().GetPlannedPnl();
+
+				if (maxLoss < plannedPnl) {
+					return;
+				}
+
+				GetTradingLog().Write(
+					"%1%\thit"
+						"\tplanned-pnl=%2$.8f\tmax-loss=%3$.8f*%4$.8f=%5$.8f"
+						"\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+					[&](TradingRecord &record) {
+						record
+							% GetName()
+							% plannedPnl
+							% GetPosition().GetOpenedQty()
+							% m_maxLossPerLot
+							% maxLoss
+							% GetPosition().GetSecurity().GetBidPriceValue()
+							% GetPosition().GetSecurity().GetAskPriceValue()
+							% GetPosition().GetId();
+					});
+
+				GetPosition().ResetCloseType(CLOSE_TYPE_STOP_LOSS);
+
+			}
 
 	}
 
 	OnHit();
 
-}
-
-void StopLoss::OnHit() {
-
-	if (m_position.HasActiveOpenOrders()) {
-	
-		m_position.GetStrategy().GetTradingLog().Write(
-			"stop loss\tbad open-order\tpos=%1%",
-			[&](TradingRecord &record) {record % m_position.GetId();});
-	
-		m_position.CancelAllOrders();
-	
-	} else if (m_position.HasActiveCloseOrders()) {
-	
-		const auto &orderPrice = m_position.GetActiveCloseOrderPrice();
-		const auto &currentPrice = m_position.GetMarketClosePrice();
-
-		const bool isBadOrder = !m_position.IsLong()
-			?	orderPrice < currentPrice
-			:	orderPrice > currentPrice;
-		m_position.GetStrategy().GetTradingLog().Write(
-				"stop loss\t%1%\t%2%"
-					"\torder-price=%3$.8f\tcurrent-price=%4$.8f\tpos=%5%",
-			[&](TradingRecord &record) {
-				record
-					%	(isBadOrder
-							?	"canceling bad close-order"
-							:	"close order is good")
-					%	m_position.GetCloseOrderSide()
-					%	m_position.GetSecurity().DescalePrice(orderPrice)
-					%	m_position.GetSecurity().DescalePrice(currentPrice)
-					%	m_position.GetId();
-			});
-		if (isBadOrder) {
-			m_position.CancelAllOrders();
-		}
-	
-	} else {
-	
-		m_position.GetStrategy().GetTradingLog().Write(
-			"stop loss\tclosing\tpos=%1%",
-			[&](TradingRecord &record) {record % m_position.GetId();});
-
-		m_position.Close(m_position.GetMarketClosePrice());
-	
-	}
-
-}
-
-Position & StopLoss::GetPosition() {
-	return m_position;
-}
-
-const Position & StopLoss::GetPosition() const {
-	return const_cast<StopLoss *>(this)->GetPosition();
 }

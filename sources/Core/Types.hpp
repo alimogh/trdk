@@ -16,9 +16,12 @@
 
 namespace trdk {
 
-	typedef trdk::Lib::Numeric<double> Qty;
+	typedef trdk::Lib::Double Qty;
 	
 	typedef boost::int32_t ScaledPrice;
+	typedef trdk::Lib::Double Price;
+	
+	typedef trdk::Lib::Double Volume;
 
 	typedef boost::uint64_t OrderId;
 

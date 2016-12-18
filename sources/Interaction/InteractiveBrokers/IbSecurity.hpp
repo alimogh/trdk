@@ -116,8 +116,8 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 			switch (tick.GetType()) {
 				case LEVEL1_TICK_LAST_PRICE:
 					{
-						auto lastQty = GetLastQty();
-						if (Lib::IsZero(lastQty)) {
+						Qty lastQty = GetLastQty();
+						if (lastQty == 0) {
 							if (!m_firstTradeTick) {
 								m_firstTradeTick = tick;
 								break;

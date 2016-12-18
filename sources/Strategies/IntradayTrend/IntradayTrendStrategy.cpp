@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingLib/StopLoss.hpp"
+#include "TradingLib/TrailingStop.hpp"
 #include "Services/BarService.hpp"
 #include "Services/MovingAverageService.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -34,9 +35,60 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 	struct Settings {
 
 		struct Order {
+
 			pt::time_duration passiveMaxLifetime;
-			double maxPriceDelta;
+			Double maxPriceDelta;
 			ScaledPrice maxPriceScaledDelta;
+
+			explicit Order(bool isOpen, const IniSectionRef &conf)
+				: passiveMaxLifetime(
+					ReadOrderMaxLifetime(
+						conf,
+						isOpen
+							? "open.passive_order_max_lifetime.sec"
+							: "close.passive_order_max_lifetime.sec"))
+				, maxPriceDelta(
+					conf.ReadTypedKey<double>(
+						isOpen 
+							?	"open.order_price_max_delta"
+							:	"close.order_price_max_delta"))
+				, maxPriceScaledDelta(0) {
+				//...//
+			}
+
+			void Validate() const {
+				if (passiveMaxLifetime.is_negative()) {
+					throw Exception("Passive order live time is negative");
+				}
+				if (passiveMaxLifetime.total_microseconds() == 0) {
+					throw Exception("Passive order live time is not set");
+				}
+				if (maxPriceDelta == 0) {
+					throw Exception("Order price delta is not set");
+				}
+			}
+
+			void OnSecurity(const Security &security) const {
+				AssertEq(0, maxPriceScaledDelta);
+				const_cast<Order *>(this)->maxPriceScaledDelta
+					= security.ScalePrice(maxPriceDelta);
+				if (!maxPriceScaledDelta) {
+					throw Exception("Order price delta is too small");
+				}
+			}
+
+		private:
+
+			static pt::time_duration ReadOrderMaxLifetime(
+					const IniSectionRef &conf,
+					const char *key) {
+				const auto value = conf.ReadTypedKey<unsigned int>(key);
+				if (!value) {
+					return pt::not_a_date_time;
+				}
+				return pt::seconds(value);
+			}
+
 		};
 
 		const Qty qty;
@@ -44,63 +96,91 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		Order open;
 		Order close;
 
-		size_t trendSize;
-		uint16_t trendPrecision;
+		struct Trend {
 
-		double maxLossPerQty;
+			size_t size;
+			uint16_t precision;
+
+			explicit Trend(const IniSectionRef &conf)
+				: size(conf.ReadTypedKey<size_t>("trend.size"))
+				, precision(conf.ReadTypedKey<uint16_t>("trend.precision")) {
+				//...//
+			}
+
+			void Validate() const {
+				if (size < 2) {
+					throw Exception("Trend size is too small");
+				}
+			}
+
+		} trend;
+
+		struct StopLoss {
+			
+			Double maxLossPerLot;
+		
+			explicit StopLoss(const IniSectionRef &conf)
+				: maxLossPerLot(
+					conf.ReadTypedKey<double>("stop_loss.max_loss.per_lot")) {
+				//...//
+			}
+		
+			void Validate() const {
+				//...//
+			}
+
+		} stopLoss;
+
+		struct TrailingStop {
+		
+			Double minProfitPerLotToActivate;
+			Double minProfitPerLotToClose;
+
+			explicit TrailingStop(const IniSectionRef &conf)
+				: minProfitPerLotToActivate(
+					conf.ReadTypedKey<double>(
+						"trailing_stop.activation.min_profit.per_lot"))
+				, minProfitPerLotToClose(
+						conf.ReadTypedKey<double>(
+							"trailing_stop.closing.min_profit.per_lot")) {
+				//...//
+			}
+
+			void Validate() const {
+				if (minProfitPerLotToActivate < minProfitPerLotToClose) {
+					throw Exception(
+						"Min profit to activate trailing stop must be greater"
+							" than min profit to close position"
+							" by trailing stop");
+				}
+			}
+
+		} trailingStop;
 
 		explicit Settings(const IniSectionRef &conf)
 			: qty(conf.ReadTypedKey<Qty>("qty"))
-			, open(
-				Order{
-					ReadOrderMaxLifetime(
-						conf,
-						"passive_open_order_max_lifetime_sec"),
-					conf.ReadTypedKey<double>("open_order_price_max_delta")
-				})
-			, close(
-				Order{
-					ReadOrderMaxLifetime(
-						conf,
-						"passive_close_order_max_lifetime_sec"),
-					conf.ReadTypedKey<double>("close_order_price_max_delta")
-				})
-			, trendSize(conf.ReadTypedKey<size_t>("trend_size"))
-			, trendPrecision(conf.ReadTypedKey<uint16_t>("trend_precision"))
-			, maxLossPerQty(
-				conf.ReadTypedKey<double>("max_loss_per_contract")) {
-		
+			, open(true, conf)
+			, close(false, conf)
+			, trend(conf)
+			, stopLoss(conf)
+			, trailingStop(conf) {
+			//...//
+		}
+
+		void Validate() const {
 			if (qty < 1) {
 				throw Exception("Position size is not set");
 			}
-
-			if (IsZero(open.maxPriceDelta)) {
-				throw Exception("Open-order price delta is not set");
-			}
-			if (IsZero(close.maxPriceDelta)) {
-				throw Exception("Close-order price delta is not set");
-			}
-
-			if (trendSize < 2) {
-				throw Exception("Trend size is too small");
-			}
-
+			open.Validate();
+			close.Validate();
+			trend.Validate();
+			stopLoss.Validate();
+			trailingStop.Validate();
 		}
 
 		void OnSecurity(const Security &security) const {
-			
-			const_cast<Settings *>(this)->open.maxPriceScaledDelta
-				= security.ScalePrice(open.maxPriceDelta);
-			if (!open.maxPriceScaledDelta) {
-				throw Exception("Open-order price delta is too small");
-			}
-
-			const_cast<Settings *>(this)->close.maxPriceScaledDelta
-				= security.ScalePrice(close.maxPriceDelta);
-			if (!close.maxPriceScaledDelta) {
-				throw Exception("Close-order price delta is too small");
-			}
-
+			open.OnSecurity(security);
+			close.OnSecurity(security);
 		}
 
 		void Log(Module::Log &log) const {
@@ -109,30 +189,20 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				"Position size: %1%."
 					" Passive order max. lifetime: %2% / %3%."
 					" Order price max. delta: %4$.8f / %5$.8f."
-					" Max loss: %6$.8f."
-					" Trend: %7% points, precision %8%.");
+					" Trend: %6% points, precision %7%."
+					" Stop loss: %8$.8f."
+					" Trailing stop: %9% -> %10%.");
 			info
 				% qty // 1
 				% open.passiveMaxLifetime % close.passiveMaxLifetime// 2, 3
 				% open.maxPriceDelta % close.maxPriceDelta // 4, 5
-				% maxLossPerQty // 6
-				% trendSize % trendPrecision // 7, 8
-				;
+				% trend.size % trend.precision // 6, 7
+				% stopLoss.maxLossPerLot // 8
+				% trailingStop.minProfitPerLotToActivate // 9
+				% trailingStop.minProfitPerLotToClose; // 10
 
 			log.Info(info.str().c_str());
 
-		}
-
-	private:
-
-		pt::time_duration ReadOrderMaxLifetime(
-				const IniSectionRef &conf,
-				const char *key) {
-			const auto value = conf.ReadTypedKey<unsigned int>(key);
-			if (!value) {
-				return pt::not_a_date_time;
-			}
-			return pt::seconds(value);
 		}
 
 	};
@@ -201,11 +271,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		}
 
-		double GetNumerOfDirectionChanges() const {
-			if (!m_history.full()) {
-				throw Exception("Trend stat is not full");
-			}
-			return Descale(m_history.back(), m_scale);
+		size_t GetNumerOfDirectionChanges() const {
+			return m_numerOfDirectionChanges;
 		}
 
 		double GetFirstValue() const {
@@ -215,8 +282,11 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			return Descale(m_history.front(), m_scale);
 		}
 
-		size_t GetLastValue() const {
-			return m_numerOfDirectionChanges;
+		double GetLastValue() const {
+			if (!m_history.full()) {
+				throw Exception("Trend stat is not full");
+			}
+			return Descale(m_history.back(), m_scale);
 		}
 
 		const char * GetAsPch() const {
@@ -261,12 +331,11 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			, m_barServiceDropCopyId(DropCopy::nDataSourceInstanceId)
 			, m_ma(nullptr)
 			, m_maServiceDropCopyId(DropCopy::nDataSourceInstanceId)
-			, m_trend(
-				m_settings.trendSize,
-				m_settings.trendPrecision)
+			, m_trend(m_settings.trend.size, m_settings.trend.precision)
 			, m_stat(Stat{}) {
 			
 			m_settings.Log(GetLog());
+			m_settings.Validate();
 
 		}
 
@@ -668,7 +737,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				if (position->IsCompleted()) {
 					position = nullptr;
 				} else if (m_trend.IsRising() == position->IsLong()) {
-					LogTrend("trend restored");
+					LogTrend("trend confirmed");
 					delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
 					return;
 				}
@@ -682,15 +751,16 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						|| position->HasActiveCloseOrders())) {
 				LogTrend("signal canceled");
 				return;
-			} else {
-				LogTrend("signal");
 			}
 
 			if (!position) {
+				LogTrend("signal to open");
 				OpenPosition(m_trend.IsRising(), delayMeasurement);
 			} else if (position->HasActiveOpenOrders()) {
+				LogTrend("signal to cancel");
 				Verify(position->CancelAllOrders());
 			} else {
+				LogTrend("signal to close");
 				ClosePosition(*position);
 			}
 
@@ -709,7 +779,12 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						delayMeasurement);
 			position->AttachAlgo(
 				boost::make_unique<StopLoss>(
-					m_settings.maxLossPerQty,
+					m_settings.stopLoss.maxLossPerLot,
+					*position));
+			position->AttachAlgo(
+				boost::make_unique<TrailingStop>(
+					m_settings.trailingStop.minProfitPerLotToActivate,
+					m_settings.trailingStop.minProfitPerLotToClose,
 					*position));
 
 			ContinuePosition(*position);

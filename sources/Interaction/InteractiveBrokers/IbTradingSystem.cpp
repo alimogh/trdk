@@ -129,7 +129,7 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
 			callBackList.push_back(
 				[callBack, id, permOrderId, status, remaining, tradeData]() {
 					const TradeInfo *const tradeDataPtr
-						= !IsZero(tradeData.qty)
+						= tradeData.qty != 0
 							?	&tradeData
 							:	nullptr;	
 					callBack(

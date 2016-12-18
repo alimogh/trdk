@@ -757,10 +757,10 @@ ScaledPrice Security::ScalePrice(double price) const {
 	return ScaledPrice(Scale(price, GetPriceScale()));
 }
 
-double Security::DescalePrice(const ScaledPrice &price) const {
+Price Security::DescalePrice(const ScaledPrice &price) const {
 	return Descale(int64_t(price), GetPriceScale());
 }
-double Security::DescalePrice(double price) const {
+Price Security::DescalePrice(double price) const {
 	return Descale(price, GetPriceScale());
 }
 
@@ -882,7 +882,7 @@ const Security::Request & Security::GetRequest() const {
 	return m_pimpl->m_request;
 }
 
-double Security::GetLastPrice() const {
+Price Security::GetLastPrice() const {
 	return DescalePrice(GetLastPriceScaled());
 }
 
@@ -905,10 +905,10 @@ ScaledPrice Security::GetAskPriceScaled() const {
 	return ScaledPrice(
 		m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
 }
-double Security::GetAskPrice() const {
+Price Security::GetAskPrice() const {
 	return DescalePrice(GetAskPriceScaled());
 }
-double Security::GetAskPriceValue() const {
+Price Security::GetAskPriceValue() const {
 	try {
 		return GetAskPrice();
 	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {
@@ -931,10 +931,10 @@ ScaledPrice Security::GetBidPriceScaled() const {
 	return ScaledPrice(
 		m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
 }
-double Security::GetBidPrice() const {
+Price Security::GetBidPrice() const {
 	return DescalePrice(GetBidPriceScaled());
 }
-double Security::GetBidPriceValue() const {
+Price Security::GetBidPriceValue() const {
 	try {
 		return GetBidPrice();
 	} catch (const trdk::Security::MarketDataValueDoesNotExist &) {

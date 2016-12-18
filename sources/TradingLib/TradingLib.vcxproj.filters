@@ -17,12 +17,24 @@
     <ClCompile Include="StopLoss.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TrailingStop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StopOrder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StopLoss.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrailingStop.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StopOrder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

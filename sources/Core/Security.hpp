@@ -251,8 +251,8 @@ namespace trdk {
 		uint8_t GetPricePrecision() const throw();
 
 		trdk::ScaledPrice ScalePrice(double price) const;
-		double DescalePrice(const trdk::ScaledPrice &price) const;
-		double DescalePrice(double price) const;
+		trdk::Price DescalePrice(const trdk::ScaledPrice &price) const;
+		trdk::Price DescalePrice(double price) const;
 
 	public:
 
@@ -262,18 +262,18 @@ namespace trdk {
 	public:
 
 		trdk::ScaledPrice GetLastPriceScaled() const;
-		double GetLastPrice() const;
+		trdk::Price GetLastPrice() const;
 		trdk::Qty GetLastQty() const;
 
 		trdk::ScaledPrice GetAskPriceScaled() const;
-		double GetAskPrice() const;
-		double GetAskPriceValue() const;
+		trdk::Price GetAskPrice() const;
+		trdk::Price GetAskPriceValue() const;
 		trdk::Qty GetAskQty() const;
 		trdk::Qty GetAskQtyValue() const;
 
 		trdk::ScaledPrice GetBidPriceScaled() const;
-		double GetBidPrice() const;
-		double GetBidPriceValue() const;
+		trdk::Price GetBidPrice() const;
+		trdk::Price GetBidPriceValue() const;
 		trdk::Qty GetBidQty() const;
 		trdk::Qty GetBidQtyValue() const;
 

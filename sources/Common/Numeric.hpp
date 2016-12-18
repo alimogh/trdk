@@ -12,6 +12,8 @@
 
 namespace trdk { namespace Lib {
 
+	////////////////////////////////////////////////////////////////////////////////
+
 	template<typename T>
 	class Numeric {
 
@@ -28,19 +30,19 @@ namespace trdk { namespace Lib {
 			//...//
 		}
 
-		void Swap(Numeric &rhs) throw() {
+		void Swap(Numeric &rhs) noexcept {
 			std::swap(m_value, rhs.m_value);
 		}
 
-		operator ValueType() const throw() {
+		operator ValueType() const noexcept {
 			return Get();
 		}
 
-		const ValueType & Get() const throw() {
+		const ValueType & Get() const noexcept {
 			return m_value;
 		}
 
-		Numeric & operator =(const ValueType &rhs) throw() {
+		Numeric & operator =(const ValueType &rhs) noexcept {
 			m_value = rhs;
 			return *this;
 		}
@@ -190,5 +192,23 @@ namespace trdk { namespace Lib {
 		ValueType m_value;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	template<typename T>
+	bool IsEqual(const trdk::Lib::Numeric<T> &, const trdk::Lib::Numeric<T> &) {
+		static_assert(false, "Deprecated call, use operator \"==\" instead.");
+	}
+
+	template<typename T>
+	bool IsZero(const trdk::Lib::Numeric<T> &) {
+		static_assert(false, "Deprecated call, use operator \"==\" instead.");
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	typedef trdk::Lib::Numeric<double> Double;
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } }

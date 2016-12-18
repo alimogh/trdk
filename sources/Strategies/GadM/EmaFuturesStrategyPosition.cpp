@@ -963,8 +963,8 @@ boost::optional<EmaFuturesStrategy::ShortPosition::PriceCheckResult>
 EmaFuturesStrategy::ShortPosition::CheckStopLoss(
 		double maxLossMoneyPerContract)
 		const {
-	Assert(!IsZero(GetOpenAvgPrice()));
-	Assert(!IsZero(GetActiveQty()));
+	Assert(GetOpenAvgPrice() != 0);
+	Assert(GetActiveQty() != 0);
 	AssertEq(INTENTION_HOLD, GetIntention());
 	PriceCheckResult result = {};
 	result.start = ScaledPrice(GetOpenAvgPrice() * GetActiveQty());

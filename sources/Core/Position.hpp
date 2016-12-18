@@ -199,12 +199,12 @@ namespace trdk {
 		  * @sa GetLastCloseTradePrice
 		  */
 		const trdk::ScaledPrice & GetLastOpenTradePrice() const;
-		double GetOpenedVolume() const;
+		trdk::Volume GetOpenedVolume() const;
 		//! Time of first trade.
 		const boost::posix_time::ptime & GetOpenTime() const;
 
 		trdk::Qty GetActiveQty() const noexcept;
-		double GetActiveVolume() const;
+		trdk::Volume GetActiveVolume() const;
 
 		void SetCloseStartPrice(const trdk::ScaledPrice &);
 		const trdk::ScaledPrice & GetCloseStartPrice() const;
@@ -237,7 +237,7 @@ namespace trdk {
 		  */
 		const trdk::ScaledPrice & GetLastCloseTradePrice() const;
 		const trdk::Qty & GetClosedQty() const noexcept;
-		double GetClosedVolume() const;
+		trdk::Volume GetClosedVolume() const;
 		//! Time of last trade.
 		const boost::posix_time::ptime & GetCloseTime() const;
 
@@ -261,21 +261,21 @@ namespace trdk {
 		  */
 		const trdk::ScaledPrice & GetLastTradePrice() const;
 		
-		virtual double GetRealizedPnl() const = 0;
-		double GetRealizedPnlVolume() const;
+		virtual trdk::Volume GetRealizedPnl() const = 0;
+		trdk::Volume GetRealizedPnlVolume() const;
 		//! Returns realized PnL ratio.
 		/** @return	If the value is 1.0 - no profit and no loss, if less
 		  *			then 1.0 - loss, if greater then 1.0 - profit.
 		  */
-		virtual double GetRealizedPnlRatio() const = 0;
+		virtual trdk::Lib::Double GetRealizedPnlRatio() const = 0;
 		//! Returns percentage of profit.
 		/** @return	If the value is zero - no profit and no loss, if less then
 		  *			zero - loss, if greater then zero - profit.
 		  */
-		double GetRealizedPnlPercentage() const;
-		virtual double GetUnrealizedPnl() const = 0;
+		trdk::Lib::Double GetRealizedPnlPercentage() const;
+		virtual trdk::Volume GetUnrealizedPnl() const = 0;
 		//! Realized PnL + unrealized PnL.
-		double GetPlannedPnl() const;
+		trdk::Volume GetPlannedPnl() const;
 		//! Returns true if position has profit by realized P&L.
 		/** @return	False if position has loss or does not have profit and
 		  *			does not have loss. True if position has profit.
@@ -468,9 +468,9 @@ namespace trdk {
 		virtual trdk::OrderSide GetOpenOrderSide() const override;
 		virtual trdk::OrderSide GetCloseOrderSide() const override;
 
-		virtual double GetRealizedPnl() const override;
-		virtual double GetRealizedPnlRatio() const override;
-		virtual double GetUnrealizedPnl() const override;
+		virtual trdk::Volume GetRealizedPnl() const override;
+		virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
+		virtual trdk::Volume GetUnrealizedPnl() const override;
 
 		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
 		virtual trdk::ScaledPrice GetMarketClosePrice() const override;
@@ -560,9 +560,9 @@ namespace trdk {
 		virtual trdk::OrderSide GetOpenOrderSide() const override;
 		virtual trdk::OrderSide GetCloseOrderSide() const override;
 
-		virtual double GetRealizedPnl() const override;
-		virtual double GetRealizedPnlRatio() const override;
-		virtual double GetUnrealizedPnl() const override;
+		virtual trdk::Volume GetRealizedPnl() const override;
+		virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
+		virtual trdk::Volume GetUnrealizedPnl() const override;
 
 		virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
 		virtual trdk::ScaledPrice GetMarketClosePrice() const override;

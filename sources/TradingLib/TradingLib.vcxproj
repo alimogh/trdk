@@ -263,10 +263,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="StopLoss.cpp" />
+    <ClCompile Include="StopOrder.cpp" />
+    <ClCompile Include="TrailingStop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="StopLoss.hpp" />
+    <ClInclude Include="StopOrder.hpp" />
+    <ClInclude Include="TrailingStop.hpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
