@@ -187,7 +187,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 			"type = %1%\n"
 			"id = {00000000-0000-0000-0000-000000000001}\n"
 			"history = yes\n"
-			"period = 10");
+			"period = 10\n"
+			"log = none");
 	settingsString % Policy::GetType();
 	const lib::IniString settingsForBars(
 		settingsString.str() + "\nsource = close price");
@@ -365,7 +366,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 			"type = %1%\n"
 			"id = {00000000-0000-0000-0000-000000000001}\n"
 			"history = no\n"
-			"period = 10");
+			"period = 10\n"
+			"log = none");
 	settingsString % Policy::GetType();
 	const lib::IniString settingsForBars(
 		settingsString.str() + "\nsource = close price");
@@ -505,7 +507,8 @@ TEST(MovingAverageServiceTypedTest, DropCopy) {
 			"type = simple\n"
 			"source = last price\n"
 			"history = no\n"
-			"period = 2");
+			"period = 2\n"
+			"log = none");
 
 	MockDropCopy dropCopy;
 
