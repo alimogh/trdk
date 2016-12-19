@@ -107,7 +107,7 @@ namespace boost { namespace accumulators {
 		  * is suitable only for Bollinger Bands.
 		  */
 		template<typename Sample>
-		struct StandardDeviationForBb : accumulator_base {
+		struct StandardDeviationForBb : public accumulator_base {
 
 			typedef Sample result_type;
 
