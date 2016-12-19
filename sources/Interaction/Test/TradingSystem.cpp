@@ -340,15 +340,18 @@ private:
 
 				if (ExecuteOrder(order)) {
 					m_self->GetContext().SyncDispatching();
+					m_orders.erase(m_orders.begin());
 					{
 						const Lock lock(m_mutex);
 						LoadNewOrders();
 					}
 				} else {
-					const Lock lock(m_mutex);
-					m_orders.emplace(newTime, std::move(order));
+					{
+						const Lock lock(m_mutex);
+						m_orders.emplace(newTime, std::move(order));
+					}
+					m_orders.erase(m_orders.begin());
 				}
-				m_orders.erase(m_orders.begin());
 
 				hasUpdates = true;
 		
@@ -429,9 +432,6 @@ private:
 			AssertLe(
 				m_self->GetContext().GetCurrentTime(),
 				order.first);
-			Assert(
-				m_orders.empty()
-				|| m_orders.begin()->first < order.first);
 			m_orders.emplace(std::move(order.first), std::move(order.second));
 			hasUpdates = true;
 		}
