@@ -96,7 +96,7 @@ namespace trdk { namespace Services {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 

@@ -10,9 +10,11 @@
 
 #include "Prec.hpp"
 #include "BollingerBandsService.hpp"
+#include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
+namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -61,7 +63,7 @@ namespace { namespace Configuration {
 			const IniSectionRef &configuration,
 			BollingerBandsService &service) {
 		const auto &result
-			= configuration.ReadTypedKey<uintmax_t>(Keys::period, 20);
+			= configuration.ReadTypedKey<uintmax_t>(Keys::period);
 		if (result <= 1) {
 			service.GetLog().Error(
 				"Wrong period specified (%1% frames): must be greater than 1.",
@@ -75,7 +77,7 @@ namespace { namespace Configuration {
 			const IniSectionRef &configuration,
 			BollingerBandsService &service) {
 		const auto &result
-			= configuration.ReadTypedKey<uintmax_t>(Keys::deviation, 2);
+			= configuration.ReadTypedKey<uintmax_t>(Keys::deviation);
 		if (result <= 0) {
 			service.GetLog().Error(
 				"Wrong deviation specified (%1%): must be greater than 0.",
@@ -167,7 +169,7 @@ public:
 
 	BollingerBandsService &m_service;
 
-	boost::atomic_bool m_isEmpty;
+	bool m_isEmpty;
 
 	const size_t m_period;
 	const size_t m_deviation;
@@ -178,6 +180,8 @@ public:
 
 	boost::optional<Point> m_lastValue;
 	std::unique_ptr<History> m_history;
+
+	std::ofstream m_pointsLog;
 
 public:
 
@@ -198,6 +202,20 @@ public:
 			Configuration::Keys::period, m_period,
 			Configuration::Keys::deviation, m_deviation,
 			Configuration::Keys::isHistoryOn, m_history ? "yes" : "no");
+		{
+			const std::string logType = configuration.ReadKey("log");
+			if (boost::iequals(logType, "none")) {
+				m_service.GetLog().Info("Values logging is disabled.");
+			} else if (!boost::iequals(logType, "csv")) {
+				m_service.GetLog().Error(
+					"Wrong values log type settings: \"%1%\". Unknown type."
+						" Supported: none and CSV.",
+					logType);
+				throw Error("Wrong values log type");
+			} else {
+				OpenPointsLog();
+			}
+		}
 	}
 
 	void CheckHistoryIndex(size_t index) const {
@@ -223,6 +241,64 @@ public:
 		return *result;
 	}
 
+	void OpenPointsLog() {
+
+		Assert(!m_pointsLog.is_open());
+
+		const fs::path path
+			= m_service.GetContext().GetSettings().GetLogsInstanceDir()
+			/ "BollingerBands"
+			/ (
+					boost::format("%1%__%2%_%3%.csv")
+						% m_period
+						% m_service.GetId()
+						% m_service.GetInstanceId())
+				.str();
+
+		fs::create_directories(path.branch_path());
+		m_pointsLog.open(
+			path.string(),
+			std::ios::out | std::ios::ate | std::ios::app);
+		if (!m_pointsLog.is_open()) {
+			m_service.GetLog().Error("Failed to open log file %1%", path);
+			throw Error("Failed to open log file");
+		}
+
+		m_pointsLog << "Date,Time,Source,MA,Low,Hight" << std::endl;
+
+		m_pointsLog << std::setfill('0');
+
+		m_service.GetLog().Info("Logging into %1%.", path);
+
+	}
+
+	void LogEmptyPoint(const MovingAverageService::Point &ma) {
+		if (!m_pointsLog.is_open()) {
+			return;
+		}
+		m_pointsLog
+			<< ma.time.date()
+			<< ',' << ma.time.time_of_day()
+			<< ',' << ma.source
+			<< ',' << ma.value
+			<< ",,"
+			<< std::endl;
+	}
+
+	void LogPoint(const MovingAverageService::Point &ma, const Point &point) {
+		if (!m_pointsLog.is_open()) {
+			return;
+		}
+		m_pointsLog
+			<< ma.time.date()
+			<< ',' << ma.time.time_of_day()
+			<< ',' << ma.source
+			<< ',' << ma.value
+			<< ',' << point.low
+			<< ',' << point.high
+			<< std::endl;
+	}
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,15 +310,16 @@ BollingerBandsService::BollingerBandsService(
 	: Service(
 		context,
 		boost::uuids::string_generator()(
-			"{64BCD2BA-4FF6-4E0F-9C64-4E4DAD0AE9B7}"),
+			"{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}"),
 		"BollingerBandsService",
 		tag,
-		configuration) {
-	m_pimpl = new Implementation(*this, configuration);
+		configuration)
+	, m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {
+	//...//
 }
 
 BollingerBandsService::~BollingerBandsService() {
-	delete m_pimpl;
+	//...//
 }
 
 bool BollingerBandsService::OnServiceDataUpdate(
@@ -258,25 +335,28 @@ bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
 	// Called from dispatcher, locking is not required.
 
 	if (IsZero(ma.source)) {
+		m_pimpl->LogEmptyPoint(ma);
 		return false;
 	}
 	m_pimpl->m_stat(ma.source);
 
 	if (accs::rolling_count(m_pimpl->m_stat) < m_pimpl->m_period) {
+		m_pimpl->LogEmptyPoint(ma);
  		return false;
  	}
 
 	const auto &stDev = accs::standardDeviationForBb(m_pimpl->m_stat);
-	const Point newPoint = {
+	m_pimpl->m_lastValue = {
 		ma.source,
  		ma.value + (m_pimpl->m_deviation * stDev),
  		ma.value - (m_pimpl->m_deviation * stDev)
 	};
-	m_pimpl->m_lastValue = newPoint;
 	m_pimpl->m_isEmpty = false;
 
+	m_pimpl->LogPoint(ma, *m_pimpl->m_lastValue);
+
 	if (m_pimpl->m_history) {
-		m_pimpl->m_history->PushBack(newPoint);
+		m_pimpl->m_history->PushBack(*m_pimpl->m_lastValue);
 	}
 
 	return true;
