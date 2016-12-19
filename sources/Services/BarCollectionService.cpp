@@ -898,7 +898,7 @@ void BarCollectionService::OnSecurityStart(
 
 	if (m_pimpl->m_countedBarSize) {
 		request.RequestNumberOfTicks(m_pimpl->m_countedBarSize);
-	} else {
+	} else if (!GetContext().GetSettings().IsReplayMode()) {
 		auto time = GetContext().GetCurrentTime();
 		time -= (m_pimpl->m_timedBarSize * int(m_pimpl->m_numberOfHistoryBars));
 		request.RequestTime(time);
