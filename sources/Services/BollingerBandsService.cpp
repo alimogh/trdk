@@ -15,6 +15,7 @@
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
 namespace fs = boost::filesystem;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -73,18 +74,18 @@ namespace { namespace Configuration {
 		return size_t(result);
 	}
 
-	size_t LoadDeviationSetting(
+	double LoadDeviationSetting(
 			const IniSectionRef &configuration,
 			BollingerBandsService &service) {
 		const auto &result
-			= configuration.ReadTypedKey<uintmax_t>(Keys::deviation);
-		if (result <= 0) {
+			= configuration.ReadTypedKey<double>(Keys::deviation);
+		if (result < 0 || IsZero(result)) {
 			service.GetLog().Error(
 				"Wrong deviation specified (%1%): must be greater than 0.",
 				result);
 			throw Exception("Wrong deviation specified for Bollinger Bands");
 		}
-		return size_t(result);
+		return result;
 	}
 
 	History * LoadHistorySetting(
@@ -169,41 +170,47 @@ public:
 
 	BollingerBandsService &m_service;
 
-	bool m_isEmpty;
-
 	const size_t m_period;
-	const size_t m_deviation;
+	const double m_deviation;
 	accs::accumulator_set<
 			double,
 			accs::stats<accs::tag::StandardDeviationForBb>>
 		m_stat;
 
 	boost::optional<Point> m_lastValue;
+	size_t m_lastValueNo;
+
 	std::unique_ptr<History> m_history;
 
 	std::ofstream m_pointsLog;
+
+	const uuids::uuid m_lowValuesId;
+	const uuids::uuid m_highValuesId;
 
 public:
 
 	explicit Implementation(
 			BollingerBandsService &service,
-			const IniSectionRef &configuration)
-		: m_service(service)
-		, m_isEmpty(true)
-		, m_period(
-			Configuration::LoadPeriodSetting(configuration, m_service))
-		, m_deviation(
-			Configuration::LoadDeviationSetting(configuration, m_service))
-		, m_stat(accs::tag::rolling_window::window_size = m_period)
-		, m_history(
-				Configuration::LoadHistorySetting(configuration, m_service)) {
+			const IniSectionRef &conf)
+		:	m_service(service)
+		,	m_period(Configuration::LoadPeriodSetting(conf, m_service))
+		,	m_deviation(Configuration::LoadDeviationSetting(conf, m_service))
+		,	m_stat(accs::tag::rolling_window::window_size = m_period)
+		,	m_lastValueNo(0)
+		,	m_history(Configuration::LoadHistorySetting(conf, m_service))
+		,	m_lowValuesId(uuids::string_generator()(conf.ReadKey("id.low")))
+		,	m_highValuesId(uuids::string_generator()(conf.ReadKey("id.high"))) {
+
 		m_service.GetLog().Info(
-			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%.",
+			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%"
+				", channels UUIDs: %7%/%8%.",
 			Configuration::Keys::period, m_period,
 			Configuration::Keys::deviation, m_deviation,
-			Configuration::Keys::isHistoryOn, m_history ? "yes" : "no");
+			Configuration::Keys::isHistoryOn, m_history ? "yes" : "no",
+			m_lowValuesId,
+			m_highValuesId);
 		{
-			const std::string logType = configuration.ReadKey("log");
+			const std::string logType = conf.ReadKey("log");
 			if (boost::iequals(logType, "none")) {
 				m_service.GetLog().Info("Values logging is disabled.");
 			} else if (!boost::iequals(logType, "csv")) {
@@ -285,15 +292,15 @@ public:
 			<< std::endl;
 	}
 
-	void LogPoint(const MovingAverageService::Point &ma, const Point &point) {
+	void LogPoint(const Point &point) {
 		if (!m_pointsLog.is_open()) {
 			return;
 		}
 		m_pointsLog
-			<< ma.time.date()
-			<< ',' << ma.time.time_of_day()
-			<< ',' << ma.source
-			<< ',' << ma.value
+			<< point.time.date()
+			<< ',' << point.time.time_of_day()
+			<< ',' << point.source
+			<< ',' << point.ma
 			<< ',' << point.low
 			<< ',' << point.high
 			<< std::endl;
@@ -309,7 +316,7 @@ BollingerBandsService::BollingerBandsService(
 		const IniSectionRef &configuration)
 	: Service(
 		context,
-		boost::uuids::string_generator()(
+		uuids::string_generator()(
 			"{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}"),
 		"BollingerBandsService",
 		tag,
@@ -320,6 +327,14 @@ BollingerBandsService::BollingerBandsService(
 
 BollingerBandsService::~BollingerBandsService() {
 	//...//
+}
+
+const uuids::uuid & BollingerBandsService::GetLowValuesId() const {
+	return m_pimpl->m_lowValuesId;
+}
+
+const uuids::uuid & BollingerBandsService::GetHighValuesId() const {
+	return m_pimpl->m_highValuesId;
 }
 
 bool BollingerBandsService::OnServiceDataUpdate(
@@ -347,13 +362,15 @@ bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
 
 	const auto &stDev = accs::standardDeviationForBb(m_pimpl->m_stat);
 	m_pimpl->m_lastValue = {
+		ma.time,
 		ma.source,
+		ma.value,
  		ma.value + (m_pimpl->m_deviation * stDev),
  		ma.value - (m_pimpl->m_deviation * stDev)
 	};
-	m_pimpl->m_isEmpty = false;
+	++m_pimpl->m_lastValueNo;
 
-	m_pimpl->LogPoint(ma, *m_pimpl->m_lastValue);
+	m_pimpl->LogPoint(*m_pimpl->m_lastValue);
 
 	if (m_pimpl->m_history) {
 		m_pimpl->m_history->PushBack(*m_pimpl->m_lastValue);
@@ -364,7 +381,7 @@ bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
 }
 
 bool BollingerBandsService::IsEmpty() const {
-	return m_pimpl->m_isEmpty;
+	return m_pimpl->m_lastValueNo == 0;
 }
 
 BollingerBandsService::Point BollingerBandsService::GetLastPoint() const {
@@ -394,6 +411,33 @@ BollingerBandsService::GetHistoryPointByReversedIndex(
 		const {
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[m_pimpl->m_history->GetSize() - index - 1];
+}
+
+void BollingerBandsService::DropLastPointCopy(
+		const DropCopy::DataSourceInstanceId &lowValueId,
+		const DropCopy::DataSourceInstanceId &highValueId)
+		const {
+
+	if (IsEmpty()) {
+		throw ValueDoesNotExistError("BollingerBandsService is empty");
+	}
+
+	GetContext().InvokeDropCopy(
+		[this, &lowValueId, &highValueId](DropCopy &dropCopy) {
+			AssertLt(0, m_pimpl->m_lastValueNo);
+			const auto recordNo = m_pimpl->m_lastValueNo - 1;
+			dropCopy.CopyAbstractData(
+				lowValueId,
+				recordNo,
+				m_pimpl->m_lastValue->time,
+				m_pimpl->m_lastValue->low);
+			dropCopy.CopyAbstractData(
+				lowValueId,
+				recordNo,
+				m_pimpl->m_lastValue->time,
+				m_pimpl->m_lastValue->high);
+		});
+	
 }
 
 ////////////////////////////////////////////////////////////////////////////////

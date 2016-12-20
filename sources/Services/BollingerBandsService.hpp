@@ -40,7 +40,9 @@ namespace trdk { namespace Services {
 
 		//! Value data point.
  		struct Point {
+			boost::posix_time::ptime time;
 			double source;
+			double ma;
 			double high;
 			double low;
 		};
@@ -54,6 +56,19 @@ namespace trdk { namespace Services {
 		virtual ~BollingerBandsService();
 
 	public:
+
+		//! UUID for values channel "low value".
+		/** @sa GetId
+		  * @sa GetHighValuesId
+		  * @sa DropLastPointCopy
+		  */
+		const boost::uuids::uuid & GetLowValuesId() const;
+		//! UUID for values channel "high value".
+		/** @sa GetId
+		  * @sa GetLowValuesId
+		  * @sa DropLastPointCopy
+		  */
+		const boost::uuids::uuid & GetHighValuesId() const;
 
 		bool IsEmpty() const;
 
@@ -92,6 +107,18 @@ namespace trdk { namespace Services {
 	public:
 
 		bool OnNewData(const trdk::Services::MovingAverageService::Point &);
+
+	public:
+
+		//! Drops last value point copy.
+		/** @sa GetLowValuesId
+		  * @sa GetHighValuesId
+		  * @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
+		  */
+		void DropLastPointCopy(
+				const trdk::DropCopy::DataSourceInstanceId &lowValueId,
+				const trdk::DropCopy::DataSourceInstanceId &highValueId)
+				const;
 
 	private:
 
