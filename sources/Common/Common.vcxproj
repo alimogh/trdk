@@ -319,6 +319,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Accumulators.hpp" />
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />

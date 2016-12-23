@@ -12,15 +12,17 @@
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
 #include "Core/Settings.hpp"
+#include "Common/Accumulators.hpp"
+
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Services;
 
 namespace pt = boost::posix_time;
 namespace accs = boost::accumulators;
 namespace uuids = boost::uuids;
 namespace fs = boost::filesystem;
-
-using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Services;
+namespace ma = trdk::Lib::Accumulators::MovingAverage;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -138,137 +140,6 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace boost { namespace accumulators {
-
-	namespace impl {
-
-		template<typename Sample>
-		struct Ema : accumulator_base {
-
-			typedef Sample result_type;
-
-			template<typename Args>
-			Ema(const Args &args)
-				: m_windowSize(args[rolling_window_size])
-				, m_smoothingConstant(2 / (double(m_windowSize) + 1))
-				, m_isStarted(false)
-				, m_sum(0) {
-				//...//
-			}
-
-			template<typename Args>
-			void operator ()(const Args &args) {
-				const auto &currentCount = rolling_count(args);
-				if (currentCount < m_windowSize) {
-					return;
-				}
-				if (!m_isStarted) {
-					m_sum = rolling_mean(args);
-					m_isStarted = true;
-					return;
-				}
-				m_sum
-					= (args[sample] * m_smoothingConstant)
-					+ (m_sum * (1 - m_smoothingConstant));
- 			}
-
-			result_type result(dont_care) const {
-				return m_sum;
-			}
-
-		private:
-			
-			uintmax_t m_windowSize;
-			double m_smoothingConstant;
-			bool m_isStarted;
-			result_type m_sum;
-		
-		};
-
-	}
-
-	namespace tag {
-		struct Ema : depends_on<rolling_mean> {
-			typedef accumulators::impl::Ema<mpl::_1> impl;
-		};
-	}
-
-	namespace extract {
-		const extractor<tag::Ema> ema = {
-			//...//
-		};
-		BOOST_ACCUMULATORS_IGNORE_GLOBAL(ema)
-	}
-
-	using extract::ema;
-
-} }
-
-
-namespace boost { namespace accumulators {
-
-	namespace impl {
-
-		template<typename Sample>
-		struct SmMa : accumulator_base {
-
-			typedef Sample result_type;
-
-			template<typename Args>
-			SmMa(const Args &args)
-				: m_windowSize(args[rolling_window_size])
-				, m_val(0) {
-				//...//
-			}
-
-			template<typename Args>
-			void operator ()(const Args &args) {
-				const auto &currentCount = rolling_count(args) + 1;
-				if (currentCount <= m_windowSize) {
-					if (currentCount == m_windowSize) {
-						m_val = rolling_mean(args);
-					}
-					return;
-				}
-				result_type val = m_val * m_windowSize;
-				val -= m_val;
-				val += args[sample];
-				val /= m_windowSize;
-				m_val = val;
- 			}
-
-			result_type result(dont_care) const {
-				return m_val;
-			}
-
-		private:
-			
-			uintmax_t m_windowSize;
-			result_type m_val;
-		
-		};
-
-	}
-
-	namespace tag {
-		struct SmMa : depends_on<rolling_mean> {
-			typedef accumulators::impl::SmMa<mpl::_1> impl;
-		};
-	}
-
-	namespace extract {
-		const extractor<tag::SmMa> smMa = {
-			//...//
-		};
-		BOOST_ACCUMULATORS_IGNORE_GLOBAL(smMa)
-	}
-
-	using extract::smMa;
-
-} }
-
-////////////////////////////////////////////////////////////////////////////////
-
 namespace {
 
 	enum MaType {
@@ -290,15 +161,7 @@ namespace {
 		return result;
 	}
 
-	//! Simple Moving Average
-	typedef accs::accumulator_set<double, accs::stats<accs::tag::rolling_mean>>
-		SmaAcc;
-	//! Exponential Moving Average
-	typedef accs::accumulator_set<double, accs::stats<accs::tag::Ema>> EmaAcc;
-		//! Smoothed Moving Average
-	typedef accs::accumulator_set<double, accs::stats<accs::tag::SmMa>> SmMaAcc;
-
-	typedef boost::variant<SmaAcc, EmaAcc, SmMaAcc> Acc;
+	typedef boost::variant<ma::Simple, ma::Exponential, ma::Smoothed> Acc;
 
 	class AccumVisitor : public boost::static_visitor<void> {
 	public:
@@ -323,14 +186,14 @@ namespace {
 	};
 
 	struct GetValueVisitor : public boost::static_visitor<double> {
-		double operator ()(SmaAcc &acc) const {
+		double operator ()(ma::Simple &acc) const {
 			return accs::rolling_mean(acc);
 		}
-		double operator ()(EmaAcc &acc) const {
+		double operator ()(ma::Exponential &acc) const {
 			return accs::ema(acc);
 		}
-		double operator ()(SmMaAcc &acc) const {
-			return accs::smMa(acc);
+		double operator ()(ma::Smoothed &acc) const {
+			return accs::smma(acc);
 		}
 	};
 
@@ -415,21 +278,21 @@ public:
 			switch (type) {
 				case MA_TYPE_SIMPLE:
 					{
-						const SmaAcc acc(
+						const ma::Simple acc(
 							accs::tag::rolling_window::window_size = m_period);
 						m_acc.reset(new Acc(acc));
 					}
 					break;
 				case MA_TYPE_EXPONENTIAL:
 					{
-						const EmaAcc acc(
+						const ma::Exponential acc(
 							accs::tag::rolling_window::window_size = m_period);
 						m_acc.reset(new Acc(acc));
 					}
 					break;
 				case MA_TYPE_SMOOTHED:
 					{
-						const SmMaAcc acc(
+						const ma::Smoothed acc(
 							accs::tag::rolling_window::window_size = m_period);
 						m_acc.reset(new Acc(acc));
 					}

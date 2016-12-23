@@ -151,5 +151,8 @@
     <ClInclude Include="HttpStreamClient.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Accumulators.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
