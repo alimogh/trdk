@@ -91,7 +91,7 @@ Dispatcher::Dispatcher(Engine::Context &context)
 	, m_newTrades("Trades", m_context)
 	, m_positionsUpdates("Positions", m_context)
 	, m_brokerPositionsUpdates("Broker positions", m_context)
-	, m_newBars("Bars", m_context)
+	, m_newBars("System bars", m_context)
 	, m_bookUpdateTicks("Book update ticks", m_context) {
 
 	m_queues.emplace_back(&m_level1Updates);
