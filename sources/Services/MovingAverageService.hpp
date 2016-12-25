@@ -66,7 +66,7 @@ namespace trdk { namespace Services {
 		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
 		  */
 		void DropLastPointCopy(
-				const trdk::DropCopy::DataSourceInstanceId &)
+				const trdk::DropCopyDataSourceInstanceId &)
 				const;
 
 	public:

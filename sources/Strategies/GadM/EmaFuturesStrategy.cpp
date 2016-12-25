@@ -252,7 +252,7 @@ namespace EmaFuturesStrategy {
 				= dynamic_cast<const MovingAverageService *>(&service);
 			if (maService) {
 
-				DropCopy::DataSourceInstanceId dropCopySourceId
+				DropCopyDataSourceInstanceId dropCopySourceId
 					 = DropCopy::nDataSourceInstanceId;
 				GetContext().InvokeDropCopy(
 					[this, &dropCopySourceId, maService](DropCopy &dropCopy) {
@@ -1106,7 +1106,7 @@ namespace EmaFuturesStrategy {
 		Security *m_security;
 
 		const BarService *m_barService;
-		DropCopy::DataSourceInstanceId m_barServiceId;
+		DropCopyDataSourceInstanceId m_barServiceId;
 
 		SlowFastEmas m_ema;
 		Direction m_fastEmaDirection;

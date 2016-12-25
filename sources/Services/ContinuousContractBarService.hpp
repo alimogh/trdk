@@ -43,10 +43,10 @@ namespace trdk { namespace Services {
 		virtual Bar GetLastBar() const;
 
 		virtual void DropLastBarCopy(
-				const trdk::DropCopy::DataSourceInstanceId &)
+				const trdk::DropCopyDataSourceInstanceId &)
 				const;
 		virtual void DropUncompletedBarCopy(
-				const trdk::DropCopy::DataSourceInstanceId &)
+				const trdk::DropCopyDataSourceInstanceId &)
 				const;
 
 	public:

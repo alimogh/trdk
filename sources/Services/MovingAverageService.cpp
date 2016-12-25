@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "MovingAverageService.hpp"
 #include "BarService.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 #include "Common/Accumulators.hpp"
 
@@ -257,9 +258,9 @@ public:
 			Configuration::Keys::period);
 		if (m_period <= 1) {
 			m_service.GetLog().Error(
-				"Wrong period specified (%1% frames): must be greater than 1.",
+				"Wrong period (%1% frames): must be greater than 1.",
 				m_period);
-			throw Exception("Wrong period specified for Moving Average");
+			throw Exception("Wrong Moving Average period");
 		}
 
 		//! @todo to const std::map<MaType, std::string> &types in new MSVC 2012
@@ -548,7 +549,7 @@ MovingAverageService::Point MovingAverageService::GetLastPoint() const {
 }
 
 void MovingAverageService::DropLastPointCopy(
-		const DropCopy::DataSourceInstanceId &sourceId)
+		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	
 	if (IsEmpty()) {

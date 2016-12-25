@@ -285,20 +285,20 @@ void EngineServer::Service::DropCopy::Dump() {
 	m_queue.Dump();
 }
 
-DropCopy::StrategyInstanceId
+DropCopyStrategyInstanceId
 EngineServer::Service::DropCopy::RegisterStrategyInstance(
 		const Strategy &strategy) {
 	return m_service.RegisterStrategyInstance(strategy);
 }
 
-DropCopy::StrategyInstanceId
+DropCopyStrategyInstanceId
 EngineServer::Service::DropCopy::ContinueStrategyInstance(
 		const Strategy &strategy,
 		const pt::ptime &time) {
 	return m_service.ContinueStrategyInstance(strategy, time);
 }
 
-EngineServer::Service::DropCopy::DataSourceInstanceId
+DropCopyDataSourceInstanceId
 EngineServer::Service::DropCopy::RegisterDataSourceInstance(
 		const Strategy &strategy,
 		const uuids::uuid &type,
@@ -489,7 +489,7 @@ void EngineServer::Service::DropCopy::CopyBook(
 }
 
 void EngineServer::Service::DropCopy::CopyBar(
-		const DropCopy::DataSourceInstanceId &sourceId,
+		const DropCopyDataSourceInstanceId &sourceId,
 		size_t index,
 		const pt::ptime &time,
 		double open,
@@ -516,7 +516,7 @@ void EngineServer::Service::DropCopy::CopyBar(
 }
 
 void EngineServer::Service::DropCopy::CopyAbstractData(
-		const DataSourceInstanceId &source,
+		const DropCopyDataSourceInstanceId &source,
 		size_t index,
 		const pt::ptime &time,
 		double value) {
@@ -1263,7 +1263,7 @@ void EngineServer::Service::OnContextStateChanged(
 
 }
 
-DropCopy::StrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
+DropCopyStrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
 		const Strategy &strategy) {
 
 	DropCopyRecord record;
@@ -1273,7 +1273,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
 	record["trading_mode"] = strategy.GetTradingMode();
 	record["start_time"] = strategy.GetContext().GetStartTime();
 
-	const auto &result = Request<DropCopy::StrategyInstanceId>(
+	const auto &result = Request<DropCopyStrategyInstanceId>(
 		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::registerStrategyInstance,
@@ -1286,7 +1286,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
 
 }
 
-DropCopy::StrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
+DropCopyStrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
 		const Strategy &strategy,
 		const pt::ptime &time) {
 
@@ -1296,7 +1296,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
 	record["previous_id"] = strategy.GetDropCopyInstanceId();
 	record["start_time"] = time;
 
-	const auto &result = Request<DropCopy::StrategyInstanceId>(
+	const auto &result = Request<DropCopyStrategyInstanceId>(
 		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::continueStrategyInstance,
@@ -1309,8 +1309,7 @@ DropCopy::StrategyInstanceId EngineServer::Service::ContinueStrategyInstance(
 
 }
 
-EngineServer::Service::DropCopy::DataSourceInstanceId
-EngineServer::Service::RegisterDataSourceInstance(
+DropCopyDataSourceInstanceId EngineServer::Service::RegisterDataSourceInstance(
 		const Strategy &strategy,
 		const uuids::uuid &type,
 		const uuids::uuid &id) {
@@ -1320,7 +1319,7 @@ EngineServer::Service::RegisterDataSourceInstance(
 	record["data_source_id"] = id;
 	record["strategy_instance_id"] = strategy.GetDropCopyInstanceId();
 
-	const auto &result = Request<DropCopy::DataSourceInstanceId>(
+	const auto &result = Request<DropCopyDataSourceInstanceId>(
 		m_dropCopy->TakeRecordNumber(),
 		1,
 		&Topics::registerDataSourceInstance,
@@ -1478,7 +1477,7 @@ bool EngineServer::Service::StoreAbstractData(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
-		const DropCopy::DataSourceInstanceId &source,
+		const DropCopyDataSourceInstanceId &source,
 		size_t index,
 		const pt::ptime &time,
 		double value) {
@@ -1502,7 +1501,7 @@ bool EngineServer::Service::StoreBar(
 		size_t recordNumber,
 		size_t storeAttemptNo,
 		bool dump,
-		const DropCopy::DataSourceInstanceId &sourceId,
+		const DropCopyDataSourceInstanceId &sourceId,
 		size_t index,
 		const pt::ptime &time,
 		double open,

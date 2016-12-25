@@ -364,10 +364,12 @@
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />
+    <ClCompile Include="..\Services\RelativeStrengthIndexServiceUTest.cpp" />
     <ClCompile Include="DummyContext.cpp" />
     <ClCompile Include="DummyMarketDataSource.cpp" />
     <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
     <ClCompile Include="FuncTestList.cpp" />
+    <ClCompile Include="MockBarService.cpp" />
     <ClCompile Include="MockContext.cpp" />
     <ClCompile Include="MockMarketDataSource.cpp" />
     <ClCompile Include="..\Core\PriceBookUTest.cpp" />

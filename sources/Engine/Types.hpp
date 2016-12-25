@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Core/DropCopy.hpp"
-
 namespace trdk { namespace Engine {
 
 	struct TradingSystemHolder {

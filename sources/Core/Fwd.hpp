@@ -21,6 +21,8 @@ namespace trdk {
 	class TradingSystem;
 	class MarketDataSource;
 
+	typedef std::int32_t DropCopyStrategyInstanceId;
+	typedef std::int32_t DropCopyDataSourceInstanceId;
 	class DropCopy;
 
 	class Module;

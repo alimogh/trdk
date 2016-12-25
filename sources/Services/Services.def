@@ -4,3 +4,4 @@ EXPORTS
 	CreateContinuousContractBarService
 	CreateMovingAverageService
 	CreateBollingerBandsService
+	CreateRelativeStrengthIndexService

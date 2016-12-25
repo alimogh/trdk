@@ -199,14 +199,14 @@ namespace trdk { namespace EngineServer {
 			virtual void Flush();
 			virtual void Dump();
 		public:
-			virtual trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+			virtual trdk::DropCopyStrategyInstanceId RegisterStrategyInstance(
 					const trdk::Strategy &)
 					override;
-			virtual trdk::DropCopy::StrategyInstanceId ContinueStrategyInstance(
+			virtual trdk::DropCopyStrategyInstanceId ContinueStrategyInstance(
 					const Strategy &,
 					const boost::posix_time::ptime &)
 					override;
-			virtual DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+			virtual DropCopyDataSourceInstanceId RegisterDataSourceInstance(
 					const trdk::Strategy &,
 					const boost::uuids::uuid &type,
 					const boost::uuids::uuid &id)
@@ -261,7 +261,7 @@ namespace trdk { namespace EngineServer {
 					const trdk::PriceBook &)
 					override;
 			virtual void CopyBar(
-					const trdk::DropCopy::DataSourceInstanceId &,
+					const trdk::DropCopyDataSourceInstanceId &,
 					size_t index,
 					const boost::posix_time::ptime &,
 					double open,
@@ -270,7 +270,7 @@ namespace trdk { namespace EngineServer {
 					double close)
 					override;
 			virtual void CopyAbstractData(
-					const trdk::DropCopy::DataSourceInstanceId &,
+					const trdk::DropCopyDataSourceInstanceId &,
 					size_t index,
 					const boost::posix_time::ptime &,
 					double value)
@@ -283,7 +283,6 @@ namespace trdk { namespace EngineServer {
 			boost::atomic_bool m_isSecondaryDataDisabled;
 		};
 
-		//! @sa https://mbcm.robotdk.com:8443/display/API/Constants
 		enum EngineState {
 			ENGINE_STATE_STARTED = 1100,
 			ENGINE_STATE_STARTING = 1200,
@@ -334,12 +333,12 @@ namespace trdk { namespace EngineServer {
 
 	private:
 
-		trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+		trdk::DropCopyStrategyInstanceId RegisterStrategyInstance(
 				const Strategy &);
-		DropCopy::StrategyInstanceId ContinueStrategyInstance(
+		DropCopyStrategyInstanceId ContinueStrategyInstance(
 				const Strategy &,
 				const boost::posix_time::ptime &);
-		trdk::DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+		trdk::DropCopyDataSourceInstanceId RegisterDataSourceInstance(
 				const Strategy &,
 				const boost::uuids::uuid &type,
 				const boost::uuids::uuid &id);
@@ -392,7 +391,7 @@ namespace trdk { namespace EngineServer {
 				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
-				const trdk::DropCopy::DataSourceInstanceId &,
+				const trdk::DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double value);
@@ -401,7 +400,7 @@ namespace trdk { namespace EngineServer {
 				size_t recordNumber,
 				size_t storeAttemptNo,
 				bool dump,
-				const DropCopy::DataSourceInstanceId &,
+				const DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double open,

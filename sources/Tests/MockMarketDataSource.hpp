@@ -17,10 +17,7 @@ namespace trdk { namespace Tests {
 
 	public:
 
-		explicit MockMarketDataSource(
-				size_t index,
-				trdk::Context &,
-				const std::string &tag);
+		MockMarketDataSource();
 		virtual ~MockMarketDataSource();
 
 	public:

@@ -41,10 +41,10 @@ namespace trdk { namespace Services {
 		//! Value data point.
  		struct Point {
 			boost::posix_time::ptime time;
-			double source;
-			double ma;
-			double high;
-			double low;
+			trdk::Lib::Double source;
+			trdk::Lib::Double ma;
+			trdk::Lib::Double high;
+			trdk::Lib::Double low;
 		};
 
 	public:
@@ -116,8 +116,8 @@ namespace trdk { namespace Services {
 		  * @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
 		  */
 		void DropLastPointCopy(
-				const trdk::DropCopy::DataSourceInstanceId &lowValueId,
-				const trdk::DropCopy::DataSourceInstanceId &highValueId)
+				const trdk::DropCopyDataSourceInstanceId &lowValueId,
+				const trdk::DropCopyDataSourceInstanceId &highValueId)
 				const;
 
 	private:

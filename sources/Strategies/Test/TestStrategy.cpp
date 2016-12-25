@@ -16,6 +16,7 @@
 #include "Core/PriceBook.hpp"
 #include "Core/Position.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/DropCopy.hpp"
 #include "Api.h"
 
 using namespace trdk;

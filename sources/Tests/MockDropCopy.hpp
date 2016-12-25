@@ -33,15 +33,15 @@ namespace trdk { namespace Tests {
 
 		MOCK_METHOD1(
 			RegisterStrategyInstance,
-			StrategyInstanceId(const trdk::Strategy &));
+			DropCopyStrategyInstanceId(const trdk::Strategy &));
 		MOCK_METHOD2(
 			ContinueStrategyInstance,
-			StrategyInstanceId(
+			DropCopyStrategyInstanceId(
 				const trdk::Strategy &,
 				const boost::posix_time::ptime &));
 		MOCK_METHOD3(
 			RegisterDataSourceInstance,
-			trdk::DropCopy::DataSourceInstanceId(
+			DropCopyDataSourceInstanceId(
 				const trdk::Strategy &,
 				const boost::uuids::uuid &type,
 				const boost::uuids::uuid &id));
@@ -114,7 +114,7 @@ namespace trdk { namespace Tests {
 		MOCK_METHOD7(
 			CopyBar,
 			void(
-				const trdk::DropCopy::DataSourceInstanceId &,
+				const trdk::DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double,
@@ -124,7 +124,7 @@ namespace trdk { namespace Tests {
 		MOCK_METHOD4(
 			CopyAbstractData,
 			void(
-				const trdk::DropCopy::DataSourceInstanceId &,
+				const trdk::DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double value));

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Core/Service.hpp"
-#include "Core/DropCopy.hpp"
 #include "Api.h"
 
 namespace trdk { namespace Services {
@@ -102,11 +101,11 @@ namespace trdk { namespace Services {
 		virtual Bar GetLastBar() const = 0;
 
 		virtual void DropLastBarCopy(
-				const trdk::DropCopy::DataSourceInstanceId &)
+				const trdk::DropCopyDataSourceInstanceId &)
 				const
 			= 0;
 		virtual void DropUncompletedBarCopy(
-				const trdk::DropCopy::DataSourceInstanceId &)
+				const trdk::DropCopyDataSourceInstanceId &)
 				const
 			= 0;
 

@@ -18,21 +18,26 @@ namespace trdk { namespace Tests {
 
 	public:
 
-		MockBarService()
-			: BarService(
-				*static_cast<Context *>(nullptr),
-				"Mock",
-				trdk::Lib::IniSectionRef(
-					trdk::Lib::IniString(
-						"[Section]\nsize = 10 ticks\nlog = none"),
-					"Section")) {
-			//...//
-		}
+		MockBarService();
+		virtual ~MockBarService();
 
 	public:
 
-		MOCK_CONST_METHOD0(GetLastBar, const Bar &());
+		MOCK_CONST_METHOD0(GetSize, size_t());
+		MOCK_CONST_METHOD0(IsEmpty, bool());
+
+		MOCK_CONST_METHOD0(GetLastBar, Bar());
 		MOCK_CONST_METHOD0(GetSecurity, const trdk::Security &());
+
+		MOCK_CONST_METHOD1(GetBar, Bar(size_t));
+		MOCK_CONST_METHOD1(GetBarByReversedIndex, Bar(size_t));
+
+		MOCK_CONST_METHOD1(
+			DropLastBarCopy,
+			void(const trdk::DropCopyDataSourceInstanceId &));
+		MOCK_CONST_METHOD1(
+			DropUncompletedBarCopy,
+			void(const trdk::DropCopyDataSourceInstanceId &));
 
 	};
 

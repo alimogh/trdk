@@ -214,8 +214,13 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	
 	std::string settingsString(
 		"[Section]\n"
-			"id = {00000000-0000-0000-0000-000000000001}\n"
-			"history = yes\n");
+			"id = {00000000-0000-0000-0000-000000000000}\n"
+			"id.low = {00000000-0000-0000-0000-000000000000}\n"
+			"id.high = {00000000-0000-0000-0000-000000000000}\n"
+			"period = 20\n"
+			"deviation = 2\n"
+			"history = yes\n"
+			"log = none\n");
 	const lib::IniString settings(settingsString);
 	m_service.reset(
 		new svc::BollingerBandsService(
@@ -312,7 +317,12 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithoutHistory) {
 
 	std::string settingsString(
 		"[Section]\n"
-			"id = {00000000-0000-0000-0000-000000000001}\n");
+			"id = {00000000-0000-0000-0000-000000000001}\n"
+			"id.low = {00000000-0000-0000-0000-000000000000}\n"
+			"id.high = {00000000-0000-0000-0000-000000000000}\n"
+			"period = 20\n"
+			"deviation = 2\n"
+			"log = none\n");
 	const lib::IniString settings(settingsString);
 	m_service.reset(
 		new svc::BollingerBandsService(

@@ -80,7 +80,7 @@ TEST(BarServiceTest, ByNumberOfTicks) {
 			"log = none");
 	
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
@@ -210,7 +210,7 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
 			"log = none");
 	
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
@@ -358,7 +358,7 @@ TEST(BarServiceTest, DropCopy) {
 	MockDropCopy dropCopy;
 
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),

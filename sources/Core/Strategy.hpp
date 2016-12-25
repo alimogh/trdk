@@ -12,7 +12,6 @@
 
 #include "Position.hpp"
 #include "Consumer.hpp"
-#include "DropCopy.hpp"
 #include "Api.h"
 
 namespace trdk {
@@ -118,8 +117,7 @@ namespace trdk {
 		const boost::uuids::uuid & GetId() const;
 		const std::string & GetTitle() const;
 		trdk::TradingMode GetTradingMode() const;
-		const trdk::DropCopy::StrategyInstanceId & GetDropCopyInstanceId()
-				const;
+		const trdk::DropCopyStrategyInstanceId & GetDropCopyInstanceId() const;
 
 		//! Opens strategy log file stream and reports file path.
 		std::ofstream CreateLog(const std::string &fileExtension) const;

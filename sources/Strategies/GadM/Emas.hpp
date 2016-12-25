@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Services/MovingAverageService.hpp"
+#include "Core/DropCopy.hpp"
 
 namespace trdk { namespace Strategies { namespace GadM {
 
@@ -57,7 +58,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 		}
 		explicit Ema(
 				const Services::MovingAverageService &service,
-				const DropCopy::DataSourceInstanceId &dropCopyDataSourceId)
+				const DropCopyDataSourceInstanceId &dropCopyDataSourceId)
 			: m_value(0)
 			, m_security(nullptr)
 			, m_service(&service)
@@ -108,7 +109,7 @@ namespace trdk { namespace Strategies { namespace GadM {
 		const Security *m_security;
 		const Services::MovingAverageService *m_service;
 		size_t m_numberOfUpdates;
-		DropCopy::DataSourceInstanceId m_dropCopyDataSourceId;
+		DropCopyDataSourceInstanceId m_dropCopyDataSourceId;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

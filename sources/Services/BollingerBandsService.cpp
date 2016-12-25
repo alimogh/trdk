@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "BollingerBandsService.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
 namespace pt = boost::posix_time;
@@ -414,8 +415,8 @@ BollingerBandsService::GetHistoryPointByReversedIndex(
 }
 
 void BollingerBandsService::DropLastPointCopy(
-		const DropCopy::DataSourceInstanceId &lowValueId,
-		const DropCopy::DataSourceInstanceId &highValueId)
+		const DropCopyDataSourceInstanceId &lowValueId,
+		const DropCopyDataSourceInstanceId &highValueId)
 		const {
 
 	if (IsEmpty()) {

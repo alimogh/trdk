@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "BarCollectionService.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
 using namespace trdk;
@@ -1036,7 +1037,7 @@ void BarCollectionService::ForEachReversed(
 }
 
 void BarCollectionService::DropLastBarCopy(
-		const DropCopy::DataSourceInstanceId &sourceId)
+		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	
 	if (IsEmpty()) {
@@ -1060,7 +1061,7 @@ void BarCollectionService::DropLastBarCopy(
 }
 
 void BarCollectionService::DropUncompletedBarCopy(
-		const DropCopy::DataSourceInstanceId &sourceId)
+		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	
 	if (!m_pimpl->m_current.bar) {

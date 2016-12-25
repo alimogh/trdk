@@ -12,6 +12,7 @@
 #include "Strategy.hpp"
 #include "RiskControl.hpp"
 #include "Service.hpp"
+#include "DropCopy.hpp"
 #include "Settings.hpp"
 #ifndef BOOST_WINDOWS
 #	include <signal.h>
@@ -330,7 +331,7 @@ public:
 
 	boost::array<const Position *, 3> m_delayedPositionToForget;
 
-	DropCopy::StrategyInstanceId m_dropCopyInstanceId;
+	DropCopyStrategyInstanceId m_dropCopyInstanceId;
 
 public:
 
@@ -460,7 +461,7 @@ TradingMode Strategy::GetTradingMode() const {
 	return m_pimpl->m_tradingMode;
 }
 
-const DropCopy::StrategyInstanceId & Strategy::GetDropCopyInstanceId() const {
+const DropCopyStrategyInstanceId & Strategy::GetDropCopyInstanceId() const {
 	AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
 	return m_pimpl->m_dropCopyInstanceId;
 }

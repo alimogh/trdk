@@ -87,6 +87,12 @@
       <Filter>Unit Tests</Filter>
     </ClCompile>
     <ClCompile Include="FuncTestList.cpp" />
+    <ClCompile Include="..\Services\RelativeStrengthIndexServiceUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="MockBarService.cpp">
+      <Filter>Mocks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />

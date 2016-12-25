@@ -196,7 +196,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 		settingsString.str() + "\nsource = last price");
 		
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
@@ -375,7 +375,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 		settingsString.str() + "\nsource = last price");
 		
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),
@@ -515,7 +515,7 @@ TEST(MovingAverageServiceTypedTest, DropCopy) {
 	pt::ptime time = pt::microsec_clock::local_time();
 
 	MockContext context;
-	MockMarketDataSource marketDataSource(0, context, std::string("0"));
+	MockMarketDataSource marketDataSource;
 	const trdk::Security security(
 		context,
 		lib::Symbol("TEST_SCALE2/USD::STK"),

@@ -19,11 +19,6 @@ namespace trdk {
 
 	public:
 
-		typedef std::int32_t StrategyInstanceId;
-		typedef std::int32_t DataSourceInstanceId;
-
-	public:
-
 		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
 		public:
 			explicit Exception(const char *what) throw();
@@ -31,8 +26,8 @@ namespace trdk {
 
 	public:
 
-		static const trdk::DropCopy::StrategyInstanceId nStrategyInstanceId;
-		static const trdk::DropCopy::DataSourceInstanceId nDataSourceInstanceId;
+		static const trdk::DropCopyStrategyInstanceId nStrategyInstanceId;
+		static const trdk::DropCopyDataSourceInstanceId nDataSourceInstanceId;
 	
 	public:
 
@@ -54,14 +49,14 @@ namespace trdk {
 
 	public:
 
-		virtual trdk::DropCopy::StrategyInstanceId RegisterStrategyInstance(
+		virtual trdk::DropCopyStrategyInstanceId RegisterStrategyInstance(
 				const trdk::Strategy &)
 			= 0;
-		virtual trdk::DropCopy::StrategyInstanceId ContinueStrategyInstance(
+		virtual trdk::DropCopyStrategyInstanceId ContinueStrategyInstance(
 				const trdk::Strategy &,
 				const boost::posix_time::ptime &)
 			= 0;
-		virtual trdk::DropCopy::DataSourceInstanceId RegisterDataSourceInstance(
+		virtual trdk::DropCopyDataSourceInstanceId RegisterDataSourceInstance(
 				const trdk::Strategy &,
 				const boost::uuids::uuid &type,
 				const boost::uuids::uuid &id)
@@ -121,7 +116,7 @@ namespace trdk {
 			= 0;
 
 		virtual void CopyBar(
-				const trdk::DropCopy::DataSourceInstanceId &,
+				const trdk::DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double open,
@@ -131,7 +126,7 @@ namespace trdk {
 			= 0;
 
 		virtual void CopyAbstractData(
-				const trdk::DropCopy::DataSourceInstanceId &,
+				const trdk::DropCopyDataSourceInstanceId &,
 				size_t index,
 				const boost::posix_time::ptime &,
 				double value)

@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "ContinuousContractBarService.hpp"
 #include "BarCollectionService.hpp"
+#include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -509,13 +510,13 @@ ContinuousContractBarService::GetLastBar()
 }
 
 void ContinuousContractBarService::DropLastBarCopy(
-		const DropCopy::DataSourceInstanceId &sourceId)
+		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	m_pimpl->m_source.DropLastBarCopy(sourceId);
 }
 
 void ContinuousContractBarService::DropUncompletedBarCopy(
-		const DropCopy::DataSourceInstanceId &sourceId)
+		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	m_pimpl->m_source.DropUncompletedBarCopy(sourceId);
 }
