@@ -385,7 +385,7 @@ public:
 			throw Error("Failed to open log file");
 		}
 
-		m_pointsLog << "Date,Time,Source,Value" << std::endl;
+		m_pointsLog << "Date,Time,Source,RSI" << std::endl;
 
 		m_pointsLog << std::setfill('0');
 
@@ -414,18 +414,6 @@ public:
 			<< ',' << point.source
 			<< ',' << point.value
 			<< std::endl;
-	}
-
-	const BarService & CastToBarService(const Service &service) const {
-		const BarService *const result
-			= dynamic_cast<const BarService *>(&service);
-		if (!result) {
-			m_service.GetLog().Error(
-				"Service \"%1%\" can't be used as data source.",
-				service);
-			throw Error("Unknown service used as source");
-		}
-		return *result;
 	}
 
 	void CheckHistoryIndex(size_t index) const {
@@ -505,9 +493,18 @@ MovingAverageService::~MovingAverageService() {
 bool MovingAverageService::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
-	const auto &barService = m_pimpl->CastToBarService(service);
-	AssertLt(0, barService.GetSize());
-	return OnNewBar(barService.GetSecurity(), barService.GetLastBar());
+	
+	const auto *const barService = dynamic_cast<const BarService *>(&service);
+	if (!barService) {
+		GetLog().Error(
+			"Failed to use service \"%1%\" used as data source.",
+			service);
+		throw Error("Unknown service used as source");
+	}
+
+	AssertLt(0, barService->GetSize());
+	return OnNewBar(barService->GetSecurity(), barService->GetLastBar());
+
 }
 
 void MovingAverageService::OnSecurityContractSwitched(

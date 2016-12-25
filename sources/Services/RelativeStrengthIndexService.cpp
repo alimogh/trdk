@@ -90,18 +90,6 @@ public:
 		}
 	}
 
-	const BarService & CastToBarService(const Service &service) const {
-		const BarService *const result
-			= dynamic_cast<const BarService *>(&service);
-		if (!result) {
-			m_self.GetLog().Error(
-				"Service \"%1%\" can't be used as data source.",
-				service);
-			throw Error("Unknown service used as source");
-		}
-		return *result;
-	}
-
 	void OpenPointsLog() {
 
 		Assert(!m_pointsLog.is_open());
@@ -254,11 +242,20 @@ void RelativeStrengthIndexService::DropLastPointCopy(
 bool RelativeStrengthIndexService::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
-	const auto &barService = m_pimpl->CastToBarService(service);
-	const auto &bar = barService.GetLastBar();
+
+	const auto *const barService = dynamic_cast<const BarService *>(&service);
+	if (!barService) {
+		GetLog().Error(
+			"Failed to use service \"%1%\" as data source.",
+			service);
+		throw Error("Unknown service used as source");
+	}
+
+	const auto &bar = barService->GetLastBar();
 	return m_pimpl->OnNewValue(
 		bar.time,
-		barService.GetSecurity().DescalePrice(bar.closeTradePrice));
+		barService->GetSecurity().DescalePrice(bar.closeTradePrice));
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

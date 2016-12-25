@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "MovingAverageService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
 
@@ -42,9 +41,9 @@ namespace trdk { namespace Services {
  		struct Point {
 			boost::posix_time::ptime time;
 			trdk::Lib::Double source;
-			trdk::Lib::Double ma;
-			trdk::Lib::Double high;
 			trdk::Lib::Double low;
+			trdk::Lib::Double middle;
+			trdk::Lib::Double high;
 		};
 
 	public:
@@ -77,8 +76,6 @@ namespace trdk { namespace Services {
 		  */
 		Point GetLastPoint() const;
 
-	public:
-
 		//! Number of points from history.
 		size_t GetHistorySize() const;
 
@@ -98,18 +95,6 @@ namespace trdk { namespace Services {
 		  */
 		Point GetHistoryPointByReversedIndex(size_t index) const;
 
-	public:
-
-		virtual bool OnServiceDataUpdate(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-
-	public:
-
-		bool OnNewData(const trdk::Services::MovingAverageService::Point &);
-
-	public:
-
 		//! Drops last value point copy.
 		/** @sa GetLowValuesId
 		  * @sa GetHighValuesId
@@ -119,6 +104,13 @@ namespace trdk { namespace Services {
 				const trdk::DropCopyDataSourceInstanceId &lowValueId,
 				const trdk::DropCopyDataSourceInstanceId &highValueId)
 				const;
+
+	protected:
+
+		virtual bool OnServiceDataUpdate(
+				const trdk::Service &,
+				const trdk::Lib::TimeMeasurement::Milestones &)
+				override;
 
 	private:
 

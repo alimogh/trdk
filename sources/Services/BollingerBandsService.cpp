@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "BollingerBandsService.hpp"
+#include "BarService.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
@@ -175,7 +176,9 @@ public:
 	const double m_deviation;
 	accs::accumulator_set<
 			double,
-			accs::stats<accs::tag::StandardDeviationForBb>>
+			accs::stats<
+				accs::tag::StandardDeviationForBb,
+				accs::tag::rolling_mean>>
 		m_stat;
 
 	boost::optional<Point> m_lastValue;
@@ -193,14 +196,14 @@ public:
 	explicit Implementation(
 			BollingerBandsService &service,
 			const IniSectionRef &conf)
-		:	m_service(service)
-		,	m_period(Configuration::LoadPeriodSetting(conf, m_service))
-		,	m_deviation(Configuration::LoadDeviationSetting(conf, m_service))
-		,	m_stat(accs::tag::rolling_window::window_size = m_period)
-		,	m_lastValueNo(0)
-		,	m_history(Configuration::LoadHistorySetting(conf, m_service))
-		,	m_lowValuesId(uuids::string_generator()(conf.ReadKey("id.low")))
-		,	m_highValuesId(uuids::string_generator()(conf.ReadKey("id.high"))) {
+		: m_service(service)
+		, m_period(Configuration::LoadPeriodSetting(conf, m_service))
+		, m_deviation(Configuration::LoadDeviationSetting(conf, m_service))
+		, m_stat(accs::tag::rolling_window::window_size = m_period)
+		, m_lastValueNo(0)
+		, m_history(Configuration::LoadHistorySetting(conf, m_service))
+		, m_lowValuesId(uuids::string_generator()(conf.ReadKey("id.low")))
+		, m_highValuesId(uuids::string_generator()(conf.ReadKey("id.high"))) {
 
 		m_service.GetLog().Info(
 			"Initial: %1% = %2%, %3% = %4% frames, %5% = %6%"
@@ -237,18 +240,6 @@ public:
 		}
 	}
 
-	const MovingAverageService & CastToMaService(const Service &service) const {
-		const MovingAverageService *const result
-			= dynamic_cast<const MovingAverageService *>(&service);
-		if (!result) {
-			m_service.GetLog().Error(
-				"Service \"%1%\" can't be used as data source.",
-				service);
-			throw Error("Unknown service used as source");
-		}
-		return *result;
-	}
-
 	void OpenPointsLog() {
 
 		Assert(!m_pointsLog.is_open());
@@ -272,7 +263,7 @@ public:
 			throw Error("Failed to open log file");
 		}
 
-		m_pointsLog << "Date,Time,Source,MA,Low,Hight" << std::endl;
+		m_pointsLog << "Date,Time,Source,Low,Middle,Hight" << std::endl;
 
 		m_pointsLog << std::setfill('0');
 
@@ -280,16 +271,15 @@ public:
 
 	}
 
-	void LogEmptyPoint(const MovingAverageService::Point &ma) {
+	void LogEmptyPoint(const pt::ptime &time, double source) {
 		if (!m_pointsLog.is_open()) {
 			return;
 		}
 		m_pointsLog
-			<< ma.time.date()
-			<< ',' << ma.time.time_of_day()
-			<< ',' << ma.source
-			<< ',' << ma.value
-			<< ",,"
+			<< time.date()
+			<< ',' << time.time_of_day()
+			<< ',' << source
+			<< ",,,"
 			<< std::endl;
 	}
 
@@ -301,8 +291,8 @@ public:
 			<< point.time.date()
 			<< ',' << point.time.time_of_day()
 			<< ',' << point.source
-			<< ',' << point.ma
 			<< ',' << point.low
+			<< ',' << point.middle
 			<< ',' << point.high
 			<< std::endl;
 	}
@@ -341,33 +331,34 @@ const uuids::uuid & BollingerBandsService::GetHighValuesId() const {
 bool BollingerBandsService::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
-	const auto &maService = m_pimpl->CastToMaService(service);
-	Assert(!maService.IsEmpty());
-	return OnNewData(maService.GetLastPoint());
-}
 
-bool BollingerBandsService::OnNewData(const MovingAverageService::Point &ma) {
-
-	// Called from dispatcher, locking is not required.
-
-	if (IsZero(ma.source)) {
-		m_pimpl->LogEmptyPoint(ma);
-		return false;
+	const auto *const barService = dynamic_cast<const BarService *>(&service);
+	if (!barService) {
+		GetLog().Error(
+			"Failed to use service \"%1%\" as data source.",
+			service);
+		throw Error("Unknown service used as source");
 	}
-	m_pimpl->m_stat(ma.source);
+
+	const auto &bar = barService->GetLastBar();
+	const auto &source
+		= barService->GetSecurity().DescalePrice(bar.closeTradePrice);
+
+	m_pimpl->m_stat(source);
 
 	if (accs::rolling_count(m_pimpl->m_stat) < m_pimpl->m_period) {
-		m_pimpl->LogEmptyPoint(ma);
+		m_pimpl->LogEmptyPoint(bar.time, source);
  		return false;
  	}
 
+	const auto &middle = accs::rolling_mean(m_pimpl->m_stat);
 	const auto &stDev = accs::standardDeviationForBb(m_pimpl->m_stat);
 	m_pimpl->m_lastValue = {
-		ma.time,
-		ma.source,
-		ma.value,
- 		ma.value + (m_pimpl->m_deviation * stDev),
- 		ma.value - (m_pimpl->m_deviation * stDev)
+		bar.time,
+		source,
+		middle - (m_pimpl->m_deviation * stDev),
+		middle,
+		middle + (m_pimpl->m_deviation * stDev),
 	};
 	++m_pimpl->m_lastValueNo;
 

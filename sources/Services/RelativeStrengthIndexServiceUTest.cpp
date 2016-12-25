@@ -188,14 +188,19 @@ TEST(RelativeStrengthIndexService, General) {
 		bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
 		EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 
-		ASSERT_DOUBLE_EQ(
+		ASSERT_EQ(
 			!lib::IsZero(row[1]),
 			service.OnServiceDataUpdate(
 				bars,
 				lib::TimeMeasurement::Milestones()));
 		if (lib::IsZero(row[1])) {
+			EXPECT_TRUE(service.IsEmpty());
+			EXPECT_THROW(
+				service.GetLastPoint(),
+				svc::RelativeStrengthIndexService::ValueDoesNotExistError);
 			continue;
 		}
+		ASSERT_FALSE(service.IsEmpty());
 
 		EXPECT_EQ(time, service.GetLastPoint().time);
 		EXPECT_DOUBLE_EQ(row[0], service.GetLastPoint().source);
