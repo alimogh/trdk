@@ -153,11 +153,11 @@ namespace {
 			const std::string &instanceName,
 			const Module::InstanceId &instanceId) {
 		std::ostringstream result;
-		result
-			<< typeName
-			<< '.' << implementationName
-			<< '.' << instanceName
-			<< '.' << instanceId;
+		result << typeName << '.' << implementationName;
+		if (implementationName != instanceName) {
+			result << '.' << instanceName;
+		}
+		result << '.' << instanceId;
 		return result.str();
 	}
 

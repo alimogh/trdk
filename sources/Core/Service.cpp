@@ -94,6 +94,7 @@ public:
 	Service &m_service;
 	const uuids::uuid m_typeId;
 	const uuids::uuid m_id;
+	const std::string m_tag;
 
 	ModuleSecurityList m_securities;
 	SubscriberList m_subscribers;
@@ -104,7 +105,8 @@ public:
 			const IniSectionRef &conf)
 		: m_service(service)
 		, m_typeId(typeId)
-		, m_id(uuids::string_generator()(conf.ReadKey("id"))) {
+		, m_id(uuids::string_generator()(conf.ReadKey("id")))
+		, m_tag(conf.ReadKey("tag", "")) {
 		//...//
 	}
 
@@ -165,6 +167,10 @@ const uuids::uuid & Service::GetTypeId() const {
 
 const uuids::uuid & Service::GetId() const {
 	return m_pimpl->m_id;
+}
+
+const std::string & Service::GetTag() const {
+	return m_pimpl->m_tag;
 }
 
 void Service::OnSecurityStart(const Security &, Security::Request &) {
