@@ -101,7 +101,8 @@ public:
 			return;
 		}
 
-		fs::path path = m_self.GetContext().GetSettings().GetBarsDataLogDir();
+		fs::path path = m_self.GetContext().GetSettings().GetLogsInstanceDir();
+		path /= "Bars";
 		if (!m_self.GetContext().GetSettings().IsReplayMode()) {
 			path /= SymbolToFileName(
 				(boost::format("ContinuousContract_%1%__%2%__%3%__%4%_%5%")

@@ -36,7 +36,6 @@ namespace trdk {
 	public:
 
 		const boost::uuids::uuid & GetTypeId() const;
-		const boost::uuids::uuid & Service::GetId() const;
 		const std::string & GetTag() const;
 
 	public:

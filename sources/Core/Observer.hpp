@@ -22,7 +22,8 @@ namespace trdk {
 		Observer(
 			trdk::Context &,
 			const std::string &implementationName,
-			const std::string &instanceName);
+			const std::string &instanceName,
+			const trdk::Lib::IniSectionRef &);
 		~Observer();
 
 	public:

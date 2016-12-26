@@ -33,8 +33,9 @@ Consumer::Consumer(
 		Context &context,
 		const std::string &typeName,
 		const std::string &name,
-		const std::string &instanceName)
-	: Module(context, typeName, name, instanceName),
+		const std::string &instanceName,
+		const IniSectionRef &conf)
+	: Module(context, typeName, name, instanceName, conf),
 	m_pimpl(new Implementation) {
 	//...//
 }

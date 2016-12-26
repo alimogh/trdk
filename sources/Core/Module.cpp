@@ -13,10 +13,12 @@
 #include "ModuleSecurityList.hpp"
 #include "Service.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "EventsLog.hpp"
 #include "TradingLog.hpp"
 
 namespace fs = boost::filesystem;
+namespace uuids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -167,7 +169,9 @@ class Module::Implementation : private boost::noncopyable {
 
 public:
 
+	const uuids::uuid m_id;
 	const InstanceId m_instanceId;
+	const std::string m_implementationName;
 	const std::string m_instanceName;
 
 	Mutex m_mutex;
@@ -185,14 +189,17 @@ public:
 			Context &context,
 			const std::string &typeName,
 			const std::string &implementationName,
-			const std::string &instanceName)
-		:	m_instanceId(nextFreeInstanceId++)
+			const std::string &instanceName,
+			const IniSectionRef &conf)
+		:	m_id(uuids::string_generator()(conf.ReadKey("id")))
+		,	m_instanceId(nextFreeInstanceId++)
+		,	m_implementationName(implementationName)
 		,	m_instanceName(instanceName)
 		,	m_context(context)
 		,	m_stringId(
 				FormatStringId(
 					typeName,
-					implementationName,
+					m_implementationName,
 					m_instanceName,
 					m_instanceId))
 		,	m_log(m_stringId, m_context.GetLog())
@@ -206,13 +213,15 @@ Module::Module(
 		Context &context,
 		const std::string &typeName,
 		const std::string &implementationName,
-		const std::string &instanceName)
+		const std::string &instanceName,
+		const IniSectionRef &conf)
 	: m_pimpl(
 		boost::make_unique<Implementation>(
 			context,
 			typeName,
 			implementationName,
-			instanceName)) {
+			instanceName,
+			conf)) {
 	//...//
 }
 
@@ -222,6 +231,14 @@ Module::~Module() {
 
 const Module::InstanceId & Module::GetInstanceId() const {
 	return m_pimpl->m_instanceId;
+}
+
+const uuids::uuid & Module::GetId() const {
+	return m_pimpl->m_id;
+}
+
+const std::string & Module::GetImplementationName() const {
+	return m_pimpl->m_implementationName;
 }
 
 const std::string & Module::GetInstanceName() const noexcept {
@@ -269,17 +286,33 @@ void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
 	OnSettingsUpdate(conf);
 }
 
-namespace {
-	
-	typedef boost::mutex SettingsReportMutex;
-	typedef SettingsReportMutex::scoped_lock SettingsReportLock;
-	static SettingsReportMutex mutex;
+std::ofstream Module::OpenDataLog(const std::string &fileExtension) const {
 
-	typedef std::map<
-			std::string,
-			std::list<std::pair<std::string, std::string>>>
-		SettingsReportCache; 
-	static SettingsReportCache settingsReportcache;
+	fs::path path = GetContext().GetSettings().GetLogsInstanceDir();
+	path /= GetImplementationName();
+	{
+		boost::format fileName("%1%__%2%__%3%_%4%");
+		fileName
+			% GetInstanceName()
+			% ConvertToFileName(GetContext().GetStartTime())
+			% GetId()
+			% GetInstanceId();
+		path /= SymbolToFileName(fileName.str(), fileExtension);
+	}
+
+	fs::create_directories(path.branch_path());
+
+	std::ofstream result(
+		path.string(),
+		std::ios::out | std::ios::ate | std::ios::app);
+	if (!result) {
+		GetLog().Error("Failed to open data log file %1%", path);
+		throw Exception("Failed to open data log file");
+	} else {
+		GetLog().Info("Data log: %1%.", path);
+	}
+
+	return result;
 
 }
 

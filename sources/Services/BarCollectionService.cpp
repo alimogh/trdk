@@ -287,7 +287,8 @@ public:
 		}
 
 		fs::path path
-			= m_service.GetContext().GetSettings().GetBarsDataLogDir();
+			= m_service.GetContext().GetSettings().GetLogsInstanceDir();
+		path /= "Bars";
 		if (!m_service.GetContext().GetSettings().IsReplayMode()) {
 			boost::format fileName("%1%_%2%%3%_%4%_%5%_%6%");
 			fileName

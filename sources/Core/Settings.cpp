@@ -110,11 +110,3 @@ void Settings::Log(Context::Log &log) const {
 		m_defaultSecurityType,
 		m_isMarketDataLogEnabled ? "enabled" : "disabled");
 }
-
-fs::path Settings::GetBarsDataLogDir() const {
-	return GetLogsInstanceDir() / "Bars";
-}
-
-fs::path Settings::GetPositionsLogDir() const {
-	return GetLogsInstanceDir() / "Positions";
-}

@@ -681,19 +681,19 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 
 		// 1. Open Start Time, 2. Open Time, 3. Opening Duration:
 		m_reportStream
-			<< "\"=\"\"" << GetStartTime() << "\"\"\""
-			<< ",\"=\"\"" << GetOpenTime() << "\"\"\""
-			<< ",\"=\"\"" << (GetOpenTime() - GetStartTime()) << "\"\"\"";
+			<< GetStartTime()
+			<< ',' << GetOpenTime()
+			<< ',' << ExcelCsvTimeField(GetOpenTime() - GetStartTime());
 
 		// 4. Close Start Time, 5. Close Time, 6. Closing Duration:
 		m_reportStream
-			<< ",\"=\"\"" << GetCloseStartTime() << "\"\"\""
-			<< ",\"=\"\"" << GetCloseTime() << "\"\"\""
-			<< ",\"=\"\"" << (GetCloseTime() - GetCloseStartTime()) << "\"\"\"";
+			<< ',' << GetCloseStartTime()
+			<< ',' << GetCloseTime()
+			<< ',' << ExcelCsvTimeField(GetCloseTime() - GetCloseStartTime());
 
 		// 7. Position Duration:
 		m_reportStream
-			<< ",\"=\"\"" << (GetCloseTime() - GetOpenTime());
+			<< ',' << ExcelCsvTimeField(GetCloseTime() - GetOpenTime());
 
 		// 8. Type:
 		m_reportStream << ',' << GetType();

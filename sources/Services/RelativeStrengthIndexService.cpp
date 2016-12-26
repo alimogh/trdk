@@ -91,34 +91,11 @@ public:
 	}
 
 	void OpenPointsLog() {
-
 		Assert(!m_pointsLog.is_open());
-
-		const fs::path path
-			= m_self.GetContext().GetSettings().GetLogsInstanceDir()
-			/ "RSI"
-			/ (
-					boost::format("%1%__%2%_%3%.csv")
-						% m_period
-						% m_self.GetId()
-						% m_self.GetInstanceId())
-				.str();
-
-		fs::create_directories(path.branch_path());
-		m_pointsLog.open(
-			path.string(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!m_pointsLog.is_open()) {
-			m_self.GetLog().Error("Failed to open log file %1%", path);
-			throw Error("Failed to open log file");
-		}
-
-		m_pointsLog << "Date,Time,Source,RSI" << std::endl;
-
-		m_pointsLog << std::setfill('0');
-
-		m_self.GetLog().Info("Logging into %1%.", path);
-
+		auto log = m_self.OpenDataLog("csv");
+		log << "Date,Time,Source,RSI" << std::endl;
+		log << std::setfill('0');
+		m_pointsLog = std::move(log);
 	}
 
 	void LogEmptyPoint(const pt::ptime &time, const Double &source) {

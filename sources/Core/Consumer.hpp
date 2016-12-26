@@ -23,7 +23,8 @@ namespace trdk {
 			trdk::Context &,
 			const std::string &typeName,
 			const std::string &name,
-			const std::string &instanceName);
+			const std::string &instanceName,
+			const trdk::Lib::IniSectionRef &);
 		virtual ~Consumer();
 
 	public:

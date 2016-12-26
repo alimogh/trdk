@@ -312,7 +312,6 @@ public:
 
 	Strategy &m_strategy;
 	const uuids::uuid m_typeId;
-	const uuids::uuid m_id;
 	const std::string m_title;
 	const TradingMode m_tradingMode;
 
@@ -341,7 +340,6 @@ public:
 			const IniSectionRef &conf)
 		: m_strategy(strategy)
 		, m_typeId(typeId)
-		, m_id(uuids::string_generator()(conf.ReadKey("id")))
 		, m_title(conf.ReadKey("title"))
 		, m_tradingMode(
 			ConvertTradingModeFromString(conf.ReadKey("trading_mode")))
@@ -408,9 +406,8 @@ Strategy::Strategy(
 		const std::string &implementationName,
 		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Consumer(context, "Strategy", implementationName, instanceName) {
-
-	m_pimpl = new Implementation(*this, typeId, conf);
+	: Consumer(context, "Strategy", implementationName, instanceName, conf)
+	, m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {
 
 	std::string dropCopyInstanceIdStr = "not used";
 	GetContext().InvokeDropCopy(
@@ -442,15 +439,10 @@ Strategy::~Strategy() {
 	} catch (...) {
 		AssertFailNoException();
 	}
-	delete m_pimpl;
 }
 
 const uuids::uuid & Strategy::GetTypeId() const {
 	return m_pimpl->m_typeId;
-}
-
-const uuids::uuid & Strategy::GetId() const {
-	return m_pimpl->m_id;
 }
 
 const std::string & Strategy::GetTitle() const {
@@ -915,44 +907,6 @@ void Strategy::ClosePositions() {
 	const auto lock = LockForOtherThreads();
 	GetLog().Info("Closing positions by request...");
 	OnPostionsCloseRequest();
-}
-
-std::ofstream Strategy::CreateLog(const std::string &fileExtension) const {
-
-	fs::path path = GetContext().GetSettings().GetPositionsLogDir();
-	if (!GetContext().GetSettings().IsReplayMode()) {
-		boost::format fileName("%1%__%2%__%3%_%4%");
-		fileName
-			% GetInstanceName()
-			% ConvertToFileName(GetContext().GetStartTime())
-			% GetId()
-			% GetInstanceId();
-		path /= SymbolToFileName(fileName.str(), fileExtension);
-	} else {
-		boost::format fileName("%1%__%2%__%3%__%4%_%5%");
-		fileName
-			% GetInstanceName()
-			% ConvertToFileName(GetContext().GetCurrentTime())
-			% ConvertToFileName(GetContext().GetStartTime())
-			% GetId()
-			% GetInstanceId();
-		path /= SymbolToFileName(fileName.str(), fileExtension);
-	}
-
-	fs::create_directories(path.branch_path());
-
-	std::ofstream result(
-		path.string(),
-		std::ios::out | std::ios::ate | std::ios::app);
-	if (!result) {
-		GetLog().Error("Failed to open strategy log file %1%", path);
-		throw Exception("Failed to open strategy log file");
-	} else {
-		GetLog().Info("Strategy log: %1%.", path);
-	}
-
-	return result;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

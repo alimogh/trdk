@@ -38,7 +38,8 @@ namespace trdk {
 				trdk::Context &,
 				const std::string &typeName,
 				const std::string &implementationName,
-				const std::string &instanceName);
+				const std::string &instanceName,
+				const trdk::Lib::IniSectionRef &);
 		virtual ~Module();
 
 		TRDK_CORE_API friend std::ostream & operator <<(
@@ -47,7 +48,9 @@ namespace trdk {
 
 	public:
 
+		const boost::uuids::uuid & GetId() const;
 		const trdk::Module::InstanceId & GetInstanceId() const;
+		const std::string & GetImplementationName() const;
 		const std::string & GetInstanceName() const noexcept;
 
 		trdk::Context & GetContext();
@@ -74,6 +77,10 @@ namespace trdk {
 	protected:
 
 		virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+
+		//! Opens file stream to log module data and reports and reports file
+		//! path to log.
+		std::ofstream OpenDataLog(const std::string &fileExtension) const;
 
 	private:
 

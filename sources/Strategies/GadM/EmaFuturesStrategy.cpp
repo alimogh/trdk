@@ -1011,8 +1011,7 @@ namespace EmaFuturesStrategy {
 
 		void OpenStartegyLog() {
 			Assert(!m_strategyLog.is_open());
-			m_strategyLog = CreateLog("csv");
-			Assert(m_strategyLog.is_open());
+			m_strategyLog = OpenDataLog("csv");
 			Position::OpenReport(m_strategyLog);
 		}
 

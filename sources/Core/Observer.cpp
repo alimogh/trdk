@@ -20,8 +20,9 @@ namespace pt = boost::posix_time;
 Observer::Observer(
 		Context &context,
 		const std::string &implementationName,
-		const std::string &instanceName)
-	: Consumer(context, "Observer", implementationName, instanceName) {
+		const std::string &instanceName,
+		const IniSectionRef &conf)
+	:	Consumer(context, "Observer", implementationName, instanceName, conf) {
 	//...//
 }
 

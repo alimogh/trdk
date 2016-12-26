@@ -93,7 +93,6 @@ public:
 
 	Service &m_service;
 	const uuids::uuid m_typeId;
-	const uuids::uuid m_id;
 	const std::string m_tag;
 
 	ModuleSecurityList m_securities;
@@ -105,7 +104,6 @@ public:
 			const IniSectionRef &conf)
 		: m_service(service)
 		, m_typeId(typeId)
-		, m_id(uuids::string_generator()(conf.ReadKey("id")))
 		, m_tag(conf.ReadKey("tag", "")) {
 		//...//
 	}
@@ -152,8 +150,8 @@ Service::Service(
 		const std::string &implementationName,
 		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Module(context, "Service", implementationName, instanceName)
-	, m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {
+	:	Module(context, "Service", implementationName, instanceName,conf)
+	,	m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {
 	//...//
 }
 
@@ -163,10 +161,6 @@ Service::~Service() {
 
 const uuids::uuid & Service::GetTypeId() const {
 	return m_pimpl->m_typeId;
-}
-
-const uuids::uuid & Service::GetId() const {
-	return m_pimpl->m_id;
 }
 
 const std::string & Service::GetTag() const {

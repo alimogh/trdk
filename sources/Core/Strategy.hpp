@@ -114,13 +114,9 @@ namespace trdk {
 	public:
 
 		const boost::uuids::uuid & GetTypeId() const;
-		const boost::uuids::uuid & GetId() const;
 		const std::string & GetTitle() const;
 		trdk::TradingMode GetTradingMode() const;
 		const trdk::DropCopyStrategyInstanceId & GetDropCopyInstanceId() const;
-
-		//! Opens strategy log file stream and reports file path.
-		std::ofstream CreateLog(const std::string &fileExtension) const;
 
 	public:
 
@@ -227,7 +223,7 @@ namespace trdk {
 	private:
 
 		class Implementation;
-		Implementation *m_pimpl;
+		std::unique_ptr<Implementation> m_pimpl;
 
 	};
 
