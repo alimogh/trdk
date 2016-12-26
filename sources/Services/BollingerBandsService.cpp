@@ -263,7 +263,7 @@ public:
 			throw Error("Failed to open log file");
 		}
 
-		m_pointsLog << "Date,Time,Source,Low,Middle,Hight" << std::endl;
+		m_pointsLog << "Date,Time,Source,Low,Middle,High" << std::endl;
 
 		m_pointsLog << std::setfill('0');
 
@@ -277,7 +277,7 @@ public:
 		}
 		m_pointsLog
 			<< time.date()
-			<< ',' << time.time_of_day()
+			<< ',' << ExcelCsvTimeField(time.time_of_day())
 			<< ',' << source
 			<< ",,,"
 			<< std::endl;
@@ -289,7 +289,7 @@ public:
 		}
 		m_pointsLog
 			<< point.time.date()
-			<< ',' << point.time.time_of_day()
+			<< ',' << ExcelCsvTimeField(point.time.time_of_day())
 			<< ',' << point.source
 			<< ',' << point.low
 			<< ',' << point.middle
@@ -303,14 +303,13 @@ public:
 
 BollingerBandsService::BollingerBandsService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration)
 	: Service(
 		context,
-		uuids::string_generator()(
-			"{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}"),
-		"BollingerBandsService",
-		tag,
+		uuids::string_generator()("{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}"),
+		"BollingerBands",
+		instanceName,
 		configuration)
 	, m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {
 	//...//
@@ -436,11 +435,11 @@ void BollingerBandsService::DropLastPointCopy(
 
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateBollingerBandsService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<BollingerBandsService>(
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

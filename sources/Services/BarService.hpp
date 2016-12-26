@@ -64,8 +64,8 @@ namespace trdk { namespace Services {
 		explicit BarService(
 				Context &context,
 				const boost::uuids::uuid &typeId,
-				const std::string &name,
-				const std::string &tag,
+				const std::string &implementationName,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~BarService();
 

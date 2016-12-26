@@ -478,9 +478,9 @@ Test::TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Base(mode, index, context, tag)
+	: Base(mode, index, context, instanceName)
 	, m_pimpl(std::make_unique<Implementation>(*this, conf)) {
 	m_pimpl->m_delayGenerator.Report(GetLog());
 }
@@ -750,13 +750,13 @@ boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
 		const trdk::TradingMode &mode,
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<Test::TradingSystem>(
 		mode,
 		index,
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

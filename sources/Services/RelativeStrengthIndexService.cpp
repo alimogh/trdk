@@ -113,7 +113,7 @@ public:
 			throw Error("Failed to open log file");
 		}
 
-		m_pointsLog << "Date,Time,Source,Value" << std::endl;
+		m_pointsLog << "Date,Time,Source,RSI" << std::endl;
 
 		m_pointsLog << std::setfill('0');
 
@@ -127,7 +127,7 @@ public:
 		}
 		m_pointsLog
 			<< time.date()
-			<< ',' << time.time_of_day()
+			<< ',' << ExcelCsvTimeField(time.time_of_day())
 			<< ',' << source
 			<< ','
 			<< std::endl;
@@ -139,7 +139,7 @@ public:
 		}
 		m_pointsLog
 			<< point.time.date()
-			<< ',' << point.time.time_of_day()
+			<< ',' << ExcelCsvTimeField(point.time.time_of_day())
 			<< ',' << point.source
 			<< ',' << point.value
 			<< std::endl;
@@ -196,13 +196,13 @@ public:
 
 RelativeStrengthIndexService::RelativeStrengthIndexService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
 	: Service(
 		context,
 		uuids::string_generator()("{bc5436e2-33cf-411c-b88a-02a5b84e1cc0}"),
-		"RelativeStrengthIndexService",
-		tag,
+		"RelativeStrengthIndex",
+		instanceName,
 		conf)
 	, m_pimpl(boost::make_unique<Implementation>(*this, conf)) {
 	//...//
@@ -263,11 +263,11 @@ bool RelativeStrengthIndexService::OnServiceDataUpdate(
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service>
 CreateRelativeStrengthIndexService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<RelativeStrengthIndexService>(
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

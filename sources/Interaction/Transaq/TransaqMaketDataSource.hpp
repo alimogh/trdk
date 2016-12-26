@@ -25,7 +25,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		explicit MarketDataSource(
 				size_t index,
 				trdk::Context &,
-				const std::string &tag);
+				const std::string &instanceName);
 		virtual ~MarketDataSource();
 
 	public:

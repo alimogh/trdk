@@ -33,8 +33,8 @@ Consumer::Consumer(
 		Context &context,
 		const std::string &typeName,
 		const std::string &name,
-		const std::string &tag)
-	: Module(context, typeName, name, tag),
+		const std::string &instanceName)
+	: Module(context, typeName, name, instanceName),
 	m_pimpl(new Implementation) {
 	//...//
 }

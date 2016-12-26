@@ -273,10 +273,10 @@ namespace {
 			typename TimeMeasurementMilestone,
 			typename MilestonesStatAccum>
 		void DumpAccum(
-					size_t &index,
-					const std::string &tag,
-					MilestonesStatAccum &accum,
-					std::ostream &destination) {
+				size_t &index,
+				const std::string &tag,
+				MilestonesStatAccum &accum,
+				std::ostream &destination) {
 
 			if (!accum.HasMeasures()) {
 				return;
@@ -315,7 +315,7 @@ namespace {
 					|| !IsZero(numberOfMarketDataUpdates)) {
 				destination
 					<< '\t' << m_context.GetLog().GetTime()
-					<< '\t' << security.GetSource().GetTag()
+					<< '\t' << security.GetSource().GetInstanceName()
 					<< '\t' << security.GetSymbol().GetSymbol()
 					<< '\t' << numberOfMarketDataUpdates
 					<< '\t' << security.GetLastMarketDataTime()

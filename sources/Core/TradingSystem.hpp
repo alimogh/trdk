@@ -21,7 +21,7 @@ namespace trdk {
 			const trdk::TradingMode &,
 			size_t tradingSystemIndex,
 			trdk::Context &,
-			const std::string &tag,
+			const std::string &instanceName,
 			const trdk::Lib::IniSectionRef &);
 
 	struct TradingSystemAndMarketDataSourceFactoryResult {
@@ -33,7 +33,7 @@ namespace trdk {
 			size_t tradingSystemIndex,
 			size_t marketDataSourceSystemIndex,
 			trdk::Context &,
-			const std::string &tag,
+			const std::string &instanceName,
 			const trdk::Lib::IniSectionRef &);
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ namespace trdk {
 				const trdk::TradingMode &,
 				size_t index,
 				trdk::Context &,
-				const std::string &tag);
+				const std::string &instanceName);
 		virtual ~TradingSystem();
 
 		TRDK_CORE_API friend std::ostream & operator <<(
@@ -176,9 +176,9 @@ namespace trdk {
 		trdk::TradingSystem::TradingLog & GetTradingLog() const noexcept;
 
 		//! Identifies Trading System object by verbose name. 
-		/** Trading System Tag unique, but can be empty for one of objects.
+		/** Trading System instance name is unique, but can be empty.
 		  */
-		const std::string & GetTag() const;
+		const std::string & GetInstanceName() const;
 
 		const std::string & GetStringId() const noexcept;
 

@@ -24,7 +24,7 @@ namespace trdk {
 	typedef boost::shared_ptr<trdk::MarketDataSource> (MarketDataSourceFactory)(
 			size_t index,
 			trdk::Context &,
-			const std::string &tag,
+			const std::string &instanceName,
 			const trdk::Lib::IniSectionRef &);
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ namespace trdk {
 		explicit MarketDataSource(
 				size_t index,
 				trdk::Context &,
-				const std::string &tag);
+				const std::string &instanceName);
 		virtual ~MarketDataSource();
 
 		bool operator ==(const MarketDataSource &rhs) const {
@@ -75,9 +75,9 @@ namespace trdk {
 		trdk::MarketDataSource::TradingLog & GetTradingLog() const throw();
 
 		//! Identifies Market Data Source object by verbose name. 
-		/** Market Data Source Tag unique, but can be empty for one of objects.
+		/** Market Data Source instance name is unique, but can be empty.
 		  */
-		const std::string & GetTag() const;
+		const std::string & GetInstanceName() const;
 		const std::string & GetStringId() const throw();
 
 	public:

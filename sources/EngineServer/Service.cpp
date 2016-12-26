@@ -1403,7 +1403,7 @@ bool EngineServer::Service::StoreOrder(
 	}
 	record["type"] = ORDER_TYPE_LIMIT;
 	record["symbol"] = order.security->GetSymbol().GetSymbol();
-	record["source"] = order.tradingSystem->GetTag();
+	record["source"] = order.tradingSystem->GetInstanceName();
 	record["side"] = order.side;
 	record["qty"] = order.qty;
 	if (order.price) {
@@ -1663,7 +1663,7 @@ bool EngineServer::Service::StoreBook(
 				m_connection->topics.storeBook,
 				std::make_tuple(
 					*m_instanceId,
-					security.GetSource().GetTag(),
+					security.GetSource().GetInstanceName(),
 					security.GetSymbol().GetSymbol(),
 					ConvertToMicroseconds(book.GetTime()),
 					book.GetBid(),

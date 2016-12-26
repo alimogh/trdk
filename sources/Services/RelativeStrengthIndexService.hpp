@@ -44,7 +44,7 @@ namespace trdk { namespace Services {
 
 		explicit RelativeStrengthIndexService(
 				Context &,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~RelativeStrengthIndexService() noexcept;
 

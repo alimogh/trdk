@@ -24,9 +24,9 @@ using namespace trdk::Interaction::Test;
 RandomMarketDataSource::RandomMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &)
-	: Base(index, context, tag),
+	: Base(index, context, instanceName),
 	m_stopFlag(false) {
 	//...//
 }
@@ -212,12 +212,12 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<MarketDataSource> CreateRandomMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<RandomMarketDataSource>(
 		index,
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

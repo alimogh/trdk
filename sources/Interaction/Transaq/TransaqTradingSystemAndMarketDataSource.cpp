@@ -32,10 +32,15 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				size_t tradingSystemIndex,
 				size_t marketDataSourceIndex,
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const IniSectionRef &conf)
-			: TradingSystem(mode, tradingSystemIndex, context, tag, conf)
-			, MarketDataSource(marketDataSourceIndex, context, tag) {
+			:	TradingSystem(
+					mode,
+					tradingSystemIndex,
+					context,
+					instanceName,
+					conf)
+			,	MarketDataSource(marketDataSourceIndex, context, instanceName) {
 			//...//
 		}
 
@@ -69,14 +74,14 @@ CreateTradingSystemAndMarketDataSource(
 		size_t tradingSystemIndex,
 		size_t marketDataSourceIndex,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	const auto &object = boost::make_shared<TradingSystemAndMarketDataSource>(
 		mode,
 		tradingSystemIndex,
 		marketDataSourceIndex,
 		context,
-		tag,
+		instanceName,
 		configuration);
 	const TradingSystemAndMarketDataSourceFactoryResult result = {
 		object,

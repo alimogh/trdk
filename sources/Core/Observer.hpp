@@ -21,8 +21,8 @@ namespace trdk {
 
 		Observer(
 			trdk::Context &,
-			const std::string &name,
-			const std::string &tag);
+			const std::string &implementationName,
+			const std::string &instanceName);
 		~Observer();
 
 	public:

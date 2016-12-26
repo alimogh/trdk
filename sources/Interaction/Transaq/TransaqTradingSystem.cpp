@@ -25,9 +25,9 @@ Transaq::TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: trdk::TradingSystem(mode, index, context, tag)
+	: trdk::TradingSystem(mode, index, context, instanceName)
 	, TradingConnector(GetContext(), GetLog(), conf)
 	, m_connectorContext(GetContext(), GetLog()) {
 	//...//
@@ -480,13 +480,13 @@ CreateTradingSystem(
 		const TradingMode &mode,
 		size_t tradingSystemIndex,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf) {
 	return boost::make_shared<Transaq::TradingSystem>(
 		mode,
 		tradingSystemIndex,
 		context,
-		tag,
+		instanceName,
 		conf);
 }
 

@@ -27,7 +27,7 @@ namespace trdk { namespace Interaction { namespace Test {
 		MarketDataSource(
 				size_t index,
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 

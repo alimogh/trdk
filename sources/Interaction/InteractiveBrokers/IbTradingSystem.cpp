@@ -26,10 +26,10 @@ ib::TradingSystem::TradingSystem(
 		size_t tradingSystemIndex,
 		size_t marketDataSourceIndex,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const Lib::IniSectionRef &conf)
-	: trdk::TradingSystem(mode, tradingSystemIndex, context, tag)
-	, trdk::MarketDataSource(marketDataSourceIndex, context, tag)
+	: trdk::TradingSystem(mode, tradingSystemIndex, context, instanceName)
+	, trdk::MarketDataSource(marketDataSourceIndex, context, instanceName)
 	, m_isTestSource(conf.ReadBoolKey("test_source", false)) {
 	if (conf.ReadBoolKey("positions", false)) {
 		m_positions.reset(new Positions);

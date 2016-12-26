@@ -23,7 +23,7 @@ MockBarService::MockBarService()
 		DummyContext::GetInstance(),
 		uuids::uuid(),
 		"Mock",
-		"tag",
+		"Test",
 		trdk::Lib::IniSectionRef(
 			trdk::Lib::IniString(
 				"[Section]\n"

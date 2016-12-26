@@ -26,8 +26,8 @@ namespace pt = boost::posix_time;
 Transaq::MarketDataSource::MarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag)
-	: trdk::MarketDataSource(index, context, tag)
+		const std::string &instanceName)
+	: trdk::MarketDataSource(index, context, instanceName)
 	, MarketDataSourceConnector(GetContext(), GetLog()) {
 	//...//
 }
@@ -169,7 +169,7 @@ Transaq::Security & Transaq::MarketDataSource::GetSecurity(
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &) {
 	
 	class MarketDataSource : public Transaq::MarketDataSource {
@@ -177,8 +177,8 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 		MarketDataSource(
 				size_t index,
 				Context &context,
-				const std::string &tag)
-			: Transaq::MarketDataSource(index, context, tag)
+				const std::string &instanceName)
+			: Transaq::MarketDataSource(index, context, instanceName)
 			, m_connectorContext(GetContext(), GetLog()) {
 			//...//
 		}
@@ -196,7 +196,7 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 	return boost::make_shared<MarketDataSource>(
 		index,
 		context,
-		tag);
+		instanceName);
 
 }
 

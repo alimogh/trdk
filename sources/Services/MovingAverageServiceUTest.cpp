@@ -205,11 +205,11 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
 
 	svc::MovingAverageService serviceForBars(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settingsForBars, "Section"));
 	svc::MovingAverageService serviceForLastPrice(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settingsForLastPrice, "Section"));
 
 	for (size_t i = 0; i < _countof(source); ++i) {
@@ -384,11 +384,11 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 
 	svc::MovingAverageService serviceForBars(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settingsForBars, "Section"));
 	svc::MovingAverageService serviceForLastPrice(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settingsForLastPrice, "Section"));
 
 	pt::ptime time = pt::microsec_clock::local_time();
@@ -524,7 +524,7 @@ TEST(MovingAverageServiceTypedTest, DropCopy) {
 
 	svc::MovingAverageService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	{

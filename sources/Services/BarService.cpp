@@ -50,10 +50,10 @@ BarService::Bar::Bar()
 BarService::BarService(
 		Context &context,
 		const boost::uuids::uuid &typeId,
-		const std::string &name,
-		const std::string &tag,
+		const std::string &implementationName,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Base(context, typeId, name, tag, conf) {
+	: Base(context, typeId, implementationName, instanceName, conf) {
 	//...//
 }
 

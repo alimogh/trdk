@@ -349,7 +349,7 @@ public:
 		, m_isBlocked(false)
 		, m_riskControlScope(
 			m_strategy.GetContext().GetRiskControl(m_tradingMode).CreateScope(
-				m_strategy.GetTag(),
+				m_strategy.GetInstanceName(),
 				conf))
 		, m_stopMode(STOP_MODE_UNKNOWN)
 		, m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
@@ -405,10 +405,10 @@ public:
 Strategy::Strategy(
 		trdk::Context &context,
 		const uuids::uuid &typeId,
-		const std::string &name,
-		const std::string &tag,
+		const std::string &implementationName,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Consumer(context, "Strategy", name, tag) {
+	: Consumer(context, "Strategy", implementationName, instanceName) {
 
 	m_pimpl = new Implementation(*this, typeId, conf);
 
@@ -923,7 +923,7 @@ std::ofstream Strategy::CreateLog(const std::string &fileExtension) const {
 	if (!GetContext().GetSettings().IsReplayMode()) {
 		boost::format fileName("%1%__%2%__%3%_%4%");
 		fileName
-			% GetTag()
+			% GetInstanceName()
 			% ConvertToFileName(GetContext().GetStartTime())
 			% GetId()
 			% GetInstanceId();
@@ -931,7 +931,7 @@ std::ofstream Strategy::CreateLog(const std::string &fileExtension) const {
 	} else {
 		boost::format fileName("%1%__%2%__%3%__%4%_%5%");
 		fileName
-			% GetTag()
+			% GetInstanceName()
 			% ConvertToFileName(GetContext().GetCurrentTime())
 			% ConvertToFileName(GetContext().GetStartTime())
 			% GetId()

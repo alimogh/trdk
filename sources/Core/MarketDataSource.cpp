@@ -52,11 +52,11 @@ namespace {
 
 namespace {
 	
-	std::string FormatStringId(const std::string &tag) {
+	std::string FormatStringId(const std::string &instanceName) {
 		std::string	result("MarketDataSource");
-		if (!tag.empty()) {
+		if (!instanceName.empty()) {
 			result += '.';
-			result += tag;
+			result += instanceName;
 		}
 		return result;
 	}
@@ -75,7 +75,7 @@ public:
 
 	Context &m_context;
 
-	const std::string m_tag;
+	const std::string m_instanceName;
 	const std::string m_stringId;
 
 	TradingSystem::Log m_log;
@@ -89,13 +89,13 @@ public:
 	explicit Implementation(
 			size_t index,
 			Context &context,
-			const std::string &tag)
+			const std::string &instanceName)
 		: m_index(index)
 		, m_context(context)
-		, m_tag(tag)
-		, m_stringId(FormatStringId(m_tag))
+		, m_instanceName(instanceName)
+		, m_stringId(FormatStringId(m_instanceName))
 		, m_log(m_stringId, m_context.GetLog())
-		, m_tradingLog(m_tag, m_context.GetTradingLog()) {
+		, m_tradingLog(m_instanceName, m_context.GetTradingLog()) {
 		//...//
 	}
 
@@ -122,8 +122,8 @@ MarketDataSource::Error::Error(const char *what) throw()
 MarketDataSource::MarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag)
-	: m_pimpl(new Implementation(index, context, tag)) {
+		const std::string &instanceName)
+	: m_pimpl(new Implementation(index, context, instanceName)) {
 	//...//
 }
 
@@ -151,8 +151,8 @@ MarketDataSource::TradingLog & MarketDataSource::GetTradingLog() const throw() {
 	return m_pimpl->m_tradingLog;
 }
 
-const std::string & MarketDataSource::GetTag() const {
-	return m_pimpl->m_tag;
+const std::string & MarketDataSource::GetInstanceName() const {
+	return m_pimpl->m_instanceName;
 }
 
 const std::string & MarketDataSource::GetStringId() const throw() {

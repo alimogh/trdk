@@ -147,11 +147,12 @@ public:
 Service::Service(
 		Context &context,
 		const uuids::uuid &typeId,
-		const std::string &name,
-		const std::string &tag,
+		const std::string &implementationName,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Module(context, "Service", name, tag) {
-	m_pimpl.reset(new Implementation(*this, typeId, conf));
+	: Module(context, "Service", implementationName, instanceName)
+	, m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {
+	//...//
 }
 
 Service::~Service() {

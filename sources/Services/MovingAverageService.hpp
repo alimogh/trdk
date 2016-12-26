@@ -49,7 +49,7 @@ namespace trdk { namespace Services {
 
 		explicit MovingAverageService(
 				Context &,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~MovingAverageService();
 

@@ -37,9 +37,9 @@ namespace {
 IqFeed::MarketDataSource::MarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Base(index, context, tag)
+	: Base(index, context, instanceName)
 	, m_settings(ReadSettings(conf))
 	, m_stream(boost::make_unique<Stream>(*this))
 	, m_history(boost::make_unique<History>(*this)) {
@@ -178,10 +178,10 @@ void IqFeed::MarketDataSource::OnHistoryLoadCompleted(
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf) {
 	return boost::shared_ptr<trdk::MarketDataSource>(
-		new IqFeed::MarketDataSource(index, context, tag, conf));
+		new IqFeed::MarketDataSource(index, context, instanceName, conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

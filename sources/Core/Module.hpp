@@ -37,8 +37,8 @@ namespace trdk {
 		explicit Module(
 				trdk::Context &,
 				const std::string &typeName,
-				const std::string &name,
-				const std::string &tag);
+				const std::string &implementationName,
+				const std::string &instanceName);
 		virtual ~Module();
 
 		TRDK_CORE_API friend std::ostream & operator <<(
@@ -48,13 +48,11 @@ namespace trdk {
 	public:
 
 		const trdk::Module::InstanceId & GetInstanceId() const;
+		const std::string & GetInstanceName() const noexcept;
 
 		trdk::Context & GetContext();
 		const trdk::Context & GetContext() const;
 
-		const std::string & GetTypeName() const noexcept;
-		const std::string & GetName() const noexcept;
-		const std::string & GetTag() const noexcept;
 		const std::string & GetStringId() const noexcept;
 
 	public:

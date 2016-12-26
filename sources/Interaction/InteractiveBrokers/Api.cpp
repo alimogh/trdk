@@ -21,14 +21,14 @@ CreateTradingSystemAndMarketDataSource(
 		size_t tradingSystemIndex,
 		size_t marketDataSourceIndex,
 		trdk::Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const trdk::Lib::IniSectionRef &configuration) {
 	const auto &object = boost::make_shared<ib::TradingSystem>(
 			mode,
 			tradingSystemIndex,
 			marketDataSourceIndex,
 			context,
-			tag,
+			instanceName,
 			configuration);
 	const trdk::TradingSystemAndMarketDataSourceFactoryResult result = {
 		object,
@@ -43,14 +43,14 @@ CreateTradingSystem(
 		const trdk::TradingMode &mode,
 		size_t tradingSystemIndex,
 		trdk::Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const trdk::Lib::IniSectionRef &configuration) {
 	const auto &result = boost::make_shared<ib::TradingSystem>(
 		mode,
 		tradingSystemIndex,
 		std::numeric_limits<size_t>::max(),
 		context,
-		tag,
+		instanceName,
 		configuration);
 	return result;
 }

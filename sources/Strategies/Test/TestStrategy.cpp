@@ -40,14 +40,14 @@ namespace trdk { namespace Strategies { namespace Test {
 		explicit TestStrategy(
 				Context &context,
 				const std::string &name,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &conf)
 			: Super(
 				context,
 				uuids::string_generator()(
 					"{063AB9A2-EE3E-4AF7-85B0-AC0B63E27F43}"),
 				name,
-				tag,
+				instanceName,
 				conf)
 			, m_numberOfOperations(0)
 			, m_finResultRange(0, 1000)
@@ -194,7 +194,7 @@ namespace trdk { namespace Strategies { namespace Test {
 				security.GetBidQty(),
 				security.GetAskPrice(),
 				security.GetAskQty(),
-				security.GetSource().GetTag());
+				security.GetSource().GetInstanceName());
 			const auto &lastPrice = security.GetLastPriceScaled();
 			if (	
 					lastPrice > security.ScalePrice(10.99)
@@ -244,10 +244,14 @@ namespace trdk { namespace Strategies { namespace Test {
 
 TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
 			trdk::Context &context,
-			const std::string &tag,
+			const std::string &instanceName,
 			const trdk::Lib::IniSectionRef &conf) {
 	return boost::shared_ptr<trdk::Strategy>(
-		new trdk::Strategies::Test::TestStrategy(context, "Test", tag, conf));
+		new trdk::Strategies::Test::TestStrategy(
+			context,
+			"Test",
+			instanceName,
+			conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

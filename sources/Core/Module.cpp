@@ -148,16 +148,16 @@ namespace {
 	boost::atomic<Module::InstanceId> nextFreeInstanceId(1);
 	
 	std::string FormatStringId(
-			const Module::InstanceId &instanceId,
 			const std::string &typeName,
-			const std::string &name,
-			const std::string &tag) {
+			const std::string &implementationName,
+			const std::string &instanceName,
+			const Module::InstanceId &instanceId) {
 		std::ostringstream result;
-		result << typeName << '.' << name;
-		if (name != tag) {
-			result << '.' << tag;
-		}
-		result << '.' << instanceId;
+		result
+			<< typeName
+			<< '.' << implementationName
+			<< '.' << instanceName
+			<< '.' << instanceId;
 		return result.str();
 	}
 
@@ -168,13 +168,13 @@ class Module::Implementation : private boost::noncopyable {
 public:
 
 	const InstanceId m_instanceId;
+	const std::string m_instanceName;
 
 	Mutex m_mutex;
 
 	Context &m_context;
 	
 	const std::string m_typeName;
-	const std::string m_name;
 	const std::string m_tag;
 	const std::string m_stringId;
 
@@ -184,16 +184,19 @@ public:
 	explicit Implementation(
 			Context &context,
 			const std::string &typeName,
-			const std::string &name,
-			const std::string &tag)
-		: m_instanceId(nextFreeInstanceId++)
-		, m_context(context)
-		, m_typeName(typeName)
-		, m_name(name)
-		, m_tag(tag)
-		, m_stringId(FormatStringId(m_instanceId, m_typeName, m_name, m_tag))
-		, m_log(m_stringId, m_context.GetLog())
-		, m_tradingLog(m_tag, m_context.GetTradingLog()) {
+			const std::string &implementationName,
+			const std::string &instanceName)
+		:	m_instanceId(nextFreeInstanceId++)
+		,	m_instanceName(instanceName)
+		,	m_context(context)
+		,	m_stringId(
+				FormatStringId(
+					typeName,
+					implementationName,
+					m_instanceName,
+					m_instanceId))
+		,	m_log(m_stringId, m_context.GetLog())
+		,	m_tradingLog(m_tag, m_context.GetTradingLog()) {
 		Assert(nextFreeInstanceId.is_lock_free());
 	}
 
@@ -202,10 +205,14 @@ public:
 Module::Module(
 		Context &context,
 		const std::string &typeName,
-		const std::string &name,
-		const std::string &tag)
+		const std::string &implementationName,
+		const std::string &instanceName)
 	: m_pimpl(
-		boost::make_unique<Implementation>(context, typeName, name, tag)) {
+		boost::make_unique<Implementation>(
+			context,
+			typeName,
+			implementationName,
+			instanceName)) {
 	//...//
 }
 
@@ -217,20 +224,12 @@ const Module::InstanceId & Module::GetInstanceId() const {
 	return m_pimpl->m_instanceId;
 }
 
+const std::string & Module::GetInstanceName() const noexcept {
+	return m_pimpl->m_instanceName;
+}
+
 Module::Lock Module::LockForOtherThreads() {
 	return Lock(m_pimpl->m_mutex);
-}
-
-const std::string & Module::GetTypeName() const noexcept {
-	return m_pimpl->m_typeName;
-}
-
-const std::string & Module::GetName() const noexcept {
-	return m_pimpl->m_name;
-}
-
-const std::string & Module::GetTag() const noexcept {
-	return m_pimpl->m_tag;
 }
 
 const std::string & Module::GetStringId() const noexcept {

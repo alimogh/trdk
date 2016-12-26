@@ -32,9 +32,9 @@ namespace {
 		explicit TrdkMarketDataLogSource(
 				size_t index,
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const IniSectionRef &conf)
-			: Base(index, context, tag, conf)
+			: Base(index, context, instanceName, conf)
 			, m_filePath(conf.ReadFileSystemPath("source")) {
 			GetLog().Info("Source is %1%.", m_filePath);
 		}
@@ -213,12 +213,12 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource> CreateTrdkMarketDataLogSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<TrdkMarketDataLogSource>(
 		index,
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

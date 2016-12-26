@@ -36,9 +36,9 @@ namespace {
 		explicit CsvContinuousContractMarketDataSource(
 				size_t index,
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const IniSectionRef &conf)
-			: Base(index, context, tag, conf) {
+			: Base(index, context, instanceName, conf) {
 			//...//
 		}
 
@@ -296,12 +296,12 @@ boost::shared_ptr<trdk::MarketDataSource>
 CreateCsvContinuousContractMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<CsvContinuousContractMarketDataSource>(
 		index,
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

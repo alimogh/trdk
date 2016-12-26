@@ -385,7 +385,7 @@ public:
 			throw Error("Failed to open log file");
 		}
 
-		m_pointsLog << "Date,Time,Source,RSI" << std::endl;
+		m_pointsLog << "Date,Time,Source,MA" << std::endl;
 
 		m_pointsLog << std::setfill('0');
 
@@ -399,7 +399,7 @@ public:
 		}
 		m_pointsLog
 			<< time.date()
-			<< ',' << time.time_of_day()
+			<< ',' << ExcelCsvTimeField(time.time_of_day())
 			<< ",,"
 			<< std::endl;
 	}
@@ -410,7 +410,7 @@ public:
 		}
 		m_pointsLog
 			<< point.time.date()
-			<< ',' << point.time.time_of_day()
+			<< ',' << ExcelCsvTimeField(point.time.time_of_day())
 			<< ',' << point.source
 			<< ',' << point.value
 			<< std::endl;
@@ -474,13 +474,13 @@ public:
 
 MovingAverageService::MovingAverageService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration)
 	: Service(
 		context,
 		uuids::string_generator()("{E1C56A8F-637B-4F73-8F15-A106845F6F71}"),
-		"MovingAverageService",
-		tag,
+		"MovingAverage",
+		instanceName,
 		configuration)
 	, m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {
 	//...//
@@ -591,11 +591,11 @@ MovingAverageService::GetHistoryPointByReversedIndex(
 
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateMovingAverageService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<MovingAverageService>(
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

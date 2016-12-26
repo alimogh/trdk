@@ -19,6 +19,7 @@ using namespace trdk::Services;
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
+namespace uuids = boost::uuids;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -356,15 +357,9 @@ public:
 				<< '.' << std::setw(2) << date.month().as_number()
 				<< '.' << std::setw(2) << date.day();
 		}
-		{
-			const auto &time = m_current.bar->time.time_of_day();
-			*m_barsLog
-				<< csvDelimeter
-				<< std::setw(2) << time.hours()
-				<< ':' << std::setw(2) << time.minutes()
-				<< ':' << std::setw(2) << time.seconds();
-		}
 		*m_barsLog
+			<< csvDelimeter
+			<< ExcelCsvTimeField(m_current.bar->time.time_of_day())
 			<< csvDelimeter
 				<< m_security->DescalePrice(m_current.bar->openTradePrice)
 			<< csvDelimeter
@@ -869,14 +864,13 @@ public:
 
 BarCollectionService::BarCollectionService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration)
 	: Base(
 		context,
-		boost::uuids::string_generator()(
-			"{7619E946-BDE0-4FB6-94A6-CFFF3F183D92}"),
-		"BarsService",
-		tag,
+		uuids::string_generator()("{7619E946-BDE0-4FB6-94A6-CFFF3F183D92}"),
+		"Bars",
+		instanceName,
 		configuration)
 	, m_pimpl(new Implementation(*this, configuration)) {
 	//...//
@@ -1094,11 +1088,11 @@ void BarCollectionService::Reset() noexcept {
 
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service> CreateBarService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<BarCollectionService>(
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

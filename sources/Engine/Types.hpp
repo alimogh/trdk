@@ -13,14 +13,14 @@
 namespace trdk { namespace Engine {
 
 	struct TradingSystemHolder {
-		std::string tag;
+		std::string instanceName;
 		// Deinitialization order is important!
 		trdk::Lib::DllObjectPtr<trdk::TradingSystem> tradingSystem;
 		std::string section;
 		boost::shared_ptr<Terminal> terminal;
 	};
 	struct TradingSystemModesHolder {
-		std::string tag;
+		std::string instanceName;
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		boost::array<TradingSystemHolder, 2> holders;
 	};
@@ -39,17 +39,17 @@ namespace trdk { namespace Engine {
 	};
 
 	typedef std::map<
-			std::string /*tag*/,
+			std::string /*instanceName*/,
 			std::vector<ModuleHolder<Strategy>>>
 		Strategies;
 
 	typedef std::map<
-			std::string /*tag*/,
+			std::string /*instanceName*/,
 			std::vector<ModuleHolder<Observer>>>
 		Observers;
 
 	typedef std::map<
-			std::string /*tag*/,
+			std::string /*instanceName*/,
 			std::vector<ModuleHolder<Service>>>
 		Services;
 

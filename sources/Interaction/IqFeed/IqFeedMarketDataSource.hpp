@@ -27,7 +27,7 @@ namespace trdk { namespace Interaction { namespace IqFeed {
 		explicit MarketDataSource(
 				size_t index,
 				trdk::Context &,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~MarketDataSource();
 

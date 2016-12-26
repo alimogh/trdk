@@ -33,9 +33,9 @@ namespace {
 		explicit CsvTickMarketDataSource(
 				size_t index,
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const IniSectionRef &conf)
-			: Base(index, context, tag, conf)
+			: Base(index, context, instanceName, conf)
 			, m_filePath(conf.ReadFileSystemPath("source"))
 			, m_halfOfBidAskSpread(
 				conf.ReadTypedKey<double>("bid_ask_spread") / 2) {
@@ -199,12 +199,12 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource> CreateCsvTickMarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<CsvTickMarketDataSource>(
 		index,
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

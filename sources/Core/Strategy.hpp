@@ -106,8 +106,8 @@ namespace trdk {
 		explicit Strategy(
 				trdk::Context &,
 				const boost::uuids::uuid &typeId,
-				const std::string &name,
-				const std::string &tag,
+				const std::string &implementationName,
+				const std::string &instanceName,
 				const trdk::Lib::IniSectionRef &);
 		virtual ~Strategy();
 

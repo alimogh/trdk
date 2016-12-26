@@ -21,6 +21,7 @@ using namespace trdk::Services;
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace uuids = boost::uuids;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -67,11 +68,11 @@ public:
 	explicit Implementation(
 			ContinuousContractBarService &self,
 			Context &context,
-			const std::string &tag,
+			const std::string &instanceName,
 			const IniSectionRef &conf)
 		: m_self(self)
 		, m_security(nullptr)
-		, m_source(context, tag, conf)
+		, m_source(context, instanceName, conf)
 		, m_sizeOfCurrentContract(0)
 		, m_isLogEnabled(false) {
 		
@@ -332,16 +333,20 @@ public:
 
 ContinuousContractBarService::ContinuousContractBarService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf)
-	: Base(
-		context,
-		boost::uuids::string_generator()(
-			"{2C1A33FF-D2B0-40F2-9C2A-B46306902712}"),
-		"ContinuousContractBarsService",
-		tag,
-		conf)
-	, m_pimpl(std::make_unique<Implementation>(*this, context, tag, conf)) {
+	:	Base(
+			context,
+			uuids::string_generator()("{2C1A33FF-D2B0-40F2-9C2A-B46306902712}"),
+			"ContinuousContractBars",
+			instanceName,
+			conf)
+	,	m_pimpl(
+			std::make_unique<Implementation>(
+				*this,
+				context,
+				instanceName,
+				conf)) {
 	//...//
 }
 
@@ -526,11 +531,11 @@ void ContinuousContractBarService::DropUncompletedBarCopy(
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service>
 CreateContinuousContractBarService(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &configuration) {
 	return boost::make_shared<ContinuousContractBarService>(
 		context,
-		tag,
+		instanceName,
 		configuration);
 }
 

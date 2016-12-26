@@ -175,8 +175,8 @@ public:
 				[&](const MarketDataSource &source) -> bool {
 					std::ostringstream oss;
 					oss << markedDataSourcesStat.size() + 1;
-					if (!source.GetTag().empty())  {
-						oss << " (" << source.GetTag() << ")";
+					if (!source.GetInstanceName().empty())  {
+						oss << " (" << source.GetInstanceName() << ")";
 					}
 					oss << ": " << source.GetActiveSecurityCount();
 					markedDataSourcesStat.push_back(oss.str());

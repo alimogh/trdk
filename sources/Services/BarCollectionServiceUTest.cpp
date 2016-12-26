@@ -89,7 +89,7 @@ TEST(BarServiceTest, ByNumberOfTicks) {
 	
 	svc::BarCollectionService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 	{
 		trdk::Security::Request request;
@@ -218,7 +218,7 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
 		trdk::Security::SupportedLevel1Types());
 	svc::BarCollectionService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	{
@@ -321,7 +321,7 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
 	MockSecurity security;
 	svc::BarCollectionService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 	
 	{
@@ -367,7 +367,7 @@ TEST(BarServiceTest, DropCopy) {
 	
 	svc::BarCollectionService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 	{
 		trdk::Security::Request request;

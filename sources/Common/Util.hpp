@@ -145,4 +145,16 @@ namespace trdk { namespace Lib {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	class ExcelCsvTimeField : private boost::noncopyable {
+	public:
+		explicit ExcelCsvTimeField(const boost::posix_time::time_duration &);
+		friend std::ostream & operator <<(
+				std::ostream &,
+				const ExcelCsvTimeField &);
+	private:
+		const boost::posix_time::time_duration &m_value;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
 } }

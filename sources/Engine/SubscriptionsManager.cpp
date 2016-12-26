@@ -35,7 +35,7 @@ namespace {
 			"Subscribed to %1% from \"%2%\" (source: \"%3%\").",
 			type,
 			security,
-			security.GetSource().GetTag());
+			security.GetSource().GetInstanceName());
 	}
 
 }

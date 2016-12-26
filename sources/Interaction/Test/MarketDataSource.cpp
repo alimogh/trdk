@@ -21,9 +21,9 @@ using namespace trdk::Interaction::Test;
 Test::MarketDataSource::MarketDataSource(
 		size_t index,
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &)
-	: Base(index, context, tag),
+	: Base(index, context, instanceName),
 	m_stopFlag(false) {
 	if (!GetContext().GetSettings().IsReplayMode()) {
 		throw Error("Failed to start without Replay Mode");

@@ -31,7 +31,7 @@ namespace trdk { namespace Services {
 
 		explicit BarCollectionService(
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const Lib::IniSectionRef &);
 		virtual ~BarCollectionService();
 

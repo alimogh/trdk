@@ -128,14 +128,14 @@ namespace EmaFuturesStrategy {
 
 		explicit Strategy(
 				Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const IniSectionRef &conf)
 			: Base(
 				context,
 				boost::uuids::string_generator()(
 					"{E316A97B-1C1F-433B-88BF-4DB788E94208}"),
 				"GadmEmaFutures",
-				tag,
+				instanceName,
 				conf)
 			, m_numberOfContracts(
 				conf.ReadTypedKey<uint32_t>("number_of_contracts"))
@@ -266,22 +266,22 @@ namespace EmaFuturesStrategy {
 						?	boost::lexical_cast<std::string>(dropCopySourceId)
 						:	std::string("not used");
 
-				if (boost::icontains(maService->GetTag(), "fastema")) {
+				if (boost::icontains(maService->GetInstanceName(), "fastema")) {
 					GetLog().Info(
 						"Using EMA service \"%1%\" as fast EMA"
 							" (drop copy ID: %2%)...",
-						maService->GetTag(),
+						*maService,
 						dropCopySourceIdStr);
 					if (m_ema[FAST].HasData()) {
 						throw Exception(
 							"Strategy should have only one fast EMA service");
 					}
 					m_ema[FAST] = Ema(*maService, dropCopySourceId);
-				} else if (boost::icontains(maService->GetTag(), "slowema")) {
+				} else if (boost::icontains(maService->GetInstanceName(), "slowema")) {
 					GetLog().Info(
 						"Using EMA service \"%1%\" as slow EMA"
 							" (drop copy ID: %2%)...",
-						maService->GetTag(),
+						*maService,
 						dropCopySourceIdStr);
 					if (m_ema[SLOW].HasData()) {
 						throw Exception(
@@ -291,7 +291,7 @@ namespace EmaFuturesStrategy {
 				} else {
 					GetLog().Error(
 						"Failed to resolve EMA service \"%1%\".",
-						maService->GetTag());
+						*maService);
 					throw Exception("Failed to resolve EMA service");
 				}
 
@@ -1124,10 +1124,13 @@ namespace EmaFuturesStrategy {
 
 TRDK_STRATEGY_GADM_API boost::shared_ptr<Strategy> CreateEmaFuturesStrategy(
 		Context &context,
-		const std::string &tag,
+		const std::string &instanceName,
 		const IniSectionRef &conf) {
 	using namespace trdk::Strategies::GadM;
-	return boost::make_shared<EmaFuturesStrategy::Strategy>(context, tag, conf);
+	return boost::make_shared<EmaFuturesStrategy::Strategy>(
+		context,
+		instanceName,
+		conf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

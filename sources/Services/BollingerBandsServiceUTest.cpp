@@ -145,9 +145,9 @@ namespace {
 
 		explicit Service(
 				trdk::Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const lib::IniSectionRef &conf)
-			: BollingerBandsService(context, tag, conf) {
+			: BollingerBandsService(context, instanceName, conf) {
 			//...//
 		}
 
@@ -245,7 +245,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
 	const lib::IniString settings(settingsString);
 	m_service = boost::make_unique<Service>(
 		m_context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	TestOnlineResult();
@@ -346,7 +346,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithoutHistory) {
 	const lib::IniString settings(settingsString);
 	m_service = boost::make_unique<Service>(
 		m_context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	TestOnlineResult();

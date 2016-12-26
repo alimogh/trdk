@@ -19,9 +19,9 @@ namespace pt = boost::posix_time;
 
 Observer::Observer(
 		Context &context,
-		const std::string &name,
-		const std::string &tag)
-	: Consumer(context, "Observer", name, tag) {
+		const std::string &implementationName,
+		const std::string &instanceName)
+	: Consumer(context, "Observer", implementationName, instanceName) {
 	//...//
 }
 

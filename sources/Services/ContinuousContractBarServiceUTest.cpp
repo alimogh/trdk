@@ -79,7 +79,7 @@ TEST(ContinuousContractBarServiceTest, DISABLED_History) {
 
 	svc::ContinuousContractBarService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	{
@@ -238,7 +238,7 @@ TEST(ContinuousContractBarServiceTest, Online) {
 
 	svc::ContinuousContractBarService service(
 		context,
-		"Tag",
+		"Test",
 		lib::IniSectionRef(settings, "Section"));
 
 	{

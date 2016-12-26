@@ -22,7 +22,7 @@ DummyMarketDataSource::DummyMarketDataSource(trdk::Context *context)
 		context
 			?	*context
 			:	DummyContext::GetInstance(),
-		"Tag") {
+		"Test") {
 	//...//
 }
 

@@ -469,8 +469,8 @@ public:
 				record
 					% eventDesc // 1
 					% m_self.GetOpenOrderSide() // 2
-					% m_security.GetSymbol().GetSymbol() // 3
-					% m_self.GetTradingSystem().GetTag() // 4
+					% m_security.GetSymbol().GetSymbol().c_str() // 3
+					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
 					% m_security.DescalePrice(m_open.startPrice); // 6
 				if (order.price) {
@@ -511,7 +511,7 @@ public:
 					% orderStatus // 1
 					% m_self.GetOpenOrderSide() // 2
 					% m_security.GetSymbol().GetSymbol().c_str() // 3
-					% m_self.GetTradingSystem().GetTag().c_str() // 4
+					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
 					% m_security.DescalePrice(m_self.GetOpenStartPrice()); // 6
 				if (order.price) {
@@ -556,7 +556,7 @@ public:
 					% eventDesc // 1
 					% m_self.GetCloseOrderSide() // 2
 					% m_security.GetSymbol().GetSymbol().c_str() // 3
-					% m_self.GetTradingSystem().GetTag().c_str() // 4
+					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
 					% m_closeType // 6
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 7
@@ -598,8 +598,8 @@ public:
 				record
 					% orderStatus // 1
 					% m_self.GetCloseOrderSide() // 2
-					% m_security.GetSymbol().GetSymbol() // 3
-					% m_self.GetTradingSystem().GetTag() // 4
+					% m_security.GetSymbol().GetSymbol().c_str() // 3
+					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
 					% m_closeType // 6
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 7
@@ -835,7 +835,7 @@ public:
 				record
 					% direction // 1
 					% m_security.GetSymbol().GetSymbol().c_str() // 2
-					% m_self.GetTradingSystem().GetTag().c_str() // 3
+					% m_self.GetTradingSystem().GetInstanceName().c_str() // 3
 					% m_tradingSystem.GetMode() // 4
 					% m_operationId // 5
 					% order.uuid // 6
@@ -1640,7 +1640,7 @@ LongPosition::LongPosition(
 		[this](TradingRecord &record) {
 			record
 				% GetSecurity().GetSymbol().GetSymbol().c_str() // 1
-				% GetTradingSystem().GetTag().c_str() // 2
+				% GetTradingSystem().GetInstanceName().c_str() // 2
 				% GetTradingSystem().GetMode() // 3
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 4
 				% GetCurrency() // 5
@@ -1656,7 +1656,7 @@ LongPosition::LongPosition() {
 		[this](TradingRecord &record) {
 			record
 				% GetSecurity().GetSymbol().GetSymbol().c_str() // 1
-				% GetTradingSystem().GetTag() // 2
+				% GetTradingSystem().GetInstanceName().c_str() // 2
 				% GetTradingSystem().GetMode() // 3
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 4
 				% GetCurrency() // 5
@@ -2001,7 +2001,7 @@ ShortPosition::ShortPosition(
 		[this](TradingRecord &record) {
 			record
 				% GetSecurity().GetSymbol().GetSymbol().c_str() // 1
-				% GetTradingSystem().GetTag().c_str() // 2
+				% GetTradingSystem().GetInstanceName().c_str() // 2
 				% GetTradingSystem().GetMode() // 3
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 4
 				% GetCurrency() // 5
@@ -2017,7 +2017,7 @@ ShortPosition::ShortPosition() {
 		[this](TradingRecord &record) {
 			record
 				% GetSecurity().GetSymbol().GetSymbol().c_str() // 1
-				% GetTradingSystem().GetTag().c_str() // 2
+				% GetTradingSystem().GetInstanceName().c_str() // 2
 				% GetTradingSystem().GetMode() // 3
 				% GetSecurity().DescalePrice(GetOpenStartPrice()) // 4
 				% GetCurrency() // 5

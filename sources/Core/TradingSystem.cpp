@@ -74,12 +74,12 @@ TradingSystem::PositionError::PositionError(const char *what) noexcept
 namespace {
 	
 	std::string FormatStringId(
-			const std::string &tag,
+			const std::string &instanceName,
 			const TradingMode &mode) {
 		std::string	result("TradingSystem");
-		if (!tag.empty()) {
+		if (!instanceName.empty()) {
 			result += '.';
-			result += tag;
+			result += instanceName;
 		}
 		result += '.';
 		result += ConvertToString(mode);
@@ -100,7 +100,7 @@ public:
 
 	Context &m_context;
 
-	const std::string m_tag;
+	const std::string m_instanceName;
 	const std::string m_stringId;
 
 	TradingSystem::Log m_log;
@@ -110,14 +110,14 @@ public:
 			const TradingMode &mode,
 			size_t index,
 			Context &context,
-			const std::string &tag)
-		: m_mode(mode),
-		m_index(index),
-		m_context(context),
-		m_tag(tag),
-		m_stringId(FormatStringId(m_tag, m_mode)),
-		m_log(m_stringId, m_context.GetLog()),
-		m_tradingLog(m_tag, m_context.GetTradingLog()) {
+			const std::string &instanceName)
+		: m_mode(mode)
+		, m_index(index)
+		, m_context(context)
+		, m_instanceName(instanceName)
+		, m_stringId(FormatStringId(m_instanceName, m_mode))
+		, m_log(m_stringId, m_context.GetLog())
+		, m_tradingLog(instanceName, m_context.GetTradingLog()) {
 		//...//
 	}
 
@@ -276,8 +276,8 @@ TradingSystem::TradingSystem(
 		const TradingMode &mode,
 		size_t index,
 		Context &context,
-		const std::string &tag)
-	: m_pimpl(new Implementation(mode, index, context, tag)) {
+		const std::string &instanceName)
+	: m_pimpl(new Implementation(mode, index, context, instanceName)) {
 	m_pimpl->m_self = this;
 }
 
@@ -309,8 +309,8 @@ TradingSystem::TradingLog & TradingSystem::GetTradingLog() const noexcept {
 	return m_pimpl->m_tradingLog;
 }
 
-const std::string & TradingSystem::GetTag() const {
-	return m_pimpl->m_tag;
+const std::string & TradingSystem::GetInstanceName() const {
+	return m_pimpl->m_instanceName;
 }
 
 const std::string & TradingSystem::GetStringId() const noexcept {

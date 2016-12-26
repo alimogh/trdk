@@ -143,9 +143,9 @@ namespace {
 
 		explicit Service(
 				trdk::Context &context,
-				const std::string &tag,
+				const std::string &instanceName,
 				const lib::IniSectionRef &conf)
-			: RelativeStrengthIndexService(context, tag, conf) {
+			: RelativeStrengthIndexService(context, instanceName, conf) {
 			//...//
 		}
 
@@ -176,7 +176,7 @@ TEST(RelativeStrengthIndexService, General) {
 	EXPECT_CALL(bars, GetSecurity())
 		.WillRepeatedly(ReturnRef(security));
 
-	Service service(context, "Tag", lib::IniSectionRef(settings, "Section"));
+	Service service(context, "Test", lib::IniSectionRef(settings, "Section"));
 
 	pt::ptime time = pt::microsec_clock::local_time();
 	for (const auto &row: source) {
