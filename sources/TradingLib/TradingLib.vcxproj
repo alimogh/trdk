@@ -269,6 +269,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="SourcesSynchronizer.hpp" />
     <ClInclude Include="StopLoss.hpp" />
     <ClInclude Include="StopOrder.hpp" />
     <ClInclude Include="TakeProfit.hpp" />

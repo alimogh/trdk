@@ -15,7 +15,6 @@
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/uuid/uuid_generators.hpp>
 #	include <boost/logic/tribool.hpp>
-#	include <boost/circular_buffer.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

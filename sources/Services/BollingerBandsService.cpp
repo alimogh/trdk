@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "BollingerBandsService.hpp"
 #include "BarService.hpp"
+#include "RelativeStrengthIndexService.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
@@ -241,34 +242,11 @@ public:
 	}
 
 	void OpenPointsLog() {
-
 		Assert(!m_pointsLog.is_open());
-
-		const fs::path path
-			= m_service.GetContext().GetSettings().GetLogsInstanceDir()
-			/ "BollingerBands"
-			/ (
-					boost::format("%1%__%2%_%3%.csv")
-						% m_period
-						% m_service.GetId()
-						% m_service.GetInstanceId())
-				.str();
-
-		fs::create_directories(path.branch_path());
-		m_pointsLog.open(
-			path.string(),
-			std::ios::out | std::ios::ate | std::ios::app);
-		if (!m_pointsLog.is_open()) {
-			m_service.GetLog().Error("Failed to open log file %1%", path);
-			throw Error("Failed to open log file");
-		}
-
-		m_pointsLog << "Date,Time,Source,Low,Middle,High" << std::endl;
-
-		m_pointsLog << std::setfill('0');
-
-		m_service.GetLog().Info("Logging into %1%.", path);
-
+		auto log = m_service.OpenDataLog("csv");
+		log << "Date,Time,Source,Low,Middle,High" << std::endl;
+		log << std::setfill('0');
+		m_pointsLog = std::move(log);
 	}
 
 	void LogEmptyPoint(const pt::ptime &time, double source) {
@@ -295,6 +273,36 @@ public:
 			<< ',' << point.middle
 			<< ',' << point.high
 			<< std::endl;
+	}
+
+	bool OnUpdate(const pt::ptime &time, const Double &source) {
+
+		m_stat(source);
+
+		if (accs::rolling_count(m_stat) < m_period) {
+			LogEmptyPoint(time, source);
+ 			return false;
+ 		}
+
+		const auto &middle = accs::rolling_mean(m_stat);
+		const auto &stDev = accs::standardDeviationForBb(m_stat);
+		m_lastValue = {
+			time,
+			source,
+			middle - (m_deviation * stDev),
+			middle,
+			middle + (m_deviation * stDev),
+		};
+		++m_lastValueNo;
+
+		LogPoint(*m_lastValue);
+
+		if (m_history) {
+			m_history->PushBack(*m_lastValue);
+		}
+
+		return true;
+
 	}
 
 };
@@ -331,43 +339,26 @@ bool BollingerBandsService::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
 
-	const auto *const barService = dynamic_cast<const BarService *>(&service);
-	if (!barService) {
-		GetLog().Error(
-			"Failed to use service \"%1%\" as data source.",
-			service);
-		throw Error("Unknown service used as source");
+	{
+		const auto *const bars = dynamic_cast<const BarService *>(&service);
+		if (bars) {
+			const auto &point = bars->GetLastBar();
+			return m_pimpl->OnUpdate(
+				point.time,
+				bars->GetSecurity().DescalePrice(point.closeTradePrice));
+		}
+	}
+	{
+		const auto *const rsi
+			= dynamic_cast<const RelativeStrengthIndexService *>(&service);
+		if (rsi) {
+			const auto &point = rsi->GetLastPoint();
+			return m_pimpl->OnUpdate(point.time, point.value);
+		}
 	}
 
-	const auto &bar = barService->GetLastBar();
-	const auto &source
-		= barService->GetSecurity().DescalePrice(bar.closeTradePrice);
-
-	m_pimpl->m_stat(source);
-
-	if (accs::rolling_count(m_pimpl->m_stat) < m_pimpl->m_period) {
-		m_pimpl->LogEmptyPoint(bar.time, source);
- 		return false;
- 	}
-
-	const auto &middle = accs::rolling_mean(m_pimpl->m_stat);
-	const auto &stDev = accs::standardDeviationForBb(m_pimpl->m_stat);
-	m_pimpl->m_lastValue = {
-		bar.time,
-		source,
-		middle - (m_pimpl->m_deviation * stDev),
-		middle,
-		middle + (m_pimpl->m_deviation * stDev),
-	};
-	++m_pimpl->m_lastValueNo;
-
-	m_pimpl->LogPoint(*m_pimpl->m_lastValue);
-
-	if (m_pimpl->m_history) {
-		m_pimpl->m_history->PushBack(*m_pimpl->m_lastValue);
-	}
-
-	return true;
+	GetLog().Error("Failed to use service \"%1%\" as data source.", service);
+	throw Error("Unknown service used as source");
 
 }
 
