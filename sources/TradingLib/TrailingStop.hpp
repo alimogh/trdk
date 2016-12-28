@@ -18,9 +18,23 @@ namespace trdk { namespace TradingLib {
 
 	public:
 
+		class Params {
+		public:
+			explicit Params(
+					const trdk::Volume &minProfitPerLotToActivate,
+					const trdk::Volume &minProfitPerLotToClose);
+		public:
+			const trdk::Volume & GetMinProfitPerLotToActivate() const;
+			const trdk::Volume & GetMinProfitPerLotToClose() const;
+		private:
+			trdk::Volume m_minProfitPerLotToActivate;
+			trdk::Volume m_minProfitPerLotToClose;
+		};
+
+	public:
+
 		explicit TrailingStop(
-				double minProfitPerLotToActivate,
-				double minProfitPerLotToClose,
+				const boost::shared_ptr<const Params> &,
 				trdk::Position &);
 		virtual ~TrailingStop();
 
@@ -39,8 +53,7 @@ namespace trdk { namespace TradingLib {
 
 	private:
 
-		const trdk::Lib::Double m_minProfitPerLotToActivate;
-		const trdk::Lib::Double m_minProfitPerLotToClose;
+		const boost::shared_ptr<const Params> m_params;
 
 		bool m_isActivated;
 		boost::optional<trdk::Lib::Double> m_maxProfit;

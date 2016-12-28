@@ -17,19 +17,33 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
+////////////////////////////////////////////////////////////////////////////////
+
+TakeProfit::Params::Params(
+		const Volume &minProfitPerLotToActivate,
+		const Volume &maxPriceOffsetPerLotToClose)
+	: m_minProfitPerLotToActivate(minProfitPerLotToActivate)
+	, m_maxPriceOffsetPerLotToClose(maxPriceOffsetPerLotToClose) {
+	//...//
+}
+
+const Volume & TakeProfit::Params::GetMinProfitPerLotToActivate() const {
+	return m_minProfitPerLotToActivate;
+}
+
+const Volume & TakeProfit::Params::GetMaxPriceOffsetPerLotToClose() const {
+	return m_maxPriceOffsetPerLotToClose;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 TakeProfit::TakeProfit(
-		double minProfitPerLotToActivate,
-		double minProfitRatioToClose,
+		const boost::shared_ptr<const Params> &params,
 		Position &position)
 	: StopOrder(position)
-	, m_minProfitPerLotToActivate(minProfitPerLotToActivate)
-	, m_minProfitRatioToClose(minProfitRatioToClose)
+	, m_params(params)
 	, m_isActivated(false) {
-	if (m_minProfitRatioToClose > 1) {
-		throw Exception(
-			"Min profit ratio to close position by take profit"
-				" must be less than or equal to 1.0");
-	}
+	Assert(m_params);
 }
 
 TakeProfit::~TakeProfit() {
@@ -73,8 +87,10 @@ bool TakeProfit::CheckSignal() {
 	}
 	Assert(m_maxProfit);
 
-	const auto &profitToClose = RoundByScale(
-		m_minProfitRatioToClose * *m_maxProfit,
+	auto profitToClose = *m_maxProfit;
+	profitToClose -= RoundByScale(
+		m_params->GetMaxPriceOffsetPerLotToClose()
+			* GetPosition().GetOpenedQty(),
 		GetPosition().GetSecurity().GetPriceScale());
 
 	if (m_minProfit && plannedPnl >= *m_minProfit) {
@@ -85,30 +101,31 @@ bool TakeProfit::CheckSignal() {
 
 	GetTradingLog().Write(
 		"%1%\t%2%"
-			"\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.2f=%8$.8f)"
-			"\tbid/ask=%9$.8f/%10$.8f\tpos=%11%",
+			"\tprofit=%3$.8f->%4$.8f%5%(%6$.8f-%7$.8f*%8$.8f=%9$.8f)"
+			"\tbid/ask=%10$.8f/%11$.8f\tpos=%12%",
 		[&](TradingRecord &record) {
 			record
-				% GetName()
-				% (isSignal ? "signaling" : "trailing");
+				% GetName() // 1
+				% (isSignal ? "signaling" : "trailing"); // 2
 			if (m_minProfit) {
-				record % *m_minProfit;
+				record % *m_minProfit; // 3
 			} else {
-				record % "none";
+				record % "none"; // 3
 			}
-			record % plannedPnl;
+			record % plannedPnl; // 4
 			if (isSignal) {
-				record % "<=";
+				record % "<="; // 5
 			} else {
-				record % '>';
+				record % '>'; // 5
 			}
 			record
-				% *m_maxProfit
-				% m_minProfitRatioToClose
-				% profitToClose
-				% GetPosition().GetSecurity().GetBidPriceValue()
-				% GetPosition().GetSecurity().GetAskPriceValue()
-				% GetPosition().GetId();
+				% *m_maxProfit // 6
+				% m_params->GetMaxPriceOffsetPerLotToClose() // 7
+				% GetPosition().GetOpenedQty() // 8
+				% profitToClose // 9
+				% GetPosition().GetSecurity().GetBidPriceValue() // 10
+				% GetPosition().GetSecurity().GetAskPriceValue() // 11
+				% GetPosition().GetId(); // 12
 		});
 	
 	m_minProfit = plannedPnl;
@@ -120,14 +137,13 @@ bool TakeProfit::CheckSignal() {
 bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
 
 	const Double &profitToActivate = RoundByScale(
-		m_minProfitPerLotToActivate * GetPosition().GetOpenedQty(),
+		m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
 		GetPosition().GetSecurity().GetPriceScale());
 
 	bool isSignal = false;
 	if (!m_isActivated) {
 		m_isActivated = plannedPnl >= profitToActivate;
-		if (m_maxProfit && plannedPnl <= *m_maxProfit) {
-			Assert(!m_isActivated);
+		if (!m_isActivated && m_maxProfit && plannedPnl <= *m_maxProfit) {
 			return false;
 		}
 		isSignal = m_isActivated;

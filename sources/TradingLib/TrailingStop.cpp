@@ -17,19 +17,37 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
+////////////////////////////////////////////////////////////////////////////////
+
+TrailingStop::Params::Params(
+		const Volume &minProfitPerLotToActivate,
+		const Volume &minProfitPerLotToClose)
+	: m_minProfitPerLotToActivate(minProfitPerLotToActivate)
+	, m_minProfitPerLotToClose(minProfitPerLotToClose) {
+	if (m_minProfitPerLotToActivate < m_minProfitPerLotToClose) {
+ 		throw Exception(
+ 			"Min profit to activate trailing stop must be greater than"
+ 				" min profit to close position by trailing stop");
+	}
+}
+
+const Volume & TrailingStop::Params::GetMinProfitPerLotToActivate() const {
+	return m_minProfitPerLotToActivate;
+}
+
+const Volume & TrailingStop::Params::GetMinProfitPerLotToClose() const {
+	return m_minProfitPerLotToClose;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 TrailingStop::TrailingStop(
-		double minProfitPerLotToActivate,
-		double minProfitPerLotToClose,
+		const boost::shared_ptr<const Params> &params,
 		Position &position)
 	: StopOrder(position)
-	, m_minProfitPerLotToActivate(minProfitPerLotToActivate)
-	, m_minProfitPerLotToClose(minProfitPerLotToClose)
+	, m_params(params)
 	, m_isActivated(false) {
-	if (m_minProfitPerLotToActivate < m_minProfitPerLotToClose) {
-		throw Exception(
-			"Min profit to activate trailing stop must be greater than"
-				" min profit to close position by trailing stop");
-	}
+	//...//
 }
 
 TrailingStop::~TrailingStop() {
@@ -77,7 +95,7 @@ bool TrailingStop::CheckSignal() {
 	}
 
 	const auto &profitToClose = RoundByScale(
-		m_minProfitPerLotToClose * GetPosition().GetOpenedQty(),
+		m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
 		GetPosition().GetSecurity().GetPriceScale());
 
 	if (m_minProfit && plannedPnl >= *m_minProfit) {
@@ -88,28 +106,30 @@ bool TrailingStop::CheckSignal() {
 
 	GetTradingLog().Write(
 		"%1%\t%2%"
-			"\tprofit=%3$.8f->%4$.8f%5%%6$.8f"
-			"\tbid/ask=%7$.8f/%8$.8f\tpos=%9%",
+			"\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
+			"\tbid/ask=%9$.8f/%10$.8f\tpos=%11%",
 		[&](TradingRecord &record) {
 			record
-				% GetName()
-				% (isSignal ? "signaling" : "trailing");
+				% GetName() // 1
+				% (isSignal ? "signaling" : "trailing"); // 2
 			if (m_minProfit) {
-				record % *m_minProfit;
+				record % *m_minProfit; // 3
 			} else {
-				record % "none";
+				record % "none"; // 3
 			}
-			record % plannedPnl;
+			record % plannedPnl; // 4
 			if (isSignal) {
-				record % "<=";
+				record % "<="; // 5
 			} else {
-				record % '>';
+				record % '>'; // 5
 			}
 			record
-				% profitToClose
-				% GetPosition().GetSecurity().GetBidPriceValue()
-				% GetPosition().GetSecurity().GetAskPriceValue()
-				% GetPosition().GetId();
+				% m_params->GetMinProfitPerLotToActivate() // 6
+				% GetPosition().GetOpenedQty() // 7
+				% profitToClose // 8
+				% GetPosition().GetSecurity().GetBidPriceValue() // 9
+				% GetPosition().GetSecurity().GetAskPriceValue() // 10
+				% GetPosition().GetId(); // 11
 		});
 	
 	m_minProfit = plannedPnl;
@@ -125,7 +145,7 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
 	}
 
 	const Double &profitToActivate = RoundByScale(
-		m_minProfitPerLotToActivate * GetPosition().GetOpenedQty(),
+		m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
 		GetPosition().GetSecurity().GetPriceScale());
 
 	m_isActivated = plannedPnl >= profitToActivate;
@@ -136,28 +156,30 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
 	
 	GetTradingLog().Write(
 		"%1%\t%2%"
-			"\tprofit=%3$.8f->%4$.8f%5%%6$.8f"
-			"\tbid/ask=%7$.8f/%8$.8f\tpos=%9%",
+			"\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
+			"\tbid/ask=%9$.8f/%10$.8f\tpos=%11%",
 		[&](TradingRecord &record) {
 			record
-				% GetName()
-				% (m_isActivated ? "activating" : "accumulating");
+				% GetName() // 1
+				% (m_isActivated ? "activating" : "accumulating"); // 2
 			if (m_maxProfit) {
-				record % *m_maxProfit;
+				record % *m_maxProfit; // 3
 			} else {
-				record % "none";
+				record % "none"; // 3
 			}
-			record % plannedPnl;
+			record % plannedPnl; // 4
 			if (m_isActivated) {
-				record % '>=';
+				record % '>='; // 5
 			} else {
-				record % "<";
+				record % "<"; // 5
 			}
 			record
-				% profitToActivate
-				% GetPosition().GetSecurity().GetBidPriceValue()
-				% GetPosition().GetSecurity().GetAskPriceValue()
-				% GetPosition().GetId();
+				% m_params->GetMinProfitPerLotToActivate() // 6
+				% GetPosition().GetOpenedQty() // 7
+				% profitToActivate // 8
+				% GetPosition().GetSecurity().GetBidPriceValue() // 9
+				% GetPosition().GetSecurity().GetAskPriceValue() // 10
+				% GetPosition().GetId(); // 11
 		});
 	
 	m_maxProfit = plannedPnl;
@@ -165,3 +187,5 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
 	return m_isActivated;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////

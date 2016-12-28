@@ -18,9 +18,23 @@ namespace trdk { namespace TradingLib {
 
 	public:
 
+		class Params {
+		public:
+			explicit Params(
+					const trdk::Volume &minProfitPerLotToActivate,
+					const trdk::Volume &maxPriceOffsetPerLotToClose);
+		public:
+			const trdk::Volume & GetMinProfitPerLotToActivate() const;
+			const trdk::Volume & GetMaxPriceOffsetPerLotToClose() const;
+		private:
+			trdk::Volume m_minProfitPerLotToActivate;
+			trdk::Volume m_maxPriceOffsetPerLotToClose;
+		};
+
+	public:
+
 		explicit TakeProfit(
-				double minProfitPerLotToActivate,
-				double minProfitRatioToClose,
+				const boost::shared_ptr<const Params> &,
 				trdk::Position &);
 		virtual ~TakeProfit();
 
@@ -39,8 +53,7 @@ namespace trdk { namespace TradingLib {
 
 	private:
 
-		const trdk::Lib::Double m_minProfitPerLotToActivate;
-		const trdk::Lib::Double m_minProfitRatioToClose;
+		const boost::shared_ptr<const Params> m_params;
 
 		bool m_isActivated;
 		boost::optional<trdk::Lib::Double> m_minProfit;
