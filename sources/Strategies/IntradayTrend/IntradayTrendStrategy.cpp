@@ -142,6 +142,41 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 	public:
 
+		class Rsi {
+		
+		public:
+
+			pt::ptime time;
+			Double value;
+
+		public:
+		
+			Rsi()
+				: value(0) {
+				//...//
+			}
+
+			operator bool() const {
+				return time != pt::not_a_date_time;
+			}
+
+			bool operator <(const BollingerBandsService::Point &rhs) const {
+				return rhs.source > rhs.high || (*this && value < rhs.source);
+			}
+			bool operator >(const BollingerBandsService::Point &rhs) const {
+				return rhs.source < rhs.low || (*this * value > rhs.source);
+			}
+
+			const Rsi & operator =(const BollingerBandsService::Point &rhs) {
+				time = rhs.time;
+				value = rhs.source;
+				return *this;
+			}
+
+		};
+
+	public:
+
 		Trend()
 			: m_isRising(boost::indeterminate)
 			, m_numberOfDirectionChanges(0)
@@ -167,6 +202,15 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				const BollingerBandsService::Point &price,
 				const BollingerBandsService::Point &rsi) {
 
+			const bool isMaxRsi = m_maxRsi < rsi;
+			if (isMaxRsi) {
+				m_maxRsi = rsi;
+			}
+			const bool isMinRsi = m_minRsi > rsi;
+			if (isMinRsi) {
+				m_minRsi = rsi;
+			}
+
 			auto isRising = m_isRising;
 
 			if (price.source > price.high) {
@@ -178,13 +222,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				}
 
 				if (!isRising) {
-					if (rsi.source <= rsi.high) {
+					if (!isMaxRsi) {
 						return false;
 					}
 					isRising = true;
 				} else {
 					Assert(boost::indeterminate(isRising));
-					isRising = rsi.source > rsi.high;
+					isRising = isMaxRsi;
 				}
 
 			} else if (price.source < price.low) {
@@ -196,13 +240,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				}
 				
 				if (isRising) {
-					if (rsi.source >= rsi.low) {
+					if (!isMinRsi) {
 						return false;
 					}
 					isRising = false;
 				} else {
 					Assert(boost::indeterminate(isRising));
-					isRising = rsi.source >= rsi.low;
+					isRising = !isMinRsi;
 				}
 
 			} else {
@@ -245,6 +289,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			return result;
 		}
 
+		const Rsi & GetMinRsi() const {
+			return m_minRsi;
+		}
+		const Rsi & GetMaxRsi() const {
+			return m_maxRsi;
+		}
+
 	private:
 
 		boost::tribool m_isRising;
@@ -252,6 +303,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		size_t m_numberOfUpdatesInsideBounds;
 		size_t m_numberOfUpdatesOutsideBounds;
+
+		Rsi m_minRsi;
+		Rsi m_maxRsi;
 
 	};
 
@@ -877,7 +931,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				"%1%\t%2%\tchange-no=%3%"
 					"\tbb=%4%->%5$.2f->%6$.4f/%7$.4f/%8$.4f\tbb-out=%9$.2f%%"
 					"\trsi=%10%->%11$.2f->%12$.2f/%13$.0f/%14$.2f"
-					"\tbid/ask=%15$.2f/%16$.2f",
+					"\trsi-min=%15%/%16$.2f\trsi-max=%17%/%18$.2f"
+					"\tbid/ask=%19$.2f/%20$.2f",
 				[&](TradingRecord &record) {
 					record
 						% action // 1
@@ -894,8 +949,12 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						% rsi.low // 12
 						% rsi.middle // 13
 						% rsi.high // 14
-						% m_security->GetBidPriceValue() // 15
-						% m_security->GetAskPriceValue(); // 16
+						% m_trend.GetMinRsi().time.time_of_day() // 15
+						% m_trend.GetMinRsi().value // 16
+						% m_trend.GetMaxRsi().time.time_of_day() // 17
+						% m_trend.GetMaxRsi().value // 18
+						% m_security->GetBidPriceValue() // 19
+						% m_security->GetAskPriceValue(); // 20
 				});
 		}
 
