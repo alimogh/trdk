@@ -142,43 +142,11 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 	public:
 
-		class Rsi {
-		
-		public:
-
-			pt::ptime time;
-			Double value;
-
-		public:
-		
-			Rsi()
-				: value(0) {
-				//...//
-			}
-
-			operator bool() const {
-				return time != pt::not_a_date_time;
-			}
-
-			bool operator <(const BollingerBandsService::Point &rhs) const {
-				return rhs.source > rhs.high || (*this && value < rhs.source);
-			}
-			bool operator >(const BollingerBandsService::Point &rhs) const {
-				return rhs.source < rhs.low || (*this * value > rhs.source);
-			}
-
-			const Rsi & operator =(const BollingerBandsService::Point &rhs) {
-				time = rhs.time;
-				value = rhs.source;
-				return *this;
-			}
-
-		};
-
-	public:
-
-		Trend()
-			: m_isRising(boost::indeterminate)
+		explicit Trend(const Double &rsiUpperBound, const Double &rsiLowerBound)
+			: m_rsiUpperBound(rsiUpperBound)
+			, m_rsiLowerBound(rsiLowerBound)
+			, m_isRising(boost::indeterminate)
+			, m_isPriceRising(boost::indeterminate)
 			, m_numberOfDirectionChanges(0)
 			, m_numberOfUpdatesInsideBounds(0)
 			, m_numberOfUpdatesOutsideBounds(0) {
@@ -200,74 +168,74 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		  */
 		bool Update(
 				const BollingerBandsService::Point &price,
-				const BollingerBandsService::Point &rsi) {
-
-			const bool isMaxRsi = m_maxRsi < rsi;
-			if (isMaxRsi) {
-				m_maxRsi = rsi;
-			}
-			const bool isMinRsi = m_minRsi > rsi;
-			if (isMinRsi) {
-				m_minRsi = rsi;
-			}
+				const RelativeStrengthIndexService::Point &rsi) {
 
 			auto isRising = m_isRising;
+			auto isPriceRising = IsPriceRising(price);
+			const auto isRsiRising = IsRsiRising(rsi);
 
-			if (price.source > price.high) {
-				
+			if (!boost::indeterminate(isPriceRising)) {
 				++m_numberOfUpdatesOutsideBounds;
-				
-				if (isRising) {
-					return false;
-				}
-
-				if (!isRising) {
-					if (!isMaxRsi) {
-						return false;
-					}
-					isRising = true;
-				} else if (!m_maxRsi) {
-					Assert(boost::indeterminate(isRising));
-					return false;
-				} else {
-					Assert(boost::indeterminate(isRising));
-					isRising = isMaxRsi;
-				}
-
-			} else if (price.source < price.low) {
-				
-				++m_numberOfUpdatesOutsideBounds;
-				
-				if (!isRising) {
-					return false;
-				}
-				
-				if (isRising) {
-					if (!isMinRsi) {
-						return false;
-					}
-					isRising = false;
-				} else if (!m_minRsi) {
-					Assert(boost::indeterminate(isRising));
-					return false;
-				} else {
-					Assert(boost::indeterminate(isRising));
-					isRising = !isMinRsi;
-				}
-
 			} else {
-
 				++m_numberOfUpdatesInsideBounds;
-
-				return false;
-
 			}
 
+			if (
+					!boost::indeterminate(isPriceRising)
+					&& !boost::indeterminate(isRsiRising)) {
+				if (isRising == isRsiRising) {
+					return false;
+				}
+				// Very strong signal.
+				isRising = isRsiRising;
+			} else if (!boost::indeterminate(isPriceRising)) {
+				// There is no signal about a new trend, but it may be signal
+				// about current trend end if the price moves from one side
+				// to opposite.
+				Assert(boost::indeterminate(isRsiRising));
+				if (boost::indeterminate(isRising)) {
+					// It has no trend.
+					Assert(boost::indeterminate(m_isPriceRising));
+					return false;
+				}
+				Assert(!boost::indeterminate(m_isPriceRising));
+				if (m_isPriceRising == isPriceRising) {
+					// Nothing changed - current trade started at the same side.
+					return false;
+				}
+				// Price moves from opposite side, so it may be trend end,
+				// but not yet a new trend.
+				isRising = boost::indeterminate;
+				isPriceRising = boost::indeterminate;
+			} else if (!boost::indeterminate(isRsiRising)) {
+				// There is no signal about a new trend, but it may be signal
+				// about trend end if the trend direction is not the same
+				// as RSI signal.
+				Assert(boost::indeterminate(isPriceRising));
+				if (boost::indeterminate(isRising)) {
+					// It has no trend.
+					Assert(boost::indeterminate(m_isPriceRising));
+					return false;
+				}
+				Assert(!boost::indeterminate(m_isPriceRising));
+				if (isRising == isRsiRising) {
+					// Noting changed, the same trend as RSI signal.
+					return false;
+				}
+				// Current trend is not the same as RSI, trend is ended.
+				isRising = boost::indeterminate;
+			} else {
+				return false;
+			}
+
+			AssertNe(isRising.value, m_isRising.value);
+			m_isRising = std::move(isRising);
+
 			Assert(
-				isRising != m_isRising
-				||	boost::indeterminate(isRising)
-						!= boost::indeterminate(m_isRising));
-			m_isRising = isRising;
+				boost::indeterminate(m_isRising)
+				|| !boost::indeterminate(isPriceRising));
+			m_isPriceRising = std::move(isPriceRising);
+
 			++m_numberOfDirectionChanges;
 
 			return true;
@@ -295,23 +263,42 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			return result;
 		}
 
-		const Rsi & GetMinRsi() const {
-			return m_minRsi;
+	protected:
+
+		static boost::tribool IsPriceRising(
+				const BollingerBandsService::Point &price) {
+			if (price.source > price.high) {
+				return true;
+			} else if (price.source < price.low) {
+				return false;
+			} else {
+				return boost::indeterminate;
+			}
 		}
-		const Rsi & GetMaxRsi() const {
-			return m_maxRsi;
+
+		boost::tribool IsRsiRising(
+				const RelativeStrengthIndexService::Point &rsi)
+				const {
+			if (rsi.value > m_rsiUpperBound) {
+				return true;
+			} else if (rsi.value < m_rsiLowerBound) {
+				return false;
+			} else {
+				return boost::indeterminate;
+			}
 		}
 
 	private:
 
-		boost::tribool m_isRising;
-		size_t m_numberOfDirectionChanges;
+		const Double m_rsiUpperBound;
+		const Double m_rsiLowerBound;
 
+		boost::tribool m_isRising;
+		boost::tribool m_isPriceRising;
+
+		size_t m_numberOfDirectionChanges;
 		size_t m_numberOfUpdatesInsideBounds;
 		size_t m_numberOfUpdatesOutsideBounds;
-
-		Rsi m_minRsi;
-		Rsi m_maxRsi;
 
 	};
 
@@ -345,6 +332,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				DropCopy::nDataSourceInstanceId,
 				DropCopy::nDataSourceInstanceId)
 			, m_rsi(nullptr)
+			, m_trend(70, 30)
 			, m_stat(Stat{}) {
 
 			m_settings.Log(GetLog());
@@ -374,12 +362,20 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		}
 
 		virtual void OnServiceStart(const Service &service) override {
-			if (dynamic_cast<const BollingerBandsService *>(&service)) {
-				OnBbServiceStart(
-					dynamic_cast<const BollingerBandsService &>(service));
+			const auto *const bb
+				= dynamic_cast<const BollingerBandsService *>(&service);
+			const auto *const bars
+				= dynamic_cast<const BarService *>(&service);
+			const auto *const rsi
+				= dynamic_cast<const RelativeStrengthIndexService *>(&service);
+			if (bb) {
+				OnBbServiceStart(*bb);
 			}
-			if (dynamic_cast<const BarService *>(&service)) {
-				OnBarServiceStart(dynamic_cast<const BarService &>(service));
+			if (bars) {
+				OnBarServiceStart(*bars);
+			}
+			if (rsi) {
+				OnRsiServiceStart(*rsi);
 			}
 		}
 
@@ -535,22 +531,6 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		}
 
 		void OnBbServiceStart(const BollingerBandsService &service) {
-			if (boost::iequals(service.GetTag(), "prices")) {
-				OnPricesServiceStart(service);
-			} else if (boost::iequals(service.GetTag(), "rsi")) {
-				OnRsiServiceStart(service);
-			} else {
-				GetLog().Info(
-					"Unknown tag \"%1%\" for \"%2%\"."
-						" Must be \"prices\" or \"rsi\".",
-					service.GetTag(),
-					service);
-				throw Exception("Unknown service tag");
-			}
-			m_sourcesSync.Add(service);
-		}
-
-		void OnPricesServiceStart(const BollingerBandsService &service) {
 
 			if (m_prices) {
 				throw Exception(
@@ -593,15 +573,18 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				dropCopySourceId.first,
 				dropCopySourceId.second);
 
+			m_sourcesSync.Add(service);
+
 		}
 
-		void OnRsiServiceStart(const BollingerBandsService &service) {
+		void OnRsiServiceStart(const RelativeStrengthIndexService &service) {
 			if (m_rsi) {
 				throw Exception(
 					"Strategy uses one RSI service, but configured more");
 			}
 			m_rsi = &service;
 			GetLog().Info("Using RSI service \"%1%\"...", *m_rsi);
+			m_sourcesSync.Add(service);
 		}
 
 		void UpdateStat() {
@@ -784,9 +767,6 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			if (!m_trend.Update(price, rsi)) {
 				LogSignal("trend", price, rsi);
 				return;
-			} else if (m_trend.GetNumberOfDirectionChanges() < 2) {
-				LogSignal("first trend", price, rsi);
-				return;
 			}
 
 			Position *position = nullptr;
@@ -935,13 +915,12 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		void LogSignal(
 				const char *action,
 				const BollingerBandsService::Point &price,
-				const BollingerBandsService::Point &rsi) {
+				const RelativeStrengthIndexService::Point &rsi) {
 			GetTradingLog().Write(
 				"%1%\t%2%\tchange-no=%3%"
-					"\tbb=%4%->%5$.2f->%6$.4f/%7$.4f/%8$.4f\tbb-out=%9$.2f%%"
-					"\trsi=%10%->%11$.2f->%12$.2f/%13$.0f/%14$.2f"
-					"\trsi-min=%15%/%16$.2f\trsi-max=%17%/%18$.2f"
-					"\tbid/ask=%19$.2f/%20$.2f",
+					"\tbb=%4%->%5$.2f->%6$.4f/%7$.4f/%8$.4f\tbb-out=%9$.0f%%"
+					"\trsi=%10%->%11$.2f->%12$.2f%%"
+					"\tbid/ask=%13$.2f/%14$.2f",
 				[&](TradingRecord &record) {
 					record
 						% action // 1
@@ -955,15 +934,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						% m_trend.GetOutOfBoundsStat() // 9
 						% rsi.time.time_of_day() // 10
 						% rsi.source // 11
-						% rsi.low // 12
-						% rsi.middle // 13
-						% rsi.high // 14
-						% m_trend.GetMinRsi().time.time_of_day() // 15
-						% m_trend.GetMinRsi().value // 16
-						% m_trend.GetMaxRsi().time.time_of_day() // 17
-						% m_trend.GetMaxRsi().value // 18
-						% m_security->GetBidPriceValue() // 19
-						% m_security->GetAskPriceValue(); // 20
+						% rsi.value // 12
+						% m_security->GetBidPriceValue() // 13
+						% m_security->GetAskPriceValue(); // 14
 				});
 		}
 
@@ -1107,7 +1080,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		std::pair<DropCopyDataSourceInstanceId, DropCopyDataSourceInstanceId>
 			m_pricesServiceDropCopyIds;
 
-		const BollingerBandsService *m_rsi;
+		const RelativeStrengthIndexService *m_rsi;
 
 		Trend m_trend;
 
