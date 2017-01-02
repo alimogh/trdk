@@ -191,19 +191,19 @@ public:
 			const std::string &implementationName,
 			const std::string &instanceName,
 			const IniSectionRef &conf)
-		:	m_id(uuids::string_generator()(conf.ReadKey("id")))
-		,	m_instanceId(nextFreeInstanceId++)
-		,	m_implementationName(implementationName)
-		,	m_instanceName(instanceName)
-		,	m_context(context)
-		,	m_stringId(
-				FormatStringId(
-					typeName,
-					m_implementationName,
-					m_instanceName,
-					m_instanceId))
-		,	m_log(m_stringId, m_context.GetLog())
-		,	m_tradingLog(m_tag, m_context.GetTradingLog()) {
+		: m_id(uuids::string_generator()(conf.ReadKey("id")))
+		, m_instanceId(nextFreeInstanceId++)
+		, m_implementationName(implementationName)
+		, m_instanceName(instanceName)
+		, m_context(context)
+		, m_stringId(
+			FormatStringId(
+				typeName,
+				m_implementationName,
+				m_instanceName,
+				m_instanceId))
+		, m_log(m_stringId, m_context.GetLog())
+		, m_tradingLog(m_instanceName, m_context.GetTradingLog()) {
 		Assert(nextFreeInstanceId.is_lock_free());
 	}
 
