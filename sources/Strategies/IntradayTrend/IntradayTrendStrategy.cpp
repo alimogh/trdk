@@ -226,6 +226,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						return false;
 					}
 					isRising = true;
+				} else if (!m_maxRsi) {
+					Assert(boost::indeterminate(isRising));
+					return false;
 				} else {
 					Assert(boost::indeterminate(isRising));
 					isRising = isMaxRsi;
@@ -244,6 +247,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						return false;
 					}
 					isRising = false;
+				} else if (!m_minRsi) {
+					Assert(boost::indeterminate(isRising));
+					return false;
 				} else {
 					Assert(boost::indeterminate(isRising));
 					isRising = !isMinRsi;
@@ -777,6 +783,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			if (!m_trend.Update(price, rsi)) {
 				LogSignal("trend", price, rsi);
+				return;
+			} else if (m_trend.GetNumberOfDirectionChanges() < 2) {
+				LogSignal("first trend", price, rsi);
 				return;
 			}
 
