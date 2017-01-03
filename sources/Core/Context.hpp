@@ -64,7 +64,8 @@ namespace trdk {
 		explicit Context(
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
-				const trdk::Settings &);
+				const trdk::Settings &,
+				const boost::unordered_map<std::string, std::string> &params);
 		virtual ~Context();
 
 	public:
@@ -251,13 +252,13 @@ namespace trdk {
 
 		class TRDK_CORE_API Exception : public trdk::Context::Exception {
 		public:
-			Exception(const char *what) throw();
+			Exception(const char *what) noexcept;
 			~Exception();
 		};
 
 		class TRDK_CORE_API KeyDoesntExistError : public Exception {
 		public:
-			KeyDoesntExistError(const char *what) throw();
+			KeyDoesntExistError(const char *what) noexcept;
 			~KeyDoesntExistError();
 		};
 
@@ -265,7 +266,9 @@ namespace trdk {
 	
 	public:
 	
-		Params(const trdk::Context &);
+		explicit Params(
+				const trdk::Context &,
+				const boost::unordered_map<std::string, std::string> &initial);
 		~Params();
 
 	public:

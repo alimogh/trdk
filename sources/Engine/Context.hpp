@@ -28,7 +28,8 @@ namespace trdk { namespace Engine {
 				trdk::Context::Log &,
 				trdk::Context::TradingLog &,
 				const trdk::Settings &,
-				const trdk::Lib::Ini &);
+				const trdk::Lib::Ini &,
+				const boost::unordered_map<std::string, std::string> &params);
 		virtual ~Context();
 
 	public:

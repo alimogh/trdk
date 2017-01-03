@@ -14,7 +14,6 @@
 
 #include "Common/DisableBoostWarningsBegin.h"
 #	include <boost/thread/recursive_mutex.hpp>
-#	include <boost/unordered_map.hpp>
 #	include <boost/algorithm/string.hpp>
 #	include <boost/iostreams/stream_buffer.hpp>
 #include "Common/DisableBoostWarningsEnd.h"

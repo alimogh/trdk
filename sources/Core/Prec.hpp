@@ -24,7 +24,6 @@
 #	include <boost/multi_index_container.hpp>
 #	include <boost/multi_index/ordered_index.hpp>
 #	include <boost/multi_index/mem_fun.hpp>
-#	include <boost/unordered_map.hpp>
 #	include <boost/circular_buffer.hpp>
 #	include <boost/uuid/string_generator.hpp>
 #	include <boost/uuid/uuid_generators.hpp>

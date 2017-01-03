@@ -27,7 +27,11 @@ namespace {
 }
 
 MockContext::MockContext()
-	: Context(contextLog, tradingLog, Settings()) {
+	: Context(
+		contextLog,
+		tradingLog,
+		Settings(),
+		boost::unordered_map<std::string, std::string>()) {
 	//...//
 }
 

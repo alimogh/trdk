@@ -40,7 +40,6 @@
 #include <unordered_map>
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/unordered_map.hpp>
 #	include <boost/filesystem.hpp>
 #	include <boost/thread/mutex.hpp>
 #	include <boost/thread/recursive_mutex.hpp>

@@ -126,9 +126,6 @@ namespace {
 		if (argc < 3 || !strlen(argv[2])) {
 			std::cerr << "No configuration file specified." << std::endl;
 			return false;
-		} else if (argc > 3) {
-			std::cerr << "Unknown option \"" << argv[3] << "\"." << std::endl;
-			return false;
 		}
 
 		std::unique_ptr<Engine> engine;
@@ -139,10 +136,20 @@ namespace {
 		boost::optional<trdk::Context::State> state;
 
 		{
+
+			boost::unordered_map<std::string, std::string> params;
 		
 			std::vector<std::string> cmd;
 			for (auto i = 0; i < argc; ++i) {
-				cmd.push_back(argv[i]);
+				cmd.emplace_back(argv[i]);
+				boost::smatch match;
+				if (
+						boost::regex_match(
+							cmd.back(),
+							match,
+							boost::regex("([^=]+)=([^=]+)"))) {
+					params.emplace(std::make_pair(match[1], match[2]));
+				}
 			}
 
 			try {
@@ -157,7 +164,8 @@ namespace {
 						}
 						stateCondition.notify_all();
 					},
-					true);
+					true,
+					params);
 			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr
 					<< "Failed to start engine: \"" << ex << "\"."

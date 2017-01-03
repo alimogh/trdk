@@ -210,8 +210,9 @@ Engine::Context::Context(
 		Context::Log &log,
 		Context::TradingLog &tradingLog,
 		const trdk::Settings &settings,
-		const Lib::Ini &conf)
-	: Base(log, tradingLog, settings) {
+		const Lib::Ini &conf,
+		const boost::unordered_map<std::string, std::string> &params)
+	: Base(log, tradingLog, settings, params) {
 	m_pimpl = new Implementation(*this, conf);
 }
 

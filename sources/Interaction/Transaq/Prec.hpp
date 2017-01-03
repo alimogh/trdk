@@ -13,7 +13,6 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/unordered_map.hpp>
 #	include <boost/property_tree/ptree.hpp>
 #	include <boost/property_tree/xml_parser.hpp>
 #	include <boost/algorithm/string.hpp>

@@ -21,7 +21,8 @@ DummyContext::DummyContext()
 	: Context(
 		*static_cast<Log *>(nullptr),
 		*static_cast<TradingLog *>(nullptr),
-		Settings()) {
+		Settings(),
+		boost::unordered_map<std::string, std::string>()) {
 	//...//
 }
 		

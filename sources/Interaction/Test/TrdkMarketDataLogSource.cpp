@@ -13,6 +13,7 @@
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
+namespace fs = boost::filesystem;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -20,6 +21,14 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::Test;
 
 namespace {
+
+	fs::path ReadSourcePath(const Context &context, const IniSectionRef &conf) {
+		if (context.GetParams().IsExist("test_market_data_source")) {
+			return context.GetParams()["test_market_data_source"];
+		} else {
+			return conf.ReadFileSystemPath("source");
+		}
+	}
 
 	class TrdkMarketDataLogSource : public Test::MarketDataSource {
 
@@ -35,7 +44,7 @@ namespace {
 				const std::string &instanceName,
 				const IniSectionRef &conf)
 			: Base(index, context, instanceName, conf)
-			, m_filePath(conf.ReadFileSystemPath("source")) {
+			, m_filePath(ReadSourcePath(GetContext(), conf)) {
 			GetLog().Info("Source is %1%.", m_filePath);
 		}
 

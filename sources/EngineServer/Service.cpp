@@ -1010,7 +1010,8 @@ void EngineServer::Service::StartEngine() {
 						OnContextStateChanged(state, updateMessage);
 					},
 					*m_dropCopy,
-					false);
+					false,
+					boost::unordered_map<std::string, std::string>());
 				{
 					const EngineLock lock(m_engineMutex);
 					Assert(!m_engine);

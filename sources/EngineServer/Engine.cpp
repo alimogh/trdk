@@ -23,16 +23,18 @@ using namespace trdk::Lib;
 Engine::Engine(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-		bool enableStdOutLog) {
-	Run(path, contextStateUpdateSlot, nullptr, enableStdOutLog);
+		bool enableStdOutLog,
+		const boost::unordered_map<std::string, std::string> &params) {
+	Run(path, contextStateUpdateSlot, nullptr, enableStdOutLog, params);
 }
 
 Engine::Engine(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
 		trdk::DropCopy &dropCopy,
-		bool enableStdOutLog) {
-	Run(path, contextStateUpdateSlot, &dropCopy, enableStdOutLog);
+		bool enableStdOutLog,
+		const boost::unordered_map<std::string, std::string> &params) {
+	Run(path, contextStateUpdateSlot, &dropCopy, enableStdOutLog, params);
 }
 
 Engine::~Engine() {
@@ -45,7 +47,8 @@ void Engine::Run(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
 		trdk::DropCopy *dropCopy,
-		bool enableStdOutLog) {
+		bool enableStdOutLog,
+		const boost::unordered_map<std::string, std::string> &params) {
 
 	Assert(!m_context);
 	Assert(!m_eventsLog);
@@ -94,7 +97,8 @@ void Engine::Run(
 			*m_eventsLog,
 			*m_tradingLog,
 			settings,
-			ini);
+			ini,
+			params);
 
 		m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 
@@ -133,6 +137,13 @@ void Engine::Run(
 		throw Exception(message.str().c_str());
 	}
 
+}
+
+trdk::Context & Engine::GetContext() {
+	if (!m_context) {
+		throw Exception("Engine has no context as it not started");
+	}
+	return *m_context;
 }
 
 void Engine::Stop(const trdk::StopMode &stopMode) {

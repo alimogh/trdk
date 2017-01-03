@@ -407,11 +407,12 @@ public:
 			Context &context,
 			Log &log,
 			TradingLog &tradingLog,
-			const Settings &settings)
+			const Settings &settings,
+			const boost::unordered_map<std::string, std::string> &params)
 		: m_log(log)
 		, m_tradingLog(tradingLog)
 		, m_settings(settings)
-		, m_params(context) {
+		, m_params(context, params) {
 		//...//
 	}
 
@@ -419,9 +420,18 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(Log &log, TradingLog &tradingLog, const Settings &settings)
+Context::Context(
+		Log &log,
+		TradingLog &tradingLog,
+		const Settings &settings,
+		const boost::unordered_map<std::string, std::string> &params)
 	: m_pimpl(
-		boost::make_unique<Implementation>(*this, log, tradingLog, settings)) {
+		boost::make_unique<Implementation>(
+			*this,
+			log,
+			tradingLog,
+			settings,
+			params)) {
 	m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
 }
 
@@ -611,11 +621,14 @@ public:
 	typedef ParamsConcurrencyPolicy::ReadLock ReadLock;
 	typedef ParamsConcurrencyPolicy::WriteLock WriteLock;
 
-	typedef std::map<std::string, std::string> Storage;
+	typedef boost::unordered_map<std::string, std::string> Storage;
 
-	Implementation(const Context &context)
-			: m_context(context),
-			m_revision(0) {
+	Implementation(
+			const Context &context,
+			const boost::unordered_map<std::string, std::string> &initial)
+		: m_context(context)
+		, m_revision(0)
+		, m_storage(initial) {
 		Assert(m_revision.is_lock_free());
 	}
 
@@ -626,7 +639,7 @@ public:
 
 };
 
-Context::Params::Exception::Exception(const char *what) throw()
+Context::Params::Exception::Exception(const char *what) noexcept
 		: Context::Exception(what) {
 	//...//
 }
@@ -636,9 +649,9 @@ Context::Params::Exception::~Exception() {
 }
 
 Context::Params::KeyDoesntExistError::KeyDoesntExistError(
-			const char *what)
-		throw()
-		: Exception(what) {
+		const char *what)
+	noexcept
+	: Exception(what) {
 	//...//
 }
 
@@ -646,8 +659,10 @@ Context::Params::KeyDoesntExistError::~KeyDoesntExistError() {
 	//...//
 }
 
-Context::Params::Params(const Context &context)
-	: m_pimpl(boost::make_unique<Implementation>(context)) {
+Context::Params::Params(
+		const Context &context,
+		const boost::unordered_map<std::string, std::string> &initial)
+	: m_pimpl(boost::make_unique<Implementation>(context, initial)) {
 	//...//
 }
 
@@ -672,9 +687,9 @@ void Context::Params::Update(
 	const Implementation::WriteLock lock(m_pimpl->m_mutex);
 	++m_pimpl->m_revision;
 	auto it = m_pimpl->m_storage.find(key);
-	if (it != m_pimpl->m_storage.end()) {
+	if (it != m_pimpl->m_storage.cend()) {
 		m_pimpl->m_context.GetLog().Debug(
-			"Context param \"%1%\" update (%2%): \"%3%\" -> \"%4%\"...",
+			"Context param \"%1%\" updating (%2%): \"%3%\" -> \"%4%\"...",
 			key,
 			Revision(m_pimpl->m_revision),
 			it->second,
@@ -682,11 +697,12 @@ void Context::Params::Update(
 		it->second = newValue;
 	} else {
 		m_pimpl->m_context.GetLog().Debug(
-			"Context param \"%1%\" create (%2%): \"%3%\"...",
+			"Context param \"%1%\" creating (%2%): \"%3%\"...",
 			key,
 			Revision(m_pimpl->m_revision),
 			newValue);
-		m_pimpl->m_storage.insert(std::make_pair(key, newValue));
+		Verify(
+			m_pimpl->m_storage.emplace(std::make_pair(key, newValue)).second);
 	}
 }
 
