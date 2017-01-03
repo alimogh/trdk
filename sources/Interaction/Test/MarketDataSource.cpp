@@ -52,6 +52,9 @@ void Test::MarketDataSource::Connect(const IniSectionRef &) {
 			try {
 				GetLog().Debug("Started notification thread.");
 				Run();
+				GetContext().RaiseStateUpdate(
+					Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY,
+					"Notification task is completed");
 				GetLog().Debug("Notification thread is completed.");
 			} catch (...) {
 				AssertFailNoException();

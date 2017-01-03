@@ -561,6 +561,7 @@ Context::StateUpdateConnection Context::SubscribeToStateUpdates(
 }
 
 void Context::RaiseStateUpdate(const State &newState) const {
+	GetLog().Debug("Raising state update event %1%...", newState);
 	m_pimpl->m_stateUpdateSignal(newState, nullptr);
 }
 
@@ -568,6 +569,10 @@ void Context::RaiseStateUpdate(
 		const State &newState,
 		const std::string &message)
 		const {
+	GetLog().Debug(
+		"Raising state update event %1% with message \"%2%\"...",
+		newState,
+		message);
 	m_pimpl->m_stateUpdateSignal(newState, &message);
 }
 

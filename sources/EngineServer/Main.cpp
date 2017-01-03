@@ -134,6 +134,10 @@ namespace {
 		std::unique_ptr<Engine> engine;
 		bool result = true;
 
+		boost::mutex stateMutex;
+		boost::condition_variable stateCondition;
+		boost::optional<trdk::Context::State> state;
+
 		{
 		
 			std::vector<std::string> cmd;
@@ -144,8 +148,14 @@ namespace {
 			try {
 				engine = boost::make_unique<Engine>(
 					GetIniFilePath(argv[2]),
-					[](const trdk::Context::State &, const std::string *) {
-						//...//
+					[&](
+							const trdk::Context::State &newState,
+							const std::string *) {
+						{
+							const boost::mutex::scoped_lock lock(stateMutex);
+							state = newState;
+						}
+						stateCondition.notify_all();
 					},
 					true);
 			} catch (const trdk::Lib::Exception &ex) {
@@ -158,64 +168,18 @@ namespace {
 		}
 		
 		if (result) {
-
-			trdk::StopMode stopMode = trdk::STOP_MODE_UNKNOWN;
-			std::cout << std::endl;
-			bool skipInfo = false;
-			while (stopMode == trdk::STOP_MODE_UNKNOWN) {
-				if (!skipInfo) {
-					std::cout
-						<< "To please enter:" << std::endl
-							<< "\t1 - normal stop,"
-								<< " wait until all positions will be completed;"
-								<< std::endl
-							<< "\t2 - gracefully stop,"
-								<< " wait for current orders only;"
-								<< std::endl
-							<< "\t5 - close all positions;" << std::endl
-							<< "\t9 - urgent stop, immediately." << std::endl
-						<< std::endl;
-				} else {
-					skipInfo = false;
-				}
-				const char command = char(getchar());
-				switch (command) {
-					case '1':
-						stopMode = trdk::STOP_MODE_GRACEFULLY_POSITIONS;
-						break;
-					case '2':
-						stopMode = trdk::STOP_MODE_GRACEFULLY_ORDERS;
-						break;
-					case '5':
-						engine->ClosePositions();
-						break;
-					case '9':
-					case 'u':
-					case 'U':
-						stopMode = trdk::STOP_MODE_IMMEDIATELY;
-						break;
-					case  '\n':
-						skipInfo = true;
-						break;
-					default:
-						std::cout << "Unknown command." << std::endl;
-						break;
-				}
-			}
-
-			try {
-				engine->Stop(stopMode);
-			} catch (const trdk::Lib::Exception &ex) {
-				std::cerr
-					<< "Failed to stop engine: \"" << ex << "\"."
-					<< std::endl;
-				result = false;
-			}
-
+			boost::mutex::scoped_lock lock(stateMutex);
+			stateCondition.wait(
+				lock,
+				[&]() {
+					static_assert(
+						trdk::Context::numberOfStates == 4,
+						"List changed.");
+					return
+						state
+						&& *state != trdk::Context::STATE_ENGINE_STARTED;
+				});
 		}
-
-		std::cout << "Stopped. Press any key to exit." << std::endl;
-		getchar();
 
 		return result;
 
