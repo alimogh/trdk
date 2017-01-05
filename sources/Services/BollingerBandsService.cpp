@@ -255,7 +255,7 @@ public:
 		}
 		m_pointsLog
 			<< time.date()
-			<< ',' << ExcelCsvTimeField(time.time_of_day())
+			<< ',' << ExcelTextField(time.time_of_day())
 			<< ',' << source
 			<< ",,,"
 			<< std::endl;
@@ -267,7 +267,7 @@ public:
 		}
 		m_pointsLog
 			<< point.time.date()
-			<< ',' << ExcelCsvTimeField(point.time.time_of_day())
+			<< ',' << ExcelTextField(point.time.time_of_day())
 			<< ',' << point.source
 			<< ',' << point.low
 			<< ',' << point.middle

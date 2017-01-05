@@ -380,16 +380,3 @@ fs::path Lib::Normalize(const fs::path &path, const fs::path &workingDir) {
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-
-ExcelCsvTimeField::ExcelCsvTimeField(const pt::time_duration &value)
-	: m_value(value) {
-	//...//
-}
-
-std::ostream & trdk::Lib::operator <<(
-		std::ostream &os,
-		const ExcelCsvTimeField &field) {
-	return os <<  "\"=\"\"" << field.m_value << "\"\"\"";
-}
-
-////////////////////////////////////////////////////////////////////////////////

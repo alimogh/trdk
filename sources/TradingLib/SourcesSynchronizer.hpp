@@ -26,6 +26,10 @@ namespace trdk { namespace TradingLib {
 	
 	public:
 
+		size_t GetSize() const {
+			return m_sources.size();
+		}
+
 		void Add(const trdk::Service &source) {
 
 			AssertEq(0, m_numberOfUpdatedSources);

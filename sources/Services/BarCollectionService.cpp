@@ -360,7 +360,7 @@ public:
 		}
 		*m_barsLog
 			<< csvDelimeter
-			<< ExcelCsvTimeField(m_current.bar->time.time_of_day())
+			<< ExcelTextField(m_current.bar->time.time_of_day())
 			<< csvDelimeter
 				<< m_security->DescalePrice(m_current.bar->openTradePrice)
 			<< csvDelimeter

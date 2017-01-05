@@ -145,15 +145,26 @@ namespace trdk { namespace Lib {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class ExcelCsvTimeField : private boost::noncopyable {
+	template<typename T>
+	class ExcelTextFieldFormatter {
 	public:
-		explicit ExcelCsvTimeField(const boost::posix_time::time_duration &);
+		explicit ExcelTextFieldFormatter(const T &value)
+			: m_value(&value) {
+			//...//
+		}
 		friend std::ostream & operator <<(
-				std::ostream &,
-				const ExcelCsvTimeField &);
+				std::ostream &os,
+				const ExcelTextFieldFormatter &rhs) {
+			return os <<  "\"=\"\"" << *rhs.m_value << "\"\"\"";
+		}
 	private:
-		const boost::posix_time::time_duration &m_value;
+		const T *m_value;
 	};
+
+	template<typename T>
+	trdk::Lib::ExcelTextFieldFormatter<T> ExcelTextField(const T &value) {
+		return trdk::Lib::ExcelTextFieldFormatter<T>(value);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 

@@ -209,7 +209,11 @@ public:
 	void OpenPointsLog() {
 		Assert(!m_pointsLog.is_open());
 		auto log = m_self.OpenDataLog("csv");
-		log << "Date,Time,Open,High,Low,Close,ATR,+DI,-DI,ADX" << std::endl;
+		log
+			<< "Date,Time,Open,High,Low,Close,"
+			<< ExcelTextField("+DI") << ',' << ExcelTextField("-DI") 
+			<< ",ADX"
+			<< std::endl;
 		log << std::setfill('0');
 		m_pointsLog = std::move(log);
 	}
@@ -223,7 +227,7 @@ public:
 		}
 		m_pointsLog
 			<< source.time.date()
-			<< ',' << ExcelCsvTimeField(source.time.time_of_day())
+			<< ',' << ExcelTextField(source.time.time_of_day())
 			<< ',' << source.open
 			<< ',' << source.high
 			<< ',' << source.low
@@ -245,7 +249,7 @@ public:
 		}
 		m_pointsLog
 			<< point.source.time.date()
-			<< ',' << ExcelCsvTimeField(point.source.time.time_of_day())
+			<< ',' << ExcelTextField(point.source.time.time_of_day())
 			<< ',' << point.source.open
 			<< ',' << point.source.high
 			<< ',' << point.source.low

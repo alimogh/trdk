@@ -6,11 +6,11 @@ Sub FormatIntradayMaTrendStrategyReport()
     Cells.Select
     Selection.AutoFilter
     Selection.Columns.AutoFit
-    Range("B2").Select
-    ActiveWindow.FreezePanes = True
-    
-    Columns("I:I").Select
-    Selection.FormatConditions.AddDatabar
+	Range("C2").Select
+	ActiveWindow.FreezePanes = True
+
+	Columns("J:J").Select
+	Selection.FormatConditions.AddDatabar
     Selection.FormatConditions(Selection.FormatConditions.Count).ShowValue = True
     Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
     With Selection.FormatConditions(1)
@@ -45,8 +45,8 @@ Sub FormatIntradayMaTrendStrategyReport()
         .TintAndShade = 0
     End With
 
-    Columns("K:K").Select
-    Selection.FormatConditions.AddDatabar
+	Columns("L:L").Select
+	Selection.FormatConditions.AddDatabar
     Selection.FormatConditions(Selection.FormatConditions.Count).ShowValue = True
     Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
     With Selection.FormatConditions(1)
@@ -81,9 +81,9 @@ Sub FormatIntradayMaTrendStrategyReport()
         .TintAndShade = 0
     End With
 
-    ' Unrealized PnL
-    Columns("L:L").Select
-    Selection.FormatConditions.AddDatabar
+	' Unrealized PnL
+	Columns("M:M").Select
+	Selection.FormatConditions.AddDatabar
     Selection.FormatConditions(Selection.FormatConditions.Count).ShowValue = True
     Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
     With Selection.FormatConditions(1)
@@ -117,8 +117,8 @@ Sub FormatIntradayMaTrendStrategyReport()
         .Color = 255
         .TintAndShade = 0
     End With
-    Columns("M:M").Select
-    Selection.FormatConditions.AddDatabar
+	Columns("N:N").Select
+	Selection.FormatConditions.AddDatabar
     Selection.FormatConditions(Selection.FormatConditions.Count).ShowValue = True
     Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
     With Selection.FormatConditions(1)
@@ -152,8 +152,8 @@ Sub FormatIntradayMaTrendStrategyReport()
         .Color = 255
         .TintAndShade = 0
     End With
-    Columns("N:N").Select
-    Selection.FormatConditions.AddDatabar
+	Columns("O:O").Select
+	Selection.FormatConditions.AddDatabar
     Selection.FormatConditions(Selection.FormatConditions.Count).ShowValue = True
     Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
     With Selection.FormatConditions(1)
@@ -190,69 +190,69 @@ Sub FormatIntradayMaTrendStrategyReport()
 
     ' P&L vol
     rowOfTotals = Cells.SpecialCells(xlLastCell).Row + 1
-    Range("I" & rowOfTotals).Select
-    Selection.FormatConditions.Delete
+	Range("J" & rowOfTotals).Select
+	Selection.FormatConditions.Delete
     Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(I2:I" & (rowOfTotals - 1) & ")"
+	ActiveCell.Formula = "=SUM(J2:J" & (rowOfTotals - 1) & ")"
 
-    ' P&L %
-    Range("J" & rowOfTotals).Select
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=AVERAGE(J2:J" & (rowOfTotals - 1) & ")"
-    Selection.NumberFormat = "0.00000"
-    
-    ' Unrealized PnL
-    Range("L" & rowOfTotals).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(L2:L" & (rowOfTotals - 1) & ")"
-    Range("L" & (rowOfTotals + 1)).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=AVERAGE(L2:L" & (rowOfTotals - 1) & ")"
-    ' Unrealized profit
-    Range("M" & rowOfTotals).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(M2:M" & (rowOfTotals - 1) & ")"
-    Range("M" & (rowOfTotals + 1)).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=AVERAGE(M2:M" & (rowOfTotals - 1) & ")"
-    ' Unrealized loss
-    Range("N" & rowOfTotals).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(N2:N" & (rowOfTotals - 1) & ")"
-    Range("N" & (rowOfTotals + 1)).Select
-    Selection.FormatConditions.Delete
-    Selection.Font.Bold = True
-    ActiveCell.Formula = "=AVERAGE(N2:N" & (rowOfTotals - 1) & ")"
+	' P&L %
+	Range("K" & rowOfTotals).Select
+	Selection.Font.Bold = True
+	ActiveCell.Formula = "=AVERAGE(K2:K" & (rowOfTotals - 1) & ")"
+	Selection.NumberFormat = "0.00000"
 
-    ' Number of wins
-    Range("O" & rowOfTotals).Select
+	' Unrealized PnL
+	Range("M" & rowOfTotals).Select
+	Selection.FormatConditions.Delete
     Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(O2:O" & (rowOfTotals - 1) & ")"
-    ' Number of losses
-    Range("P" & rowOfTotals).Select
+	ActiveCell.Formula = "=SUM(M2:M" & (rowOfTotals - 1) & ")"
+	Range("M" & (rowOfTotals + 1)).Select
+	Selection.FormatConditions.Delete
     Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(P2:P" & (rowOfTotals - 1) & ")"
-    ' Number of operations
-    rowOfTotals = rowOfTotals + 1
-    Range("P" & rowOfTotals).Select
+	ActiveCell.Formula = "=AVERAGE(M2:M" & (rowOfTotals - 1) & ")"
+	' Unrealized profit
+	Range("N" & rowOfTotals).Select
+	Selection.FormatConditions.Delete
     Selection.Font.Bold = True
-    ActiveCell.Formula = "=SUM(P" & (rowOfTotals - 1) & ":O" & (rowOfTotals - 1) & ")"
+	ActiveCell.Formula = "=SUM(N2:N" & (rowOfTotals - 1) & ")"
+	Range("N" & (rowOfTotals + 1)).Select
+	Selection.FormatConditions.Delete
+    Selection.Font.Bold = True
+	ActiveCell.Formula = "=AVERAGE(N2:N" & (rowOfTotals - 1) & ")"
+	' Unrealized loss
+	Range("O" & rowOfTotals).Select
+	Selection.FormatConditions.Delete
+    Selection.Font.Bold = True
+	ActiveCell.Formula = "=SUM(O2:O" & (rowOfTotals - 1) & ")"
+	Range("O" & (rowOfTotals + 1)).Select
+	Selection.FormatConditions.Delete
+    Selection.Font.Bold = True
+	ActiveCell.Formula = "=AVERAGE(O2:O" & (rowOfTotals - 1) & ")"
 
-    ' % of wins
-    rowOfTotals = rowOfTotals + 1
-    Range("O" & rowOfTotals).Select
-    Selection.Font.Bold = True
+	' Number of wins
+	Range("P" & rowOfTotals).Select
+	Selection.Font.Bold = True
+	ActiveCell.Formula = "=SUM(P2:P" & (rowOfTotals - 1) & ")"
+	' Number of losses
+	Range("Q" & rowOfTotals).Select
+	Selection.Font.Bold = True
+	ActiveCell.Formula = "=SUM(Q2:Q" & (rowOfTotals - 1) & ")"
+	' Number of operations
+	rowOfTotals = rowOfTotals + 1
+	Range("Q" & rowOfTotals).Select
+	Selection.Font.Bold = True
+	ActiveCell.Formula = "=SUM(Q" & (rowOfTotals - 1) & ":P" & (rowOfTotals - 1) & ")"
+
+	' % of wins
+	rowOfTotals = rowOfTotals + 1
+	Range("P" & rowOfTotals).Select
+	Selection.Font.Bold = True
     Selection.NumberFormat = "0"
-    ActiveCell.Formula = "=(O" & (rowOfTotals - 2) & "/P" & (rowOfTotals - 1) & ") * 100"
-    ' % of losses
-    Range("P" & rowOfTotals).Select
-    Selection.Font.Bold = True
+	ActiveCell.Formula = "=(P" & (rowOfTotals - 2) & "/Q" & (rowOfTotals - 1) & ") * 100"
+	' % of losses
+	Range("Q" & rowOfTotals).Select
+	Selection.Font.Bold = True
     Selection.NumberFormat = "0"
-    ActiveCell.Formula = "=(P" & (rowOfTotals - 2) & "/P" & (rowOfTotals - 1) & ") * 100"
+	ActiveCell.Formula = "=(Q" & (rowOfTotals - 2) & "/Q" & (rowOfTotals - 1) & ") * 100"
 
 End Sub

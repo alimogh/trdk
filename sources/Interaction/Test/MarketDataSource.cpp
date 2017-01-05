@@ -58,7 +58,7 @@ void Test::MarketDataSource::Connect(const IniSectionRef &) {
 				GetLog().Debug("Notification thread is completed.");
 			} catch (...) {
 				AssertFailNoException();
-				throw;
+					throw;
 			}
 		});
 }
