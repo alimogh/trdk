@@ -93,6 +93,9 @@
     <ClCompile Include="MockBarService.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
+    <ClCompile Include="..\Services\AdxIndicatorUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />

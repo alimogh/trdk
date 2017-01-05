@@ -20,12 +20,16 @@ namespace trdk { namespace Tests {
 
 	public:
 
-		MockSecurity()
+		MockSecurity(const char *symbol = "TEST_SCALE2*/USD::FUT")
 			: Security(
 				DummyContext::GetInstance(),
-				trdk::Lib::Symbol("TEST_SCALE2*/USD::FUT"),
+				trdk::Lib::Symbol(symbol),
 				DummyMarketDataSource::GetInstance(),
 				SupportedLevel1Types()) {
+			//...//
+		}
+
+		virtual ~MockSecurity() {
 			//...//
 		}
 

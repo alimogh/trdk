@@ -38,6 +38,9 @@
     <ClInclude Include="RelativeStrengthIndexService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AdxIndicator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -74,6 +77,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RelativeStrengthIndexServiceUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AdxIndicator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AdxIndicatorUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -119,4 +119,9 @@ namespace trdk { namespace Services {
 
 	};
 
+	namespace Indicators {
+		//! Bollinger Bands.
+		typedef trdk::Services::BollingerBandsService BollingerBands;
+	}
+
 } }

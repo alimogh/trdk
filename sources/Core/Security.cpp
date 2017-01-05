@@ -88,6 +88,8 @@ namespace {
 			return 3;
 		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE2")) {
 			return 2;
+		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE4")) {
+			return 4;
 		} else {
 			const uint8_t result = 2;
 			source.GetLog().Warn(
@@ -99,7 +101,9 @@ namespace {
 	}
 
 	size_t GetLotSizeBySymbol(const Symbol &symbol) {
-		if (symbol.GetSymbol() == "TEST_SCALE2") {
+		if (
+				symbol.GetSymbol() == "TEST_SCALE2"
+				|| symbol.GetSymbol() == "TEST_SCALE4") {
 			return 1;
 		}
 		switch (symbol.GetSecurityType()) {

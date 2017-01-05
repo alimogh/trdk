@@ -149,10 +149,6 @@ namespace {
 			//...//
 		}
 
-		virtual ~Service() noexcept {
-			//...//
-		}
-
 	public:
 
 		using RelativeStrengthIndexService::OnServiceDataUpdate;

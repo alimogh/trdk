@@ -361,6 +361,7 @@
     <ClInclude Include="DummyContext.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Services\AdxIndicatorUTest.cpp" />
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />

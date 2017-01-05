@@ -46,7 +46,7 @@ namespace boost { namespace accumulators {
 					+ (m_sum * (1 - m_smoothingConstant));
  			}
 
-			result_type result(dont_care) const {
+			const result_type & result(const dont_care &) const {
 				return m_sum;
 			}
 
@@ -113,7 +113,7 @@ namespace boost { namespace accumulators {
 				m_val = val;
  			}
 
-			result_type result(dont_care) const {
+			const result_type & result(const dont_care &) const {
 				return m_val;
 			}
 

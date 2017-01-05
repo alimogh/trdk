@@ -119,4 +119,9 @@ namespace trdk { namespace Services {
 
 	};
 
+	namespace Indicators {
+		//! Moving Average.
+		typedef trdk::Services::MovingAverageService Ma;
+	}
+
 } }
