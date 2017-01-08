@@ -96,9 +96,8 @@ namespace trdk { namespace TradingLib {
 				
 			}
 
-			throw trdk::Lib::Exception(
-				"Failed to sync update of the unknown service");
-		
+			return false;
+
 		}
 
 	private:
