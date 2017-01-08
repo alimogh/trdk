@@ -768,6 +768,14 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			position->AttachAlgo(
 				boost::make_unique<TakeProfit>(m_stops.takeProfit, *position));
 
+			GetContext().InvokeDropCopy(
+				[this, &position](DropCopy &dropCopy) {
+					dropCopy.ReportOperationStart(
+						*this,
+						position->GetId(),
+						GetContext().GetCurrentTime());
+				});
+
 			ContinuePosition(*position);
 
 			m_stat.maxProfitPriceDelta

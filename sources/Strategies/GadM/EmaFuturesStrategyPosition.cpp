@@ -262,11 +262,11 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					= GetStrategy().GetContext().GetCurrentTime();
 				GetStrategy().GetContext().InvokeDropCopy(
 					[this, &startTime](DropCopy &dropCopy) {
-					dropCopy.ReportOperationStart(
-						GetStrategy(),
-						GetId(),
-						startTime);
-				});
+						dropCopy.ReportOperationStart(
+							GetStrategy(),
+							GetId(),
+							startTime);
+					});
 				Open(GetMarketOpenOppositePrice());
 				m_isPassiveOpen = true;
 				m_isSent = true;
