@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Services/BarService.hpp"
+#include "MockService.hpp"
 
 namespace trdk { namespace Tests {
 
@@ -22,6 +23,8 @@ namespace trdk { namespace Tests {
 		virtual ~MockBarService();
 
 	public:
+
+		MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
 
 		MOCK_CONST_METHOD0(GetSize, size_t());
 		MOCK_CONST_METHOD0(IsEmpty, bool());

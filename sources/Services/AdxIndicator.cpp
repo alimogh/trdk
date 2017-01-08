@@ -393,11 +393,15 @@ Adx::~Adx() noexcept {
 	//...//
 }
 
+const pt::ptime & Adx::GetLastDataTime() const {
+	return GetLastPoint().source.time;
+}
+
 bool Adx::IsEmpty() const {
 	return m_pimpl->m_lastValueNo == 0;
 }
 
-Adx::Point Adx::GetLastPoint() const {
+const Adx::Point & Adx::GetLastPoint() const {
 	if (IsEmpty()) {
 		throw ValueDoesNotExistError("ADX Indicator is empty");
 	}

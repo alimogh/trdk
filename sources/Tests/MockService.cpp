@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2016/12/24 17:20:25
+ *   Created: 2017/01/09 00:19:27
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MockBarService.hpp"
+#include "MockService.hpp"
 #include "DummyContext.hpp"
 
 using namespace trdk;
@@ -18,8 +18,8 @@ using namespace trdk::Tests;
 
 namespace uuids = boost::uuids;
 
-MockBarService::MockBarService()
-	: BarService(
+MockService::MockService()
+	: Service(
 		DummyContext::GetInstance(),
 		uuids::uuid(),
 		"Mock",
@@ -34,6 +34,6 @@ MockBarService::MockBarService()
 	//...//
 }
 
-MockBarService::~MockBarService() {
+MockService::~MockService() {
 	//...//
 }

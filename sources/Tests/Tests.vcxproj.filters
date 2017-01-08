@@ -43,6 +43,9 @@
       <Filter>Dummies</Filter>
     </ClInclude>
     <ClInclude Include="FuncTestList.hpp" />
+    <ClInclude Include="MockService.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp">
@@ -95,6 +98,12 @@
     </ClCompile>
     <ClCompile Include="..\Services\AdxIndicatorUTest.cpp">
       <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="MockService.cpp">
+      <Filter>Mocks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

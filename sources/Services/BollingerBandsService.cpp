@@ -327,6 +327,10 @@ BollingerBandsService::~BollingerBandsService() {
 	//...//
 }
 
+const pt::ptime & BollingerBandsService::GetLastDataTime() const {
+	return GetLastPoint().time;
+}
+
 const uuids::uuid & BollingerBandsService::GetLowValuesId() const {
 	return m_pimpl->m_lowValuesId;
 }
@@ -366,7 +370,7 @@ bool BollingerBandsService::IsEmpty() const {
 	return m_pimpl->m_lastValueNo == 0;
 }
 
-BollingerBandsService::Point BollingerBandsService::GetLastPoint() const {
+const BollingerBandsService::Point & BollingerBandsService::GetLastPoint() const {
 	if (!m_pimpl->m_lastValue) {
 		throw ValueDoesNotExistError("MovingAverageService is empty");
 	}
@@ -380,14 +384,14 @@ size_t BollingerBandsService::GetHistorySize() const {
 	return m_pimpl->m_history->GetSize();
 }
 
-BollingerBandsService::Point BollingerBandsService::GetHistoryPoint(
+const BollingerBandsService::Point & BollingerBandsService::GetHistoryPoint(
 		size_t index)
 		const {
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[index];
 }
 
-BollingerBandsService::Point
+const BollingerBandsService::Point &
 BollingerBandsService::GetHistoryPointByReversedIndex(
 		size_t index)
 		const {

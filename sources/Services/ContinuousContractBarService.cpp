@@ -355,6 +355,10 @@ ContinuousContractBarService::~ContinuousContractBarService() {
 	//...//
 }
 
+const pt::ptime & ContinuousContractBarService::GetLastDataTime() const {
+	return GetLastBar().time;
+}
+
 size_t ContinuousContractBarService::GetSize() const {
 	return m_pimpl->m_bars.size() + m_pimpl->m_sizeOfCurrentContract;
 }

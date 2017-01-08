@@ -33,43 +33,53 @@ namespace trdk { namespace Services {
 
 	public:
 
-		virtual size_t GetSize() const;
-		virtual bool IsEmpty() const;
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
 
-		virtual const trdk::Security & GetSecurity() const;
+		virtual size_t GetSize() const override;
+		virtual bool IsEmpty() const override;
 
-		virtual Bar GetBar(size_t index) const;
-		virtual Bar GetBarByReversedIndex(size_t index) const;
-		virtual Bar GetLastBar() const;
+		virtual const trdk::Security & GetSecurity() const override;
+
+		virtual Bar GetBar(size_t index) const override;
+		virtual Bar GetBarByReversedIndex(size_t index) const override;
+		virtual Bar GetLastBar() const override;
 
 		virtual void DropLastBarCopy(
 				const trdk::DropCopyDataSourceInstanceId &)
-				const;
+				const
+				override;
 		virtual void DropUncompletedBarCopy(
 				const trdk::DropCopyDataSourceInstanceId &)
-				const;
+				const
+				override;
 
 	public:
 
 		virtual void OnSecurityStart(
 				const trdk::Security &,
-				trdk::Security::Request &);
+				trdk::Security::Request &)
+				override;
 
 		virtual void OnSecurityContractSwitched(
 				const boost::posix_time::ptime &,
 				const trdk::Security &,
-				trdk::Security::Request &);
+				trdk::Security::Request &)
+				override;
 
 		virtual bool OnSecurityServiceEvent(
 				const boost::posix_time::ptime &,
 				const Security &,
-				const Security::ServiceEvent &);
+				const Security::ServiceEvent &)
+				override;
 
 		virtual bool OnNewTrade(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &);
+				const trdk::Qty &)
+				override;
 
 	private:
 

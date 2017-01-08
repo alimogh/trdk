@@ -357,6 +357,7 @@
     <ClInclude Include="MockDropCopy.hpp" />
     <ClInclude Include="MockMarketDataSource.hpp" />
     <ClInclude Include="MockSecurity.hpp" />
+    <ClInclude Include="MockService.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="DummyContext.hpp" />
   </ItemGroup>
@@ -366,6 +367,7 @@
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />
     <ClCompile Include="..\Services\RelativeStrengthIndexServiceUTest.cpp" />
+    <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp" />
     <ClCompile Include="DummyContext.cpp" />
     <ClCompile Include="DummyMarketDataSource.cpp" />
     <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
@@ -376,6 +378,7 @@
     <ClCompile Include="..\Core\PriceBookUTest.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp" />
+    <ClCompile Include="MockService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>

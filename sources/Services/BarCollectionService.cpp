@@ -881,6 +881,10 @@ BarCollectionService::~BarCollectionService() {
 	//...//
 }
 
+const pt::ptime & BarCollectionService::GetLastDataTime() const {
+	return GetLastBar().time;
+}
+
 void BarCollectionService::OnSecurityStart(
 		const Security &security,
 		Security::Request &request) {

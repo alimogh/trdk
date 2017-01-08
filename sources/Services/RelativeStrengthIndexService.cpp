@@ -189,11 +189,16 @@ RelativeStrengthIndexService::~RelativeStrengthIndexService() noexcept {
 	//...//
 }
 
+const pt::ptime & RelativeStrengthIndexService::GetLastDataTime() const {
+	return GetLastPoint().time;
+}
+
 bool RelativeStrengthIndexService::IsEmpty() const {
 	return m_pimpl->m_lastValueNo == 0;
 }
 
-RelativeStrengthIndexService::Point RelativeStrengthIndexService::GetLastPoint()
+const RelativeStrengthIndexService::Point &
+RelativeStrengthIndexService::GetLastPoint()
 		const {
 	if (IsEmpty()) {
 		throw ValueDoesNotExistError("RelativeStrengthIndexService is empty");

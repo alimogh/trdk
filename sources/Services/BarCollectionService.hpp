@@ -37,6 +37,10 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
+
 		//! Applies callback for each bar in the reversed order.
 		/** Stops if callback returns false.
 		  */
@@ -48,45 +52,52 @@ namespace trdk { namespace Services {
 
 	public:
 
-		virtual size_t GetSize() const;
-		virtual bool IsEmpty() const;
+		virtual size_t GetSize() const override;
+		virtual bool IsEmpty() const override;
 
-		virtual const trdk::Security & GetSecurity() const;
+		virtual const trdk::Security & GetSecurity() const override;
 
-		virtual Bar GetBar(size_t) const;
-		virtual Bar GetBarByReversedIndex(size_t) const;
-		virtual Bar GetLastBar() const;
+		virtual Bar GetBar(size_t) const override;
+		virtual Bar GetBarByReversedIndex(size_t) const override;
+		virtual Bar GetLastBar() const override;
 
 		virtual void DropLastBarCopy(
 				const trdk::DropCopyDataSourceInstanceId &)
-				const;
+				const
+				override;
 		virtual void DropUncompletedBarCopy(
 				const trdk::DropCopyDataSourceInstanceId &)
-				const;
+				const
+				override;
 
 		virtual void OnSecurityStart(
 				const trdk::Security &,
-				trdk::Security::Request &);
+				trdk::Security::Request &)
+				override;
 
 		virtual bool OnNewBar(
 				const trdk::Security &,
-				const trdk::Security::Bar &);
+				const trdk::Security::Bar &)
+				override;
 
 		virtual bool OnLevel1Tick(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
+				const trdk::Level1TickValue &)
+				override;
 
 		virtual bool OnNewTrade(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
 				const trdk::ScaledPrice &,
-				const trdk::Qty &);
+				const trdk::Qty &)
+				override;
 
 		virtual bool OnSecurityServiceEvent(
 				const boost::posix_time::ptime &,
 				const trdk::Security &,
-				const trdk::Security::ServiceEvent &);
+				const trdk::Security::ServiceEvent &)
+				override;
 
 	private:
 

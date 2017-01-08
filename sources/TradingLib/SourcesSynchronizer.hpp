@@ -33,7 +33,7 @@ namespace trdk { namespace TradingLib {
 		void Add(const trdk::Service &source) {
 
 			AssertEq(0, m_numberOfUpdatedSources);
-			Assert(!m_isStarted);
+			TrdkAssert(!m_isStarted);
 
 			for (const auto &checkSource: m_sources) {
 				if (checkSource == source.GetInstanceId()) {
@@ -58,22 +58,38 @@ namespace trdk { namespace TradingLib {
 				if (m_sources[i] != source.GetInstanceId()) {
 					continue;
 				}
-				
+
+				if (m_lastDataTime != source.GetLastDataTime()) {
+					if (
+							m_isStarted
+							&& m_numberOfUpdatedSources != m_sources.size()) {
+						throw trdk::Lib::Exception(
+							"One or more service updates are lost");
+					}
+					TrdkAssert(
+						m_lastDataTime.is_not_a_date_time()
+						|| m_lastDataTime < source.GetLastDataTime());
+					m_flags = std::vector<bool>(m_sources.size(), false);
+					m_numberOfUpdatedSources = 0;
+					m_lastDataTime = source.GetLastDataTime();
+				}
+
 				if (m_flags[i]) {
+					TrdkAssert(!m_lastDataTime.is_not_a_date_time());
 					if (!m_isStarted) {
+						m_lastDataTime = source.GetLastDataTime();
 						return false;
 					}
+					AssertLe(m_lastDataTime, source.GetLastDataTime());
 					throw trdk::Lib::Exception(
 						"Services updates sequences is violated");
 				}
-				
+
 				if (++m_numberOfUpdatedSources < m_sources.size()) {
 					m_flags[i] = true;
 					return false;
 				}
 
-				m_flags = std::vector<bool>(m_sources.size(), false);
-				m_numberOfUpdatedSources = 0;
 				m_isStarted = true;
 
 				return true;
@@ -88,6 +104,7 @@ namespace trdk { namespace TradingLib {
 	private:
 
 		bool m_isStarted;
+		boost::posix_time::ptime m_lastDataTime;
 		size_t m_numberOfUpdatedSources;
 		std::vector<trdk::Module::InstanceId> m_sources;
 		std::vector<bool> m_flags;

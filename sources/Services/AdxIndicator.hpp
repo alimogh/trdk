@@ -72,12 +72,16 @@ namespace trdk { namespace Services { namespace Indicators {
 
 	public:
 
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
+
 		bool IsEmpty() const;
 
 		//! Returns last value point.
 		/** @throw ValueDoesNotExistError
 		  */
-		Point GetLastPoint() const;
+		const Point & GetLastPoint() const;
 
 	protected:
 

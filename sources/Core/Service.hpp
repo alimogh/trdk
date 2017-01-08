@@ -38,6 +38,8 @@ namespace trdk {
 		const boost::uuids::uuid & GetTypeId() const;
 		const std::string & GetTag() const;
 
+		virtual const boost::posix_time::ptime & GetLastDataTime() const = 0;
+
 	public:
 
 		void RegisterSource(trdk::Security &);

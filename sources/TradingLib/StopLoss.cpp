@@ -84,8 +84,7 @@ const char * StopPrice::GetName() const {
 
 bool StopPrice::Activate() {
 
-	const auto &currentPrice = GetPosition().GetSecurity().DescalePrice(
-		GetPosition().GetMarketClosePrice());
+	const auto &currentPrice = GetPosition().GetSecurity().GetLastPrice();
 	if (GetPosition().IsLong()) {
 		if (m_params->GetPrice() < currentPrice) {
 			return false;

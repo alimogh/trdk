@@ -55,12 +55,16 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
+
 		bool IsEmpty() const;
 
 		//! Returns last value point.
 		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
 		  */
-		Point GetLastPoint() const;
+		const Point & GetLastPoint() const;
 
 		//! Drops last value point copy.
 		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
@@ -80,7 +84,7 @@ namespace trdk { namespace Services {
 		  * @throw trdk::Services::MovingAverageService::HasNotHistory
 		  * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex
 		  */
-		Point GetHistoryPoint(size_t index) const;
+		const Point & GetHistoryPoint(size_t index) const;
 
 		//! Returns value point from history by reversed index.
 		/** Last value has index "zero".
@@ -88,25 +92,28 @@ namespace trdk { namespace Services {
 		  * @throw trdk::Services::MovingAverageService::HasNotHistory
 		  * @sa trdk::Services::MovingAverageService::GetLastPoint 
 		  */
-		Point GetHistoryPointByReversedIndex(size_t index) const;
+		const Point & GetHistoryPointByReversedIndex(size_t index) const;
 
 	protected:
 
 		virtual void OnSecurityContractSwitched(
 				const boost::posix_time::ptime &,
 				const trdk::Security &,
-				trdk::Security::Request &);
+				trdk::Security::Request &)
+				override;
 
 		virtual bool OnServiceDataUpdate(
 				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
+				const trdk::Lib::TimeMeasurement::Milestones &)
+				override;
 
 	public:
 
 		virtual bool OnLevel1Tick(
 				const trdk::Security &,
 				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
+				const trdk::Level1TickValue &)
+				override;
 
 		virtual bool OnNewBar(
 				const trdk::Security &,

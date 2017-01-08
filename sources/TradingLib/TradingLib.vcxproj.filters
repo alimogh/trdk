@@ -26,6 +26,9 @@
     <ClCompile Include="TakeProfit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SourcesSynchronizerUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">

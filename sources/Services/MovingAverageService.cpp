@@ -466,6 +466,10 @@ MovingAverageService::~MovingAverageService() {
 	//...//
 }
 
+const pt::ptime & MovingAverageService::GetLastDataTime() const {
+	return GetLastPoint().time;
+}
+
 bool MovingAverageService::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
@@ -514,7 +518,7 @@ bool MovingAverageService::IsEmpty() const {
 	return m_pimpl->m_lastValueNo == 0;
 }
 
-MovingAverageService::Point MovingAverageService::GetLastPoint() const {
+const MovingAverageService::Point & MovingAverageService::GetLastPoint() const {
 	if (IsEmpty()) {
 		throw ValueDoesNotExistError("MovingAverageService is empty");
 	}
@@ -548,14 +552,14 @@ size_t MovingAverageService::GetHistorySize() const {
 	return m_pimpl->m_history->GetSize();
 }
 
-MovingAverageService::Point MovingAverageService::GetHistoryPoint(
+const MovingAverageService::Point & MovingAverageService::GetHistoryPoint(
 		size_t index)
 		const {
 	m_pimpl->CheckHistoryIndex(index);
 	return (*m_pimpl->m_history)[index];
 }
 
-MovingAverageService::Point
+const MovingAverageService::Point &
 MovingAverageService::GetHistoryPointByReversedIndex(
 		size_t index)
 		const {

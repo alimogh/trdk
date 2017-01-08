@@ -56,6 +56,10 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
+
 		//! UUID for values channel "low value".
 		/** @sa GetId
 		  * @sa GetHighValuesId
@@ -74,7 +78,7 @@ namespace trdk { namespace Services {
 		//! Returns last point.
 		/** @throw trdk::Services::BollingerBandsService::ValueDoesNotExistError
 		  */
-		Point GetLastPoint() const;
+		const Point & GetLastPoint() const;
 
 		//! Number of points from history.
 		size_t GetHistorySize() const;
@@ -85,7 +89,7 @@ namespace trdk { namespace Services {
 		  * @throw trdk::Services::BollingerBandsService::HasNotHistory
 		  * @sa trdk::Services::BollingerBandsService::GetValueByReversedIndex
 		  */
-		Point GetHistoryPoint(size_t index) const;
+		const Point & GetHistoryPoint(size_t index) const;
 
 		//! Returns point from history by reversed index.
 		/** Last point has index "zero".
@@ -93,7 +97,7 @@ namespace trdk { namespace Services {
 		  * @throw trdk::Services::BollingerBandsService::HasNotHistory
 		  * @sa trdk::Services::BollingerBandsService::GetLastPoint 
 		  */
-		Point GetHistoryPointByReversedIndex(size_t index) const;
+		const Point & GetHistoryPointByReversedIndex(size_t index) const;
 
 		//! Drops last value point copy.
 		/** @sa GetLowValuesId

@@ -50,12 +50,16 @@ namespace trdk { namespace Services {
 
 	public:
 
+		virtual const boost::posix_time::ptime & GetLastDataTime()
+				const
+				override;
+
 		bool IsEmpty() const;
 
 		//! Returns last value point.
 		/** @throw ValueDoesNotExistError
 		  */
-		Point GetLastPoint() const;
+		const Point & GetLastPoint() const;
 
 		//! Drops last value point copy.
 		/** @throw RelativeStrengthIndexService

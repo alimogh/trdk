@@ -701,6 +701,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			const auto &price = m_prices->GetLastPoint();
 			const auto &adx = m_adx->GetLastPoint();
 
+			AssertEq(price.time, adx.source.time);
+			AssertEq(price.source, adx.source.close);
+
 			m_stops.Update(price);
 
 			if (!m_trend.Update(price, adx)) {
@@ -867,8 +870,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			GetTradingLog().Write(
 				"%1%\t%2%\tchange-no=%3%"
 					"\tbb=%4%->%5$.2f->%6$.4f/%7$.4f/%8$.4f\tbb-out=%9$.0f%%"
-					"\tadx=%10$.2f\t+di=%11$.2f\t-di=%12$.2f"
-					"\tbid/ask=%13$.2f/%14$.2f",
+					"\tadx=%10%->%11$.2f->%12$.2f/%13$.2f/%14$.2f"
+					"\tbid/ask=%15$.2f/%16$.2f",
 				[&](TradingRecord &record) {
 					record
 						% action // 1
@@ -880,11 +883,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						% price.middle // 7
 						% price.high // 8
 						% m_trend.GetOutOfBoundsStat() // 9
-						% adx.adx // 10
-						% adx.pdi // 11
-						% adx.ndi // 12
-						% m_security->GetBidPriceValue() // 13
-						% m_security->GetAskPriceValue(); // 14
+						% adx.source.time.time_of_day() // 10
+						% adx.source.close // 11
+						% adx.adx // 12
+						% adx.pdi // 13
+						% adx.ndi // 14
+						% m_security->GetBidPriceValue() // 15
+						% m_security->GetAskPriceValue(); // 16
 				});
 		}
 
