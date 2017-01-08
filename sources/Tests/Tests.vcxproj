@@ -366,7 +366,7 @@
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />
-    <ClCompile Include="..\Services\RelativeStrengthIndexServiceUTest.cpp" />
+    <ClCompile Include="..\Services\RsiIndicatorUTest.cpp" />
     <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp" />
     <ClCompile Include="DummyContext.cpp" />
     <ClCompile Include="DummyMarketDataSource.cpp" />

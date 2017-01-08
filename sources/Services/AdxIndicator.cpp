@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "AdxIndicator.hpp"
 #include "BarService.hpp"
+#include "Common/Accumulators.hpp"
 
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
@@ -18,6 +19,7 @@ namespace accs = boost::accumulators;
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::Accumulators;
 using namespace trdk::Services::Indicators;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,67 +79,6 @@ namespace boost { namespace accumulators {
 
 } }
 
-namespace boost { namespace accumulators {
-
-	namespace impl {
-
-		template<typename Sample>
-		struct DirectionalMovementIndex : accumulator_base {
-
-			typedef Sample result_type;
-
-			template<typename Args>
-			explicit DirectionalMovementIndex(const Args &args)
-				: m_windowSize(args[rolling_window_size])
-				, m_result(0) {
-				//...//
-			}
-
-			template<typename Args>
-			void operator ()(const Args &args) {
-				if (count(args) <= m_windowSize) {
-					m_result += args[sample];
-					if (count(args) == m_windowSize) {
-						m_result /= m_windowSize;
-					}
-					return;
-				}
-				m_result = m_result * (m_windowSize - 1);
-				m_result += args[sample];
-				m_result /= m_windowSize;
- 			}
-
-			const result_type & result(const dont_care &) const {
-				return m_result;
-			}
-
-		private:
-
-			const size_t m_windowSize;
-			result_type m_result;
-
-		};
-
-	}
-
-	namespace tag {
-		struct DirectionalMovementIndex : public depends_on<count> {
-			typedef accumulators::impl::DirectionalMovementIndex<mpl::_1> impl;
-		};
-	}
-
-	namespace extract {
-		//! Exponential Moving Average.
-		const extractor<tag::DirectionalMovementIndex> directionalMovementIndex = {
-			//...//
-		};
-		BOOST_ACCUMULATORS_IGNORE_GLOBAL(directionalMovementIndex)
-	}
-
-	using extract::directionalMovementIndex;
-
-} }
-
 namespace {
 
 	typedef boost::accumulators::accumulator_set<
@@ -146,11 +87,6 @@ namespace {
 				boost::accumulators::tag::DirectionalMovement>>
 		DirectionalMovementAcc;
 
-	typedef boost::accumulators::accumulator_set<
-			double,
-			boost::accumulators::stats<
-				boost::accumulators::tag::DirectionalMovementIndex>>
-		DirectionalMovementIndexAcc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +105,7 @@ public:
 	DirectionalMovementAcc m_trEma;
 	DirectionalMovementAcc m_pdmEma;
 	DirectionalMovementAcc m_ndmEma;
-	DirectionalMovementIndexAcc m_dxiMa;
+	Smoothing::Exponential m_dxiMa;
 
 	std::ofstream m_pointsLog;
 
@@ -350,7 +286,7 @@ public:
 
 		}
 
-		m_lastValue.adx = accs::directionalMovementIndex(m_dxiMa);
+		m_lastValue.adx = accs::exponentialSmoothing(m_dxiMa);
 
 		LogPoint(m_lastValue);
  		++m_lastValueNo;

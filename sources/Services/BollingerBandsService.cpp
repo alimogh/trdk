@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "BollingerBandsService.hpp"
 #include "BarService.hpp"
-#include "RelativeStrengthIndexService.hpp"
+#include "RsiIndicator.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 
@@ -23,6 +23,7 @@ namespace uuids = boost::uuids;
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Services;
+using namespace trdk::Services::Indicators;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -353,8 +354,7 @@ bool BollingerBandsService::OnServiceDataUpdate(
 		}
 	}
 	{
-		const auto *const rsi
-			= dynamic_cast<const RelativeStrengthIndexService *>(&service);
+		const auto *const rsi = dynamic_cast<const Rsi *>(&service);
 		if (rsi) {
 			const auto &point = rsi->GetLastPoint();
 			return m_pimpl->OnUpdate(point.time, point.value);

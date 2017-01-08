@@ -14,10 +14,9 @@
 #include "Core/Service.hpp"
 #include "Api.h"
 
-namespace trdk { namespace Services {
+namespace trdk { namespace Services { namespace Indicators {
 
-	class TRDK_SERVICES_API RelativeStrengthIndexService
-		: public trdk::Service {
+	class TRDK_SERVICES_API Rsi : public trdk::Service {
 
 	public:
 
@@ -42,11 +41,11 @@ namespace trdk { namespace Services {
 
 	public:
 
-		explicit RelativeStrengthIndexService(
+		explicit Rsi(
 				Context &,
 				const std::string &instanceName,
 				const Lib::IniSectionRef &);
-		virtual ~RelativeStrengthIndexService() noexcept;
+		virtual ~Rsi() noexcept;
 
 	public:
 
@@ -82,9 +81,5 @@ namespace trdk { namespace Services {
 
 	};
 
-	namespace Indicators {
-		//! Relative Strength Index.
-		typedef trdk::Services::RelativeStrengthIndexService Rsi;
-	}
 
-} }
+} } }

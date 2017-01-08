@@ -10,11 +10,13 @@
 
 #include "Prec.hpp"
 #include "TradingLib/StopLoss.hpp"
+#include "TradingLib/TrailingStop.hpp"
 #include "TradingLib/TakeProfit.hpp"
 #include "TradingLib/SourcesSynchronizer.hpp"
 #include "Services/BarService.hpp"
 #include "Services/BollingerBandsService.hpp"
 #include "Services/AdxIndicator.hpp"
+#include "Services/RsiIndicator.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/DropCopy.hpp"
@@ -145,6 +147,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		Trend()
 			: m_isRising(boost::indeterminate)
+			, m_isDivergence(false)
+			, m_bound(boost::indeterminate)
 			, m_numberOfDirectionChanges(0)
 			, m_numberOfUpdatesInsideBounds(0)
 			, m_numberOfUpdatesOutsideBounds(0) {
@@ -164,46 +168,85 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		//! Updates trend info.
 		/** @return True, if trend is detected, or changed, or lost.
 		  */
-		bool Update(const BollingerBands::Point &price, const Adx::Point &adx) {
+		bool Update(
+				const BollingerBands::Point &price,
+				const Adx::Point &adx,
+				const Rsi::Point &rsi) {
 
 			auto isRising = m_isRising;
+			auto bound = m_bound;
+			auto isDivergence = m_isDivergence;
 
 			if (price.source < price.low) {
 					
 				++m_numberOfUpdatesOutsideBounds;
 
+				if (!bound) {
+					return false;
+				}
+
 				if (adx.adx < 25 || adx.adx >= 75) {
 					return false;
-				} else if (adx.pdi < adx.ndi) {
-					isRising = false;
-				} else {
-					return false;
+				}
+
+				bound = false;
+				
+				if (adx.ndi > adx.pdi) {
+					isRising = rsi.value < 30;
+					isDivergence = isRising;
 				}
 
 			} else if (price.high < price.source) {
 
 				++m_numberOfUpdatesOutsideBounds;
+
+				if (bound) {
+					return false;
+				}
 			
 				if (adx.adx < 25 || adx.adx >= 75) {
 					return false;
-				} else if (adx.ndi < adx.pdi) {
-					isRising = true;
-				} else {
-					return false;
+				}
+				
+				bound = true;
+
+				if (adx.pdi > adx.ndi) {
+					isRising = rsi.value < 70;
+					isDivergence = !isRising;
 				}
 
 			} else {
 			
 				++m_numberOfUpdatesInsideBounds;
 
+				if (m_bound) {
+					if (price.source < price.middle) {
+						m_bound = boost::indeterminate;
+					}
+				} else if (!m_bound && price.source > price.middle) {
+					m_bound = boost::indeterminate;
+				}
+
 				return false;
 
 			}
 
-			if (isRising.value == m_isRising.value) {
+			Assert(
+				isDivergence == m_isDivergence
+				|| !boost::indeterminate(isRising));
+			Assert(
+				bound.value == m_bound.value
+				|| !boost::indeterminate(bound));
+
+			if (
+					isRising.value == m_isRising.value
+					&& isDivergence == m_isDivergence
+					&& bound.value == m_bound.value) {
 				return false;
 			}
 			m_isRising = std::move(isRising);
+			m_isDivergence = std::move(isDivergence);
+			m_bound = std::move(bound);
 
 			++m_numberOfDirectionChanges;
 
@@ -215,12 +258,24 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			return m_numberOfDirectionChanges;
 		}
 
-		const char * GetAsPch() const {
+		const char * GetTrend() const {
 			return m_isRising
 				?	"rising"
 				:	!m_isRising
 					?	"falling"
-					:	"unknown";
+					:	"flat";
+		}
+
+		bool IsDivergence() const {
+			return m_isDivergence;
+		}
+
+		const char * GetBound() const {
+			return m_bound
+				?	"upper"
+				:	!m_bound
+					?	"lower"
+					:	"?";
 		}
 
 		double GetOutOfBoundsStat() const {
@@ -235,6 +290,8 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 	private:
 
 		boost::tribool m_isRising;
+		bool m_isDivergence;
+		boost::tribool m_bound;
 
 		size_t m_numberOfDirectionChanges;
 		size_t m_numberOfUpdatesInsideBounds;
@@ -272,6 +329,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				DropCopy::nDataSourceInstanceId,
 				DropCopy::nDataSourceInstanceId)
 			, m_adx(nullptr)
+			, m_rsi(nullptr)
 			, m_stat(Stat{}) {
 
 			m_settings.Log(GetLog());
@@ -305,6 +363,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				= dynamic_cast<const BollingerBands *>(&service);
 			const auto *const bars = dynamic_cast<const BarService *>(&service);
 			const auto *const adx = dynamic_cast<const Adx *>(&service);
+			const auto *const rsi = dynamic_cast<const Rsi *>(&service);
 			if (bb) {
 				OnBbServiceStart(*bb);
 			}
@@ -313,6 +372,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			}
 			if (adx) {
 				OnAdxServiceStart(*adx);
+			}
+			if (rsi) {
+				OnRsiServiceStart(*rsi);
 			}
 		}
 
@@ -411,13 +473,10 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				m_bars->DropLastBarCopy(m_barServiceDropCopyId);
 			}
 
-			if (m_sourcesSync.GetSize() != 2) {
-				AssertLt(2, m_sourcesSync.GetSize());
+			if (m_sourcesSync.GetSize() != 3) {
+				AssertLt(3, m_sourcesSync.GetSize());
 				throw Exception("Not all required services are set");
-			}
-			AssertEq(2, m_sourcesSync.GetSize());
-
-			if (!m_sourcesSync.Sync(service)) {
+			} else if (!m_sourcesSync.Sync(service)) {
 				return;
 			}
 
@@ -526,6 +585,16 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			m_sourcesSync.Add(service);
 		}
 
+		void OnRsiServiceStart(const Rsi &service) {
+			if (m_rsi) {
+				throw Exception(
+					"Strategy uses one RSI service, but configured more");
+			}
+			m_rsi = &service;
+			GetLog().Info("Using RSI service \"%1%\"...", *m_adx);
+			m_sourcesSync.Add(service);
+		}
+
 		void UpdateStat() {
 			if (GetPositions().IsEmpty()) {
 				return;
@@ -625,7 +694,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 								%	m_security->DescalePrice(
 										startPrice + priceAllowedDelta)
 								%	m_security->DescalePrice(actualPrice)
-								%	m_trend.GetAsPch()
+								%	m_trend.GetTrend()
 								%	m_security->GetBidPriceValue()
 								%	m_security->GetAskPriceValue();
 						});
@@ -651,7 +720,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 							%	m_security->DescalePrice(
 									startPrice - priceAllowedDelta)
 							%	m_security->DescalePrice(actualPrice)
-							%	m_trend.GetAsPch()
+							%	m_trend.GetTrend()
 							%	m_security->GetBidPriceValue()
 							%	m_security->GetAskPriceValue();
 					});
@@ -679,7 +748,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 								% position.GetActiveOrderTime().time_of_day()
 								% endTime.time_of_day()
 								% (endTime - position.GetActiveOrderTime())
-								% m_trend.GetAsPch()
+								% m_trend.GetTrend()
 								% m_security->GetBidPriceValue()
 								% m_security->GetAskPriceValue();
 						});
@@ -698,16 +767,23 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		void CheckSignal(const Milestones &delayMeasurement) {
 
+			Assert(m_prices);
+			Assert(m_adx);
+			Assert(m_rsi);
+
 			const auto &price = m_prices->GetLastPoint();
 			const auto &adx = m_adx->GetLastPoint();
+			const auto &rsi = m_rsi->GetLastPoint();
 
 			AssertEq(price.time, adx.source.time);
+			AssertEq(price.time, rsi.time);
 			AssertEq(price.source, adx.source.close);
+			AssertEq(price.source, rsi.source);
 
 			m_stops.Update(price);
 
-			if (!m_trend.Update(price, adx)) {
-				LogSignal("trend", price, adx);
+			if (!m_trend.Update(price, adx, rsi)) {
+				LogSignal("trend", price, adx, rsi);
 				return;
 			}
 
@@ -718,7 +794,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				if (position->IsCompleted()) {
 					position = nullptr;
 				} else if (m_trend.IsRising() == position->IsLong()) {
-					LogSignal("signal restored", price, adx);
+					LogSignal("signal restored", price, adx, rsi);
 					delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
 					return;
 				}
@@ -726,13 +802,13 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			if (!position) {
 				if (boost::indeterminate(m_trend.IsRising())) {
-					LogSignal("signal skipped", price, adx);
+					LogSignal("signal skipped", price, adx, rsi);
 					return;
 				}
 			} else if (
 					position->IsCancelling()
 					|| position->HasActiveCloseOrders()) {
-				LogSignal("signal canceled", price, adx);
+				LogSignal("signal canceled", price, adx, rsi);
 				return;
 			}
 
@@ -740,13 +816,16 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			if (!position) {
 				Assert(m_trend.IsRising() || !m_trend.IsRising());
-				LogSignal("signal to open", price, adx);
-				position = &OpenPosition(m_trend.IsRising(), delayMeasurement);
+				LogSignal("signal to open", price, adx, rsi);
+				position = &OpenPosition(
+					m_trend.IsRising(),
+					price,
+					delayMeasurement);
 			} else if (position->HasActiveOpenOrders()) {
-				LogSignal("signal to cancel", price, adx);
+				LogSignal("signal to cancel", price, adx, rsi);
 				Verify(position->CancelAllOrders());
 			} else {
-				LogSignal("signal to close", price, adx);
+				LogSignal("signal to close", price, adx, rsi);
 				ClosePosition(*position);
 			}
 
@@ -756,6 +835,17 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 		Position & OpenPosition(
 				bool isLong,
+				const Milestones &delayMeasurement) {
+			Assert(m_prices);
+			return OpenPosition(
+				isLong,
+				m_prices->GetLastPoint(),
+				delayMeasurement);
+		}
+
+		Position & OpenPosition(
+				bool isLong,
+				const BollingerBands::Point &price,
 				const Milestones &delayMeasurement) {
 
 			boost::shared_ptr<Position> position = isLong
@@ -768,6 +858,10 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			position->AttachAlgo(
 				boost::make_unique<StopLoss>(m_stops.stopLoss, *position));
+			position->AttachAlgo(
+				boost::make_unique<TrailingStop>(
+					m_stops.trailingStop,
+					*position));
 			position->AttachAlgo(
 				boost::make_unique<TakeProfit>(m_stops.takeProfit, *position));
 
@@ -784,6 +878,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			m_stat.maxProfitPriceDelta
 				= m_stat.maxLossPriceDelta
 				= 0;
+			m_stops.Reset(price);
 
 			return *position;
 
@@ -803,14 +898,14 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						GetTradingLog().Write(
 							"reopening\topening opposite\ttrend=%1%",
 							[&](TradingRecord &record) {
-								record % m_trend.GetAsPch();
+								record % m_trend.GetTrend();
 							});
 						OpenPosition(m_trend.IsRising(), Milestones());
 					} else {
 						GetTradingLog().Write(
 							"reopening\tcanceled opposite\t%1%",
 							[&](TradingRecord &record) {
-								record % m_trend.GetAsPch();
+								record % m_trend.GetTrend();
 							});
 					}
 					break;
@@ -866,16 +961,18 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		void LogSignal(
 				const char *action,
 				const BollingerBands::Point &price,
-				const Adx::Point &adx) {
+				const Adx::Point &adx,
+				const Rsi::Point &rsi) {
 			GetTradingLog().Write(
-				"%1%\t%2%\tchange-no=%3%"
+				"%1%\t%2%\tn=%3%\tpos=%22%\tbound=%20%\tdiv=%21%"
 					"\tbb=%4%->%5$.2f->%6$.4f/%7$.4f/%8$.4f\tbb-out=%9$.0f%%"
 					"\tadx=%10%->%11$.2f->%12$.2f/%13$.2f/%14$.2f"
-					"\tbid/ask=%15$.2f/%16$.2f",
+					"\trsi=%15%->%16$.2f->%17$.2f%%"
+					"\tbid/ask=%18$.2f/%19$.2f",
 				[&](TradingRecord &record) {
 					record
 						% action // 1
-						% m_trend.GetAsPch() // 2
+						% m_trend.GetTrend() // 2
 						% m_trend.GetNumberOfDirectionChanges() // 3
 						% price.time.time_of_day() // 4
 						% price.source // 5
@@ -888,8 +985,14 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						% adx.adx // 12
 						% adx.pdi // 13
 						% adx.ndi // 14
-						% m_security->GetBidPriceValue() // 15
-						% m_security->GetAskPriceValue(); // 16
+						% rsi.time.time_of_day() // 15
+						% rsi.source // 16
+						% rsi.value // 17
+						% m_security->GetBidPriceValue() // 18
+						% m_security->GetAskPriceValue() // 19
+						% m_trend.GetBound() // 20
+						% (m_trend.IsDivergence() ? "yes" : "no") // 21
+						% GetPositions().GetSize(); // 2
 				});
 		}
 
@@ -1003,20 +1106,32 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		struct Stops {
 			
 			boost::shared_ptr<StopLoss::Params> stopLoss;
+			boost::shared_ptr<TrailingStop::Params> trailingStop;
 			boost::shared_ptr<TakeProfit::Params> takeProfit;
 
 			Stops()
 				: stopLoss(boost::make_shared<StopLoss::Params>(0.5))
+				, trailingStop(boost::make_shared<TrailingStop::Params>(0.5, 0))
 				, takeProfit(boost::make_shared<TakeProfit::Params>(0.5, 0.1)) {
 				//...//
+			}
+
+			void Reset(const BollingerBands::Point &price) {
+				AssertLt(price.low, price.middle);
+				AssertLt(price.middle, price.high);
+				const auto width = price.high - price.low;
+				*stopLoss = StopLoss::Params{width * 0.5};
+				*trailingStop = TrailingStop::Params{width * 0.5, width * 0.1};
+				*takeProfit = TakeProfit::Params{width, width * 0.6};
 			}
 
 			void Update(const BollingerBands::Point &price) {
 				AssertLt(price.low, price.middle);
 				AssertLt(price.middle, price.high);
 				const auto width = price.high - price.low;
-				*stopLoss = StopLoss::Params{width};
-				*takeProfit = TakeProfit::Params{width * 1.25, width * 0.75};
+				*takeProfit = TakeProfit::Params{
+					takeProfit->GetMinProfitPerLotToActivate(),
+					width * 0.6};
 			}
 
 		} m_stops;
@@ -1033,6 +1148,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			m_pricesServiceDropCopyIds;
 
 		const Adx *m_adx;
+		const Rsi *m_rsi;
 
 		Trend m_trend;
 

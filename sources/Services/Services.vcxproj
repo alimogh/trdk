@@ -250,7 +250,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MovingAverageService.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="RelativeStrengthIndexService.hpp" />
+    <ClInclude Include="RsiIndicator.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdxIndicator.cpp" />
@@ -329,8 +329,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="RelativeStrengthIndexService.cpp" />
-    <ClCompile Include="RelativeStrengthIndexServiceUTest.cpp">
+    <ClCompile Include="RsiIndicator.cpp" />
+    <ClCompile Include="RsiIndicatorUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>

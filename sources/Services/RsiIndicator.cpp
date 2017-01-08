@@ -9,58 +9,54 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "RelativeStrengthIndexService.hpp"
+#include "RsiIndicator.hpp"
 #include "Core/DropCopy.hpp"
 #include "Core/Settings.hpp"
 #include "Common/Accumulators.hpp"
-
-using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Services;
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
 namespace accs = boost::accumulators;
-namespace ma = trdk::Lib::Accumulators::MovingAverage;
+
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Lib::Accumulators;
+using namespace trdk::Services;
+using namespace trdk::Services::Indicators;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-RelativeStrengthIndexService::Error::Error(const char *what) noexcept
+Rsi::Error::Error(const char *what) noexcept
 	: Exception(what) {
 	//...//
 }
 
-RelativeStrengthIndexService::ValueDoesNotExistError::ValueDoesNotExistError(
-		const char *what)
-		noexcept
+Rsi::ValueDoesNotExistError::ValueDoesNotExistError(const char *what) noexcept
 	: Error(what) {
 	//...//
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class RelativeStrengthIndexService::Implementation
-	: private boost::noncopyable {
+class Rsi::Implementation : private boost::noncopyable {
 
 public:
 
-	RelativeStrengthIndexService &m_self;
+	Rsi &m_self;
 
 	const size_t m_period;
 
 	boost::optional<Double> m_prevValue;
-	ma::Exponential m_maU;
-	ma::Exponential m_maD;
+	Smoothing::Exponential m_maU;
+	Smoothing::Exponential m_maD;
 
 	Point m_lastValue;
 	size_t m_lastValueNo;
 
 	std::ofstream m_pointsLog;
 
-	explicit Implementation(
-			RelativeStrengthIndexService &self,
-			const IniSectionRef &conf)
+	explicit Implementation(Rsi &self, const IniSectionRef &conf)
 		: m_self(self)
 		, m_period(conf.ReadTypedKey<size_t>("period"))
 		, m_maU(accs::tag::rolling_window::window_size = m_period)
@@ -145,19 +141,18 @@ public:
 			m_prevValue = value;
 		}
 
-		AssertEq(accs::rolling_count(m_maU), accs::rolling_count(m_maD));
-		AssertGe(m_period, accs::rolling_count(m_maU));
-		if (accs::rolling_count(m_maU) < m_period) {
+		AssertEq(accs::count(m_maU), accs::count(m_maD));
+		if (accs::count(m_maU) < m_period) {
 			LogEmptyPoint(time, value);
 			return false;
 		}
 
 		Double result;
-		const Double maD = accs::ema(m_maD);
+		const Double maD = accs::exponentialSmoothing(m_maD);
 		if (maD == 0) {
 			result = 100;
 		} else {
-			const auto rs = accs::ema(m_maU) / maD;
+			const auto rs = accs::exponentialSmoothing(m_maU) / maD;
 			result = 100.0 - (100.0 / (1.0 + rs));
 		}
 		m_lastValue = {time, value, std::move(result)};
@@ -171,7 +166,7 @@ public:
 
 };
 
-RelativeStrengthIndexService::RelativeStrengthIndexService(
+Rsi::Rsi(
 		Context &context,
 		const std::string &instanceName,
 		const IniSectionRef &conf)
@@ -185,28 +180,26 @@ RelativeStrengthIndexService::RelativeStrengthIndexService(
 	//...//
 }
 
-RelativeStrengthIndexService::~RelativeStrengthIndexService() noexcept {
+Rsi::~Rsi() noexcept {
 	//...//
 }
 
-const pt::ptime & RelativeStrengthIndexService::GetLastDataTime() const {
+const pt::ptime & Rsi::GetLastDataTime() const {
 	return GetLastPoint().time;
 }
 
-bool RelativeStrengthIndexService::IsEmpty() const {
+bool Rsi::IsEmpty() const {
 	return m_pimpl->m_lastValueNo == 0;
 }
 
-const RelativeStrengthIndexService::Point &
-RelativeStrengthIndexService::GetLastPoint()
-		const {
+const Rsi::Point & Rsi::GetLastPoint() const {
 	if (IsEmpty()) {
-		throw ValueDoesNotExistError("RelativeStrengthIndexService is empty");
+		throw ValueDoesNotExistError("RSI Indicator is empty");
 	}
 	return m_pimpl->m_lastValue;
 }
 
-void RelativeStrengthIndexService::DropLastPointCopy(
+void Rsi::DropLastPointCopy(
 		const DropCopyDataSourceInstanceId &sourceId)
 		const {
 	GetContext().InvokeDropCopy(
@@ -221,7 +214,7 @@ void RelativeStrengthIndexService::DropLastPointCopy(
 		});
 }
 
-bool RelativeStrengthIndexService::OnServiceDataUpdate(
+bool Rsi::OnServiceDataUpdate(
 		const Service &service,
 		const TimeMeasurement::Milestones &) {
 
@@ -243,14 +236,11 @@ bool RelativeStrengthIndexService::OnServiceDataUpdate(
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_SERVICES_API boost::shared_ptr<trdk::Service>
-CreateRelativeStrengthIndexService(
+CreateRsiIndicatorService(
 		Context &context,
 		const std::string &instanceName,
 		const IniSectionRef &configuration) {
-	return boost::make_shared<RelativeStrengthIndexService>(
-		context,
-		instanceName,
-		configuration);
+	return boost::make_shared<Rsi>(context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

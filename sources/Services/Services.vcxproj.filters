@@ -35,10 +35,10 @@
     <ClInclude Include="BarCollectionService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RelativeStrengthIndexService.hpp">
+    <ClInclude Include="AdxIndicator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AdxIndicator.hpp">
+    <ClInclude Include="RsiIndicator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -73,16 +73,16 @@
     <ClCompile Include="MovingAverageServiceUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RelativeStrengthIndexService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RelativeStrengthIndexServiceUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AdxIndicator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AdxIndicatorUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RsiIndicator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RsiIndicatorUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
