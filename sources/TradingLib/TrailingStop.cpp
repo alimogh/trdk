@@ -95,7 +95,7 @@ bool TrailingStop::CheckSignal() {
 	}
 
 	const auto &profitToClose = RoundByScale(
-		m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
+		m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty(),
 		GetPosition().GetSecurity().GetPriceScale());
 
 	if (m_minProfit && plannedPnl >= *m_minProfit) {
@@ -169,9 +169,9 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
 			}
 			record % plannedPnl; // 4
 			if (m_isActivated) {
-				record % '>='; // 5
+				record % ">="; // 5
 			} else {
-				record % "<"; // 5
+				record % '<'; // 5
 			}
 			record
 				% m_params->GetMinProfitPerLotToActivate() // 6
