@@ -641,6 +641,7 @@ public:
 				return false;
 			}
 		}
+		m_source.GetContext().GetLog().Info("%1% Level 1 started.", m_self);
 		m_isLevel1Started = true;
 		return true;
 	}

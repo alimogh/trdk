@@ -88,8 +88,7 @@ trdk::Security & Transaq::MarketDataSource::CreateNewSecurityObject(
 			.set(LEVEL1_TICK_BID_PRICE)
 			.set(LEVEL1_TICK_BID_QTY)
 			.set(LEVEL1_TICK_ASK_PRICE)
-			.set(LEVEL1_TICK_ASK_QTY)
-			.set(LEVEL1_TICK_TRADING_VOLUME));
+			.set(LEVEL1_TICK_ASK_QTY));
 
 	security->SetTradingSessionState(GetContext().GetCurrentTime(), true);
 	security->SetOnline(GetContext().GetCurrentTime(), true);
