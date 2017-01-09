@@ -20,6 +20,7 @@
 #	include <boost/variant.hpp>
 #	include <boost/uuid/string_generator.hpp>
 #	include <boost/range/adaptor/reversed.hpp>
+#	include <boost/circular_buffer.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

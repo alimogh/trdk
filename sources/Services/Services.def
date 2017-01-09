@@ -6,3 +6,4 @@ EXPORTS
 	CreateBollingerBandsService
 	CreateRsiIndicatorService
 	CreateAdxIndicatorService
+	CreateStochasticIndicatorService

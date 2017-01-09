@@ -41,6 +41,9 @@
     <ClInclude Include="RsiIndicator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="StochasticIndicator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -85,6 +88,12 @@
     <ClCompile Include="RsiIndicatorUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="StochasticIndicator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StochasticIndicatorUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Services.def">
@@ -92,6 +101,9 @@
     </None>
     <None Include="ContinuousContractBarServiceUTest.xlsx" />
     <None Include="Indicators.xlsx" />
+    <None Include="StochasticIndicator.xlsx">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Services.rc">

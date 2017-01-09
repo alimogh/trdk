@@ -251,6 +251,7 @@
     <ClInclude Include="MovingAverageService.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="RsiIndicator.hpp" />
+    <ClInclude Include="StochasticIndicator.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdxIndicator.cpp" />
@@ -344,6 +345,21 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="StochasticIndicator.cpp" />
+    <ClCompile Include="StochasticIndicatorUTest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -361,6 +377,7 @@
     <None Include="ContinuousContractBarServiceUTest.xlsx" />
     <None Include="Indicators.xlsx" />
     <None Include="Services.def" />
+    <None Include="StochasticIndicator.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Services.rc" />
