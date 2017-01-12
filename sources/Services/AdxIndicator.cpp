@@ -112,6 +112,7 @@ public:
 	explicit Implementation(Adx &self, const IniSectionRef &conf)
 		: m_self(self)
 		, m_period(conf.ReadTypedKey<size_t>("period"))
+		, m_lastValue(Point{})
 		, m_lastValueNo(0)
 		, m_trEma(accs::tag::rolling_window::window_size = m_period)
 		, m_pdmEma(accs::tag::rolling_window::window_size = m_period)
@@ -124,6 +125,8 @@ public:
 				m_period);
 			throw Exception("Wrong ADX period");
 		}
+
+		m_self.GetLog().Info("Using period %1%.", m_period);
 
 		{
 			const std::string logType = conf.ReadKey("log");

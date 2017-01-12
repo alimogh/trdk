@@ -70,6 +70,8 @@ public:
 			throw Exception("Wrong RSI period");
 		}
 
+		m_self.GetLog().Info("Using period %1%.", m_period);
+
 		{
 			const std::string logType = conf.ReadKey("log");
 			if (boost::iequals(logType, "none")) {
@@ -173,7 +175,7 @@ Rsi::Rsi(
 	: Service(
 		context,
 		uuids::string_generator()("{bc5436e2-33cf-411c-b88a-02a5b84e1cc0}"),
-		"RelativeStrengthIndex",
+		"RsiIndicator",
 		instanceName,
 		conf)
 	, m_pimpl(boost::make_unique<Implementation>(*this, conf)) {
