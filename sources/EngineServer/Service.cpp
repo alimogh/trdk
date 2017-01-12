@@ -1270,6 +1270,7 @@ DropCopyStrategyInstanceId EngineServer::Service::RegisterStrategyInstance(
 	DropCopyRecord record;
 	record["strategy_type_id"] = strategy.GetTypeId();
 	record["strategy_id"] = strategy.GetId();
+	record["strategy_name"] = strategy.GetTitle();
 	record["engine_instance_id"] = *m_instanceId;
 	record["trading_mode"] = strategy.GetTradingMode();
 	record["start_time"] = strategy.GetContext().GetStartTime();
