@@ -48,7 +48,7 @@ namespace trdk { namespace TradingLib {
 			AssertEq(m_sources.size(), m_flags.size());
 
 			// Current implementation is optimal only for small list:
-			AssertGt(4, m_sources.size());
+			AssertGt(5, m_sources.size());
 
 		}
 
