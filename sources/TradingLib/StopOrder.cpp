@@ -40,7 +40,15 @@ void StopOrder::OnHit() {
 				record % GetName() % GetPosition().GetId();
 			});
 	
-		GetPosition().CancelAllOrders();
+		try {
+			GetPosition().CancelAllOrders();
+		} catch (const trdk::TradingSystem::UnknownOrderCancelError &ex) {
+			GetTradingLog().Write("failed to cancel order");
+			GetPosition().GetStrategy().GetLog().Warn(
+				"Failed to cancel order: \"%1%\".",
+				ex.what());
+			return;
+		}
 
 	} else if (GetPosition().HasActiveCloseOrders()) {
 	
@@ -65,7 +73,14 @@ void StopOrder::OnHit() {
 					%	GetPosition().GetId();
 			});
 		if (isBadOrder) {
-			GetPosition().CancelAllOrders();
+			try {
+				GetPosition().CancelAllOrders();
+			} catch (const trdk::TradingSystem::UnknownOrderCancelError &ex) {
+				GetTradingLog().Write("failed to cancel order");
+				GetPosition().GetStrategy().GetLog().Warn(
+					"Failed to cancel order: \"%1%\".",
+					ex.what());
+			}
 		}
 	
 	} else {

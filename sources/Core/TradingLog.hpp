@@ -133,6 +133,10 @@ namespace trdk {
 			//...//
 		}
 
+		void Write(const char *tag, const char *message) noexcept {
+			WriteWithNoFormat(tag, message);
+		}
+
 		template<typename FormatCallback>
 		void Write(
 				const char *tag,
@@ -163,6 +167,10 @@ namespace trdk {
 
 		void WaitForFlush() const noexcept {
 			m_log.WaitForFlush();
+		}
+
+		void Write(const char *message) {
+			m_log.Write(m_namePch, message);
 		}
 
 		template<typename FormatCallback>

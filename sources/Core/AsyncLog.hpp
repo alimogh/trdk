@@ -632,6 +632,27 @@ namespace trdk {
 			}
 		}
 
+		template<typename... RecordParams>
+		void WriteWithNoFormat(const RecordParams &...recordParams) noexcept {
+			if (!IsEnabled()) {
+				return;
+			}
+			try {
+				Record record(
+					m_log.GetTime(),
+					m_log.GetThreadId(),
+					recordParams...);
+				{
+					const Lock lock(m_queue.mutex);
+					TrdkAssert(m_queue.activeBuffer);
+					m_queue.activeBuffer->emplace_back(std::move(record));
+				}
+				m_queue.condition.notify_one();
+			} catch (...) {
+				AssertFailNoException();
+			}
+		}
+
 	private:
 
 		Log m_log;

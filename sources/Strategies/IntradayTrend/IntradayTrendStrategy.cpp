@@ -808,9 +808,16 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 								%	m_security->GetBidPriceValue()
 								%	m_security->GetAskPriceValue();
 						});
-					Verify(position.CancelAllOrders());
+					try {
+						Verify(position.CancelAllOrders());
+					} catch (const TradingSystem::UnknownOrderCancelError &ex) {
+						GetTradingLog().Write("failed to cancel order");
+						GetLog().Warn(
+							"Failed to cancel order: \"%1%\".",
+							ex.what());
+						return;
+					}
 					delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
-
 					return;
 
 				}
@@ -834,7 +841,15 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 							%	m_security->GetBidPriceValue()
 							%	m_security->GetAskPriceValue();
 					});
-				Verify(position.CancelAllOrders());
+				try {
+					Verify(position.CancelAllOrders());
+				} catch (const TradingSystem::UnknownOrderCancelError &ex) {
+					GetTradingLog().Write("failed to cancel order");
+					GetLog().Warn(
+						"Failed to cancel order: \"%1%\".",
+						ex.what());
+					return;
+				}
 				delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 
 				return;
@@ -848,6 +863,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				if (endTime <= GetContext().GetCurrentTime()) {
 
 					delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_2);
+
 					GetTradingLog().Write(
 						"time is over"
 							"\t%1%->%2%=>%3%"
@@ -862,7 +878,17 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 								% m_security->GetBidPriceValue()
 								% m_security->GetAskPriceValue();
 						});
-					Verify(position.CancelAllOrders());
+
+					try {
+						Verify(position.CancelAllOrders());
+					} catch (const TradingSystem::UnknownOrderCancelError &ex) {
+						GetTradingLog().Write("failed to cancel order");
+						GetLog().Warn(
+							"Failed to cancel order: \"%1%\".",
+							ex.what());
+						return;
+					}
+
 					delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_2);
 
 					return;
@@ -937,7 +963,15 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					delayMeasurement);
 			} else if (position->HasActiveOpenOrders()) {
 				LogSignal("signal to cancel", price, adx, rsi, stochastic);
-				Verify(position->CancelAllOrders());
+				try {
+					Verify(position->CancelAllOrders());
+				} catch (const TradingSystem::UnknownOrderCancelError &ex) {
+					GetTradingLog().Write("failed to cancel order");
+					GetLog().Warn(
+						"Failed to cancel order: \"%1%\".",
+						ex.what());
+					return;
+				}
 			} else {
 				LogSignal("signal to close", price, adx, rsi, stochastic);
 				ClosePosition(*position);
