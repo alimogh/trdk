@@ -1429,7 +1429,7 @@ OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
 		[this](const Qty &qty, const OrderParams &params) {
 			return DoOpenAtMarketPrice(qty, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		params,
 		boost::none);
 }
@@ -1445,7 +1445,7 @@ OrderId Position::Open(
 		[this, &price](const Qty &qty, const OrderParams &params) {
 			return DoOpen(qty, price, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		params,
 		price);
 }
@@ -1462,7 +1462,7 @@ OrderId Position::OpenAtMarketPriceWithStopPrice(
 		[this, stopPrice](const Qty &qty, const OrderParams &params) {
 			return DoOpenAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		params,
 		boost::none);
 }
@@ -1508,7 +1508,7 @@ OrderId Position::CloseAtMarketPrice(const OrderParams &params) {
 		[this](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPrice(qty, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		boost::none,
 		GetActiveQty(),
 		params);
@@ -1534,7 +1534,7 @@ OrderId Position::Close(
 		[this, &price](const Qty &qty, const OrderParams &params) {
 			return DoClose(qty, price, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		price,
 		maxQty,
 		params);
@@ -1552,7 +1552,7 @@ OrderId Position::CloseAtMarketPriceWithStopPrice(
 		[this, stopPrice](const Qty &qty, const OrderParams &params) {
 			return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
 		},
-		TIME_IN_FORCE_DAY,
+		TIME_IN_FORCE_GTC,
 		boost::none,
 		GetActiveQty(),
 		params);
