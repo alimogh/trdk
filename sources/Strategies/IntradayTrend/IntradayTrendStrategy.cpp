@@ -521,12 +521,12 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				// Position closing started.
 
 				Assert(!position.HasActiveOpenOrders());
-				AssertNe(CLOSE_TYPE_NONE, position.GetCloseType());
+				AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
 
 				if (position.HasActiveCloseOrders()) {
 					// Closing in progress.
 					CheckOrder(position, Milestones());
-				} else if (position.GetCloseType() != CLOSE_TYPE_NONE) {
+				} else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
 					// Close order was canceled by some condition. Sending
 					// new close order.
 					ClosePosition(position);
@@ -772,11 +772,11 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				Assert(position.HasActiveCloseOrders());
 				AssertLt(0, position.GetNumberOfOpenOrders());
 				AssertLt(0, position.GetNumberOfCloseOrders());
-				AssertNe(CLOSE_TYPE_NONE, position.GetCloseType());
+				AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
 				startPrice
 					= m_settings.close.passiveMaxLifetime != pt::not_a_date_time
 							&& position.GetNumberOfCloseOrders() == 1
-							&& position.GetCloseType() == CLOSE_TYPE_SIGNAL
+							&& position.GetCloseReason() == CLOSE_REASON_SIGNAL
 					?	position.GetCloseStartPrice()
 					:	position.GetActiveCloseOrderPrice();
 				actualPrice = position.GetMarketClosePrice();
@@ -1033,9 +1033,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			Assert(prevPosition.IsCompleted());
 			Assert(prevPosition.IsOpened());
 
-			static_assert(numberOfCloseTypes == 12, "List changed.");
-			switch (prevPosition.GetCloseType()) {
-				case CLOSE_TYPE_SIGNAL:
+			static_assert(numberOfCloseReasons == 12, "List changed.");
+			switch (prevPosition.GetCloseReason()) {
+				case CLOSE_REASON_SIGNAL:
 					if (
 							!boost::indeterminate(m_trend.IsRising())
 							&& prevPosition.IsLong() != m_trend.IsRising()) {
@@ -1055,9 +1055,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					break;
 				default:
 					GetTradingLog().Write(
-						"reopening\tcanceled by prev. close type %1%",
+						"reopening\tcanceled by prev. close reason %1%",
 						[&](TradingRecord &record) {
-							record % prevPosition.GetCloseType();
+							record % prevPosition.GetCloseReason();
 						});
 					break;
 			}
@@ -1098,7 +1098,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 							!= pt::not_a_date_time
 				?	position.GetMarketCloseOppositePrice()
 				:	position.GetMarketClosePrice();
-			position.SetCloseType(CLOSE_TYPE_SIGNAL);
+			position.SetCloseReason(CLOSE_REASON_SIGNAL);
 			position.Close(price);
 		}
 
@@ -1205,6 +1205,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 						dropCopy.ReportOperationEnd(
 							pos.GetId(),
 							pos.GetCloseTime(),
+							pos.GetCloseReason(),
 							!pos.IsProfit()
 								? OPERATION_RESULT_LOSS
 								: OPERATION_RESULT_PROFIT,
@@ -1288,7 +1289,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 				<< ',' << m_security->DescalePrice(pos.GetOpenAvgPrice())
 				<< ',' << pos.GetNumberOfOpenOrders()
 				<< ',' << pos.GetNumberOfOpenTrades()
-				<< ',' << pos.GetCloseType()
+				<< ',' << pos.GetCloseReason()
 				<< ',' << m_security->DescalePrice(pos.GetCloseAvgPrice())
 				<< ',' << pos.GetNumberOfCloseOrders()
 				<< ',' << pos.GetNumberOfCloseTrades()

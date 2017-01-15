@@ -533,7 +533,7 @@ namespace EmaFuturesStrategy {
 			Assert(!prevPosition.HasActiveOrders());
 			AssertEq(0, prevPosition.GetActiveQty());
 
-			if (prevPosition.GetCloseType() != CLOSE_TYPE_NONE) {
+			if (prevPosition.GetCloseReason() != CLOSE_REASON_NONE) {
 				return;
 			}
 
@@ -614,7 +614,7 @@ namespace EmaFuturesStrategy {
 				try {
 					position.SetIntention(
 						INTENTION_DONOT_OPEN,
-						CLOSE_TYPE_OPEN_FAILED,
+						CLOSE_REASON_OPEN_FAILED,
 						DIRECTION_LEVEL);
 				} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 					GetLog().Warn(
@@ -630,7 +630,7 @@ namespace EmaFuturesStrategy {
 					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
 						?	INTENTION_CLOSE_PASSIVE
 						:	INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_NONE,
+					CLOSE_REASON_NONE,
 					signal);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
@@ -680,7 +680,7 @@ namespace EmaFuturesStrategy {
 					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
 						?	INTENTION_CLOSE_PASSIVE
 						:	INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_TAKE_PROFIT,
+					CLOSE_REASON_TAKE_PROFIT,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn(
@@ -708,7 +708,7 @@ namespace EmaFuturesStrategy {
 					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
 						?	INTENTION_CLOSE_PASSIVE
 						:	INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_TAKE_PROFIT,
+					CLOSE_REASON_TAKE_PROFIT,
 					DIRECTION_LEVEL,
 					orderSize);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
@@ -758,7 +758,7 @@ namespace EmaFuturesStrategy {
 			try {
 				position.SetIntention(
 					INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_TRAILING_STOP,
+					CLOSE_REASON_TRAILING_STOP,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn(
@@ -797,7 +797,7 @@ namespace EmaFuturesStrategy {
 			try {
 				position.SetIntention(
 					INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_STOP_LOSS,
+					CLOSE_REASON_STOP_LOSS,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn(
@@ -868,7 +868,7 @@ namespace EmaFuturesStrategy {
 					position.GetIntention() == INTENTION_OPEN_PASSIVE
 						?	INTENTION_OPEN_AGGRESIVE
 						:	INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_NONE,
+					CLOSE_REASON_NONE,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
@@ -1046,7 +1046,7 @@ namespace EmaFuturesStrategy {
 					m_passiveCloseOrderMaxLifetime != pt::not_a_date_time
 						?	INTENTION_CLOSE_PASSIVE
 						:	INTENTION_CLOSE_AGGRESIVE,
-					CLOSE_TYPE_ROLLOVER,
+					CLOSE_REASON_ROLLOVER,
 					DIRECTION_LEVEL);
 			} catch (const TradingSystem::UnknownOrderCancelError &ex) {
 				GetLog().Warn(
@@ -1064,7 +1064,7 @@ namespace EmaFuturesStrategy {
 			if (
 					!m_security->HasExpiration()
 					|| !oldPosition.IsCompleted()
-					|| oldPosition.GetCloseType() != CLOSE_TYPE_ROLLOVER) {
+					|| oldPosition.GetCloseReason() != CLOSE_REASON_ROLLOVER) {
 				return;
 			}
 

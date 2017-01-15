@@ -33,20 +33,20 @@ void StopLossOrder::Run() {
 		return;
 	}
 
-	static_assert(numberOfCloseTypes == 12, "List changed.");
-	switch (GetPosition().GetCloseType()) {
+	static_assert(numberOfCloseReasons == 12, "List changed.");
+	switch (GetPosition().GetCloseReason()) {
 
-		case CLOSE_TYPE_STOP_LOSS:
+		case CLOSE_REASON_STOP_LOSS:
 			break;
 
-		case CLOSE_TYPE_TRAILING_STOP:
+		case CLOSE_REASON_TRAILING_STOP:
 			return;
 
 		default:
 			if (!Activate()) {
 				return;
 			}
-			GetPosition().ResetCloseType(CLOSE_TYPE_STOP_LOSS);
+			GetPosition().ResetCloseReason(CLOSE_REASON_STOP_LOSS);
 			break;
 
 	}

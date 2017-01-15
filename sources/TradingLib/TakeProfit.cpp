@@ -60,15 +60,15 @@ void TakeProfit::Run() {
 		return;
 	}
 
-	static_assert(numberOfCloseTypes == 12, "List changed.");
-	switch (GetPosition().GetCloseType()) {
-		case CLOSE_TYPE_NONE:
+	static_assert(numberOfCloseReasons == 12, "List changed.");
+	switch (GetPosition().GetCloseReason()) {
+		case CLOSE_REASON_NONE:
 			if (!CheckSignal()) {
 				return;
 			}
-			GetPosition().SetCloseType(CLOSE_TYPE_TAKE_PROFIT);
+			GetPosition().SetCloseReason(CLOSE_REASON_TAKE_PROFIT);
 			break;
-		case CLOSE_TYPE_TAKE_PROFIT:
+		case CLOSE_REASON_TAKE_PROFIT:
 			break;
 		default:
 			return;

@@ -199,37 +199,35 @@ const char * trdk::ConvertToPch(const OrderStatus &status) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const char * trdk::ConvertToPch(const CloseType &closeType) {
-	static_assert(
-		numberOfCloseTypes == 12,
-		"Close type list changed.");
-	switch (closeType) {
+const char * trdk::ConvertToPch(const CloseReason &closeReason) {
+	static_assert(numberOfCloseReasons == 12, "List changed.");
+	switch (closeReason) {
 		default:
-			AssertEq(CLOSE_TYPE_NONE, closeType);
+			AssertEq(CLOSE_REASON_NONE, closeReason);
 			return "unknown";
-		case CLOSE_TYPE_NONE:
+		case CLOSE_REASON_NONE:
 			return "none";
-		case CLOSE_TYPE_SIGNAL:
+		case CLOSE_REASON_SIGNAL:
 			return "signal";
-		case CLOSE_TYPE_TAKE_PROFIT:
+		case CLOSE_REASON_TAKE_PROFIT:
 			return "take-profit";
-		case CLOSE_TYPE_TRAILING_STOP:
+		case CLOSE_REASON_TRAILING_STOP:
 			return "trailing-stop";
-		case CLOSE_TYPE_STOP_LOSS:
+		case CLOSE_REASON_STOP_LOSS:
 			return "stop-loss";
-		case CLOSE_TYPE_TIMEOUT:
+		case CLOSE_REASON_TIMEOUT:
 			return "timeout";
-		case CLOSE_TYPE_SCHEDULE:
+		case CLOSE_REASON_SCHEDULE:
 			return "schedule";
-		case CLOSE_TYPE_ROLLOVER:
+		case CLOSE_REASON_ROLLOVER:
 			return "rollover";
-		case CLOSE_TYPE_REQUEST:
+		case CLOSE_REASON_REQUEST:
 			return "request";
-		case CLOSE_TYPE_ENGINE_STOP:
+		case CLOSE_REASON_ENGINE_STOP:
 			return "engine stop";
-		case CLOSE_TYPE_OPEN_FAILED:
+		case CLOSE_REASON_OPEN_FAILED:
 			return "open failed";
-		case CLOSE_TYPE_SYSTEM_ERROR:
+		case CLOSE_REASON_SYSTEM_ERROR:
 			return "sys error";
 	}
 }

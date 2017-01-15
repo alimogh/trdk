@@ -57,7 +57,7 @@ namespace trdk {
 			
 			PT_UUID,
 
-			PT_CLOSE_TYPE,
+			PT_CLOSE_REASON,
 
 			numberOfParamTypes
 				
@@ -262,9 +262,9 @@ namespace trdk {
 							os);
 						break;
 
-					case PT_CLOSE_TYPE:
+					case PT_CLOSE_REASON:
 						WriteToDumpStream(
-							boost::any_cast<const trdk::CloseType &>(val),
+							boost::any_cast<const trdk::CloseReason &>(val),
 							os);
 						break;
 
@@ -365,8 +365,8 @@ namespace trdk {
 			StoreTypedParam(PT_UUID, val);
 		}
 
-		void StoreParam(const trdk::CloseType &closeType) {
-			StoreTypedParam(PT_CLOSE_TYPE, closeType);
+		void StoreParam(const trdk::CloseReason &closeReason) {
+			StoreTypedParam(PT_CLOSE_REASON, closeReason);
 		}
 
         template<typename T>

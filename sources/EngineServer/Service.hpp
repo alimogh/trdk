@@ -253,6 +253,7 @@ namespace trdk { namespace EngineServer {
 			virtual void ReportOperationEnd(
 					const boost::uuids::uuid &id,
 					const boost::posix_time::ptime &,
+					const trdk::CloseReason &,
 					const trdk::OperationResult &,
 					double pnl,
 					trdk::FinancialResult &&)
@@ -357,6 +358,7 @@ namespace trdk { namespace EngineServer {
 				bool dump,
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
+				const trdk::CloseReason &,
 				const trdk::OperationResult &,
 				double pnl,
 				const boost::shared_ptr<const FinancialResult> &);

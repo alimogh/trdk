@@ -156,29 +156,29 @@ namespace trdk {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	enum CloseType {
-		CLOSE_TYPE_NONE,
-		CLOSE_TYPE_SIGNAL,
-		CLOSE_TYPE_TAKE_PROFIT,
-		CLOSE_TYPE_TRAILING_STOP,
-		CLOSE_TYPE_STOP_LOSS,
-		CLOSE_TYPE_TIMEOUT,
-		CLOSE_TYPE_SCHEDULE,
-		CLOSE_TYPE_ROLLOVER,
+	enum CloseReason {
+		CLOSE_REASON_NONE = 0,
+		CLOSE_REASON_SIGNAL = 100,
+		CLOSE_REASON_TAKE_PROFIT = 200,
+		CLOSE_REASON_TRAILING_STOP = 300,
+		CLOSE_REASON_STOP_LOSS = 400,
+		CLOSE_REASON_TIMEOUT = 500,
+		CLOSE_REASON_SCHEDULE = 600,
+		CLOSE_REASON_ROLLOVER = 700,
 		//! Closed by request, not by logic or error.
-		CLOSE_TYPE_REQUEST,
+		CLOSE_REASON_REQUEST = 800,
 		//! Closed by engine stop.
-		CLOSE_TYPE_ENGINE_STOP,
-		CLOSE_TYPE_OPEN_FAILED,
-		CLOSE_TYPE_SYSTEM_ERROR,
-		numberOfCloseTypes
+		CLOSE_REASON_ENGINE_STOP = 900,
+		CLOSE_REASON_OPEN_FAILED = 1000,
+		CLOSE_REASON_SYSTEM_ERROR = 1100,
+		numberOfCloseReasons = 12
 	};
 
-	TRDK_CORE_API const char * ConvertToPch(const trdk::CloseType &);
+	TRDK_CORE_API const char * ConvertToPch(const trdk::CloseReason &);
 	inline std::ostream & operator <<(
 			std::ostream &os,
-			const trdk::CloseType &closeType) {
-		return os << trdk::ConvertToPch(closeType);
+			const trdk::CloseReason &closeReason) {
+		return os << trdk::ConvertToPch(closeReason);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

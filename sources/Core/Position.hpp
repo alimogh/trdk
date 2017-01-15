@@ -121,9 +121,9 @@ namespace trdk {
 
 	public:
 
-		const CloseType & GetCloseType() const noexcept;
-		void SetCloseType(const CloseType &) noexcept;
-		void ResetCloseType(const CloseType & = CLOSE_TYPE_NONE) noexcept;
+		const CloseReason & GetCloseReason() const noexcept;
+		void SetCloseReason(const CloseReason &) noexcept;
+		void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE) noexcept;
 
 		//! Has opened qty and doesn't have active open-orders.
 		/** @sa	IsClosed

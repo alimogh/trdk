@@ -97,6 +97,7 @@ namespace trdk { namespace Strategies { namespace Test {
 						dropCopy.ReportOperationEnd(
 							*m_operationId,
 							GetContext().GetCurrentTime(),
+							CLOSE_REASON_NONE,
 							m_generateFinResultRandom() >= 800
 								?	OPERATION_RESULT_LOSS
 								:	OPERATION_RESULT_PROFIT,

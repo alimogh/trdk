@@ -62,7 +62,7 @@ EmaFuturesStrategy::Position::Position(
 	, m_isPassiveOpen(true)
 	, m_isPassiveClose(true)
 	, m_emas(emas)
-	, m_closeType(CLOSE_TYPE_NONE)
+	, m_closeType(CLOSE_REASON_NONE)
 	, m_maxProfitTakeProfit(0)
 	, m_maxProfitTrailingStop(0)
 	, m_reportStream(reportStream)
@@ -111,7 +111,7 @@ const Intention & EmaFuturesStrategy::Position::GetIntention() const {
 
 void EmaFuturesStrategy::Position::SetIntention(
 		Intention intention,
-		const CloseType &closeType,
+		const CloseReason &closeType,
 		const Direction &closeReason) {
 
 	AssertNe(m_intention, intention);
@@ -135,8 +135,8 @@ void EmaFuturesStrategy::Position::SetIntention(
 				% GetSecurity().GetAskPriceValue();
 		});
 
-	boost::optional<CloseType> prevCloseType;
-	if (closeType != CLOSE_TYPE_NONE) {
+	boost::optional<CloseReason> prevCloseType;
+	if (closeType != CLOSE_REASON_NONE) {
 		prevCloseType = m_closeType;
 		m_closeType = closeType;
 	}
@@ -165,7 +165,7 @@ void EmaFuturesStrategy::Position::SetIntention(
 
 void EmaFuturesStrategy::Position::SetIntention(
 		Intention intention,
-		const CloseType &type,
+		const CloseReason &type,
 		const Direction &closeReason,
 		const Qty &intentionSize) {
 	Assert(!m_intentionSize);
@@ -374,7 +374,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 				}
 			} else {
 
-				ResetCloseType(m_closeType);
+				ResetCloseReason(m_closeType);
 				if (!m_intentionSize) {
 					Close(GetMarketCloseOppositePrice());
 				} else {
@@ -441,7 +441,7 @@ void EmaFuturesStrategy::Position::Sync(Intention &intention) {
 					}
 				}
 			} else {
-				ResetCloseType(m_closeType);
+				ResetCloseReason(m_closeType);
 				if (!m_intentionSize) {
 					Close(
 						IsSuperAggressiveClosing(intention)
@@ -475,7 +475,7 @@ bool EmaFuturesStrategy::Position::IsSuperAggressiveClosing(
 	return
 		intention == INTENTION_CLOSE_AGGRESIVE
 		&& m_isSuperAggressiveClosing
-		&& m_closeType == CLOSE_TYPE_NONE;
+		&& m_closeType == CLOSE_REASON_NONE;
 }
 
 boost::optional<EmaFuturesStrategy::Position::PriceCheckResult>
@@ -662,6 +662,7 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 				dropCopy.ReportOperationEnd(
 					GetId(),
 					GetCloseTime(),
+					GetCloseReason(),
 					!IsProfit()
 						? OPERATION_RESULT_LOSS
 						: OPERATION_RESULT_PROFIT,
@@ -751,7 +752,7 @@ void EmaFuturesStrategy::Position::Report() noexcept {
 
 		// 22. exit reason:
 		m_reportStream << ',';
-		if (m_closeType != CLOSE_TYPE_NONE) {
+		if (m_closeType != CLOSE_REASON_NONE) {
 			m_reportStream << m_closeType;
 		} else {
 			switch (m_reasons[1]) {

@@ -423,13 +423,14 @@ void EngineServer::Service::DropCopy::ReportOperationStart(
 void EngineServer::Service::DropCopy::ReportOperationEnd(
 		const uuids::uuid &id,
 		const pt::ptime &time,
+		const CloseReason &reason,
 		const OperationResult &result,
 		double pnl,
 		FinancialResult &&financialResult) {
 	auto financialResultPtr = boost::make_shared<FinancialResult>(
 		std::move(financialResult));
 	m_queue.Enqueue(
-		[this, id, time, result, pnl, financialResultPtr](
+		[this, id, time, reason, result, pnl, financialResultPtr](
 				size_t recordNumber,
 				size_t attemptNo,
 				bool dump)
@@ -440,6 +441,7 @@ void EngineServer::Service::DropCopy::ReportOperationEnd(
 				dump,
 				id,
 				time,
+				reason,
 				result,
 				pnl,
 				financialResultPtr);
@@ -1387,6 +1389,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 		bool dump,
 		const uuids::uuid &id,
 		const pt::ptime &time,
+		const CloseReason &reason,
 		const OperationResult &result,
 		double pnl,
 		const boost::shared_ptr<const FinancialResult> &financialResult) {
@@ -1394,6 +1397,7 @@ bool EngineServer::Service::StoreOperationEndReport(
 	DropCopyRecord record;
 	record["id"] = id;
 	record["end_time"] = time;
+	record["end_reason"] = reason;
 	record["result"] = result;
 	record["pnl"] = pnl;
 	record["financial_result"] = financialResult;

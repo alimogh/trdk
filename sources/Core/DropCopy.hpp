@@ -105,6 +105,7 @@ namespace trdk {
 		virtual void ReportOperationEnd(
 				const boost::uuids::uuid &id,
 				const boost::posix_time::ptime &,
+				const trdk::CloseReason &,
 				const trdk::OperationResult &,
 				double pnl,
 				trdk::FinancialResult &&)

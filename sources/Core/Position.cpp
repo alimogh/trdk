@@ -217,7 +217,7 @@ public:
 	OpenData m_open;
 	CloseData m_close;
 
-	CloseType m_closeType;
+	CloseReason m_closeReason;
 
 	std::vector<boost::shared_ptr<Algo>> m_algos;
 
@@ -247,7 +247,7 @@ public:
 		, m_timeMeasurement(timeMeasurement)
 		, m_open(startPrice)
 		, m_close(0)
-		, m_closeType(CLOSE_TYPE_NONE) {
+		, m_closeReason(CLOSE_REASON_NONE) {
 		AssertLt(0, m_planedQty);
 	}
 
@@ -558,7 +558,7 @@ public:
 					% m_security.GetSymbol().GetSymbol().c_str() // 3
 					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
-					% m_closeType // 6
+					% m_closeReason // 6
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 7
 				const auto &order = m_close.orders.back();
 				if (order.price) {
@@ -601,7 +601,7 @@ public:
 					% m_security.GetSymbol().GetSymbol().c_str() // 3
 					% m_self.GetTradingSystem().GetInstanceName().c_str() // 4
 					% m_tradingSystem.GetMode() // 5
-					% m_closeType // 6
+					% m_closeReason // 6
 					% m_security.DescalePrice(m_self.GetCloseStartPrice()); // 7
 				if (order.price) {
 					record % m_security.DescalePrice(*order.price); // 8
@@ -753,7 +753,7 @@ public:
 			const OrderParams &orderParams,
 			const uuids::uuid &&uuid) {
 
-		AssertNe(CLOSE_TYPE_NONE, m_closeType);
+		AssertNe(CLOSE_REASON_NONE, m_closeReason);
 
 		const auto now = m_strategy.GetContext().GetCurrentTime();
 
@@ -1049,20 +1049,20 @@ const TimeMeasurement::Milestones & Position::GetTimeMeasurement() {
 	return m_pimpl->m_timeMeasurement;
 }
 
-const CloseType & Position::GetCloseType() const noexcept {
-	return m_pimpl->m_closeType;
+const CloseReason & Position::GetCloseReason() const noexcept {
+	return m_pimpl->m_closeReason;
 }
 
-void Position::SetCloseType(const CloseType &newCloseType) noexcept {
-	AssertNe(CLOSE_TYPE_NONE, newCloseType);
-	if (m_pimpl->m_closeType != CLOSE_TYPE_NONE) {
+void Position::SetCloseReason(const CloseReason &newCloseReason) noexcept {
+	AssertNe(CLOSE_REASON_NONE, newCloseReason);
+	if (m_pimpl->m_closeReason != CLOSE_REASON_NONE) {
 		return;
 	}
-	m_pimpl->m_closeType = newCloseType;
+	m_pimpl->m_closeReason = newCloseReason;
 }
 
-void Position::ResetCloseType(const CloseType &newType) noexcept {
-	m_pimpl->m_closeType = newType;
+void Position::ResetCloseReason(const CloseReason &newReason) noexcept {
+	m_pimpl->m_closeReason = newReason;
 }
 
 bool Position::IsOpened() const noexcept {

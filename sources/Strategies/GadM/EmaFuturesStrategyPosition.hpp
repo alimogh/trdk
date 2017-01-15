@@ -59,7 +59,7 @@ namespace EmaFuturesStrategy {
 		const boost::posix_time::ptime & GetStartTime() const;
 		const boost::posix_time::ptime & GetCloseStartTime() const;
 
-		const CloseType & GetOpenType() const;
+		const CloseReason & GetOpenType() const;
 
 		const Direction & GetOpenReason() const;
 
@@ -69,11 +69,11 @@ namespace EmaFuturesStrategy {
 		
 		void SetIntention(
 				Intention,
-				const CloseType &,
+				const CloseReason &,
 				const Direction &closeReason);
 		void SetIntention(
 				Intention,
-				const CloseType &,
+				const CloseReason &,
 				const Direction &closeReason,
 				const Qty &intentionSize);
 
@@ -130,7 +130,7 @@ namespace EmaFuturesStrategy {
 
 		const SlowFastEmas &m_emas;
 		
-		CloseType m_closeType;
+		CloseReason m_closeType;
 		boost::array<Direction, 2> m_reasons;
 		boost::array<std::pair<double, double>, 2> m_signalsBidAsk;
 		boost::array<std::pair<double, double>, 2> m_signalsEmas;

@@ -65,18 +65,18 @@ void TrailingStop::Run() {
 		return;
 	}
 
-	static_assert(numberOfCloseTypes == 12, "List changed.");
-	switch (GetPosition().GetCloseType()) {
-		case CLOSE_TYPE_STOP_LOSS:
+	static_assert(numberOfCloseReasons == 12, "List changed.");
+	switch (GetPosition().GetCloseReason()) {
+		case CLOSE_REASON_STOP_LOSS:
 			return;
-		case CLOSE_TYPE_TRAILING_STOP:
+		case CLOSE_REASON_TRAILING_STOP:
 			Assert(m_isActivated);
 			break;
 		default:
 			if (!CheckSignal()) {
 				return;
 			}
-			GetPosition().ResetCloseType(CLOSE_TYPE_TRAILING_STOP);
+			GetPosition().ResetCloseReason(CLOSE_REASON_TRAILING_STOP);
 			break;
 	}
 
@@ -86,7 +86,7 @@ void TrailingStop::Run() {
 
 bool TrailingStop::CheckSignal() {
 
-	AssertNe(CLOSE_TYPE_TRAILING_STOP, GetPosition().GetCloseType());
+	AssertNe(CLOSE_REASON_TRAILING_STOP, GetPosition().GetCloseReason());
 
 	const auto &plannedPnl = GetPosition().GetPlannedPnl();
 	if (!Activate(plannedPnl)) {
