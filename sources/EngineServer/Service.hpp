@@ -65,6 +65,7 @@ namespace trdk { namespace EngineServer {
 
 			std::string time;
 			std::string state;
+			std::string message;
 
 			std::string storeOperationStart;
 			std::string storeOperationEnd;
@@ -467,6 +468,12 @@ namespace trdk { namespace EngineServer {
 
 		void ClosePositions();
 
+		void PublishMessage(
+				const char *tag,
+				const boost::posix_time::ptime &,
+				const std::string *module,
+				const char *message);
+
 	private:
 
 		const Config m_config;
@@ -476,12 +483,14 @@ namespace trdk { namespace EngineServer {
 		  */
 		std::ofstream m_logFile;
 		std::unique_ptr<EventsLog> m_log;
+		boost::signals2::scoped_connection m_logSubscription;
 
 		std::unique_ptr<DropCopy> m_dropCopy;
 		Task m_dropCopyTask;
 
 		mutable EngineMutex m_engineMutex;
 		boost::atomic<EngineState> m_engineState;
+		boost::signals2::scoped_connection m_engineLogSubscription;
 		boost::shared_ptr<Engine> m_engine;
 		Task m_engineTask;
 

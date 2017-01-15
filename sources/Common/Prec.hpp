@@ -34,6 +34,7 @@
 #	include <boost/make_unique.hpp>
 #	include <boost/enable_shared_from_this.hpp>
 #	include <boost/asio.hpp>
+#	include <boost/signals2.hpp>
 #include "DisableBoostWarningsEnd.h"
 
 #include <iomanip>
@@ -41,6 +42,9 @@
 
 #ifdef BOOST_WINDOWS
 #	include <Windows.h>
+#	undef SendMessage
+#	undef ERROR
+#	undef GetCurrentTime
 #endif
 
 #include "Common/Constants.h"

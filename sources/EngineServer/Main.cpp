@@ -164,7 +164,9 @@ namespace {
 						}
 						stateCondition.notify_all();
 					},
-					true,
+					[](trdk::Engine::Context::Log &log) {
+						log.EnableStdOut();
+					},
 					params);
 			} catch (const trdk::Lib::Exception &ex) {
 				std::cerr

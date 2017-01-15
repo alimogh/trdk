@@ -23,18 +23,18 @@ using namespace trdk::Lib;
 Engine::Engine(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-		bool enableStdOutLog,
+		const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 		const boost::unordered_map<std::string, std::string> &params) {
-	Run(path, contextStateUpdateSlot, nullptr, enableStdOutLog, params);
+	Run(path, contextStateUpdateSlot, nullptr, onLogStart, params);
 }
 
 Engine::Engine(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
 		trdk::DropCopy &dropCopy,
-		bool enableStdOutLog,
+		const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 		const boost::unordered_map<std::string, std::string> &params) {
-	Run(path, contextStateUpdateSlot, &dropCopy, enableStdOutLog, params);
+	Run(path, contextStateUpdateSlot, &dropCopy, onLogStart, params);
 }
 
 Engine::~Engine() {
@@ -47,7 +47,7 @@ void Engine::Run(
 		const fs::path &path,
 		const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
 		trdk::DropCopy *dropCopy,
-		bool enableStdOutLog,
+		const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 		const boost::unordered_map<std::string, std::string> &params) {
 
 	Assert(!m_context);
@@ -70,8 +70,8 @@ void Engine::Run(
 
 		m_eventsLog = boost::make_unique<trdk::Engine::Context::Log>(
 			settings.GetTimeZone());
-		if (enableStdOutLog) {
-			m_eventsLog->EnableStdOut();
+		if (onLogStart) {
+			onLogStart(*m_eventsLog);
 		}
 		{
 			const auto &logFilePath

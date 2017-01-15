@@ -22,19 +22,39 @@ namespace trdk {
 
 		typedef Log Base;
 
+		typedef void(SubscriberSlotSignature)(
+			const char *tag,
+			const boost::posix_time::ptime &,
+			const std::string *moduleOrNullptr,
+			const char *message);
+		typedef boost::function<SubscriberSlotSignature> SubscriberSlot;
+		typedef boost::signals2::connection SubscriberSlotConnection;
+
+	private:
+
+		template<typename SlotSignature>
+		struct SignalTrait {
+			typedef boost::signals2::signal<
+					SlotSignature,
+					boost::signals2::optional_last_value<
+						typename boost::function_traits<
+								SlotSignature>
+							::result_type>,
+					int,
+					std::less<int>,
+					boost::function<SlotSignature>,
+					typename boost::signals2::detail::extended_signature<
+							boost::function_traits<SlotSignature>::arity,
+							SlotSignature>
+						::function_type,
+					boost::signals2::dummy_mutex>
+				Signal;
+		};
+
 	public:
 
 		explicit EventsLog(const boost::local_time::time_zone_ptr &);
 		~EventsLog();
-
-	public:
-
-		static void BroadcastCriticalError(const std::string &) noexcept;
-		static void BroadcastUnhandledException(
-				const char *function,
-				const char *file,
-				size_t line)
-				noexcept;
 
 	private:
 
@@ -69,12 +89,31 @@ namespace trdk {
 
 	public:
 
+		static void BroadcastCriticalError(const std::string &) noexcept;
+		static void BroadcastUnhandledException(
+				const char *function,
+				const char *file,
+				size_t line)
+				noexcept;
+
+	public:
+
 		void Debug(const char *message) noexcept {
 			Write("Debug", message);
 		}
 		template<typename... Params>
 		void Debug(const char *message, const Params &...params) noexcept {
 			Write("Debug", message, params...);
+		}
+		void DebugWithoutSignal(const char *message) noexcept {
+			WriteWithoutSignal("Debug", message);
+		}
+		template<typename... Params>
+		void DebugWithoutSignal(
+				const char *message,
+				const Params &...params)
+				noexcept {
+			WriteWithoutSignal("Debug", message, params...);
 		}
 		void ModuleDebug(
 				const std::string &module,
@@ -142,6 +181,13 @@ namespace trdk {
 		void Error(const char *message, const Params &...params) noexcept {
 			Write("Error", message, params...);
 		}
+		void ErrorWithoutSignal(const char *message) noexcept {
+			WriteWithoutSignal("Error", message);
+		}
+		template<typename... Params>
+		void ErrorWithoutSignal(const char *message, const Params &...params) noexcept {
+			WriteWithoutSignal("Error", message, params...);
+		}
 		void ModuleError(
 				const std::string &module,
 				const char *message)
@@ -157,14 +203,21 @@ namespace trdk {
 			ModuleWrite("Error", module, message, params...);
 		}
 
+	public:
+
+		SubscriberSlotConnection Subscribe(const SubscriberSlot &slot) {
+			return m_signal.connect(slot);
+		}
+
 	private:
 
-		using Base::Write;
 		using Base::GetThreadId;
 
 		void Write(const char *tag, const char *message) noexcept {
 			try {
-				Base::Write(tag, GetTime(), GetThreadId(), nullptr, message);
+				const auto &time = GetTime();
+				Base::Write(tag, time, GetThreadId(), nullptr, message);
+				m_signal(tag, time, nullptr, message);
 			} catch (...) {
 				AssertFailNoException();
 			}
@@ -180,10 +233,36 @@ namespace trdk {
 				Format format(message);
 				format.InsertParams(params...);
 				Base::Write(tag, time, GetThreadId(), nullptr, format.Get());
+				m_signal(tag, time, nullptr, format.Get().str().c_str());
 			} catch (...) {
 				AssertFailNoException();
 			}
 		}
+
+		void WriteWithoutSignal(const char *tag, const char *message) noexcept {
+			try {
+				const auto &time = GetTime();
+				Base::Write(tag, time, GetThreadId(), nullptr, message);
+			} catch (...) {
+				AssertFailNoException();
+			}
+		}
+		template<typename... Params>
+		void WriteWithoutSignal(
+				const char *tag,
+				const char *message,
+				const Params &...params)
+				noexcept {
+			try {
+				const auto &time = GetTime();
+				Format format(message);
+				format.InsertParams(params...);
+				Base::Write(tag, time, GetThreadId(), nullptr, format.Get());
+			} catch (...) {
+				AssertFailNoException();
+			}
+		}
+		
 		
 		void ModuleWrite(
 				const char *tag,
@@ -191,7 +270,9 @@ namespace trdk {
 				const char *message)
 				noexcept {
 			try {
-				Base::Write(tag, GetTime(), GetThreadId(), &module, message);
+				const auto &time = GetTime();
+				Base::Write(tag, time, GetThreadId(), &module, message);
+				m_signal(tag, time, &module, message);
 			} catch (...) {
 				AssertFailNoException();
 			}
@@ -208,10 +289,15 @@ namespace trdk {
 				Format format(message);
 				format.InsertParams(params...);
 				Base::Write(tag, time, GetThreadId(), &module, format.Get());
+				m_signal(tag, time, &module, format.Get().str().c_str());
 			} catch (...) {
 				AssertFailNoException();
 			}
 		}
+
+	private:
+
+		SignalTrait<SubscriberSlotSignature>::Signal m_signal;
 
 	};
 

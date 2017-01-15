@@ -22,13 +22,13 @@ namespace trdk { namespace EngineServer {
 		explicit Engine(
 				const boost::filesystem::path &,
 				const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-				bool enableStdOutLog,
+				const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 				const boost::unordered_map<std::string, std::string> &params);
 		explicit Engine(
 				const boost::filesystem::path &,
 				const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
 				DropCopy &dropCopy,
-				bool enableStdOutLog,
+				const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 				const boost::unordered_map<std::string, std::string> &params);
 		~Engine();
 
@@ -46,7 +46,7 @@ namespace trdk { namespace EngineServer {
 				const boost::filesystem::path &,
 				const trdk::Context::StateUpdateSlot &,
 				DropCopy *dropCopy,
-				bool enableStdOutLog,
+				const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
 				const boost::unordered_map<std::string, std::string> &params);
 
 		void VerifyModules() const;

@@ -59,10 +59,12 @@
 #include "Common/Spin.hpp"
 #include "Common/Numeric.hpp"
 
+#ifdef BOOST_WINDOWS
+#	undef SendMessage
+#	undef ERROR
+#	undef GetCurrentTime
+#endif
+
 #include "Core/Fwd.hpp"
 #include "Core/Types.hpp"
 #include "Core/Log.hpp"
-
-#ifdef BOOST_WINDOWS
-#	undef GetCurrentTime
-#endif

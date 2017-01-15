@@ -51,6 +51,7 @@ EngineServer::Service::Topics::Topics(const std::string &suffix)
 	, onEngineConnected("trdk.engine.on_connected")
 	, time((boost::format("trdk.engine.%1%.time") % suffix).str())
 	, state((boost::format("trdk.engine.%1%.state") % suffix).str())
+	, message((boost::format("trdk.engine.%1%.message") % suffix).str())
 	, storeOperationStart("trdk.service.operation.store_start")
 	, storeOperationEnd("trdk.service.operation.store_end")
 	, storeOrder("trdk.service.order.store")
@@ -560,7 +561,17 @@ EngineServer::Service::Service(
 	}
 
 	m_log = boost::make_unique<EventsLog>(settings->GetTimeZone());
-	m_log->EnableStdOut();
+#	ifdef DEV_VER
+		m_log->EnableStdOut();
+#	endif
+	m_logSubscription = m_log->Subscribe(
+		boost::bind(
+			&Service::PublishMessage,
+			this,
+			_1,
+			_2,
+			_3,
+			_4));
 
 	const auto logsDir = settings->GetLogsRootDir();
 	fs::create_directories(logsDir);
@@ -616,6 +627,7 @@ EngineServer::Service::~Service() {
 		m_engineTask.Join();
 		m_io->stop();
 		m_thread.join();
+		m_logSubscription.disconnect();
 	} catch (...) {
 		AssertFailNoException();
 		terminate();
@@ -1002,6 +1014,7 @@ void EngineServer::Service::StartEngine() {
 		[this]() {
 			GetLog().Debug("Started engine start task.");
 			try {
+				boost::signals2::scoped_connection engineLogSubscription;
 				auto engine = boost::make_shared<Engine>(
 					m_config.path,
 					[this](
@@ -1010,7 +1023,17 @@ void EngineServer::Service::StartEngine() {
 						OnContextStateChanged(state, updateMessage);
 					},
 					*m_dropCopy,
-					false,
+					[this, &engineLogSubscription](
+							trdk::Engine::Context::Log &log) {
+						engineLogSubscription = log.Subscribe(
+							boost::bind(
+								&Service::PublishMessage,
+								this,
+								_1,
+								_2,
+								_3,
+								_4));
+					},
 					boost::unordered_map<std::string, std::string>());
 				{
 					const EngineLock lock(m_engineMutex);
@@ -1022,6 +1045,7 @@ void EngineServer::Service::StartEngine() {
 						return;
 					}
 					engine.swap(m_engine);
+					engineLogSubscription.swap(m_engineLogSubscription);
 				}
 			} catch (const trdk::Lib::Exception &ex) {
 				GetLog().Warn("Failed to start engine: \"%1%\".", ex);
@@ -1763,6 +1787,44 @@ Result EngineServer::Service::Request(
 
 	GetLog().Error("Failed to request to TWS: TWS returned error.");
 	throw DropCopy::Exception("Failed to request to TWS");
+
+}
+
+void EngineServer::Service::PublishMessage(
+		const char *tag,
+		const pt::ptime &time,
+		const std::string *module,
+		const char *message) {
+
+	if (!boost::equals("Error", tag) && !boost::equals("Warn", tag)) {
+		return;
+	}
+
+	std::ostringstream oss;
+	if (module) {
+		oss << '[' << *module << "] ";
+	}
+	oss << message;
+
+	const ConnectionLock lock(m_connectionMutex);
+	if (m_connection) {
+		try {
+			m_connection->session->publish(
+				m_connection->topics.message,
+				std::make_tuple(
+					std::string(tag),
+					ConvertToTimeT(time),
+					oss.str()));
+		} catch (const std::exception &ex) {
+			m_log->ErrorWithoutSignal(
+				"Failed to publish log event for TWS: \"%1%\".",
+				ex.what());
+		}
+	} else {
+		m_log->DebugWithoutSignal(
+			"Log event is not published"
+				" as has no TWS connection at this moment.");
+	}
 
 }
 

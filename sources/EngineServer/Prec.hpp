@@ -17,10 +17,6 @@
 
 #include "Common/Common.hpp"
 
-#ifdef ERROR
-#	undef ERROR
-#endif
-
 #if defined(_MSC_VER)
 #	pragma warning(push)
 #	pragma warning(disable: 4005)
@@ -57,7 +53,3 @@
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Assert.hpp"
-
-#ifdef BOOST_WINDOWS
-#	undef SendMessage
-#endif
