@@ -99,6 +99,15 @@ ConnectorContext::ResultPtr ConnectorContext::SendCommand(
 	return result;
 }
 
+void ConnectorContext::StopDueFatalError(const std::string &error) {
+	m_log.Error(
+		"Stopping TRANSAQ Connector due fatal error \"%1%\"...",
+		error);
+	m_context.RaiseStateUpdate(
+		Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+		error);
+}
+
 void ConnectorContext::FreeMemory(const char *ptr) const noexcept {
 	if (!m_freeMemory(ptr)) {
 		m_log.Error("Failed to free TRANSAQ Connector memory.");

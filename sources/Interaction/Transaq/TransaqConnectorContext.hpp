@@ -69,6 +69,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const char *data,
 				const Lib::TimeMeasurement::Milestones &);
 
+		void StopDueFatalError(const std::string &error);
+
 	private:
 
 		bool OnNewData(const char *);

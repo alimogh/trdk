@@ -65,6 +65,7 @@ namespace {
 Connector::Connector(const Context &context, ModuleEventsLog &log)
 	: m_context(context)
 	, m_log(log)
+	, m_numberOfReconnectes(0)
 	, m_timeZoneDiff(GetMskTimeZoneDiff(context.GetSettings().GetTimeZone())) {
 	//...//
 }
@@ -119,26 +120,34 @@ void Connector::Connect(const IniSectionRef &conf) {
 
 	Assert(!m_isConnected);
 	AssertLt(0, m_dataHandlers.size());
+	Assert(!m_connectCommand);
 
-	ptr::ptree command;
-	command.put("login", conf.ReadKey("login"));
-	command.put("password", conf.ReadKey("password"));
-	command.put("host", conf.ReadKey("host"));
-	command.put("port", conf.ReadTypedKey<unsigned short>("port"));
-	command.put("autopos", "false");
-	command.put("micex_registers", "false");
-	command.put("milliseconds", "true");
-	command.put("utc_time", "false");
-	command.put("rqdelay", conf.ReadTypedKey<unsigned short>("rqdelay"));
-	command.put(
+	auto command = boost::make_unique<ptr::ptree>();
+	command->put("login", conf.ReadKey("login"));
+	command->put("password", conf.ReadKey("password"));
+	command->put("host", conf.ReadKey("host"));
+	command->put("port", conf.ReadTypedKey<unsigned short>("port"));
+	command->put("autopos", "false");
+	command->put("micex_registers", "false");
+	command->put("milliseconds", "true");
+	command->put("utc_time", "false");
+	command->put("rqdelay", conf.ReadTypedKey<unsigned short>("rqdelay"));
+	command->put(
 		"session_timeout",
 		conf.ReadTypedKey<size_t>("session_timeout"));
-	command.put(
+	command->put(
 		"request_timeout",
 		conf.ReadTypedKey<size_t>("request_timeout"));
 
+	Connect(*command);
+	command.swap(m_connectCommand);
+
+}
+
+void Connector::Connect(const ptr::ptree &command) {
+
 	m_log.Info(
-		"Connecting to the TRANSAQ server at %1%:%2% as %3% with password...",
+		"Connecting to TRANSAQ server at %1%:%2% as %3% with password...",
 		command.get<std::string>("host"),
 		command.get<std::string>("port"),
 		command.get<std::string>("login"));
@@ -162,7 +171,7 @@ void Connector::Connect(const IniSectionRef &conf) {
 
 		const auto &result = SendCommand(
 			"connect",
-			std::move(command),
+			ptr::ptree(command),
 			Milestones());
 		if (!result.second.empty()) {
 			throw ConnectException(result.second.c_str());
@@ -176,13 +185,38 @@ void Connector::Connect(const IniSectionRef &conf) {
 			m_isConnected.reset();
 			if (isTimeout) {
 				throw ConnectException(
-					"Failed to connect to the TRANSAQ server: request timeout");
+					"Failed to connect to TRANSAQ server: request timeout");
 			} else {
-				throw ConnectException(
-					"Failed to connect to the TRANSAQ server");
+				throw ConnectException("Failed to connect to TRANSAQ server");
 			}
 		}
 
+	}
+
+}
+
+void Connector::Reconnect() {
+
+	Assert(m_connectCommand);
+	if (!m_connectCommand) {
+		m_log.Error(
+			"Failed to reconnect to TRANSAQ server"
+				" as was never connected before.");
+		GetConnectorContext().StopDueFatalError(
+			"Failed to reconnect to TRANSAQ server");
+		return;
+	}
+
+
+	try {
+		Connect(*m_connectCommand);
+	} catch (const ConnectException &ex) {
+		m_log.Error(
+			"Failed to reconnect to TRANSAQ server: \"%1%\"",
+			ex.what());
+		GetConnectorContext().StopDueFatalError(
+			"Failed to reconnect to TRANSAQ server");
+		return;
 	}
 
 }
@@ -332,8 +366,11 @@ void Connector::OnClientsInfoMessage(
 		const Milestones::TimePoint &) {
 	try {
 		std::vector<std::string> attributes;
-		if (message.count("<xmlattr>.removed")) {
-			if (message.get<std::string>("<xmlattr>.removed") != "false") {
+		{
+			const auto &remove
+				= message.get_optional<std::string>("<xmlattr>.remove");
+			if (remove && *remove != "false") {
+				AssertEq(std::string("true"), *remove);
 				attributes.emplace_back("REMOVED");
 			} else {
 				attributes.emplace_back("ADDED");
@@ -380,43 +417,72 @@ void Connector::OnServerStatusMessage(
 	
 		const auto &connectStatus = message.get<std::string>(
 			"<xmlattr>.connected");
-		const bool isError = connectStatus == "error";
-		const bool isConnected = !isError && connectStatus == "true";
-		std::string id;
-		if (message.count("<xmlattr>.id")) {
-			id += " \"";
-			id += message.get<std::string>("<xmlattr>.id");
-			id += "\"";
+		const bool isError
+			= connectStatus != "true" && connectStatus != "false";
+		Assert(!isError || connectStatus == "error");
+		const auto &recoverStatus
+			= message.get_optional<std::string>("<xmlattr>.recover");
+		const bool isRecovery
+			= !isError && recoverStatus && *recoverStatus == "true";
+		Assert(isRecovery || !recoverStatus);
+		const bool isConnected
+			= !isError && !isRecovery && connectStatus == "true";
+
+		std::string idFormat;
+		{
+			const auto &id = message.get_optional<std::string>("<xmlattr>.id");
+			if (id) {
+				idFormat += " \"";
+				idFormat += *id;
+				idFormat += "\"";
+			}
 		}
 	
 		if (isConnected) {
 
-			m_log.Info(
-				"Connected to the TRANSAQ server%1% with timezone \"%2%\".",
-				id,
-				message.get<std::string>("<xmlattr>.server_tz"));
-		
 			if (m_isConnected) {
 				*m_isConnected = true;
 			}
-		
+
+			if (m_numberOfReconnectes++ || !m_isConnected) {
+				m_log.Warn(
+					"Connected to TRANSAQ server%1% with timezone \"%2%\".",
+					idFormat,
+					message.get<std::string>("<xmlattr>.server_tz"));
+			} else {
+				m_log.Info(
+					"Connected to TRANSAQ server%1% with timezone \"%2%\".",
+					idFormat,
+					message.get<std::string>("<xmlattr>.server_tz"));
+			}
+
 		} else if (isError) {
 
-			m_log.Error(
-				"Failed to connect to the TRANSAQ server%1%: \"%2%\".",
-				id,
-				ConvertUtf8ToAscii(message.get_value<std::string>()));
+			Assert(!isRecovery);
+			Assert(!recoverStatus);
 
-		} else if (message.count("<xmlattr>.recover")) {
+			m_log.Error(
+				"Failed to connect to TRANSAQ server%1%: \"%2%\".",
+				idFormat,
+				ConvertUtf8ToAscii(message.get_value<std::string>()));
+			
+			if (m_connectCommand) {
+				Reconnect();
+			}
+
+		} else if (isRecovery) {
+
+			Assert(!isError);
 
 			m_log.Warn(
-				"Disconnected from the TRANSAQ server%1%, reconnecting...",
-				id);
+				"Disconnected from TRANSAQ server%1%, reconnecting...",
+				idFormat);
 
 		} else {
 
-			m_log.Info("Disconnected from the TRANSAQ server%1%.", id);
-			Assert(!isConnected);
+			m_log.Warn("Disconnected from TRANSAQ server%1%.", idFormat);
+
+			Reconnect();
 
 		}
 

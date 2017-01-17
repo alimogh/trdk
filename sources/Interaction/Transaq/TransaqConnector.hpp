@@ -75,7 +75,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 	protected:
 
 		virtual ConnectorContext & GetConnectorContext() = 0;
-		
+
 		virtual DataHandlers GetDataHandlers() const;
 
 		std::pair<boost::property_tree::ptree, std::string>
@@ -89,6 +89,9 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		}
 
 	private:
+
+		void Connect(const  boost::property_tree::ptree &);
+		void Reconnect();
 
 		void OnNewDataMessage(
 				const boost::property_tree::ptree &,
@@ -127,6 +130,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		mutable Mutex m_mutex;
 		
 		boost::optional<bool> m_isConnected;
+		size_t m_numberOfReconnectes;
+		std::unique_ptr<boost::property_tree::ptree> m_connectCommand;
 		boost::condition_variable m_connectCondition;
 
 		const boost::posix_time::time_duration m_timeZoneDiff;

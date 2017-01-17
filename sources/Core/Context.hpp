@@ -78,8 +78,12 @@ namespace trdk {
 				const StateUpdateSlot &)
 				const;
 		//! Raises state update event.
+		/** Engine service should listen events and react to it.
+		  */
 		void RaiseStateUpdate(const State &) const;
 		//! Raises state update event with message.
+		/** Engine service should listen events and react to it.
+		  */
 		void RaiseStateUpdate(const State &, const std::string &message) const;
 
 		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
