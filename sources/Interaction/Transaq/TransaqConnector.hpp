@@ -90,8 +90,10 @@ namespace trdk { namespace Interaction { namespace Transaq {
 
 	private:
 
-		void Connect(const  boost::property_tree::ptree &);
-		void Reconnect();
+		void Connect(const  boost::property_tree::ptree &, Lock &);
+
+		void RunReconnectionTaks();
+		bool ScheduleReconnect(const Lock &);
 
 		void OnNewDataMessage(
 				const boost::property_tree::ptree &,
@@ -129,12 +131,18 @@ namespace trdk { namespace Interaction { namespace Transaq {
 
 		mutable Mutex m_mutex;
 		
-		boost::optional<bool> m_isConnected;
+		bool m_isConnected;
 		size_t m_numberOfReconnectes;
 		std::unique_ptr<boost::property_tree::ptree> m_connectCommand;
 		boost::condition_variable m_connectCondition;
 
 		const boost::posix_time::time_duration m_timeZoneDiff;
+
+		bool m_isStopped;
+
+		boost::thread m_reconnectThread;
+		boost::condition_variable m_reconnectCondition;
+		boost::optional<boost::posix_time::ptime> m_reconnectStartTime;
 
 	};
 

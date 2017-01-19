@@ -65,13 +65,26 @@ namespace {
 Connector::Connector(const Context &context, ModuleEventsLog &log)
 	: m_context(context)
 	, m_log(log)
+	, m_isConnected(false)
 	, m_numberOfReconnectes(0)
-	, m_timeZoneDiff(GetMskTimeZoneDiff(context.GetSettings().GetTimeZone())) {
+	, m_timeZoneDiff(GetMskTimeZoneDiff(context.GetSettings().GetTimeZone()))
+	, m_isStopped(false) {
 	//...//
 }
 
 Connector::~Connector() {
-	//...//
+	try {
+		{
+			const Lock lock(m_mutex);
+			Assert(!m_isStopped);
+			m_isStopped = true;
+		}
+		m_reconnectCondition.notify_all();
+		m_reconnectThread.join();
+	} catch (...) {
+		AssertFailNoException();
+		terminate();
+	}
 }
 
 Connector::DataHandlers Connector::GetDataHandlers() const {
@@ -113,7 +126,7 @@ void Connector::Init() {
 
 bool Connector::IsConnected() const {
 	const Lock lock(m_mutex);
-	return m_isConnected && *m_isConnected;
+	return m_isConnected;
 }
 
 void Connector::Connect(const IniSectionRef &conf) {
@@ -139,12 +152,31 @@ void Connector::Connect(const IniSectionRef &conf) {
 		"request_timeout",
 		conf.ReadTypedKey<size_t>("request_timeout"));
 
-	Connect(*command);
+	Lock lock(m_mutex);
+
+	if (m_isConnected) {
+		throw Exception("Already is connected");
+	}
+	Connect(*command, lock);
+	Assert(m_isConnected);
+
+	m_reconnectThread = boost::thread(
+		[this]() {
+			try {
+				RunReconnectionTaks();
+			} catch (...) {
+				AssertFailNoException();
+				throw;
+			}
+		});
+
 	command.swap(m_connectCommand);
 
 }
 
-void Connector::Connect(const ptr::ptree &command) {
+void Connector::Connect(const ptr::ptree &command, Lock &lock) {
+
+	Assert(!m_isConnected);
 
 	m_log.Info(
 		"Connecting to TRANSAQ server at %1%:%2% as %3% with password...",
@@ -158,67 +190,127 @@ void Connector::Connect(const ptr::ptree &command) {
 		command.get<std::string>("session_timeout"),
 		command.get<std::string>("request_timeout"));
 
-	{
-		
-		Lock lock(m_mutex);
-		
-		Assert(!m_isConnected);
+	const auto &result = SendCommand(
+		"connect",
+		ptr::ptree(command),
+		Milestones());
+	if (!result.second.empty()) {
+		throw ConnectException(result.second.c_str());
+	}
 
-		if (m_isConnected) {
-			throw Exception("Already connected");
+	bool isTimeout = !m_connectCondition.timed_wait(
+		lock,
+		pt::seconds(command.get<long>("request_timeout") * 3));
+
+	if (!m_isConnected) {
+		if (isTimeout) {
+			throw ConnectException(
+				"Failed to connect to TRANSAQ server: request timeout");
+		} else {
+			throw ConnectException("Failed to connect to TRANSAQ server");
 		}
-		m_isConnected = false;
-
-		const auto &result = SendCommand(
-			"connect",
-			ptr::ptree(command),
-			Milestones());
-		if (!result.second.empty()) {
-			throw ConnectException(result.second.c_str());
-		}
-
-		bool isTimeout = !m_connectCondition.timed_wait(
-			lock,
-			pt::seconds(command.get<long>("request_timeout") * 3));
-
-		if (!*m_isConnected) {
-			m_isConnected.reset();
-			if (isTimeout) {
-				throw ConnectException(
-					"Failed to connect to TRANSAQ server: request timeout");
-			} else {
-				throw ConnectException("Failed to connect to TRANSAQ server");
-			}
-		}
-
 	}
 
 }
 
-void Connector::Reconnect() {
+void Connector::RunReconnectionTaks() {
+	
+	m_log.Debug("Starting TRANSAQ reconnection task...");
 
-	Assert(m_connectCommand);
-	if (!m_connectCommand) {
-		m_log.Error(
-			"Failed to reconnect to TRANSAQ server"
-				" as was never connected before.");
-		GetConnectorContext().StopDueFatalError(
-			"Failed to reconnect to TRANSAQ server");
-		return;
+	Lock  lock(m_mutex);
+	while (!m_isStopped) {
+
+		if (!m_reconnectStartTime) {
+			m_reconnectCondition.wait(lock);
+			continue;
+		}
+
+		if (m_isConnected) {
+			m_reconnectStartTime = boost::none;
+			continue;
+		}
+
+		const auto &now = m_context.GetCurrentTime();
+
+		{
+			// 10.00 - 14.00	Основная торговая сессия
+			//					(дневной Расчетный период)
+			// 14.00 - 14.05	Дневная клиринговая сессия
+			//					(промежуточный клиринг)
+			// 14.05 - 18.45	Основная торговая сессия
+			//					(вечерний Расчетный период)
+			// 18.45 - 19.00*	Вечерняя клиринговая сессия (основной клиринг)
+			// 19.00 - 23.50	Вечерняя дополнительная торговая сессия
+			//	http://moex.com/s96
+			const pt::ptime sessionStartTime(
+				now.date(),
+				pt::time_duration(9, 40, 0));
+			if (sessionStartTime > now) {
+				m_log.Warn(
+					"Waiting until %1%"
+						" to try to reconnect to TRANSAQ server...",
+					sessionStartTime);
+				m_reconnectCondition.timed_wait(lock, sessionStartTime);
+				m_reconnectStartTime = m_context.GetCurrentTime();
+				continue;
+			}
+		}
+
+		if (now - *m_reconnectStartTime >= pt::minutes(7)) {
+			m_log.Error(
+				"Failed to reconnect to TRANSAQ server"
+					" during the last %1% (%2% -> %3%). Stopping...",
+				now - *m_reconnectStartTime,
+				*m_reconnectStartTime,
+				now);
+			m_context.RaiseStateUpdate(
+				Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+				"Failed to reconnect to TRANSAQ server");
+			break;
+		}
+		
+		if (!m_connectCommand) {
+			m_log.Error(
+				"Failed to reconnect to TRANSAQ server"
+					" as was never connected before.");
+			m_context.RaiseStateUpdate(
+				Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+				"Failed to reconnect to TRANSAQ server");
+			break;
+		}
+
+		m_log.Warn("Trying to restart connecting to TRANSAQ server...");
+		try {
+			Connect(*m_connectCommand, lock);
+		} catch (const ConnectException &ex) {
+			m_log.Error(
+				"Failed to reconnect to TRANSAQ server: \"%1%\""
+					", continue to try to reconnect...",
+				ex.what());
+			continue;
+		} catch (const std::exception &ex) {
+			m_log.Error(
+				"Failed to reconnect to TRANSAQ server: \"%1%\"",
+				ex.what());
+			m_context.RaiseStateUpdate(
+				Context::STATE_DISPATCHER_TASK_STOPPED_ERROR,
+				"Failed to reconnect to TRANSAQ server");
+			break;
+		}
+
 	}
 
+	m_log.Debug("TRANSAQ reconnection completed.");
 
-	try {
-		Connect(*m_connectCommand);
-	} catch (const ConnectException &ex) {
-		m_log.Error(
-			"Failed to reconnect to TRANSAQ server: \"%1%\"",
-			ex.what());
-		GetConnectorContext().StopDueFatalError(
-			"Failed to reconnect to TRANSAQ server");
-		return;
+}
+
+bool Connector::ScheduleReconnect(const Lock &) {
+	if (m_reconnectStartTime) {
+		return false;
 	}
-
+	m_reconnectStartTime = m_context.GetCurrentTime();
+	m_reconnectCondition.notify_all();
+	return true;
 }
 
 std::pair<boost::property_tree::ptree, std::string> Connector::SendCommand(
@@ -411,6 +503,8 @@ void Connector::OnServerStatusMessage(
 		const Milestones &,
 		const Milestones::TimePoint &) {
 	
+	bool isRecovery = false;
+
 	try {
 	
 		const Lock lock(m_mutex);
@@ -422,8 +516,7 @@ void Connector::OnServerStatusMessage(
 		Assert(!isError || connectStatus == "error");
 		const auto &recoverStatus
 			= message.get_optional<std::string>("<xmlattr>.recover");
-		const bool isRecovery
-			= !isError && recoverStatus && *recoverStatus == "true";
+		isRecovery = !isError && recoverStatus && *recoverStatus == "true";
 		Assert(isRecovery || !recoverStatus);
 		const bool isConnected
 			= !isError && !isRecovery && connectStatus == "true";
@@ -437,14 +530,12 @@ void Connector::OnServerStatusMessage(
 				idFormat += "\"";
 			}
 		}
+
+		m_isConnected = isConnected;
 	
 		if (isConnected) {
 
-			if (m_isConnected) {
-				*m_isConnected = true;
-			}
-
-			if (m_numberOfReconnectes++ || !m_isConnected) {
+			if (m_numberOfReconnectes++) {
 				m_log.Warn(
 					"Connected to TRANSAQ server%1% with timezone \"%2%\".",
 					idFormat,
@@ -467,22 +558,31 @@ void Connector::OnServerStatusMessage(
 				ConvertUtf8ToAscii(message.get_value<std::string>()));
 			
 			if (m_connectCommand) {
-				Reconnect();
+				ScheduleReconnect(lock);
 			}
 
 		} else if (isRecovery) {
 
 			Assert(!isError);
 
-			m_log.Warn(
-				"Disconnected from TRANSAQ server%1%, reconnecting...",
+			m_log.Error(
+				"Disconnected from TRANSAQ server%1%, recovering connection...",
 				idFormat);
+
+		} else if (m_isStopped) {
+
+			m_log.Info("Disconnected from TRANSAQ server%1%.", idFormat);
 
 		} else {
 
-			m_log.Warn("Disconnected from TRANSAQ server%1%.", idFormat);
-
-			Reconnect();
+			if (ScheduleReconnect(lock)) {
+				m_log.Error(
+					"Disconnected from TRANSAQ server%1%"
+						", restarting connection...",
+					idFormat);
+			} else {
+				m_log.Error("Disconnected from TRANSAQ server%1%.", idFormat);
+			}
 
 		}
 
@@ -491,7 +591,9 @@ void Connector::OnServerStatusMessage(
 		throw Exception("Failed to read server status");
 	}
 
-	m_connectCondition.notify_all();
+	if (!isRecovery) {
+		m_connectCondition.notify_all();
+	}
 
 }
 
