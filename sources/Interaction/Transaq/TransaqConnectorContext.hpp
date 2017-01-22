@@ -11,7 +11,9 @@
 #pragma once
 
 namespace trdk { namespace Interaction { namespace Transaq {
-	
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	class ConnectorContext : private boost::noncopyable {
 
 	public:
@@ -26,6 +28,30 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const trdk::Lib::TimeMeasurement::Milestones &,
 				const trdk::Lib::TimeMeasurement::Milestones::TimePoint &);
 		typedef boost::function<NewDataSlotSignature> NewDataSlot;
+
+	public:
+
+		virtual ~ConnectorContext() {
+			//...//
+		}
+
+	public:
+
+		virtual boost::signals2::scoped_connection SubscribeToNewData(
+				const NewDataSlot &)
+				const
+				= 0;
+
+		virtual ResultPtr SendCommand(
+				const char *data,
+				const Lib::TimeMeasurement::Milestones &)
+				= 0;
+
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class TransaqConnectorContext : public ConnectorContext {
 
 	private:
 
@@ -47,8 +73,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 			Signal;
 		};
 
-		typedef bool(ApiCallback)(const char *data, ConnectorContext *);
-		typedef bool(ApiSetCallback)(ApiCallback *, ConnectorContext *);
+		typedef bool(ApiCallback)(const char *data, TransaqConnectorContext *);
+		typedef bool(ApiSetCallback)(ApiCallback *, TransaqConnectorContext *);
 		typedef const char *(ApiSendCommand)(const char *data);
 		typedef bool (ApiFreeMemory)(const char *data);
 		typedef const char *(ApiInitialize)(const char *logPath, int logLevel);
@@ -56,24 +82,27 @@ namespace trdk { namespace Interaction { namespace Transaq {
 
 	public:
 
-		explicit ConnectorContext(const Context &, ModuleEventsLog &);
-		~ConnectorContext();
+		explicit TransaqConnectorContext(const Context &, ModuleEventsLog &);
+		virtual ~TransaqConnectorContext();
 
 	public:
 
-		boost::signals2::scoped_connection SubscribeToNewData(
+		virtual boost::signals2::scoped_connection SubscribeToNewData(
 				const NewDataSlot &)
-				const;
+				const
+				override;
 
-		ResultPtr SendCommand(
+		virtual ResultPtr SendCommand(
 				const char *data,
-				const Lib::TimeMeasurement::Milestones &);
+				const Lib::TimeMeasurement::Milestones &)
+				override;
 
 	private:
 
 		bool OnNewData(const char *);
 		static bool RaiseNewDataEvent(
-				const char *, ConnectorContext *)
+				const char *,
+				TransaqConnectorContext *)
 				noexcept;
 
 		void FreeMemory(const char *) const noexcept;
@@ -91,5 +120,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 		mutable SignalTrait<NewDataSlotSignature>::Signal m_signal;
 
 	};
+
+	////////////////////////////////////////////////////////////////////////////////
 
 } } }

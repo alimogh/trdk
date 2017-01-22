@@ -12,11 +12,12 @@
 
 #include "TransaqConnector.hpp"
 #include "TransaqConnectorContext.hpp"
+#include "Api.h"
 #include "Core/TradingSystem.hpp"
 
 namespace trdk { namespace Interaction { namespace Transaq {
 	
-	class TradingSystem
+	class TRDK_INTERACTION_TRANSAQ_API TradingSystem
 		: public trdk::TradingSystem,
 		protected TradingConnector {
 
@@ -26,6 +27,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 			const Security *security;
 			OrderId id;
 			OrderStatusUpdateSlot callback;
+			mutable Qty orderBalance;
 			Qty qty;
 			mutable Qty remainingQty;
 			mutable OrderStatus status;
@@ -196,10 +198,14 @@ namespace trdk { namespace Interaction { namespace Transaq {
 
 	private:
 
-		ConnectorContext m_connectorContext;
+		TransaqConnectorContext m_connectorContext;
+
+		bool m_tradingStarted;
 
 		OrdersMutex m_ordersMutex;
 		Orders m_orders;
+
+		boost::unordered_map<OrderId, size_t> m_unknownRequests;
 
 	};
 

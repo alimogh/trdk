@@ -19,7 +19,7 @@ namespace trdk {
 	public:
 
 		explicit Instrument(trdk::Context &, const trdk::Lib::Symbol &);
-		~Instrument();
+		virtual ~Instrument();
 
 		TRDK_CORE_API friend std::ostream & operator <<(
 				std::ostream &,
@@ -27,7 +27,7 @@ namespace trdk {
 
 	public:
 
-		const trdk::Lib::Symbol & GetSymbol() const throw();
+		virtual const trdk::Lib::Symbol & GetSymbol() const noexcept;
 
 	public:
 

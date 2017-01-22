@@ -10,13 +10,15 @@
 
 #pragma once
 
+#include "Fwd.hpp"
+#include "Api.h"
 #include "Common/TimeMeasurement.hpp"
 
 namespace trdk { namespace Interaction { namespace Transaq {
 
 	////////////////////////////////////////////////////////////////////////////////
 	
-	class Connector : private boost::noncopyable {
+	class TRDK_INTERACTION_TRANSAQ_API Connector : private boost::noncopyable {
 
 	public:
 
@@ -148,7 +150,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	class TradingConnector : public Connector {
+	class TRDK_INTERACTION_TRANSAQ_API TradingConnector : public Connector {
 
 	public:
 

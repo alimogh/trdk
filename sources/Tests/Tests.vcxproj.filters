@@ -108,6 +108,9 @@
     <ClCompile Include="..\Services\StochasticIndicatorUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\Interaction\Transaq\TransaqTradingSystemUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />

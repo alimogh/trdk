@@ -64,22 +64,22 @@ namespace {
 
 class ExpirationCalendarTest : public testing::Test {
 
-	protected:
+protected:
 
-		typedef trdk::Lib::ExpirationCalendar Calendar;
-		typedef trdk::Lib::ContractExpiration Expiration;
+	typedef trdk::Lib::ExpirationCalendar Calendar;
+	typedef trdk::Lib::ContractExpiration Expiration;
 
-	public:
+public:
 
-		static void SetUpTestCase() {
-			m_csvSourceFilePath = CreateCsvOkSource();
-		}
+	static void SetUpTestCase() {
+		m_csvSourceFilePath = CreateCsvOkSource();
+	}
 
-	protected:
+protected:
 
-		static fs::path m_csvSourceFilePath;
+	static fs::path m_csvSourceFilePath;
 
-	};
+};
 
 fs::path ExpirationCalendarTest::m_csvSourceFilePath;
 

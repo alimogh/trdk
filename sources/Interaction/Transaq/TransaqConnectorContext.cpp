@@ -24,7 +24,9 @@ using namespace trdk::Interaction::Transaq;
 namespace fs = boost::filesystem;
 namespace ptr = boost::property_tree;
 
-ConnectorContext::ConnectorContext(const Context &context, ModuleEventsLog &log)
+TransaqConnectorContext::TransaqConnectorContext(
+		const Context &context,
+		ModuleEventsLog &log)
 try
 	: m_context(context)
 	, m_log(log)
@@ -43,7 +45,7 @@ try
 
 	const bool setCallbackResult
 		= m_dll.GetFunction<ApiSetCallback>("SetCallbackEx")(
-			&ConnectorContext::RaiseNewDataEvent,
+			&TransaqConnectorContext::RaiseNewDataEvent,
 			this);
 	if (!setCallbackResult) {
 		m_log.Error("Failed to set TRANSAQ Connector callback.");
@@ -59,7 +61,7 @@ try
 		m_dll.GetFunction<ApiInitialize>("Initialize")(
 			logPath.string().c_str(),
 			logLevel),
-		boost::bind(&ConnectorContext::FreeMemory, this, _1));
+		boost::bind(&TransaqConnectorContext::FreeMemory, this, _1));
 	if (initResult) {
 		m_log.Error(
 			"Failed to init TRANSAQ Connector: \"%1%\".",
@@ -72,11 +74,11 @@ try
 	throw Exception("Failed to load TRANAQ Connector");
 }
 
-ConnectorContext::~ConnectorContext() {
+TransaqConnectorContext::~TransaqConnectorContext() {
 	try {
 		ResultPtr unInitializeResult(
 			m_unInitialize(),
-			boost::bind(&ConnectorContext::FreeMemory, this, _1));
+			boost::bind(&TransaqConnectorContext::FreeMemory, this, _1));
 		if (unInitializeResult) {
 			m_log.Error(
 				"Failed to stop TRANSAQ Connector: \"%1%\".",
@@ -88,27 +90,27 @@ ConnectorContext::~ConnectorContext() {
 	}
 }
 
-ConnectorContext::ResultPtr ConnectorContext::SendCommand(
+TransaqConnectorContext::ResultPtr TransaqConnectorContext::SendCommand(
 		const char *argument,
 		const Milestones &delayMeasurement) {
 	delayMeasurement.Measure(TSM_ORDER_SEND);
 	ResultPtr result(
 		m_sendCommand(argument),
-		boost::bind(&ConnectorContext::FreeMemory, this, _1));
+		boost::bind(&TransaqConnectorContext::FreeMemory, this, _1));
 	delayMeasurement.Measure(TSM_ORDER_SENT);
 	return result;
 }
 
-void ConnectorContext::FreeMemory(const char *ptr) const noexcept {
+void TransaqConnectorContext::FreeMemory(const char *ptr) const noexcept {
 	if (!m_freeMemory(ptr)) {
 		m_log.Error("Failed to free TRANSAQ Connector memory.");
 		Assert(false);
 	}
 }
 
-bool ConnectorContext::RaiseNewDataEvent(
+bool TransaqConnectorContext::RaiseNewDataEvent(
 		const char *data,
-		ConnectorContext *context)
+		TransaqConnectorContext *context)
 		noexcept {
 	try {
 		return context->OnNewData(data);
@@ -118,11 +120,11 @@ bool ConnectorContext::RaiseNewDataEvent(
 	}
 }
 
-bool ConnectorContext::OnNewData(const char *data) {
+bool TransaqConnectorContext::OnNewData(const char *data) {
 
 	ResultPtr dataHolder(
 		data,
-		boost::bind(&ConnectorContext::FreeMemory, this, _1));
+		boost::bind(&TransaqConnectorContext::FreeMemory, this, _1));
 
 	const auto &delayMeasurement = m_context.StartStrategyTimeMeasurement();
 	const auto &now = Milestones::GetNow();
@@ -155,7 +157,7 @@ bool ConnectorContext::OnNewData(const char *data) {
 
 }
 
-boost::signals2::scoped_connection ConnectorContext::SubscribeToNewData(
+boost::signals2::scoped_connection TransaqConnectorContext::SubscribeToNewData(
 		const NewDataSlot &slot)
 		const {
 	return m_signal.connect(slot);

@@ -35,6 +35,9 @@
     <ClCompile Include="TransaqSecurity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TransaqTradingSystemUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">

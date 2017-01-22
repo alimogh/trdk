@@ -29,7 +29,8 @@ Transaq::TradingSystem::TradingSystem(
 		const IniSectionRef &conf)
 	: trdk::TradingSystem(mode, index, context, instanceName)
 	, TradingConnector(GetContext(), GetLog(), conf)
-	, m_connectorContext(GetContext(), GetLog()) {
+	, m_connectorContext(GetContext(), GetLog())
+	, m_tradingStarted(false) {
 	//...//
 }
 
@@ -235,19 +236,43 @@ void Transaq::TradingSystem::SendCancelOrder(const OrderId &orderId) {
 	const auto &delayMeasurement
 		= GetContext().StartTradingSystemTimeMeasurement();
 
-	bool isExistent = false;
+	enum {
+		IS_EXISTENT_YES,
+		IS_EXISTENT_NO,
+		IS_EXISTENT_TOO_MANY,
+	} isExistent = IS_EXISTENT_YES;
 	{
 		const OrdersLock lock(m_ordersMutex);
+		Assert(m_tradingStarted);
 		auto &index = m_orders.get<ByOrderId>();
 		const auto &order = index.find(orderId);
-		isExistent = order != index.cend() && order->remainingQty;
+		static_assert(numberOfOrderStatuses == 9, "List changed.");
+		if (
+				order == index.cend()
+				|| order->remainingQty == 0
+				|| !(
+					order->status == ORDER_STATUS_SUBMITTED
+					|| order->status == ORDER_STATUS_SENT
+					|| order->status == ORDER_STATUS_FILLED_PARTIALLY
+					|| order->status == ORDER_STATUS_INACTIVE)) {
+			isExistent
+				= ++m_unknownRequests[orderId] > 100
+					|| m_unknownRequests.size() > 100
+				?	IS_EXISTENT_TOO_MANY
+				:	IS_EXISTENT_NO;
+		}
 	}
-	if (!isExistent) {
+	if (isExistent != IS_EXISTENT_YES) {
 		boost::format message(
 			"Failed to cancel unknown order %1% as it never existed"
 				", already filled, canceled or rejected (local error)");
 		message % orderId;
-		throw UnknownOrderCancelError(message.str().c_str());
+		if (isExistent != IS_EXISTENT_TOO_MANY) {
+			throw UnknownOrderCancelError(message.str().c_str());
+		} else {
+			GetLog().Error("Too many attempts to cancel unknown order.");
+			throw Error(message.str().c_str());
+		}
 	}
 
 	bool isOrderFound = false;
@@ -281,11 +306,13 @@ void Transaq::TradingSystem::RegisterOrder(
 		std::move(callback),
 		qty,
 		qty,
+		qty,
 		ORDER_STATUS_SENT,
 		std::move(delayMeasurement)
 	};
 	const OrdersLock lock(m_ordersMutex);
 	Verify(m_orders.emplace(std::move(order)).second);
+	m_tradingStarted = true;
 }
 
 void Transaq::TradingSystem::OnOrderUpdate(
@@ -316,23 +343,46 @@ void Transaq::TradingSystem::OnOrderUpdate(
 		auto &index = m_orders.get<ByOrderId>();
 		const auto &order = index.find(id);
 		if (order == index.cend()) {
-			GetTradingLog().Write(
-				"unknown order: id=%1%"
-					", ts-id=%2%, status=%3%, remaining-qty=%4%"
-					", message=\"%5%\"",
-				[&](TradingRecord &record) {
-					record
-						% id
-						% tradingSystemOrderId
-						% status
-						% remainingQty
-						% tradingSystemMessage;
-				});
+			if (!m_tradingStarted) {
+				GetTradingLog().Write(
+					"unknown order: id=%1%"
+						", ts-id=%2%, status=%3%, remaining-qty=%4%"
+						", message=\"%5%\"",
+					[&](TradingRecord &record) {
+						record
+							% id
+							% tradingSystemOrderId
+							% status
+							% remainingQty
+							% tradingSystemMessage;
+					});
+			} else {
+				GetLog().Error(
+					"Unknown order received from TRANSAQ server: id=%1%"
+						", ts-id=%2%, status=%3%, remaining-qty=%4%"
+						", message=\"%5%\".",
+					id,
+					tradingSystemOrderId,
+					status,
+					remainingQty,
+					tradingSystemMessage);
+			}
 			return;
 		}
 
 		AssertGe(order->remainingQty, remainingQty);
 		Assert(status != ORDER_STATUS_FILLED || remainingQty == 0);
+		
+		if (order->orderBalance < remainingQty) {
+			GetLog().Error(
+				"Protocol error: order %1% has balance %2%"
+					", but new order %3% balance is greater.",
+				id,
+				order->orderBalance,
+				remainingQty);
+			throw Exception("TRANSAQ Connector protocol error");
+		}
+		order->orderBalance = remainingQty;
 
 		if (order->tradingSystemOrderId != tradingSystemOrderId) {
 			AssertEq(0, order->tradingSystemOrderId);
@@ -353,18 +403,6 @@ void Transaq::TradingSystem::OnOrderUpdate(
 
 		static_assert(numberOfOrderStatuses == 9, "List changed.");
 		switch (status) {
-			default:
-				AssertEq(ORDER_STATUS_SUBMITTED, status);
-			case ORDER_STATUS_REJECTED:
-			case ORDER_STATUS_INACTIVE:
-			case ORDER_STATUS_ERROR:
-			case ORDER_STATUS_CANCELLED:
-				Assert(
-					order->status == ORDER_STATUS_SUBMITTED
-					|| order->status == ORDER_STATUS_SENT);
-				callback = std::move(order->callback);
-				m_orders.erase(order);
-				break;
 			case ORDER_STATUS_SUBMITTED:
 				Assert(
 					order->status == ORDER_STATUS_SENT
@@ -376,19 +414,35 @@ void Transaq::TradingSystem::OnOrderUpdate(
 				order->status = std::move(status);
 				callback = order->callback;
 				break;
-			case ORDER_STATUS_FILLED:
-				AssertEq(0, remainingQty);
+			default:
+				AssertEq(ORDER_STATUS_SUBMITTED, status);
+				throw Error("Unknown order status from TRANSAQ Connector");
+			case ORDER_STATUS_REJECTED:
+			case ORDER_STATUS_INACTIVE:
+			case ORDER_STATUS_ERROR:
+			case ORDER_STATUS_CANCELLED:
 				Assert(
 					order->status == ORDER_STATUS_SENT
 					|| order->status == ORDER_STATUS_SUBMITTED);
-				if (order->remainingQty) {
-					// Will be removed by trade.
+				if (order->remainingQty > order->orderBalance) {
+					order->status = std::move(status);
+					return;
+				}
+				callback = order->callback;
+				m_orders.erase(order);
+				break;
+			case ORDER_STATUS_FILLED:
+				Assert(
+					order->status == ORDER_STATUS_SENT
+					|| order->status == ORDER_STATUS_SUBMITTED);
+				if (order->remainingQty > order->orderBalance) {
+					// Will be removed by trade or already did.
 					order->status = std::move(status);
 				} else {
 					m_orders.erase(order);
 				}
 			case ORDER_STATUS_FILLED_PARTIALLY:
-				// Will be notified by trade.
+				// Will be notified by trade or already did.
 				if (replyDelayMeasurement) {
 					replyDelayMeasurement->Measure(TSM_ORDER_REPLY_PROCESSED);
 				}
@@ -418,6 +472,7 @@ void Transaq::TradingSystem::OnTrade(
 		Qty &&qty) {
 
 	Order order;
+	OrderStatus status;
 	{
 	
 		const OrdersLock lock(m_ordersMutex);
@@ -425,34 +480,70 @@ void Transaq::TradingSystem::OnTrade(
 		auto &index = m_orders.get<ByTradingSystemOrderId>();
 		const auto &it = index.find(tradingSystemOrderId);
 		if (it == index.cend()) {
-			GetTradingLog().Write(
-				"unknown trade: id=%1%, ts-order-id=%2%, price=%3%, qty=%4%",
-				[&](TradingRecord &record) {
-					record
-						% id
-						% tradingSystemOrderId
-						% price
-						% qty;
-				});
+			if (!m_tradingStarted) {
+				GetTradingLog().Write(
+					"unknown trade"
+						": id=%1%, ts-order-id=%2%, price=%3%, qty=%4%",
+					[&](TradingRecord &record) {
+						record
+							% id
+							% tradingSystemOrderId
+							% price
+							% qty;
+					});
+			} else {
+				GetLog().Error(
+					"Unknown trade received from TRANSAQ server"
+						": id=%1%, ts-order-id=%2%, price=%3%, qty=%4%.",
+					id,
+					tradingSystemOrderId,
+					price,
+					qty);
+			}
 			return;
 		}
 
 		Assert(
 			it->status == ORDER_STATUS_SUBMITTED
-			|| it->status == ORDER_STATUS_FILLED);
+			|| it->status == ORDER_STATUS_FILLED
+			|| it->status == ORDER_STATUS_REJECTED
+			|| it->status == ORDER_STATUS_INACTIVE
+			|| it->status == ORDER_STATUS_ERROR
+			|| it->status == ORDER_STATUS_CANCELLED);
 
 		if (it->remainingQty < qty) {
 			GetLog().Error(
 				"Protocol error: trade has quantity %1%"
-					", but order has remaining quantity %2%");
+					", but order has remaining quantity %2%.",
+				qty,
+				it->remainingQty);
 			throw Exception("Wrong trade quantity");
 		}
+		AssertGe(it->remainingQty, qty);
 		it->remainingQty -= qty;
 
 		order = *it;
 
-		if (it->status == ORDER_STATUS_FILLED && it->remainingQty == 0) {
-			index.erase(it);
+		static_assert(numberOfOrderStatuses == 9, "List changed.");
+		switch (it->status) {
+			case ORDER_STATUS_FILLED:
+			case ORDER_STATUS_REJECTED:
+			case ORDER_STATUS_INACTIVE:
+			case ORDER_STATUS_ERROR:
+			case ORDER_STATUS_CANCELLED:
+				AssertGe(it->remainingQty, it->orderBalance);
+				if (it->remainingQty <= it->orderBalance) {
+					status = it->status;
+					index.erase(it);
+				} else {
+					status = ORDER_STATUS_FILLED_PARTIALLY;
+				}
+				break;
+			default:
+				status = it->remainingQty
+					?	ORDER_STATUS_FILLED_PARTIALLY
+					:	ORDER_STATUS_FILLED;
+				break;
 		}
 
 	}
@@ -465,9 +556,7 @@ void Transaq::TradingSystem::OnTrade(
 	order.callback(
 		order.id,
 		boost::lexical_cast<std::string>(tradingSystemOrderId),
-		order.remainingQty > 0
-			?	ORDER_STATUS_FILLED_PARTIALLY
-			:	ORDER_STATUS_FILLED,
+		status,
 		order.remainingQty,
 		&trade);
 

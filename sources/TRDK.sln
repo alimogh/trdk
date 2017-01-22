@@ -22,6 +22,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version\Version.vcxproj", "{6884DFB9-D84C-4F37-853F-79565671A1E3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{AF773219-8D87-4958-A567-4BCB72272E51}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7C01DF94-CF6D-412A-BA9A-508855937233} = {7C01DF94-CF6D-412A-BA9A-508855937233}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test trading systems", "Interaction\Test\Test.vcxproj", "{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40}"
 EndProject

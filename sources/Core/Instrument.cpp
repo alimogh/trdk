@@ -44,7 +44,7 @@ Instrument::~Instrument() {
 	delete m_pimpl;
 }
 
-const Symbol & Instrument::GetSymbol() const throw() {
+const Symbol & Instrument::GetSymbol() const noexcept {
 	return m_pimpl->m_symbol;
 }
 

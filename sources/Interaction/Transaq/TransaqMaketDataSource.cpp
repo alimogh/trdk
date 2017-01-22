@@ -189,7 +189,7 @@ boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
 			return m_connectorContext;
 		}
 	private:
-		ConnectorContext m_connectorContext;
+		TransaqConnectorContext m_connectorContext;
 	};
 
 	return boost::make_shared<MarketDataSource>(
