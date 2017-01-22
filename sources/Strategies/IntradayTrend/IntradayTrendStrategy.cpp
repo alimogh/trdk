@@ -368,7 +368,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			if (rsi.value <= 30 || stochastic.k <= 20) {
 				return false;
 			}
-			
+
 			return stochastic.k >= stochastic.d;
 
 		}
@@ -420,6 +420,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			, m_pricesServiceDropCopyIds(
 				DropCopy::nDataSourceInstanceId,
 				DropCopy::nDataSourceInstanceId)
+			, m_barDuration(pt::not_a_date_time)
 			, m_adx(nullptr)
 			, m_rsi(nullptr)
 			, m_stochastic(nullptr)
@@ -922,8 +923,30 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			m_stops.Update(price);
 
+			pt::time_duration barDuration(pt::not_a_date_time);
+			if (m_barDuration.is_not_a_date_time()) {
+				if (m_lastBarTime != pt::not_a_date_time) {
+					AssertLt(m_lastBarTime, price.time);
+					m_barDuration = price.time - m_lastBarTime;
+					// Only for timed bars:
+					AssertEq(0, m_barDuration.seconds());
+				}
+			} else {
+				Assert(m_lastBarTime != pt::not_a_date_time);
+				AssertLt(m_lastBarTime, price.time);
+				barDuration = price.time - m_lastBarTime;
+				// Only for timed bars:
+				AssertEq(0, barDuration.seconds());
+			}
+			m_lastBarTime = price.time;
+
 			if (!m_trend.Update(price, adx, rsi, stochastic)) {
 				LogSignal("trend", price, adx, rsi, stochastic);
+				return;
+			} else if (
+					barDuration.is_not_a_date_time()
+					|| barDuration > m_barDuration) {
+				LogSignal("first bar signal", price, adx, rsi, stochastic);
 				return;
 			}
 
@@ -1342,6 +1365,9 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		const BollingerBands *m_prices;
 		std::pair<DropCopyDataSourceInstanceId, DropCopyDataSourceInstanceId>
 			m_pricesServiceDropCopyIds;
+
+		pt::ptime m_lastBarTime;
+		pt::time_duration m_barDuration;
 
 		const Adx *m_adx;
 		const Rsi *m_rsi;
