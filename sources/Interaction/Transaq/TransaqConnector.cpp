@@ -246,10 +246,11 @@ void Connector::RunReconnectionTaks() {
 				now.date(),
 				pt::time_duration(9, 40, 0));
 			if (sessionStartTime > now) {
+				const pt::time_duration &waitTime = sessionStartTime - now;
 				m_log.Warn(
-					"Waiting until %1%"
+					"Waiting for %1%"
 						" to try to reconnect to TRANSAQ server...",
-					sessionStartTime);
+					waitTime);
 				m_reconnectCondition.timed_wait(lock, sessionStartTime);
 				m_reconnectStartTime = m_context.GetCurrentTime();
 				continue;
