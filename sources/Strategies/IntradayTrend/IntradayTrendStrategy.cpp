@@ -24,6 +24,7 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace m = boost::math;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -240,7 +241,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 		boost::tribool CheckOutside(
 				const Adx::Point &adx,
 				const Rsi::Point &/*rsi*/,
-				const Stochastic::Point &stochastic) {
+				const Stochastic::Point &stoch) {
 
 			++m_numberOfUpdatesOutsideBounds;
 			
@@ -254,18 +255,23 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			}
 			// Вышли за другую границу коридора первый раз.
 
-			if (adx.adx < 25) {
-				// Тенд слишком слаб, но даём ему ещё шанс.
-				m_bound = boost::indeterminate;
-				return boost::indeterminate;
+			{
+				const auto &adxVal = intmax_t(m::round(adx.adx.Get()));
+				if (adxVal < 25) {
+					// Тенд слишком слаб, но даём ему ещё шанс.
+					m_bound = boost::indeterminate;
+					return boost::indeterminate;
+				}
 			}
 
 			m_bound = boost::tribool(isUpper);
 
 			{
+				const auto &ndiVal = intmax_t(m::round(adx.ndi.Get()));
+				const auto &pdiVal = intmax_t(m::round(adx.pdi.Get()));
 				const bool isMyDirectionByAdx = isUpper
-					? adx.pdi > adx.ndi
-					: adx.ndi > adx.pdi;
+					? pdiVal > ndiVal
+					: ndiVal > pdiVal;
 				if (!isMyDirectionByAdx) {
 					// Тренд по ADX не совпадает с пробоем.
 					return boost::indeterminate;
@@ -273,23 +279,26 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			}
 
 			{
+
+				const auto &kVal = intmax_t(m::round(stoch.k.Get()));
+				const auto &dVal = intmax_t(m::round(stoch.d.Get()));
+
 				const bool isMyDirectionByStoh = isUpper
-					? stochastic.k >= 80 || stochastic.k > stochastic.d
-					: stochastic.k <= 20 || stochastic.k < stochastic.d;
+					? kVal >= 80 && kVal > dVal
+					: kVal <= 20 && kVal < dVal;
 				if (!isMyDirectionByStoh) {
 					// Тренд по Stochastic-ку не совпадает с пробоем.
 					return boost::indeterminate;
 				}
-			}
 
-			{
 				const bool isTrendConfirmedByStohExtremum = isUpper
-					?	stochastic.k >= stochastic.extremums.maxK
-					:	stochastic.k <= stochastic.extremums.minK;
+					?	kVal >= intmax_t(m::round(stoch.extremums.maxK.Get()))
+					:	kVal <= intmax_t(m::round(stoch.extremums.minK.Get()));
 				if (!isTrendConfirmedByStohExtremum) {
 					// Тренд не совпадает с экстремумом по Stochastic-ку.
 					return boost::indeterminate;
 				}
+
 			}
 
 			return isUpper;
@@ -306,7 +315,7 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 
 			boost::tribool result = m_isRising;
 
-			if (adx.adx < 25) {
+			if (adx.adx <= 25) {
 				// Тренд закончился.
 				result = boost::indeterminate;
 			} else if (result) {
