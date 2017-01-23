@@ -114,6 +114,12 @@ namespace {
 						return 1000;
 					} else if (symbolStr == "BR") {
 						return 10;
+					} else if (symbolStr == "GD") {
+						return 1;
+					} else if (symbolStr == "SV") {
+						return 10;
+					} else if (symbolStr == "SR") {
+						return 100;
 					}
 					break;
 				}
