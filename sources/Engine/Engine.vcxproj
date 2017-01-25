@@ -257,9 +257,6 @@
     <ProjectReference Include="..\Services\Services.vcxproj">
       <Project>{4f025d92-8f15-4a05-97b6-ca680cb090d9}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Strategies\GadM\GadM.vcxproj">
-      <Project>{8a8f4bbd-ee56-4eb1-b239-7303fd993027}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Strategies\Test\TestStrategy.vcxproj">
       <Project>{9ef13741-7c1b-4a58-b79c-3800b42847e7}</Project>
     </ProjectReference>

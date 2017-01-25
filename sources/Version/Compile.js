@@ -31,7 +31,6 @@ var requiredModules = [
 	, 'IqFeed'
 	, 'Services'
 	, 'TestStrategy'
-	, 'GadM'
 	, 'IntradayTrend'
 ]
 
