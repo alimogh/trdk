@@ -52,11 +52,6 @@ namespace trdk { namespace Services { namespace Indicators {
 			//! %D.
 			trdk::Lib::Double d;
 
-			struct {
-				trdk::Lib::Double minK;
-				trdk::Lib::Double maxK;
-			} extremums;
-
 		};
 
 	public:

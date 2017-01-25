@@ -30,7 +30,6 @@ public:
 
 	Point m_lastValue;
 	size_t m_lastValueNo;
-	boost::circular_buffer<Double> m_history;
 	
 	std::ofstream m_pointsLog;
 
@@ -47,7 +46,6 @@ public:
 		: m_self(self)
 		, m_lastValue(Point{})
 		, m_lastValueNo(0)
-		, m_history(conf.ReadTypedKey<size_t>("period_k") - 1)
 		, m_highestPrices(conf.ReadTypedKey<size_t>("period_k"))
 		, m_lowestPrices(m_highestPrices.capacity())
 		, m_periodD(conf.ReadTypedKey<size_t>("period_d"))
@@ -165,19 +163,6 @@ public:
 				m_lastValue.k *= 100;
 			}
 		}
-
-		if (!m_history.empty()) {
-			m_lastValue.extremums.minK = *std::min_element(
-				m_history.begin(),
-				m_history.end());
-			m_lastValue.extremums.maxK = *std::max_element(
-				m_history.begin(),
-				m_history.end());
-		} else {
-			AssertEq(0, m_lastValue.extremums.minK);
-			AssertEq(0, m_lastValue.extremums.maxK);
-		}
-		m_history.push_back(m_lastValue.k);
 
 		m_dAcc(m_lastValue.k);
 		if (accs::rolling_count(m_dAcc) < m_periodD) {
