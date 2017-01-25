@@ -230,8 +230,6 @@ void Connector::RunReconnectionTaks() {
 			continue;
 		}
 
-		const auto &now = m_context.GetCurrentTime();
-
 		{
 			// 10.00 - 14.00	Основная торговая сессия
 			//					(дневной Расчетный период)
@@ -243,19 +241,31 @@ void Connector::RunReconnectionTaks() {
 			// 19.00 - 23.50	Вечерняя дополнительная торговая сессия
 			//	http://moex.com/s96
 			const pt::ptime sessionStartTime(
-				now.date(),
-				pt::time_duration(9, 40, 0));
-			if (sessionStartTime > now) {
-				const pt::time_duration &waitTime = sessionStartTime - now;
-				m_log.Warn(
-					"Waiting for %1%"
-						" to try to reconnect to TRANSAQ server...",
-					waitTime);
-				m_reconnectCondition.timed_wait(lock, sessionStartTime);
+				m_context.GetCurrentTime().date(),
+				pt::time_duration(9, 30, 0));
+			if (sessionStartTime > m_context.GetCurrentTime()) {
+				{
+					const auto totalWaitTime
+						= sessionStartTime - m_context.GetCurrentTime();
+					m_log.Warn(
+						"Waiting for %1%"
+							" to try to reconnect to TRANSAQ server...",
+						totalWaitTime);
+				}
+				do {
+					const auto waitTime = std::min(
+						sessionStartTime - m_context.GetCurrentTime(),
+						pt::time_duration(pt::minutes(5)));
+					m_reconnectCondition.timed_wait(lock, waitTime);
+				} while (
+					!m_isStopped
+					&& sessionStartTime > m_context.GetCurrentTime());
 				m_reconnectStartTime = m_context.GetCurrentTime();
 				continue;
 			}
 		}
+
+		const auto &now = m_context.GetCurrentTime();
 
 		if (now - *m_reconnectStartTime >= pt::minutes(7)) {
 			m_log.Error(
