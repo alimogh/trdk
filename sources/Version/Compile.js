@@ -27,7 +27,6 @@ var requiredModules = [
 	, 'Engine'
 	, 'TestTradingSystems'
 	, 'Transaq'
-	, 'IqFeed'
 	, 'Services'
 	, 'TestStrategy'
 	, 'IntradayTrend'
