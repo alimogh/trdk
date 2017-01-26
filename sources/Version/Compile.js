@@ -26,7 +26,6 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'TestTradingSystems'
-	, 'InteractiveBrokers'
 	, 'Transaq'
 	, 'IqFeed'
 	, 'Services'
