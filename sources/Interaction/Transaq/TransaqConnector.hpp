@@ -90,6 +90,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 			return m_timeZoneDiff;
 		}
 
+		virtual void OnReconnect() = 0;
+
 	private:
 
 		void Connect(const  boost::property_tree::ptree &, Lock &);

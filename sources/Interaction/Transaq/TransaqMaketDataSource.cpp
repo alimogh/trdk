@@ -48,6 +48,10 @@ void Transaq::MarketDataSource::Connect(const IniSectionRef &conf) {
 	}
 } 
 
+void Transaq::MarketDataSource::OnReconnect() {
+	SubscribeToSecurities();
+}
+
 void Transaq::MarketDataSource::SubscribeToSecurities() {
 
 	GetLog().Info(

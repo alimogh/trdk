@@ -253,10 +253,9 @@ void Connector::RunReconnectionTaks() {
 						totalWaitTime);
 				}
 				do {
-					const auto waitTime = std::min(
-						sessionStartTime - m_context.GetCurrentTime(),
-						pt::time_duration(pt::minutes(5)));
-					m_reconnectCondition.timed_wait(lock, waitTime);
+					m_reconnectCondition.timed_wait(
+						lock,
+						sessionStartTime - m_context.GetCurrentTime());
 				} while (
 					!m_isStopped
 					&& sessionStartTime > m_context.GetCurrentTime());
@@ -308,6 +307,8 @@ void Connector::RunReconnectionTaks() {
 				"Failed to reconnect to TRANSAQ server");
 			break;
 		}
+
+		OnReconnect();
 
 	}
 

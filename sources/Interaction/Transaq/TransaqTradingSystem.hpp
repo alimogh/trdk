@@ -87,6 +87,10 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const trdk::Lib::IniSectionRef &)
 				override;
 
+		virtual void OnReconnect() override {
+			//...//
+		}
+
 		virtual OrderId SendSellAtMarketPrice(
 				trdk::Security &,
 				const trdk::Lib::Currency &,

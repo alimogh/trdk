@@ -45,6 +45,8 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const trdk::Lib::Symbol &)
 				override;
 
+		virtual void OnReconnect() override;
+
 		virtual void OnNewTick(
 				const boost::posix_time::ptime &,
 				const std::string &board,
