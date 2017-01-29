@@ -67,37 +67,32 @@ namespace {
 	}
 
 	//! Returns symbol price precision.
-	uint8_t GetPrecisionBySymbol(
-			const Symbol &symbol,
-			const MarketDataSource &source) {
-		if (boost::iequals(symbol.GetSymbol(), "EUR/USD")) {
-			return 5;
-		} else if (boost::iequals(symbol.GetSymbol(), "EUR/JPY")) {
-			return 3;
-		} else if (boost::iequals(symbol.GetSymbol(), "EUR/CHF")) {
-			return 5;
-		} else if (boost::iequals(symbol.GetSymbol(), "EUR/AUD")) {
-			return 5;
-		} else if (boost::iequals(symbol.GetSymbol(), "USD/JPY")) {
-			return 3;
-		} else if (boost::iequals(symbol.GetSymbol(), "USD/CHF")) {
-			return 5;
-		} else if (boost::iequals(symbol.GetSymbol(), "AUD/USD")) {
-			return 5;
-		} else if (boost::iequals(symbol.GetSymbol(), "AUD/JPY")) {
-			return 3;
-		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE2")) {
+	uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
+		if (symbol.GetSymbol() == "TEST_SCALE2") {
 			return 2;
-		} else if (boost::iequals(symbol.GetSymbol(), "TEST_SCALE4")) {
+		} else if (symbol.GetSymbol() == "TEST_SCALE4") {
 			return 4;
-		} else {
-			const uint8_t result = 2;
-			source.GetLog().Warn(
-				"Precision for \"%1%\" not set. Using default - %2%.",
-				symbol,
-				int(result));
-			return result;
 		}
+		switch (symbol.GetSecurityType()) {
+			case SECURITY_TYPE_FUTURES:
+				{
+					const auto &symbolStr = GetFutureSymbol(symbol);
+					if (symbolStr == "BR") {
+						return 2;
+					} else if (symbolStr == "GD") {
+						return 1;
+					} else if (symbolStr == "SV") {
+						return 2;
+					} else if (symbolStr == "SR") {
+						return 0;
+					}
+					break;
+				}
+		}
+		boost::format message(
+			"Failed to find precision for unknown symbol \"%1%\"");
+		message % symbol;
+		throw Exception(message.str().c_str());
 	}
 
 	size_t GetLotSizeBySymbol(const Symbol &symbol) {
@@ -124,7 +119,8 @@ namespace {
 					break;
 				}
 		}
-		boost::format message("Unknown symbol \"%1%\" to get lot size");
+		boost::format message(
+			"Failed to find lot size for unknown symbol \"%1%\"");
 		message % symbol;
 		throw Exception(message.str().c_str());
 	}
@@ -507,7 +503,7 @@ public:
 		: m_self(self)
 		, m_instanceId(m_nextInstanceId++)
 		, m_source(source)
-		, m_pricePrecision(GetPrecisionBySymbol(symbol, source))
+		, m_pricePrecision(GetPrecisionBySymbol(symbol))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
 		, m_lotSize(GetLotSizeBySymbol(symbol))
 		, m_brokerPosition(0)
