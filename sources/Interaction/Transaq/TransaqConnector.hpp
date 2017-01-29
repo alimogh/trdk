@@ -174,12 +174,14 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const std::string &board,
 				const std::string &symbol,
 				double price,
+				uint8_t pricePrecision,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 		OrderId SendBuyOrder(
 				const std::string &board,
 				const std::string &symbol,
 				double price,
+				uint8_t pricePrecision,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 
@@ -217,6 +219,7 @@ namespace trdk { namespace Interaction { namespace Transaq {
 				const std::string &board,
 				const std::string &symbol,
 				double price,
+				uint8_t pricePrecision,
 				const Qty &,
 				const Lib::TimeMeasurement::Milestones &);
 

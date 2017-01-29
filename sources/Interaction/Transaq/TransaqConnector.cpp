@@ -47,19 +47,6 @@ namespace {
 		return result - timeZoneDiff;
 	}
 
-	std::string ConvertToTransaqPriceString(double val) {
-		std::ostringstream os;
-		os << std::fixed << std::setprecision(7) << val;
-		std::string result = os.str();
-		const auto dot = result.find('.');
-		AssertNe(std::string::npos, dot);
-		AssertLe(dot + 2, result.size());
-		const auto notZero = result.find_last_not_of('0');
-		Assert(notZero != std::string::npos);
-		result.resize(notZero == dot ? dot + 2: notZero + 1);
-		return result;
-	}
-
 }
 
 Connector::Connector(const Context &context, ModuleEventsLog &log)
@@ -671,6 +658,7 @@ OrderId TradingConnector::SendSellOrder(
 		const std::string &board,
 		const std::string &symbol,
 		double price,
+		uint8_t pricePrecision,
 		const Qty &qty,
 		const Milestones &delayMeasurement) {
 	return SendOrder(
@@ -678,6 +666,7 @@ OrderId TradingConnector::SendSellOrder(
 		board,
 		symbol,
 		price,
+		pricePrecision,
 		qty,
 		delayMeasurement);
 }
@@ -686,6 +675,7 @@ OrderId TradingConnector::SendBuyOrder(
 		const std::string &board,
 		const std::string &symbol,
 		double price,
+		uint8_t pricePrecision,
 		const Qty &qty,
 		const Milestones &delayMeasurement) {
 	return SendOrder(
@@ -693,6 +683,7 @@ OrderId TradingConnector::SendBuyOrder(
 		board,
 		symbol,
 		price,
+		pricePrecision,
 		qty,
 		delayMeasurement);
 }
@@ -702,6 +693,7 @@ OrderId TradingConnector::SendOrder(
 		const std::string &board,
 		const std::string &symbol,
 		double price,
+		uint8_t pricePrecision,
 		const Qty &qty,
 		const Milestones &delayMeasurement) {
 
@@ -712,7 +704,11 @@ OrderId TradingConnector::SendOrder(
 		security.put("seccode", symbol);
 		order.add_child("security", security);
 	}
-	order.put("price", ConvertToTransaqPriceString(price));
+	{
+		std::ostringstream os;
+		os << std::fixed << std::setprecision(pricePrecision) << price;
+		order.put("price", os.str());
+	}
 	order.put("quantity", int32_t(qty));
 
 	const auto &result = SendCommand(

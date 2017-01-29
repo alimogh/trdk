@@ -97,6 +97,7 @@ OrderId Transaq::TradingSystem::SendSell(
 			symbol.GetExchange(),
 			symbol.GetSymbol(),
 			security.DescalePrice(price),
+			security.GetPricePrecision(),
 			qty,
 			delayMeasurement);
 	} catch (const Exception &ex) {
@@ -178,6 +179,7 @@ OrderId Transaq::TradingSystem::SendBuy(
 			symbol.GetExchange(),
 			symbol.GetSymbol(),
 			security.DescalePrice(price),
+			security.GetPricePrecision(),
 			qty,
 			delayMeasurement);
 	} catch (const Exception &ex) {
