@@ -198,10 +198,25 @@ namespace trdk { namespace Engine {
 						flush = !m_context.GetSettings().IsReplayMode();
 					}
 					if (!(m_current->size() % m_queueSizeConstrolLevel)) {
-						m_context.GetLog().Warn(
-							"Dispatcher queue \"%1%\" is too long (%2% events)!",
-							m_name,
-							m_current->size());
+						const char *const message
+							= "Dispatcher queue \"%1%\""
+								" is too long (%2% events)!";
+						if (m_current->size() <= 100) {
+							m_context.GetLog().Info(
+								message,
+								m_name,
+								m_current->size());
+						} else if (m_current->size() <= 200) {
+							m_context.GetLog().Warn(
+								message,
+								m_name,
+								m_current->size());
+						} else {
+							m_context.GetLog().Error(
+								message,
+								m_name,
+								m_current->size());
+						}
 					}
 				}
 				if (flush) {
