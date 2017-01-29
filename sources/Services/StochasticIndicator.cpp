@@ -36,6 +36,12 @@ public:
 	boost::circular_buffer<Price> m_highestPrices;
 	boost::circular_buffer<Price> m_lowestPrices;
 
+	const size_t m_periodSmoothingK;
+	accs::accumulator_set<
+			Double,
+			accs::stats<accs::tag::rolling_mean>>
+		m_kAcc;
+
 	const size_t m_periodD;
 	accs::accumulator_set<
 			Double,
@@ -48,6 +54,8 @@ public:
 		, m_lastValueNo(0)
 		, m_highestPrices(conf.ReadTypedKey<size_t>("period_k"))
 		, m_lowestPrices(m_highestPrices.capacity())
+		, m_periodSmoothingK(conf.ReadTypedKey<size_t>("period_k_smooth"))
+		, m_kAcc(accs::tag::rolling_window::window_size = m_periodSmoothingK)
 		, m_periodD(conf.ReadTypedKey<size_t>("period_d"))
 		, m_dAcc(accs::tag::rolling_window::window_size = m_periodD) {
 
@@ -63,8 +71,10 @@ public:
 		}
 
 		m_self.GetLog().Info(
-			"Using period %1% for %%K, period %2% for %%D.",
+			"Using period %1% for %%K with smoothing period %2%"
+				", period %3% for %%D.",
 			m_highestPrices.capacity(),
+			m_periodSmoothingK,
 			m_periodD);
 
 		{
@@ -163,6 +173,8 @@ public:
 				m_lastValue.k *= 100;
 			}
 		}
+		m_kAcc(m_lastValue.k);
+		m_lastValue.k = accs::rolling_mean(m_kAcc);
 
 		m_dAcc(m_lastValue.k);
 		if (accs::rolling_count(m_dAcc) < m_periodD) {
