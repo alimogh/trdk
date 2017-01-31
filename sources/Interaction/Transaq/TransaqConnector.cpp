@@ -240,9 +240,10 @@ void Connector::RunReconnectionTaks() {
 						totalWaitTime);
 				}
 				do {
-					m_reconnectCondition.timed_wait(
-						lock,
-						sessionStartTime - m_context.GetCurrentTime());
+					const auto waitTime = std::min(
+						sessionStartTime - m_context.GetCurrentTime(),
+						pt::time_duration(pt::minutes(5)));
+					m_reconnectCondition.timed_wait(lock, waitTime);
 				} while (
 					!m_isStopped
 					&& sessionStartTime > m_context.GetCurrentTime());
