@@ -92,24 +92,27 @@ OrderId Transaq::TradingSystem::SendSell(
 		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &symbol = security.GetSymbol();
 	OrderId id;
-	try {
-		id = TradingConnector::SendSellOrder(
-			symbol.GetExchange(),
-			symbol.GetSymbol(),
-			security.DescalePrice(price),
-			security.GetPricePrecision(),
+	{
+		const OrdersLock lock(m_ordersMutex);
+		try {
+			id = TradingConnector::SendSellOrder(
+				symbol.GetExchange(),
+				symbol.GetSymbol(),
+				security.DescalePrice(price),
+				security.GetPricePrecision(),
+				qty,
+				delayMeasurement);
+		} catch (const Exception &ex) {
+			GetLog().Error("Failed to send order to sell: \"%1%\".", ex.what());
+			throw SendingError("Failed to send order to sell");
+		}
+		RegisterOrder(
+			security,
+			id,
 			qty,
-			delayMeasurement);
-	} catch (const Exception &ex) {
-		GetLog().Error("Failed to send order to sell: \"%1%\".", ex.what());
-		throw SendingError("Failed to send order to sell");
+			std::move(callback),
+			std::move(delayMeasurement));
 	}
-	RegisterOrder(
-		security,
-		id,
-		qty,
-		std::move(callback),
-		std::move(delayMeasurement));
 	return id;
 }
 
@@ -174,24 +177,27 @@ OrderId Transaq::TradingSystem::SendBuy(
 		= GetContext().StartTradingSystemTimeMeasurement();
 	const auto &symbol = security.GetSymbol();
 	OrderId id;
-	try {
-		id = TradingConnector::SendBuyOrder(
-			symbol.GetExchange(),
-			symbol.GetSymbol(),
-			security.DescalePrice(price),
-			security.GetPricePrecision(),
+	{
+		const OrdersLock lock(m_ordersMutex);
+		try {
+			id = TradingConnector::SendBuyOrder(
+				symbol.GetExchange(),
+				symbol.GetSymbol(),
+				security.DescalePrice(price),
+				security.GetPricePrecision(),
+				qty,
+				delayMeasurement);
+		} catch (const Exception &ex) {
+			GetLog().Error("Failed to send order to buy: \"%1%\".", ex.what());
+			throw SendingError("Failed to send order to buy");
+		}
+		RegisterOrder(
+			security,
+			id,
 			qty,
-			delayMeasurement);
-	} catch (const Exception &ex) {
-		GetLog().Error("Failed to send order to buy: \"%1%\".", ex.what());
-		throw SendingError("Failed to send order to buy");
+			std::move(callback),
+			std::move(delayMeasurement));
 	}
-	RegisterOrder(
-		security,
-		id,
-		qty,
-		std::move(callback),
-		std::move(delayMeasurement));
 	return id;
 }
 
@@ -312,7 +318,6 @@ void Transaq::TradingSystem::RegisterOrder(
 		ORDER_STATUS_SENT,
 		std::move(delayMeasurement)
 	};
-	const OrdersLock lock(m_ordersMutex);
 	Verify(m_orders.emplace(std::move(order)).second);
 	m_tradingStarted = true;
 }
