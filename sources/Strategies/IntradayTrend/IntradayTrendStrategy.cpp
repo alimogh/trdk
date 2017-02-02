@@ -637,16 +637,25 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 					m_lastDivergenceCheckResult = "out->rsi->was-not->oversold";
 					return boost::indeterminate;
 				}
-				m_lastTrendCheckResult
-					= m_lastDivergenceCheckResult
-					= "out->rsi->not-extremum";
- 				m_isDivergenceTrend = true;
-				return !isUpper;
+				m_lastTrendCheckResult = "out->rsi->not-extremum";
+				if (m_isDivergenceSignal) {
+					m_lastDivergenceCheckResult = "second-divergence";
+					return boost::indeterminate;
+				} else {
+					m_lastDivergenceCheckResult = m_lastTrendCheckResult;
+ 					m_isDivergenceTrend = true;
+					return !isUpper;
+				}
  			}
 
 			if (isDivergenceTrend && isSameDirection) {
 				m_lastTrendCheckResult = "out->divergence-not-confirmed";
 				return boost::indeterminate;
+			}
+			
+			if (m_isDivergenceSignal) {
+				m_lastDivergenceCheckResult = "second-divergence";
+				return boost::indeterminate;			
 			}
 
 			m_lastTrendCheckResult = "out->trend";
