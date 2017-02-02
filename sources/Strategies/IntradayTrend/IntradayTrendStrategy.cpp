@@ -1720,18 +1720,18 @@ namespace trdk { namespace Strategies { namespace IntradayTrend {
 			{
 				const auto delta = m_security->DescalePrice(
 					m_stat.maxProfitPriceDelta + m_stat.maxLossPriceDelta);
-				m_strategyLog << ',' << (delta * m_security->GetLotSize());
+				m_strategyLog << ',' << (delta * m_security->GetQuoteSize());
 			}
 			{
 				const auto delta
 					= m_security->DescalePrice(m_stat.maxProfitPriceDelta);
-				m_strategyLog << ',' << (delta * m_security->GetLotSize());
+				m_strategyLog << ',' << (delta * m_security->GetQuoteSize());
 			}
 			{
 				const auto delta
 					= std::abs(
 						m_security->DescalePrice(m_stat.maxLossPriceDelta));
-				m_strategyLog << ',' << (delta * m_security->GetLotSize());
+				m_strategyLog << ',' << (delta * m_security->GetQuoteSize());
 			}
 			m_strategyLog
 				<< (pos.IsProfit() ? ",1,0" : ",0,1")

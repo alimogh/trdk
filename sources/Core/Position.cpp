@@ -1234,7 +1234,7 @@ const ScaledPrice & Position::GetLastTradePrice() const {
 
 Volume Position::GetRealizedPnlVolume() const {
 	return RoundByScale(
-		GetRealizedPnl() * GetSecurity().GetLotSize(),
+		GetRealizedPnl() * GetSecurity().GetQuoteSize(),
 		GetSecurity().GetPriceScale());
 }
 

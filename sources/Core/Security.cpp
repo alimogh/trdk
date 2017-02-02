@@ -95,7 +95,7 @@ namespace {
 		throw Exception(message.str().c_str());
 	}
 
-	size_t GetLotSizeBySymbol(const Symbol &symbol) {
+	size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
 		if (
 				symbol.GetSymbol() == "TEST_SCALE2"
 				|| symbol.GetSymbol() == "TEST_SCALE4") {
@@ -114,13 +114,13 @@ namespace {
 					} else if (symbolStr == "SV") {
 						return 10;
 					} else if (symbolStr == "SR") {
-						return 100;
+						return 1;
 					}
 					break;
 				}
 		}
 		boost::format message(
-			"Failed to find lot size for unknown symbol \"%1%\"");
+			"Failed to find quote size for unknown symbol \"%1%\"");
 		message % symbol;
 		throw Exception(message.str().c_str());
 	}
@@ -463,7 +463,7 @@ public:
 
 	const uint8_t m_pricePrecision;
 	const uintmax_t m_priceScale;
-	const size_t m_lotSize;
+	const size_t m_quoteSize;
 
 	mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
 	mutable SignalTrait<Level1TickSlotSignature>::Signal m_level1TickSignal;
@@ -505,7 +505,7 @@ public:
 		, m_source(source)
 		, m_pricePrecision(GetPrecisionBySymbol(symbol))
 		, m_priceScale(size_t(std::pow(10, m_pricePrecision)))
-		, m_lotSize(GetLotSizeBySymbol(symbol))
+		, m_quoteSize(GetQuoteSizeBySymbol(symbol))
 		, m_brokerPosition(0)
 		, m_marketDataTime(0)
 		, m_numberOfMarketDataUpdates(0)
@@ -748,8 +748,8 @@ const MarketDataSource & Security::GetSource() const {
 	return m_pimpl->m_source;
 }
 
-size_t Security::GetLotSize() const {
-	return m_pimpl->m_lotSize;
+size_t Security::GetQuoteSize() const {
+	return m_pimpl->m_quoteSize;
 }
 
 uintmax_t Security::GetPriceScale() const {
