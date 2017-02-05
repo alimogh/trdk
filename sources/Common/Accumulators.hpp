@@ -106,8 +106,7 @@ namespace boost { namespace accumulators {
 					}
 					return;
 				}
-				result_type val = m_val * m_windowSize;
-				val -= m_val;
+				result_type val = m_val * (m_windowSize - 1);
 				val += args[sample];
 				val /= m_windowSize;
 				m_val = val;
@@ -145,67 +144,6 @@ namespace boost { namespace accumulators {
 
 } }
 
-namespace boost { namespace accumulators {
-
-	namespace impl {
-
-		template<typename Sample>
-		struct ExponentialSmoothing : public accumulator_base {
-
-			typedef Sample result_type;
-
-			template<typename Args>
-			explicit ExponentialSmoothing(const Args &args)
-				: m_windowSize(args[rolling_window_size])
-				, m_result(0) {
-				//...//
-			}
-
-			template<typename Args>
-			void operator ()(const Args &args) {
-				if (count(args) <= m_windowSize) {
-					m_result += args[sample];
-					if (count(args) == m_windowSize) {
-						m_result /= m_windowSize;
-					}
-					return;
-				}
-				m_result = m_result * (m_windowSize - 1);
-				m_result += args[sample];
-				m_result /= m_windowSize;
- 			}
-
-			const result_type & result(const dont_care &) const {
-				return m_result;
-			}
-
-		private:
-
-			const size_t m_windowSize;
-			result_type m_result;
-
-		};
-
-	}
-
-	namespace tag {
-		struct ExponentialSmoothing : public depends_on<count> {
-			typedef accumulators::impl::ExponentialSmoothing<mpl::_1> impl;
-		};
-	}
-
-	namespace extract {
-		//! Exponential smoothing.
-		const extractor<tag::ExponentialSmoothing> exponentialSmoothing = {
-			//...//
-		};
-		BOOST_ACCUMULATORS_IGNORE_GLOBAL(exponentialSmoothing)
-	}
-
-	using extract::exponentialSmoothing;
-
-} }
-
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace trdk { namespace Lib { namespace Accumulators {
@@ -229,15 +167,6 @@ namespace trdk { namespace Lib { namespace Accumulators {
 				boost::accumulators::stats<
 					boost::accumulators::tag::MovingAverageSmoothed>>
 			Smoothed;
-	}
-
-	namespace Smoothing {
-		//! Exponential Smoothing.
-		typedef boost::accumulators::accumulator_set<
-			double,
-			boost::accumulators::stats<
-				boost::accumulators::tag::ExponentialSmoothing>>
-			Exponential;
 	}
 
 } } }

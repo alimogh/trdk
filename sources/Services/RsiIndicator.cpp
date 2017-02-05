@@ -48,8 +48,13 @@ public:
 	const size_t m_period;
 
 	boost::optional<Double> m_prevValue;
-	Smoothing::Exponential m_maU;
-	Smoothing::Exponential m_maD;
+	accs::accumulator_set<
+			Double,
+			accs::stats<
+				accs::tag::MovingAverageSmoothed,
+				accs::tag::count>>
+		m_maU;
+	MovingAverage::Smoothed m_maD;
 
 	Point m_lastValue;
 	size_t m_lastValueNo;
@@ -143,18 +148,17 @@ public:
 			m_prevValue = value;
 		}
 
-		AssertEq(accs::count(m_maU), accs::count(m_maD));
 		if (accs::count(m_maU) < m_period) {
 			LogEmptyPoint(time, value);
 			return false;
 		}
 
 		Double result;
-		const Double maD = accs::exponentialSmoothing(m_maD);
+		const Double maD = accs::smma(m_maD);
 		if (maD == 0) {
 			result = 100;
 		} else {
-			const auto rs = accs::exponentialSmoothing(m_maU) / maD;
+			const auto rs = accs::smma(m_maU) / maD;
 			result = 100.0 - (100.0 / (1.0 + rs));
 		}
 		m_lastValue = {time, value, std::move(result)};

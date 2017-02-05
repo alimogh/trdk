@@ -105,7 +105,12 @@ public:
 	DirectionalMovementAcc m_trEma;
 	DirectionalMovementAcc m_pdmEma;
 	DirectionalMovementAcc m_ndmEma;
-	Smoothing::Exponential m_dxiMa;
+	accs::accumulator_set<
+			Double,
+			accs::stats<
+				accs::tag::MovingAverageSmoothed,
+				accs::tag::count>>
+		m_dxiMa;
 
 	std::ofstream m_pointsLog;
 
@@ -289,7 +294,7 @@ public:
 
 		}
 
-		m_lastValue.adx = accs::exponentialSmoothing(m_dxiMa);
+		m_lastValue.adx = accs::smma(m_dxiMa);
 
 		LogPoint(m_lastValue);
  		++m_lastValueNo;
