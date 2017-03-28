@@ -53,7 +53,7 @@ SubscriptionsManager::~SubscriptionsManager() {
 		}
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 }
 

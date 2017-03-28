@@ -197,7 +197,7 @@ Client::~Client() {
 
 	} catch (...) {
 		AssertFailNoException();
-		throw;
+		terminate();
 	}
 
 }
@@ -300,7 +300,7 @@ void Client::StartData() {
 		m_client->reqAccountUpdates(true, m_account);
 	}
 
-	bool isBrokerPositionsRequred = m_ts.m_positions;
+	bool isBrokerPositionsRequred = m_ts.m_positions ? true : false;
 	if (!isBrokerPositionsRequred) {
 		foreach (const Security *security, m_ts.m_securities) {
 			if (security->IsBrokerPositionRequired()) {
@@ -471,7 +471,8 @@ void Client::SendMarketDataRequest(ib::Security &security) const {
 		request.tickerId,
 		contract,
 		boost::join(genericTicklist, ","),
-		false);
+		false,
+		TagValueListSPtr());
 		
 	// Custom branch
 
@@ -551,7 +552,8 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security) const {
 		// custom branch
 		"OPTION_IMPLIED_VOLATILITY",
 		0,
-		1);
+		1,
+		TagValueListSPtr());
 	
 	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level I"
@@ -595,7 +597,8 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) const {
 	m_client->reqMktDepth(
 		request.tickerId,
 		contract,
-		std::numeric_limits<int>::max());
+		std::numeric_limits<int>::max(),
+		TagValueListSPtr());
 
 	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " Level II"
@@ -1816,7 +1819,8 @@ void Client::tickSnapshotEnd(int reqId) {
 		request.tickerId,
 		contract,
 		boost::join(genericTicklist, ","),
-		false);
+		false,
+		TagValueListSPtr());
 	m_log.Debug(
 		"Sent " INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME " "
 			" Option Implied Volatility subscription request for \"%1%\""
@@ -1947,6 +1951,29 @@ void Client::accountSummary(
 
 void Client::accountSummaryEnd(int) {
 	//...//
+}
+
+void Client::verifyMessageAPI(const IBString &apiData) {
+	m_log.Error(
+		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": API data: \"%1%\".",
+		apiData);
+}
+
+void Client::verifyCompleted(bool isSuccessful, const IBString &errorText) {
+	m_log.Debug(
+		INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME ": Is successful"
+			": %1%; Error: \"%2%\".",
+		boost::make_tuple(isSuccessful, boost::cref(errorText)));
+}
+
+void Client::displayGroupList(int /*reqId*/, const IBString &/*groups*/) {
+	AssertFail("Unexpected method call.");
+}
+
+void Client::displayGroupUpdated(
+		int /*reqId*/,
+		const IBString &/*contractInfo*/) {
+	AssertFail("Unexpected method call.");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

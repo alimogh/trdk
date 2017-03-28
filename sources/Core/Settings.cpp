@@ -57,7 +57,7 @@ void Settings::UpdateStatic(const Ini &conf, Context::Log &log) {
 			std::vector<std::string> subSubs;
 			boost::split(subSubs, t, boost::is_any_of(":"));
 			bool isValid = true;
-			foreach (std::string &i, subSubs) {
+			for (std::string &i: subSubs) {
 				boost::trim(i);
 				if (i.empty()) {
 					isValid = false;

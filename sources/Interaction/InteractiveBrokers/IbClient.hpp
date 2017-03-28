@@ -371,6 +371,12 @@ namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
 				const IBString &);
 		virtual void accountSummaryEnd(int);
 
+		virtual void verifyMessageAPI(const IBString &);
+		virtual void verifyCompleted(bool, const IBString &);
+
+		virtual void displayGroupList( int reqId, const IBString &);
+		virtual void displayGroupUpdated( int reqId, const IBString &);
+
 	private:
 
 		InteractiveBrokers::TradeSystem &m_ts;

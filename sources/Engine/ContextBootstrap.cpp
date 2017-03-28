@@ -557,14 +557,14 @@ private:
 			AssertEq(0, source.size());
 			return;
 		}
-		foreach (auto &module, source) {
+		for (auto &module: source) {
 			const std::string &tag = module.first;
 			ModuleDll<Module> &moduleDll = module.second;
 			auto &resultTag = (*result)[tag];
-			foreach (auto &instance, moduleDll.symbolInstances) {
+			for (auto &instance: moduleDll.symbolInstances) {
 				resultTag.push_back(instance.second);
 			}
-			foreach (auto &instance, moduleDll.standaloneInstances) {
+			for (auto &instance: moduleDll.standaloneInstances) {
 				resultTag.push_back(instance);
 			}
 			m_moduleListResult.insert(moduleDll.dll);
@@ -1144,7 +1144,7 @@ private:
 		}
 		ModuleDll<Module> &module = modulePos->second;
 
-		foreach (const auto &requirement, requirements.requiredModules) {
+		for (const auto &requirement: requirements.requiredModules) {
 			const auto &requirementTag = requirement.first;
 			const auto requredModulePos = m_services.find(requirementTag);
 			if (requredModulePos == m_services.end()) {
@@ -1154,14 +1154,14 @@ private:
 				throw Exception("Unknown service in requirement list");
 			}
  			ModuleDll<Service> &requredModule = requredModulePos->second;
- 			foreach (const std::set<Symbol> &symbols, requirement.second) {
+ 			for (const std::set<Symbol> &symbols: requirement.second) {
 
 				const auto createBySymbolSet = [&](
 							const std::set<Symbol> &symbols,
 							std::string &symbolsStrList)
 						-> boost::shared_ptr<Service> {
 					std::list<std::string> symbolsStr;
-					foreach (const Symbol &symbol, symbols) {
+					for (const Symbol &symbol: symbols) {
 						Assert(symbol);
 						symbolsStr.push_back(symbol.GetAsString());
 					}
@@ -1188,7 +1188,7 @@ private:
 
 				if (symbols.size() == 1 && !*symbols.begin()) {
 
-					foreach (auto &instance, module.symbolInstances) {
+					for (auto &instance: module.symbolInstances) {
 						std::string symbolsStrList;
 						boost::shared_ptr<Service> requredService
 							= createBySymbolSet(instance.first, symbolsStrList);
@@ -1206,7 +1206,7 @@ private:
 					boost::shared_ptr<Service> requredService
 						= createBySymbolSet(symbols, symbolsStrList);
 
-					foreach (auto &instance, module.standaloneInstances) {
+					for (auto &instance: module.standaloneInstances) {
 						requredService->RegisterSubscriber(*instance);
 						instance->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
@@ -1214,7 +1214,7 @@ private:
 								boost::cref(*requredService),
 								boost::cref(symbolsStrList)));
 					}
-					foreach (auto &instance, module.symbolInstances) {
+					for (auto &instance: module.symbolInstances) {
 						requredService->RegisterSubscriber(*instance.second);
 						instance.second->GetLog().Info(
 							"Subscribed to \"%1%\" with security(ies) \"%2%\".",
@@ -1305,7 +1305,7 @@ private:
 			if (!subscribe) {
 				continue;
 			}
-			foreach (const Symbol &symbol, requirement.second) {
+			for (const Symbol &symbol: requirement.second) {
 				Security *security = nullptr;
 				if (symbol) {
 					security = &LoadSecurity(symbol);

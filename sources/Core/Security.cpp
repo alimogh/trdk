@@ -167,8 +167,8 @@ public:
 
 		mutable boost::atomic<double> m_actualValue;
 		mutable double m_lastValue;
-		mutable boost::mutex &m_mutex;
-		mutable boost::condition_variable &m_condition;
+		boost::mutex &m_mutex;
+		boost::condition_variable &m_condition;
 		boost::atomic_bool &m_isAnotherSet;
 	
 	};

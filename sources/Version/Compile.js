@@ -12,13 +12,13 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "juliomac2"
+var branch = "francesco_placci"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
 var supportEmail ="support@" + domain
-var copyright = "Copyright 2014 (C) " + vendorName + ", " + domain + ". All rights reserved."
+var copyright = "Copyright 2017 (C) " + vendorName + ", " + domain + ". All rights reserved."
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -51,7 +51,7 @@ namespace {
 					m_stateUpdateConnection.disconnect();
 				} catch (...) {
 					AssertFailNoException();
-					throw;
+					terminate();
 				}
 				delete m_refCount;
 			}

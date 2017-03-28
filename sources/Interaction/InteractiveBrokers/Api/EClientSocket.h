@@ -23,7 +23,7 @@ public:
 	~EClientSocket();
 
 	// override virtual funcs from EClient
-	bool eConnect( const char *host, UINT port, int clientId=0);
+	bool eConnect( const char *host, UINT port, int clientId=0, bool extraAuth = false);
 	void eDisconnect();
 
 private:
