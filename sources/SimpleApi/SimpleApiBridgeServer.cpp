@@ -111,7 +111,7 @@ BridgeServer::BridgeId BridgeServer::CreateBridge(const BridgeId *id) {
 				"exchange = GLOBEX\n"
 				"currency = USD\n"
 			"[TradeSystem]\n"
-				"module = " << GetDllWorkingDir().string() << "/Acct\n"
+				"module = " << GetDllWorkingDir().string() << "/TrdkTwsBridge\n"
 				"positions = yes\n"
 				"client_id = " << ++m_pimpl->m_clientId << "\n"
 				"account = \n";

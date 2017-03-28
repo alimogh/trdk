@@ -2,7 +2,7 @@
 import ctypes
 import msvcrt
 
-api = ctypes.windll.LoadLibrary("Acct_dbg.dll")
+api = ctypes.windll.LoadLibrary("TrdkTwsBridge_dbg.dll")
 
 api.GetNetLiquidationValueTotal.restype						= ctypes.c_int
 api.GetNetLiquidationValueUsSecurities.restype				= ctypes.c_int

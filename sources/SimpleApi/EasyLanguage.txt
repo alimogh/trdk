@@ -1,31 +1,31 @@
 
-external: "Acct.dll", int, "GetNetLiquidationValueTotal", string;
-external: "Acct.dll", int, "GetNetLiquidationValueUsSecurities", string;		
-external: "Acct.dll", int, "GetNetLiquidationValueUsCommodities", string;
+external: "TrdkTwsBridge.dll", int, "GetNetLiquidationValueTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetNetLiquidationValueUsSecurities", string;		
+external: "TrdkTwsBridge.dll", int, "GetNetLiquidationValueUsCommodities", string;
 
-external: "Acct.dll", int, "GetEquityWithLoanValueTotal", string;
-external: "Acct.dll", int, "GetEquityWithLoanValueUsSecurities", string;
-external: "Acct.dll", int, "GetEquityWithLoanValueUsCommodities", string;
+external: "TrdkTwsBridge.dll", int, "GetEquityWithLoanValueTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetEquityWithLoanValueUsSecurities", string;
+external: "TrdkTwsBridge.dll", int, "GetEquityWithLoanValueUsCommodities", string;
 																		
-external: "Acct.dll", int, "GetSecuritiesGrossPositionValueTotal",	string;	
-external: "Acct.dll", int, "GetSecuritiesGrossPositionUsSecurities", string;	
+external: "TrdkTwsBridge.dll", int, "GetSecuritiesGrossPositionValueTotal",	string;	
+external: "TrdkTwsBridge.dll", int, "GetSecuritiesGrossPositionUsSecurities", string;	
 																		
-external: "Acct.dll", int, "GetCashTotal", string;
-external: "Acct.dll", int, "GetCashUsSecurities", string;
-external: "Acct.dll", int, "GetCashUsCommodities", string;
+external: "TrdkTwsBridge.dll", int, "GetCashTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetCashUsSecurities", string;
+external: "TrdkTwsBridge.dll", int, "GetCashUsCommodities", string;
 																		
-external: "Acct.dll", int, "GetCurrentInitialMarginTotal", string;
-external: "Acct.dll", int, "GetCurrentInitialMarginUsSecurities", string;
-external: "Acct.dll", int, "GetCurrentInitialMarginUsCommodities", string;	
+external: "TrdkTwsBridge.dll", int, "GetCurrentInitialMarginTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentInitialMarginUsSecurities", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentInitialMarginUsCommodities", string;	
 																		
-external: "Acct.dll", int, "GetCurrentMaintenanceMarginTotal", string;
-external: "Acct.dll", int, "GetCurrentMaintenanceMarginUsSecurities", string;	
-external: "Acct.dll", int, "GetCurrentMaintenanceMarginUsCommodities", string;		
+external: "TrdkTwsBridge.dll", int, "GetCurrentMaintenanceMarginTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentMaintenanceMarginUsSecurities", string;	
+external: "TrdkTwsBridge.dll", int, "GetCurrentMaintenanceMarginUsCommodities", string;		
 
-external: "Acct.dll", int, "GetCurrentAvailableFundsTotal", string;
-external: "Acct.dll", int, "GetCurrentAvailableFundsUsSecurities", string;	
-external: "Acct.dll", int, "GetCurrentAvailableFundsUsCommodities", string;	
+external: "TrdkTwsBridge.dll", int, "GetCurrentAvailableFundsTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentAvailableFundsUsSecurities", string;	
+external: "TrdkTwsBridge.dll", int, "GetCurrentAvailableFundsUsCommodities", string;	
 
-external: "Acct.dll", int, "GetCurrentExcessLiquidityTotal", string;
-external: "Acct.dll", int, "GetCurrentExcessLiquidityUsSecurities", string;	
-external: "Acct.dll", int, "GetCurrentExcessLiquidityUsCommodities", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentExcessLiquidityTotal", string;
+external: "TrdkTwsBridge.dll", int, "GetCurrentExcessLiquidityUsSecurities", string;	
+external: "TrdkTwsBridge.dll", int, "GetCurrentExcessLiquidityUsCommodities", string;

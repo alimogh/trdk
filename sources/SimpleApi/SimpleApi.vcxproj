@@ -54,6 +54,7 @@
     <ProjectGuid>{4809FFBD-45A2-4758-8E6E-9B7771BA3E7B}</ProjectGuid>
     <RootNamespace>SimpleApi</RootNamespace>
     <ProjectName>Simple API</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -248,40 +249,40 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
-    <TargetName>Acct_dbg</TargetName>
+    <TargetName>TrdkTwsBridge_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
-    <TargetName>Acct_dbg</TargetName>
+    <TargetName>TrdkTwsBridge_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
-    <TargetName>Acct_dbg</TargetName>
+    <TargetName>TrdkTwsBridge_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>Acct_dbg</TargetName>
+    <TargetName>TrdkTwsBridge_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
-    <TargetName>Acct</TargetName>
+    <TargetName>TrdkTwsBridge</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-    <TargetName>Acct</TargetName>
+    <TargetName>TrdkTwsBridge</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
-    <TargetName>Acct</TargetName>
+    <TargetName>TrdkTwsBridge</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>Acct</TargetName>
+    <TargetName>TrdkTwsBridge</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
-    <TargetName>Acct_test</TargetName>
+    <TargetName>TrdkTwsBridge_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-    <TargetName>Acct_test</TargetName>
+    <TargetName>TrdkTwsBridge_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
-    <TargetName>Acct_test</TargetName>
+    <TargetName>TrdkTwsBridge_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>Acct_test</TargetName>
+    <TargetName>TrdkTwsBridge_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="SimpleApi.cpp" />
