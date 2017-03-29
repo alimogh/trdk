@@ -638,7 +638,7 @@ public:
 		if (m_isLevel1Started) {
 			return true;
 		}
-		for (auto i = 0; i < m_level1.size(); ++i) {
+		for (size_t i = 0; i < m_level1.size(); ++i) {
 			if (!IsSet(m_level1[i]) && m_supportedLevel1Types[i]) {
 				return false;
 			}
@@ -737,7 +737,7 @@ const Security::InstanceId & Security::GetInstanceId() const {
 RiskControlSymbolContext & Security::GetRiskControlContext(
 		const TradingMode &mode) {
 	AssertLt(0, mode);
-	AssertGe(m_pimpl->m_riskControlContext.size(), mode);
+	AssertGe(m_pimpl->m_riskControlContext.size(), static_cast<size_t>(mode));
 	// If context is not set - risk control is disabled and nobody should call
 	// this method:
 	Assert(m_pimpl->m_riskControlContext[mode - 1]);

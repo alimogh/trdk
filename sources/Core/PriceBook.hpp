@@ -130,7 +130,7 @@ namespace trdk {
 			}
 
 			const Level & GetLevel(size_t levelIndex) const {
-				AssertGe(m_levels.size(), m_offset + m_size);
+				AssertGe(m_levels.size(), size_t(m_offset + m_size));
 				if (levelIndex >= m_size) {
 					throw trdk::Lib::LogicError(
 						"Price book level index is out of range");
@@ -141,7 +141,7 @@ namespace trdk {
 
 			void PopTop() {
 
-				AssertGe(m_levels.size(), m_offset + m_size);
+				AssertGe(m_levels.size(), size_t(m_offset + m_size));
 				if (IsEmpty()) {
 					throw trdk::Lib::LogicError("Price book is empty");
 				}
@@ -151,7 +151,7 @@ namespace trdk {
 				++m_offset;
 				--m_size;
 
-				AssertGe(m_levels.size(), m_offset + m_size);
+				AssertGe(m_levels.size(), size_t(m_offset + m_size));
 			
 			}
 

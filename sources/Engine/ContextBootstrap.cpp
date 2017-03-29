@@ -397,7 +397,9 @@ private:
 					continue;
 				}
 				AssertLt(0, mode);
-				AssertGe(holderByMode.holders.size(), mode);
+				AssertGe(
+					holderByMode.holders.size(),
+					static_cast<size_t>(mode));
 				AssertEq(
 					std::string(),
 					holderByMode.holders[mode - 1].section);
@@ -411,7 +413,9 @@ private:
 				TradingSystemModesHolder holderByMode;
 				holderByMode.instanceName = instanceName;
 				AssertLt(0, mode);
-				AssertGe(holderByMode.holders.size(), mode);
+				AssertGe(
+					holderByMode.holders.size(),
+					static_cast<size_t>(mode));
 				holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
 				holderByMode.holders[mode - 1].section = section;
 				m_tradingSystems.emplace_back(holderByMode);

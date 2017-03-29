@@ -134,7 +134,7 @@ HttpStreamClient::Buffer::const_iterator HttpStreamClient::FindLastMessageLastBy
 				'\r');
 		}
 
-		std::intmax_t chunkSize = 0;
+		std::ptrdiff_t chunkSize = 0;
 		std::stringstream ss;
 		ss
 			<< std::hex
@@ -200,7 +200,7 @@ void HttpStreamClient::HandleNewMessages(
 
 	for ( ; ; ) {
 
-		std::intmax_t chunkSize = 0;
+		std::ptrdiff_t chunkSize = 0;
 		std::stringstream ss;
 		ss << std::hex << boost::copy_range<std::string>(*chunk);
 		ss >> chunkSize;

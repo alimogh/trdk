@@ -126,7 +126,7 @@ public:
 	RiskControl & GetRiskControl(const TradingMode &mode) {
 		static_assert(numberOfTradingModes == 3, "List changed.");
 		AssertLt(0, mode);
-		AssertGe(m_riskControl.size(), mode);
+		AssertGe(m_riskControl.size(), static_cast<size_t>(mode));
 		return *m_riskControl[mode - 1];
 	}
 
@@ -510,7 +510,7 @@ DropCopy * Engine::Context::GetDropCopy() const {
 RiskControl & Engine::Context::GetRiskControl(const TradingMode &mode) {
 	static_assert(numberOfTradingModes == 3, "List changed.");
 	AssertLt(0, mode);
-	AssertGe(m_pimpl->m_riskControl.size(), mode);
+	AssertGe(m_pimpl->m_riskControl.size(), static_cast<size_t>(mode));
 	return *m_pimpl->m_riskControl[mode - 1];
 }
 
@@ -582,7 +582,9 @@ TradingSystem & Engine::Context::GetTradingSystem(
 		throw Exception("Trading System index is out of range");
 	}
 	AssertLt(0, mode);
-	AssertGe(m_pimpl->m_tradingSystems[index].holders.size(), mode);
+	AssertGe(
+		m_pimpl->m_tradingSystems[index].holders.size(),
+		static_cast<size_t>(mode));
 	auto &holder = m_pimpl->m_tradingSystems[index].holders[mode - 1];
 	if (!holder.tradingSystem) {
 		throw Exception("Trading System with such trading mode is not loaded");
