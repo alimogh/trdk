@@ -580,7 +580,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -629,7 +629,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -695,7 +695,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -775,7 +775,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -867,7 +867,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -986,7 +986,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -1120,7 +1120,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
@@ -1269,7 +1269,7 @@ namespace trdk { namespace Engine {
 						decltype(lists),
 						DispatchingTimeMeasurementPolicy>,
 					this,
-					boost::ref(startBarrier),
+					startBarrier,
 					lists));
 			Assert(1 <= threadsCounter--);
 		}
