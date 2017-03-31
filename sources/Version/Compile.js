@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
+var branch = "francesco_placci"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
