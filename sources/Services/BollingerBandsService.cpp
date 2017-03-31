@@ -287,7 +287,7 @@ public:
 
 		const auto &middle = accs::rolling_mean(m_stat);
 		const auto &stDev = accs::standardDeviationForBb(m_stat);
-		m_lastValue = {
+		m_lastValue = Point{
 			time,
 			source,
 			middle - (m_deviation * stDev),
