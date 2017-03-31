@@ -85,11 +85,11 @@ namespace trdk { namespace Lib {
 
 		//! Explicit symbol has all in the name what required to specify symbol,
 		//! dates and so on.
-		/* Futures will not be "explicit" if doesn't have contract period in the
-		 * name, ex.: CL* - not explicit, CLM6 - explicit.
-		 * @sa GetSecurityType
-		 * @return true if symbol is explicit, false if symbol is not explicit.
-		 */
+		/** Futures will not be "explicit" if doesn't have contract period in the
+		  * name, ex.: CL* - not explicit, CLM6 - explicit.
+		  * @sa GetSecurityType
+		  * @return true if symbol is explicit, false if symbol is not explicit.
+		  */
 		bool IsExplicit() const;
 
 		double GetStrike() const;

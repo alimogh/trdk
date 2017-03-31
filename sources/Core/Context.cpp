@@ -535,7 +535,13 @@ const Settings & Context::GetSettings() const {
 }
 
 Security & Context::GetSecurity(const Symbol &symbol) {
-	auto result = FindSecurity(symbol);
+	AssertFail("Please debug me - caller should know market data source index");
+	Security *result = nullptr;
+	ForEachMarketDataSource(
+		[&](MarketDataSource &source) -> bool {
+			result = source.FindSecurity(symbol);
+			return result ? false : true;
+		});
 	if (!result) {
 		throw UnknownSecurity();
 	}
@@ -543,11 +549,7 @@ Security & Context::GetSecurity(const Symbol &symbol) {
 }
 
 const Security & Context::GetSecurity(const Symbol &symbol) const {
-	auto result = FindSecurity(symbol);
-	if (!result) {
-		throw UnknownSecurity();
-	}
-	return *result;	
+	return const_cast<Context *>(this)->GetSecurity(symbol);
 }
 
 Context::Params & Context::GetParams() {

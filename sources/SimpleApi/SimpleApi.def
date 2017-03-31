@@ -1,0 +1,24 @@
+
+EXPORTS
+
+	trdk_InitLog
+	trdk_EnableStdOutLog
+	
+	trdk_DestroyAllEngines
+
+	GetCashBalance
+	trdk_GetCashBalance
+
+	GetEquityWithLoanValue
+	trdk_GetEquityWithLoanValue
+
+	GetMaintenanceMargin
+	trdk_GetMaintenanceMargin
+
+	GetExcessLiquidity
+	trdk_GetExcessLiquidity
+
+	GetOptionPremium
+	trdk_GetOptionPremium
+
+	CreateTradingSystemAndMarketDataSource

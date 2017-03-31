@@ -60,13 +60,6 @@ namespace trdk { namespace Tests {
 
 		virtual DropCopy * GetDropCopy() const;
 
-	protected:
-
-		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
-		virtual const trdk::Security * FindSecurity(
-				const trdk::Lib::Symbol &)
-				const;
-
 	};
 
 } }

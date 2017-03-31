@@ -76,11 +76,6 @@ namespace trdk { namespace Engine {
 
 		virtual DropCopy * GetDropCopy() const;
 
-		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
-		virtual const trdk::Security * FindSecurity(
-				const trdk::Lib::Symbol &)
-				const;
-
 	private:
 
 		class Implementation;

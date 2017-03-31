@@ -233,14 +233,6 @@ namespace trdk {
 		void OnStarted();
 		void OnBeforeStop();
 
-	protected:
-
-		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
-		virtual const trdk::Security * FindSecurity(
-				const trdk::Lib::Symbol &)
-				const
-			= 0;
-
 	private:
 
 		class Implementation;

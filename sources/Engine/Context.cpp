@@ -598,21 +598,6 @@ const TradingSystem & Engine::Context::GetTradingSystem(
 	return const_cast<Context *>(this)->GetTradingSystem(index, mode);
 }
 
-Security * Engine::Context::FindSecurity(const Symbol &symbol) {
-	//! @todo Wrong method implementation - symbol must says what MDS it uses
-	Security *result = nullptr;
-	ForEachMarketDataSource(
-		[&](MarketDataSource &source) -> bool {
-			result = source.FindSecurity(symbol);
-			return result ? false : true;
-		});
-	return result;
-}
-
-const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	return const_cast<Context *>(this)->FindSecurity(symbol);
-}
-
 void Engine::Context::ClosePositions() {
 
 	if (!m_pimpl->m_state) {

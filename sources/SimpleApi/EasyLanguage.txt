@@ -1,0 +1,67 @@
+
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns account cach balance.}
+	"GetCashBalance",
+	string {Account};
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns cach balance.}
+	"trdk_GetCashBalance" {The same as "GetCashBalance", but with prefix to resolve collisions.},
+	string {Account};
+
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account equity with loan.}
+	"GetEquityWithLoanValue",
+	string {Account};
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account equity with loan.}
+	"trdk_GetEquityWithLoanValue" {The same as "GetEquityWithLoanValue", but with prefix to resolve collisions.},
+	string {Account};
+
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account maintenance margin.}
+	"GetMaintenanceMargin",
+	string {Account};
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account maintenance margin.}
+	"trdk_GetMaintenanceMargin" {The same as "GetMaintenanceMargin", but with prefix to resolve collisions.},
+	string {Account};
+
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account excess liquidity.}
+	"GetExcessLiquidity",
+	string {Account};
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns value of account excess liquidity.}
+	"trdk_GetExcessLiquidity" {The same as "GetExcessLiquidity", but with prefix to resolve collisions.},
+	string {Account};
+
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns option premium.}
+	"GetOptionPremium",
+	string, {Stmbol (ex.: "AAPL").}
+	string, {Currency (ex.: "USD").}
+	string, {Exchange (ex.: "SMART").}
+	double, {Expiration date (ex.: 20170421.00).}
+	double, {Strike (ex.: 1.23).}
+	string, {Right ("Call" or "Pull").}
+	double {Request date (ex.: 20170421.00).};
+external:
+	"RobotEngine.dll", {For production: "RobotEngine.dll", for tests: "RobotEngine_test.dll".}
+	double, {Returns option premium.}
+	"trdk_GetOptionPremium",  {The same as "GetOptionPremium", but with prefix to resolve collisions.},
+	string, {Stmbol (ex.: "AAPL").}
+	string, {Currency (ex.: "USD").}
+	string, {Exchange (ex.: "SMART").}
+	double, {Expiration date (ex.: 20170421.00).}
+	double, {Strike (ex.: 1.23).}
+	string, {Right ("Call" or "Pull").}
+	double {Request date (ex.: 20170421.00).};
