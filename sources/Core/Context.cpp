@@ -432,7 +432,9 @@ Context::Context(
 			tradingLog,
 			settings,
 			params)) {
-	m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
+	if (settings.IsMarketDataLogEnabled()) {
+		m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
+	}
 }
 
 Context::~Context() {
@@ -440,11 +442,15 @@ Context::~Context() {
 }
 
 void Context::OnStarted() {
-	m_pimpl->m_statReport->StartMonitoring();
+	if (m_pimpl->m_statReport) {
+		m_pimpl->m_statReport->StartMonitoring();
+	}
 }
 
 void Context::OnBeforeStop() {
-	m_pimpl->m_statReport->StopMonitoring();
+	if (m_pimpl->m_statReport) {
+		m_pimpl->m_statReport->StopMonitoring();
+	}
 }
 
 Context::Log & Context::GetLog() const throw() {
@@ -553,14 +559,23 @@ const Context::Params & Context::GetParams() const {
 }
 
 TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
+	if (!m_pimpl->m_statReport) {
+		return TimeMeasurement::Milestones();
+	}
 	return m_pimpl->m_statReport->StartStrategyTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartTradingSystemTimeMeasurement() const {
+	if (!m_pimpl->m_statReport) {
+		return TimeMeasurement::Milestones();
+	}
 	return m_pimpl->m_statReport->StartTradingSystemTimeMeasurement();
 }
 
 TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
+	if (!m_pimpl->m_statReport) {
+		return TimeMeasurement::Milestones();
+	}
 	return m_pimpl->m_statReport->StartDispatchingTimeMeasurement();
 }
 
