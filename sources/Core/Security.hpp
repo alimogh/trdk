@@ -482,6 +482,8 @@ namespace trdk {
 				trdk::PriceBook &book,
 				const trdk::Lib::TimeMeasurement::Milestones &timeMeasurement);
 
+	public:
+
 		//! Sets new expiration.
 		/** All marked data for security will be reset (so if security just
 		  * started). The request will be reset. The request can be set new at

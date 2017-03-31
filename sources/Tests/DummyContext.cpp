@@ -98,11 +98,3 @@ TradingSystem & DummyContext::GetTradingSystem(size_t, const TradingMode &) {
 DropCopy * DummyContext::GetDropCopy() const {
 	throw std::logic_error("Not supported");
 }
-
-Security * DummyContext::FindSecurity(const Symbol &) {
-	throw std::logic_error("Not supported");
-}
-
-const Security * DummyContext::FindSecurity(const Symbol &) const {
-	throw std::logic_error("Not supported");
-}

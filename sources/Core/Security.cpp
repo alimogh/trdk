@@ -88,6 +88,11 @@ namespace {
 					}
 					break;
 				}
+			case  SECURITY_TYPE_OPTIONS:
+				if (symbol.GetSymbol() == "AAPL") {
+					return 2;
+				}
+				break;
 		}
 		boost::format message(
 			"Failed to find precision for unknown symbol \"%1%\"");
@@ -118,6 +123,11 @@ namespace {
 					}
 					break;
 				}
+			case  SECURITY_TYPE_OPTIONS:
+				if (symbol.GetSymbol() == "AAPL") {
+					return 1;
+				}
+				break;
 		}
 		boost::format message(
 			"Failed to find quote size for unknown symbol \"%1%\"");

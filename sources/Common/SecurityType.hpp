@@ -24,6 +24,8 @@ namespace trdk { namespace Lib {
 		SECURITY_TYPE_FOR,
 		//! Future Option Contract for Foreign Exchange Contract.
 		SECURITY_TYPE_FOR_FUTURES_OPTIONS,
+		//! Option Contract.
+		SECURITY_TYPE_OPTIONS,
 		//! Number of security types.
 		numberOfSecurityTypes
 	};

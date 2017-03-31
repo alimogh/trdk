@@ -14,9 +14,12 @@
 #include "Context.hpp"
 #include "Security.hpp"
 #include "TradingLog.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+
+namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -67,10 +70,6 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 
 public:
 
-	typedef boost::unordered_map<trdk::Lib::Symbol, Security *> Securities;
-
-public:
-
 	const size_t m_index;
 
 	Context &m_context;
@@ -81,8 +80,15 @@ public:
 	TradingSystem::Log m_log;
 	TradingSystem::TradingLog m_tradingLog;
 
-	SecuritiesMutex m_securitiesMutex;
-	Securities m_securities;
+	struct {
+		mutable SecuritiesMutex mutex;
+		boost::unordered_map<Symbol, Security *> list;
+	} m_securitiesWithoutExpiration;
+
+	struct {
+		mutable SecuritiesMutex mutex;
+		std::map<std::pair<Symbol, ContractExpiration>, Security *> list;
+	} m_securitiesWithExpiration;
 
 public:
 
@@ -99,13 +105,16 @@ public:
 		//...//
 	}
 
-public:
-
-	Security * FindSecurity(const Symbol &symbol) {
-		const auto &result = m_securities.find(symbol);
-		return result != m_securities.end()
-			?	&*result->second
-			:	nullptr;
+	template<typename Securities>
+	static void ForEachSecurity(
+			const Securities &securities,
+			const boost::function<bool (const Security &)> &pred) {
+		const SecuritiesWriteLock lock(securities.mutex);
+		for (const auto &security: securities.list) {
+			if (!pred(*security.second)) {
+				break;
+			}
+		}
 	}
 
 };
@@ -165,16 +174,50 @@ Security & MarketDataSource::GetSecurity(const Symbol &symbol) {
 		return *result;
 	}
 	{
-		const SecuritiesWriteLock lock(m_pimpl->m_securitiesMutex);
-		result = m_pimpl->FindSecurity(symbol);
-		if (result) {
-			return *result;
+		auto &securities = m_pimpl->m_securitiesWithoutExpiration;
+		const SecuritiesWriteLock lock(securities.mutex);
+		{
+			const auto &security = securities.list.find(symbol);
+			if (security != securities.list.cend()) {
+				return *security->second;
+			}
 		}
-		auto &newSecurity = CreateSecurity(symbol);
-		m_pimpl->m_securities[symbol] = &newSecurity;
-		result = &newSecurity;
+		{
+			auto &newSecurity = CreateSecurity(symbol);
+			Verify(
+				securities.list.emplace(std::make_pair(symbol, &newSecurity))
+					.second);
+			result = &newSecurity;
+		}
 	}
-	GetLog().Debug("Loaded security \"%1%\".", *result);
+	GetLog().Info("Loaded security \"%1%\".", *result);
+	return *result;
+}
+
+Security & MarketDataSource::GetSecurity(
+		const Symbol &symbol,
+		const ContractExpiration &expiration) {
+	trdk::Security *result = FindSecurity(symbol, expiration);
+	if (result) {
+		return *result;
+	}
+	{
+		const auto key = std::make_pair(symbol, expiration);
+		auto &securities = m_pimpl->m_securitiesWithExpiration;
+		const SecuritiesWriteLock lock(securities.mutex);
+		{
+			const auto &security = securities.list.find(key);
+			if (security != securities.list.cend()) {
+				return *security->second;
+			}
+		}
+		result = &CreateSecurity(symbol);
+		result->SetExpiration(pt::not_a_date_time, expiration);
+		Verify(
+			securities.list.emplace(std::make_pair(std::move(key), result))
+				.second);
+	}
+	GetLog().Info("Loaded security \"%1%\" (%2%).", *result, expiration);
 	return *result;
 }
 
@@ -185,26 +228,50 @@ Security & MarketDataSource::CreateSecurity(const Symbol &symbol) {
 }
 
 Security * MarketDataSource::FindSecurity(const Symbol &symbol) {
-	const SecuritiesReadLock lock(m_pimpl->m_securitiesMutex);
-	return m_pimpl->FindSecurity(symbol);
+	auto &securities = m_pimpl->m_securitiesWithoutExpiration;
+	const SecuritiesWriteLock lock(securities.mutex);
+	const auto &security = securities.list.find(symbol);
+	return security != securities.list.cend()
+		? &*security->second
+		: nullptr;
 }
 
 const Security * MarketDataSource::FindSecurity(const Symbol &symbol) const {
 	return const_cast<MarketDataSource *>(this)->FindSecurity(symbol);
 }
 
+Security * MarketDataSource::FindSecurity(
+		const Symbol &symbol,
+		const ContractExpiration &expiration) {
+	auto &securities = m_pimpl->m_securitiesWithExpiration;
+	const SecuritiesWriteLock lock(securities.mutex);
+	const auto &security
+		= securities.list.find(std::make_pair(symbol, expiration));
+	return security != securities.list.cend()
+		? &*security->second
+		: nullptr;
+}
+
+const Security * MarketDataSource::FindSecurity(
+		const Symbol &symbol,
+		const ContractExpiration &expiration)
+		const {
+	return const_cast<MarketDataSource *>(this)->FindSecurity(
+		symbol,
+		expiration);
+}
+
 size_t MarketDataSource::GetActiveSecurityCount() const {
-	return m_pimpl->m_securities.size();
+	return
+		m_pimpl->m_securitiesWithoutExpiration.list.size()
+		+ m_pimpl->m_securitiesWithExpiration.list.size();
 }
 
 void MarketDataSource::ForEachSecurity(
 		const boost::function<bool (const Security &)> &pred)
 		const {
-	foreach (const auto &security, m_pimpl->m_securities) {
-		if (!pred(*security.second)) {
-			break;
-		}
-	}
+	m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithoutExpiration, pred);
+	m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, pred);
 }
 
 void MarketDataSource::SwitchToNextContract(trdk::Security &security) {

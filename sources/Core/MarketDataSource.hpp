@@ -89,24 +89,52 @@ namespace trdk {
 
 	public:
 
-		//! Returns security, creates new object if it doesn't exist yet.
+		//! Returns security without expiration date, creates new object if it
+		//! doesn't exist yet.
 		/** @sa trdk::MarketDataSource::FindSecurity
 		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  */
 		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
+		//! Returns security with expiration date, creates new object if it
+		//! doesn't exist yet.
+		/** @sa trdk::MarketDataSource::FindSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
+		  */
+		trdk::Security & GetSecurity(
+				const trdk::Lib::Symbol &,
+				const trdk::Lib::ContractExpiration &);
 
-		//! Finds security.
-		/** @sa trdk::MarketDataSource::GetSecurity
+		//! Finds security without expiration date.
+		/** Doesn't search security with expiration date.
+		  * @sa trdk::MarketDataSource::GetSecurity
 		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  * @return nullptr if security object doesn't exist.
 		  */
 		trdk::Security * FindSecurity(const trdk::Lib::Symbol &);
-		//! Finds security.
+		//! Finds security without expiration date.
 		/** @sa trdk::MarketDataSource::GetSecurity
 		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
 		  * @return nullptr if security object doesn't exist.
 		  */
 		const trdk::Security * FindSecurity(const trdk::Lib::Symbol &) const;
+		//! Finds security with expiration date.
+		/** Doesn't search security with expiration date.
+		  * @sa trdk::MarketDataSource::GetSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
+		  * @return nullptr if security object doesn't exist.
+		  */
+		trdk::Security * FindSecurity(
+				const trdk::Lib::Symbol &,
+				const trdk::Lib::ContractExpiration &);
+		//! Finds security with expiration date.
+		/** @sa trdk::MarketDataSource::GetSecurity
+		  * @sa trdk::MarketDataSource::GetActiveSecurityCount
+		  * @return nullptr if security object doesn't exist.
+		  */
+		const trdk::Security * FindSecurity(
+				const trdk::Lib::Symbol &,
+				const trdk::Lib::ContractExpiration &)
+				const;
 
 		size_t GetActiveSecurityCount() const;
 

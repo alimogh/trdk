@@ -78,26 +78,36 @@ namespace trdk { namespace Lib {
 	public:
 
 		const trdk::Lib::SecurityType & GetSecurityType() const;
+		void SetSecurityType(const trdk::Lib::SecurityType &);
 
 		const std::string & GetSymbol() const;
+		void SetSymbol(const std::string &);
+
 		const std::string & GetExchange() const;
+		void SetExchange(const std::string &);
+
 		const std::string & GetPrimaryExchange() const;
 
 		//! Explicit symbol has all in the name what required to specify symbol,
 		//! dates and so on.
-		/* Futures will not be "explicit" if doesn't have contract period in the
-		 * name, ex.: CL* - not explicit, CLM6 - explicit.
-		 * @sa GetSecurityType
-		 * @return true if symbol is explicit, false if symbol is not explicit.
-		 */
+		/** Futures will not be "explicit" if doesn't have contract period in the
+		  * name, ex.: CL* - not explicit, CLM6 - explicit.
+		  * @sa GetSecurityType
+		  * @return true if symbol is explicit, false if symbol is not explicit.
+		  */
 		bool IsExplicit() const;
 
 		double GetStrike() const;
+		void SetStrike(double);
+
 		const Right & GetRight() const;
 		std::string GetRightAsString() const;
-		static Right ParseRight(const std::string &);
+		void SetRight(const Right &);
+		void SetRight(const std::string &);
 
 		const trdk::Lib::Currency & GetCurrency() const;
+		void SetCurrency(const trdk::Lib::Currency &);
+
 		const trdk::Lib::Currency & GetFotBaseCurrency() const;
 		const trdk::Lib::Currency & GetFotQuoteCurrency() const;
 

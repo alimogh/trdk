@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Terminal.hpp"
 #include "TradingSystem.hpp"
+#include "MarketDataSource.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Context.hpp"
@@ -174,12 +175,15 @@ private:
 				return false;
 			}
 			const Symbol symbol(field);
-			try {
-				m_security = &m_tradingSystem.GetContext().GetSecurity(symbol);
-				return true;
-			} catch (const Context::UnknownSecurity &) {
+			m_security
+				= m_tradingSystem
+					.GetContext()
+					.GetMarketDataSource(m_tradingSystem.GetIndex())
+					.FindSecurity(symbol);
+			if (!m_security) {
 				throw Exception("Failed to find security for command");
 			}
+			return true;
 		}
 		void OnReply(
 					const OrderId &orderId,

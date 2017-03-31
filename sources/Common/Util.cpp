@@ -157,7 +157,7 @@ int64_t Lib::ConvertToMicroseconds(const pt::ptime &source) {
 		return 0;
 	}
 	const pt::time_duration durationFromTEpoch(source - unixEpochStart);
-	return static_cast<time_t>(durationFromTEpoch.total_microseconds());
+	return durationFromTEpoch.total_microseconds();
 }
 
 pt::ptime Lib::ConvertToPTimeFromMicroseconds(int64_t source) {
@@ -185,6 +185,32 @@ pt::ptime Lib::GetTimeByTimeOfDayAndDate(
 
 	return result;
 
+}
+
+gr::date Lib::ConvertToDate(unsigned int dateAsInt) {
+	if (!dateAsInt) {
+		return gr::date(0, 0 , 0);
+	}
+	const gr::date::day_type day = dateAsInt % 100;
+	dateAsInt /= 100;
+	const gr::date::month_type month = dateAsInt % 100;
+#	pragma warning(push)
+#	pragma warning(disable: 4244)
+		const auto year = static_cast<gr::date::year_type>(dateAsInt / 100);
+#	pragma warning(pop)
+	return gr::date(year, month, day);
+}
+
+pt::time_duration Lib::ConvertToTimeDuration(unsigned int timeAsInt) {
+	const auto sec = timeAsInt % 100;
+	timeAsInt /= 100;
+	const auto minute = timeAsInt % 100;
+	timeAsInt /= 100;
+	return pt::time_duration(timeAsInt, minute, sec);
+}
+
+pt::ptime Lib::ConvertToTime(unsigned int dateAsInt, unsigned int timeAsInt) {
+	return pt::ptime(ConvertToDate(dateAsInt), ConvertToTimeDuration(timeAsInt));
 }
 
 //////////////////////////////////////////////////////////////////////////

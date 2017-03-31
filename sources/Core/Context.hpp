@@ -25,10 +25,6 @@ namespace trdk {
 		public:
 			explicit Exception(const char *what) throw();
 		};
-		class TRDK_CORE_API UnknownSecurity : public trdk::Context::Exception {
-		public:
-			explicit UnknownSecurity() throw();
-		};
 
 		typedef trdk::EventsLog Log;
 		typedef trdk::TradingLog TradingLog;
@@ -161,9 +157,6 @@ namespace trdk {
 		//! User context parameters. No predefined key list.
 		const trdk::Context::Params & GetParams() const;
 
-		trdk::Security & GetSecurity(const trdk::Lib::Symbol &);
-		const trdk::Security & GetSecurity(const trdk::Lib::Symbol &) const;
-
 		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
 				const
 			= 0;
@@ -232,14 +225,6 @@ namespace trdk {
 
 		void OnStarted();
 		void OnBeforeStop();
-
-	protected:
-
-		virtual trdk::Security * FindSecurity(const trdk::Lib::Symbol &) = 0;
-		virtual const trdk::Security * FindSecurity(
-				const trdk::Lib::Symbol &)
-				const
-			= 0;
 
 	private:
 

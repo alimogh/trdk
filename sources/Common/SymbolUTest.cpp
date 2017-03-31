@@ -12,8 +12,132 @@
 
 namespace lib = trdk::Lib;
 
+////////////////////////////////////////////////////////////////////////////////
+
 TEST(SymbolTest, Operators) {
 	//! @todo add tests for ==, !=, >, >=, <, <=, = and so on...
+}
+
+TEST(SymbolTest, Fields) {
+
+	lib::Symbol symbol;
+
+	try {
+		symbol.GetSecurityType();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have security type", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetSymbol();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have symbol", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetExchange();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have exchange", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetPrimaryExchange();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have primary exchange", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetRight();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have right", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetRightAsString();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have right", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetCurrency();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have currency", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetFotBaseCurrency();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have base currency", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetFotQuoteCurrency();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have quote currency", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+
+	EXPECT_DOUBLE_EQ(0, symbol.GetStrike());
+
+	symbol.SetSecurityType(lib::SECURITY_TYPE_OPTIONS);
+	symbol.SetSymbol("XXXX");
+	symbol.SetExchange("ZZZZZ");
+	symbol.SetStrike(1234.56);
+	symbol.SetRight(lib::Symbol::RIGHT_CALL);
+	symbol.SetCurrency(lib::CURRENCY_CHF);
+
+	EXPECT_EQ(lib::SECURITY_TYPE_OPTIONS, symbol.GetSecurityType());
+	EXPECT_EQ("XXXX", symbol.GetSymbol());
+	EXPECT_EQ("ZZZZZ", symbol.GetExchange());
+	try {
+		symbol.GetPrimaryExchange();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have primary exchange", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	EXPECT_EQ(lib::Symbol::RIGHT_CALL, symbol.GetRight());
+	EXPECT_EQ(std::string("CALL"), symbol.GetRightAsString());
+	EXPECT_EQ(lib::CURRENCY_CHF, symbol.GetCurrency());
+	try {
+		symbol.GetFotBaseCurrency();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have base currency", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	try {
+		symbol.GetFotQuoteCurrency();
+	} catch (const lib::LogicError &ex) {
+		EXPECT_STREQ("Symbol doesn't have quote currency", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::LogicError);
+	}
+	EXPECT_DOUBLE_EQ(1234.56, symbol.GetStrike());
+
+	try {
+		symbol.SetRight("ZXC");
+	} catch (const lib::Symbol::ParameterError &ex) {
+		EXPECT_STREQ("Failed to resolve Options Right (PUT or CALL)", ex.what());
+	} catch (...) {
+		EXPECT_THROW(throw, lib::Symbol::ParameterError);
+	}	
+	EXPECT_EQ(lib::Symbol::RIGHT_CALL, symbol.GetRight());
+	EXPECT_EQ(std::string("CALL"), symbol.GetRightAsString());
+	
+	symbol.SetRight("PUT");
+	EXPECT_EQ(lib::Symbol::RIGHT_PUT, symbol.GetRight());
+	EXPECT_EQ(std::string("PUT"), symbol.GetRightAsString());
+
 }
 
 TEST(SymbolTest, GeneralErrors) {
@@ -57,11 +181,13 @@ TEST(SymbolTest, GeneralErrors) {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 TEST(SymbolTest, FuturesOk) {
 	{
 		const lib::Symbol symbol("XXX/USD:NYMEX:FUT");
 		EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
-		EXPECT_EQ(std::string("XXX"), symbol.GetSymbol().c_str());
+		EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
 		EXPECT_TRUE(symbol.IsExplicit());
 		EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
 		EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
@@ -196,3 +322,23 @@ TEST(SymbolTest, FuturesErrors) {
 		EXPECT_THROW(throw, lib::Symbol::StringFormatError);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(SymbolTest, OptionsAsString) {
+
+	lib::Symbol symbol;
+	symbol.SetSecurityType(lib::SECURITY_TYPE_OPTIONS);
+	symbol.SetSymbol("XXXX");
+	symbol.SetExchange("ZZZZZ");
+	symbol.SetStrike(1234.56);
+	symbol.SetRight(lib::Symbol::RIGHT_CALL);
+	symbol.SetCurrency(lib::CURRENCY_CHF);
+
+	EXPECT_EQ(
+		std::string("XXXX/CHF/CALL/1234.56:ZZZZZ(OPT)"),
+		symbol.GetAsString());
+
+}
+
+////////////////////////////////////////////////////////////////////////////////

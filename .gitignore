@@ -2,6 +2,7 @@
 *.suo
 *.user
 /sources/ipch
+/sources/.vs
 *.pyc
 /sources/*.opensdf
 /sources/*.sdf

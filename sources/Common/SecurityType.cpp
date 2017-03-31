@@ -25,10 +25,11 @@ namespace {
 	const std::string fop = ConvertToPch(SECURITY_TYPE_FUTURES_OPTIONS);
 	const std::string for_ = ConvertToPch(SECURITY_TYPE_FOR);
 	const std::string forFop = ConvertToPch(SECURITY_TYPE_FOR_FUTURES_OPTIONS);
+	const std::string opt = ConvertToPch(SECURITY_TYPE_OPTIONS);
 }
 
 const char * Lib::ConvertToPch(const SecurityType &source) {
-	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
 	switch (source) {
 		case SECURITY_TYPE_STOCK:
 			return "STK";
@@ -40,6 +41,8 @@ const char * Lib::ConvertToPch(const SecurityType &source) {
 			return "FOR";
 		case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
 			return "FORFOP";
+		case SECURITY_TYPE_OPTIONS:
+			return "OPT";
 		default:
 			AssertEq(SECURITY_TYPE_STOCK, source);
 			throw Exception("Internal error: Unknown security type ID");
@@ -47,7 +50,7 @@ const char * Lib::ConvertToPch(const SecurityType &source) {
 }
 
 const std::string & Lib::ConvertToString(const SecurityType &source) {
-	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
 	switch (source) {
 		case SECURITY_TYPE_STOCK:
 			return stk;
@@ -59,6 +62,8 @@ const std::string & Lib::ConvertToString(const SecurityType &source) {
 			return for_;
 		case SECURITY_TYPE_FOR_FUTURES_OPTIONS:
 			return forFop;
+		case SECURITY_TYPE_OPTIONS:
+			return opt;
 		default:
 			AssertEq(SECURITY_TYPE_STOCK, source);
 			throw Exception("Internal error: Unknown security type ID");
@@ -66,7 +71,7 @@ const std::string & Lib::ConvertToString(const SecurityType &source) {
 }
 
 SecurityType Lib::ConvertSecurityTypeFromString(const std::string &source) {
-	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
 	if (boost::iequals(source, stk)) {
 		return SECURITY_TYPE_STOCK;
 	} else if (boost::iequals(source, fut)) {
@@ -77,6 +82,8 @@ SecurityType Lib::ConvertSecurityTypeFromString(const std::string &source) {
 		return SECURITY_TYPE_FOR;
 	} else if (boost::iequals(source, forFop)) {
 		return SECURITY_TYPE_FOR_FUTURES_OPTIONS;
+	} else if (boost::iequals(source, opt)) {
+		return SECURITY_TYPE_OPTIONS;
 	} else {
 		boost::format message("Security type code \"%1%\" is unknown");
 		message % source;

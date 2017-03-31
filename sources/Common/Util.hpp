@@ -139,6 +139,13 @@ namespace trdk { namespace Lib {
 			const boost::posix_time::ptime &controlTime,
 			const boost::posix_time::time_duration &sourceTimeZoneDiff);
 
+	boost::gregorian::date ConvertToDate(unsigned int dateAsInt);
+	boost::posix_time::time_duration ConvertToTimeDuration(
+			unsigned int timeAsInt);
+	boost::posix_time::ptime ConvertToTime(
+			unsigned int dateAsInt,
+			unsigned int timeAsInt);
+
 	//////////////////////////////////////////////////////////////////////////
 
 	std::string ConvertUtf8ToAscii(const std::string &);

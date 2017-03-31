@@ -69,11 +69,10 @@ namespace {
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	IBString FormatLocalSymbol(
-			std::string symbol,
+	IBString FormatLocalFuturesSymbol(
+			const std::string &symbol,
 			const ContractExpiration &expirationInfo) {
-		symbol += expirationInfo.GetContract(true);
-		return symbol;
+		return symbol + expirationInfo.GetContract(true);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +225,7 @@ Contract Client::GetContract(
 		const {
 	Contract contract;
 	static_assert(
-		numberOfSecurityTypes == 5,
+		numberOfSecurityTypes == 6,
 		"Security type list changed.");
 	const Symbol &symbol = security.GetSymbol();
 	switch (symbol.GetSecurityType()) {
@@ -240,7 +239,7 @@ Contract Client::GetContract(
 			contract.secType = "FUT";
 			contract.includeExpired = true;
 			contract.localSymbol = !symbol.IsExplicit()
-				?	FormatLocalSymbol(
+				?	FormatLocalFuturesSymbol(
 						symbol.GetSymbol(),
 						customContractExpiration
 							?	*customContractExpiration
@@ -253,6 +252,16 @@ Contract Client::GetContract(
 			contract.symbol = symbol.GetSymbol();
 			contract.strike = symbol.GetStrike();
 			contract.right = symbol.GetRightAsString();
+			break;
+		case SECURITY_TYPE_OPTIONS:
+			Assert(!customContractExpiration);
+			Assert(security.HasExpiration());
+			contract.secType = "OPT";
+			contract.symbol = symbol.GetSymbol();
+			contract.strike = symbol.GetStrike();
+			contract.right = symbol.GetRightAsString();
+			contract.expiry
+				= gr::to_iso_string(security.GetExpiration().GetDate());
 			break;
 		default:
 			throw MethodDoesNotImplementedError(
@@ -593,7 +602,7 @@ bool Client::SendMarketDataHistoryRequest(
 				error % *request.security % requestStart;
 				throw trdk::MarketDataSource::Error(error.str().c_str());
 			}
-			contract.localSymbol = FormatLocalSymbol(
+			contract.localSymbol = FormatLocalFuturesSymbol(
 				request.security->GetSymbol().GetSymbol(),
 				*request.expiration);
 			const auto &prevExpiration = std::prev(request.expiration);
@@ -2258,11 +2267,11 @@ void Client::SwitchToNextContract(ib::Security &security) {
 		m_ts.GetMdsLog().Info(
 			"Switching %1% contract from %2% (%3%) to %4% (%5%)...",
 			security,
-			FormatLocalSymbol(
+			FormatLocalFuturesSymbol(
 				security.GetSymbol().GetSymbol(),
 				*prevExpiration),
 			prevExpiration->GetDate(),
-			FormatLocalSymbol(
+			FormatLocalFuturesSymbol(
 				security.GetSymbol().GetSymbol(),
 				*nextExpiration),
 			nextExpiration->GetDate());
@@ -2284,11 +2293,11 @@ void Client::SwitchToNextContract(ib::Security &security) {
 	m_ts.GetMdsLog().Info(
 		"%1% switched to next contract %4% (%5%) from %2% (%3%).",
 		security,
-		FormatLocalSymbol(
+		FormatLocalFuturesSymbol(
 			security.GetSymbol().GetSymbol(),
 			*prevExpiration),
 		prevExpiration->GetDate(),
-		FormatLocalSymbol(
+		FormatLocalFuturesSymbol(
 			security.GetSymbol().GetSymbol(),
 			*nextExpiration),
 		nextExpiration->GetDate());

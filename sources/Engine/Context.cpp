@@ -212,15 +212,15 @@ Engine::Context::Context(
 		const trdk::Settings &settings,
 		const Lib::Ini &conf,
 		const boost::unordered_map<std::string, std::string> &params)
-	: Base(log, tradingLog, settings, params) {
-	m_pimpl = new Implementation(*this, conf);
+	: Base(log, tradingLog, settings, params)
+	, m_pimpl(boost::make_unique<Implementation>(*this, conf)) {
+	//...//
 }
 
 Engine::Context::~Context() {
 	if (!m_pimpl->m_isStopped) {
 		Stop(STOP_MODE_IMMEDIATELY);
 	}
-	delete m_pimpl;
 }
 
 void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
@@ -596,21 +596,6 @@ const TradingSystem & Engine::Context::GetTradingSystem(
 		size_t index,
 		const TradingMode &mode) const {
 	return const_cast<Context *>(this)->GetTradingSystem(index, mode);
-}
-
-Security * Engine::Context::FindSecurity(const Symbol &symbol) {
-	//! @todo Wrong method implementation - symbol must says what MDS it uses
-	Security *result = nullptr;
-	ForEachMarketDataSource(
-		[&](MarketDataSource &source) -> bool {
-			result = source.FindSecurity(symbol);
-			return result ? false : true;
-		});
-	return result;
-}
-
-const Security * Engine::Context::FindSecurity(const Symbol &symbol) const {
-	return const_cast<Context *>(this)->FindSecurity(symbol);
 }
 
 void Engine::Context::ClosePositions() {

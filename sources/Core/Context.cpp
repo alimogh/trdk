@@ -37,11 +37,6 @@ Context::Exception::Exception(const char *what) throw()
 	//...//
 }
 
-Context::UnknownSecurity::UnknownSecurity() throw()
-		: Exception("Unknown security") {
-	//...//
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -532,22 +527,6 @@ pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
 
 const Settings & Context::GetSettings() const {
 	return m_pimpl->m_settings;
-}
-
-Security & Context::GetSecurity(const Symbol &symbol) {
-	auto result = FindSecurity(symbol);
-	if (!result) {
-		throw UnknownSecurity();
-	}
-	return *result;
-}
-
-const Security & Context::GetSecurity(const Symbol &symbol) const {
-	auto result = FindSecurity(symbol);
-	if (!result) {
-		throw UnknownSecurity();
-	}
-	return *result;	
 }
 
 Context::Params & Context::GetParams() {

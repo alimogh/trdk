@@ -98,8 +98,8 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 		}
 
 		explicit Milestones(const boost::shared_ptr<StatAccum> &stat)
-			: m_start(Clock::now()),
-			m_stat(stat) {
+			: m_start(Clock::now())
+			, m_stat(stat) {
 			//...//
 		}
 
@@ -122,10 +122,10 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 	public:
 
 		PeriodFromStart Measure(const MilestoneIndex &milestone) const throw() {
+			if (!m_stat) {
+				return 0;
+			}
 			try {
-				if (!m_stat) {
-					return 0;
-				}
 				return Add(milestone, GetNow());
 			} catch (...) {
 				AssertFailNoException();
@@ -137,7 +137,9 @@ namespace trdk { namespace Lib { namespace TimeMeasurement {
 				const MilestoneIndex &milestone,
 				const TimePoint &now)
 				const {
-			Assert(m_stat);
+			if (!m_stat) {
+				return 0;
+			}
 			const auto &period = CalcPeriod(m_start, now);
 			m_stat->AddMeasurement(milestone, period);
 			return period;

@@ -114,7 +114,7 @@ Symbol::Symbol(
 	
 	symbolSubs.front().swap(m_data.symbol);
 	
-	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
 	size_t currencyIndex = 0;
 	switch (m_data.securityType) {
 		case SECURITY_TYPE_STOCK:
@@ -146,6 +146,8 @@ Symbol::Symbol(
 			throw Exception(
 				"Foreign currency exchange futures options symbols"
 					" are not supported");
+		case SECURITY_TYPE_OPTIONS:
+			throw Exception("Options symbols paring is not supported");
 		default:
 			AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
 			throw Exception("System error: Unknown security ID");
@@ -184,7 +186,7 @@ Symbol::Symbol(
 				}
 			}
 		
-			static_assert(numberOfSecurityTypes == 5, "List changed.");
+			static_assert(numberOfSecurityTypes == 6, "List changed.");
 			switch (m_data.securityType) {
 				case SECURITY_TYPE_STOCK:
 					if (exchangeSubs.size() > 2) {
@@ -219,6 +221,8 @@ Symbol::Symbol(
 					throw Exception(
 						"Foreign currency exchange futures options exchanges"
 							" are not supported");
+				case SECURITY_TYPE_OPTIONS:
+					throw Exception("Options symbols parsing is not supported");
 				default:
 					AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
 					throw Exception("System error: Unknown security ID");
@@ -325,25 +329,44 @@ Symbol::Hash Symbol::GetHash() const {
 }
 
 const SecurityType & Symbol::GetSecurityType() const {
-	AssertNe(numberOfSecurityTypes, m_data.securityType);
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
+	if (
+			m_data.securityType < 0
+			|| m_data.securityType >= numberOfSecurityTypes) {
+		throw Lib::LogicError("Symbol doesn't have security type");
+	}
 	return m_data.securityType;
 }
 
+void Symbol::SetSecurityType(const SecurityType &newType) {
+	m_data.securityType = newType;
+}
+
 const std::string & Symbol::GetSymbol() const {
-	Assert(!m_data.symbol.empty());
+	if (m_data.symbol.empty()) {
+		throw Lib::LogicError("Symbol doesn't have symbol");
+	}
 	return m_data.symbol;
+}
+
+void Symbol::SetSymbol(const std::string &newSymbol) {
+	m_data.symbol = newSymbol;
 }
 
 const std::string & Symbol::GetExchange() const {
 	if (m_data.exchange.empty()) {
-		throw Lib::LogicError("Symbol doesn't have Exchange");
+		throw Lib::LogicError("Symbol doesn't have exchange");
 	}
 	return m_data.exchange;
 }
 
+void Symbol::SetExchange(const std::string &newExchange) {
+	m_data.exchange = newExchange;
+}
+
 const std::string & Symbol::GetPrimaryExchange() const {
 	if (m_data.primaryExchange.empty()) {
-		throw Lib::LogicError("Symbol doesn't have Primary Exchange");
+		throw Lib::LogicError("Symbol doesn't have primary exchange");
 	}
 	return m_data.primaryExchange;
 }
@@ -357,54 +380,77 @@ double Symbol::GetStrike() const {
 	return m_data.strike;
 }
 
+void Symbol::SetStrike(double strike) {
+	m_data.strike = strike;
+}
+
 const Symbol::Right & Symbol::GetRight() const {
-	if (m_data.right == numberOfRights) {
-		throw Lib::LogicError("Symbol doesn't have Right");
+	if (m_data.right < 0 || m_data.right >= numberOfRights) {
+		throw Lib::LogicError("Symbol doesn't have right");
 	}
 	return m_data.right;
 }
 
-Symbol::Right Symbol::ParseRight(const std::string &source) {
+void Symbol::SetRight(const Symbol::Right &newRight) {
+	m_data.right = newRight;
+}
+
+namespace {
+
+	const std::string callRight = "CALL";
+	const std::string putRight = "PUT";
+
+}
+
+void Symbol::SetRight(const std::string &source) {
 	//! @sa trdk::Lib::Symbol::GetRightAsString
 	static_assert(numberOfRights == 2, "Right list changed.");
-	if (boost::iequals(source, "put")) {
-		return RIGHT_PUT;
-	} else if (boost::iequals(source, "call")) {
-		return RIGHT_CALL;
+	if (boost::iequals(source, putRight)) {
+		SetRight(RIGHT_PUT);
+	} else if (boost::iequals(source, callRight)) {
+		SetRight(RIGHT_CALL);
 	} else {
-		throw ParameterError("Failed to resolve FOP Right (Put or Call)");
+		throw ParameterError("Failed to resolve Options Right (PUT or CALL)");
 	}
 }
 
 std::string Symbol::GetRightAsString() const {
-	//! @sa trdk::Lib::Symbol::ParseRight
+	//! @sa trdk::Lib::Symbol::GetRight
 	static_assert(numberOfRights == 2, "Right list changed.");
 	switch (GetRight()) {
 		default:
 			AssertEq(RIGHT_CALL, GetRight());
 			return std::string();
 		case RIGHT_CALL:
-			return "Call";
+			return callRight;
 		case RIGHT_PUT:
-			return "Put";
+			return putRight;
 	}
 }
 
 const Currency & Symbol::GetCurrency() const {
-	AssertNe(numberOfCurrencies, m_data.currency);
+	if (m_data.currency < 0 || m_data.currency >= numberOfCurrencies) {
+		throw Lib::LogicError("Symbol doesn't have currency");
+	}
 	return m_data.currency;
 }
 
+void Symbol::SetCurrency(const Currency &newCurrency) {
+	m_data.currency = newCurrency;
+}
+
 const Currency & Symbol::GetFotBaseCurrency() const {
-	if (m_data.fotBaseCurrency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol doesn't have Base Currency");
+	if (
+			m_data.fotBaseCurrency < 0
+			|| m_data.fotBaseCurrency >= numberOfCurrencies) {
+		throw Lib::LogicError("Symbol doesn't have base currency");
 	}
 	return m_data.fotBaseCurrency;
 }
 
 const Currency & Symbol::GetFotQuoteCurrency() const {
 	if (m_data.currency == numberOfCurrencies) {
-		throw Lib::LogicError("Symbol doesn't have Quote Currency");
+		throw Lib::LogicError("Symbol doesn't have quote currency");
 	}
 	return m_data.currency;
 }
@@ -413,7 +459,7 @@ const Currency & Symbol::GetFotQuoteCurrency() const {
 
 std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 	// If changing here - look at Symbol::GetHash, how hash creating.
-	static_assert(numberOfSecurityTypes == 5, "List changed.");
+	static_assert(numberOfSecurityTypes == 6, "List changed.");
 	switch (symbol.GetSecurityType()) {
 		case SECURITY_TYPE_STOCK:
 			Assert(symbol.IsExplicit());
@@ -438,6 +484,19 @@ std::ostream & trdk::Lib::operator <<(std::ostream &os, const Symbol &symbol) {
 				os << '*';
 			}
 			os << '/' << symbol.GetCurrency();
+			if (!symbol.m_data.exchange.empty()) {
+				os << ':' << symbol.m_data.exchange;
+			}
+			break;
+		case SECURITY_TYPE_OPTIONS:
+			os << symbol.GetSymbol();
+			if (!symbol.IsExplicit()) {
+				os << '*';
+			}
+			os
+				<< '/' << symbol.GetCurrency()
+				<< '/' << symbol.GetRightAsString()
+				<< '/' << symbol.GetStrike();
 			if (!symbol.m_data.exchange.empty()) {
 				os << ':' << symbol.m_data.exchange;
 			}

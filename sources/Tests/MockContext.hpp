@@ -62,13 +62,6 @@ namespace trdk { namespace Tests {
 			GetTradingSystem,
 			trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
 
-	protected:
-	
-		MOCK_METHOD1(FindSecurity, Security *(const trdk::Lib::Symbol &));
-		MOCK_CONST_METHOD1(
-			FindSecurity,
-			trdk::Security *(const trdk::Lib::Symbol &));
-
 	};
 
 

@@ -275,7 +275,9 @@ TEST_F(ExpirationCalendarTest, WrongInstrumnetType) {
 				//! @todo not supported yet
 				|| i == lib::SECURITY_TYPE_FUTURES_OPTIONS
 				//! @todo not supported yet
-				|| i == lib::SECURITY_TYPE_FOR_FUTURES_OPTIONS) {
+				|| i == lib::SECURITY_TYPE_FOR_FUTURES_OPTIONS
+				//! @todo not supported yet
+				|| i == lib::SECURITY_TYPE_OPTIONS) {
 			continue;
 		}
 
