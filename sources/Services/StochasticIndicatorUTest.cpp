@@ -161,6 +161,7 @@ TEST(StochasticIndicator, General) {
 		"[Section]\n"
 			"id = {00000000-0000-0000-0000-000000000000}\n"
 			"period_k = 14\n"
+			"period_k_smooth = 1\n"
 			"period_d = 3\n"
 			"log = none");
 
