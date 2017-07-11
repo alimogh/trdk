@@ -152,5 +152,41 @@
     <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
       <Filter>Lib Files</Filter>
     </Library>
+    <Library Include="..\..\output\x86\lib\Debug DLL\Transaq_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\Transaq_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test DLL\Transaq_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\Transaq_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release DLL\Transaq.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\Transaq.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug DLL\Transaq_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\Transaq_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test DLL\Transaq_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\Transaq_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release DLL\Transaq.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release Standalone\Transaq.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>

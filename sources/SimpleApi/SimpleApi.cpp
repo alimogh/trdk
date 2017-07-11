@@ -164,6 +164,7 @@ double _stdcall trdk_GetOptionPremium(
 	AssertLt(0, strike);
 	Assert(right);
 	AssertLt(0, requestDate);
+  UseUnused(requestDate);
 
 	try {
 
