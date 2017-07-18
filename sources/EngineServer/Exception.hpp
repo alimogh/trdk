@@ -10,14 +10,12 @@
 
 #pragma once
 
-namespace trdk { namespace EngineServer {
+namespace trdk {
+namespace EngineServer {
 
-	class Exception : public trdk::Lib::Exception {
-	public:
-		explicit Exception(const char *what) throw()
-			: Lib::Exception(what) {
-			//...//
-		}
-	};
-
-} }
+class Exception : public trdk::Lib::Exception {
+ public:
+  explicit Exception(const char *what) throw() : Lib::Exception(what) {}
+};
+}
+}

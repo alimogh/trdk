@@ -10,11 +10,12 @@
 
 #pragma once
 
-namespace trdk { namespace Engine {
+namespace trdk {
+namespace Engine {
 
-	class Context;
-		
-	class Dispatcher;
-	class SubscriberPtrWrapper;
+class Context;
 
-} }
+class Dispatcher;
+class SubscriberPtrWrapper;
+}
+}

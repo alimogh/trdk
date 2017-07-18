@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "TransaqTradingSystem.hpp"
 #include "TransaqMaketDataSource.hpp"
+#include "TransaqTradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -19,75 +19,54 @@ using namespace trdk::Interaction::Transaq;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Interaction { namespace Transaq {
-	
-	class TradingSystemAndMarketDataSource
-		: public TradingSystem,
-		public MarketDataSource {
+namespace trdk {
+namespace Interaction {
+namespace Transaq {
 
-	public:
+class TradingSystemAndMarketDataSource : public TradingSystem,
+                                         public MarketDataSource {
+ public:
+  explicit TradingSystemAndMarketDataSource(const TradingMode &mode,
+                                            size_t tradingSystemIndex,
+                                            size_t marketDataSourceIndex,
+                                            Context &context,
+                                            const std::string &instanceName,
+                                            const IniSectionRef &conf)
+      : TradingSystem(mode, tradingSystemIndex, context, instanceName, conf),
+        MarketDataSource(marketDataSourceIndex, context, instanceName) {}
 
-		explicit TradingSystemAndMarketDataSource(
-				const TradingMode &mode,
-				size_t tradingSystemIndex,
-				size_t marketDataSourceIndex,
-				Context &context,
-				const std::string &instanceName,
-				const IniSectionRef &conf)
-			:	TradingSystem(
-					mode,
-					tradingSystemIndex,
-					context,
-					instanceName,
-					conf)
-			,	MarketDataSource(marketDataSourceIndex, context, instanceName) {
-			//...//
-		}
+  virtual ~TradingSystemAndMarketDataSource() {}
 
-		virtual ~TradingSystemAndMarketDataSource() {
-			//...//
-		}
+ public:
+  virtual void Connect(const trdk::Lib::IniSectionRef &) override {
+    // Disabling market data source connection method.
+    Assert(TradingSystem::IsConnected());
+    MarketDataSource::Init();
+  }
 
-	public:
-
-		virtual void Connect(const trdk::Lib::IniSectionRef &) override {
-			// Disabling market data source connection method.
-			Assert(TradingSystem::IsConnected());
-			MarketDataSource::Init();
-		}
-
-	protected:
-
-		virtual ConnectorContext & GetConnectorContext() override {
-			return TradingSystem::GetConnectorContext();
-		}
-
-	};
-
-} } } 
+ protected:
+  virtual ConnectorContext &GetConnectorContext() override {
+    return TradingSystem::GetConnectorContext();
+  }
+};
+}
+}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 TradingSystemAndMarketDataSourceFactoryResult
-CreateTradingSystemAndMarketDataSource(
-		const TradingMode &mode,
-		size_t tradingSystemIndex,
-		size_t marketDataSourceIndex,
-		Context &context,
-		const std::string &instanceName,
-		const IniSectionRef &configuration) {
-	const auto &object = boost::make_shared<TradingSystemAndMarketDataSource>(
-		mode,
-		tradingSystemIndex,
-		marketDataSourceIndex,
-		context,
-		instanceName,
-		configuration);
-	const TradingSystemAndMarketDataSourceFactoryResult result = {
-		object,
-		object
-	};
-	return result;
+CreateTradingSystemAndMarketDataSource(const TradingMode &mode,
+                                       size_t tradingSystemIndex,
+                                       size_t marketDataSourceIndex,
+                                       Context &context,
+                                       const std::string &instanceName,
+                                       const IniSectionRef &configuration) {
+  const auto &object = boost::make_shared<TradingSystemAndMarketDataSource>(
+      mode, tradingSystemIndex, marketDataSourceIndex, context, instanceName,
+      configuration);
+  const TradingSystemAndMarketDataSourceFactoryResult result = {object, object};
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

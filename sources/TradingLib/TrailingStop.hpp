@@ -12,53 +12,46 @@
 
 #include "StopOrder.hpp"
 
-namespace trdk { namespace TradingLib {
+namespace trdk {
+namespace TradingLib {
 
-	class TrailingStop : public trdk::TradingLib::StopOrder {
+class TrailingStop : public trdk::TradingLib::StopOrder {
+ public:
+  class Params {
+   public:
+    explicit Params(const trdk::Volume &minProfitPerLotToActivate,
+                    const trdk::Volume &minProfitPerLotToClose);
 
-	public:
+   public:
+    const trdk::Volume &GetMinProfitPerLotToActivate() const;
+    const trdk::Volume &GetMinProfitPerLotToClose() const;
 
-		class Params {
-		public:
-			explicit Params(
-					const trdk::Volume &minProfitPerLotToActivate,
-					const trdk::Volume &minProfitPerLotToClose);
-		public:
-			const trdk::Volume & GetMinProfitPerLotToActivate() const;
-			const trdk::Volume & GetMinProfitPerLotToClose() const;
-		private:
-			trdk::Volume m_minProfitPerLotToActivate;
-			trdk::Volume m_minProfitPerLotToClose;
-		};
+   private:
+    trdk::Volume m_minProfitPerLotToActivate;
+    trdk::Volume m_minProfitPerLotToClose;
+  };
 
-	public:
+ public:
+  explicit TrailingStop(const boost::shared_ptr<const Params> &,
+                        trdk::Position &);
+  virtual ~TrailingStop();
 
-		explicit TrailingStop(
-				const boost::shared_ptr<const Params> &,
-				trdk::Position &);
-		virtual ~TrailingStop();
+ public:
+  virtual void Run() override;
 
-	public:
+ protected:
+  virtual const char *GetName() const override;
 
-		virtual void Run() override;
+ private:
+  bool CheckSignal();
+  bool Activate(const trdk::Volume &plannedPnl);
 
-	protected:
+ private:
+  const boost::shared_ptr<const Params> m_params;
 
-		virtual const char * GetName() const override;
-
-	private:
-		
-		bool CheckSignal();
-		bool Activate(const trdk::Volume &plannedPnl);
-
-	private:
-
-		const boost::shared_ptr<const Params> m_params;
-
-		bool m_isActivated;
-		boost::optional<trdk::Lib::Double> m_maxProfit;
-		boost::optional<trdk::Lib::Double> m_minProfit;
-
-	};
-
-} }
+  bool m_isActivated;
+  boost::optional<trdk::Lib::Double> m_maxProfit;
+  boost::optional<trdk::Lib::Double> m_minProfit;
+};
+}
+}

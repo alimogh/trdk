@@ -10,55 +10,41 @@
 
 #pragma once
 
-#include "Consumer.hpp"
 #include "Api.h"
+#include "Consumer.hpp"
 
 namespace trdk {
 
-	class TRDK_CORE_API Observer : public trdk::Consumer {
+class TRDK_CORE_API Observer : public trdk::Consumer {
+ public:
+  Observer(trdk::Context &,
+           const std::string &implementationName,
+           const std::string &instanceName,
+           const trdk::Lib::IniSectionRef &);
+  ~Observer();
 
-	public:
+ public:
+  virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+                                              const trdk::Qty &,
+                                              bool isInitial);
 
-		Observer(
-			trdk::Context &,
-			const std::string &implementationName,
-			const std::string &instanceName,
-			const trdk::Lib::IniSectionRef &);
-		~Observer();
+  virtual void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
+  virtual void RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
+                                         trdk::Security &,
+                                         const trdk::Security::ServiceEvent &);
 
-	public:
+  void RaiseLevel1UpdateEvent(Security &);
+  void RaiseLevel1TickEvent(trdk::Security &,
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &);
+  void RaiseNewTradeEvent(trdk::Security &,
+                          const boost::posix_time::ptime &,
+                          const trdk::ScaledPrice &,
+                          const trdk::Qty &);
+  void RaiseServiceDataUpdateEvent(
+      const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
 
-		virtual void RaiseBrokerPositionUpdateEvent(
-				trdk::Security &,
-				const trdk::Qty &,
-				bool isInitial);
-
-		virtual void RaiseNewBarEvent(
-				trdk::Security &,
-				const trdk::Security::Bar &);
-		virtual void RaiseSecurityServiceEvent(
-				const boost::posix_time::ptime &,
-				trdk::Security &,
-				const trdk::Security::ServiceEvent &);
-
-		void RaiseLevel1UpdateEvent(Security &);
-		void RaiseLevel1TickEvent(
-				trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
-		void RaiseNewTradeEvent(
-				trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &);
-		void RaiseServiceDataUpdateEvent(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-
-	protected:
-
-		virtual void OnLevel1Update(trdk::Security &);
-
-	};
-
+ protected:
+  virtual void OnLevel1Update(trdk::Security &);
+};
 }

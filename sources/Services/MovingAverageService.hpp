@@ -10,125 +10,106 @@
 
 #pragma once
 
-#include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
+#include "BarService.hpp"
 
-namespace trdk { namespace Services {
+namespace trdk {
+namespace Services {
 
-	class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
+class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
+ public:
+  //! General service error.
+  class Error : public trdk::Lib::Exception {
+   public:
+    explicit Error(const char *) throw();
+  };
 
-	public:
+  //! Throws when client code requests value which does not exist.
+  class ValueDoesNotExistError : public Error {
+   public:
+    explicit ValueDoesNotExistError(const char *) throw();
+  };
 
-		//! General service error.
-		class Error : public trdk::Lib::Exception {
-		public:
-			explicit Error(const char *) throw();
-		};
+  //! Service has not points history.
+  class HasNotHistory : public Error {
+   public:
+    explicit HasNotHistory(const char *) throw();
+  };
 
-		//! Throws when client code requests value which does not exist.
-		class ValueDoesNotExistError : public Error {
-		public:
-			explicit ValueDoesNotExistError(const char *) throw();
-		};
+  //! Value data point.
+  struct Point {
+    boost::posix_time::ptime time;
+    double source;
+    double value;
+  };
 
-		//! Service has not points history.
-		class HasNotHistory : public Error {
-		public:
-			explicit HasNotHistory(const char *) throw();
-		};
+ public:
+  explicit MovingAverageService(Context &,
+                                const std::string &instanceName,
+                                const Lib::IniSectionRef &);
+  virtual ~MovingAverageService();
 
-		//! Value data point.
- 		struct Point {
-			boost::posix_time::ptime time;
-			double source;
-			double value;
-		};
+ public:
+  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
 
-	public:
+  bool IsEmpty() const;
 
-		explicit MovingAverageService(
-				Context &,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~MovingAverageService();
+  //! Returns last value point.
+  /** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+    */
+  const Point &GetLastPoint() const;
 
-	public:
+  //! Drops last value point copy.
+  /** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+    */
+  void DropLastPointCopy(const trdk::DropCopyDataSourceInstanceId &) const;
 
-		virtual const boost::posix_time::ptime & GetLastDataTime()
-				const
-				override;
+ public:
+  //! Number of points from history.
+  size_t GetHistorySize() const;
 
-		bool IsEmpty() const;
+  //! Returns value point from history by index.
+  /** First value has index "zero".
+    * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+    * @throw trdk::Services::MovingAverageService::HasNotHistory
+    * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex
+    */
+  const Point &GetHistoryPoint(size_t index) const;
 
-		//! Returns last value point.
-		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  */
-		const Point & GetLastPoint() const;
+  //! Returns value point from history by reversed index.
+  /** Last value has index "zero".
+    * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
+    * @throw trdk::Services::MovingAverageService::HasNotHistory
+    * @sa trdk::Services::MovingAverageService::GetLastPoint
+    */
+  const Point &GetHistoryPointByReversedIndex(size_t index) const;
 
-		//! Drops last value point copy.
-		/** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  */
-		void DropLastPointCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const;
+ protected:
+  virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
+                                          const trdk::Security &,
+                                          trdk::Security::Request &) override;
 
-	public:
+  virtual bool OnServiceDataUpdate(
+      const trdk::Service &,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
 
-		//! Number of points from history.
-		size_t GetHistorySize() const;
+ public:
+  virtual bool OnLevel1Tick(const trdk::Security &,
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &) override;
 
-		//! Returns value point from history by index.
-		/** First value has index "zero".
-		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  * @throw trdk::Services::MovingAverageService::HasNotHistory
-		  * @sa trdk::Services::MovingAverageService::GetValueByReversedIndex
-		  */
-		const Point & GetHistoryPoint(size_t index) const;
+  virtual bool OnNewBar(const trdk::Security &,
+                        const trdk::Services::BarService::Bar &);
 
-		//! Returns value point from history by reversed index.
-		/** Last value has index "zero".
-		  * @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
-		  * @throw trdk::Services::MovingAverageService::HasNotHistory
-		  * @sa trdk::Services::MovingAverageService::GetLastPoint 
-		  */
-		const Point & GetHistoryPointByReversedIndex(size_t index) const;
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
 
-	protected:
-
-		virtual void OnSecurityContractSwitched(
-				const boost::posix_time::ptime &,
-				const trdk::Security &,
-				trdk::Security::Request &)
-				override;
-
-		virtual bool OnServiceDataUpdate(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &)
-				override;
-
-	public:
-
-		virtual bool OnLevel1Tick(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &)
-				override;
-
-		virtual bool OnNewBar(
-				const trdk::Security &,
-				const trdk::Services::BarService::Bar &);
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-	namespace Indicators {
-		//! Moving Average.
-		typedef trdk::Services::MovingAverageService Ma;
-	}
-
-} }
+namespace Indicators {
+//! Moving Average.
+typedef trdk::Services::MovingAverageService Ma;
+}
+}
+}

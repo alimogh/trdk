@@ -1,8 +1,10 @@
-/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
- * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is
+ * subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial
+ * License, as applicable. */
 
 #ifndef DLLEXP
-#define DLLEXP __declspec( dllexport )
+#define DLLEXP __declspec(dllexport)
 #endif
 
 #ifdef _MSC_VER
@@ -12,4 +14,3 @@
 #include <afxwin.h>
 
 #endif
-

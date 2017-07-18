@@ -10,77 +10,63 @@
 
 #pragma once
 
-#include "Context.hpp"
 #include "Api.h"
+#include "Context.hpp"
 
 namespace trdk {
 
-	class TRDK_CORE_API Settings {
+class TRDK_CORE_API Settings {
+ public:
+  Settings();
+  explicit Settings(const trdk::Lib::Ini &,
+                    const boost::posix_time::ptime &universalStartTime);
 
-	public:
-	
-		Settings();
-		explicit Settings(
-				const trdk::Lib::Ini &,
-				const boost::posix_time::ptime &universalStartTime);
+ public:
+  void Log(trdk::Context::Log &) const;
 
-	public:
+ public:
+  const boost::posix_time::ptime &GetStartTime() const { return m_startTime; }
 
-		void Log(trdk::Context::Log &) const;
+  bool IsReplayMode() const noexcept { return m_isReplayMode; }
 
-	public:
+  bool IsMarketDataLogEnabled() const { return m_isMarketDataLogEnabled; }
 
-		const boost::posix_time::ptime & GetStartTime() const {
-			return m_startTime;
-		}
+  const boost::filesystem::path &GetLogsRootDir() const {
+    return m_logsRootDir;
+  }
+  const boost::filesystem::path &GetLogsInstanceDir() const {
+    return m_logsInstanceDir;
+  }
 
-		bool IsReplayMode() const noexcept {
-			return m_isReplayMode;
-		}
+  //! Default security Currency.
+  /** Path: Defaults::currency
+    * Ex.: "currency = USD"
+    */
+  const trdk::Lib::Currency &GetDefaultCurrency() const {
+    return m_defaultCurrency;
+  }
 
-		bool IsMarketDataLogEnabled() const {
-			return m_isMarketDataLogEnabled;
-		}
+  //! Default security Security Type.
+  /** Path: Defaults::currency.
+    * Values: STK, FUT, FOP, FOR, FORFOP
+    * Ex.: "security_type = FOP"
+    */
+  const trdk::Lib::SecurityType &GetDefaultSecurityType() const {
+    return m_defaultSecurityType;
+  }
 
-		const boost::filesystem::path & GetLogsRootDir() const {
-			return m_logsRootDir;
-		}
-		const boost::filesystem::path & GetLogsInstanceDir() const {
-			return m_logsInstanceDir;
-		}
+  const boost::local_time::time_zone_ptr &GetTimeZone() const {
+    return m_timeZone;
+  }
 
-		//! Default security Currency.
-		/** Path: Defaults::currency
-		  * Ex.: "currency = USD"
-		  */
-		const trdk::Lib::Currency & GetDefaultCurrency() const {
-			return m_defaultCurrency;
-		}
-
-		//! Default security Security Type.
-		/** Path: Defaults::currency.
-		  * Values: STK, FUT, FOP, FOR, FORFOP
-		  * Ex.: "security_type = FOP"
-		  */
-		const trdk::Lib::SecurityType & GetDefaultSecurityType() const {
-			return m_defaultSecurityType;
-		}
-
-		const boost::local_time::time_zone_ptr & GetTimeZone() const {
-			return m_timeZone;
-		}
-
-	private:
-
-		const trdk::Lib::SecurityType m_defaultSecurityType;
-		const trdk::Lib::Currency m_defaultCurrency;
-		const bool m_isReplayMode;
-		const bool m_isMarketDataLogEnabled;
-		const boost::posix_time::ptime m_startTime;
-		const boost::filesystem::path m_logsRootDir;
-		const boost::filesystem::path m_logsInstanceDir;
-		const boost::local_time::time_zone_ptr m_timeZone;
-
-	};
-
+ private:
+  const trdk::Lib::SecurityType m_defaultSecurityType;
+  const trdk::Lib::Currency m_defaultCurrency;
+  const bool m_isReplayMode;
+  const bool m_isMarketDataLogEnabled;
+  const boost::posix_time::ptime m_startTime;
+  const boost::filesystem::path m_logsRootDir;
+  const boost::filesystem::path m_logsInstanceDir;
+  const boost::local_time::time_zone_ptr m_timeZone;
+};
 }

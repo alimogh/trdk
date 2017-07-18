@@ -10,16 +10,15 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class NetworkClientServiceIo : private boost::noncopyable {
-	public:
-		boost::asio::io_service & GetService() {
-			return m_service;
-		}
-	private:
-		boost::asio::io_service m_service;
-	};
+class NetworkClientServiceIo : private boost::noncopyable {
+ public:
+  boost::asio::io_service& GetService() { return m_service; }
 
-} }
-
+ private:
+  boost::asio::io_service m_service;
+};
+}
+}

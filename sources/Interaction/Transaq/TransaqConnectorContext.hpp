@@ -10,117 +10,92 @@
 
 #pragma once
 
-namespace trdk { namespace Interaction { namespace Transaq {
+namespace trdk {
+namespace Interaction {
+namespace Transaq {
 
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-	class ConnectorContext : private boost::noncopyable {
+class ConnectorContext : private boost::noncopyable {
+ public:
+  typedef std::unique_ptr<const char, boost::function<void(const char *)>>
+      ResultPtr;
 
-	public:
+  typedef void(NewDataSlotSignature)(
+      const boost::property_tree::ptree &,
+      const trdk::Lib::TimeMeasurement::Milestones &,
+      const trdk::Lib::TimeMeasurement::Milestones::TimePoint &);
+  typedef boost::function<NewDataSlotSignature> NewDataSlot;
 
-		typedef std::unique_ptr<
-				const char,
-				boost::function<void(const char *)>>
-			ResultPtr;
+ public:
+  virtual ~ConnectorContext() {}
 
-		typedef void(NewDataSlotSignature)(
-				const boost::property_tree::ptree &,
-				const trdk::Lib::TimeMeasurement::Milestones &,
-				const trdk::Lib::TimeMeasurement::Milestones::TimePoint &);
-		typedef boost::function<NewDataSlotSignature> NewDataSlot;
+ public:
+  virtual boost::signals2::scoped_connection SubscribeToNewData(
+      const NewDataSlot &) const = 0;
 
-	public:
+  virtual ResultPtr SendCommand(const char *data,
+                                const Lib::TimeMeasurement::Milestones &) = 0;
+};
 
-		virtual ~ConnectorContext() {
-			//...//
-		}
+////////////////////////////////////////////////////////////////////////////////
 
-	public:
+class TransaqConnectorContext : public ConnectorContext {
+ private:
+  template <typename SlotSignature>
+  struct SignalTrait {
+    typedef boost::signals2::signal<
+        SlotSignature,
+        boost::signals2::optional_last_value<
+            typename boost::function_traits<SlotSignature>::result_type>,
+        int,
+        std::less<int>,
+        boost::function<SlotSignature>,
+        typename boost::signals2::detail::extended_signature<
+            boost::function_traits<SlotSignature>::arity,
+            SlotSignature>::function_type,
+        boost::signals2::dummy_mutex>
+        Signal;
+  };
 
-		virtual boost::signals2::scoped_connection SubscribeToNewData(
-				const NewDataSlot &)
-				const
-				= 0;
+  typedef bool(ApiCallback)(const char *data, TransaqConnectorContext *);
+  typedef bool(ApiSetCallback)(ApiCallback *, TransaqConnectorContext *);
+  typedef const char *(ApiSendCommand)(const char *data);
+  typedef bool(ApiFreeMemory)(const char *data);
+  typedef const char *(ApiInitialize)(const char *logPath, int logLevel);
+  typedef const char *(ApiUnInitialize)();
 
-		virtual ResultPtr SendCommand(
-				const char *data,
-				const Lib::TimeMeasurement::Milestones &)
-				= 0;
+ public:
+  explicit TransaqConnectorContext(const Context &, ModuleEventsLog &);
+  virtual ~TransaqConnectorContext();
 
-	};
+ public:
+  virtual boost::signals2::scoped_connection SubscribeToNewData(
+      const NewDataSlot &) const override;
 
-	////////////////////////////////////////////////////////////////////////////////
+  virtual ResultPtr SendCommand(
+      const char *data, const Lib::TimeMeasurement::Milestones &) override;
 
-	class TransaqConnectorContext : public ConnectorContext {
+ private:
+  bool OnNewData(const char *);
+  static bool RaiseNewDataEvent(const char *,
+                                TransaqConnectorContext *) noexcept;
 
-	private:
+  void FreeMemory(const char *) const noexcept;
 
-		template<typename SlotSignature>
-		struct SignalTrait {
-			typedef boost::signals2::signal<
-				SlotSignature,
-				boost::signals2::optional_last_value<
-					typename boost::function_traits<SlotSignature>
-						::result_type>,
-				int,
-				std::less<int>,
-				boost::function<SlotSignature>,
-				typename boost::signals2::detail::extended_signature<
-						boost::function_traits<SlotSignature>::arity,
-						SlotSignature>
-					::function_type,
-				boost::signals2::dummy_mutex>
-			Signal;
-		};
+ private:
+  const Context &m_context;
+  ModuleEventsLog &m_log;
 
-		typedef bool(ApiCallback)(const char *data, TransaqConnectorContext *);
-		typedef bool(ApiSetCallback)(ApiCallback *, TransaqConnectorContext *);
-		typedef const char *(ApiSendCommand)(const char *data);
-		typedef bool (ApiFreeMemory)(const char *data);
-		typedef const char *(ApiInitialize)(const char *logPath, int logLevel);
-		typedef const char *(ApiUnInitialize)();
+  const Lib::Dll m_dll;
+  ApiSendCommand *const m_sendCommand;
+  ApiFreeMemory *const m_freeMemory;
+  ApiUnInitialize *m_unInitialize;
 
-	public:
+  mutable SignalTrait<NewDataSlotSignature>::Signal m_signal;
+};
 
-		explicit TransaqConnectorContext(const Context &, ModuleEventsLog &);
-		virtual ~TransaqConnectorContext();
-
-	public:
-
-		virtual boost::signals2::scoped_connection SubscribeToNewData(
-				const NewDataSlot &)
-				const
-				override;
-
-		virtual ResultPtr SendCommand(
-				const char *data,
-				const Lib::TimeMeasurement::Milestones &)
-				override;
-
-	private:
-
-		bool OnNewData(const char *);
-		static bool RaiseNewDataEvent(
-				const char *,
-				TransaqConnectorContext *)
-				noexcept;
-
-		void FreeMemory(const char *) const noexcept;
-
-	private:
-
-		const Context &m_context;
-		ModuleEventsLog &m_log;
-
-		const Lib::Dll m_dll;
-		ApiSendCommand *const m_sendCommand;
-		ApiFreeMemory *const m_freeMemory;
-		ApiUnInitialize *m_unInitialize;
-
-		mutable SignalTrait<NewDataSlotSignature>::Signal m_signal;
-
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
-
-} } }
+////////////////////////////////////////////////////////////////////////////////
+}
+}
+}

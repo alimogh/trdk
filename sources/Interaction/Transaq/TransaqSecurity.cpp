@@ -16,15 +16,10 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Transaq;
 
-Transaq::Security::Security(
-		Context &context,
-		const Symbol &symbol,
-		MarketDataSource &source,
-		const SupportedLevel1Types &supportedLevel1Types)
-	: Base(context, symbol, source, supportedLevel1Types) {
-	//...//
-}
+Transaq::Security::Security(Context &context,
+                            const Symbol &symbol,
+                            MarketDataSource &source,
+                            const SupportedLevel1Types &supportedLevel1Types)
+    : Base(context, symbol, source, supportedLevel1Types) {}
 
-Transaq::Security::~Security() {
-	//...//
-}
+Transaq::Security::~Security() {}

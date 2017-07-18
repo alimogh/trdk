@@ -12,31 +12,27 @@
 
 #include "Core/Security.hpp"
 
-namespace trdk { namespace Interaction { namespace Transaq {
+namespace trdk {
+namespace Interaction {
+namespace Transaq {
 
-	class Security : public trdk::Security {
+class Security : public trdk::Security {
+ public:
+  typedef trdk::Security Base;
 
-	public:
+ public:
+  explicit Security(trdk::Context &,
+                    const trdk::Lib::Symbol &,
+                    trdk::MarketDataSource &,
+                    const SupportedLevel1Types &);
+  virtual ~Security();
 
-		typedef trdk::Security Base;
-
-	public:
-
-		explicit Security(
-				trdk::Context &,
-				const trdk::Lib::Symbol &,
-				trdk::MarketDataSource &,
-				const SupportedLevel1Types &);
-		virtual ~Security();
-
-	public:
-
-		using Base::SetTradingSessionState;
-		using Base::SetOnline;
-		using Base::SetLevel1;
-		using Base::AddTrade;
-
-	};
-
-} } }
-
+ public:
+  using Base::SetTradingSessionState;
+  using Base::SetOnline;
+  using Base::SetLevel1;
+  using Base::AddTrade;
+};
+}
+}
+}

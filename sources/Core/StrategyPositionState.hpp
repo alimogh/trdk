@@ -12,10 +12,7 @@
 #include "Strategy.hpp"
 
 class TRDK_CORE_API StrategyPositionState : private boost::noncopyable {
-
-public:
-
-	StrategyPositionState();
-	virtual ~StrategyPositionState();
-
+ public:
+  StrategyPositionState();
+  virtual ~StrategyPositionState();
 };

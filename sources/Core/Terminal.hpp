@@ -12,20 +12,13 @@
 
 namespace trdk {
 
-	class TRDK_CORE_API Terminal : private boost::noncopyable {
+class TRDK_CORE_API Terminal : private boost::noncopyable {
+ public:
+  explicit Terminal(const boost::filesystem::path &, trdk::TradingSystem &);
+  ~Terminal();
 
-	public:
-
-		explicit Terminal(
-				const boost::filesystem::path &,
-				trdk::TradingSystem &);
-		~Terminal();
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
-	};
-
+ private:
+  class Implementation;
+  Implementation *m_pimpl;
+};
 }

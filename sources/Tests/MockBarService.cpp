@@ -19,21 +19,15 @@ using namespace trdk::Tests;
 namespace uuids = boost::uuids;
 
 MockBarService::MockBarService()
-	: BarService(
-		DummyContext::GetInstance(),
-		uuids::uuid(),
-		"Mock",
-		"Test",
-		IniSectionRef(
-			IniString(
-				"[Section]\n"
-					"id = {00000000-0000-0000-0000-000000000000}\n"
-					"size = 10 ticks\n"
-					"log = none"),
-			"Section")) {
-	//...//
-}
+    : BarService(DummyContext::GetInstance(),
+                 uuids::uuid(),
+                 "Mock",
+                 "Test",
+                 IniSectionRef(
+                     IniString("[Section]\n"
+                               "id = {00000000-0000-0000-0000-000000000000}\n"
+                               "size = 10 ticks\n"
+                               "log = none"),
+                     "Section")) {}
 
-MockBarService::~MockBarService() {
-	//...//
-}
+MockBarService::~MockBarService() {}

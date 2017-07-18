@@ -12,37 +12,31 @@
 
 #include "Core/TradingSystem.hpp"
 
-namespace trdk { namespace SimpleApi {
+namespace trdk {
+namespace SimpleApi {
 
-	class Engine : private boost::noncopyable {
+class Engine : private boost::noncopyable {
+ public:
+  explicit Engine(const boost::shared_ptr<trdk::Engine::Context> &,
+                  const TradingMode &tradingMode,
+                  size_t tradingSystemIndex);
 
-	public:
+ public:
+  const trdk::TradingSystem::Account &GetAccount() const;
 
-		explicit Engine(
-				const boost::shared_ptr<trdk::Engine::Context> &,
-				const TradingMode &tradingMode,
-				size_t tradingSystemIndex);
+  trdk::Security &GetOptionSecurity(const std::string &symbolName,
+                                    const std::string &currency,
+                                    const std::string &exchange,
+                                    unsigned int expirationDate,
+                                    double strike,
+                                    const std::string &right,
+                                    const unsigned int dataStartDate);
 
-	public:
-
-		const trdk::TradingSystem::Account & GetAccount() const;
-
-		trdk::Security & GetOptionSecurity(
-				const std::string &symbolName,
-				const std::string &currency,
-				const std::string &exchange,
-				unsigned int expirationDate,
-				double strike,
-				const std::string &right,
-				const unsigned int dataStartDate);
-
-	private:
-
-		const boost::shared_ptr<trdk::Engine::Context> m_context;
-		const TradingMode m_tradingMode;
-		const size_t m_tradingSystemIndex;
-		std::vector<Security *> m_handles;
-
-	};
-
-} }
+ private:
+  const boost::shared_ptr<trdk::Engine::Context> m_context;
+  const TradingMode m_tradingMode;
+  const size_t m_tradingSystemIndex;
+  std::vector<Security *> m_handles;
+};
+}
+}

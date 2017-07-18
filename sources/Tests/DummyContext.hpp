@@ -12,54 +12,42 @@
 
 #include "Core/Context.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class DummyContext : public Context {
+class DummyContext : public Context {
+ public:
+  DummyContext();
+  virtual ~DummyContext();
 
-	public:
+  static DummyContext &GetInstance();
 
-		DummyContext();
-		virtual ~DummyContext();
-	
-		static DummyContext & GetInstance();
+ public:
+  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
 
-	public:
+  virtual RiskControl &GetRiskControl(const trdk::TradingMode &);
+  virtual const RiskControl &GetRiskControl(
+      const trdk::TradingMode &mode) const;
 
-		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
+  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar() const;
 
-		virtual RiskControl & GetRiskControl(const trdk::TradingMode &);
-		virtual const RiskControl & GetRiskControl(
-				const trdk::TradingMode &mode)
-				const;
-		
-		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
-				const;
+  virtual size_t GetNumberOfMarketDataSources() const;
+  virtual const trdk::MarketDataSource &GetMarketDataSource(size_t) const;
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t);
 
-		virtual size_t GetNumberOfMarketDataSources() const;
-		virtual const trdk::MarketDataSource & GetMarketDataSource(
-				size_t)
-				const;
-		virtual trdk::MarketDataSource & GetMarketDataSource(size_t);
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(const trdk::MarketDataSource &)> &) const;
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(trdk::MarketDataSource &)> &);
 
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (const trdk::MarketDataSource &)> &)
-				const;
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (trdk::MarketDataSource &)> &);
+  virtual size_t GetNumberOfTradingSystems() const;
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      size_t, const trdk::TradingMode &) const;
+  virtual trdk::TradingSystem &GetTradingSystem(size_t,
+                                                const trdk::TradingMode &);
 
-		virtual size_t GetNumberOfTradingSystems() const;
-		virtual const trdk::TradingSystem & GetTradingSystem(
-				size_t,
-				const trdk::TradingMode &)
-				const;
-		virtual trdk::TradingSystem & GetTradingSystem(
-				size_t,
-				const trdk::TradingMode &);
-
-	protected:
-
-		virtual DropCopy * GetDropCopy() const;
-
-	};
-
-} }
+ protected:
+  virtual DropCopy *GetDropCopy() const;
+};
+}
+}

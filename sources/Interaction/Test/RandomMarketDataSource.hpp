@@ -10,51 +10,42 @@
 
 #pragma once
 
+#include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Security.hpp"
-#include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Test {
+namespace trdk {
+namespace Interaction {
+namespace Test {
 
-	class RandomMarketDataSource : public trdk::MarketDataSource {
+class RandomMarketDataSource : public trdk::MarketDataSource {
+ public:
+  typedef trdk::MarketDataSource Base;
 
-	public:
+ public:
+  RandomMarketDataSource(size_t index,
+                         Context &context,
+                         const std::string &instanceName,
+                         const Lib::IniSectionRef &);
+  virtual ~RandomMarketDataSource();
 
-		typedef trdk::MarketDataSource Base;
+ public:
+  virtual void Connect(const trdk::Lib::IniSectionRef &);
 
-	public:
+  virtual void SubscribeToSecurities() {}
 
-		RandomMarketDataSource(
-				size_t index,
-				Context &context,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~RandomMarketDataSource();
+ protected:
+  virtual trdk::Security &CreateNewSecurityObject(const trdk::Lib::Symbol &);
 
-	public:
+ private:
+  void NotificationThread();
 
-		virtual void Connect(const trdk::Lib::IniSectionRef &);
+ private:
+  boost::thread_group m_threads;
+  boost::atomic_bool m_stopFlag;
 
-		virtual void SubscribeToSecurities() {
-			//...//
-		}
-
-	protected:
-
-		virtual trdk::Security & CreateNewSecurityObject(
-				const trdk::Lib::Symbol &);
-
-	private:
-
-		void NotificationThread();
-
-	private:
-
-		boost::thread_group m_threads;
-		boost::atomic_bool m_stopFlag;
-
-		std::vector<boost::shared_ptr<Security>> m_securityList;
-
-	};
-
-} } }
+  std::vector<boost::shared_ptr<Security>> m_securityList;
+};
+}
+}
+}

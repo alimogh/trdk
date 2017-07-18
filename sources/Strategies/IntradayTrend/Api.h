@@ -9,17 +9,17 @@
  **************************************************************************/
 
 #pragma once
- 
+
 #ifdef TRDK_STRATEGY_INTRADAYTREND
-#	ifdef BOOST_WINDOWS
-#		define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllexport)
-#	else
-#		define TRDK_STRATEGY_INTRADAYTREND_API
-#	endif
+#ifdef BOOST_WINDOWS
+#define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllexport)
 #else
-#	ifdef BOOST_WINDOWS
-#		define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllimport)
-#	else
-#		define TRDK_STRATEGY_INTRADAYTREND_API
-#	endif
+#define TRDK_STRATEGY_INTRADAYTREND_API
+#endif
+#else
+#ifdef BOOST_WINDOWS
+#define TRDK_STRATEGY_INTRADAYTREND_API __declspec(dllimport)
+#else
+#define TRDK_STRATEGY_INTRADAYTREND_API
+#endif
 #endif

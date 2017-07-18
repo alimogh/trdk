@@ -11,27 +11,22 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class MockMarketDataSource : public MarketDataSource {
+class MockMarketDataSource : public MarketDataSource {
+ public:
+  MockMarketDataSource();
+  virtual ~MockMarketDataSource();
 
-	public:
+ public:
+  MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
 
-		MockMarketDataSource();
-		virtual ~MockMarketDataSource();
+  MOCK_METHOD0(SubscribeToSecurities, void());
 
-	public:
-
-		MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
-
-		MOCK_METHOD0(SubscribeToSecurities, void());
-
-	protected:
-
-		MOCK_METHOD1(
-			CreateNewSecurityObject,
-			trdk::Security &(const trdk::Lib::Symbol &));
-
-	};
-
-} }
+ protected:
+  MOCK_METHOD1(CreateNewSecurityObject,
+               trdk::Security &(const trdk::Lib::Symbol &));
+};
+}
+}

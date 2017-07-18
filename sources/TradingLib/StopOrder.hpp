@@ -12,32 +12,27 @@
 
 #include "Core/Position.hpp"
 
-namespace trdk { namespace TradingLib {
+namespace trdk {
+namespace TradingLib {
 
-	class StopOrder : public trdk::Position::Algo {
+class StopOrder : public trdk::Position::Algo {
+ public:
+  explicit StopOrder(trdk::Position &);
+  virtual ~StopOrder();
 
-	public:
+ public:
+  trdk::ModuleTradingLog &GetTradingLog() const noexcept;
 
-		explicit StopOrder(trdk::Position &);
-		virtual ~StopOrder();
+ protected:
+  virtual const char *GetName() const = 0;
 
-	public:
+  virtual void OnHit();
 
-		trdk::ModuleTradingLog & GetTradingLog() const noexcept;
+  trdk::Position &GetPosition();
+  const trdk::Position &GetPosition() const;
 
-	protected:
-
-		virtual const char * GetName() const = 0;
-
-		virtual void OnHit();
-
-		trdk::Position & GetPosition();
-		const trdk::Position & GetPosition() const;
-
-	private:
-
-		trdk::Position & m_position;
-
-	};
-
-} }
+ private:
+  trdk::Position &m_position;
+};
+}
+}

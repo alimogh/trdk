@@ -10,205 +10,190 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-	template<typename T>
-	class Numeric {
+template <typename T>
+class Numeric {
+ public:
+  typedef T ValueType;
 
-	public:
+  static_assert(boost::is_pod<ValueType>::value, "Type should be POD.");
 
-		typedef T ValueType;
+ public:
+  Numeric(const ValueType &value = 0) : m_value(value) {}
 
-		static_assert(boost::is_pod<ValueType>::value, "Type should be POD.");
+  void Swap(Numeric &rhs) noexcept { std::swap(m_value, rhs.m_value); }
 
-	public:
+  operator ValueType() const noexcept { return Get(); }
 
-		Numeric(const ValueType &value = 0)
-			: m_value(value) {
-			//...//
-		}
+  const ValueType &Get() const noexcept { return m_value; }
 
-		void Swap(Numeric &rhs) noexcept {
-			std::swap(m_value, rhs.m_value);
-		}
+  Numeric &operator=(const ValueType &rhs) noexcept {
+    m_value = rhs;
+    return *this;
+  }
 
-		operator ValueType() const noexcept {
-			return Get();
-		}
+  template <typename StreamElem, typename StreamTraits>
+  friend std::basic_ostream<StreamElem, StreamTraits> &operator<<(
+      std::basic_ostream<StreamElem, StreamTraits> &os,
+      const trdk::Lib::Numeric<ValueType> &numeric) {
+    os << numeric.Get();
+    return os;
+  }
 
-		const ValueType & Get() const noexcept {
-			return m_value;
-		}
+  template <typename StreamElem, typename StreamTraits>
+  friend std::basic_istream<StreamElem, StreamTraits> &operator>>(
+      std::basic_istream<StreamElem, StreamTraits> &is,
+      trdk::Lib::Numeric<ValueType> &numeric) {
+    is >> numeric.m_value;
+    return is;
+  }
 
-		Numeric & operator =(const ValueType &rhs) noexcept {
-			m_value = rhs;
-			return *this;
-		}
+ public:
+  template <typename AnotherValueType>
+  bool operator==(const AnotherValueType &rhs) const {
+    return operator==(Numeric(rhs));
+  }
+  bool operator==(const Numeric &rhs) const {
+    return trdk::Lib::IsEqual(m_value, rhs.m_value);
+  }
 
-		template<typename StreamElem, typename StreamTraits>
-		friend std::basic_ostream<StreamElem, StreamTraits> & operator <<(
-				std::basic_ostream<StreamElem, StreamTraits> &os,
-				const trdk::Lib::Numeric<ValueType> &numeric) {
-			os << numeric.Get();
-			return os;
-		}
+  template <typename AnotherValueType>
+  bool operator!=(const AnotherValueType &rhs) const {
+    return operator!=(Numeric(rhs));
+  }
+  bool operator!=(const Numeric &rhs) const {
+    return !trdk::Lib::IsEqual(m_value, rhs.m_value);
+  }
 
-		template<typename StreamElem, typename StreamTraits>
-		friend std::basic_istream<StreamElem, StreamTraits> & operator >>(
-				std::basic_istream<StreamElem, StreamTraits> &is,
-				trdk::Lib::Numeric<ValueType> &numeric) {
-			is >> numeric.m_value;
-			return is;
-		}
+  template <typename AnotherValueType>
+  bool operator<(const AnotherValueType &rhs) const {
+    return operator<(Numeric(rhs));
+  }
+  bool operator<(const Numeric &rhs) const {
+    return m_value < rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
+  }
 
-	public:
+  template <typename AnotherValueType>
+  bool operator<=(const AnotherValueType &rhs) const {
+    return operator<=(Numeric(rhs));
+  }
+  bool operator<=(const Numeric &rhs) const {
+    return m_value < rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
+  }
 
-		template<typename AnotherValueType>
-		bool operator ==(const AnotherValueType &rhs) const {
-			return operator ==(Numeric(rhs));
-		}
-		bool operator ==(const Numeric &rhs) const {
-			return trdk::Lib::IsEqual(m_value, rhs.m_value);
-		}
+  template <typename AnotherValueType>
+  bool operator>(const AnotherValueType &rhs) const {
+    return operator>(Numeric(rhs));
+  }
+  bool operator>(const Numeric &rhs) const {
+    return m_value > rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
+  }
 
-		template<typename AnotherValueType>
-		bool operator !=(const AnotherValueType &rhs) const {
-			return operator !=(Numeric(rhs));
-		}
-		bool operator !=(const Numeric &rhs) const {
-			return !trdk::Lib::IsEqual(m_value, rhs.m_value);
-		}
+  template <typename AnotherValueType>
+  bool operator>=(const AnotherValueType &rhs) const {
+    return operator>=(Numeric(rhs));
+  }
+  bool operator>=(const Numeric &rhs) const {
+    return m_value > rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
+  }
 
-		template<typename AnotherValueType>
-		bool operator <(const AnotherValueType &rhs) const {
-			return operator <(Numeric(rhs));
-		}
-		bool operator <(const Numeric &rhs) const {
-			return m_value < rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
-		}
+ public:
+  template <typename AnotherValueType>
+  Numeric &operator+=(const AnotherValueType &rhs) {
+    m_value += rhs;
+    return *this;
+  }
+  Numeric &operator+=(const Numeric &rhs) {
+    m_value += rhs.m_value;
+    return *this;
+  }
 
-		template<typename AnotherValueType>
-		bool operator <=(const AnotherValueType &rhs) const {
-			return operator <=(Numeric(rhs));
-		}
-		bool operator <=(const Numeric &rhs) const {
-			return m_value < rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
-		}
+  template <typename AnotherValueType>
+  Numeric &operator-=(const AnotherValueType &rhs) {
+    m_value -= rhs;
+    return *this;
+  }
+  Numeric &operator-=(const Numeric &rhs) {
+    m_value -= rhs.m_value;
+    return *this;
+  }
 
-		template<typename AnotherValueType>
-		bool operator >(const AnotherValueType &rhs) const {
-			return operator >(Numeric(rhs));
-		}
-		bool operator >(const Numeric &rhs) const {
-			return m_value > rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
-		}
+  template <typename AnotherValueType>
+  Numeric &operator*=(const Numeric &rhs) {
+    m_value *= rhs;
+    return *this;
+  }
+  Numeric &operator*=(const Numeric &rhs) {
+    m_value *= rhs.m_value;
+    return *this;
+  }
 
-		template<typename AnotherValueType>
-		bool operator >=(const AnotherValueType &rhs) const {
-			return operator >=(Numeric(rhs));
-		}
-		bool operator >=(const Numeric &rhs) const {
-			return m_value > rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
-		}
+  template <typename AnotherValueType>
+  Numeric &operator/=(const AnotherValueType &rhs) {
+    m_value /= rhs;
+    return *this;
+  }
+  Numeric &operator/=(const Numeric &rhs) {
+    m_value /= rhs.m_value;
+    return *this;
+  }
 
-	public:
+  template <typename AnotherValueType>
+  Numeric operator+(const AnotherValueType &rhs) const {
+    return Numeric(m_value + rhs);
+  }
+  Numeric operator+(const Numeric &rhs) const {
+    return Numeric(m_value + rhs.m_value);
+  }
 
-		template<typename AnotherValueType>
-		Numeric & operator +=(const AnotherValueType &rhs) {
-			m_value += rhs;
-			return *this;
-		}
-		Numeric & operator +=(const Numeric &rhs) {
-			m_value += rhs.m_value;
-			return *this;
-		}
+  template <typename AnotherValueType>
+  Numeric operator-(const AnotherValueType &rhs) const {
+    return Numeric(m_value - rhs);
+  }
+  Numeric operator-(const Numeric &rhs) const {
+    return Numeric(m_value - rhs.m_value);
+  }
 
-		template<typename AnotherValueType>
-		Numeric & operator -=(const AnotherValueType &rhs) {
-			m_value -= rhs;
-			return *this;
-		}
-		Numeric & operator -=(const Numeric &rhs) {
-			m_value -= rhs.m_value;
-			return *this;
-		}
+  template <typename AnotherValueType>
+  Numeric operator*(const AnotherValueType &rhs) const {
+    return Numeric(m_value * rhs);
+  }
+  Numeric operator*(const Numeric &rhs) const {
+    return Numeric(m_value * rhs.m_value);
+  }
 
-		template<typename AnotherValueType>
-		Numeric & operator *=(const Numeric &rhs) {
-			m_value *= rhs;
-			return *this;
-		}
-		Numeric & operator *=(const Numeric &rhs) {
-			m_value *= rhs.m_value;
-			return *this;
-		}
+  template <typename AnotherValueType>
+  Numeric operator/(const AnotherValueType &rhs) const {
+    return Numeric(m_value / rhs);
+  }
+  Numeric operator/(const Numeric &rhs) const {
+    return Numeric(m_value / rhs.m_value);
+  }
 
-		template<typename AnotherValueType>
-		Numeric & operator /=(const AnotherValueType &rhs) {
-			m_value /= rhs;
-			return *this;
-		}
-		Numeric & operator /=(const Numeric &rhs) {
-			m_value /= rhs.m_value;
-			return *this;
-		}
+ private:
+  ValueType m_value;
+};
 
-		template<typename AnotherValueType>
-		Numeric operator +(const AnotherValueType &rhs) const {
-			return Numeric(m_value + rhs);
-		}
-		Numeric operator +(const Numeric &rhs) const {
-			return Numeric(m_value + rhs.m_value);
-		}
+////////////////////////////////////////////////////////////////////////////////
 
-		template<typename AnotherValueType>
-		Numeric operator -(const AnotherValueType &rhs) const {
-			return Numeric(m_value - rhs);
-		}
-		Numeric operator -(const Numeric &rhs) const {
-			return Numeric(m_value - rhs.m_value);
-		}
+template <typename T>
+bool IsEqual(const trdk::Lib::Numeric<T> &, const trdk::Lib::Numeric<T> &) {
+  static_assert(false, "Deprecated call, use operator \"==\" instead.");
+}
 
-		template<typename AnotherValueType>
-		Numeric operator *(const AnotherValueType &rhs) const {
-			return Numeric(m_value * rhs);
-		}
-		Numeric operator *(const Numeric &rhs) const {
-			return Numeric(m_value * rhs.m_value);
-		}
+template <typename T>
+bool IsZero(const trdk::Lib::Numeric<T> &) {
+  static_assert(false, "Deprecated call, use operator \"==\" instead.");
+}
 
-		template<typename AnotherValueType>
-		Numeric operator /(const AnotherValueType &rhs) const {
-			return Numeric(m_value / rhs);
-		}
-		Numeric operator /(const Numeric &rhs) const {
-			return Numeric(m_value / rhs.m_value);
-		}
+////////////////////////////////////////////////////////////////////////////////
 
-	private:
+typedef trdk::Lib::Numeric<double> Double;
 
-		ValueType m_value;
-
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	template<typename T>
-	bool IsEqual(const trdk::Lib::Numeric<T> &, const trdk::Lib::Numeric<T> &) {
-		static_assert(false, "Deprecated call, use operator \"==\" instead.");
-	}
-
-	template<typename T>
-	bool IsZero(const trdk::Lib::Numeric<T> &) {
-		static_assert(false, "Deprecated call, use operator \"==\" instead.");
-	}
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	typedef trdk::Lib::Numeric<double> Double;
-
-	////////////////////////////////////////////////////////////////////////////////
-
-} }
+////////////////////////////////////////////////////////////////////////////////
+}
+}

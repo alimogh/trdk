@@ -10,76 +10,65 @@
 
 #pragma once
 
-#include "BarService.hpp"
 #include "Core/Service.hpp"
 #include "Api.h"
+#include "BarService.hpp"
 
-namespace trdk { namespace Services { namespace Indicators {
+namespace trdk {
+namespace Services {
+namespace Indicators {
 
-	class TRDK_SERVICES_API Rsi : public trdk::Service {
+class TRDK_SERVICES_API Rsi : public trdk::Service {
+ public:
+  //! General service error.
+  class Error : public trdk::Lib::Exception {
+   public:
+    explicit Error(const char *) noexcept;
+  };
 
-	public:
+  //! Throws when client code requests value which does not exist.
+  class ValueDoesNotExistError : public Error {
+   public:
+    explicit ValueDoesNotExistError(const char *) noexcept;
+  };
 
-		//! General service error.
-		class Error : public trdk::Lib::Exception {
-		public:
-			explicit Error(const char *) noexcept;
-		};
+  //! Value data point.
+  struct Point {
+    boost::posix_time::ptime time;
+    trdk::Lib::Double source;
+    trdk::Lib::Double value;
+  };
 
-		//! Throws when client code requests value which does not exist.
-		class ValueDoesNotExistError : public Error {
-		public:
-			explicit ValueDoesNotExistError(const char *) noexcept;
-		};
+ public:
+  explicit Rsi(Context &,
+               const std::string &instanceName,
+               const Lib::IniSectionRef &);
+  virtual ~Rsi() noexcept;
 
-		//! Value data point.
- 		struct Point {
-			boost::posix_time::ptime time;
-			trdk::Lib::Double source;
-			trdk::Lib::Double value;
-		};
+ public:
+  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
 
-	public:
+  bool IsEmpty() const;
 
-		explicit Rsi(
-				Context &,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~Rsi() noexcept;
+  //! Returns last value point.
+  /** @throw ValueDoesNotExistError
+    */
+  const Point &GetLastPoint() const;
 
-	public:
+  //! Drops last value point copy.
+  /** @throw RelativeStrengthIndexService
+    */
+  void DropLastPointCopy(const trdk::DropCopyDataSourceInstanceId &) const;
 
-		virtual const boost::posix_time::ptime & GetLastDataTime()
-				const
-				override;
+ protected:
+  virtual bool OnServiceDataUpdate(
+      const trdk::Service &,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
 
-		bool IsEmpty() const;
-
-		//! Returns last value point.
-		/** @throw ValueDoesNotExistError
-		  */
-		const Point & GetLastPoint() const;
-
-		//! Drops last value point copy.
-		/** @throw RelativeStrengthIndexService
-		  */
-		void DropLastPointCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const;
-
-	protected:
-
-		virtual bool OnServiceDataUpdate(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &)
-				override;
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-
-} } }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}
+}

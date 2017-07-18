@@ -13,27 +13,27 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/bind.hpp>
-#	include <boost/cast.hpp>
-#	include <boost/date_time/posix_time/posix_time.hpp>
-#	include <boost/date_time/local_time/local_time.hpp>
-#	include <boost/filesystem.hpp>
-#	include <boost/thread.hpp>
-#	include <boost/algorithm/string_regex.hpp>
-#	include <boost/tuple/tuple.hpp>
-#	include <boost/multi_index_container.hpp>
-#	include <boost/multi_index/ordered_index.hpp>
-#	include <boost/multi_index/mem_fun.hpp>
-#	include <boost/circular_buffer.hpp>
-#	include <boost/uuid/string_generator.hpp>
-#	include <boost/uuid/uuid_generators.hpp>
-#	include <boost/accumulators/accumulators.hpp>
-#	include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/algorithm/string_regex.hpp>
+#include <boost/bind.hpp>
+#include <boost/cast.hpp>
+#include <boost/circular_buffer.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/thread.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #ifdef BOOST_WINDOWS
-#	include <concrt.h>
-#	include <signal.h>
+#include <concrt.h>
+#include <signal.h>
 #endif
 
 #include "Common/Common.hpp"

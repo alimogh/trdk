@@ -12,35 +12,30 @@
 
 #include "Core/Security.hpp"
 
-namespace trdk { namespace Interaction { namespace Test {
+namespace trdk {
+namespace Interaction {
+namespace Test {
 
-	class Security : public trdk::Security {
+class Security : public trdk::Security {
+ public:
+  typedef trdk::Security Base;
 
-	public:
+ public:
+  explicit Security(Context &context,
+                    const Lib::Symbol &symbol,
+                    MarketDataSource &source,
+                    const SupportedLevel1Types &supportedData)
+      : Base(context, symbol, source, supportedData) {}
 
-		typedef trdk::Security Base;
-
-	public:
-
-		explicit Security(
-				Context &context,
-				const Lib::Symbol &symbol,
-				MarketDataSource &source,
-				const SupportedLevel1Types &supportedData)
-			: Base(context, symbol,  source, supportedData) {
-			//...//
-		}
-
-	public:
-
-		using Base::SetOnline;
-		using Base::SetTradingSessionState;
-		using Base::SetExpiration;
-		using Base::SetBook;
-		using Base::AddTrade;
-		using Base::SetLevel1;
-		using Base::AddBar;
-
-	};
-
-} } }
+ public:
+  using Base::SetOnline;
+  using Base::SetTradingSessionState;
+  using Base::SetExpiration;
+  using Base::SetBook;
+  using Base::AddTrade;
+  using Base::SetLevel1;
+  using Base::AddBar;
+};
+}
+}
+}

@@ -9,48 +9,37 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "IbTradingSystem.hpp"
 #include "Api.h"
+#include "IbTradingSystem.hpp"
 
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
 trdk::TradingSystemAndMarketDataSourceFactoryResult
 CreateTradingSystemAndMarketDataSource(
-		const trdk::TradingMode &mode,
-		size_t tradingSystemIndex,
-		size_t marketDataSourceIndex,
-		trdk::Context &context,
-		const std::string &instanceName,
-		const trdk::Lib::IniSectionRef &configuration) {
-	const auto &object = boost::make_shared<ib::TradingSystem>(
-			mode,
-			tradingSystemIndex,
-			marketDataSourceIndex,
-			context,
-			instanceName,
-			configuration);
-	const trdk::TradingSystemAndMarketDataSourceFactoryResult result = {
-		object,
-		object
-	};
-	return result;
+    const trdk::TradingMode &mode,
+    size_t tradingSystemIndex,
+    size_t marketDataSourceIndex,
+    trdk::Context &context,
+    const std::string &instanceName,
+    const trdk::Lib::IniSectionRef &configuration) {
+  const auto &object = boost::make_shared<ib::TradingSystem>(
+      mode, tradingSystemIndex, marketDataSourceIndex, context, instanceName,
+      configuration);
+  const trdk::TradingSystemAndMarketDataSourceFactoryResult result = {object,
+                                                                      object};
+  return result;
 }
 
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
-boost::shared_ptr<trdk::TradingSystem>
-CreateTradingSystem(
-		const trdk::TradingMode &mode,
-		size_t tradingSystemIndex,
-		trdk::Context &context,
-		const std::string &instanceName,
-		const trdk::Lib::IniSectionRef &configuration) {
-	const auto &result = boost::make_shared<ib::TradingSystem>(
-		mode,
-		tradingSystemIndex,
-		std::numeric_limits<size_t>::max(),
-		context,
-		instanceName,
-		configuration);
-	return result;
+boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
+    const trdk::TradingMode &mode,
+    size_t tradingSystemIndex,
+    trdk::Context &context,
+    const std::string &instanceName,
+    const trdk::Lib::IniSectionRef &configuration) {
+  const auto &result = boost::make_shared<ib::TradingSystem>(
+      mode, tradingSystemIndex, std::numeric_limits<size_t>::max(), context,
+      instanceName, configuration);
+  return result;
 }

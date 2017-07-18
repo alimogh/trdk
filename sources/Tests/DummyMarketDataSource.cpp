@@ -17,33 +17,25 @@ using namespace trdk::Lib;
 using namespace trdk::Tests;
 
 DummyMarketDataSource::DummyMarketDataSource(trdk::Context *context)
-	: MarketDataSource(
-		0,
-		context
-			?	*context
-			:	DummyContext::GetInstance(),
-		"Test") {
-	//...//
-}
+    : MarketDataSource(
+          0, context ? *context : DummyContext::GetInstance(), "Test") {}
 
-DummyMarketDataSource::~DummyMarketDataSource() {
-	//...//
-}
+DummyMarketDataSource::~DummyMarketDataSource() {}
 
-DummyMarketDataSource & DummyMarketDataSource::GetInstance() {
-	static DummyMarketDataSource result;
-	return result;
+DummyMarketDataSource &DummyMarketDataSource::GetInstance() {
+  static DummyMarketDataSource result;
+  return result;
 }
 
 void DummyMarketDataSource::Connect(const trdk::Lib::IniSectionRef &) {
-	throw std::logic_error("Not supported");
+  throw std::logic_error("Not supported");
 }
 
 void DummyMarketDataSource::SubscribeToSecurities() {
-	throw std::logic_error("Not supported");
+  throw std::logic_error("Not supported");
 }
 
-trdk::Security & DummyMarketDataSource::CreateNewSecurityObject(
-		const trdk::Lib::Symbol &) {
-	throw std::logic_error("Not supported");
+trdk::Security &DummyMarketDataSource::CreateNewSecurityObject(
+    const trdk::Lib::Symbol &) {
+  throw std::logic_error("Not supported");
 }

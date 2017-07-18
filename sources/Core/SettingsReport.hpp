@@ -12,52 +12,34 @@
 
 #include "Security.hpp"
 
-namespace trdk { namespace SettingsReport {
+namespace trdk {
+namespace SettingsReport {
 
-	template<typename T>
-	void Append(
-				const std::string &name,
-				const T &val,
-				Report &report) {
-		const Report::value_type item(
-			name,
-			(boost::format("%1%") % val).str());
-		report.push_back(item);
-	}
-	
-	inline void Append(
-				const std::string &name,
-				double val,
-				Report &report) {
-		const Report::value_type item(
-			name,
-			(boost::format("%1%") % val).str());
-		report.push_back(item);
-	}
+template <typename T>
+void Append(const std::string &name, const T &val, Report &report) {
+  const Report::value_type item(name, (boost::format("%1%") % val).str());
+  report.push_back(item);
+}
 
-	inline void Append(
-				const std::string &name,
-				bool val,
-				Report &report) {
-		Append(name, val ? "true" : "false", report);
-	}
+inline void Append(const std::string &name, double val, Report &report) {
+  const Report::value_type item(name, (boost::format("%1%") % val).str());
+  report.push_back(item);
+}
 
-	inline void AppendPercent(
-				const std::string &name,
-				double val,
-				Report &report) {
-		const Report::value_type item(
-			name,
-			(boost::format("%.4f%%") % val).str());
-		report.push_back(item);
-	}
+inline void Append(const std::string &name, bool val, Report &report) {
+  Append(name, val ? "true" : "false", report);
+}
 
-	inline void Append(
-				const std::string &name,
-				const trdk::Lib::Ini::AbsoluteOrPercentsPrice &val,
-				const trdk::Security &security,
-				Report &report) {
-		Append(name, val.GetStr(security.GetPriceScale()), report);
-	}
+inline void AppendPercent(const std::string &name, double val, Report &report) {
+  const Report::value_type item(name, (boost::format("%.4f%%") % val).str());
+  report.push_back(item);
+}
 
-} }
+inline void Append(const std::string &name,
+                   const trdk::Lib::Ini::AbsoluteOrPercentsPrice &val,
+                   const trdk::Security &security,
+                   Report &report) {
+  Append(name, val.GetStr(security.GetPriceScale()), report);
+}
+}
+}

@@ -10,82 +10,70 @@
 
 #pragma once
 
-#include "Fwd.hpp"
 #include "Exception.hpp"
+#include "Fwd.hpp"
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class NetworkStreamClientService : private boost::noncopyable {
+class NetworkStreamClientService : private boost::noncopyable {
+ public:
+  class Exception : public trdk::Lib::Exception {
+   public:
+    explicit Exception(const char *what) throw();
+  };
 
-	public:
+ public:
+  NetworkStreamClientService();
+  explicit NetworkStreamClientService(const std::string &logTag);
+  virtual ~NetworkStreamClientService();
 
-		class Exception : public trdk::Lib::Exception {
-		public:
-			explicit Exception(const char *what) throw();
-		};
-	
-	public:
+ public:
+  const std::string &GetLogTag() const;
 
-		NetworkStreamClientService();
-		explicit NetworkStreamClientService(const std::string &logTag);
-		virtual ~NetworkStreamClientService();
+  //! Connects.
+  /** @throw NetworkStreamClientService::Exception  If connection will fail.
+    */
+  void Connect();
 
-	public:
+  bool IsConnected() const;
 
-		const std::string & GetLogTag() const;
+  //! Stops all.
+  void Stop();
 
-		//! Connects.
-		/** @throw NetworkStreamClientService::Exception	If connection
-		  *													will fail.
-		  */
-		void Connect();
+  trdk::Lib::NetworkClientServiceIo &GetIo();
 
-		bool IsConnected() const;
+ public:
+  void OnDisconnect();
 
-		//! Stops all.
-		void Stop();
+  void OnClientDestroy();
 
-		trdk::Lib::NetworkClientServiceIo & GetIo();
+ protected:
+  virtual boost::posix_time::ptime GetCurrentTime() const = 0;
 
-	public:
+  virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient() = 0;
 
-		void OnDisconnect();
+  virtual void LogDebug(const char *) const = 0;
+  virtual void LogInfo(const std::string &) const = 0;
+  virtual void LogError(const std::string &) const = 0;
 
-		void OnClientDestroy();
+  virtual void OnConnectionRestored() = 0;
+  virtual void OnStopByError(const std::string &message) = 0;
 
-	protected:
+ protected:
+  template <typename Client>
+  void InvokeClient(const boost::function<void(Client &)> &callback) {
+    InvokeClient([callback](trdk::Lib::NetworkStreamClient &client) {
+      callback(*boost::polymorphic_downcast<Client *>(&client));
+    });
+  }
 
-		virtual boost::posix_time::ptime GetCurrentTime() const = 0;
+  void InvokeClient(
+      const boost::function<void(trdk::Lib::NetworkStreamClient &)> &);
 
-		virtual std::unique_ptr<trdk::Lib::NetworkStreamClient> CreateClient()
-				= 0;
-
-		virtual void LogDebug(const char *) const = 0;
-		virtual void LogInfo(const std::string &) const = 0;
-		virtual void LogError(const std::string &) const = 0;
-
-		virtual void OnConnectionRestored() = 0;
-		virtual void OnStopByError(const std::string &message) = 0;
-
-	protected:
-
-		template<typename Client>
-		void InvokeClient(const boost::function<void(Client &)> &callback) {
-			InvokeClient(
-				[callback](trdk::Lib::NetworkStreamClient &client) {
-					callback(*boost::polymorphic_downcast<Client *>(&client));
-				});
-		}
-
-		void InvokeClient(	
-			const boost::function<void(trdk::Lib::NetworkStreamClient &)> &);
-
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}

@@ -1,5 +1,7 @@
-/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
- * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is
+ * subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial
+ * License, as applicable. */
 
 #ifndef eclientsocketbase_h__INCLUDED
 #define eclientsocketbase_h__INCLUDED
@@ -12,176 +14,199 @@
 
 class EWrapper;
 
-class EClientSocketBase : public EClient
-{
-public:
+class EClientSocketBase : public EClient {
+ public:
+  explicit EClientSocketBase(EWrapper* ptr);
+  ~EClientSocketBase();
 
-	explicit EClientSocketBase(EWrapper *ptr);
-	~EClientSocketBase();
+  virtual bool eConnect(const char* host,
+                        unsigned int port,
+                        int clientId = 0,
+                        bool extraAuth = false) = 0;
+  virtual void eDisconnect() = 0;
 
-	virtual bool eConnect(const char *host, unsigned int port, int clientId = 0, bool extraAuth = false) = 0;
-	virtual void eDisconnect() = 0;
+  int clientId() const { return m_clientId; }
 
-	int clientId() const { return m_clientId; }
+ protected:
+  void eConnectBase();
+  void eDisconnectBase();
 
-protected:
+ public:
+  // connection state
+  bool isConnected() const;
 
-	void eConnectBase();
-	void eDisconnectBase();
+ protected:
+  // access to protected variables
+  EWrapper* getWrapper() const;
+  void setClientId(int clientId);
+  void setExtraAuth(bool extraAuth);
 
-public:
+ public:
+  bool isInBufferEmpty() const;
+  bool isOutBufferEmpty() const;
 
-	// connection state
-	bool isConnected() const;
+  // override virtual funcs from EClient
+  int serverVersion();
+  IBString TwsConnectionTime();
+  void reqMktData(TickerId id,
+                  const Contract& contract,
+                  const IBString& genericTicks,
+                  bool snapshot,
+                  const TagValueListSPtr& mktDataOptions);
+  void cancelMktData(TickerId id);
+  void placeOrder(OrderId id, const Contract& contract, const Order& order);
+  void cancelOrder(OrderId id);
+  void reqOpenOrders();
+  void reqAccountUpdates(bool subscribe, const IBString& acctCode);
+  void reqExecutions(int reqId, const ExecutionFilter& filter);
+  void reqIds(int numIds);
+  bool checkMessages();
+  void reqContractDetails(int reqId, const Contract& contract);
+  void reqMktDepth(TickerId tickerId,
+                   const Contract& contract,
+                   int numRows,
+                   const TagValueListSPtr& mktDepthOptions);
+  void cancelMktDepth(TickerId tickerId);
+  void reqNewsBulletins(bool allMsgs);
+  void cancelNewsBulletins();
+  void setServerLogLevel(int level);
+  void reqAutoOpenOrders(bool bAutoBind);
+  void reqAllOpenOrders();
+  void reqManagedAccts();
+  void requestFA(faDataType pFaDataType);
+  void replaceFA(faDataType pFaDataType, const IBString& cxml);
+  void reqHistoricalData(TickerId id,
+                         const Contract& contract,
+                         const IBString& endDateTime,
+                         const IBString& durationStr,
+                         const IBString& barSizeSetting,
+                         const IBString& whatToShow,
+                         int useRTH,
+                         int formatDate,
+                         const TagValueListSPtr& chartOptions);
+  void exerciseOptions(TickerId tickerId,
+                       const Contract& contract,
+                       int exerciseAction,
+                       int exerciseQuantity,
+                       const IBString& account,
+                       int override);
+  void cancelHistoricalData(TickerId tickerId);
+  void reqRealTimeBars(TickerId id,
+                       const Contract& contract,
+                       int barSize,
+                       const IBString& whatToShow,
+                       bool useRTH,
+                       const TagValueListSPtr& realTimeBarsOptions);
+  void cancelRealTimeBars(TickerId tickerId);
+  void cancelScannerSubscription(int tickerId);
+  void reqScannerParameters();
+  void reqScannerSubscription(
+      int tickerId,
+      const ScannerSubscription& subscription,
+      const TagValueListSPtr& scannerSubscriptionOptions);
+  void reqCurrentTime();
+  void reqFundamentalData(TickerId reqId,
+                          const Contract&,
+                          const IBString& reportType);
+  void cancelFundamentalData(TickerId reqId);
+  void calculateImpliedVolatility(TickerId reqId,
+                                  const Contract& contract,
+                                  double optionPrice,
+                                  double underPrice);
+  void calculateOptionPrice(TickerId reqId,
+                            const Contract& contract,
+                            double volatility,
+                            double underPrice);
+  void cancelCalculateImpliedVolatility(TickerId reqId);
+  void cancelCalculateOptionPrice(TickerId reqId);
+  void reqGlobalCancel();
+  void reqMarketDataType(int marketDataType);
+  void reqPositions();
+  void cancelPositions();
+  void reqAccountSummary(int reqId,
+                         const IBString& groupName,
+                         const IBString& tags);
+  void cancelAccountSummary(int reqId);
+  void verifyRequest(const IBString& apiName, const IBString& apiVersion);
+  void verifyMessage(const IBString& apiData);
+  void queryDisplayGroups(int reqId);
+  void subscribeToGroupEvents(int reqId, int groupId);
+  void updateDisplayGroup(int reqId, const IBString& contractInfo);
+  void unsubscribeFromGroupEvents(int reqId);
 
-protected:
+ private:
+  virtual int send(const char* buf, size_t sz) = 0;
+  virtual int receive(char* buf, size_t sz) = 0;
 
-	// access to protected variables
-	EWrapper * getWrapper() const;
-	void setClientId( int clientId);
-	void setExtraAuth( bool extraAuth);
+ protected:
+  int sendBufferedData();
 
-public:
+ private:
+  int bufferedSend(const char* buf, size_t sz);
+  int bufferedSend(const std::string& msg);
 
-	bool isInBufferEmpty() const;
-	bool isOutBufferEmpty() const;
+  // read and buffer what's available
+  int bufferedRead();
 
-	// override virtual funcs from EClient
-	int serverVersion();
-	IBString TwsConnectionTime();
-	void reqMktData(TickerId id, const Contract &contract,
-		const IBString &genericTicks, bool snapshot, const TagValueListSPtr& mktDataOptions);
-	void cancelMktData(TickerId id);
-	void placeOrder(OrderId id, const Contract &contract, const Order &order);
-	void cancelOrder(OrderId id) ;
-	void reqOpenOrders();
-	void reqAccountUpdates(bool subscribe, const IBString& acctCode);
-	void reqExecutions(int reqId, const ExecutionFilter& filter);
-	void reqIds(int numIds);
-	bool checkMessages();
-	void reqContractDetails(int reqId, const Contract &contract);
-	void reqMktDepth(TickerId tickerId, const Contract &contract, int numRows, const TagValueListSPtr& mktDepthOptions);
-	void cancelMktDepth(TickerId tickerId);
-	void reqNewsBulletins(bool allMsgs);
-	void cancelNewsBulletins();
-	void setServerLogLevel(int level);
-	void reqAutoOpenOrders(bool bAutoBind);
-	void reqAllOpenOrders();
-	void reqManagedAccts();
-	void requestFA(faDataType pFaDataType);
-	void replaceFA(faDataType pFaDataType, const IBString& cxml);
-	void reqHistoricalData( TickerId id, const Contract &contract,
-		const IBString &endDateTime, const IBString &durationStr,
-		const IBString & barSizeSetting, const IBString &whatToShow,
-		int useRTH, int formatDate, const TagValueListSPtr& chartOptions);
-	void exerciseOptions(TickerId tickerId, const Contract &contract,
-		int exerciseAction, int exerciseQuantity,
-		const IBString &account, int override);
-	void cancelHistoricalData(TickerId tickerId );
-	void reqRealTimeBars(TickerId id, const Contract &contract, int barSize,
-		const IBString &whatToShow, bool useRTH, const TagValueListSPtr& realTimeBarsOptions);
-	void cancelRealTimeBars(TickerId tickerId );
-	void cancelScannerSubscription(int tickerId);
-	void reqScannerParameters();
-	void reqScannerSubscription(int tickerId, const ScannerSubscription &subscription, const TagValueListSPtr& scannerSubscriptionOptions);
-	void reqCurrentTime();
-	void reqFundamentalData(TickerId reqId, const Contract&, const IBString& reportType);
-	void cancelFundamentalData(TickerId reqId);
-	void calculateImpliedVolatility(TickerId reqId, const Contract &contract, double optionPrice, double underPrice);
-	void calculateOptionPrice(TickerId reqId, const Contract &contract, double volatility, double underPrice);
-	void cancelCalculateImpliedVolatility(TickerId reqId);
-	void cancelCalculateOptionPrice(TickerId reqId);
-	void reqGlobalCancel();
-	void reqMarketDataType(int marketDataType);
-	void reqPositions();
-	void cancelPositions();
-	void reqAccountSummary( int reqId, const IBString& groupName, const IBString& tags);
-	void cancelAccountSummary( int reqId);
-	void verifyRequest( const IBString& apiName, const IBString& apiVersion);
-	void verifyMessage( const IBString& apiData);
-	void queryDisplayGroups( int reqId);
-	void subscribeToGroupEvents( int reqId, int groupId);
-	void updateDisplayGroup( int reqId, const IBString& contractInfo);
-	void unsubscribeFromGroupEvents( int reqId);
+  // try to process connection request ack
+  int processConnectAck(const char*& ptr, const char* endPtr);
 
-private:
+  // try to process single msg
+  int processMsg(const char*& ptr, const char* endPtr);
 
-	virtual int send(const char* buf, size_t sz) = 0;
-	virtual int receive(char* buf, size_t sz) = 0;
+  void startApi();
 
-protected:
+  static bool CheckOffset(const char* ptr, const char* endPtr);
+  static const char* FindFieldEnd(const char* ptr, const char* endPtr);
 
-	int sendBufferedData();
+  // decoders
+  static bool DecodeField(bool&, const char*& ptr, const char* endPtr);
+  static bool DecodeField(int&, const char*& ptr, const char* endPtr);
+  static bool DecodeField(long&, const char*& ptr, const char* endPtr);
+  static bool DecodeField(double&, const char*& ptr, const char* endPtr);
+  static bool DecodeField(IBString&, const char*& ptr, const char* endPtr);
 
-private:
+  static bool DecodeFieldMax(int&, const char*& ptr, const char* endPtr);
+  static bool DecodeFieldMax(long&, const char*& ptr, const char* endPtr);
+  static bool DecodeFieldMax(double&, const char*& ptr, const char* endPtr);
 
-	int bufferedSend(const char* buf, size_t sz);
-	int bufferedSend(const std::string& msg);
+  // encoders
+  template <class T>
+  static void EncodeField(std::ostream&, T);
 
-	// read and buffer what's available
-	int bufferedRead();
+  // "max" encoders
+  static void EncodeFieldMax(std::ostream& os, int);
+  static void EncodeFieldMax(std::ostream& os, double);
 
-	// try to process connection request ack
-	int processConnectAck(const char*& ptr, const char* endPtr);
+  // socket state
+  virtual bool isSocketOK() const = 0;
 
-	// try to process single msg
-	int processMsg(const char*& ptr, const char* endPtr);
+ protected:
+  void onConnectBase();
 
-	void startApi();
+ private:
+  typedef std::vector<char> BytesVec;
 
-	static bool CheckOffset(const char* ptr, const char* endPtr);
-	static const char* FindFieldEnd(const char* ptr, const char* endPtr);
+ private:
+  static void CleanupBuffer(BytesVec&, int processed);
 
-	// decoders
-	static bool DecodeField(bool&, const char*& ptr, const char* endPtr);
-	static bool DecodeField(int&, const char*& ptr, const char* endPtr);
-	static bool DecodeField(long&, const char*& ptr, const char* endPtr);
-	static bool DecodeField(double&, const char*& ptr, const char* endPtr);
-	static bool DecodeField(IBString&, const char*& ptr, const char* endPtr);
+ private:
+  EWrapper* m_pEWrapper;
 
-	static bool DecodeFieldMax(int&, const char*& ptr, const char* endPtr);
-	static bool DecodeFieldMax(long&, const char*& ptr, const char* endPtr);
-	static bool DecodeFieldMax(double&, const char*& ptr, const char* endPtr);
+  BytesVec m_inBuffer;
+  BytesVec m_outBuffer;
 
-	// encoders
-	template<class T> static void EncodeField(std::ostream&, T);
+  int m_clientId;
 
-	// "max" encoders
-	static void EncodeFieldMax(std::ostream& os, int);
-	static void EncodeFieldMax(std::ostream& os, double);
-
-	// socket state
-	virtual bool isSocketOK() const = 0;
-
-protected:
-
-	void onConnectBase();
-
-private:
-
-	typedef std::vector<char> BytesVec;
-
-private:
-
-	static void CleanupBuffer(BytesVec&, int processed);
-
-private:
-
-	EWrapper *m_pEWrapper;
-
-	BytesVec m_inBuffer;
-	BytesVec m_outBuffer;
-
-	int m_clientId;
-
-	bool m_connected;
-	bool m_extraAuth;
-	int m_serverVersion;
-	IBString m_TwsTime;
-
+  bool m_connected;
+  bool m_extraAuth;
+  int m_serverVersion;
+  IBString m_TwsTime;
 };
 
-template<> void EClientSocketBase::EncodeField<bool>(std::ostream& os, bool);
-template<> void EClientSocketBase::EncodeField<double>(std::ostream& os, double);
+template <>
+void EClientSocketBase::EncodeField<bool>(std::ostream& os, bool);
+template <>
+void EClientSocketBase::EncodeField<double>(std::ostream& os, double);
 
 #endif

@@ -10,9 +10,12 @@
 
 #pragma once
 
-namespace trdk {  namespace Interaction { namespace InteractiveBrokers {
+namespace trdk {
+namespace Interaction {
+namespace InteractiveBrokers {
 
-	class TradingSystem;
-	class Client;
-
-} } }
+class TradingSystem;
+class Client;
+}
+}
+}

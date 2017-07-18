@@ -12,95 +12,79 @@
 
 #include "StopOrder.hpp"
 
-namespace trdk { namespace TradingLib {
+namespace trdk {
+namespace TradingLib {
 
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-	class StopLossOrder : public trdk::TradingLib::StopOrder {
+class StopLossOrder : public trdk::TradingLib::StopOrder {
+ public:
+  explicit StopLossOrder(trdk::Position &);
+  virtual ~StopLossOrder();
 
-	public:
+ public:
+  virtual void Run() override;
 
-		explicit StopLossOrder(trdk::Position &);
-		virtual ~StopLossOrder();
+ protected:
+  virtual bool Activate() = 0;
+};
 
-	public:
+////////////////////////////////////////////////////////////////////////////////
 
-		virtual void Run() override;
+class StopPrice : public trdk::TradingLib::StopLossOrder {
+ public:
+  class Params {
+   public:
+    explicit Params(const trdk::Price &price);
 
-	protected:
+   public:
+    const trdk::Price &GetPrice() const;
 
-		virtual bool Activate() = 0;
+   private:
+    trdk::Price m_price;
+  };
 
-	};
+ public:
+  explicit StopPrice(const boost::shared_ptr<const Params> &, trdk::Position &);
+  virtual ~StopPrice();
 
-	////////////////////////////////////////////////////////////////////////////////
+ protected:
+  virtual const char *GetName() const override;
 
-	class StopPrice : public trdk::TradingLib::StopLossOrder {
+  virtual bool Activate() override;
 
-	public:
+ private:
+  const boost::shared_ptr<const Params> m_params;
+};
 
-		class Params {
-		public:
-			explicit Params(const trdk::Price &price);
-		public:
-			const trdk::Price & GetPrice() const;
-		private:
-			trdk::Price m_price;
-		};
+////////////////////////////////////////////////////////////////////////////////
 
-	public:
+class StopLoss : public trdk::TradingLib::StopLossOrder {
+ public:
+  class Params {
+   public:
+    explicit Params(const trdk::Volume &maxLossPerLot);
 
-		explicit StopPrice(
-				const boost::shared_ptr<const Params> &,
-				trdk::Position &);
-		virtual ~StopPrice();
+   public:
+    const trdk::Volume &GetMaxLossPerLot() const;
 
-	protected:
+   private:
+    trdk::Volume m_maxLossPerLot;
+  };
 
-		virtual const char * GetName() const override;
+ public:
+  explicit StopLoss(const boost::shared_ptr<const Params> &, trdk::Position &);
+  virtual ~StopLoss();
 
-		virtual bool Activate() override;
+ protected:
+  virtual const char *GetName() const override;
 
-	private:
+  virtual bool Activate() override;
 
-		const boost::shared_ptr<const Params> m_params;
+ private:
+  const boost::shared_ptr<const Params> m_params;
+};
 
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
-
-	class StopLoss : public trdk::TradingLib::StopLossOrder {
-
-	public:
-
-		class Params {
-		public:
-			explicit Params(const trdk::Volume &maxLossPerLot);
-		public:
-			const trdk::Volume & GetMaxLossPerLot() const;
-		private:
-			trdk::Volume m_maxLossPerLot;
-		};
-
-	public:
-
-		explicit StopLoss(
-				const boost::shared_ptr<const Params> &,
-				trdk::Position &);
-		virtual ~StopLoss();
-
-	protected:
-
-		virtual const char * GetName() const override;
-
-		virtual bool Activate() override;
-
-	private:
-
-		const boost::shared_ptr<const Params> m_params;
-
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
-
-} }
+////////////////////////////////////////////////////////////////////////////////
+}
+}

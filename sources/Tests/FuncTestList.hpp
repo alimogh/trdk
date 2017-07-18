@@ -10,8 +10,9 @@
 
 #pragma once
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	int RunFuncTest(std::string &&);
-
-} }
+int RunFuncTest(std::string &&);
+}
+}

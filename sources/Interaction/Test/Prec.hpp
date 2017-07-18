@@ -13,9 +13,9 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/thread.hpp>
-#	include <boost/random.hpp>
-#	include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/random.hpp>
+#include <boost/thread.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

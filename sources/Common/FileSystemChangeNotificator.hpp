@@ -11,37 +11,31 @@
 #pragma once
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/noncopyable.hpp>
-#	include <boost/function.hpp>
-#	include <boost/filesystem/path.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/function.hpp>
+#include <boost/noncopyable.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 #include <string>
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class FileSystemChangeNotificator : private boost::noncopyable {
+class FileSystemChangeNotificator : private boost::noncopyable {
+ public:
+  typedef boost::function<void()> EventSlot;
 
-	public:
+ public:
+  FileSystemChangeNotificator(const boost::filesystem::path &,
+                              const EventSlot &eventSlot);
+  ~FileSystemChangeNotificator();
 
-		typedef boost::function<void()> EventSlot;
+ public:
+  void Start();
+  void Stop();
 
-	public:
-	
-		FileSystemChangeNotificator(
-					const boost::filesystem::path &,
-					const EventSlot &eventSlot);
-		~FileSystemChangeNotificator();
-
-	public:
-
-		void Start();
-		void Stop();
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  Implementation *m_pimpl;
+};
+}
+}

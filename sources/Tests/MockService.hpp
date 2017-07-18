@@ -12,19 +12,16 @@
 
 #include "Core/Service.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class MockService : public trdk::Service {
+class MockService : public trdk::Service {
+ public:
+  MockService();
+  virtual ~MockService();
 
-	public:
-
-		MockService();
-		virtual ~MockService();
-
-	public:
-
-		MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
-
-	};
-
-} }
+ public:
+  MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
+};
+}
+}

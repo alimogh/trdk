@@ -18,47 +18,35 @@ using namespace trdk::Services;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BarService::Error::Error(const char *what) throw()
-	: Exception(what) {
-	//...//
-}
+BarService::Error::Error(const char *what) throw() : Exception(what) {}
 
 BarService::BarDoesNotExistError::BarDoesNotExistError(const char *what) throw()
-	: Error(what) {
-	//...//
-}
+    : Error(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 BarService::Bar::Bar()
-	: maxAskPrice(0)
-	, openAskPrice(0)
-	, closeAskPrice(0)
-	, minBidPrice(0)
-	, openBidPrice(0)
-	, closeBidPrice(0)
-	, openTradePrice(0)
-	, closeTradePrice(0)
-	, highTradePrice(0)
-	, lowTradePrice(0)
-	, tradingVolume(0) {
-	//...//
-}
+    : maxAskPrice(0),
+      openAskPrice(0),
+      closeAskPrice(0),
+      minBidPrice(0),
+      openBidPrice(0),
+      closeBidPrice(0),
+      openTradePrice(0),
+      closeTradePrice(0),
+      highTradePrice(0),
+      lowTradePrice(0),
+      tradingVolume(0) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-BarService::BarService(
-		Context &context,
-		const boost::uuids::uuid &typeId,
-		const std::string &implementationName,
-		const std::string &instanceName,
-		const IniSectionRef &conf)
-	: Base(context, typeId, implementationName, instanceName, conf) {
-	//...//
-}
+BarService::BarService(Context &context,
+                       const boost::uuids::uuid &typeId,
+                       const std::string &implementationName,
+                       const std::string &instanceName,
+                       const IniSectionRef &conf)
+    : Base(context, typeId, implementationName, instanceName, conf) {}
 
-BarService::~BarService() {
-	//...//
-}
+BarService::~BarService() {}
 
 //////////////////////////////////////////////////////////////////////////

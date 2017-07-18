@@ -12,59 +12,54 @@
 
 #include "Fwd.hpp"
 
-namespace trdk { namespace SimpleApi {
+namespace trdk {
+namespace SimpleApi {
 
-	class EngineServer : private boost::noncopyable {
+class EngineServer : private boost::noncopyable {
+ public:
+  typedef size_t EngineId;
 
-	public:
+  class Exception : public trdk::Lib::Exception {
+   public:
+    typedef trdk::Lib::Exception Base;
 
-		typedef size_t EngineId;
+   public:
+    explicit Exception(const char *what) noexcept;
+  };
 
-		class Exception : public trdk::Lib::Exception {
-		public:
-			typedef trdk::Lib::Exception Base;
-		public:
-			explicit Exception(const char *what) noexcept;
-		};
+  class UnknownEngineError : public Exception {
+   public:
+    UnknownEngineError() noexcept;
+  };
 
-		class UnknownEngineError : public Exception {
-		public:
-			UnknownEngineError() noexcept;
-		};
+  class UnknownAccountError : public Exception {
+   public:
+    UnknownAccountError() noexcept;
+  };
 
-		class UnknownAccountError : public Exception {
-		public:
-			UnknownAccountError() noexcept;
-		};
+ public:
+  EngineServer();
+  ~EngineServer();
 
-	public:
+ public:
+  EngineId CreateEngine();
 
-		EngineServer();
-		~EngineServer();
+  void DestoryEngine(const EngineId &);
+  void DestoryAllEngines();
 
-	public:
+  Engine &CheckEngine(const EngineId &);
 
-		EngineId CreateEngine();
+  Engine &GetEngine(const EngineId &);
+  const Engine &GetEngine(const EngineId &) const;
 
-		void DestoryEngine(const EngineId &);
-		void DestoryAllEngines();
+  trdk::EventsLog &GetLog();
 
-		Engine & CheckEngine(const EngineId &);
+ public:
+  void InitLog(const boost::filesystem::path &);
 
-		Engine & GetEngine(const EngineId &);
-		const Engine & GetEngine(const EngineId &) const;
-
-		trdk::EventsLog & GetLog();
-
-	public:
-
-		void InitLog(const boost::filesystem::path &);
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}

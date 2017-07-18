@@ -10,284 +10,247 @@
 
 #pragma once
 
-#include "EventsLog.hpp"
 #include "Api.h"
+#include "EventsLog.hpp"
 
 namespace trdk {
 
-	//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-	class TRDK_CORE_API Context : private boost::noncopyable {
+class TRDK_CORE_API Context : private boost::noncopyable {
+ public:
+  class TRDK_CORE_API Exception : public trdk::Lib::Exception {
+   public:
+    explicit Exception(const char *what) throw();
+  };
 
-	public:
+  typedef trdk::EventsLog Log;
+  typedef trdk::TradingLog TradingLog;
 
-		class TRDK_CORE_API Exception : public trdk::Lib::Exception {
-		public:
-			explicit Exception(const char *what) throw();
-		};
+  class TRDK_CORE_API Params;
 
-		typedef trdk::EventsLog Log;
-		typedef trdk::TradingLog TradingLog;
+  class TRDK_CORE_API DispatchingLock : private boost::noncopyable {
+   public:
+    virtual ~DispatchingLock() = 0;
+  };
 
-		class TRDK_CORE_API Params;
+  typedef void(CurrentTimeChangeSlotSignature)(
+      const boost::posix_time::ptime &newTime);
+  typedef boost::function<CurrentTimeChangeSlotSignature> CurrentTimeChangeSlot;
+  typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
 
-		class TRDK_CORE_API DispatchingLock : private boost::noncopyable {
-		public:
-			virtual ~DispatchingLock() = 0;
-		};
+  enum State {
+    STATE_ENGINE_STARTED,
+    STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY,
+    STATE_DISPATCHER_TASK_STOPPED_ERROR,
+    STATE_STRATEGY_BLOCKED,
+    numberOfStates,
+  };
+  typedef void(StateUpdateSlotSignature)(
+      const State &newState, const std::string *message /*= nullptr*/);
+  typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
+  typedef boost::signals2::connection StateUpdateConnection;
 
-		typedef void (CurrentTimeChangeSlotSignature)(
-				const boost::posix_time::ptime &newTime);
-		typedef boost::function<CurrentTimeChangeSlotSignature>
-			CurrentTimeChangeSlot;
-		typedef boost::signals2::connection CurrentTimeChangeSlotConnection;
+ public:
+  explicit Context(
+      trdk::Context::Log &,
+      trdk::Context::TradingLog &,
+      const trdk::Settings &,
+      const boost::unordered_map<std::string, std::string> &params);
+  virtual ~Context();
 
-		enum State {
-			STATE_ENGINE_STARTED,
-			STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY,
-			STATE_DISPATCHER_TASK_STOPPED_ERROR,
-			STATE_STRATEGY_BLOCKED,
-			numberOfStates,
-		};
-		typedef void (StateUpdateSlotSignature)(
-				const State &newState,
-				const std::string *message /*= nullptr*/);
-		typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
-		typedef boost::signals2::connection StateUpdateConnection;
+ public:
+  trdk::Context::Log &GetLog() const throw();
+  trdk::Context::TradingLog &GetTradingLog() const throw();
 
-	public:
+  //! Subscribes to state changes.
+  StateUpdateConnection SubscribeToStateUpdates(const StateUpdateSlot &) const;
+  //! Raises state update event.
+  /** Engine service should listen events and react to it.
+    */
+  void RaiseStateUpdate(const State &) const;
+  //! Raises state update event with message.
+  /** Engine service should listen events and react to it.
+    */
+  void RaiseStateUpdate(const State &, const std::string &message) const;
 
-		explicit Context(
-				trdk::Context::Log &,
-				trdk::Context::TradingLog &,
-				const trdk::Settings &,
-				const boost::unordered_map<std::string, std::string> &params);
-		virtual ~Context();
+  trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement() const;
+  trdk::Lib::TimeMeasurement::Milestones StartTradingSystemTimeMeasurement()
+      const;
+  trdk::Lib::TimeMeasurement::Milestones StartDispatchingTimeMeasurement()
+      const;
 
-	public:
+  //! Context setting with predefined key list and predefined behavior.
+  const trdk::Settings &GetSettings() const;
 
-		trdk::Context::Log & GetLog() const throw();
-		trdk::Context::TradingLog & GetTradingLog() const throw();
+  //! Context local start time.
+  /** Does not depend from replay mode, always actual start time for local
+    * time zone.
+    * @sa GetCurrentTime
+    */
+  const boost::posix_time::ptime &GetStartTime() const;
 
-		//! Subscribes to state changes.
-		StateUpdateConnection SubscribeToStateUpdates(
-				const StateUpdateSlot &)
-				const;
-		//! Raises state update event.
-		/** Engine service should listen events and react to it.
-		  */
-		void RaiseStateUpdate(const State &) const;
-		//! Raises state update event with message.
-		/** Engine service should listen events and react to it.
-		  */
-		void RaiseStateUpdate(const State &, const std::string &message) const;
+  //! Current time.
+  /** Initialization, value and time zone depends from settings and replay
+    * mode.
+    * @sa GetStartTime
+    */
+  boost::posix_time::ptime GetCurrentTime() const;
+  //! The current time in the specific timezone.
+  /** Initialization, value and timezone depends from settings and replay
+    * mode.
+    * @sa GetStartTime
+    */
+  boost::posix_time::ptime GetCurrentTime(
+      const boost::local_time::time_zone_ptr &) const;
 
-		trdk::Lib::TimeMeasurement::Milestones StartStrategyTimeMeasurement()
-				const;
-		trdk::Lib::TimeMeasurement::Milestones StartTradingSystemTimeMeasurement()
-				const;
-		trdk::Lib::TimeMeasurement::Milestones StartDispatchingTimeMeasurement()
-				const;
+  //! Sets current time (for replay mode).
+  /** @param newTime            New time, can be only greater or equal then
+    *                           current.
+    * @param signalAboutUpdate  If true - signal about update will be sent for
+    *                           all subscribers.
+    * @sa SubscribeToCurrentTimeChange
+    */
+  void SetCurrentTime(const boost::posix_time::ptime &newTime,
+                      bool signalAboutUpdate);
+  //! Subscribes to a time change by SetCurrentTime.
+  /** Signals before new time will be set for context.
+    * @sa SetCurrentTime
+    */
+  CurrentTimeChangeSlotConnection SubscribeToCurrentTimeChange(
+      const CurrentTimeChangeSlot &) const;
 
-		//! Context setting with predefined key list and predefined behavior.
-		const trdk::Settings & GetSettings() const;
+  //! Waits until each of dispatching queue will be empty (but not all
+  //! at the same moment).
+  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const = 0;
 
-		//! Context local start time.
-		/** Does not depend from replay mode, always actual start time for local 
-		  * time zone.
-		  * @sa GetCurrentTime
-		  */
-		const boost::posix_time::ptime & GetStartTime() const;
+  virtual RiskControl &GetRiskControl(const trdk::TradingMode &) = 0;
+  virtual const RiskControl &GetRiskControl(
+      const trdk::TradingMode &) const = 0;
 
-		//! Current time.
-		/** Initialization, value and time zone depends from settings and replay
-		  * mode.
-		  * @sa GetStartTime
-		  */
-		boost::posix_time::ptime GetCurrentTime() const;
-		//! The current time in the specific timezone.
-		/** Initialization, value and timezone depends from settings and replay
-		  * mode.
-		  * @sa GetStartTime
-		  */
-		boost::posix_time::ptime GetCurrentTime(
-				const boost::local_time::time_zone_ptr &)
-				const;
+  template <typename Method>
+  void InvokeDropCopy(const Method &method) const {
+    auto *const dropCopy = GetDropCopy();
+    if (!dropCopy) {
+      return;
+    }
+    method(*dropCopy);
+  }
 
-		//! Sets current time (for replay mode).
-		/** @param newTime				New time, can be only greater or equal
-		  *								then current.
-		  * @param signalAboutUpdate	If true - signal about update will be
-		  *								sent for all subscribers.
-		  * @sa SubscribeToCurrentTimeChange
-		  */
-		void SetCurrentTime(
-				const boost::posix_time::ptime &newTime,
-				bool signalAboutUpdate);
-		//! Subscribes to a time change by SetCurrentTime.
-		/** Signals before new time will be set for context.
-		  * @sa SetCurrentTime
-		  */
-		CurrentTimeChangeSlotConnection SubscribeToCurrentTimeChange(
-				const CurrentTimeChangeSlot &)
-				const;
+  //! User context parameters. No predefined key list. Any key can be
+  //! changed.
+  trdk::Context::Params &GetParams();
+  //! User context parameters. No predefined key list.
+  const trdk::Context::Params &GetParams() const;
 
-		//! Waits until each of dispatching queue will be empty (but not all
-		//! at the same moment).
-		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const = 0;
+  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
+      const = 0;
 
-		virtual RiskControl & GetRiskControl(const trdk::TradingMode &) = 0;
-		virtual const RiskControl & GetRiskControl(
-				const trdk::TradingMode &)
-				const
-			= 0;
+  //! Market Data Sources count.
+  /** @sa GetMarketDataSource
+    */
+  virtual size_t GetNumberOfMarketDataSources() const = 0;
+  //! Returns Market Data Source by index.
+  /** Throws an exception if index in unknown.
+    * @sa GetNumberOfMarketDataSources
+    * @throw trdk::Lib::Exception
+    */
+  virtual const trdk::MarketDataSource &GetMarketDataSource(
+      size_t index) const = 0;
+  //! Returns Market Data Source by index.
+  /** Throws an exception if index in unknown.
+    * @sa GetNumberOfMarketDataSources
+    * @throw trdk::Lib::Exception
+    */
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t index) = 0;
+  //! Applies the given predicate to the each market data source and
+  //! stops if predicate returns false.
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(const trdk::MarketDataSource &)> &) const = 0;
+  //! Applies the given predicate to the each market data source and
+  //! stops if predicate returns false.
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(trdk::MarketDataSource &)> &) = 0;
 
-		template<typename Method>
-		void InvokeDropCopy(const Method &method) const {
-			auto *const dropCopy = GetDropCopy();
-			if (!dropCopy) {
-				return;
-			}
-			method(*dropCopy);
-		}
+  //! Trading Systems count.
+  /** @sa GetTradingSystem
+    */
+  virtual size_t GetNumberOfTradingSystems() const = 0;
+  //! Returns Trading System by index.
+  /** Throws an exception if index in unknown.
+    * @sa GetNumberOfTradingSystems
+    * @throw trdk::Lib::Exception
+    */
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      size_t index, const trdk::TradingMode &) const = 0;
+  //! Returns Trading System by index.
+  /** Throws an exception if index in unknown.
+    * @sa GetNumberOfTradingSystems
+    * @throw trdk::Lib::Exception
+    */
+  virtual trdk::TradingSystem &GetTradingSystem(size_t index,
+                                                const trdk::TradingMode &) = 0;
 
-		//! User context parameters. No predefined key list. Any key can be
-		//! changed.
-		trdk::Context::Params & GetParams();
-		//! User context parameters. No predefined key list.
-		const trdk::Context::Params & GetParams() const;
+ protected:
+  //! Returns Drop Copy or nullptr.
+  virtual DropCopy *GetDropCopy() const = 0;
 
-		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
-				const
-			= 0;
+ protected:
+  void OnStarted();
+  void OnBeforeStop();
 
-		//! Market Data Sources count.
-		/** @sa GetMarketDataSource
-		  */
-		virtual size_t GetNumberOfMarketDataSources() const = 0;
-		//! Returns Market Data Source by index.
-		/** Throws an exception if index in unknown.
-		  * @sa GetNumberOfMarketDataSources
-		  * @throw trdk::Lib::Exception
-		  */
-		virtual const trdk::MarketDataSource & GetMarketDataSource(
-				size_t index)
-				const
-			= 0;
-		//! Returns Market Data Source by index.
-		/** Throws an exception if index in unknown.
-		  * @sa GetNumberOfMarketDataSources
-		  * @throw trdk::Lib::Exception
-		  */
-		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index) = 0;
-		//! Applies the given predicate to the each market data source and
-		//! stops if predicate returns false.
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (const trdk::MarketDataSource &)> &)
-				const
-			= 0;
-		//! Applies the given predicate to the each market data source and
-		//! stops if predicate returns false.
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (trdk::MarketDataSource &)> &)
-			= 0;
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
 
-		//! Trading Systems count.
-		/** @sa GetTradingSystem
-		  */
-		virtual size_t GetNumberOfTradingSystems() const = 0;
-		//! Returns Trading System by index.
-		/** Throws an exception if index in unknown.
-		  * @sa GetNumberOfTradingSystems
-		  * @throw trdk::Lib::Exception
-		  */
-		virtual const trdk::TradingSystem & GetTradingSystem(
-				size_t index,
-				const trdk::TradingMode &)
-				const
-			= 0;
-		//! Returns Trading System by index.
-		/** Throws an exception if index in unknown.
-		  * @sa GetNumberOfTradingSystems
-		  * @throw trdk::Lib::Exception
-		  */
-		virtual trdk::TradingSystem & GetTradingSystem(
-				size_t index,
-				const trdk::TradingMode &)
-			= 0;
+//////////////////////////////////////////////////////////////////////////
 
-	protected:
+class trdk::Context::Params : private boost::noncopyable {
+ public:
+  class TRDK_CORE_API Exception : public trdk::Context::Exception {
+   public:
+    Exception(const char *what) noexcept;
+    ~Exception();
+  };
 
-		//! Returns Drop Copy or nullptr.
-		virtual DropCopy * GetDropCopy() const = 0;
-	
-	protected:
+  class TRDK_CORE_API KeyDoesntExistError : public Exception {
+   public:
+    KeyDoesntExistError(const char *what) noexcept;
+    ~KeyDoesntExistError();
+  };
 
-		void OnStarted();
-		void OnBeforeStop();
+  typedef uintmax_t Revision;
 
-	private:
+ public:
+  explicit Params(
+      const trdk::Context &,
+      const boost::unordered_map<std::string, std::string> &initial);
+  ~Params();
 
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
+ public:
+  //! Returns key value.
+  /** Throws an exception if key doesn't exist.
+    * @sa trdk::Context::Parameters::Update
+    * @throw trdk::Context::Parameters::KeyDoesntExistError
+    */
+  std::string operator[](const std::string &) const;
 
-	};
+ public:
+  //! Returns current object revision.
+  /** Any field update changes revision number. Update rule isn't defined.
+    */
+  Revision GetRevision() const;
 
-	//////////////////////////////////////////////////////////////////////////
+  bool IsExist(const std::string &) const;
 
-	class trdk::Context::Params : private boost::noncopyable {
+  //! Updates key. Creates new if key doesn't exist.
+  void Update(const std::string &key, const std::string &value);
 
-	public:
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
 
-		class TRDK_CORE_API Exception : public trdk::Context::Exception {
-		public:
-			Exception(const char *what) noexcept;
-			~Exception();
-		};
-
-		class TRDK_CORE_API KeyDoesntExistError : public Exception {
-		public:
-			KeyDoesntExistError(const char *what) noexcept;
-			~KeyDoesntExistError();
-		};
-
-		typedef uintmax_t Revision;
-	
-	public:
-	
-		explicit Params(
-				const trdk::Context &,
-				const boost::unordered_map<std::string, std::string> &initial);
-		~Params();
-
-	public:
-
-		//! Returns key value.
-		/** Throws an exception if key doesn't exist.
-		  * @sa trdk::Context::Parameters::Update
-		  * @throw trdk::Context::Parameters::KeyDoesntExistError
-		  */
-		std::string operator [](const std::string &) const;
-
-	public:
-		
-		//! Returns current object revision.
-		/** Any field update changes revision number. Update rule isn't defined.
-		  */
-		Revision GetRevision() const;
-
-		bool IsExist(const std::string &) const;
-
-		//! Updates key. Creates new if key doesn't exist.
-		void Update(const std::string &key, const std::string &value);
-	
-	private:
-	
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-	
-	};
-
-	////////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
 }

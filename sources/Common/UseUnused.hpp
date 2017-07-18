@@ -10,21 +10,16 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	template<typename T>
-	inline void UseUnused(const T &) throw() {
-		//...//
-	}
+template <typename T>
+inline void UseUnused(const T &) throw() {}
 
-	template<typename T1, typename T2>
-	inline void UseUnused(const T1 &, const T2 &) throw() {
-		//...//
-	}
+template <typename T1, typename T2>
+inline void UseUnused(const T1 &, const T2 &) throw() {}
 
-	template<typename T1, typename T2, typename T3>
-	inline void UseUnused(const T1 &, const T2 &, const T3 &) throw() {
-		//...//
-	}
-
-} }
+template <typename T1, typename T2, typename T3>
+inline void UseUnused(const T1 &, const T2 &, const T3 &) throw() {}
+}
+}

@@ -14,29 +14,28 @@
 #include "SubscriptionsManager.hpp"
 #include "Types.hpp"
 
-namespace trdk { namespace Engine {
+namespace trdk {
+namespace Engine {
 
-	void BootContext(
-			const trdk::Lib::Ini &,
-			Context &,
-			TradingSystems &tradingSystemsRef,
-			MarketDataSources &marketDataSourcesRef);
+void BootContext(const trdk::Lib::Ini &,
+                 Context &,
+                 TradingSystems &tradingSystemsRef,
+                 MarketDataSources &marketDataSourcesRef);
 
-	void BootContextState(
-			const trdk::Lib::Ini &,
-			Context &,
-			SubscriptionsManager &subscriptionsManagerRef,
-			Strategies &strategiesRef,
-			Observers &observersRef,
-			Services &servicesRef,
-			ModuleList &moduleListRef);
+void BootContextState(const trdk::Lib::Ini &,
+                      Context &,
+                      SubscriptionsManager &subscriptionsManagerRef,
+                      Strategies &strategiesRef,
+                      Observers &observersRef,
+                      Services &servicesRef,
+                      ModuleList &moduleListRef);
 
-	void BootNewStrategiesForContextState(
-			const trdk::Lib::Ini &newStrategiesConf,
-			Context &,
-			SubscriptionsManager &subscriptionsManagerRef,
-			Strategies &strategiesRef,
-			Services &servicesRef,
-			ModuleList &moduleListRef);
-
-} }
+void BootNewStrategiesForContextState(
+    const trdk::Lib::Ini &newStrategiesConf,
+    Context &,
+    SubscriptionsManager &subscriptionsManagerRef,
+    Strategies &strategiesRef,
+    Services &servicesRef,
+    ModuleList &moduleListRef);
+}
+}

@@ -11,10 +11,6 @@
 #include "Prec.hpp"
 #include "StrategyPositionState.hpp"
 
-StrategyPositionState::StrategyPositionState() {
-	//...//
-}
+StrategyPositionState::StrategyPositionState() {}
 
-StrategyPositionState::~StrategyPositionState() {
-	//...//
-}
+StrategyPositionState::~StrategyPositionState() {}

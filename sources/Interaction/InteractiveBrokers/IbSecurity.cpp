@@ -16,12 +16,9 @@ using namespace trdk::Interaction;
 using namespace trdk::Interaction::InteractiveBrokers;
 namespace ib = trdk::Interaction::InteractiveBrokers;
 
-ib::Security::Security(
-		Context &context,
-		const Lib::Symbol &symbol,
-		MarketDataSource &source,
-		bool isTestSource)
-	: Base(context, symbol, source, SupportedLevel1Types().set()),
-	m_isTestSource(isTestSource) {
-	//...//
-}
+ib::Security::Security(Context &context,
+                       const Lib::Symbol &symbol,
+                       MarketDataSource &source,
+                       bool isTestSource)
+    : Base(context, symbol, source, SupportedLevel1Types().set()),
+      m_isTestSource(isTestSource) {}

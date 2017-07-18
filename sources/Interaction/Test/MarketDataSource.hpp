@@ -10,49 +10,42 @@
 
 #pragma once
 
+#include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Security.hpp"
-#include "Core/Context.hpp"
 
-namespace trdk { namespace Interaction { namespace Test {
+namespace trdk {
+namespace Interaction {
+namespace Test {
 
-	class MarketDataSource : public trdk::MarketDataSource {
+class MarketDataSource : public trdk::MarketDataSource {
+ public:
+  typedef trdk::MarketDataSource Base;
 
-	public:
+ public:
+  MarketDataSource(size_t index,
+                   Context &context,
+                   const std::string &instanceName,
+                   const Lib::IniSectionRef &);
+  virtual ~MarketDataSource();
 
-		typedef trdk::MarketDataSource Base;
+ public:
+  virtual void Connect(const trdk::Lib::IniSectionRef &);
 
-	public:
+  virtual void SubscribeToSecurities();
 
-		MarketDataSource(
-				size_t index,
-				Context &context,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~MarketDataSource();
+ protected:
+  virtual void Run() = 0;
 
-	public:
+  //! Should be called from each inherited destructor.
+  void Stop();
 
-		virtual void Connect(const trdk::Lib::IniSectionRef &);
+  bool IsStopped() const { return m_stopFlag; }
 
-		virtual void SubscribeToSecurities();
-
-	protected:
-
-		virtual void Run() = 0;
-
-		//! Should be called from each inherited destructor.
-		void Stop();
-
-		bool IsStopped() const {
-			return m_stopFlag;
-		}
-
-	private:
-
-		boost::thread_group m_threads;
-		boost::atomic_bool m_stopFlag;
-
-	};
-
-} } }
+ private:
+  boost::thread_group m_threads;
+  boost::atomic_bool m_stopFlag;
+};
+}
+}
+}

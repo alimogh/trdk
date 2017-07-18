@@ -9,83 +9,63 @@
  **************************************************************************/
 
 #pragma once
-#include "BarService.hpp"
 #include "Api.h"
+#include "BarService.hpp"
 
-namespace trdk { namespace Services {
+namespace trdk {
+namespace Services {
 
-	//! Bars collection service.
-	/** @sa https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm
-	  */
-	class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
+//! Bars collection service.
+/** @sa
+ * https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm
+  */
+class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
+ public:
+  typedef BarService Base;
 
-	public:
+ public:
+  explicit ContinuousContractBarService(Context &context,
+                                        const std::string &instanceName,
+                                        const Lib::IniSectionRef &);
+  virtual ~ContinuousContractBarService();
 
-		typedef BarService Base;
+ public:
+  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
 
-	public:
+  virtual size_t GetSize() const override;
+  virtual bool IsEmpty() const override;
 
-		explicit ContinuousContractBarService(
-				Context &context,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~ContinuousContractBarService();
+  virtual const trdk::Security &GetSecurity() const override;
 
-	public:
+  virtual Bar GetBar(size_t index) const override;
+  virtual Bar GetBarByReversedIndex(size_t index) const override;
+  virtual Bar GetLastBar() const override;
 
-		virtual const boost::posix_time::ptime & GetLastDataTime()
-				const
-				override;
+  virtual void DropLastBarCopy(
+      const trdk::DropCopyDataSourceInstanceId &) const override;
+  virtual void DropUncompletedBarCopy(
+      const trdk::DropCopyDataSourceInstanceId &) const override;
 
-		virtual size_t GetSize() const override;
-		virtual bool IsEmpty() const override;
+ public:
+  virtual void OnSecurityStart(const trdk::Security &,
+                               trdk::Security::Request &) override;
 
-		virtual const trdk::Security & GetSecurity() const override;
+  virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
+                                          const trdk::Security &,
+                                          trdk::Security::Request &) override;
 
-		virtual Bar GetBar(size_t index) const override;
-		virtual Bar GetBarByReversedIndex(size_t index) const override;
-		virtual Bar GetLastBar() const override;
+  virtual bool OnSecurityServiceEvent(const boost::posix_time::ptime &,
+                                      const Security &,
+                                      const Security::ServiceEvent &) override;
 
-		virtual void DropLastBarCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const
-				override;
-		virtual void DropUncompletedBarCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const
-				override;
+  virtual bool OnNewTrade(const trdk::Security &,
+                          const boost::posix_time::ptime &,
+                          const trdk::ScaledPrice &,
+                          const trdk::Qty &) override;
 
-	public:
-
-		virtual void OnSecurityStart(
-				const trdk::Security &,
-				trdk::Security::Request &)
-				override;
-
-		virtual void OnSecurityContractSwitched(
-				const boost::posix_time::ptime &,
-				const trdk::Security &,
-				trdk::Security::Request &)
-				override;
-
-		virtual bool OnSecurityServiceEvent(
-				const boost::posix_time::ptime &,
-				const Security &,
-				const Security::ServiceEvent &)
-				override;
-
-		virtual bool OnNewTrade(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &)
-				override;
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}

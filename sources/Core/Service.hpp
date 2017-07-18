@@ -10,143 +10,113 @@
 
 #pragma once
 
-#include "ModuleVariant.hpp"
-#include "Module.hpp"
 #include "Api.h"
+#include "Module.hpp"
+#include "ModuleVariant.hpp"
 
 namespace trdk {
 
-	class TRDK_CORE_API Service : public trdk::Module {
+class TRDK_CORE_API Service : public trdk::Module {
+ public:
+  typedef trdk::ModuleRefVariant Subscriber;
+  typedef std::list<Subscriber> SubscriberList;
 
-	public:
+ public:
+  explicit Service(trdk::Context &,
+                   const boost::uuids::uuid &typeId,
+                   const std::string &implementationName,
+                   const std::string &instanceName,
+                   const trdk::Lib::IniSectionRef &);
+  virtual ~Service();
 
-		typedef trdk::ModuleRefVariant Subscriber;
-		typedef std::list<Subscriber> SubscriberList;
+ public:
+  const boost::uuids::uuid &GetTypeId() const;
+  const std::string &GetTag() const;
 
-	public:
+  virtual const boost::posix_time::ptime &GetLastDataTime() const = 0;
 
-		explicit Service(
-			trdk::Context &,
-			const boost::uuids::uuid &typeId,
-			const std::string &implementationName,
-			const std::string &instanceName,
-			const trdk::Lib::IniSectionRef &);
-		virtual ~Service();
+ public:
+  void RegisterSource(trdk::Security &);
+  const SecurityList &GetSecurities() const;
 
-	public:
+  void RegisterSubscriber(trdk::Strategy &);
+  void RegisterSubscriber(trdk::Service &);
+  void RegisterSubscriber(trdk::Observer &);
+  const SubscriberList &GetSubscribers();
 
-		const boost::uuids::uuid & GetTypeId() const;
-		const std::string & GetTag() const;
+ public:
+  void RaiseSecurityContractSwitchedEvent(const boost::posix_time::ptime &,
+                                          const Security &,
+                                          Security::Request &);
+  bool RaiseLevel1UpdateEvent(const trdk::Security &);
+  bool RaiseLevel1TickEvent(const trdk::Security &,
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &);
+  bool RaiseNewTradeEvent(const trdk::Security &,
+                          const boost::posix_time::ptime &,
+                          const trdk::ScaledPrice &,
+                          const trdk::Qty &);
+  bool RaiseServiceDataUpdateEvent(
+      const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
+  bool RaiseBrokerPositionUpdateEvent(const trdk::Security &security,
+                                      const trdk::Qty &qty,
+                                      bool isInitial);
+  bool RaiseNewBarEvent(const trdk::Security &, const trdk::Security::Bar &);
+  bool RaiseBookUpdateTickEvent(const trdk::Security &,
+                                const trdk::PriceBook &,
+                                const trdk::Lib::TimeMeasurement::Milestones &);
+  bool RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
+                                 const trdk::Security &,
+                                 const trdk::Security::ServiceEvent &);
 
-		virtual const boost::posix_time::ptime & GetLastDataTime() const = 0;
+ public:
+  //! Notifies about new security start.
+  virtual void OnSecurityStart(const trdk::Security &,
+                               trdk::Security::Request &);
+  //! Notifies when security switched to another contract.
+  /** All marked data for security will be reset (so if security just
+    * started).
+    */
+  virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
+                                          const trdk::Security &,
+                                          trdk::Security::Request &);
 
-	public:
+  virtual bool OnLevel1Update(const trdk::Security &);
 
-		void RegisterSource(trdk::Security &);
-		const SecurityList & GetSecurities() const;
+  virtual bool OnLevel1Tick(const trdk::Security &,
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &);
 
-		void RegisterSubscriber(trdk::Strategy &);
-		void RegisterSubscriber(trdk::Service &);
-		void RegisterSubscriber(trdk::Observer &);
-		const SubscriberList & GetSubscribers();
+  virtual bool OnNewTrade(const trdk::Security &,
+                          const boost::posix_time::ptime &,
+                          const trdk::ScaledPrice &,
+                          const trdk::Qty &);
 
-	public:
+  virtual bool OnServiceDataUpdate(
+      const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
 
-		void RaiseSecurityContractSwitchedEvent(
-				const boost::posix_time::ptime &,
-				const Security &,
-				Security::Request &);
-		bool RaiseLevel1UpdateEvent(const trdk::Security &);
-		bool RaiseLevel1TickEvent(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
-		bool RaiseNewTradeEvent(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &);
-		bool RaiseServiceDataUpdateEvent(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-		bool RaiseBrokerPositionUpdateEvent(
-				const trdk::Security &security,
-				const trdk::Qty &qty,
-				bool isInitial);
-		bool RaiseNewBarEvent(
-				const trdk::Security &,
-				const trdk::Security::Bar &);
-		bool RaiseBookUpdateTickEvent(
-				const trdk::Security &,
-				const trdk::PriceBook &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-		bool RaiseSecurityServiceEvent(
-				const boost::posix_time::ptime &,
-				const trdk::Security &,
-				const trdk::Security::ServiceEvent &);
+  //! Notifies about broker position update.
+  /** @param security   Security.
+    * @param qty        Position size (may differ from current
+    *                   trdk::Security::GetBrokerPosition).
+    * @param isInitial  true if it initial data at start.
+    */
+  virtual bool OnBrokerPositionUpdate(const trdk::Security &,
+                                      const trdk::Qty &,
+                                      bool isInitial);
 
-	public:
+  virtual bool OnNewBar(const trdk::Security &, const trdk::Security::Bar &);
 
-		//! Notifies about new security start.
-		virtual void OnSecurityStart(
-				const trdk::Security &,
-				trdk::Security::Request &);
-		//! Notifies when security switched to another contract.
-		/** All marked data for security will be reset (so if security just
-		  * started).
-		  */
-		virtual void OnSecurityContractSwitched(
-				const boost::posix_time::ptime &,
-				const trdk::Security &,
-				trdk::Security::Request &);
+  virtual bool OnBookUpdateTick(const trdk::Security &,
+                                const trdk::PriceBook &,
+                                const trdk::Lib::TimeMeasurement::Milestones &);
 
-		virtual bool OnLevel1Update(const trdk::Security &);
+  virtual bool OnSecurityServiceEvent(const boost::posix_time::ptime &,
+                                      const trdk::Security &,
+                                      const trdk::Security::ServiceEvent &);
 
-		virtual bool OnLevel1Tick(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::Level1TickValue &);
-
-		virtual bool OnNewTrade(
-				const trdk::Security &,
-				const boost::posix_time::ptime &,
-				const trdk::ScaledPrice &,
-				const trdk::Qty &);
-
-		virtual bool OnServiceDataUpdate(
-				const trdk::Service &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-		
-		//! Notifies about broker position update.
-		/** @param security		Security.
-		  * @param qty			Position size (may differ from current
-		  *						trdk::Security::GetBrokerPosition).
-		  * @param isInitial	true if it initial data at start.
-		  */
-		virtual bool OnBrokerPositionUpdate(
-				const trdk::Security &,
-				const trdk::Qty &,
-				bool isInitial);
-
-		virtual bool OnNewBar(
-				const trdk::Security &,
-				const trdk::Security::Bar &);
-
-		virtual bool OnBookUpdateTick(
-				const trdk::Security &,
-				const trdk::PriceBook &,
-				const trdk::Lib::TimeMeasurement::Milestones &);
-
-		virtual bool OnSecurityServiceEvent(
-				const boost::posix_time::ptime &,
-				const trdk::Security &,
-				const trdk::Security::ServiceEvent &);
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
 }

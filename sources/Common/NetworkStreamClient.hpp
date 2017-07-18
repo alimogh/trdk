@@ -14,139 +14,122 @@
 #include "TimeMeasurement.hpp"
 #include "Fwd.hpp"
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class NetworkStreamClient
-		: private boost::noncopyable,
-		public boost::enable_shared_from_this<trdk::Lib::NetworkStreamClient> {
+class NetworkStreamClient
+    : private boost::noncopyable,
+      public boost::enable_shared_from_this<trdk::Lib::NetworkStreamClient> {
+ public:
+  class Exception : public trdk::Lib::Exception {
+   public:
+    explicit Exception(const char *what) noexcept;
+  };
 
-	public:
+  class ConnectError : public trdk::Lib::NetworkStreamClient::Exception {
+   public:
+    explicit ConnectError(const char *what) noexcept;
+  };
 
-		class Exception : public trdk::Lib::Exception {
-		public:
-			explicit Exception(const char *what) noexcept;
-		};
+  class ProtocolError : public trdk::Lib::NetworkStreamClient::Exception {
+   public:
+    explicit ProtocolError(const char *what,
+                           const char *bufferAddress,
+                           char expectedByte) noexcept;
 
-		class ConnectError : public trdk::Lib::NetworkStreamClient::Exception {
-		public:
-			explicit ConnectError(const char *what) noexcept;
-		};
+   public:
+    const char *GetBufferAddress() const;
+    char GetExpectedByte() const;
 
-		class ProtocolError : public trdk::Lib::NetworkStreamClient::Exception {
-		public:
-			explicit ProtocolError(
-					const char *what,
-					const char *bufferAddress,
-					char expectedByte)
-					noexcept;
-		public:
-			const char * GetBufferAddress() const;
-			char GetExpectedByte() const;
-		private:
-			const char *m_bufferAddress;
-			char m_expectedByte;
-		};
+   private:
+    const char *m_bufferAddress;
+    char m_expectedByte;
+  };
 
-	protected:
+ protected:
+  typedef std::vector<char> Buffer;
 
-		typedef std::vector<char> Buffer;
+  typedef boost::recursive_mutex BufferMutex;
+  typedef BufferMutex::scoped_lock BufferLock;
 
-		typedef boost::recursive_mutex BufferMutex;
-		typedef BufferMutex::scoped_lock BufferLock;
+ public:
+  explicit NetworkStreamClient(trdk::Lib::NetworkStreamClientService &,
+                               const std::string &host,
+                               size_t port);
+  virtual ~NetworkStreamClient();
 
-	public:
+ public:
+  void Start();
+  void Stop();
 
-		explicit NetworkStreamClient(
-				trdk::Lib::NetworkStreamClientService &,
-				const std::string &host,
-				size_t port);
-		virtual ~NetworkStreamClient();
+ protected:
+  virtual trdk::Lib::TimeMeasurement::Milestones StartMessageMeasurement()
+      const = 0;
+  virtual boost::posix_time::ptime GetCurrentTime() const = 0;
+  virtual void LogDebug(const std::string &message) const = 0;
+  virtual void LogInfo(const std::string &message) const = 0;
+  virtual void LogWarn(const std::string &message) const = 0;
+  virtual void LogError(const std::string &message) const = 0;
 
-	public:
+  virtual void OnStart() = 0;
 
-		void Start();
-		void Stop();
+  //! Find message end by reverse iterators.
+  /** Called under lock.
+    * @param[in] bufferBegin     Buffer begin.
+    * @param[in] transferedBegin Last operation transfered begin.
+    * @param[in] bufferEnd       Buffer end.
+    * @return Last byte of a message, or bufferEnd if the range
+    *         doesn't include message end.
+    */
+  virtual Buffer::const_iterator FindLastMessageLastByte(
+      const Buffer::const_iterator &bufferBegin,
+      const Buffer::const_iterator &transferedEnd,
+      const Buffer::const_iterator &bufferEnd) const = 0;
 
-	protected:
+  //! Handles messages in the buffer.
+  /** Called under lock. This range has one or more messages.
+    */
+  virtual void HandleNewMessages(
+      const boost::posix_time::ptime &time,
+      const Buffer::const_iterator &begin,
+      const Buffer::const_iterator &end,
+      const trdk::Lib::TimeMeasurement::Milestones &) = 0;
 
-		virtual trdk::Lib::TimeMeasurement::Milestones StartMessageMeasurement()
-				const
-			= 0;
-		virtual boost::posix_time::ptime GetCurrentTime() const = 0;
-		virtual void LogDebug(const std::string &message) const = 0;
-		virtual void LogInfo(const std::string &message) const = 0;
-		virtual void LogWarn(const std::string &message) const = 0;
-		virtual void LogError(const std::string &message) const = 0;
+ protected:
+  //! Returns number of received bytes.
+  /** Thread-safe only from HandleNewMessages call.
+    */
+  size_t GetNumberOfReceivedBytes() const;
 
-		virtual void OnStart() = 0;
+  //! Returns number of received bytes.
+  /** Thread-safe only from HandleNewMessages call.
+    *
+    * @return Pair where 1-st value - value, second - unit name.
+    */
+  std::pair<double, std::string> GetReceivedVerbouseStat() const;
 
-		//! Find message end by reverse iterators.
-		/** Called under lock.
-		  * @param[in] bufferBegin		Buffer begin.
-		  * @param[in] transferedBegin	Last operation transfered begin.
-		  * @param[in] bufferEnd		Buffer end.
-		  * @return	Last byte of a message, or bufferEnd if the range
-		  *			doesn't include message end.
-		  */
-		virtual Buffer::const_iterator FindLastMessageLastByte(
-				const Buffer::const_iterator &bufferBegin,
-				const Buffer::const_iterator &transferedEnd,
-				const Buffer::const_iterator &bufferEnd)
-				const
-			= 0;
+  virtual trdk::Lib::NetworkStreamClientService &GetService();
+  virtual const trdk::Lib::NetworkStreamClientService &GetService() const;
 
-		//! Handles messages in the buffer.
-		/** Called under lock. This range has one or more messages.
-		  */
-		virtual void HandleNewMessages(
-				const boost::posix_time::ptime &time,
-				const Buffer::const_iterator &begin,
-				const Buffer::const_iterator &end,
-				const trdk::Lib::TimeMeasurement::Milestones &)
-			= 0;
+  void Send(std::string &&);
 
-	protected:
+  bool CheckResponceSynchronously(const char *actionName,
+                                  const char *expectedResponse,
+                                  const char *errorResponse = nullptr);
 
-		//! Returns number of received bytes.
-		/** Thread-safe only from HandleNewMessages call.
-		  */
-		size_t GetNumberOfReceivedBytes() const;
+  void SendSynchronously(const std::string &message, const char *requestName);
 
-		//! Returns number of received bytes.
-		/** Thread-safe only from HandleNewMessages call.
-		  * 
-		  * @return Pair where 1-st value - value, second - unit name.
-		  */
-		std::pair<double, std::string> GetReceivedVerbouseStat() const;
+  bool RequestSynchronously(const std::string &message,
+                            const char *requestName,
+                            const char *expectedResponse,
+                            const char *errorResponse = nullptr);
 
-		virtual trdk::Lib::NetworkStreamClientService & GetService();
-		virtual const trdk::Lib::NetworkStreamClientService & GetService() const;
+  //! Locks data acrimonious exchange (recursive mutex).
+  BufferLock LockDataExchange();
 
-		void Send(std::string &&);
-
-		bool CheckResponceSynchronously(
-				const char *actionName,
-				const char *expectedResponse,
-				const char *errorResponse = nullptr);
-
-		void SendSynchronously(
-				const std::string &message,
-				const char *requestName);
-
-		bool RequestSynchronously(
-				const std::string &message,
-				const char *requestName,
-				const char *expectedResponse,
-				const char *errorResponse = nullptr);
-
-		//! Locks data acrimonious exchange (recursive mutex).
-		BufferLock LockDataExchange();
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}

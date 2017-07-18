@@ -14,58 +14,49 @@
 
 #pragma once
 
-#include <string>
 #include "DisableBoostWarningsBegin.h"
-#	include <boost/config.hpp>
+#include <boost/config.hpp>
 #include "DisableBoostWarningsEnd.h"
+#include <string>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef BOOST_WINDOWS
 
-#	include <errno.h>
+#include <errno.h>
 
-	inline int GetLastError() throw() {
-		return errno;
-	}
+inline int GetLastError() throw() { return errno; }
 
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Lib {	 
+namespace trdk {
+namespace Lib {
 
-	class SysError {
+class SysError {
+ public:
+  explicit SysError(int errorNo) throw();
+  ~SysError() throw();
 
-	public:
+  friend std::ostream &operator<<(std::ostream &, const trdk::Lib::SysError &);
+  friend std::wostream &operator<<(std::wostream &,
+                                   const trdk::Lib::SysError &);
 
-		explicit SysError(int errorNo) throw();
-		~SysError() throw();
+ public:
+  std::wstring GetStringW() const;
+  std::string GetString() const;
+  int GetErrorNo() const;
 
-		friend std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Lib::SysError &);
-		friend std::wostream & operator <<(
-				std::wostream &,
-				const trdk::Lib::SysError &);
+  bool IsError() const;
 
-	public:
+  //! Returns true if error could be resolved to string.
+  bool CheckError() const;
 
-		std::wstring GetStringW() const;
-		std::string GetString() const;
-		int GetErrorNo() const;
-
-		bool IsError() const;
-
-		//! Returns true if error could be resolved to string.
-		bool CheckError() const;
-
-	private:
-
-		int m_errorNo;
-
-	};
-
-} }
+ private:
+  int m_errorNo;
+};
+}
+}
 
 ////////////////////////////////////////////////////////////////////////////////

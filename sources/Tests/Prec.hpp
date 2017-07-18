@@ -15,12 +15,12 @@
 #include "Common/Common.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/random.hpp>
-#	include <boost/property_tree/ptree.hpp>
-#	include <boost/property_tree/xml_parser.hpp>
-#	include <boost/multi_index_container.hpp>
-#	include <boost/multi_index/member.hpp>
-#	include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/random.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #undef Assert
@@ -28,4 +28,3 @@
 #include <gtest/gtest.h>
 
 #include <string>
-

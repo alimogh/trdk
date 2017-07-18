@@ -13,35 +13,30 @@
 #include "Services/BarService.hpp"
 #include "MockService.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class MockBarService : public trdk::Services::BarService {
+class MockBarService : public trdk::Services::BarService {
+ public:
+  MockBarService();
+  virtual ~MockBarService();
 
-	public:
+ public:
+  MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
 
-		MockBarService();
-		virtual ~MockBarService();
+  MOCK_CONST_METHOD0(GetSize, size_t());
+  MOCK_CONST_METHOD0(IsEmpty, bool());
 
-	public:
+  MOCK_CONST_METHOD0(GetLastBar, Bar());
+  MOCK_CONST_METHOD0(GetSecurity, const trdk::Security &());
 
-		MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
+  MOCK_CONST_METHOD1(GetBar, Bar(size_t));
+  MOCK_CONST_METHOD1(GetBarByReversedIndex, Bar(size_t));
 
-		MOCK_CONST_METHOD0(GetSize, size_t());
-		MOCK_CONST_METHOD0(IsEmpty, bool());
-
-		MOCK_CONST_METHOD0(GetLastBar, Bar());
-		MOCK_CONST_METHOD0(GetSecurity, const trdk::Security &());
-
-		MOCK_CONST_METHOD1(GetBar, Bar(size_t));
-		MOCK_CONST_METHOD1(GetBarByReversedIndex, Bar(size_t));
-
-		MOCK_CONST_METHOD1(
-			DropLastBarCopy,
-			void(const trdk::DropCopyDataSourceInstanceId &));
-		MOCK_CONST_METHOD1(
-			DropUncompletedBarCopy,
-			void(const trdk::DropCopyDataSourceInstanceId &));
-
-	};
-
-} }
+  MOCK_CONST_METHOD1(DropLastBarCopy,
+                     void(const trdk::DropCopyDataSourceInstanceId &));
+  MOCK_CONST_METHOD1(DropUncompletedBarCopy,
+                     void(const trdk::DropCopyDataSourceInstanceId &));
+};
+}
+}

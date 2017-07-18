@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #ifdef BOOST_WINDOWS
-#	define TRDK_INTERACTION_TEST_API
+#define TRDK_INTERACTION_TEST_API
 #else
-#	define TRDK_INTERACTION_TEST_API extern "C"
+#define TRDK_INTERACTION_TEST_API extern "C"
 #endif

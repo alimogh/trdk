@@ -14,31 +14,23 @@
 
 namespace trdk {
 
-	class TRDK_CORE_API Instrument : private boost::noncopyable {
+class TRDK_CORE_API Instrument : private boost::noncopyable {
+ public:
+  explicit Instrument(trdk::Context &, const trdk::Lib::Symbol &);
+  virtual ~Instrument();
 
-	public:
+  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
+                                                const trdk::Instrument &);
 
-		explicit Instrument(trdk::Context &, const trdk::Lib::Symbol &);
-		virtual ~Instrument();
+ public:
+  virtual const trdk::Lib::Symbol &GetSymbol() const noexcept;
 
-		TRDK_CORE_API friend std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Instrument &);
+ public:
+  const trdk::Context &GetContext() const;
+  trdk::Context &GetContext();
 
-	public:
-
-		virtual const trdk::Lib::Symbol & GetSymbol() const noexcept;
-
-	public:
-
-		const trdk::Context & GetContext() const;
-		trdk::Context & GetContext();
-
-	private:
-
-		class Implementation;
-		Implementation *m_pimpl;
-
-	};
-
+ private:
+  class Implementation;
+  Implementation *m_pimpl;
+};
 }

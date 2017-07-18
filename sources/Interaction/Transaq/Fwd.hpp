@@ -10,8 +10,11 @@
 
 #pragma once
 
-namespace trdk { namespace Interaction { namespace Transaq {
+namespace trdk {
+namespace Interaction {
+namespace Transaq {
 
-	class ConnectorContext;
-
-} } } 
+class ConnectorContext;
+}
+}
+}

@@ -18,154 +18,116 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StopLossOrder::StopLossOrder(Position &position)
-	: StopOrder(position) {
-	//...//
-}
+StopLossOrder::StopLossOrder(Position &position) : StopOrder(position) {}
 
-StopLossOrder::~StopLossOrder() {
-	//...//
-}
+StopLossOrder::~StopLossOrder() {}
 
 void StopLossOrder::Run() {
+  if (!GetPosition().IsOpened()) {
+    return;
+  }
 
-	if (!GetPosition().IsOpened()) {
-		return;
-	}
+  static_assert(numberOfCloseReasons == 12, "List changed.");
+  switch (GetPosition().GetCloseReason()) {
+    case CLOSE_REASON_STOP_LOSS:
+      break;
 
-	static_assert(numberOfCloseReasons == 12, "List changed.");
-	switch (GetPosition().GetCloseReason()) {
+    case CLOSE_REASON_TRAILING_STOP:
+      return;
 
-		case CLOSE_REASON_STOP_LOSS:
-			break;
+    default:
+      if (!Activate()) {
+        return;
+      }
+      GetPosition().ResetCloseReason(CLOSE_REASON_STOP_LOSS);
+      break;
+  }
 
-		case CLOSE_REASON_TRAILING_STOP:
-			return;
-
-		default:
-			if (!Activate()) {
-				return;
-			}
-			GetPosition().ResetCloseReason(CLOSE_REASON_STOP_LOSS);
-			break;
-
-	}
-
-	OnHit();
-
+  OnHit();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StopPrice::Params::Params(const Price &price)
-	: m_price(price) {
-	//....//
+StopPrice::Params::Params(const Price &price) : m_price(price) {
+  //....//
 }
 
-const Price & StopPrice::Params::GetPrice() const {
-	return m_price;
-}
+const Price &StopPrice::Params::GetPrice() const { return m_price; }
 
-StopPrice::StopPrice(
-		const boost::shared_ptr<const Params> &params,
-		Position &position)
-	: StopLossOrder(position)
-	, m_params(params) {
-	//...//
-}
+StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
+                     Position &position)
+    : StopLossOrder(position), m_params(params) {}
 
-StopPrice::~StopPrice() {
-	//...//
-}
+StopPrice::~StopPrice() {}
 
-const char * StopPrice::GetName() const {
-	return "stop price";
-}
+const char *StopPrice::GetName() const { return "stop price"; }
 
 bool StopPrice::Activate() {
+  const auto &currentPrice = GetPosition().GetSecurity().GetLastPrice();
+  if (GetPosition().IsLong()) {
+    if (m_params->GetPrice() < currentPrice) {
+      return false;
+    }
+  } else if (m_params->GetPrice() > currentPrice) {
+    return false;
+  }
 
-	const auto &currentPrice = GetPosition().GetSecurity().GetLastPrice();
-	if (GetPosition().IsLong()) {
-		if (m_params->GetPrice() < currentPrice) {
-			return false;
-		}
-	} else if (m_params->GetPrice() > currentPrice) {
-		return false;
-	}
+  GetTradingLog().Write(
+      "%1%\thit\tprice=%2$.8f%3%%4$.8f\tbid/ask=%5$.8f/%6$.8f\tpos=%7%",
+      [&](TradingRecord &record) {
+        record % GetName()                                    // 1
+            % currentPrice                                    // 2
+            % (GetPosition().IsLong() ? "<=" : ">=")          // 3
+            % m_params->GetPrice()                            // 4
+            % GetPosition().GetSecurity().GetBidPriceValue()  // 5
+            % GetPosition().GetSecurity().GetAskPriceValue()  // 6
+            % GetPosition().GetId();                          // 7
+      });
 
-	GetTradingLog().Write(
-		"%1%\thit\tprice=%2$.8f%3%%4$.8f\tbid/ask=%5$.8f/%6$.8f\tpos=%7%",
-		[&](TradingRecord &record) {
-			record
-				% GetName() // 1
-				% currentPrice // 2
-				% (GetPosition().IsLong() ? "<=" : ">=") // 3
-				% m_params->GetPrice() // 4
-				% GetPosition().GetSecurity().GetBidPriceValue() // 5
-				% GetPosition().GetSecurity().GetAskPriceValue() // 6
-				% GetPosition().GetId(); // 7
-		});
-
-	return true;
-
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 StopLoss::Params::Params(const Volume &maxLossPerLot)
-	: m_maxLossPerLot(maxLossPerLot) {
-	//....//
+    : m_maxLossPerLot(maxLossPerLot) {
+  //....//
 }
 
-const Volume & StopLoss::Params::GetMaxLossPerLot() const {
-	return m_maxLossPerLot;
+const Volume &StopLoss::Params::GetMaxLossPerLot() const {
+  return m_maxLossPerLot;
 }
 
-StopLoss::StopLoss(
-		const boost::shared_ptr<const Params> &params,
-		Position &position)
-	: StopLossOrder(position)
-	, m_params(params) {
-	//...//
-}
+StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
+                   Position &position)
+    : StopLossOrder(position), m_params(params) {}
 
-StopLoss::~StopLoss() {
-	//...//
-}
+StopLoss::~StopLoss() {}
 
-const char * StopLoss::GetName() const {
-	return "stop loss";
-}
+const char *StopLoss::GetName() const { return "stop loss"; }
 
 bool StopLoss::Activate() {
+  const Double maxLoss =
+      GetPosition().GetOpenedQty() * -m_params->GetMaxLossPerLot();
+  const auto &plannedPnl = GetPosition().GetPlannedPnl();
 
-	const Double maxLoss
-		= GetPosition().GetOpenedQty() * -m_params->GetMaxLossPerLot();
-	const auto &plannedPnl = GetPosition().GetPlannedPnl();
+  if (maxLoss < plannedPnl) {
+    return false;
+  }
 
-	if (maxLoss < plannedPnl) {
-		return false;
-	}
+  GetTradingLog().Write(
+      "%1%\thit"
+      "\tplanned-pnl=%2$.8f\tmax-loss=%3$.8f*%4$.8f=%5$.8f"
+      "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+      [&](TradingRecord &record) {
+        record % GetName() % plannedPnl % GetPosition().GetOpenedQty() %
+            m_params->GetMaxLossPerLot() % maxLoss %
+            GetPosition().GetSecurity().GetBidPriceValue() %
+            GetPosition().GetSecurity().GetAskPriceValue() %
+            GetPosition().GetId();
+      });
 
-	GetTradingLog().Write(
-		"%1%\thit"
-			"\tplanned-pnl=%2$.8f\tmax-loss=%3$.8f*%4$.8f=%5$.8f"
-			"\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
-		[&](TradingRecord &record) {
-			record
-				% GetName()
-				% plannedPnl
-				% GetPosition().GetOpenedQty()
-				% m_params->GetMaxLossPerLot()
-				% maxLoss
-				% GetPosition().GetSecurity().GetBidPriceValue()
-				% GetPosition().GetSecurity().GetAskPriceValue()
-				% GetPosition().GetId();
-		});
-
-	return true;
-
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-

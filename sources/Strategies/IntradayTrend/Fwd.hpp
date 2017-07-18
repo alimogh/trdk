@@ -10,6 +10,8 @@
 
 #pragma once
 
-namespace trdk { namespace Strategies { namespace IntradayTrend {
-	//...//
-} } }
+namespace trdk {
+namespace Strategies {
+namespace IntradayTrend {}
+}
+}

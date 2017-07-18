@@ -17,76 +17,66 @@ using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
 
-Observer::Observer(
-		Context &context,
-		const std::string &implementationName,
-		const std::string &instanceName,
-		const IniSectionRef &conf)
-	:	Consumer(context, "Observer", implementationName, instanceName, conf) {
-	//...//
-}
+Observer::Observer(Context &context,
+                   const std::string &implementationName,
+                   const std::string &instanceName,
+                   const IniSectionRef &conf)
+    : Consumer(context, "Observer", implementationName, instanceName, conf) {}
 
-Observer::~Observer() {
-	//...//
-}
+Observer::~Observer() {}
 
 void Observer::OnLevel1Update(Security &security) {
-	GetLog().Error(
-		"Subscribed to %1% level 1 updates, but can't work with it"
-			" (doesn't have OnLevel1Update method implementation).",
-		security);
-	throw MethodDoesNotImplementedError(
-		"Module subscribed to level 1 updates, but can't work with it");
+  GetLog().Error(
+      "Subscribed to %1% level 1 updates, but can't work with it"
+      " (doesn't have OnLevel1Update method implementation).",
+      security);
+  throw MethodDoesNotImplementedError(
+      "Module subscribed to level 1 updates, but can't work with it");
 }
 
-void Observer::RaiseBrokerPositionUpdateEvent(
-		Security &security,
-		const Qty &qty,
-		bool isInitial) {
-	const auto lock = LockForOtherThreads();
-	OnBrokerPositionUpdate(security, qty, isInitial);
+void Observer::RaiseBrokerPositionUpdateEvent(Security &security,
+                                              const Qty &qty,
+                                              bool isInitial) {
+  const auto lock = LockForOtherThreads();
+  OnBrokerPositionUpdate(security, qty, isInitial);
 }
 
-void Observer::RaiseNewBarEvent(
-		Security &security,
-		const Security::Bar &bar) {
-	const auto lock = LockForOtherThreads();
-	return OnNewBar(security, bar);
+void Observer::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
+  const auto lock = LockForOtherThreads();
+  return OnNewBar(security, bar);
 }
 
 void Observer::RaiseLevel1UpdateEvent(Security &security) {
-	const auto lock = LockForOtherThreads();
-	OnLevel1Update(security);
+  const auto lock = LockForOtherThreads();
+  OnLevel1Update(security);
 }
 
-void Observer::RaiseLevel1TickEvent(
-		Security &security,
-		const boost::posix_time::ptime &time,
-		const Level1TickValue &value) {
-	const auto lock = LockForOtherThreads();
-	OnLevel1Tick(security, time, value);
+void Observer::RaiseLevel1TickEvent(Security &security,
+                                    const boost::posix_time::ptime &time,
+                                    const Level1TickValue &value) {
+  const auto lock = LockForOtherThreads();
+  OnLevel1Tick(security, time, value);
 }
 
-void Observer::RaiseNewTradeEvent(
-		Security &security,
-		const boost::posix_time::ptime &time,
-		const trdk::ScaledPrice &price,
-		const trdk::Qty &qty) {
-	const auto lock = LockForOtherThreads();
-	OnNewTrade(security, time, price, qty);
+void Observer::RaiseNewTradeEvent(Security &security,
+                                  const boost::posix_time::ptime &time,
+                                  const trdk::ScaledPrice &price,
+                                  const trdk::Qty &qty) {
+  const auto lock = LockForOtherThreads();
+  OnNewTrade(security, time, price, qty);
 }
 
 void Observer::RaiseServiceDataUpdateEvent(
-		const Service &service,
-		const TimeMeasurement::Milestones &timeMeasurement) {
-	const auto lock = LockForOtherThreads();
-	OnServiceDataUpdate(service, timeMeasurement);
+    const Service &service,
+    const TimeMeasurement::Milestones &timeMeasurement) {
+  const auto lock = LockForOtherThreads();
+  OnServiceDataUpdate(service, timeMeasurement);
 }
 
 void Observer::RaiseSecurityServiceEvent(
-		const pt::ptime &time,
-		Security &security,
-		const Security::ServiceEvent &securityEvent) {
-	const auto lock = LockForOtherThreads();
-	OnSecurityServiceEvent(time, security, securityEvent);
+    const pt::ptime &time,
+    Security &security,
+    const Security::ServiceEvent &securityEvent) {
+  const auto lock = LockForOtherThreads();
+  OnSecurityServiceEvent(time, security, securityEvent);
 }

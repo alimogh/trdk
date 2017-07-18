@@ -13,102 +13,90 @@
 #include "Core/Service.hpp"
 #include "Api.h"
 
-namespace trdk { namespace Services {
+namespace trdk {
+namespace Services {
 
-	//! Bars collection service.
-	class TRDK_SERVICES_API BarService : public trdk::Service {
+//! Bars collection service.
+class TRDK_SERVICES_API BarService : public trdk::Service {
+ public:
+  typedef trdk::Service Base;
 
-	public:
+  //! General service error.
+  class Error : public trdk::Lib::Exception {
+   public:
+    explicit Error(const char *) throw();
+  };
 
-		typedef trdk::Service Base;
+  //! Throws when client code requests bar which does not exist.
+  class BarDoesNotExistError : public Error {
+   public:
+    explicit BarDoesNotExistError(const char *) throw();
+  };
 
-		//! General service error.
-		class Error : public trdk::Lib::Exception {
-		public:
-			explicit Error(const char *) throw();
-		};
+  //! Bar data.
+  struct TRDK_SERVICES_API Bar {
+    boost::posix_time::ptime time;
 
-		//! Throws when client code requests bar which does not exist.
-		class BarDoesNotExistError : public Error {
-		public:
-			explicit BarDoesNotExistError(const char *) throw();
-		};
+    trdk::ScaledPrice maxAskPrice;
+    trdk::ScaledPrice openAskPrice;
+    trdk::ScaledPrice closeAskPrice;
 
- 		//! Bar data.
- 		struct TRDK_SERVICES_API Bar {
+    trdk::ScaledPrice minBidPrice;
+    trdk::ScaledPrice openBidPrice;
+    trdk::ScaledPrice closeBidPrice;
 
-			boost::posix_time::ptime time;
-			
-			trdk::ScaledPrice maxAskPrice;
-			trdk::ScaledPrice openAskPrice;
-			trdk::ScaledPrice closeAskPrice;
-			
-			trdk::ScaledPrice minBidPrice;
-			trdk::ScaledPrice openBidPrice;
-			trdk::ScaledPrice closeBidPrice;
+    trdk::ScaledPrice openTradePrice;
+    trdk::ScaledPrice closeTradePrice;
 
-			trdk::ScaledPrice openTradePrice;
-			trdk::ScaledPrice closeTradePrice;
-			
-			trdk::ScaledPrice highTradePrice;
-			trdk::ScaledPrice lowTradePrice;
-			
-			trdk::Qty tradingVolume;
+    trdk::ScaledPrice highTradePrice;
+    trdk::ScaledPrice lowTradePrice;
 
-			Bar();
+    trdk::Qty tradingVolume;
 
- 		};
+    Bar();
+  };
 
-	public:
+ public:
+  explicit BarService(Context &context,
+                      const boost::uuids::uuid &typeId,
+                      const std::string &implementationName,
+                      const std::string &instanceName,
+                      const Lib::IniSectionRef &);
+  virtual ~BarService();
 
-		explicit BarService(
-				Context &context,
-				const boost::uuids::uuid &typeId,
-				const std::string &implementationName,
-				const std::string &instanceName,
-				const Lib::IniSectionRef &);
-		virtual ~BarService();
+ public:
+  //! Number of bars.
+  virtual size_t GetSize() const = 0;
 
-	public:
+  virtual bool IsEmpty() const = 0;
 
-		//! Number of bars.
-		virtual size_t GetSize() const = 0;
+ public:
+  virtual const trdk::Security &GetSecurity() const = 0;
 
-		virtual bool IsEmpty() const = 0;
+  //! Returns bar by index.
+  /** First bar has index "zero".
+    * @throw trdk::Services::BarService::BarDoesNotExistError
+    * @sa trdk::Services::BarService::GetBarByReversedIndex
+    */
+  virtual Bar GetBar(size_t index) const = 0;
 
-	public:
+  //! Returns bar by reversed index.
+  /** Last bar has index "zero".
+    * @throw trdk::Services::BarService::BarDoesNotExistError
+    * @sa trdk::Services::BarService::GetBarByIndex
+    */
+  virtual Bar GetBarByReversedIndex(size_t index) const = 0;
 
-		virtual const trdk::Security & GetSecurity() const = 0;
+  //! Returns last bar.
+  /** @throw trdk::Services::BarService::BarDoesNotExistError
+    * @sa trdk::Services::BarService::GetBarByReversedIndex
+    */
+  virtual Bar GetLastBar() const = 0;
 
-		//! Returns bar by index.
-		/** First bar has index "zero".
-		  * @throw trdk::Services::BarService::BarDoesNotExistError
-		  * @sa trdk::Services::BarService::GetBarByReversedIndex
-		  */
-		virtual Bar GetBar(size_t index) const = 0;
-
-		//! Returns bar by reversed index.
-		/** Last bar has index "zero".
-		  * @throw trdk::Services::BarService::BarDoesNotExistError
-		  * @sa trdk::Services::BarService::GetBarByIndex 
-		  */
-		virtual Bar GetBarByReversedIndex(size_t index) const = 0;
-
-		//! Returns last bar.
-		/** @throw trdk::Services::BarService::BarDoesNotExistError
-		  * @sa trdk::Services::BarService::GetBarByReversedIndex
-		  */
-		virtual Bar GetLastBar() const = 0;
-
-		virtual void DropLastBarCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const
-			= 0;
-		virtual void DropUncompletedBarCopy(
-				const trdk::DropCopyDataSourceInstanceId &)
-				const
-			= 0;
-
-	};
-
-} }
+  virtual void DropLastBarCopy(
+      const trdk::DropCopyDataSourceInstanceId &) const = 0;
+  virtual void DropUncompletedBarCopy(
+      const trdk::DropCopyDataSourceInstanceId &) const = 0;
+};
+}
+}

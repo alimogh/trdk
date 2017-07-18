@@ -15,24 +15,15 @@ using namespace trdk;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Interactor::Error::Error(const char *what) throw()
-		: Exception(what) {
-	//...//
-}
+Interactor::Error::Error(const char *what) throw() : Exception(what) {}
 
 Interactor::ConnectError::ConnectError(const char *what) throw()
-		: Error(what) {
-	//...//
-}
+    : Error(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Interactor::Interactor() {
-	//...//
-}
+Interactor::Interactor() {}
 
-Interactor::~Interactor() {
-	//...//
-}
+Interactor::~Interactor() {}
 
 ////////////////////////////////////////////////////////////////////////////////

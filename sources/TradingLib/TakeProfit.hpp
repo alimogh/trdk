@@ -12,53 +12,46 @@
 
 #include "StopOrder.hpp"
 
-namespace trdk { namespace TradingLib {
+namespace trdk {
+namespace TradingLib {
 
-	class TakeProfit : public trdk::TradingLib::StopOrder {
+class TakeProfit : public trdk::TradingLib::StopOrder {
+ public:
+  class Params {
+   public:
+    explicit Params(const trdk::Volume &minProfitPerLotToActivate,
+                    const trdk::Volume &maxPriceOffsetPerLotToClose);
 
-	public:
+   public:
+    const trdk::Volume &GetMinProfitPerLotToActivate() const;
+    const trdk::Volume &GetMaxPriceOffsetPerLotToClose() const;
 
-		class Params {
-		public:
-			explicit Params(
-					const trdk::Volume &minProfitPerLotToActivate,
-					const trdk::Volume &maxPriceOffsetPerLotToClose);
-		public:
-			const trdk::Volume & GetMinProfitPerLotToActivate() const;
-			const trdk::Volume & GetMaxPriceOffsetPerLotToClose() const;
-		private:
-			trdk::Volume m_minProfitPerLotToActivate;
-			trdk::Volume m_maxPriceOffsetPerLotToClose;
-		};
+   private:
+    trdk::Volume m_minProfitPerLotToActivate;
+    trdk::Volume m_maxPriceOffsetPerLotToClose;
+  };
 
-	public:
+ public:
+  explicit TakeProfit(const boost::shared_ptr<const Params> &,
+                      trdk::Position &);
+  virtual ~TakeProfit();
 
-		explicit TakeProfit(
-				const boost::shared_ptr<const Params> &,
-				trdk::Position &);
-		virtual ~TakeProfit();
+ public:
+  virtual void Run() override;
 
-	public:
+ protected:
+  virtual const char *GetName() const override;
 
-		virtual void Run() override;
+ private:
+  bool CheckSignal();
+  bool Activate(const trdk::Volume &plannedPnl);
 
-	protected:
+ private:
+  const boost::shared_ptr<const Params> m_params;
 
-		virtual const char * GetName() const override;
-
-	private:
-		
-		bool CheckSignal();
-		bool Activate(const trdk::Volume &plannedPnl);
-
-	private:
-
-		const boost::shared_ptr<const Params> m_params;
-
-		bool m_isActivated;
-		boost::optional<trdk::Lib::Double> m_minProfit;
-		boost::optional<trdk::Lib::Double> m_maxProfit;
-
-	};
-
-} }
+  bool m_isActivated;
+  boost::optional<trdk::Lib::Double> m_minProfit;
+  boost::optional<trdk::Lib::Double> m_maxProfit;
+};
+}
+}

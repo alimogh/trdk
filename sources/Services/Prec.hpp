@@ -13,14 +13,14 @@
 #include "Common/Assert.hpp"
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/regex.hpp>
-#	include <boost/accumulators/accumulators.hpp>
-#	include <boost/accumulators/statistics.hpp>
-#	include <boost/accumulators/statistics/rolling_mean.hpp>
-#	include <boost/variant.hpp>
-#	include <boost/uuid/string_generator.hpp>
-#	include <boost/range/adaptor/reversed.hpp>
-#	include <boost/circular_buffer.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+#include <boost/accumulators/statistics/rolling_mean.hpp>
+#include <boost/circular_buffer.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/regex.hpp>
+#include <boost/uuid/string_generator.hpp>
+#include <boost/variant.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 #include "Common/Common.hpp"

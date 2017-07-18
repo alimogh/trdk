@@ -12,263 +12,177 @@
 
 #include <boost/atomic.hpp>
 #ifdef BOOST_WINDOWS
-	#include <concrt.h>
+#include <concrt.h>
 #endif
 
-namespace trdk { namespace Lib { namespace Concurrency {
+namespace trdk {
+namespace Lib {
+namespace Concurrency {
 
-	class SpinScopedLock;
+class SpinScopedLock;
 
-	////////////////////////////////////////////////////////////////////////////////
-	
-#	ifdef BOOST_WINDOWS
+////////////////////////////////////////////////////////////////////////////////
 
-		class SpinMutex : public ::Concurrency::reader_writer_lock {
-		public:
-			typedef SpinScopedLock ScopedLock;
-		};
-		
-		class SpinScopedLock : public SpinMutex::scoped_lock {
-		
-		public:
-		
-			typedef SpinMutex::scoped_lock Base;
-		
-		public:
-		
-			explicit SpinScopedLock(SpinMutex &mutex)
-				: Base(mutex),
-				m_mutex(mutex) {
-				//...//
-			}
-		
-		public:
-		
-			SpinMutex & GetMutex() {
-				return m_mutex;
-			}
-			SpinMutex * mutex() {
-				return &GetMutex();
-			}
-			const SpinMutex & GetMutex() const {
-				return const_cast<SpinScopedLock *>(this)->GetMutex();
-			}
-			const SpinMutex * mutex() const {
-				return &GetMutex();
-			}
-		
-			void Lock() {
-				m_mutex.lock();
-			}
-			void lock() {
-				Lock();
-			}
-		
-			void Unlock() {
-				m_mutex.unlock();
-			}
-			void unlock() {
-				Unlock();
-			}
-		
-		private:
-		
-			SpinMutex &m_mutex;
-		
-		};
+#ifdef BOOST_WINDOWS
 
-#	else
+class SpinMutex : public ::Concurrency::reader_writer_lock {
+ public:
+  typedef SpinScopedLock ScopedLock;
+};
 
-		class SpinMutex : private boost::noncopyable {
-			
-		public:
-			
-			typedef SpinScopedLock ScopedLock;
-		
-		public:
-			
-			void Lock() {
-				while (m_state.test_and_set(boost::memory_order_acquire));
-			}
-			
-			void Unlock() {
-				m_state.clear();
-			}
-			
-		private:
-			
-			boost::atomic_flag m_state;
-		
-		};
-		
-		class SpinScopedLock : private boost::noncopyable {
-		
-		public:
-		
-			explicit SpinScopedLock(SpinMutex &mutex)
-				: m_mutex(mutex) {
-				Lock();
-			}
-					
-			~SpinScopedLock() {
-				Unlock();
-			}
-		
-		public:
+class SpinScopedLock : public SpinMutex::scoped_lock {
+ public:
+  typedef SpinMutex::scoped_lock Base;
 
-			SpinMutex & GetMutex() {
-				return m_mutex;
-			}
-			SpinMutex * mutex() {
-				return &GetMutex();
-			}
-			const SpinMutex & GetMutex() const {
-				return const_cast<SpinScopedLock *>(this)->GetMutex();
-			}
-			const SpinMutex * mutex() const {
-				return &GetMutex();
-			}
-			
-			void Lock() {
-				m_mutex.Lock();
-			}
-			void lock() {
-				Lock();
-			}
-			
-			void Unlock() {
-				m_mutex.Unlock();
-			}
-			void unlock() {
-				Unlock();
-			}
-		
-		private:
-			
-			SpinMutex &m_mutex;
-		
-		};
+ public:
+  explicit SpinScopedLock(SpinMutex &mutex) : Base(mutex), m_mutex(mutex) {}
 
-#	endif
+ public:
+  SpinMutex &GetMutex() { return m_mutex; }
+  SpinMutex *mutex() { return &GetMutex(); }
+  const SpinMutex &GetMutex() const {
+    return const_cast<SpinScopedLock *>(this)->GetMutex();
+  }
+  const SpinMutex *mutex() const { return &GetMutex(); }
 
-	////////////////////////////////////////////////////////////////////////////////
+  void Lock() { m_mutex.lock(); }
+  void lock() { Lock(); }
 
-	class SpinCondition : private boost::noncopyable {
+  void Unlock() { m_mutex.unlock(); }
+  void unlock() { Unlock(); }
 
-	public:
+ private:
+  SpinMutex &m_mutex;
+};
 
-		SpinCondition()
-			: m_waitersCount(0) {
-			//...//
-		}
+#else
 
-		~SpinCondition() {
-			AssertEq(0, m_waitersCount);
-		}
+class SpinMutex : private boost::noncopyable {
+ public:
+  typedef SpinScopedLock ScopedLock;
 
-	public:
-		
-		void NotifyOne() {
-			m_state.clear();
-		}
+ public:
+  void Lock() {
+    while (m_state.test_and_set(boost::memory_order_acquire))
+      ;
+  }
 
-		void notify_one() {
-			NotifyOne();
-		}
+  void Unlock() { m_state.clear(); }
 
-		void NotifyAll() {
-			while (m_waitersCount != 0) {
-				NotifyOne();
-			}
-		}
+ private:
+  boost::atomic_flag m_state;
+};
 
- 		void notify_all() {
-			NotifyAll();
-		}
+class SpinScopedLock : private boost::noncopyable {
+ public:
+  explicit SpinScopedLock(SpinMutex &mutex) : m_mutex(mutex) { Lock(); }
 
-		void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
-			if (!m_state.test_and_set(boost::memory_order_acquire)) {
-				return;
-			}
-			++m_waitersCount;
-			lock.Unlock();
-			while (m_state.test_and_set(boost::memory_order_acquire));
-			AssertLt(0, m_waitersCount);
-			--m_waitersCount;
-			lock.Lock();
-		}
+  ~SpinScopedLock() { Unlock(); }
 
-		void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
-			Wait(lock);
-		}
+ public:
+  SpinMutex &GetMutex() { return m_mutex; }
+  SpinMutex *mutex() { return &GetMutex(); }
+  const SpinMutex &GetMutex() const {
+    return const_cast<SpinScopedLock *>(this)->GetMutex();
+  }
+  const SpinMutex *mutex() const { return &GetMutex(); }
 
-	private:
+  void Lock() { m_mutex.Lock(); }
+  void lock() { Lock(); }
 
-		mutable boost::atomic_size_t m_waitersCount;
-		mutable boost::atomic_flag m_state;
+  void Unlock() { m_mutex.Unlock(); }
+  void unlock() { Unlock(); }
 
-	};
+ private:
+  SpinMutex &m_mutex;
+};
 
-	////////////////////////////////////////////////////////////////////////////////
+#endif
 
-	class LazySpinCondition : private boost::noncopyable {
+////////////////////////////////////////////////////////////////////////////////
 
-	public:
+class SpinCondition : private boost::noncopyable {
+ public:
+  SpinCondition() : m_waitersCount(0) {}
 
-		LazySpinCondition()
-			: m_waitersCount(0) {
-			//...//
-		}
+  ~SpinCondition() { AssertEq(0, m_waitersCount); }
 
-		~LazySpinCondition() {
-			AssertEq(0, m_waitersCount);
-		}
+ public:
+  void NotifyOne() { m_state.clear(); }
 
-	public:
-		
-		void NotifyOne() {
-			m_state.clear();
-		}
+  void notify_one() { NotifyOne(); }
 
-		void notify_one() {
-			NotifyOne();
-		}
+  void NotifyAll() {
+    while (m_waitersCount != 0) {
+      NotifyOne();
+    }
+  }
 
-		void NotifyAll() {
-			while (m_waitersCount != 0) {
-				NotifyOne();
-			}
-		}
+  void notify_all() { NotifyAll(); }
 
- 		void notify_all() {
-			NotifyAll();
-		}
+  void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
+    if (!m_state.test_and_set(boost::memory_order_acquire)) {
+      return;
+    }
+    ++m_waitersCount;
+    lock.Unlock();
+    while (m_state.test_and_set(boost::memory_order_acquire))
+      ;
+    AssertLt(0, m_waitersCount);
+    --m_waitersCount;
+    lock.Lock();
+  }
 
-		void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
-			if (!m_state.test_and_set(boost::memory_order_acquire)) {
-				return;
-			}
-			++m_waitersCount;
-			lock.Unlock();
-			while (m_state.test_and_set(boost::memory_order_acquire)) {
-				boost::this_thread::sleep(boost::posix_time::seconds(1));
-			}
-			AssertLt(0, m_waitersCount);
-			--m_waitersCount;
-			lock.Lock();
-		}
+  void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const { Wait(lock); }
 
-		void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
-			Wait(lock);
-		}
+ private:
+  mutable boost::atomic_size_t m_waitersCount;
+  mutable boost::atomic_flag m_state;
+};
 
-	private:
+////////////////////////////////////////////////////////////////////////////////
 
-		mutable boost::atomic_size_t m_waitersCount;
-		mutable boost::atomic_flag m_state;
+class LazySpinCondition : private boost::noncopyable {
+ public:
+  LazySpinCondition() : m_waitersCount(0) {}
 
-	};
+  ~LazySpinCondition() { AssertEq(0, m_waitersCount); }
 
-	////////////////////////////////////////////////////////////////////////////////
+ public:
+  void NotifyOne() { m_state.clear(); }
 
-} } }
+  void notify_one() { NotifyOne(); }
+
+  void NotifyAll() {
+    while (m_waitersCount != 0) {
+      NotifyOne();
+    }
+  }
+
+  void notify_all() { NotifyAll(); }
+
+  void Wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const {
+    if (!m_state.test_and_set(boost::memory_order_acquire)) {
+      return;
+    }
+    ++m_waitersCount;
+    lock.Unlock();
+    while (m_state.test_and_set(boost::memory_order_acquire)) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+    AssertLt(0, m_waitersCount);
+    --m_waitersCount;
+    lock.Lock();
+  }
+
+  void wait(trdk::Lib::Concurrency::SpinScopedLock &lock) const { Wait(lock); }
+
+ private:
+  mutable boost::atomic_size_t m_waitersCount;
+  mutable boost::atomic_flag m_state;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+}
+}
+}

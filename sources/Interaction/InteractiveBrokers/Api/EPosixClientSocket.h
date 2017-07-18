@@ -1,5 +1,7 @@
-/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
- * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is
+ * subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial
+ * License, as applicable. */
 
 #ifndef eposixclientsocket_def
 #define eposixclientsocket_def
@@ -8,43 +10,41 @@
 
 class EWrapper;
 
-class EPosixClientSocket : public EClientSocketBase
-{
-public:
+class EPosixClientSocket : public EClientSocketBase {
+ public:
+  explicit EPosixClientSocket(EWrapper* ptr);
+  ~EPosixClientSocket();
 
-	explicit EPosixClientSocket( EWrapper *ptr);
-	~EPosixClientSocket();
+  // override virtual funcs from EClient
+  bool eConnect(const char* host,
+                unsigned int port,
+                int clientId = 0,
+                bool extraAuth = false);
+  void eDisconnect();
 
-	// override virtual funcs from EClient
-	bool eConnect( const char *host, unsigned int port, int clientId = 0, bool extraAuth = false);
-	void eDisconnect();
+  bool isSocketOK() const;
+  int fd() const;
 
-	bool isSocketOK() const;
-	int fd() const;
+ private:
+  int send(const char* buf, size_t sz);
+  int receive(char* buf, size_t sz);
 
-private:
+ public:
+  // callback from socket
+  void onReceive();
+  void onSend();
+  void onError();
 
-	int send( const char* buf, size_t sz);
-	int receive( char* buf, size_t sz);
+ private:
+  void onConnect();
+  void onClose();
 
-public:
-	// callback from socket
-	void onReceive();
-	void onSend();
-	void onError();
+ public:
+  // helper
+  bool handleSocketError();
 
-private:
-
-	void onConnect();
-	void onClose();
-
-public:
-	// helper
-	bool handleSocketError();
-
-private:
-
-	int m_fd;
+ private:
+  int m_fd;
 };
 
 #endif

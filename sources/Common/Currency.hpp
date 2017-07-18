@@ -10,40 +10,39 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
-	
-	//! Currency.
-	enum Currency {
-		CURRENCY_USD,
-		CURRENCY_EUR,
-		CURRENCY_JPY,
-		CURRENCY_RUB,
-		CURRENCY_GBP,
-		CURRENCY_CHF,
-		CURRENCY_AUD,
-		numberOfCurrencies
-	};
+namespace trdk {
+namespace Lib {
 
-	//! Convert currency to string in ISO 4217 code.
-	/** http://en.wikipedia.org/wiki/ISO_4217
-	  * @sa ConvertCurrencyFromIso
-	  */
-	const std::string & ConvertToIso(const trdk::Lib::Currency &);
+//! Currency.
+enum Currency {
+  CURRENCY_USD,
+  CURRENCY_EUR,
+  CURRENCY_JPY,
+  CURRENCY_RUB,
+  CURRENCY_GBP,
+  CURRENCY_CHF,
+  CURRENCY_AUD,
+  numberOfCurrencies
+};
 
-	//! Convert currency from ISO 4217 code.
-	/** http://en.wikipedia.org/wiki/ISO_4217
-	  * Throws an exception if currency is unknown.
-	  * @sa ConvertToIso
-	  * @throw trdk::Lib::Exception
-	  */
-	trdk::Lib::Currency ConvertCurrencyFromIso(const std::string &);
+//! Convert currency to string in ISO 4217 code.
+/** http://en.wikipedia.org/wiki/ISO_4217
+  * @sa ConvertCurrencyFromIso
+  */
+const std::string &ConvertToIso(const trdk::Lib::Currency &);
 
-	inline std::ostream & operator <<(
-			std::ostream &oss,
-			const trdk::Lib::Currency &currency) {
-		oss << trdk::Lib::ConvertToIso(currency);
-		return oss;
-	}
+//! Convert currency from ISO 4217 code.
+/** http://en.wikipedia.org/wiki/ISO_4217
+  * Throws an exception if currency is unknown.
+  * @sa ConvertToIso
+  * @throw trdk::Lib::Exception
+  */
+trdk::Lib::Currency ConvertCurrencyFromIso(const std::string &);
 
-} }
-
+inline std::ostream &operator<<(std::ostream &oss,
+                                const trdk::Lib::Currency &currency) {
+  oss << trdk::Lib::ConvertToIso(currency);
+  return oss;
+}
+}
+}

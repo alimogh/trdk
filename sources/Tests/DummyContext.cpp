@@ -10,91 +10,78 @@
 
 #include "Prec.hpp"
 #include "DummyContext.hpp"
-#include "Core/Settings.hpp"
 #include "Core/RiskControl.hpp"
+#include "Core/Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Tests;
 
 DummyContext::DummyContext()
-	: Context(
-		*static_cast<Log *>(nullptr),
-		*static_cast<TradingLog *>(nullptr),
-		Settings(),
-		boost::unordered_map<std::string, std::string>()) {
-	//...//
-}
-		
-DummyContext::~DummyContext() {
-	//...//
-}
-	
-DummyContext & DummyContext::GetInstance() {
-	static DummyContext result;
-	return result;
+    : Context(*static_cast<Log *>(nullptr),
+              *static_cast<TradingLog *>(nullptr),
+              Settings(),
+              boost::unordered_map<std::string, std::string>()) {}
+
+DummyContext::~DummyContext() {}
+
+DummyContext &DummyContext::GetInstance() {
+  static DummyContext result;
+  return result;
 }
 
 std::unique_ptr<DummyContext::DispatchingLock> DummyContext::SyncDispatching()
-		const {
-	throw std::logic_error("Not supported");
+    const {
+  throw std::logic_error("Not supported");
 }
 
-RiskControl & DummyContext::GetRiskControl(const TradingMode &) {
-	static RiskControl result(
-		*this,
-		IniString("[RiskControl]\nis_enabled = false"),
-		numberOfTradingModes);
-	return result;
+RiskControl &DummyContext::GetRiskControl(const TradingMode &) {
+  static RiskControl result(*this,
+                            IniString("[RiskControl]\nis_enabled = false"),
+                            numberOfTradingModes);
+  return result;
 }
-const RiskControl & DummyContext::GetRiskControl(
-		const TradingMode &mode)
-		const {
-	return const_cast<DummyContext *>(this)->GetRiskControl(mode);
+const RiskControl &DummyContext::GetRiskControl(const TradingMode &mode) const {
+  return const_cast<DummyContext *>(this)->GetRiskControl(mode);
 }
 
-const ExpirationCalendar & DummyContext::GetExpirationCalendar() const {
-	throw std::logic_error("Not supported");
+const ExpirationCalendar &DummyContext::GetExpirationCalendar() const {
+  throw std::logic_error("Not supported");
 }
 
 size_t DummyContext::GetNumberOfMarketDataSources() const {
-	throw std::logic_error("Not supported");
+  throw std::logic_error("Not supported");
 }
 
-const MarketDataSource & DummyContext::GetMarketDataSource(size_t) const {
-	throw std::logic_error("Not supported");
+const MarketDataSource &DummyContext::GetMarketDataSource(size_t) const {
+  throw std::logic_error("Not supported");
 }
 
-MarketDataSource & DummyContext::GetMarketDataSource(size_t) {
-	throw std::logic_error("Not supported");
-}
-
-void DummyContext::ForEachMarketDataSource(
-		const boost::function<bool (const MarketDataSource &)> &)
-		const {
-	throw std::logic_error("Not supported");
+MarketDataSource &DummyContext::GetMarketDataSource(size_t) {
+  throw std::logic_error("Not supported");
 }
 
 void DummyContext::ForEachMarketDataSource(
-		const boost::function<bool (MarketDataSource &)> &) {
-	throw std::logic_error("Not supported");
+    const boost::function<bool(const MarketDataSource &)> &) const {
+  throw std::logic_error("Not supported");
 }
 
-size_t DummyContext::GetNumberOfTradingSystems() const {
-	return 0;
+void DummyContext::ForEachMarketDataSource(
+    const boost::function<bool(MarketDataSource &)> &) {
+  throw std::logic_error("Not supported");
 }
 
-const TradingSystem & DummyContext::GetTradingSystem(
-		size_t,
-		const TradingMode &)
-		const {
-	throw std::logic_error("Not supported");
+size_t DummyContext::GetNumberOfTradingSystems() const { return 0; }
+
+const TradingSystem &DummyContext::GetTradingSystem(size_t,
+                                                    const TradingMode &) const {
+  throw std::logic_error("Not supported");
 }
 
-TradingSystem & DummyContext::GetTradingSystem(size_t, const TradingMode &) {
-	throw std::logic_error("Not supported");
+TradingSystem &DummyContext::GetTradingSystem(size_t, const TradingMode &) {
+  throw std::logic_error("Not supported");
 }
 
-DropCopy * DummyContext::GetDropCopy() const {
-	throw std::logic_error("Not supported");
+DropCopy *DummyContext::GetDropCopy() const {
+  throw std::logic_error("Not supported");
 }

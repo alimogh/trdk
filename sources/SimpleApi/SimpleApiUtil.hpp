@@ -10,10 +10,11 @@
 
 #pragma once
 
-namespace trdk { namespace SimpleApi { namespace Util {
+namespace trdk {
+namespace SimpleApi {
+namespace Util {
 
-	boost::posix_time::ptime ConvertEasyLanguageDateTimeToPTime(
-				int date,
-				int time);
-
-} } }
+boost::posix_time::ptime ConvertEasyLanguageDateTimeToPTime(int date, int time);
+}
+}
+}

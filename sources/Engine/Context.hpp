@@ -10,77 +10,63 @@
 
 #pragma once
 
-#include <Core/DropCopy.hpp>
 #include "Core/Context.hpp"
 #include "Api.h"
+#include <Core/DropCopy.hpp>
 
-namespace trdk { namespace Engine {
+namespace trdk {
+namespace Engine {
 
-	class TRDK_ENGINE_API Context : public trdk::Context {
+class TRDK_ENGINE_API Context : public trdk::Context {
+ public:
+  typedef trdk::Context Base;
 
-	public:
+ public:
+  explicit Context(
+      trdk::Context::Log &,
+      trdk::Context::TradingLog &,
+      const trdk::Settings &,
+      const trdk::Lib::Ini &,
+      const boost::unordered_map<std::string, std::string> &params);
+  virtual ~Context();
 
-		typedef trdk::Context Base;
+ public:
+  void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
+  void Stop(const trdk::StopMode &);
 
-	public:
+  void Add(const trdk::Lib::Ini &);
+  void Update(const trdk::Lib::Ini &);
 
-		explicit Context(
-				trdk::Context::Log &,
-				trdk::Context::TradingLog &,
-				const trdk::Settings &,
-				const trdk::Lib::Ini &,
-				const boost::unordered_map<std::string, std::string> &params);
-		virtual ~Context();
+  void ClosePositions();
 
-	public:
+  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
 
-		void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
-		void Stop(const trdk::StopMode &);
+ public:
+  virtual RiskControl &GetRiskControl(const trdk::TradingMode &);
+  virtual const RiskControl &GetRiskControl(const trdk::TradingMode &) const;
 
-		void Add(const trdk::Lib::Ini &);
-		void Update(const trdk::Lib::Ini &);
+  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar() const;
 
-		void ClosePositions();
+  virtual size_t GetNumberOfMarketDataSources() const;
+  virtual const trdk::MarketDataSource &GetMarketDataSource(size_t index) const;
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t index);
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(const trdk::MarketDataSource &)> &) const;
+  virtual void ForEachMarketDataSource(
+      const boost::function<bool(trdk::MarketDataSource &)> &);
 
-		virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
+  virtual size_t GetNumberOfTradingSystems() const;
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      size_t index, const TradingMode &) const;
+  virtual trdk::TradingSystem &GetTradingSystem(size_t index,
+                                                const TradingMode &);
 
-	public:
+ protected:
+  virtual DropCopy *GetDropCopy() const;
 
-		virtual RiskControl & GetRiskControl(const trdk::TradingMode &);
-		virtual const RiskControl & GetRiskControl(const trdk::TradingMode &)
-				const;
-
-		virtual const trdk::Lib::ExpirationCalendar & GetExpirationCalendar()
-				const;
-
-		virtual size_t GetNumberOfMarketDataSources() const;
-		virtual const trdk::MarketDataSource & GetMarketDataSource(
-				size_t index)
-				const;
-		virtual trdk::MarketDataSource & GetMarketDataSource(size_t index);
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (const trdk::MarketDataSource &)> &)
-				const;
-		virtual void ForEachMarketDataSource(
-				const boost::function<bool (trdk::MarketDataSource &)> &);
-
-		virtual size_t GetNumberOfTradingSystems() const;
-		virtual const trdk::TradingSystem & GetTradingSystem(
-				size_t index,
-				const TradingMode &) const;
-		virtual trdk::TradingSystem & GetTradingSystem(
-				size_t index,
-				const TradingMode &);
-
-	protected:
-
-		virtual DropCopy * GetDropCopy() const;
-
-	private:
-
-		class Implementation;
-		std::unique_ptr<Implementation> m_pimpl;
-
-	};
-
-} }
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+}
+}

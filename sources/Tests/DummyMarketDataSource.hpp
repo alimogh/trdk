@@ -12,29 +12,24 @@
 
 #include "Core/MarketDataSource.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class DummyMarketDataSource : public MarketDataSource {
+class DummyMarketDataSource : public MarketDataSource {
+ public:
+  explicit DummyMarketDataSource(trdk::Context * = nullptr);
+  virtual ~DummyMarketDataSource();
 
-	public:
+  static DummyMarketDataSource &GetInstance();
 
-		explicit DummyMarketDataSource(trdk::Context * = nullptr);
-		virtual ~DummyMarketDataSource();
+ public:
+  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
 
-		static DummyMarketDataSource & GetInstance();
+  virtual void SubscribeToSecurities() override;
 
-	public:
-
-		virtual void Connect(const trdk::Lib::IniSectionRef &) override;
-
-		virtual void SubscribeToSecurities() override;
-
-	protected:
-
-		virtual trdk::Security & CreateNewSecurityObject(
-				const trdk::Lib::Symbol &)
-				override;
-
-	};
-
-} }
+ protected:
+  virtual trdk::Security &CreateNewSecurityObject(
+      const trdk::Lib::Symbol &) override;
+};
+}
+}

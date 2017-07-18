@@ -14,22 +14,20 @@
 
 using namespace trdk;
 
-void AsyncLogRecord::WriteToDumpStream(
-		const Security &security,
-		boost::format &os) {
-	os % security;
+void AsyncLogRecord::WriteToDumpStream(const Security &security,
+                                       boost::format &os) {
+  os % security;
 }
 
-void AsyncLogRecord::WriteToDumpStream(
-		const Security &security,
-		std::ostream &os) {
-	os << security;
+void AsyncLogRecord::WriteToDumpStream(const Security &security,
+                                       std::ostream &os) {
+  os << security;
 }
 
 void AsyncLogRecord::WriteToDumpStream(float val, std::ostream &os) {
-	os << std::fixed << std::setprecision(8) << val;
+  os << std::fixed << std::setprecision(8) << val;
 }
 
 void AsyncLogRecord::WriteToDumpStream(double val, std::ostream &os) {
-	os << std::fixed << std::setprecision(8) << val;
+  os << std::fixed << std::setprecision(8) << val;
 }

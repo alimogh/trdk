@@ -15,41 +15,30 @@ using namespace trdk;
 using namespace trdk::Tests;
 
 int Tests::RunFuncTest(std::string &&testName) {
+  boost::to_lower(testName);
 
-	boost::to_lower(testName);
+  boost::function<void(void)> test;
+  if (testName == "") {
+  } else {
+    std::cerr << "Func test \"" << testName << "\" is unknown." << std::endl;
+    return 1;
+  }
 
-	boost::function<void(void)> test;
-	if (testName == "") {
-		//...//
-	} else {
-		std::cerr
-			<< "Func test \"" << testName << "\" is unknown."
-			<< std::endl;
-		return 1;
-	}
+  std::cout << "[Tests]\t" << boost::posix_time::microsec_clock::local_time()
+            << " Starting func test \"" << testName << "\"..." << std::endl;
 
-	std::cout
-		<< "[Tests]\t" << boost::posix_time::microsec_clock::local_time()
-		<< " Starting func test \"" << testName << "\"..."
-		<< std::endl;
+  try {
+    test();
+  } catch (const std::exception &ex) {
+    std::cerr << "Unhandled exception: \"" << ex.what() << "\"." << std::endl;
+    return 2;
+  } catch (...) {
+    AssertFailNoException();
+    return 2;
+  }
 
-	try {
-		test();
-	} catch (const std::exception &ex) {
-		std::cerr
-			<< "Unhandled exception: \"" << ex.what() << "\"." << std::endl;
-		return 2;
-	} catch (...) {
-		AssertFailNoException();
-		return 2;
-	}
+  std::cout << "[Tests]\t" << boost::posix_time::microsec_clock::local_time()
+            << " Func test \"" << testName << "\" is completed." << std::endl;
 
-	std::cout
-		<< "[Tests]\t"
-		<< boost::posix_time::microsec_clock::local_time()
-		<< " Func test \"" << testName << "\" is completed." << std::endl;
-
-	return 0;
-
+  return 0;
 }
-

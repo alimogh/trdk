@@ -12,8 +12,9 @@
 
 #pragma once
 
-namespace trdk { namespace SimpleApi {
+namespace trdk {
+namespace SimpleApi {
 
-	class Engine;
-
-} }
+class Engine;
+}
+}

@@ -10,152 +10,137 @@
 
 #pragma once
 
-#include "SecurityType.hpp"
 #include "Currency.hpp"
 #include "Exception.hpp"
+#include "SecurityType.hpp"
 #include <iosfwd>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class Symbol {
+class Symbol {
+ public:
+  typedef size_t Hash;
 
-	public:
+  enum Right { RIGHT_PUT, RIGHT_CALL, numberOfRights };
 
-		typedef size_t Hash;
+ public:
+  class Error : public Exception {
+   public:
+    explicit Error(const char *what) throw();
+  };
 
-		enum Right {
-			RIGHT_PUT,
-			RIGHT_CALL,
-			numberOfRights
-		};
+  class StringFormatError : public Error {
+   public:
+    explicit StringFormatError(const char *what) throw();
+  };
 
-	public:
+  class ParameterError : public Error {
+   public:
+    explicit ParameterError(const char *what) throw();
+  };
 
-		class Error : public Exception {
-		public:
-			explicit Error(const char *what) throw();
-		};
+ public:
+  Symbol();
+  explicit Symbol(const std::string &line,
+                  const trdk::Lib::SecurityType &defSecurityType =
+                      trdk::Lib::numberOfSecurityTypes,
+                  const Currency &defCurrency = trdk::Lib::numberOfCurrencies);
 
-		class StringFormatError : public Error {
-		public:
-			explicit StringFormatError(const char *what) throw();
-		};
+  Symbol(const Symbol &);
 
-		class ParameterError : public Error {
-		public:
-			explicit ParameterError(const char *what) throw();
-		};
+  Symbol &operator=(const Symbol &);
 
-	public:
+  operator bool() const;
 
-		Symbol();
-		explicit Symbol(
-				const std::string &line,
-				const trdk::Lib::SecurityType &defSecurityType
-					= trdk::Lib::numberOfSecurityTypes,
-				const Currency &defCurrency = trdk::Lib::numberOfCurrencies);
-		
-		Symbol(const Symbol &);
-		
-		Symbol & operator =(const Symbol &);
+  bool operator<(const Symbol &rhs) const;
+  bool operator==(const Symbol &rhs) const;
+  bool operator!=(const Symbol &rhs) const;
 
-		operator bool() const;
+  friend std::ostream &operator<<(std::ostream &, const trdk::Lib::Symbol &);
 
-		bool operator <(const Symbol &rhs) const;
-		bool operator ==(const Symbol &rhs) const;
-		bool operator !=(const Symbol &rhs) const;
+ public:
+  Hash GetHash() const;
 
-		friend std::ostream & operator <<(
-				std::ostream &,
-				const trdk::Lib::Symbol &);
+ public:
+  const trdk::Lib::SecurityType &GetSecurityType() const;
+  void SetSecurityType(const trdk::Lib::SecurityType &);
 
-	public:
+  const std::string &GetSymbol() const;
+  void SetSymbol(const std::string &);
 
-		Hash GetHash() const;
+  const std::string &GetExchange() const;
+  void SetExchange(const std::string &);
 
-	public:
+  const std::string &GetPrimaryExchange() const;
 
-		const trdk::Lib::SecurityType & GetSecurityType() const;
-		void SetSecurityType(const trdk::Lib::SecurityType &);
+  //! Explicit symbol has all in the name what required to specify symbol,
+  //! dates and so on.
+  /** Futures will not be "explicit" if doesn't have contract period in the
+    * name, ex.: CL* - not explicit, CLM6 - explicit.
+    * @sa GetSecurityType
+    * @return true if symbol is explicit, false if symbol is not explicit.
+    */
+  bool IsExplicit() const;
 
-		const std::string & GetSymbol() const;
-		void SetSymbol(const std::string &);
+  double GetStrike() const;
+  void SetStrike(double);
 
-		const std::string & GetExchange() const;
-		void SetExchange(const std::string &);
+  const Right &GetRight() const;
+  std::string GetRightAsString() const;
+  void SetRight(const Right &);
+  void SetRight(const std::string &);
 
-		const std::string & GetPrimaryExchange() const;
+  const trdk::Lib::Currency &GetCurrency() const;
+  void SetCurrency(const trdk::Lib::Currency &);
 
-		//! Explicit symbol has all in the name what required to specify symbol,
-		//! dates and so on.
-		/** Futures will not be "explicit" if doesn't have contract period in the
-		  * name, ex.: CL* - not explicit, CLM6 - explicit.
-		  * @sa GetSecurityType
-		  * @return true if symbol is explicit, false if symbol is not explicit.
-		  */
-		bool IsExplicit() const;
+  const trdk::Lib::Currency &GetFotBaseCurrency() const;
+  const trdk::Lib::Currency &GetFotQuoteCurrency() const;
 
-		double GetStrike() const;
-		void SetStrike(double);
+  std::string GetAsString() const;
 
-		const Right & GetRight() const;
-		std::string GetRightAsString() const;
-		void SetRight(const Right &);
-		void SetRight(const std::string &);
+ private:
+  struct Data {
+    trdk::Lib::SecurityType securityType;
+    std::string symbol;
+    std::string exchange;
+    std::string primaryExchange;
 
-		const trdk::Lib::Currency & GetCurrency() const;
-		void SetCurrency(const trdk::Lib::Currency &);
+    bool isExplicit;
+    double strike;
+    Right right;
 
-		const trdk::Lib::Currency & GetFotBaseCurrency() const;
-		const trdk::Lib::Currency & GetFotQuoteCurrency() const;
+    trdk::Lib::Currency fotBaseCurrency;
+    //! Currency and FOR Quote Currency.
+    trdk::Lib::Currency currency;
 
-		std::string GetAsString() const;
+    Data();
 
-	private:
+  } m_data;
 
-		struct Data {
-
-			trdk::Lib::SecurityType securityType;
-			std::string symbol;
-			std::string exchange;
-			std::string primaryExchange;
-
-			bool isExplicit;
-			double strike;
-			Right right;
-
-			trdk::Lib::Currency fotBaseCurrency;
-			//! Currency and FOR Quote Currency.
-			trdk::Lib::Currency currency;
-
-			Data();
-
-		} m_data;
-
-		boost::atomic<Hash> m_hash;
-
-	};
-
-} }
+  boost::atomic<Hash> m_hash;
+};
+}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace stdext {
 
-	inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
-		return symbol.GetHash();
-	};
-
+inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
+  return symbol.GetHash();
+};
 }
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
-		return stdext::hash_value(symbol);
-	};
-
-} }
+inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
+  return stdext::hash_value(symbol);
+};
+}
+}
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,12 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Common/VersionInfo.hpp"
 #include "Api.h"
+#include "Common/VersionInfo.hpp"
 
-extern "C" TRDK_INTERACTION_INTERACTIVEBROKERS_API
-void GetTrdkModuleVersionInfoV1(
-		trdk::Lib::VersionInfoV1 *result) {
-	*result = trdk::Lib::VersionInfoV1(
-		TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME);
+extern "C" TRDK_INTERACTION_INTERACTIVEBROKERS_API void
+GetTrdkModuleVersionInfoV1(trdk::Lib::VersionInfoV1 *result) {
+  *result =
+      trdk::Lib::VersionInfoV1(TRDK_INTERACTION_INTERACTIVEBROKERS_FILE_NAME);
 }

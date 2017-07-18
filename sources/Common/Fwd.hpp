@@ -10,14 +10,14 @@
 
 #pragma once
 
-namespace trdk { namespace Lib {
+namespace trdk {
+namespace Lib {
 
-	class ContractExpiration;
-	class ExpirationCalendar;
+class ContractExpiration;
+class ExpirationCalendar;
 
-	class NetworkStreamClient;
-	class NetworkStreamClientService;
-	class NetworkClientServiceIo;
-
-} }
-
+class NetworkStreamClient;
+class NetworkStreamClientService;
+class NetworkClientServiceIo;
+}
+}

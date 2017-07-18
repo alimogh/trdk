@@ -12,45 +12,44 @@
 
 namespace trdk {
 
-	class Context;
+class Context;
 
-	class PriceBook;
+class PriceBook;
 
-	class Security;
-	
-	class TradingSystem;
-	class MarketDataSource;
+class Security;
 
-	typedef std::int32_t DropCopyStrategyInstanceId;
-	typedef std::int32_t DropCopyDataSourceInstanceId;
-	class DropCopy;
+class TradingSystem;
+class MarketDataSource;
 
-	class Module;
-	class Consumer;
-	class Strategy;
-	class Observer;
-	class Service;
+typedef std::int32_t DropCopyStrategyInstanceId;
+typedef std::int32_t DropCopyDataSourceInstanceId;
+class DropCopy;
 
-	class RiskControl;
-	class RiskControlSymbolContext;
-	class RiskControlScope;
+class Module;
+class Consumer;
+class Strategy;
+class Observer;
+class Service;
 
-	class Position;
-	class LongPosition;
-	class ShortPosition;
-	class PositionReporter;
+class RiskControl;
+class RiskControlSymbolContext;
+class RiskControlScope;
 
-	class Settings;
+class Position;
+class LongPosition;
+class ShortPosition;
+class PositionReporter;
 
-	class Terminal;
+class Settings;
 
-	class EventsLog;
-	class ModuleEventsLog;
-	class TradingLog;
-	class ModuleTradingLog;
+class Terminal;
 
-	namespace SettingsReport {
-		typedef std::list<std::pair<std::string, std::string>> Report;
-	}
+class EventsLog;
+class ModuleEventsLog;
+class TradingLog;
+class ModuleTradingLog;
 
+namespace SettingsReport {
+typedef std::list<std::pair<std::string, std::string>> Report;
+}
 }

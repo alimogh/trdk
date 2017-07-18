@@ -10,9 +10,10 @@
 
 #pragma once
 
-namespace trdk { namespace Services {
+namespace trdk {
+namespace Services {
 
-	class BarService;
-	class MovingAverageService;
-
-} }
+class BarService;
+class MovingAverageService;
+}
+}

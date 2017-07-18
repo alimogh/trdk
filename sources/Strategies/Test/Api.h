@@ -11,7 +11,7 @@
 #pragma once
 
 #ifdef BOOST_WINDOWS
-#	define TRDK_STRATEGY_TEST_API
+#define TRDK_STRATEGY_TEST_API
 #else
-#	define TRDK_STRATEGY_TEST_API extern "C"
+#define TRDK_STRATEGY_TEST_API extern "C"
 #endif

@@ -11,11 +11,11 @@
 #pragma once
 
 #include "Common/DisableBoostWarningsBegin.h"
-#	include <boost/foreach.hpp>
+#include <boost/foreach.hpp>
 #include "Common/DisableBoostWarningsEnd.h"
 
 namespace boost {
-    namespace BOOST_FOREACH = foreach;
+namespace BOOST_FOREACH = foreach;
 }
 
 #define foreach BOOST_FOREACH

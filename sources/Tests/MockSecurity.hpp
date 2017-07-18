@@ -10,36 +10,26 @@
 
 #pragma once
 
-#include "DummyMarketDataSource.hpp"
-#include "DummyContext.hpp"
 #include "Core/Security.hpp"
+#include "DummyContext.hpp"
+#include "DummyMarketDataSource.hpp"
 
-namespace trdk { namespace Tests {
+namespace trdk {
+namespace Tests {
 
-	class MockSecurity : public trdk::Security {
+class MockSecurity : public trdk::Security {
+ public:
+  MockSecurity(const char *symbol = "TEST_SCALE2*/USD:NYMEX:FUT")
+      : Security(DummyContext::GetInstance(),
+                 trdk::Lib::Symbol(symbol),
+                 DummyMarketDataSource::GetInstance(),
+                 SupportedLevel1Types()) {}
 
-	public:
+  virtual ~MockSecurity() {}
 
-		MockSecurity(const char *symbol = "TEST_SCALE2*/USD:NYMEX:FUT")
-			: Security(
-				DummyContext::GetInstance(),
-				trdk::Lib::Symbol(symbol),
-				DummyMarketDataSource::GetInstance(),
-				SupportedLevel1Types()) {
-			//...//
-		}
-
-		virtual ~MockSecurity() {
-			//...//
-		}
-
-	public:
-
-		MOCK_CONST_METHOD0(IsOnline, bool());
-		MOCK_CONST_METHOD0(
-			GetExpiration,
-			const trdk::Lib::ContractExpiration &());
-
-	};
-
-} }
+ public:
+  MOCK_CONST_METHOD0(IsOnline, bool());
+  MOCK_CONST_METHOD0(GetExpiration, const trdk::Lib::ContractExpiration &());
+};
+}
+}

@@ -10,17 +10,13 @@
 
 #include "Prec.hpp"
 #include "MockMarketDataSource.hpp"
-#include "DummyContext.hpp"
-#include "Core/TradingLog.hpp"
 #include "Core/Settings.hpp"
+#include "Core/TradingLog.hpp"
+#include "DummyContext.hpp"
 
 using namespace trdk::Tests;
 
 MockMarketDataSource::MockMarketDataSource()
-	: MarketDataSource(0, DummyContext::GetInstance(), "0") {
-	//...//
-}
+    : MarketDataSource(0, DummyContext::GetInstance(), "0") {}
 
-MockMarketDataSource::~MockMarketDataSource() {
-	//...//
-}
+MockMarketDataSource::~MockMarketDataSource() {}

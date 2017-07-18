@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Common/VersionInfo.hpp"
 
-extern "C" void GetTrdkModuleVersionInfoV1(
-		trdk::Lib::VersionInfoV1 *result) {
-	*result = trdk::Lib::VersionInfoV1(TRDK_INTERACTION_TRANSAQ_FILE_NAME);
+extern "C" void GetTrdkModuleVersionInfoV1(trdk::Lib::VersionInfoV1 *result) {
+  *result = trdk::Lib::VersionInfoV1(TRDK_INTERACTION_TRANSAQ_FILE_NAME);
 }
