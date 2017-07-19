@@ -10,12 +10,10 @@
 
 #pragma once
 
-#include "DisableBoostWarningsBegin.h"
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/math/special_functions/round.hpp>
-#include "DisableBoostWarningsEnd.h"
 
 namespace trdk {
 namespace Lib {

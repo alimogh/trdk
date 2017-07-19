@@ -10,13 +10,9 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
+#include "Common/Common.hpp"
 #include "Engine/Fwd.hpp"
 #include "Fwd.hpp"
-
-#include "Common/Common.hpp"
-
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4005)
@@ -31,11 +27,6 @@
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
-
-#include <fstream>
-#include <unordered_map>
-
-#include "Common/DisableBoostWarningsBegin.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -50,6 +41,5 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Assert.hpp"
+#include <fstream>
+#include <unordered_map>

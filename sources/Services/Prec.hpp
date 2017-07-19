@@ -10,9 +10,8 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
+#include "Common/Common.hpp"
+#include "Common/SegmentedVector.hpp"
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/statistics/rolling_mean.hpp>
@@ -21,11 +20,10 @@
 #include <boost/regex.hpp>
 #include <boost/uuid/string_generator.hpp>
 #include <boost/variant.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-#include "Common/SegmentedVector.hpp"
-
 #include <string>
 
-#include "Common/Assert.hpp"
+#ifdef BOOST_WINDOWS
+#undef SendMessage
+#undef ERROR
+#undef GetCurrentTime
+#endif

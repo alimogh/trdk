@@ -68,7 +68,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
 
 #ifdef DEV_VER
     std::fill(activeBuffer.begin() + bufferStartOffset, activeBuffer.end(),
-              0xff);
+              static_cast<char>(-1));
 #endif
 
     auto self = m_self.shared_from_this();
@@ -378,9 +378,9 @@ void NetworkStreamClient::Start() {
   m_pimpl->m_buffer.second.resize(m_pimpl->m_buffer.first.size());
 #ifdef DEV_VER
   std::fill(m_pimpl->m_buffer.first.begin(), m_pimpl->m_buffer.first.end(),
-            0xff);
+            static_cast<char>(-1));
   std::fill(m_pimpl->m_buffer.second.begin(), m_pimpl->m_buffer.second.end(),
-            0xff);
+            static_cast<char>(-1));
 #endif
 
   m_pimpl->StartRead(m_pimpl->m_buffer.first, 0, m_pimpl->m_buffer.second);

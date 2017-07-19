@@ -32,7 +32,7 @@ pt::ptime Util::ConvertEasyLanguageDateTimeToPTime(int elDate, int elTime) {
   int secs = 0;
   int mins = 0;
   int hours = 0;
-  AssertLe(0, time);
+  AssertLe(0, elTime);
   if (elTime != 0) {
     mins = elTime % 100;
     elTime /= 100;

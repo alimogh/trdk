@@ -12,7 +12,6 @@
 
 #include "Exception.hpp"
 #include "Symbol.hpp"
-#include "DisableBoostWarningsBegin.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
@@ -20,7 +19,6 @@
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-#include "DisableBoostWarningsEnd.h"
 #include <fstream>
 #include <list>
 #include <set>

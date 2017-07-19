@@ -17,12 +17,10 @@
 #include "Exception.hpp"
 #include "SysError.hpp"
 #include "UseUnused.hpp"
-#include "DisableBoostWarningsBegin.h"
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/type_traits.hpp>
-#include "DisableBoostWarningsEnd.h"
 #if defined(BOOST_MSVC)
 #include <Windows.h>
 #elif defined(BOOST_GCC)

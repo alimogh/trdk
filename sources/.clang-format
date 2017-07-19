@@ -3,16 +3,12 @@ BinPackParameters: false
 IncludeCategories:
   - Regex:           '^"Prec\.h(pp)?"$'
     Priority:        -1
-  - Regex:           '^"(.+/)?DisableBoostWarningsBegin.h"$'
-    Priority:        301
   - Regex:           '^<boost/.+>'
     Priority:        351
-  - Regex:           '^"(.+/)?DisableBoostWarningsEnd.h"$'
-    Priority:        399
+  - Regex:           '^"Common/Common.hpp"$'
+    Priority:        1
   - Regex:           '^"Common/Fwd.hpp"$'
     Priority:        299
-  - Regex:           '^"Common/Assert.hpp"$'
-    Priority:        999999
   - Regex:           '^"Common/.+"$'
     Priority:        201
   - Regex:           '^"TradingLib/Fwd.hpp"$'

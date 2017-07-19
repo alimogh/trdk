@@ -10,15 +10,7 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
-#include <boost/noncopyable.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Engine/Fwd.hpp"
 #include "Common/Common.hpp"
-
 #include "Core/Fwd.hpp"
-
-#include "Common/Assert.hpp"
+#include "Engine/Fwd.hpp"
+#include <boost/noncopyable.hpp>

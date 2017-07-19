@@ -10,12 +10,11 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
-#include <boost/uuid/uuid_generators.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
 #include "Common/Common.hpp"
+#include <boost/uuid/uuid_generators.hpp>
 
-#include "Common/Assert.hpp"
+#ifdef BOOST_WINDOWS
+#undef SendMessage
+#undef ERROR
+#undef GetCurrentTime
+#endif

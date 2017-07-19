@@ -10,9 +10,7 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "DisableBoostWarningsBegin.h"
+#include "Assert.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/atomic.hpp>
@@ -36,20 +34,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid.hpp>
-#include "DisableBoostWarningsEnd.h"
-
 #include <iomanip>
 #include <iostream>
 
-#ifdef BOOST_WINDOWS
-#include <Windows.h>
-#undef SendMessage
-#undef ERROR
-#undef GetCurrentTime
-#endif
-
-#include "Common/Constants.h"
-
 #include "Core/Log.hpp"
-#include "Core/Fwd.hpp"
-#include "Common/Assert.hpp"

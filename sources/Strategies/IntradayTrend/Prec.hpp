@@ -10,18 +10,10 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
+#include "Common/Common.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
 #include <boost/circular_buffer.hpp>
 #include <boost/logic/tribool.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Api.h"
-#include "Fwd.hpp"
-
-#include "Common/Assert.hpp"

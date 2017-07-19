@@ -10,16 +10,8 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
+#include "Common/Common.hpp"
+#include "Api.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/random.hpp>
 #include <boost/thread.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
-#include "Api.h"
-
-#include "Common/Assert.hpp"

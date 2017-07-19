@@ -10,9 +10,8 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
+#include "Common/Common.hpp"
+#include "Fwd.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -20,12 +19,10 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
 #include <concrt.h>
 
-#include "Common/Common.hpp"
-
-#include "Fwd.hpp"
-
-#include "Common/Assert.hpp"
+#ifdef BOOST_WINDOWS
+#undef SendMessage
+#undef ERROR
+#undef GetCurrentTime
+#endif

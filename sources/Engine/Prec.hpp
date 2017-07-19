@@ -10,9 +10,7 @@
 
 #pragma once
 
-#include "Common/Assert.hpp"
-
-#include "Common/DisableBoostWarningsBegin.h"
+#include "Common/Common.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
@@ -29,10 +27,4 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/variant.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
-
-#include "Common/Common.hpp"
-
 #include <bitset>
-
-#include "Common/Assert.hpp"

@@ -14,9 +14,7 @@
 
 #pragma once
 
-#include "DisableBoostWarningsBegin.h"
 #include <boost/config.hpp>
-#include "DisableBoostWarningsEnd.h"
 #include <string>
 
 ////////////////////////////////////////////////////////////////////////////////

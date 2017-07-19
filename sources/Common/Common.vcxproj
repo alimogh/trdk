@@ -324,8 +324,6 @@
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Currency.hpp" />
-    <ClInclude Include="DisableBoostWarningsEnd.h" />
-    <ClInclude Include="DisableBoostWarningsBegin.h" />
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="ExpirationCalendar.hpp" />
     <ClInclude Include="Fwd.hpp" />

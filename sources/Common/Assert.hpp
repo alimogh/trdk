@@ -8,13 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "DisableBoostWarningsBegin.h"
 #include <boost/assert.hpp>
 #if !defined(BOOST_DISABLE_ASSERTS) && defined(BOOST_ENABLE_ASSERT_HANDLER)
 #include <boost/lexical_cast.hpp>
 #include <string>
 #endif
-#include "DisableBoostWarningsEnd.h"
 
 #undef assert
 #undef Assert

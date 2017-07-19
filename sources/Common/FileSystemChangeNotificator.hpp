@@ -10,11 +10,9 @@
 
 #pragma once
 
-#include "Common/DisableBoostWarningsBegin.h"
 #include <boost/filesystem/path.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
-#include "Common/DisableBoostWarningsEnd.h"
 #include <string>
 
 namespace trdk {
