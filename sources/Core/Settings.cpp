@@ -51,7 +51,7 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
       } catch (const Exception &ex) {
         boost::format error(
             "Failed to parse default currency ISO 4217 code"
-            " \"%1%\": \"2%\"");
+            " \"%1%\": \"%2%\"");
         error % currency % ex.what();
         throw Exception(error.str().c_str());
       }
@@ -67,7 +67,7 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
       } catch (const Exception &ex) {
         boost::format error(
             "Failed to parse default security type"
-            " \"%1%\": \"2%\"");
+            " \"%1%\": \"%2%\"");
         error % securityType % ex.what();
         throw Exception(error.str().c_str());
       }
