@@ -207,9 +207,15 @@ Contract Client::GetContract(
     const trdk::Security &security,
     const ContractExpiration *customContractExpiration) const {
   Contract contract;
-  static_assert(numberOfSecurityTypes == 6, "Security type list changed.");
+  static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
   const Symbol &symbol = security.GetSymbol();
   switch (symbol.GetSecurityType()) {
+    case SECURITY_TYPE_INDEX:
+      Assert(!customContractExpiration);
+      contract.secType = "IND";
+      contract.symbol = symbol.GetSymbol();
+      contract.primaryExchange = symbol.GetPrimaryExchange();
+      break;
     case SECURITY_TYPE_STOCK:
       Assert(!customContractExpiration);
       contract.secType = "STK";

@@ -14,11 +14,11 @@ namespace lib = trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(SymbolTest, Operators) {
+TEST(Symbol, Operators) {
   //! @todo add tests for ==, !=, >, >=, <, <=, = and so on...
 }
 
-TEST(SymbolTest, Fields) {
+TEST(Symbol, Fields) {
   lib::Symbol symbol;
 
   try {
@@ -138,7 +138,7 @@ TEST(SymbolTest, Fields) {
   EXPECT_EQ(std::string("PUT"), symbol.GetRightAsString());
 }
 
-TEST(SymbolTest, GeneralErrors) {
+TEST(Symbol, GeneralErrors) {
   try {
     lib::Symbol("");
     EXPECT_TRUE(false) << "Exception expected.";
@@ -175,7 +175,89 @@ TEST(SymbolTest, GeneralErrors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(SymbolTest, FuturesOk) {
+TEST(Symbol, Stock) {
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:STK");
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:STK", lib::SECURITY_TYPE_INDEX);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:STK", lib::SECURITY_TYPE_INDEX,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX", lib::SECURITY_TYPE_STOCK,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX", lib::SECURITY_TYPE_STOCK,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX:NYMEX", lib::SECURITY_TYPE_STOCK,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/AUD:NYMEX(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX", lib::SECURITY_TYPE_STOCK,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("XXX/AUD(STK)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD::STK");
+    EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("XXX/USD(STK)"), symbol.GetAsString());
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(Symbol, FuturesOk) {
   {
     const lib::Symbol symbol("XXX/USD:NYMEX:FUT");
     EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
@@ -273,7 +355,7 @@ TEST(SymbolTest, FuturesOk) {
   }
 }
 
-TEST(SymbolTest, FuturesErrors) {
+TEST(Symbol, FuturesErrors) {
   try {
     lib::Symbol("XXX/20161328/USD::FUT", lib::SECURITY_TYPE_FUTURES,
                 lib::CURRENCY_AUD);
@@ -303,7 +385,7 @@ TEST(SymbolTest, FuturesErrors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(SymbolTest, OptionsAsString) {
+TEST(Symbol, OptionsAsString) {
   lib::Symbol symbol;
   symbol.SetSecurityType(lib::SECURITY_TYPE_OPTIONS);
   symbol.SetSymbol("XXXX");
@@ -314,6 +396,88 @@ TEST(SymbolTest, OptionsAsString) {
 
   EXPECT_EQ(std::string("XXXX/CHF/CALL/1234.56:ZZZZZ(OPT)"),
             symbol.GetAsString());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(Symbol, Index) {
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:INDEX");
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:INDEX", lib::SECURITY_TYPE_STOCK);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX:INDEX", lib::SECURITY_TYPE_STOCK,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX", lib::SECURITY_TYPE_INDEX,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD:NYMEX", lib::SECURITY_TYPE_INDEX,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/USD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX:NYMEX", lib::SECURITY_TYPE_INDEX,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("NYMEX"), symbol.GetExchange());
+    EXPECT_EQ(std::string("XXX/AUD:NYMEX(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX", lib::SECURITY_TYPE_INDEX,
+                             lib::CURRENCY_AUD);
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_AUD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("XXX/AUD(INDEX)"), symbol.GetAsString());
+  }
+  {
+    const lib::Symbol symbol("XXX/USD::INDEX");
+    EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());
+    EXPECT_EQ(std::string("XXX"), symbol.GetSymbol());
+    EXPECT_EQ(lib::CURRENCY_USD, symbol.GetCurrency());
+    EXPECT_THROW(symbol.GetPrimaryExchange(), lib::LogicError);
+    EXPECT_THROW(symbol.GetExchange(), lib::LogicError);
+    EXPECT_EQ(std::string("XXX/USD(INDEX)"), symbol.GetAsString());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

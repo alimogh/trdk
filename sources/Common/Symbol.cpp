@@ -100,12 +100,13 @@ Symbol::Symbol(const std::string &line,
 
   symbolSubs.front().swap(m_data.symbol);
 
-  static_assert(numberOfSecurityTypes == 6, "List changed.");
+  static_assert(numberOfSecurityTypes == 7, "List changed.");
   size_t currencyIndex = 0;
   switch (m_data.securityType) {
     case SECURITY_TYPE_STOCK:
+    case SECURITY_TYPE_INDEX:
       if (symbolSubs.size() > 2) {
-        throw StringFormatError("Too many fields for stock symbol");
+        throw StringFormatError("Too many fields for symbol");
       }
       currencyIndex = 1;
       break;
@@ -168,11 +169,12 @@ Symbol::Symbol(const std::string &line,
         }
       }
 
-      static_assert(numberOfSecurityTypes == 6, "List changed.");
+      static_assert(numberOfSecurityTypes == 7, "List changed.");
       switch (m_data.securityType) {
         case SECURITY_TYPE_STOCK:
+        case SECURITY_TYPE_INDEX:
           if (exchangeSubs.size() > 2) {
-            throw StringFormatError("Too many fields for stock exchange");
+            throw StringFormatError("Too many fields for symbol exchange");
           } else if (exchangeSubs.size() > 1) {
             exchangeSubs[0].swap(m_data.primaryExchange);
             exchangeSubs[1].swap(m_data.exchange);
@@ -295,7 +297,7 @@ Symbol::Hash Symbol::GetHash() const {
 }
 
 const SecurityType &Symbol::GetSecurityType() const {
-  static_assert(numberOfSecurityTypes == 6, "List changed.");
+  static_assert(numberOfSecurityTypes == 7, "List changed.");
   if (m_data.securityType < 0 || m_data.securityType >= numberOfSecurityTypes) {
     throw Lib::LogicError("Symbol doesn't have security type");
   }
@@ -417,9 +419,10 @@ const Currency &Symbol::GetFotQuoteCurrency() const {
 
 std::ostream &trdk::Lib::operator<<(std::ostream &os, const Symbol &symbol) {
   // If changing here - look at Symbol::GetHash, how hash creating.
-  static_assert(numberOfSecurityTypes == 6, "List changed.");
+  static_assert(numberOfSecurityTypes == 7, "List changed.");
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_STOCK:
+    case SECURITY_TYPE_INDEX:
       Assert(symbol.IsExplicit());
       os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
       if (!symbol.m_data.primaryExchange.empty()) {

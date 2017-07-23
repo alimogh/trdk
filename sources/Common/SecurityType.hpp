@@ -27,6 +27,8 @@ enum SecurityType {
   SECURITY_TYPE_FOR_FUTURES_OPTIONS,
   //! Option Contract.
   SECURITY_TYPE_OPTIONS,
+  //! Index.
+  SECURITY_TYPE_INDEX,
   //! Number of security types.
   numberOfSecurityTypes
 };
