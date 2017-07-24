@@ -53,6 +53,9 @@ std::string GetFutureSymbol(const Symbol &symbol) {
   boost::smatch match;
   const boost::regex expr("([a-z]+)[a-z]\\d+", boost::regex::icase);
   if (!boost::regex_match(symbol.GetSymbol(), match, expr)) {
+    if (symbol.GetSymbol() == "NIFTY17JULFUT") {
+      return "NIFTY";
+    }
     boost::format message("Failed to parse explicit future symbol \"%1%\"");
     message % symbol.GetSymbol();
     throw Exception(message.str().c_str());
@@ -70,7 +73,9 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FUTURES: {
       const auto &symbolStr = GetFutureSymbol(symbol);
-      if (symbolStr == "BR") {
+      if (symbolStr == "CL") {
+        return 2;
+      } else if (symbolStr == "BR") {
         return 2;
       } else if (symbolStr == "GD") {
         return 1;
@@ -78,6 +83,8 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
         return 2;
       } else if (symbolStr == "SR") {
         return 0;
+      } else if (symbolStr == "NIFTY") {
+        return 2;
       }
       break;
     }
@@ -109,6 +116,8 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
       } else if (symbolStr == "SV") {
         return 10;
       } else if (symbolStr == "SR") {
+        return 1;
+      } else if (symbolStr == "NIFTY") {
         return 1;
       }
       break;

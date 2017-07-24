@@ -95,7 +95,7 @@ class TRDK_CORE_API Context : private boost::noncopyable {
     * mode.
     * @sa GetStartTime
     */
-  boost::posix_time::ptime GetCurrentTime() const;
+  virtual boost::posix_time::ptime GetCurrentTime() const;
   //! The current time in the specific timezone.
   /** Initialization, value and timezone depends from settings and replay
     * mode.

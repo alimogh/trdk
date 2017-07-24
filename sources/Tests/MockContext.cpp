@@ -21,7 +21,8 @@ using namespace trdk::Tests;
 namespace lt = boost::local_time;
 
 namespace {
-const lt::time_zone_ptr timeZone;
+const lt::time_zone_ptr timeZone =
+    boost::make_shared<lt::posix_time_zone>("GMT");
 Context::Log contextLog(timeZone);
 Context::TradingLog tradingLog(timeZone);
 }

@@ -12,14 +12,24 @@
 #include "DummyContext.hpp"
 #include "Core/RiskControl.hpp"
 #include "Core/Settings.hpp"
+#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Tests;
 
+namespace lt = boost::local_time;
+
+namespace {
+const lt::time_zone_ptr timeZone =
+    boost::make_shared<lt::posix_time_zone>("GMT");
+Context::Log contextLog(timeZone);
+Context::TradingLog tradingLog(timeZone);
+}
+
 DummyContext::DummyContext()
-    : Context(*static_cast<Log *>(nullptr),
-              *static_cast<TradingLog *>(nullptr),
+    : Context(contextLog,
+              tradingLog,
               Settings(),
               boost::unordered_map<std::string, std::string>()) {}
 

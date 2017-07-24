@@ -118,7 +118,7 @@ class Service::Implementation : private boost::noncopyable {
   void RegisterSubscriber(Module &module) {
     const Subscriber subscriber(ModuleRef(module));
     CheckRecursiveSubscription(subscriber);
-    m_subscribers.push_back(subscriber);
+    m_subscribers.emplace_back(std::move(subscriber));
     module.OnServiceStart(m_service);
   }
 };

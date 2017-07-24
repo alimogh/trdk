@@ -23,13 +23,31 @@ class MockSecurity : public trdk::Security {
       : Security(DummyContext::GetInstance(),
                  trdk::Lib::Symbol(symbol),
                  DummyMarketDataSource::GetInstance(),
-                 SupportedLevel1Types()) {}
+                 SupportedLevel1Types()),
+        m_symbol(nullptr) {}
 
-  virtual ~MockSecurity() {}
+  virtual ~MockSecurity() override = default;
 
  public:
+  //! @todo Fix when Google Test will support noexcept.
+  void SetSymbolToMock(const trdk::Lib::Symbol &symbol) { m_symbol = &symbol; }
+  //! @todo Fix when Google Test will support noexcept.
+  const trdk::Lib::Symbol &GetSymbol() const noexcept override {
+    if (!m_symbol) {
+      return Security::GetSymbol();
+    }
+    return *m_symbol;
+  }
+
   MOCK_CONST_METHOD0(IsOnline, bool());
   MOCK_CONST_METHOD0(GetExpiration, const trdk::Lib::ContractExpiration &());
+  MOCK_CONST_METHOD0(GetLastPrice, trdk::Price());
+  MOCK_CONST_METHOD0(GetAskPriceScaled, trdk::ScaledPrice());
+  MOCK_CONST_METHOD0(GetBidPriceScaled, trdk::ScaledPrice());
+
+ private:
+  //! @todo Fix when Google Test will support noexcept.
+  const trdk::Lib::Symbol *m_symbol;
 };
 }
 }

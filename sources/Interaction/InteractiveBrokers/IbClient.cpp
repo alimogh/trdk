@@ -67,13 +67,6 @@ void FormatOrderDateTime(const pt::ptime &dateTime, IBString &destination) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-IBString FormatLocalFuturesSymbol(const std::string &symbol,
-                                  const ContractExpiration &expirationInfo) {
-  return symbol + expirationInfo.GetContract(true);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,6 +199,8 @@ void Client::Task() {
 Contract Client::GetContract(
     const trdk::Security &security,
     const ContractExpiration *customContractExpiration) const {
+  // see how to find instrument:
+  // https://interactivebrokers.github.io/tws-api/basic_contracts.html#gsc.tab=0
   Contract contract;
   static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
   const Symbol &symbol = security.GetSymbol();
@@ -225,13 +220,17 @@ Contract Client::GetContract(
     case SECURITY_TYPE_FUTURES:
       contract.secType = "FUT";
       contract.includeExpired = true;
-      contract.localSymbol =
-          !symbol.IsExplicit()
-              ? FormatLocalFuturesSymbol(symbol.GetSymbol(),
-                                         customContractExpiration
-                                             ? *customContractExpiration
-                                             : security.GetExpiration())
-              : symbol.GetSymbol();
+      if (symbol.IsExplicit()) {
+        contract.localSymbol = symbol.GetSymbol();
+      } else {
+        contract.symbol = symbol.GetSymbol();
+        // Doesn't build local symbol name as there are no universal format
+        // for all symbols. It can be "CLQ7" or "NIFTY17JULFUT".
+        contract.expiry = gr::to_iso_string((customContractExpiration
+                                                 ? *customContractExpiration
+                                                 : security.GetExpiration())
+                                                .GetDate());
+      }
       break;
     case SECURITY_TYPE_FUTURES_OPTIONS:
       Assert(!customContractExpiration);
@@ -513,32 +512,6 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security,
     // https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
     boost::this_thread::sleep(pt::seconds(2));
     request.numberOfPrevRequests = 1;
-  }
-
-  if (security.GetSymbol().GetSecurityType() == SECURITY_TYPE_FUTURES) {
-    for (request.expiration = m_ts.GetContext().GetExpirationCalendar().Find(
-             request.security->GetSymbol(), request.subRequestEnd.date());
-         ;) {
-      if (!request.expiration) {
-        boost::format error(
-            "Failed to find expiration info for \"%1%\" and %2%");
-        error % *request.security % requestStart;
-        throw trdk::MarketDataSource::Error(error.str().c_str());
-      }
-      contract.localSymbol = FormatLocalFuturesSymbol(
-          request.security->GetSymbol().GetSymbol(), *request.expiration);
-      const auto &prevExpiration = std::prev(request.expiration);
-      if (prevExpiration) {
-        request.subRequestStart = pt::ptime(prevExpiration->GetDate());
-        request.subRequestStart += pt::hours(24);
-        if (request.subRequestStart >= request.subRequestEnd) {
-          AssertEq(request.subRequestStart, request.subRequestEnd);
-          --request.expiration;
-          continue;
-        }
-        break;
-      }
-    }
   }
 
   {
@@ -1865,14 +1838,8 @@ void Client::SwitchToNextContract(ib::Security &security) {
   {
     Lock lock(m_mutex);
 
-    m_ts.GetMdsLog().Info(
-        "Switching %1% contract from %2% (%3%) to %4% (%5%)...", security,
-        FormatLocalFuturesSymbol(security.GetSymbol().GetSymbol(),
-                                 *prevExpiration),
-        prevExpiration->GetDate(),
-        FormatLocalFuturesSymbol(security.GetSymbol().GetSymbol(),
-                                 *nextExpiration),
-        nextExpiration->GetDate());
+    m_ts.GetMdsLog().Info("Switching %1% contract from %3% to %4%...", security,
+                          prevExpiration->GetDate(), nextExpiration->GetDate());
 
     m_client->cancelMktData(oldRequest->tickerId);
     m_marketDataRequests.erase(oldRequest);
@@ -1887,14 +1854,9 @@ void Client::SwitchToNextContract(ib::Security &security) {
 
   Assert(!m_securityInSwitching);
 
-  m_ts.GetMdsLog().Info(
-      "%1% switched to next contract %4% (%5%) from %2% (%3%).", security,
-      FormatLocalFuturesSymbol(security.GetSymbol().GetSymbol(),
-                               *prevExpiration),
-      prevExpiration->GetDate(),
-      FormatLocalFuturesSymbol(security.GetSymbol().GetSymbol(),
-                               *nextExpiration),
-      nextExpiration->GetDate());
+  m_ts.GetMdsLog().Info("%1% switched from %2% to the next contract %3%.",
+                        security, prevExpiration->GetDate(),
+                        nextExpiration->GetDate());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

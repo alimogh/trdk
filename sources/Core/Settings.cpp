@@ -23,7 +23,8 @@ Settings::Settings()
     : m_defaultSecurityType(numberOfSecurityTypes),
       m_defaultCurrency(numberOfCurrencies),
       m_isReplayMode(false),
-      m_isMarketDataLogEnabled(false) {}
+      m_isMarketDataLogEnabled(false),
+      m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
 
 Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
     : m_defaultSecurityType(numberOfSecurityTypes),

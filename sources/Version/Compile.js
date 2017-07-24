@@ -31,6 +31,7 @@ var requiredModules = [
 	, 'Services'
 	, 'TestStrategy'
 	, 'IntradayTrend'
+	, 'MrigeshKejriwal'
 ]
 
 //////////////////////////////////////////////////////////////////////////

@@ -51,6 +51,8 @@ class MockContext : public Context {
                                                  const trdk::TradingMode &));
   MOCK_METHOD2(GetTradingSystem,
                trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
+
+  MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 };
 }
 }

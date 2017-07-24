@@ -29,5 +29,3 @@ MockService::MockService()
                             "size = 10 ticks\n"
                             "log = none"),
                   "Section")) {}
-
-MockService::~MockService() {}

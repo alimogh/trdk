@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2017/01/09 00:16:32
+ *   Created: 2017/07/19 20:43:36
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,20 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#pragma once
-
-#include "Core/Service.hpp"
-
-namespace trdk {
-namespace Tests {
-
-class MockService : public trdk::Service {
- public:
-  MockService();
-  virtual ~MockService() override = default;
-
- public:
-  MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
-};
-}
-}
+#include "Prec.hpp"

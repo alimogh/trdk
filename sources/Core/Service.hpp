@@ -19,7 +19,7 @@ namespace trdk {
 class TRDK_CORE_API Service : public trdk::Module {
  public:
   typedef trdk::ModuleRefVariant Subscriber;
-  typedef std::list<Subscriber> SubscriberList;
+  typedef std::vector<Subscriber> SubscriberList;
 
  public:
   explicit Service(trdk::Context &,

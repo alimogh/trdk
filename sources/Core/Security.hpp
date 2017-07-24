@@ -240,16 +240,16 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
  public:
   trdk::ScaledPrice GetLastPriceScaled() const;
-  trdk::Price GetLastPrice() const;
+  virtual trdk::Price GetLastPrice() const;
   trdk::Qty GetLastQty() const;
 
-  trdk::ScaledPrice GetAskPriceScaled() const;
+  virtual trdk::ScaledPrice GetAskPriceScaled() const;
   trdk::Price GetAskPrice() const;
   trdk::Price GetAskPriceValue() const;
   trdk::Qty GetAskQty() const;
   trdk::Qty GetAskQtyValue() const;
 
-  trdk::ScaledPrice GetBidPriceScaled() const;
+  virtual trdk::ScaledPrice GetBidPriceScaled() const;
   trdk::Price GetBidPrice() const;
   trdk::Price GetBidPriceValue() const;
   trdk::Qty GetBidQty() const;

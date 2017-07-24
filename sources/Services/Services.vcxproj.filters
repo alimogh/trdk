@@ -44,6 +44,9 @@
     <ClInclude Include="StochasticIndicator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MovingAverageServiceMock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -92,6 +95,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StochasticIndicatorUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MovingAverageServiceMock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

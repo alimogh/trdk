@@ -42,6 +42,12 @@ class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
     boost::posix_time::ptime time;
     double source;
     double value;
+
+    bool operator==(const Point &rhs) const {
+      using namespace trdk::Lib;
+      return time == rhs.time && IsEqual(source, rhs.source) &&
+             IsEqual(value, rhs.value);
+    }
   };
 
  public:
@@ -53,12 +59,12 @@ class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
  public:
   virtual const boost::posix_time::ptime &GetLastDataTime() const override;
 
-  bool IsEmpty() const;
+  virtual bool IsEmpty() const;
 
   //! Returns last value point.
   /** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError
     */
-  const Point &GetLastPoint() const;
+  virtual const Point &GetLastPoint() const;
 
   //! Drops last value point copy.
   /** @throw trdk::Services::MovingAverageService::ValueDoesNotExistError

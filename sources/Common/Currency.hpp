@@ -22,6 +22,7 @@ enum Currency {
   CURRENCY_GBP,
   CURRENCY_CHF,
   CURRENCY_AUD,
+  CURRENCY_INR,
   numberOfCurrencies
 };
 

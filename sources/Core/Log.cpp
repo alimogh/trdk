@@ -21,7 +21,9 @@ Log::Log(const lt::time_zone_ptr &timeZone)
     : m_timeZone(timeZone),
       m_log(nullptr),
       m_isStreamEnabled(false),
-      m_isStdOutEnabled(false) {}
+      m_isStdOutEnabled(false) {
+  Assert(m_timeZone);
+}
 
 Log::~Log() {
   try {
