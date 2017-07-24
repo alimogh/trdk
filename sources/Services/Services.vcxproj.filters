@@ -23,25 +23,10 @@
     <ClInclude Include="MovingAverageService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BollingerBandsService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ContinuousContractBarService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BarService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BarCollectionService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AdxIndicator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RsiIndicator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StochasticIndicator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MovingAverageServiceMock.hpp">
@@ -55,13 +40,7 @@
     <ClCompile Include="MovingAverageService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BollingerBandsService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Version.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ContinuousContractBarService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BarService.cpp">
@@ -70,31 +49,10 @@
     <ClCompile Include="BarCollectionService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ContinuousContractBarServiceUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BarCollectionServiceUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MovingAverageServiceUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AdxIndicator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AdxIndicatorUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RsiIndicator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RsiIndicatorUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StochasticIndicator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StochasticIndicatorUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MovingAverageServiceMock.cpp">
@@ -107,9 +65,6 @@
     </None>
     <None Include="ContinuousContractBarServiceUTest.xlsx" />
     <None Include="Indicators.xlsx" />
-    <None Include="StochasticIndicator.xlsx">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Services.rc">
