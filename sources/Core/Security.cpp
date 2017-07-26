@@ -51,11 +51,9 @@ std::string GetFutureSymbol(const Symbol &symbol) {
     return symbol.GetSymbol();
   }
   boost::smatch match;
-  const boost::regex expr("([a-z]+)[a-z]\\d+", boost::regex::icase);
+  const boost::regex expr("^([a-z]+)([a-z]\\d+|\\d{2,2}[a-z]{3,3}FUT)$",
+                          boost::regex::icase);
   if (!boost::regex_match(symbol.GetSymbol(), match, expr)) {
-    if (symbol.GetSymbol() == "NIFTY17JULFUT") {
-      return "NIFTY";
-    }
     boost::format message("Failed to parse explicit future symbol \"%1%\"");
     message % symbol.GetSymbol();
     throw Exception(message.str().c_str());
@@ -65,11 +63,6 @@ std::string GetFutureSymbol(const Symbol &symbol) {
 
 //! Returns symbol price precision.
 uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
-  if (symbol.GetSymbol() == "TEST_SCALE2") {
-    return 2;
-  } else if (symbol.GetSymbol() == "TEST_SCALE4") {
-    return 4;
-  }
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FUTURES: {
       const auto &symbolStr = GetFutureSymbol(symbol);
@@ -83,7 +76,7 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
         return 2;
       } else if (symbolStr == "SR") {
         return 0;
-      } else if (symbolStr == "NIFTY") {
+      } else if (symbolStr == "NIFTY" || symbolStr == "NIFTY50") {
         return 2;
       }
       break;
@@ -93,6 +86,20 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
         return 2;
       }
       break;
+    case SECURITY_TYPE_INDEX:
+      if (symbol.GetSymbol() == "NIFTY50") {
+        return 2;
+      } else if (symbol.GetSymbol() == "CL") {
+        return 2;
+      } else if (symbol.GetSymbol() == "SPX") {
+        return 2;
+      }
+      break;
+  }
+  if (symbol.GetSymbol() == "TEST_SCALE2") {
+    return 2;
+  } else if (symbol.GetSymbol() == "TEST_SCALE4") {
+    return 4;
   }
   boost::format message("Failed to find precision for unknown symbol \"%1%\"");
   message % symbol;
@@ -100,10 +107,6 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
 }
 
 size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
-  if (symbol.GetSymbol() == "TEST_SCALE2" ||
-      symbol.GetSymbol() == "TEST_SCALE4") {
-    return 1;
-  }
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FUTURES: {
       const auto &symbolStr = GetFutureSymbol(symbol);
@@ -117,7 +120,7 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
         return 10;
       } else if (symbolStr == "SR") {
         return 1;
-      } else if (symbolStr == "NIFTY") {
+      } else if (symbolStr == "NIFTY" || symbolStr == "NIFTY50") {
         return 1;
       }
       break;
@@ -127,6 +130,19 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
         return 1;
       }
       break;
+    case SECURITY_TYPE_INDEX:
+      if (symbol.GetSymbol() == "NIFTY50") {
+        return 1;
+      } else if (symbol.GetSymbol() == "CL") {
+        return 1;
+      } else if (symbol.GetSymbol() == "SPX") {
+        return 1;
+      }
+      break;
+  }
+  if (symbol.GetSymbol() == "TEST_SCALE2" ||
+      symbol.GetSymbol() == "TEST_SCALE4") {
+    return 1;
   }
   boost::format message("Failed to find quote size for unknown symbol \"%1%\"");
   message % symbol;
@@ -195,6 +211,24 @@ class Log : private LogBase {
                          const std::vector<Level1TickValue> &ticks) {
     FormatAndWrite([&](Record &record) {
       record % record.GetTime() % time % "L1U";
+      for (const auto &tick : ticks) {
+        WriteValue(record, tick);
+      }
+    });
+  }
+
+  template <typename... Params>
+  void WriteLevel1Tick(const pt::ptime &time, const Params &... params) {
+    FormatAndWrite([&](Record &record) {
+      record % record.GetTime() % time % "L1T";
+      InsertFirstLevel1Update(record, params...);
+    });
+  }
+
+  void WriteLevel1Tick(const pt::ptime &time,
+                       const std::vector<Level1TickValue> &ticks) {
+    FormatAndWrite([&](Record &record) {
+      record % record.GetTime() % time % "L1T";
       for (const auto &tick : ticks) {
         WriteValue(record, tick);
       }
@@ -961,6 +995,7 @@ void Security::AddLevel1Tick(
     const Level1TickValue &tick,
     const TimeMeasurement::Milestones &timeMeasurement) {
   m_pimpl->AddLevel1Tick(time, tick, timeMeasurement, true, false);
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick);
 }
 
 void Security::AddLevel1Tick(
@@ -971,6 +1006,7 @@ void Security::AddLevel1Tick(
   m_pimpl->AddLevel1Tick(
       time, tick2, timeMeasurement, true,
       m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false, false));
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2);
 }
 
 void Security::AddLevel1Tick(
@@ -984,6 +1020,7 @@ void Security::AddLevel1Tick(
       m_pimpl->AddLevel1Tick(
           time, tick2, timeMeasurement, false,
           m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false, false)));
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick3);
 }
 
 void Security::AddLevel1Tick(
@@ -1001,6 +1038,7 @@ void Security::AddLevel1Tick(
               time, tick2, timeMeasurement, false,
               m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false,
                                      false))));
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick4);
 }
 
 void Security::AddLevel1Tick(
@@ -1014,6 +1052,7 @@ void Security::AddLevel1Tick(
         m_pimpl->AddLevel1Tick(time, tick, timeMeasurement,
                                ++counter >= ticks.size(), isPreviousChanged);
   }
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, ticks);
 }
 
 void Security::AddTrade(const boost::posix_time::ptime &time,
