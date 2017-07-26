@@ -209,7 +209,7 @@ Contract Client::GetContract(
       Assert(!customContractExpiration);
       contract.secType = "IND";
       contract.symbol = symbol.GetSymbol();
-      contract.primaryExchange = symbol.GetPrimaryExchange();
+      contract.exchange = symbol.GetExchange();
       break;
     case SECURITY_TYPE_STOCK:
       Assert(!customContractExpiration);
@@ -1472,7 +1472,8 @@ void Client::historicalData(TickerId tickerId,
     const bool isRequiredTime =
         request->subRequestStart <= time && time <= request->subRequestEnd;
 
-    if (isRequiredTime && request->security->IsLevel1Required()) {
+    if (request->expiration && isRequiredTime &&
+        request->security->IsLevel1Required()) {
       const auto &prevExpiration = std::prev(request->expiration);
       if (!prevExpiration || pt::ptime(prevExpiration->GetDate()) < time) {
         Assert(m_historyUpdates.find(request->security) ==
@@ -1491,7 +1492,6 @@ void Client::historicalData(TickerId tickerId,
     }
 
     if (isRequiredTime && request->security->IsBarsRequired()) {
-      AssertFail("History bars is not supported anymore");
       ib::Security::Bar bar(time, ib::Security::Bar::TRADES);
       bar.openPrice = request->security->ScalePrice(openPrice);
       bar.highPrice = request->security->ScalePrice(highPrice);
@@ -1506,25 +1506,26 @@ void Client::historicalData(TickerId tickerId,
     return;
   }
 
-  Assert(request->expiration);
-
-  const auto &prevExpiration = std::prev(request->expiration);
-  if (prevExpiration) {
-    if (request->subRequestStart <= pt::ptime(prevExpiration->GetDate())) {
-      AssertEq(pt::ptime(prevExpiration->GetDate()), request->subRequestStart);
-      m_ts.GetMdsLog().Debug(
-          "Finished Level I"
-          " market data history contract request"
-          " for \"%1%\" (%2%%3%, expiration: %4%"
-          ", ticker ID: %5%).",
-          *request->security, request->security->GetSymbol().GetSymbol(),
-          request->expiration->GetContract(true),
-          request->expiration->GetDate(), request->tickerId);
-    }
-    if (SendMarketDataHistoryRequest(
-            *request->security, request->requestsSequenceStartTime,
-            request->subRequestStart, request->numberOfPrevRequests, .0)) {
-      return;
+  if (request->expiration) {
+    const auto &prevExpiration = std::prev(request->expiration);
+    if (prevExpiration) {
+      if (request->subRequestStart <= pt::ptime(prevExpiration->GetDate())) {
+        AssertEq(pt::ptime(prevExpiration->GetDate()),
+                 request->subRequestStart);
+        m_ts.GetMdsLog().Debug(
+            "Finished Level I"
+            " market data history contract request"
+            " for \"%1%\" (%2%%3%, expiration: %4%"
+            ", ticker ID: %5%).",
+            *request->security, request->security->GetSymbol().GetSymbol(),
+            request->expiration->GetContract(true),
+            request->expiration->GetDate(), request->tickerId);
+      }
+      if (SendMarketDataHistoryRequest(
+              *request->security, request->requestsSequenceStartTime,
+              request->subRequestStart, request->numberOfPrevRequests, .0)) {
+        return;
+      }
     }
   }
 
@@ -1677,36 +1678,30 @@ void Client::scannerData(int /*reqId*/,
 
 void Client::scannerDataEnd(int /*reqId*/) {}
 
-void Client::realtimeBar(TickerId /*tickerId*/,
-                         long /*time*/,
-                         double /*openPrice*/,
-                         double /*highPrice*/,
-                         double /*lowPrice*/,
-                         double /*closePrice*/,
-                         long /*volume*/,
+void Client::realtimeBar(TickerId tickerId,
+                         long time,
+                         double openPrice,
+                         double highPrice,
+                         double lowPrice,
+                         double closePrice,
+                         long volume,
                          double /*wap*/,
                          int /*count*/) {
-  AssertFail("Received real time bar from IB.");
-  /*
   auto *const security = GetBarsRequest(tickerId);
   if (!security) {
-          return;
+    return;
   }
   Assert(security->IsBarsRequired());
-  ib::Security::Bar bar(
-          pt::from_time_t(time),
-          // Currently only 5 second bars are supported, if any other value is
-          // used, an exception will be thrown:
-          pt::seconds(5),
-          ib::Security::Bar::TRADES);
+  ib::Security::Bar bar(pt::from_time_t(time), ib::Security::Bar::TRADES);
   bar.openPrice = security->ScalePrice(openPrice);
   bar.highPrice = security->ScalePrice(highPrice);
   bar.lowPrice = security->ScalePrice(lowPrice);
   bar.closePrice = security->ScalePrice(closePrice);
   bar.volume = volume;
-  bar.count = count;
-  security->AddBar(bar);
-  */
+  // Currently only 5 second bars are supported, if any other value is used,
+  // an exception will be thrown:
+  bar.period = pt::seconds(5);
+  security->AddBar(std::move(bar));
 }
 
 void Client::fundamentalData(TickerId /*reqId*/, const IBString & /*data*/) {}

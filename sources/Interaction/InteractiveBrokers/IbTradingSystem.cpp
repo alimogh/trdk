@@ -185,21 +185,23 @@ trdk::Security &ib::TradingSystem::CreateNewSecurityObject(
                                                         *this, m_isTestSource);
 
   switch (symbol.GetSecurityType()) {
-    case SECURITY_TYPE_FUTURES: {
-      const auto &now = GetContext().GetCurrentTime();
-      const auto &expiration =
-          GetContext().GetExpirationCalendar().Find(symbol, now.date());
-      if (!expiration) {
-        boost::format error(
-            "Failed to find expiration info for \"%1%\" and %2%");
-        error % symbol % now;
-        throw trdk::MarketDataSource::Error(error.str().c_str());
+    case SECURITY_TYPE_FUTURES:
+      if (!symbol.IsExplicit()) {
+        const auto &now = GetContext().GetCurrentTime();
+        const auto &expiration =
+            GetContext().GetExpirationCalendar().Find(symbol, now.date());
+        if (!expiration) {
+          boost::format error(
+              "Failed to find expiration info for \"%1%\" and %2%");
+          error % symbol % now;
+          throw trdk::MarketDataSource::Error(error.str().c_str());
+        }
+        GetMdsLog().Info("Current expiration date for \"%1%\": %2% (%3%%4%).",
+                         symbol, expiration->GetDate(), symbol.GetSymbol(),
+                         expiration->GetContract(true));
+        result->SetExpiration(pt::not_a_date_time, *expiration);
       }
-      GetMdsLog().Info("Current expiration date for \"%1%\": %2% (%3%%4%).",
-                       symbol, expiration->GetDate(), symbol.GetSymbol(),
-                       expiration->GetContract(true));
-      result->SetExpiration(pt::not_a_date_time, *expiration);
-    } break;
+      break;
   }
 
   result->SetTradingSessionState(pt::not_a_date_time, true);
