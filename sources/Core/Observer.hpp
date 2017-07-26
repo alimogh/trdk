@@ -36,7 +36,8 @@ class TRDK_CORE_API Observer : public trdk::Consumer {
   void RaiseLevel1UpdateEvent(Security &);
   void RaiseLevel1TickEvent(trdk::Security &,
                             const boost::posix_time::ptime &,
-                            const trdk::Level1TickValue &);
+                            const trdk::Level1TickValue &,
+                            const trdk::Lib::TimeMeasurement::Milestones &);
   void RaiseNewTradeEvent(trdk::Security &,
                           const boost::posix_time::ptime &,
                           const trdk::ScaledPrice &,

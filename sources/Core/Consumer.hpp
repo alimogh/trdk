@@ -59,7 +59,8 @@ class TRDK_CORE_API Consumer : public trdk::Module {
 
   virtual void OnLevel1Tick(trdk::Security &,
                             const boost::posix_time::ptime &,
-                            const trdk::Level1TickValue &);
+                            const trdk::Level1TickValue &,
+                            const trdk::Lib::TimeMeasurement::Milestones &);
 
   virtual void OnNewTrade(trdk::Security &,
                           const boost::posix_time::ptime &,

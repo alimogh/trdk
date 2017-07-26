@@ -129,6 +129,7 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed. Maybe it better to open opposite position here
       // as position should be closed by signal?
+      ReportOperation(position);
       return;
     }
 
@@ -174,12 +175,15 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
   }
 }
 
-void mk::Strategy::OnLevel1Update(Security &security,
-                                  const Milestones &delayMeasurement) {
-  if (&security != &GetSpotSecurity() || GetMa().IsEmpty()) {
+void mk::Strategy::OnLevel1Tick(Security &security,
+                                const pt::ptime &,
+                                const Level1TickValue &tick,
+                                const Milestones &delayMeasurement) {
+  if (tick.GetType() != LEVEL1_TICK_LAST_PRICE ||
+      &security != &GetSpotSecurity() || GetMa().IsEmpty()) {
     return;
   }
-  CheckSignal(delayMeasurement);
+  CheckSignal(security.DescalePrice(tick.GetValue()), delayMeasurement);
 }
 
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}
@@ -190,12 +194,21 @@ void mk::Strategy::OnPostionsCloseRequest() {
       "::OnPostionsCloseRequest is not implemented");
 }
 
-void mk::Strategy::CheckSignal(const Milestones &delayMeasurement) {
-  if (!m_trend->Update(GetSpotSecurity().GetLastPrice(),
-                       GetMa().GetLastPoint())) {
+void mk::Strategy::CheckSignal(const Price &spotPrice,
+                               const Milestones &delayMeasurement) {
+  const auto &lastPoint = GetMa().GetLastPoint();
+  if (!m_trend->Update(spotPrice, lastPoint)) {
     return;
   }
   Assert(!boost::indeterminate(m_trend->IsRising()));
+  GetTradingLog().Write(
+      "trend changed\tprice=%1%\tema=%2%\tspot-price=%3%\tnew-direction=%4%",
+      [this, &lastPoint, &spotPrice](TradingRecord &record) {
+        record % lastPoint.source                            // 1
+            % lastPoint.value                                // 2
+            % spotPrice                                      // 3
+            % (m_trend->IsRising() ? "rising" : "falling");  // 4
+      });
 
   Position *position = nullptr;
   if (!GetPositions().IsEmpty()) {
@@ -257,6 +270,40 @@ void mk::Strategy::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.SetCloseReason(CLOSE_REASON_SIGNAL);
   position.Close(position.GetMarketClosePrice());
+}
+
+void mk::Strategy::ReportOperation(const Position &pos) {
+  if (!m_strategyLog.is_open()) {
+    m_strategyLog = OpenDataLog("csv");
+    m_strategyLog << "Date,Open Start Time,Open Time,Opening Duration"
+                  << ",Close Start Time,Close Time,Closing Duration"
+                  << ",Position Duration,Type,P&L Volume,P&L %,Is Profit"
+                  << ",Is Loss,Qty,Open Price,Open Orders,Open Trades"
+                  << ",Close Reason,Close Price,Close Orders, Close Trades,ID"
+                  << std::endl;
+  }
+
+  m_strategyLog << pos.GetOpenStartTime().date() << ','
+                << ExcelTextField(pos.GetOpenStartTime().time_of_day()) << ','
+                << ExcelTextField(pos.GetOpenTime().time_of_day()) << ','
+                << ExcelTextField(pos.GetOpenTime() - pos.GetOpenStartTime())
+                << ',' << ExcelTextField(pos.GetCloseStartTime().time_of_day())
+                << ',' << ExcelTextField(pos.GetCloseTime().time_of_day())
+                << ','
+                << ExcelTextField(pos.GetCloseTime() - pos.GetCloseStartTime())
+                << ',' << ExcelTextField(pos.GetCloseTime() - pos.GetOpenTime())
+                << ',' << pos.GetType() << ',' << pos.GetRealizedPnlVolume()
+                << ',' << pos.GetRealizedPnlRatio()
+                << (pos.IsProfit() ? ",1,0" : ",0,1") << ','
+                << pos.GetOpenedQty() << ','
+                << GetTradingSecurity().DescalePrice(pos.GetOpenAvgPrice())
+                << ',' << pos.GetNumberOfOpenOrders() << ','
+                << pos.GetNumberOfOpenTrades() << ',' << pos.GetCloseReason()
+                << ','
+                << GetTradingSecurity().DescalePrice(pos.GetCloseAvgPrice())
+                << ',' << pos.GetNumberOfCloseOrders() << ','
+                << pos.GetNumberOfCloseTrades() << ',' << pos.GetId()
+                << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

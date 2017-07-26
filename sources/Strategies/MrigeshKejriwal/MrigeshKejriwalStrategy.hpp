@@ -77,8 +77,10 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
       const trdk::Lib::TimeMeasurement::Milestones &) override;
   virtual void OnPostionsCloseRequest() override;
 
-  virtual void OnLevel1Update(
+  virtual void OnLevel1Tick(
       trdk::Security &,
+      const boost::posix_time::ptime &,
+      const trdk::Level1TickValue &,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
 
  private:
@@ -97,7 +99,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   void OnMaServiceStart(const trdk::Services::MovingAverageService &);
 
-  void CheckSignal(const trdk::Lib::TimeMeasurement::Milestones &);
+  void CheckSignal(const Price &,
+                   const trdk::Lib::TimeMeasurement::Milestones &);
 
   trdk::Position &OpenPosition(bool isLong,
                                const trdk::Lib::TimeMeasurement::Milestones &);
@@ -115,6 +118,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   void ContinuePosition(trdk::Position &);
   void ClosePosition(trdk::Position &);
 
+  void ReportOperation(const Position &);
+
  private:
   const Settings m_settings;
 
@@ -125,6 +130,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   const trdk::Services::MovingAverageService *m_ma;
 
   boost::shared_ptr<Trend> m_trend;
+
+  std::ofstream m_strategyLog;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

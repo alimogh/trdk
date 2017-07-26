@@ -20,5 +20,11 @@ ib::Security::Security(Context &context,
                        const Lib::Symbol &symbol,
                        MarketDataSource &source,
                        bool isTestSource)
-    : Base(context, symbol, source, SupportedLevel1Types().set()),
+    : Base(context,
+           symbol,
+           source,
+           SupportedLevel1Types()
+               .set(LEVEL1_TICK_LAST_PRICE)
+               .set(LEVEL1_TICK_BID_PRICE)
+               .set(LEVEL1_TICK_ASK_PRICE)),
       m_isTestSource(isTestSource) {}

@@ -51,11 +51,13 @@ void Observer::RaiseLevel1UpdateEvent(Security &security) {
   OnLevel1Update(security);
 }
 
-void Observer::RaiseLevel1TickEvent(Security &security,
-                                    const boost::posix_time::ptime &time,
-                                    const Level1TickValue &value) {
+void Observer::RaiseLevel1TickEvent(
+    Security &security,
+    const boost::posix_time::ptime &time,
+    const Level1TickValue &value,
+    const TimeMeasurement::Milestones &delayMeasurement) {
   const auto lock = LockForOtherThreads();
-  OnLevel1Tick(security, time, value);
+  OnLevel1Tick(security, time, value, delayMeasurement);
 }
 
 void Observer::RaiseNewTradeEvent(Security &security,
@@ -68,9 +70,9 @@ void Observer::RaiseNewTradeEvent(Security &security,
 
 void Observer::RaiseServiceDataUpdateEvent(
     const Service &service,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+    const TimeMeasurement::Milestones &delayMeasurement) {
   const auto lock = LockForOtherThreads();
-  OnServiceDataUpdate(service, timeMeasurement);
+  OnServiceDataUpdate(service, delayMeasurement);
 }
 
 void Observer::RaiseSecurityServiceEvent(

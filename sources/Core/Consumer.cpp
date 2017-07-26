@@ -54,7 +54,8 @@ void Consumer::OnSecurityContractSwitched(const pt::ptime &,
 
 void Consumer::OnLevel1Tick(Security &security,
                             const pt::ptime &,
-                            const Level1TickValue &) {
+                            const Level1TickValue &,
+                            const TimeMeasurement::Milestones &) {
   GetLog().Error(
       "Subscribed to %1% level 1 ticks, but can't work with it"
       " (doesn't have OnLevel1Tick method implementation).",
