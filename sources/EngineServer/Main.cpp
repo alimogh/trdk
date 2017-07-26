@@ -65,11 +65,6 @@ fs::path GetIniFilePath(const char *inputValue) {
 namespace {
 
 bool DebugStrategy(int argc, const char *argv[]) {
-  if (argc < 3 || !strlen(argv[2])) {
-    std::cerr << "No configuration file specified." << std::endl;
-    return false;
-  }
-
   std::unique_ptr<Engine> engine;
   bool result = true;
 
@@ -92,7 +87,7 @@ bool DebugStrategy(int argc, const char *argv[]) {
 
     try {
       engine = boost::make_unique<Engine>(
-          GetIniFilePath(argv[2]),
+          GetIniFilePath(argc >= 3 ? argv[2] : "etc"),
           [&](const trdk::Context::State &newState, const std::string *) {
             {
               const boost::mutex::scoped_lock lock(stateMutex);
@@ -140,7 +135,7 @@ bool ShowHelp(int argc, const char *argv[]) {
             << std::endl
             << "Command:" << std::endl
             << std::endl
-            << "    " << debug << " (or " << debugShort << ")"
+            << "    " << debug << " (or " << debugShort << ", or no command)"
             << " \"path to INI-file or path to default.ini directory\""
             << std::endl
             << std::endl
@@ -257,6 +252,8 @@ int main(int argc, const char *argv[]) {
       } else {
         std::cerr << "No command specified." << std::endl;
       }
+    } else {
+      func = &DebugStrategy;
     }
 
     if (func) {
