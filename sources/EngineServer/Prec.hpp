@@ -13,20 +13,6 @@
 #include "Common/Common.hpp"
 #include "Engine/Fwd.hpp"
 #include "Fwd.hpp"
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4005)
-#pragma warning(disable : 4100)
-#pragma warning(disable : 4101)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4267)
-#pragma warning(disable : 4309)
-#pragma warning(disable : 4457)
-#endif
-#include <autobahn/autobahn.hpp>
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>

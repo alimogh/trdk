@@ -328,7 +328,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DropCopyRecord.hpp" />
@@ -337,7 +336,6 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Pack.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Service.hpp" />
     <ClInclude Include="QueueService.hpp" />
   </ItemGroup>
   <ItemGroup>

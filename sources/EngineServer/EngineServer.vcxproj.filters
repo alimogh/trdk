@@ -3,13 +3,11 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
-    <ClCompile Include="Service.cpp" />
     <ClCompile Include="QueueService.cpp" />
     <ClCompile Include="Engine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="Service.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="QueueService.hpp" />

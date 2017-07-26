@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Engine.hpp"
-#include "Service.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
@@ -29,9 +28,6 @@ namespace Commands {
 
 const char *const debug = "debug";
 const char *const debugShort = "d";
-
-const char *const standalone = "standalone";
-const char *const standaloneShort = "s";
 
 const char *const version = "version";
 const char *const versionShort = "v";
@@ -67,50 +63,6 @@ fs::path GetIniFilePath(const char *inputValue) {
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
-
-bool RunService(int argc, const char *argv[]) {
-  if (argc < 3 || !strlen(argv[2])) {
-    std::cerr << "No configuration file specified." << std::endl;
-    return false;
-  }
-
-  pt::time_duration startDelay;
-  if (argc > 3) {
-    auto i = 3;
-    if (strcmp(argv[i], CommandLine::Options::startDelay)) {
-      std::cerr << "Unknown option \"" << argv[i] << "\"." << std::endl;
-      return false;
-    }
-    const auto valueArgIndex = i + 1;
-    if (valueArgIndex >= argc) {
-      std::cerr << "Option " << CommandLine::Options::startDelay
-                << " has no value." << std::endl;
-      return false;
-    }
-    try {
-      const auto value =
-          boost::lexical_cast<unsigned short>(argv[valueArgIndex]);
-      startDelay = pt::seconds(value);
-    } catch (const boost::bad_lexical_cast &ex) {
-      std::cerr << "Failed to read " << CommandLine::Options::startDelay
-                << " value \"" << argv[valueArgIndex] << "\":"
-                << " \"" << ex.what() << "\"." << std::endl;
-      return false;
-    }
-  }
-
-  try {
-    Service service(GetIniFilePath(argv[2]), startDelay);
-    getchar();
-    return true;
-  } catch (const trdk::Lib::Exception &ex) {
-    std::cerr << "Failed to start engine service: \"" << ex << "\"."
-              << std::endl;
-    getchar();
-  }
-
-  return false;
-}
 
 bool DebugStrategy(int argc, const char *argv[]) {
   if (argc < 3 || !strlen(argv[2])) {
@@ -187,11 +139,6 @@ bool ShowHelp(int argc, const char *argv[]) {
             << std::endl
             << std::endl
             << "Command:" << std::endl
-            << std::endl
-            << "    " << standalone << " (or " << standaloneShort
-            << ")"
-               " \"path to INI-file or path to default.ini directory\""
-            << std::endl
             << std::endl
             << "    " << debug << " (or " << debugShort << ")"
             << " \"path to INI-file or path to default.ini directory\""
@@ -289,10 +236,6 @@ int main(int argc, const char *argv[]) {
       Verify(--result >= 0);
 
       boost::unordered_map<std::string, decltype(func)> commands;
-
-      Verify(commands.emplace(std::make_pair(standalone, &RunService)).second);
-      Verify(commands.emplace(std::make_pair(standaloneShort, &RunService))
-                 .second);
 
       Verify(commands.emplace(std::make_pair(debug, &DebugStrategy)).second);
       Verify(
