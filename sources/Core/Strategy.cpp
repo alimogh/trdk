@@ -416,7 +416,7 @@ void Strategy::Unregister(Position &position) throw() {
 }
 
 void Strategy::RaiseLevel1UpdateEvent(
-    Security &security, const TimeMeasurement::Milestones &timeMeasurement) {
+    Security &security, const TimeMeasurement::Milestones &delayMeasurement) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -424,7 +424,7 @@ void Strategy::RaiseLevel1UpdateEvent(
   if (IsBlocked()) {
     return;
   }
-  timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
+  delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
     {
       auto &positions = GetPositions();
@@ -433,15 +433,17 @@ void Strategy::RaiseLevel1UpdateEvent(
         it->RunAlgos();
       }
     }
-    OnLevel1Update(security, timeMeasurement);
+    OnLevel1Update(security, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
   }
 }
 
-void Strategy::RaiseLevel1TickEvent(trdk::Security &security,
-                                    const boost::posix_time::ptime &time,
-                                    const Level1TickValue &value) {
+void Strategy::RaiseLevel1TickEvent(
+    trdk::Security &security,
+    const boost::posix_time::ptime &time,
+    const Level1TickValue &value,
+    const TimeMeasurement::Milestones &delayMeasurement) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -449,8 +451,9 @@ void Strategy::RaiseLevel1TickEvent(trdk::Security &security,
   if (IsBlocked()) {
     return;
   }
+  delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
-    OnLevel1Tick(security, time, value);
+    OnLevel1Tick(security, time, value, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
   }
