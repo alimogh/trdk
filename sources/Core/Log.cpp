@@ -47,16 +47,17 @@ void Log::EnableStream(std::ostream &newLog, bool writeStartInfo) {
     Write("Start", GetTime(), GetThreadId(), nullptr,
           boost::format("Build: " TRDK_BUILD_IDENTITY "."
                         " Build time: " __DATE__ " " __TIME__ "."
-                        " Timezone: %1%. UTC: %2%. EST: %3% (%4%)."
-                        " CST: %5% (%6%). MSK: %7% (%8%).") %
-              GetTimeZone()->to_posix_string() %
-              pt::microsec_clock::universal_time() %
-              (now + GetEstTimeZoneDiff(GetTimeZone())) %
-              GetEstTimeZoneDiff(GetTimeZone()) %
-              (now + GetCstTimeZoneDiff(GetTimeZone())) %
-              GetCstTimeZoneDiff(GetTimeZone()) %
-              (now + GetMskTimeZoneDiff(GetTimeZone())) %
-              GetMskTimeZoneDiff(GetTimeZone()));
+                        " Timezone: %1%. UTC: %2%. Local: %3%. EST: %4% (%5%)."
+                        " CST: %6% (%7%). MSK: %8% (%9%).") %
+              GetTimeZone()->to_posix_string() %           // 1
+              pt::microsec_clock::universal_time() %       // 2
+              pt::microsec_clock::local_time() %           // 3
+              (now + GetEstTimeZoneDiff(GetTimeZone())) %  // 4
+              GetEstTimeZoneDiff(GetTimeZone()) %          // 5
+              (now + GetCstTimeZoneDiff(GetTimeZone())) %  // 6
+              GetCstTimeZoneDiff(GetTimeZone()) %          // 7
+              (now + GetMskTimeZoneDiff(GetTimeZone())) %  // 8
+              GetMskTimeZoneDiff(GetTimeZone()));          // 9
   }
 }
 
