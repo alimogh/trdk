@@ -1692,7 +1692,10 @@ void Client::realtimeBar(TickerId tickerId,
     return;
   }
   Assert(security->IsBarsRequired());
-  ib::Security::Bar bar(pt::from_time_t(time), ib::Security::Bar::TRADES);
+  ib::Security::Bar bar(
+      pt::from_time_t(time) +
+          m_ts.GetContext().GetSettings().GetTimeZone()->base_utc_offset(),
+      ib::Security::Bar::TRADES);
   bar.openPrice = security->ScalePrice(openPrice);
   bar.highPrice = security->ScalePrice(highPrice);
   bar.lowPrice = security->ScalePrice(lowPrice);
