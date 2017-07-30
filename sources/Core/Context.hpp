@@ -143,8 +143,17 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   //! User context parameters. No predefined key list.
   const trdk::Context::Params &GetParams() const;
 
+  //! Returns expiration calendar.
+  /** Throws an exception if expiration calendar is not set.
+    * @sa HasExpirationCalendar
+    * @throw trdk::Lib::Exception
+    */
   virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
       const = 0;
+  //! Returns true if expiration calendar is set.
+  /** @sa GetExpirationCalendar
+    */
+  virtual bool HasExpirationCalendar() const = 0;
 
   //! Market Data Sources count.
   /** @sa GetMarketDataSource

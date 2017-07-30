@@ -1176,6 +1176,12 @@ bool Security::HasExpiration() const {
 
 bool Security::SetExpiration(const pt::ptime &time,
                              const ContractExpiration &expiration) {
+  return SetExpiration(time,
+                       std::forward<const ContractExpiration>(expiration));
+}
+
+bool Security::SetExpiration(const pt::ptime &time,
+                             const ContractExpiration &&expiration) {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   if (m_pimpl->m_expiration) {
     AssertLt(*m_pimpl->m_expiration, expiration);
@@ -1200,7 +1206,7 @@ bool Security::SetExpiration(const pt::ptime &time,
     }
 
     m_pimpl->m_isLevel1Started = false;
-    m_pimpl->m_expiration = expiration;
+    m_pimpl->m_expiration = std::move(expiration);
     for (auto &item : m_pimpl->m_level1) {
       Unset(item);
     }

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "ExpirationCalendar.hpp"
+#include "Util.hpp"
 
 using namespace trdk::Lib;
 namespace fs = boost::filesystem;
@@ -263,41 +264,15 @@ void ExpirationCalendar::ReloadCsv(const fs::path &filePath) {
         symbol = std::move(field);
 
       } else if (expirationDate.is_not_a_date()) {
-        uint32_t expirationDateInt;
         try {
-          expirationDateInt = boost::lexical_cast<uint32_t>(field);
-        } catch (const boost::bad_lexical_cast &) {
+          expirationDate = ConvertToDateFromYyyyMmDd(field);
+        } catch (const std::exception &ex) {
           boost::format error(
               "Wrong expiration date format in CSV-file %1%"
-              " at line %2%");
-          error % filePath % numberOfLines;
+              " at line %2%: \"%3%\"");
+          error % filePath % numberOfLines % ex.what();
           throw Exception(error.str().c_str());
         }
-
-        struct {
-          uint16_t year;
-          uint8_t month;
-          uint8_t day;
-        } date;
-        date.year = uint16_t(expirationDateInt / 10000);
-        date.month = uint8_t((expirationDateInt - (date.year * 10000)) / 100);
-        if (date.month < 1 || date.month > 12) {
-          boost::format error(
-              "Wrong expiration month format in CSV-file %1%"
-              " at line %2%");
-          error % filePath % numberOfLines;
-          throw Exception(error.str().c_str());
-        }
-        date.day = uint8_t(expirationDateInt - (date.year * 10000) -
-                           (date.month * 100));
-        if (date.day < 1 || date.day > 31) {
-          boost::format error(
-              "Wrong expiration month day format in CSV-file %1%"
-              " at line %2%");
-          throw Exception(error.str().c_str());
-        }
-        expirationDate = gr::date(date.year, date.month, date.day);
-
       } else {
         boost::format error("Too many fields in CSV-file %1% at line %2%");
         error % filePath % numberOfLines;

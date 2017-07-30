@@ -130,6 +130,8 @@ boost::posix_time::time_duration ConvertToTimeDuration(unsigned int timeAsInt);
 boost::posix_time::ptime ConvertToTime(unsigned int dateAsInt,
                                        unsigned int timeAsInt);
 
+boost::gregorian::date ConvertToDateFromYyyyMmDd(const std::string &);
+
 //////////////////////////////////////////////////////////////////////////
 
 std::string ConvertUtf8ToAscii(const std::string &);

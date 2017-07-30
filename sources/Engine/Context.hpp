@@ -28,7 +28,7 @@ class TRDK_ENGINE_API Context : public trdk::Context {
       const trdk::Settings &,
       const trdk::Lib::Ini &,
       const boost::unordered_map<std::string, std::string> &params);
-  virtual ~Context();
+  virtual ~Context() override;
 
  public:
   void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
@@ -39,30 +39,35 @@ class TRDK_ENGINE_API Context : public trdk::Context {
 
   void ClosePositions();
 
-  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
+  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
  public:
-  virtual RiskControl &GetRiskControl(const trdk::TradingMode &);
-  virtual const RiskControl &GetRiskControl(const trdk::TradingMode &) const;
+  virtual RiskControl &GetRiskControl(const trdk::TradingMode &) override;
+  virtual const RiskControl &GetRiskControl(
+      const trdk::TradingMode &) const override;
 
-  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar() const;
+  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
+      const override;
+  virtual bool HasExpirationCalendar() const override;
 
-  virtual size_t GetNumberOfMarketDataSources() const;
-  virtual const trdk::MarketDataSource &GetMarketDataSource(size_t index) const;
-  virtual trdk::MarketDataSource &GetMarketDataSource(size_t index);
+  virtual size_t GetNumberOfMarketDataSources() const override;
+  virtual const trdk::MarketDataSource &GetMarketDataSource(
+      size_t index) const override;
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t index) override;
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(const trdk::MarketDataSource &)> &) const;
+      const boost::function<bool(const trdk::MarketDataSource &)> &)
+      const override;
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(trdk::MarketDataSource &)> &);
+      const boost::function<bool(trdk::MarketDataSource &)> &) override;
 
-  virtual size_t GetNumberOfTradingSystems() const;
+  virtual size_t GetNumberOfTradingSystems() const override;
   virtual const trdk::TradingSystem &GetTradingSystem(
-      size_t index, const TradingMode &) const;
+      size_t index, const TradingMode &) const override;
   virtual trdk::TradingSystem &GetTradingSystem(size_t index,
-                                                const TradingMode &);
+                                                const TradingMode &) override;
 
  protected:
-  virtual DropCopy *GetDropCopy() const;
+  virtual DropCopy *GetDropCopy() const override;
 
  private:
   class Implementation;

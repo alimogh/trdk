@@ -33,8 +33,6 @@ DummyContext::DummyContext()
               Settings(),
               boost::unordered_map<std::string, std::string>()) {}
 
-DummyContext::~DummyContext() {}
-
 DummyContext &DummyContext::GetInstance() {
   static DummyContext result;
   return result;
@@ -56,6 +54,10 @@ const RiskControl &DummyContext::GetRiskControl(const TradingMode &mode) const {
 }
 
 const ExpirationCalendar &DummyContext::GetExpirationCalendar() const {
+  throw std::logic_error("Not supported");
+}
+
+bool DummyContext::HasExpirationCalendar() const {
   throw std::logic_error("Not supported");
 }
 

@@ -32,6 +32,7 @@ class MockContext : public Context {
 
   MOCK_CONST_METHOD0(GetExpirationCalendar,
                      const trdk::Lib::ExpirationCalendar &());
+  MOCK_CONST_METHOD0(HasExpirationCalendar, bool());
 
   MOCK_CONST_METHOD0(GetNumberOfMarketDataSources, size_t());
 

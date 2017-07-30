@@ -18,36 +18,40 @@ namespace Tests {
 class DummyContext : public Context {
  public:
   DummyContext();
-  virtual ~DummyContext();
+  virtual ~DummyContext() override = default;
 
   static DummyContext &GetInstance();
 
  public:
-  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const;
+  virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
-  virtual RiskControl &GetRiskControl(const trdk::TradingMode &);
+  virtual RiskControl &GetRiskControl(const trdk::TradingMode &) override;
   virtual const RiskControl &GetRiskControl(
-      const trdk::TradingMode &mode) const;
+      const trdk::TradingMode &mode) const override;
 
-  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar() const;
+  virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
+      const override;
+  virtual bool HasExpirationCalendar() const override;
 
-  virtual size_t GetNumberOfMarketDataSources() const;
-  virtual const trdk::MarketDataSource &GetMarketDataSource(size_t) const;
-  virtual trdk::MarketDataSource &GetMarketDataSource(size_t);
+  virtual size_t GetNumberOfMarketDataSources() const override;
+  virtual const trdk::MarketDataSource &GetMarketDataSource(
+      size_t) const override;
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t) override;
 
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(const trdk::MarketDataSource &)> &) const;
+      const boost::function<bool(const trdk::MarketDataSource &)> &)
+      const override;
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(trdk::MarketDataSource &)> &);
+      const boost::function<bool(trdk::MarketDataSource &)> &) override;
 
-  virtual size_t GetNumberOfTradingSystems() const;
+  virtual size_t GetNumberOfTradingSystems() const override;
   virtual const trdk::TradingSystem &GetTradingSystem(
-      size_t, const trdk::TradingMode &) const;
-  virtual trdk::TradingSystem &GetTradingSystem(size_t,
-                                                const trdk::TradingMode &);
+      size_t, const trdk::TradingMode &) const override;
+  virtual trdk::TradingSystem &GetTradingSystem(
+      size_t, const trdk::TradingMode &) override;
 
  protected:
-  virtual DropCopy *GetDropCopy() const;
+  virtual DropCopy *GetDropCopy() const override;
 };
 }
 }
