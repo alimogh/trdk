@@ -9,11 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/MarketDataSourceMock.hpp"
+#include "Core/SecurityMock.hpp"
+#include "Services/BarServiceMock.hpp"
 #include "AdxIndicator.hpp"
-#include "Tests/MockBarService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockMarketDataSource.hpp"
-#include "Tests/MockSecurity.hpp"
 
 using namespace testing;
 using namespace trdk::Tests;
@@ -551,10 +551,10 @@ TEST(AdxIndicator, General) {
       "period = 14\n"
       "log = none");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   MockSecurity security("TEST_SCALE4*/USD::FUT");
-  MockBarService bars;
+  Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 
   Indicator indicator(context, "Test", lib::IniSectionRef(settings, "Section"));
@@ -563,7 +563,7 @@ TEST(AdxIndicator, General) {
   for (const auto &row : source) {
     time += pt::seconds(123);
 
-    MockBarService::Bar bar;
+    Mocks::BarService::Bar bar;
     bar.time = time;
     bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0] + 99.99, 10000));
     bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 10000));

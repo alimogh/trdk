@@ -20,33 +20,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MockContext.hpp">
-      <Filter>Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="MockMarketDataSource.hpp">
-      <Filter>Mocks</Filter>
-    </ClInclude>
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="MockDropCopy.hpp">
-      <Filter>Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="MockBarService.hpp">
-      <Filter>Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="MockSecurity.hpp">
-      <Filter>Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="DummyContext.hpp">
-      <Filter>Dummies</Filter>
-    </ClInclude>
-    <ClInclude Include="DummyMarketDataSource.hpp">
-      <Filter>Dummies</Filter>
-    </ClInclude>
     <ClInclude Include="FuncTestList.hpp" />
-    <ClInclude Include="MockService.hpp">
+    <ClInclude Include="..\Services\MovingAverageServiceMock.hpp">
       <Filter>Mocks</Filter>
     </ClInclude>
-    <ClInclude Include="..\Services\MovingAverageServiceMock.hpp">
+    <ClInclude Include="..\Core\TradingSystemMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\ContextMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\DropCopyMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\MarketDataSourceMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\SecurityMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\ServiceMock.hpp">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\ContextDummy.hpp">
+      <Filter>Dummies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\MarketDataSourceDummy.hpp">
+      <Filter>Dummies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Services\BarServiceMock.hpp">
       <Filter>Mocks</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,12 +60,6 @@
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="MockContext.cpp">
-      <Filter>Mocks</Filter>
-    </ClCompile>
-    <ClCompile Include="MockMarketDataSource.cpp">
-      <Filter>Mocks</Filter>
-    </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp" />
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp">
@@ -70,12 +67,6 @@
     </ClCompile>
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp">
       <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="DummyContext.cpp">
-      <Filter>Dummies</Filter>
-    </ClCompile>
-    <ClCompile Include="DummyMarketDataSource.cpp">
-      <Filter>Dummies</Filter>
     </ClCompile>
     <ClCompile Include="..\Core\SecurityUTest.cpp">
       <Filter>Unit Tests</Filter>
@@ -93,17 +84,11 @@
       <Filter>Unit Tests</Filter>
     </ClCompile>
     <ClCompile Include="FuncTestList.cpp" />
-    <ClCompile Include="MockBarService.cpp">
-      <Filter>Mocks</Filter>
-    </ClCompile>
     <ClCompile Include="..\Services\AdxIndicatorUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
     <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp">
       <Filter>Unit Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="MockService.cpp">
-      <Filter>Mocks</Filter>
     </ClCompile>
     <ClCompile Include="..\Services\RsiIndicatorUTest.cpp">
       <Filter>Unit Tests</Filter>
@@ -119,6 +104,27 @@
     </ClCompile>
     <ClCompile Include="..\Strategies\MrigeshKejriwal\MrigeshKejriwalStrategyUTest.cpp">
       <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\TradingSystemMock.cpp">
+      <Filter>Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\ContextMock.cpp">
+      <Filter>Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\MarketDataSourceMock.cpp">
+      <Filter>Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\ServiceMock.cpp">
+      <Filter>Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\ContextDummy.cpp">
+      <Filter>Dummies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Core\MarketDataSourceDummy.cpp">
+      <Filter>Dummies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Services\BarServiceMock.cpp">
+      <Filter>Mocks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -208,7 +214,7 @@
     </Library>
     <Library Include="..\..\output\x86\lib\Test Standalone\MrigeshKejriwal_test.lib">
       <Filter>Lib Files</Filter>
-    </Library>	
+    </Library>
     <Library Include="..\..\output\x86\lib\Release DLL\MrigeshKejriwal.lib">
       <Filter>Lib Files</Filter>
     </Library>

@@ -9,9 +9,9 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/SecurityMock.hpp"
 #include "ContinuousContractBarService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockSecurity.hpp"
 
 using namespace testing;
 using namespace trdk::Tests;
@@ -133,7 +133,7 @@ TEST(ContinuousContractBarServiceTest, DISABLED_History) {
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockContext context;
+  Mocks::Context context;
 
   MockSecurity security;
   EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(false));
@@ -248,7 +248,7 @@ TEST(ContinuousContractBarServiceTest, Online) {
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockContext context;
+  Mocks::Context context;
 
   MockSecurity security;
   EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(true));

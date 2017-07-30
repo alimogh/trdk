@@ -9,11 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/MarketDataSourceMock.hpp"
+#include "Core/SecurityMock.hpp"
+#include "Services/BarServiceMock.hpp"
 #include "StochasticIndicator.hpp"
-#include "Tests/MockBarService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockMarketDataSource.hpp"
-#include "Tests/MockSecurity.hpp"
 
 using namespace testing;
 using namespace trdk::Tests;
@@ -156,10 +156,10 @@ TEST(StochasticIndicator, General) {
       "period_d = 3\n"
       "log = none");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   MockSecurity security("TEST_SCALE2*/USD::FUT");
-  MockBarService bars;
+  Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 
   Indicator indicator(context, "Test", lib::IniSectionRef(settings, "Section"));
@@ -168,7 +168,7 @@ TEST(StochasticIndicator, General) {
   for (const auto &row : source) {
     time += pt::seconds(123);
 
-    MockBarService::Bar bar;
+    Mocks::BarService::Bar bar;
     bar.time = time;
     bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
     bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[1], 100));

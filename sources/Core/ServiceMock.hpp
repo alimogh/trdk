@@ -10,18 +10,20 @@
 
 #pragma once
 
-#include "Core/Service.hpp"
+#include "Service.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockService : public trdk::Service {
+class Service : public trdk::Service {
  public:
-  MockService();
-  virtual ~MockService() override = default;
+  Service();
+  virtual ~Service() override = default;
 
  public:
   MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
 };
+}
 }
 }

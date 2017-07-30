@@ -10,16 +10,16 @@
 
 #pragma once
 
-#include "Services/BarService.hpp"
-#include "MockService.hpp"
+#include "BarService.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockBarService : public trdk::Services::BarService {
+class BarService : public trdk::Services::BarService {
  public:
-  MockBarService();
-  virtual ~MockBarService();
+  BarService();
+  virtual ~BarService() override = default;
 
  public:
   MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
@@ -38,5 +38,6 @@ class MockBarService : public trdk::Services::BarService {
   MOCK_CONST_METHOD1(DropUncompletedBarCopy,
                      void(const trdk::DropCopyDataSourceInstanceId &));
 };
+}
 }
 }

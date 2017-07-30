@@ -9,33 +9,31 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "DummyMarketDataSource.hpp"
-#include "DummyContext.hpp"
+#include "MarketDataSourceDummy.hpp"
+#include "ContextDummy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Tests;
 
-DummyMarketDataSource::DummyMarketDataSource(trdk::Context *context)
-    : MarketDataSource(
-          0, context ? *context : DummyContext::GetInstance(), "Test") {}
+Dummies::MarketDataSource::MarketDataSource(trdk::Context *context)
+    : trdk::MarketDataSource(
+          0, context ? *context : Dummies::Context::GetInstance(), "Test") {}
 
-DummyMarketDataSource::~DummyMarketDataSource() {}
-
-DummyMarketDataSource &DummyMarketDataSource::GetInstance() {
-  static DummyMarketDataSource result;
+Dummies::MarketDataSource &Dummies::MarketDataSource::GetInstance() {
+  static Dummies::MarketDataSource result;
   return result;
 }
 
-void DummyMarketDataSource::Connect(const trdk::Lib::IniSectionRef &) {
+void Dummies::MarketDataSource::Connect(const trdk::Lib::IniSectionRef &) {
   throw std::logic_error("Not supported");
 }
 
-void DummyMarketDataSource::SubscribeToSecurities() {
+void Dummies::MarketDataSource::SubscribeToSecurities() {
   throw std::logic_error("Not supported");
 }
 
-trdk::Security &DummyMarketDataSource::CreateNewSecurityObject(
+trdk::Security &Dummies::MarketDataSource::CreateNewSecurityObject(
     const trdk::Lib::Symbol &) {
   throw std::logic_error("Not supported");
 }

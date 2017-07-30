@@ -10,17 +10,18 @@
 
 #pragma once
 
-#include "Core/MarketDataSource.hpp"
+#include "MarketDataSource.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Dummies {
 
-class DummyMarketDataSource : public MarketDataSource {
+class MarketDataSource : public trdk::MarketDataSource {
  public:
-  explicit DummyMarketDataSource(trdk::Context * = nullptr);
-  virtual ~DummyMarketDataSource();
+  explicit MarketDataSource(trdk::Context * = nullptr);
+  virtual ~MarketDataSource() override = default;
 
-  static DummyMarketDataSource &GetInstance();
+  static MarketDataSource &GetInstance();
 
  public:
   virtual void Connect(const trdk::Lib::IniSectionRef &) override;
@@ -31,5 +32,6 @@ class DummyMarketDataSource : public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const trdk::Lib::Symbol &) override;
 };
+}
 }
 }

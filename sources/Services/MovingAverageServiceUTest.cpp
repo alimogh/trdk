@@ -9,10 +9,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/DropCopyMock.hpp"
+#include "Core/MarketDataSourceMock.hpp"
 #include "MovingAverageService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockDropCopy.hpp"
-#include "Tests/MockMarketDataSource.hpp"
 
 namespace lib = trdk::Lib;
 namespace svc = trdk::Services;
@@ -179,8 +179,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
   const lib::IniString settingsForLastPrice(settingsString.str() +
                                             "\nsource = last price");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());
@@ -322,8 +322,8 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
   const lib::IniString settingsForLastPrice(settingsString.str() +
                                             "\nsource = last price");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());
@@ -429,8 +429,8 @@ TEST(MovingAverageServiceTypedTest, DropCopy) {
 
   pt::ptime time = pt::microsec_clock::local_time();
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());

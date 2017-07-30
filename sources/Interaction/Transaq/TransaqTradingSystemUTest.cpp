@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockSecurity.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/SecurityMock.hpp"
 #include "TransaqConnectorContext.hpp"
 #include "TransaqTradingSystem.hpp"
 
@@ -192,7 +192,7 @@ class TransaqTradingSystemTest : public testing::Test {
   const std::string m_orderCommandResultBuffer;
   const char *const m_orderCommandResult;
 
-  MockContext m_context;
+  Mocks::Context m_context;
   MockConnectorContext m_connector;
   MockSecurity m_security;
 };

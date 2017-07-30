@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "Core/Security.hpp"
-#include "DummyContext.hpp"
-#include "DummyMarketDataSource.hpp"
+#include "ContextDummy.hpp"
+#include "MarketDataSourceDummy.hpp"
+#include "Security.hpp"
 
 namespace trdk {
 namespace Tests {
@@ -20,9 +20,9 @@ namespace Tests {
 class MockSecurity : public trdk::Security {
  public:
   MockSecurity(const char *symbol = "TEST_SCALE2*/USD:NYMEX:FUT")
-      : Security(DummyContext::GetInstance(),
+      : Security(Dummies::Context::GetInstance(),
                  trdk::Lib::Symbol(symbol),
-                 DummyMarketDataSource::GetInstance(),
+                 Dummies::MarketDataSource::GetInstance(),
                  SupportedLevel1Types()),
         m_symbol(nullptr) {}
 

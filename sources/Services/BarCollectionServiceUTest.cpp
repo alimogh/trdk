@@ -9,11 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/DropCopyMock.hpp"
+#include "Core/MarketDataSourceMock.hpp"
+#include "Core/SecurityMock.hpp"
 #include "BarCollectionService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockDropCopy.hpp"
-#include "Tests/MockMarketDataSource.hpp"
-#include "Tests/MockSecurity.hpp"
 
 using namespace trdk::Tests;
 using namespace testing;
@@ -65,8 +65,8 @@ TEST(BarServiceTest, ByNumberOfTicks) {
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());
@@ -172,8 +172,8 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());
@@ -246,7 +246,7 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockContext context;
+  Mocks::Context context;
 
   MockSecurity security;
   svc::BarCollectionService service(context, "Test",
@@ -283,8 +283,8 @@ TEST(BarServiceTest, DropCopy) {
 
   MockDropCopy dropCopy;
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   const trdk::Security security(context, lib::Symbol("TEST_SCALE2/USD::STK"),
                                 marketDataSource,
                                 trdk::Security::SupportedLevel1Types());

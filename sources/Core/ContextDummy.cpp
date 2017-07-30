@@ -9,10 +9,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "DummyContext.hpp"
-#include "Core/RiskControl.hpp"
-#include "Core/Settings.hpp"
-#include "Core/TradingLog.hpp"
+#include "ContextDummy.hpp"
+#include "RiskControl.hpp"
+#include "Settings.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -27,73 +27,74 @@ Context::Log contextLog(timeZone);
 Context::TradingLog tradingLog(timeZone);
 }
 
-DummyContext::DummyContext()
-    : Context(contextLog,
-              tradingLog,
-              Settings(),
-              boost::unordered_map<std::string, std::string>()) {}
+Dummies::Context::Context()
+    : trdk::Context(contextLog,
+                    tradingLog,
+                    Settings(),
+                    boost::unordered_map<std::string, std::string>()) {}
 
-DummyContext &DummyContext::GetInstance() {
-  static DummyContext result;
+Dummies::Context &Dummies::Context::GetInstance() {
+  static Dummies::Context result;
   return result;
 }
 
-std::unique_ptr<DummyContext::DispatchingLock> DummyContext::SyncDispatching()
-    const {
+std::unique_ptr<Dummies::Context::DispatchingLock>
+Dummies::Context::SyncDispatching() const {
   throw std::logic_error("Not supported");
 }
 
-RiskControl &DummyContext::GetRiskControl(const TradingMode &) {
+RiskControl &Dummies::Context::GetRiskControl(const TradingMode &) {
   static RiskControl result(*this,
                             IniString("[RiskControl]\nis_enabled = false"),
                             numberOfTradingModes);
   return result;
 }
-const RiskControl &DummyContext::GetRiskControl(const TradingMode &mode) const {
-  return const_cast<DummyContext *>(this)->GetRiskControl(mode);
+const RiskControl &Dummies::Context::GetRiskControl(
+    const TradingMode &mode) const {
+  return const_cast<Dummies::Context *>(this)->GetRiskControl(mode);
 }
 
-const ExpirationCalendar &DummyContext::GetExpirationCalendar() const {
+const ExpirationCalendar &Dummies::Context::GetExpirationCalendar() const {
   throw std::logic_error("Not supported");
 }
 
-bool DummyContext::HasExpirationCalendar() const {
+bool Dummies::Context::HasExpirationCalendar() const {
   throw std::logic_error("Not supported");
 }
 
-size_t DummyContext::GetNumberOfMarketDataSources() const {
+size_t Dummies::Context::GetNumberOfMarketDataSources() const {
   throw std::logic_error("Not supported");
 }
 
-const MarketDataSource &DummyContext::GetMarketDataSource(size_t) const {
+const MarketDataSource &Dummies::Context::GetMarketDataSource(size_t) const {
   throw std::logic_error("Not supported");
 }
 
-MarketDataSource &DummyContext::GetMarketDataSource(size_t) {
+MarketDataSource &Dummies::Context::GetMarketDataSource(size_t) {
   throw std::logic_error("Not supported");
 }
 
-void DummyContext::ForEachMarketDataSource(
+void Dummies::Context::ForEachMarketDataSource(
     const boost::function<bool(const MarketDataSource &)> &) const {
   throw std::logic_error("Not supported");
 }
 
-void DummyContext::ForEachMarketDataSource(
+void Dummies::Context::ForEachMarketDataSource(
     const boost::function<bool(MarketDataSource &)> &) {
   throw std::logic_error("Not supported");
 }
 
-size_t DummyContext::GetNumberOfTradingSystems() const { return 0; }
+size_t Dummies::Context::GetNumberOfTradingSystems() const { return 0; }
 
-const TradingSystem &DummyContext::GetTradingSystem(size_t,
-                                                    const TradingMode &) const {
+const TradingSystem &Dummies::Context::GetTradingSystem(
+    size_t, const TradingMode &) const {
   throw std::logic_error("Not supported");
 }
 
-TradingSystem &DummyContext::GetTradingSystem(size_t, const TradingMode &) {
+TradingSystem &Dummies::Context::GetTradingSystem(size_t, const TradingMode &) {
   throw std::logic_error("Not supported");
 }
 
-DropCopy *DummyContext::GetDropCopy() const {
+DropCopy *Dummies::Context::GetDropCopy() const {
   throw std::logic_error("Not supported");
 }

@@ -9,10 +9,10 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MockContext.hpp"
-#include "Core/RiskControl.hpp"
-#include "Core/Settings.hpp"
-#include "Core/TradingLog.hpp"
+#include "ContextMock.hpp"
+#include "RiskControl.hpp"
+#include "Settings.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -23,25 +23,23 @@ namespace lt = boost::local_time;
 namespace {
 const lt::time_zone_ptr timeZone =
     boost::make_shared<lt::posix_time_zone>("GMT");
-Context::Log contextLog(timeZone);
-Context::TradingLog tradingLog(timeZone);
+Mocks::Context::Log contextLog(timeZone);
+Mocks::Context::TradingLog tradingLog(timeZone);
 }
 
-MockContext::MockContext()
-    : Context(contextLog,
-              tradingLog,
-              Settings(),
-              boost::unordered_map<std::string, std::string>()) {}
+Mocks::Context::Context()
+    : trdk::Context(contextLog,
+                    tradingLog,
+                    Settings(),
+                    boost::unordered_map<std::string, std::string>()) {}
 
-MockContext::~MockContext() {}
-
-RiskControl &MockContext::GetRiskControl(const TradingMode &tradingMode) {
+RiskControl &Mocks::Context::GetRiskControl(const TradingMode &tradingMode) {
   static RiskControl riskControl(
       *this, IniString("[RiskControl]\nis_enabled = no"), tradingMode);
   return riskControl;
 }
 
-const RiskControl &MockContext::GetRiskControl(
+const RiskControl &Mocks::Context::GetRiskControl(
     const TradingMode &tradingMode) const {
-  return const_cast<MockContext *>(this)->GetRiskControl(tradingMode);
+  return const_cast<Mocks::Context *>(this)->GetRiskControl(tradingMode);
 }

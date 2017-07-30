@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "MockService.hpp"
-#include "DummyContext.hpp"
+#include "ServiceMock.hpp"
+#include "ContextDummy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -18,14 +18,15 @@ using namespace trdk::Tests;
 
 namespace uuids = boost::uuids;
 
-MockService::MockService()
-    : Service(DummyContext::GetInstance(),
-              uuids::uuid(),
-              "Mock",
-              "Test",
-              IniSectionRef(
-                  IniString("[Section]\n"
-                            "id = {00000000-0000-0000-0000-000000000000}\n"
-                            "size = 10 ticks\n"
-                            "log = none"),
-                  "Section")) {}
+Mocks::Service::Service()
+    : trdk::Service(
+          Dummies::Context::GetInstance(),
+          uuids::uuid(),
+          "Mock",
+          "Test",
+          IniSectionRef(
+              IniString("[Section]\n"
+                        "id = {00000000-0000-0000-0000-000000000000}\n"
+                        "size = 10 ticks\n"
+                        "log = none"),
+              "Section")) {}

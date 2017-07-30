@@ -10,8 +10,8 @@
 
 #include "Prec.hpp"
 #include "MovingAverageServiceMock.hpp"
-#include "Tests/DummyContext.hpp"
-#include "Tests/MockBarService.hpp"
+#include "Core/ContextDummy.hpp"
+#include "BarServiceMock.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -19,9 +19,9 @@ using namespace trdk::Tests;
 
 namespace uuids = boost::uuids;
 
-MovingAverageServiceMock::MovingAverageServiceMock()
-    : MovingAverageService(
-          DummyContext::GetInstance(),
+Mocks::MovingAverageService::MovingAverageService()
+    : Services::MovingAverageService(
+          Dummies::Context::GetInstance(),
           "Mock",
           IniSectionRef(
               IniString("[Section]\n"
@@ -32,5 +32,3 @@ MovingAverageServiceMock::MovingAverageServiceMock()
                         "period = 15\n"
                         "log = none\n"),
               "Section")) {}
-
-MovingAverageServiceMock::~MovingAverageServiceMock() {}

@@ -350,22 +350,30 @@
     <ResourceCompile Include="Tests.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Core\ContextDummy.hpp" />
+    <ClInclude Include="..\Core\ContextMock.hpp" />
+    <ClInclude Include="..\Core\DropCopyMock.hpp" />
+    <ClInclude Include="..\Core\MarketDataSourceDummy.hpp" />
+    <ClInclude Include="..\Core\MarketDataSourceMock.hpp" />
+    <ClInclude Include="..\Core\SecurityMock.hpp" />
+    <ClInclude Include="..\Core\ServiceMock.hpp" />
+    <ClInclude Include="..\Core\TradingSystemMock.hpp" />
+    <ClInclude Include="..\Services\BarServiceMock.hpp" />
     <ClInclude Include="..\Services\MovingAverageServiceMock.hpp" />
-    <ClInclude Include="DummyMarketDataSource.hpp" />
     <ClInclude Include="FuncTestList.hpp" />
-    <ClInclude Include="MockBarService.hpp" />
-    <ClInclude Include="MockContext.hpp" />
-    <ClInclude Include="MockDropCopy.hpp" />
-    <ClInclude Include="MockMarketDataSource.hpp" />
-    <ClInclude Include="MockSecurity.hpp" />
-    <ClInclude Include="MockService.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="DummyContext.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Core\ContextDummy.cpp" />
+    <ClCompile Include="..\Core\ContextMock.cpp" />
+    <ClCompile Include="..\Core\MarketDataSourceDummy.cpp" />
+    <ClCompile Include="..\Core\MarketDataSourceMock.cpp" />
+    <ClCompile Include="..\Core\ServiceMock.cpp" />
+    <ClCompile Include="..\Core\TradingSystemMock.cpp" />
     <ClCompile Include="..\Interaction\Transaq\TransaqTradingSystemUTest.cpp" />
     <ClCompile Include="..\Services\AdxIndicatorUTest.cpp" />
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
+    <ClCompile Include="..\Services\BarServiceMock.cpp" />
     <ClCompile Include="..\Services\BollingerBandsServiceUTest.cpp" />
     <ClCompile Include="..\Services\ContinuousContractBarServiceUTest.cpp" />
     <ClCompile Include="..\Services\MovingAverageServiceMock.cpp" />
@@ -373,17 +381,11 @@
     <ClCompile Include="..\Services\StochasticIndicatorUTest.cpp" />
     <ClCompile Include="..\Strategies\MrigeshKejriwal\MrigeshKejriwalStrategyUTest.cpp" />
     <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp" />
-    <ClCompile Include="DummyContext.cpp" />
-    <ClCompile Include="DummyMarketDataSource.cpp" />
     <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
     <ClCompile Include="FuncTestList.cpp" />
-    <ClCompile Include="MockBarService.cpp" />
-    <ClCompile Include="MockContext.cpp" />
-    <ClCompile Include="MockMarketDataSource.cpp" />
     <ClCompile Include="..\Core\PriceBookUTest.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="..\Services\MovingAverageServiceUTest.cpp" />
-    <ClCompile Include="MockService.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>

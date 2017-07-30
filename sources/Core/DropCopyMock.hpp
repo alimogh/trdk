@@ -8,10 +8,10 @@
  * Copyright: Eugene V. Palchukovsky
  **************************************************************************/
 
-#include "Core/DropCopy.hpp"
-#include "Core/PriceBook.hpp"
-#include "Core/Security.hpp"
-#include "Core/Strategy.hpp"
+#include "DropCopy.hpp"
+#include "PriceBook.hpp"
+#include "Security.hpp"
+#include "Strategy.hpp"
 
 namespace trdk {
 namespace Tests {

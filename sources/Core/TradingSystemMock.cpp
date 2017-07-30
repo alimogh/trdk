@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/07/23 02:11:48
+ *   Created: 2017/07/30 18:25:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,23 +8,15 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "TradingSystemMock.hpp"
+#include "ContextDummy.hpp"
 
-#include "MovingAverageService.hpp"
+using namespace trdk;
+using namespace trdk::Tests;
 
-namespace trdk {
-namespace Tests {
-namespace Mocks {
-
-class MovingAverageService : public trdk::Services::MovingAverageService {
- public:
-  MovingAverageService();
-  virtual ~MovingAverageService() override = default;
-
- public:
-  MOCK_CONST_METHOD0(IsEmpty, bool());
-  MOCK_CONST_METHOD0(GetLastPoint, const Point &());
-};
-}
-}
-}
+Mocks::TradingSystem::TradingSystem()
+    : trdk::TradingSystem(numberOfTradingModes,
+                          std::numeric_limits<size_t>::max(),
+                          Dummies::Context::GetInstance(),
+                          "Mock") {}

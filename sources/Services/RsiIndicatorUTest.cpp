@@ -9,11 +9,11 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/MarketDataSourceMock.hpp"
+#include "Core/SecurityMock.hpp"
+#include "BarServiceMock.hpp"
 #include "RsiIndicator.hpp"
-#include "Tests/MockBarService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockMarketDataSource.hpp"
-#include "Tests/MockSecurity.hpp"
 
 using namespace testing;
 using namespace trdk::Tests;
@@ -103,10 +103,10 @@ TEST(RsiIndicator, General) {
       "period = 14\n"
       "log = none");
 
-  MockContext context;
-  MockMarketDataSource marketDataSource;
+  Mocks::Context context;
+  Mocks::MarketDataSource marketDataSource;
   MockSecurity security;
-  MockBarService bars;
+  Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 
   Service service(context, "Test", lib::IniSectionRef(settings, "Section"));

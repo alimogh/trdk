@@ -10,17 +10,18 @@
 
 #pragma once
 
-#include "Core/Context.hpp"
+#include "Context.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Dummies {
 
-class DummyContext : public Context {
+class Context : public trdk::Context {
  public:
-  DummyContext();
-  virtual ~DummyContext() override = default;
+  Context();
+  virtual ~Context() override = default;
 
-  static DummyContext &GetInstance();
+  static Context &GetInstance();
 
  public:
   virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
@@ -53,5 +54,6 @@ class DummyContext : public Context {
  protected:
   virtual DropCopy *GetDropCopy() const override;
 };
+}
 }
 }

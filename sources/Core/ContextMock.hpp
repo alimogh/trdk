@@ -8,19 +8,20 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Core/Context.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/RiskControl.hpp"
-#include "Core/TradingSystem.hpp"
+#include "Context.hpp"
+#include "MarketDataSource.hpp"
+#include "RiskControl.hpp"
+#include "TradingSystem.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockContext : public Context {
+class Context : public trdk::Context {
  public:
-  MockContext();
-  virtual ~MockContext();
+  Context();
+  virtual ~Context() override = default;
 
  public:
   MOCK_CONST_METHOD0(SyncDispatching, std::unique_ptr<DispatchingLock>());
@@ -55,5 +56,6 @@ class MockContext : public Context {
 
   MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 };
+}
 }
 }

@@ -9,8 +9,8 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ServiceMock.hpp"
 #include "SourcesSynchronizer.hpp"
-#include "Tests/MockService.hpp"
 
 namespace lib = trdk::Lib;
 namespace tl = trdk::TradingLib;
@@ -21,8 +21,8 @@ using namespace testing;
 using namespace trdk::Tests;
 
 TEST(SourcesSynchronizer, OneStartedEarly2) {
-  MockService service1;
-  MockService service2;
+  Mocks::Service service1;
+  Mocks::Service service2;
 
   tl::SourcesSynchronizer sync;
   sync.Add(service1);
@@ -60,9 +60,9 @@ TEST(SourcesSynchronizer, OneStartedEarly2) {
 }
 
 TEST(SourcesSynchronizer, OneStartedEarly3) {
-  MockService service1;
-  MockService service2;
-  MockService service3;
+  Mocks::Service service1;
+  Mocks::Service service2;
+  Mocks::Service service3;
 
   tl::SourcesSynchronizer sync;
   sync.Add(service1);
@@ -125,8 +125,8 @@ TEST(SourcesSynchronizer, OneStartedEarly3) {
 }
 
 TEST(SourcesSynchronizer, LostUpdate) {
-  MockService service1;
-  MockService service2;
+  Mocks::Service service1;
+  Mocks::Service service2;
 
   tl::SourcesSynchronizer sync;
   sync.Add(service1);
@@ -159,9 +159,9 @@ TEST(SourcesSynchronizer, LostUpdate) {
 }
 
 TEST(SourcesSynchronizer, UnknownService) {
-  MockService service1;
-  MockService service2;
-  MockService service3;
+  Mocks::Service service1;
+  Mocks::Service service2;
+  Mocks::Service service3;
 
   tl::SourcesSynchronizer sync;
   sync.Add(service1);

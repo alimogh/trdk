@@ -8,16 +8,17 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
+#include "MarketDataSource.hpp"
+#include "Security.hpp"
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockMarketDataSource : public MarketDataSource {
+class MarketDataSource : public trdk::MarketDataSource {
  public:
-  MockMarketDataSource();
-  virtual ~MockMarketDataSource();
+  MarketDataSource();
+  virtual ~MarketDataSource() override = default;
 
  public:
   MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
@@ -28,5 +29,6 @@ class MockMarketDataSource : public MarketDataSource {
   MOCK_METHOD1(CreateNewSecurityObject,
                trdk::Security &(const trdk::Lib::Symbol &));
 };
+}
 }
 }
