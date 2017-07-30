@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "MrigeshKejriwalStrategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -71,7 +72,8 @@ mk::Strategy::Strategy(Context &context,
       m_tradingSecurity(nullptr),
       m_spotSecurity(nullptr),
       m_ma(nullptr),
-      m_trend(trend) {
+      m_trend(trend),
+      m_isRollover(false) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
@@ -102,6 +104,18 @@ void mk::Strategy::OnSecurityStart(Security &security,
   }
 }
 
+void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
+                                              Security &security,
+                                              Security::Request &request) {
+  Assert(&security == &GetTradingSecurity());
+  if (&security != &GetTradingSecurity()) {
+    return;
+  }
+  request.RequestTime(GetContext().GetCurrentTime() - pt::hours(3));
+  GetLog().Info("Using new contract \"%1%\" to trade...", GetTradingSecurity());
+  StartRollOver();
+}
+
 void mk::Strategy::OnServiceStart(const Service &service) {
   const auto *const ma = dynamic_cast<const MovingAverageService *>(&service);
   if (ma) {
@@ -120,6 +134,8 @@ void mk::Strategy::OnMaServiceStart(const MovingAverageService &service) {
 
 void mk::Strategy::OnPositionUpdate(Position &position) {
   AssertLt(0, position.GetNumberOfOpenOrders());
+
+  FinishRollOver(position);
 
   if (position.IsCompleted()) {
     // No active order, no active qty...
@@ -230,11 +246,13 @@ void mk::Strategy::CheckSignal(const Price &spotPrice,
     return;
   }
 
+  CancelRollOver();
+
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
     Assert(m_trend->IsRising() || !m_trend->IsRising());
-    position = &OpenPosition(m_trend->IsRising(), delayMeasurement);
+    OpenPosition(m_trend->IsRising(), delayMeasurement);
   } else if (position->HasActiveOpenOrders()) {
     try {
       Verify(position->CancelAllOrders());
@@ -250,15 +268,14 @@ void mk::Strategy::CheckSignal(const Price &spotPrice,
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
 }
 
-Position &mk::Strategy::OpenPosition(bool isLong,
-                                     const Milestones &delayMeasurement) {
+void mk::Strategy::OpenPosition(bool isLong,
+                                const Milestones &delayMeasurement) {
   auto position =
       isLong ? CreatePosition<LongPosition>(
                    GetTradingSecurity().GetAskPriceScaled(), delayMeasurement)
              : CreatePosition<ShortPosition>(
                    GetTradingSecurity().GetBidPriceScaled(), delayMeasurement);
   ContinuePosition(*position);
-  return *position;
 }
 
 void mk::Strategy::ContinuePosition(Position &position) {
@@ -304,6 +321,58 @@ void mk::Strategy::ReportOperation(const Position &pos) {
                 << ',' << pos.GetNumberOfCloseOrders() << ','
                 << pos.GetNumberOfCloseTrades() << ',' << pos.GetId()
                 << std::endl;
+}
+
+bool mk::Strategy::StartRollOver() {
+  if (m_isRollover) {
+    return false;
+  }
+
+  if (!GetPositions().GetSize()) {
+    return false;
+  }
+  AssertEq(1, GetPositions().GetSize());
+
+  Position &position = *GetPositions().GetBegin();
+  if (position.HasActiveCloseOrders()) {
+    return false;
+  }
+
+  const Security &security = GetTradingSecurity();
+  Assert(security.HasExpiration());
+  if (position.GetExpiration() == security.GetExpiration()) {
+    return false;
+  }
+
+  GetTradingLog().Write("rollover\texpiration=%1%\tposition=%2%",
+                        [&security, &position](TradingRecord &record) {
+                          record % security.GetExpiration().GetDate() %
+                              position.GetId();
+                        });
+
+  if (position.HasActiveOpenOrders()) {
+    try {
+      position.CancelAllOrders();
+    } catch (const TradingSystem::UnknownOrderCancelError &ex) {
+      GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
+    }
+    return false;
+  }
+
+  position.CloseAtMarketPrice();
+
+  m_isRollover = true;
+  return true;
+}
+
+void mk::Strategy::CancelRollOver() { m_isRollover = false; }
+
+void mk::Strategy::FinishRollOver(Position &oldPosition) {
+  if (!m_isRollover || !oldPosition.IsCompleted()) {
+    return;
+  }
+  OpenPosition(oldPosition.IsLong(), Milestones());
+  m_isRollover = false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
