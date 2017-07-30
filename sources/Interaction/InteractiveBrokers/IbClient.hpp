@@ -15,11 +15,13 @@
 #include "IbTradingSystem.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
+typedef std::string IBString;
+
 namespace trdk {
 namespace Interaction {
 namespace InteractiveBrokers {
 
-class Client : protected EWrapper {
+class Client : public EWrapper {
  public:
   typedef std::list<boost::function<void()>> OrderCallbackList;
 
@@ -50,7 +52,33 @@ class Client : protected EWrapper {
 
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
-  typedef boost::condition_variable Condition;
+  class Condition : public EReaderSignal, private boost::noncopyable {
+   public:
+    explicit Condition(Mutex &mutex) : m_mutex(mutex), m_isSignaled(false) {}
+    virtual ~Condition() = default;
+
+   public:
+    virtual void issueSignal() override {
+      {
+        const Lock lock(m_mutex);
+        m_isSignaled = true;
+      }
+      m_var.notify_all();
+    }
+    virtual void waitForSignal() override {
+      Lock lock(m_mutex);
+      m_var.wait(lock, [this]() { return m_isSignaled; });
+      m_isSignaled = false;
+    }
+
+   public:
+    boost::condition_variable &GetVar() { return m_var; }
+
+   private:
+    Mutex &m_mutex;
+    boost::condition_variable m_var;
+    bool m_isSignaled;
+  };
 
   typedef boost::unordered_map<std::string, trdk::OrderStatus> OrderStatusesMap;
 
@@ -224,8 +252,8 @@ class Client : protected EWrapper {
   void SwitchToNextContract(Security &security);
 
  private:
-  Contract Client::GetContract(const trdk::Security &,
-                               const Lib::ContractExpiration * = nullptr) const;
+  Contract GetContract(const trdk::Security &,
+                       const Lib::ContractExpiration * = nullptr) const;
   Contract GetContract(const trdk::Security &, const OrderParams &) const;
 
   void PostponeMarketDataSubscription(Security &) const;
@@ -242,8 +270,6 @@ class Client : protected EWrapper {
                                     double prevClosePrice);
 
   void Task();
-
-  bool ProcessMessages();
 
   OrderStatusesMap GetOrderStatusesMap();
 
@@ -280,9 +306,9 @@ class Client : protected EWrapper {
   void FlushHistory(Security &);
 
  private:
-  void commissionReport(const CommissionReport &);
-  virtual void tickPrice(TickerId, TickType, double, int);
-  virtual void tickSize(TickerId, TickType, int);
+  void commissionReport(const CommissionReport &) override;
+  virtual void tickPrice(TickerId, TickType, double, int) override;
+  virtual void tickSize(TickerId, TickType, int) override;
   virtual void tickOptionComputation(TickerId,
                                      TickType,
                                      double,
@@ -292,9 +318,9 @@ class Client : protected EWrapper {
                                      double,
                                      double,
                                      double,
-                                     double);
-  virtual void tickGeneric(TickerId, TickType, double);
-  virtual void tickString(TickerId, TickType, const IBString &);
+                                     double) override;
+  virtual void tickGeneric(TickerId, TickType, double) override;
+  virtual void tickString(TickerId, TickType, const IBString &) override;
   virtual void tickEFP(TickerId,
                        TickType,
                        double,
@@ -303,50 +329,54 @@ class Client : protected EWrapper {
                        int,
                        const IBString &,
                        double,
-                       double);
+                       double) override;
   virtual void orderStatus(::OrderId,
                            const IBString &,
-                           int,
-                           int,
+                           double,
+                           double,
                            double,
                            int,
                            int,
                            double,
                            int,
-                           const IBString &);
+                           const IBString &) override;
   virtual void openOrder(::OrderId orderId,
                          const Contract &,
                          const Order &,
-                         const OrderState &);
-  virtual void openOrderEnd();
-  virtual void winError(const IBString &, int);
-  virtual void connectionClosed();
+                         const OrderState &) override;
+  virtual void openOrderEnd() override;
+  virtual void winError(const IBString &, int) override;
+  virtual void connectionClosed() override;
   virtual void updateAccountValue(const IBString &,
                                   const IBString &,
                                   const IBString &,
-                                  const IBString &);
+                                  const IBString &) override;
   virtual void updatePortfolio(const Contract &,
-                               int,
                                double,
                                double,
                                double,
                                double,
                                double,
-                               const IBString &);
-  virtual void updateAccountTime(const IBString &);
-  virtual void accountDownloadEnd(const IBString &);
-  virtual void nextValidId(::OrderId);
-  virtual void contractDetails(int, const ContractDetails &);
-  virtual void bondContractDetails(int, const ContractDetails &);
-  virtual void contractDetailsEnd(int);
-  virtual void execDetails(int, const Contract &, const Execution &);
-  virtual void execDetailsEnd(int);
-  virtual void error(const int, const int, const IBString);
-  virtual void updateMktDepth(TickerId, int, int, int, double, int);
-  virtual void updateMktDepthL2(TickerId, int, IBString, int, int, double, int);
-  virtual void updateNewsBulletin(int, int, const IBString &, const IBString &);
-  virtual void managedAccounts(const IBString &);
-  virtual void receiveFA(faDataType, const IBString &);
+                               double,
+                               const IBString &) override;
+  virtual void updateAccountTime(const IBString &) override;
+  virtual void accountDownloadEnd(const IBString &) override;
+  virtual void nextValidId(::OrderId) override;
+  virtual void contractDetails(int, const ContractDetails &) override;
+  virtual void bondContractDetails(int, const ContractDetails &) override;
+  virtual void contractDetailsEnd(int) override;
+  virtual void execDetails(int, const Contract &, const Execution &) override;
+  virtual void execDetailsEnd(int) override;
+  virtual void error(const int, const int, const IBString) override;
+  virtual void updateMktDepth(TickerId, int, int, int, double, int) override;
+  virtual void updateMktDepthL2(
+      TickerId, int, IBString, int, int, double, int) override;
+  virtual void updateNewsBulletin(int,
+                                  int,
+                                  const IBString &,
+                                  const IBString &) override;
+  virtual void managedAccounts(const IBString &) override;
+  virtual void receiveFA(faDataType, const IBString &) override;
   virtual void historicalData(TickerId,
                               const IBString &,
                               double,
@@ -356,38 +386,74 @@ class Client : protected EWrapper {
                               int,
                               int,
                               double,
-                              int);
-  virtual void scannerParameters(const IBString &);
+                              int) override;
+  virtual void scannerParameters(const IBString &) override;
   virtual void scannerData(int,
                            int,
                            const ContractDetails &,
                            const IBString &,
                            const IBString &,
                            const IBString &,
-                           const IBString &);
-  virtual void scannerDataEnd(int);
+                           const IBString &) override;
+  virtual void scannerDataEnd(int) override;
   virtual void realtimeBar(
-      TickerId, long, double, double, double, double, long, double, int);
-  virtual void currentTime(long);
-  virtual void fundamentalData(TickerId, const IBString &);
-  virtual void deltaNeutralValidation(int, const UnderComp &);
-  virtual void tickSnapshotEnd(int);
-  virtual void marketDataType(TickerId, int);
+      TickerId, long, double, double, double, double, long, double, int)
+      override;
+  virtual void currentTime(long) override;
+  virtual void fundamentalData(TickerId, const IBString &) override;
+  virtual void deltaNeutralValidation(int, const UnderComp &) override;
+  virtual void tickSnapshotEnd(int) override;
+  virtual void marketDataType(TickerId, int) override;
 
-  virtual void position(const IBString &, const Contract &, int, double);
-  virtual void positionEnd(void);
+  virtual void position(const IBString &,
+                        const Contract &,
+                        double,
+                        double) override;
+  virtual void positionEnd(void) override;
   virtual void accountSummary(int,
                               const IBString &,
                               const IBString &,
                               const IBString &,
-                              const IBString &);
-  virtual void accountSummaryEnd(int);
+                              const IBString &) override;
+  virtual void accountSummaryEnd(int) override;
 
-  virtual void verifyMessageAPI(const IBString &);
-  virtual void verifyCompleted(bool, const IBString &);
+  virtual void verifyMessageAPI(const IBString &) override;
+  virtual void verifyCompleted(bool, const IBString &) override;
 
-  virtual void displayGroupList(int reqId, const IBString &);
-  virtual void displayGroupUpdated(int reqId, const IBString &);
+  virtual void displayGroupList(int reqId, const IBString &) override;
+  virtual void displayGroupUpdated(int reqId, const IBString &) override;
+
+  virtual void verifyAndAuthMessageAPI(
+      const std::string & /*apiData*/,
+      const std::string & /*xyzChallange*/) override{};
+  virtual void verifyAndAuthCompleted(
+      bool /*isSuccessful*/, const std::string & /*errorText*/) override{};
+  virtual void connectAck() override{};
+  virtual void positionMulti(int /*reqId*/,
+                             const std::string & /*account*/,
+                             const std::string & /*modelCode*/,
+                             const Contract & /*contract*/,
+                             double /*pos*/,
+                             double /*avgCost*/) override{};
+  virtual void positionMultiEnd(int /*reqId*/) override{};
+  virtual void accountUpdateMulti(int /*reqId*/,
+                                  const std::string & /*account*/,
+                                  const std::string & /*modelCode*/,
+                                  const std::string & /*key*/,
+                                  const std::string & /*value*/,
+                                  const std::string & /*currency*/) override{};
+  virtual void accountUpdateMultiEnd(int /*reqId*/) override{};
+  virtual void securityDefinitionOptionalParameter(
+      int /*reqId*/,
+      const std::string & /*exchange*/,
+      int /*underlyingConId*/,
+      const std::string & /*tradingClass*/,
+      const std::string & /*multiplier*/,
+      std::set<std::string> /*expirations*/,
+      std::set<double> /*strikes*/) override{};
+  virtual void securityDefinitionOptionalParameterEnd(int /*reqId*/) override{};
+  virtual void softDollarTiers(
+      int /*reqId*/, const std::vector<SoftDollarTier> & /*tiers*/) override{};
 
  private:
   InteractiveBrokers::TradingSystem &m_ts;
@@ -397,7 +463,11 @@ class Client : protected EWrapper {
   const std::string m_host;
   const unsigned short m_port;
   const int m_clientId;
-  mutable std::unique_ptr<EPosixClientSocket> m_client;
+
+  mutable Mutex m_mutex;
+  Condition m_condition;
+  mutable std::unique_ptr<EClientSocket> m_client;
+  std::unique_ptr<EReader> m_reader;
 
   ConnectionState m_connectionState;
   PingState m_state;
@@ -405,8 +475,6 @@ class Client : protected EWrapper {
   boost::posix_time::ptime m_nextPingTime;
   boost::posix_time::ptime m_timeoutTime;
 
-  mutable Mutex m_mutex;
-  Condition m_condition;
   boost::thread *m_thread;
 
   mutable boost::signals2::signal<OrderStatusSlotSignature> m_orderStatusSignal;

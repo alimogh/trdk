@@ -81,6 +81,7 @@ Client::Client(ib::TradingSystem &ts,
       m_host(host),
       m_port(port),
       m_clientId(clientId),
+      m_condition(m_mutex),
       m_connectionState(CONNECTION_STATE_NOT_CONNECTED),
       m_state(PING_STATE_REQ),
       m_thread(nullptr),
@@ -88,7 +89,8 @@ Client::Client(ib::TradingSystem &ts,
       m_seqNumber(-1),
       m_accountInfo(nullptr),
       m_securityInSwitching(nullptr) {
-  m_client.reset(new EPosixClientSocket(this));
+  m_client = std::make_unique<EClientSocket>(this, &m_condition);
+  m_reader = std::make_unique<EReader>(&*m_client, &m_condition);
   LogConnectionAttempt();
   const bool connectResult =
       m_client->eConnect(m_host.c_str(), m_port, m_clientId);
@@ -113,7 +115,7 @@ Client::~Client() {
         const Lock lock(m_mutex);
         m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
       }
-      m_condition.notify_all();
+      m_condition.GetVar().notify_all();
       m_thread->join();
       delete m_thread;
     }
@@ -134,49 +136,37 @@ Client::~Client() {
 void Client::Task() {
   m_ts.GetTsLog().Debug("Started client task.");
   bool isInited = false;
-  pt::ptime nextIterationTime = boost::get_system_time() + maxIterationTime;
-  size_t heavyCount = 0;
-  for (Lock lock(m_mutex);;) {
-    try {
+  try {
+    pt::ptime nextIterationTime = boost::get_system_time() + maxIterationTime;
+    for (Lock lock(m_mutex); m_connectionState;) {
       m_clientNow = boost::get_system_time();
       if (isInited) {
         if (!m_connectionState) {
           break;
         }
         if (nextIterationTime > m_clientNow) {
-          heavyCount = 0;
-          m_condition.timed_wait(lock, nextIterationTime);
-        } else if (heavyCount == 5 ||
-                   (heavyCount > 5 && !(++heavyCount % 10))) {
-          lock.unlock();
-          m_ts.GetTsLog().Warn(
-              "Connection task is heavily loaded"
-              " (iterations without sleep: %1%).",
-              heavyCount);
-          lock.lock();
+          m_condition.GetVar().timed_wait(lock, nextIterationTime);
         }
         m_clientNow = boost::get_system_time();
       }
       nextIterationTime = m_clientNow + maxIterationTime;
       CheckTimeout();
-      while (m_connectionState && ProcessMessages()) {
-        if (m_callBackList.size() > 0) {
-          OrderCallbackList callBackList;
-          callBackList.swap(m_callBackList);
-          lock.unlock();
-          std::for_each(
-              callBackList.begin(), callBackList.end(),
-              [](OrderCallbackList::value_type &callBack) { callBack(); });
-          lock.lock();
-        } else {
-          lock.unlock();
-          lock.lock();
-        }
+      m_reader->processMsgs();
+      if (m_callBackList.size() > 0) {
+        OrderCallbackList callBackList;
+        callBackList.swap(m_callBackList);
+        lock.unlock();
+        std::for_each(
+            callBackList.begin(), callBackList.end(),
+            [](OrderCallbackList::value_type &callBack) { callBack(); });
+        lock.lock();
       }
-      if (!isInited) {
+      if (isInited) {
+        // UpdateLastResponseTime();
+      } else {
         isInited = m_seqNumber >= 0;
         if (isInited) {
-          m_condition.notify_all();
+          m_condition.GetVar().notify_all();
         } else {
           lock.unlock();
           m_ts.GetTsLog().Debug("Waiting for seqnumber...");
@@ -184,14 +174,10 @@ void Client::Task() {
           lock.lock();
         }
       }
-      if (!m_connectionState) {
-        break;
-      }
-    } catch (...) {
-      lock.unlock();
-      AssertFailNoException();
-      throw;
     }
+  } catch (...) {
+    AssertFailNoException();
+    throw;
   }
   m_ts.GetTsLog().Debug("Client task finished.");
 }
@@ -226,10 +212,10 @@ Contract Client::GetContract(
         contract.symbol = symbol.GetSymbol();
         // Doesn't build local symbol name as there are no universal format
         // for all symbols. It can be "CLQ7" or "NIFTY17JULFUT".
-        contract.expiry = gr::to_iso_string((customContractExpiration
-                                                 ? *customContractExpiration
-                                                 : security.GetExpiration())
-                                                .GetDate());
+        contract.lastTradeDateOrContractMonth = gr::to_iso_string(
+            (customContractExpiration ? *customContractExpiration
+                                      : security.GetExpiration())
+                .GetDate());
       }
       break;
     case SECURITY_TYPE_FUTURES_OPTIONS:
@@ -246,7 +232,8 @@ Contract Client::GetContract(
       contract.symbol = symbol.GetSymbol();
       contract.strike = symbol.GetStrike();
       contract.right = symbol.GetRightAsString();
-      contract.expiry = gr::to_iso_string(security.GetExpiration().GetDate());
+      contract.lastTradeDateOrContractMonth =
+          gr::to_iso_string(security.GetExpiration().GetDate());
       break;
     default:
       throw MethodDoesNotImplementedError("Security type is not supported");
@@ -292,70 +279,15 @@ void Client::StartData() {
     m_connectionState = CONNECTION_STATE_READY;
   }
 
+  m_reader->start();
+
   m_thread = new boost::thread([this]() { Task(); });
-  if (!m_condition.timed_wait(lock, timeout)) {
+  if (!m_condition.GetVar().timed_wait(lock, timeout)) {
     m_ts.GetMdsLog().Error("No seqnumber received.");
     m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
-    m_condition.notify_all();
+    m_condition.GetVar().notify_all();
     throw trdk::TradingSystem::ConnectError("No seqnumber received");
   }
-}
-
-bool Client::ProcessMessages() {
-  if (m_client->fd() < 0) {
-    return false;
-  }
-
-  fd_set readSet;
-  fd_set writeSet;
-  fd_set errorSet;
-
-#ifdef _WINDOWS
-#pragma warning(push)
-#pragma warning(disable : 4389)
-#pragma warning(disable : 4127)
-#endif
-
-  FD_ZERO(&readSet);
-  FD_SET(m_client->fd(), &readSet);
-
-  FD_ZERO(&writeSet);
-  if (!m_client->isOutBufferEmpty()) {
-    FD_SET(m_client->fd(), &writeSet);
-  }
-
-  FD_ZERO(&errorSet);
-  FD_CLR(m_client->fd(), &errorSet);
-
-#ifdef _WINDOWS
-#pragma warning(pop)
-#endif
-
-  timeval selectWaitTime = {};
-  const int selectResult = select(m_client->fd() + 1, &readSet, &writeSet,
-                                  &errorSet, &selectWaitTime);
-  if (selectResult == 0) {  // timeout
-    return false;
-  } else if (selectResult < 0) {
-    m_ts.GetTsLog().Debug("Connection process operation returned DISCONNECT.");
-    m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
-    return false;
-  } else if (m_client->fd() < 0) {
-    return false;
-  }
-
-  if (FD_ISSET(m_client->fd(), &errorSet)) {
-    m_client->onError();
-  }
-  if (m_client->fd() >= 0 && FD_ISSET(m_client->fd(), &writeSet)) {
-    m_client->onSend();
-  }
-  if (m_client->fd() >= 0 && FD_ISSET(m_client->fd(), &readSet)) {
-    UpdateLastResponseTime();
-    m_client->onReceive();
-  }
-
-  return true;
 }
 
 void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) {
@@ -650,7 +582,6 @@ trdk::OrderId Client::PlaceBuyOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -675,7 +606,6 @@ trdk::OrderId Client::PlaceBuyOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -701,7 +631,6 @@ trdk::OrderId Client::PlaceBuyOrderWithMarketPrice(
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -726,7 +655,6 @@ trdk::OrderId Client::PlaceBuyIocOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -749,7 +677,6 @@ trdk::OrderId Client::PlaceSellOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -774,7 +701,6 @@ trdk::OrderId Client::PlaceSellOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -800,7 +726,6 @@ trdk::OrderId Client::PlaceSellOrderWithMarketPrice(
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -825,7 +750,6 @@ trdk::OrderId Client::PlaceSellIocOrder(const trdk::Security &security,
   const auto orderId = TakeOrderId();
   m_client->placeOrder(orderId, contract, order);
   UpdateLastRequestTime();
-  m_condition.notify_all();
 
   return orderId;
 }
@@ -836,7 +760,6 @@ void Client::CancelOrder(trdk::OrderId id) {
   AssertLe(0, id);
   m_client->cancelOrder(::OrderId(id));
   UpdateLastRequestTime();
-  m_condition.notify_all();
 }
 
 void Client::LogConnectionAttempt() const throw() {
@@ -1089,8 +1012,8 @@ void Client::commissionReport(const CommissionReport &) {}
 
 void Client::orderStatus(::OrderId id,
                          const IBString &statusText,
-                         int filled,
-                         int remaining,
+                         double filled,
+                         double remaining,
                          double /*avgFillPrice*/,
                          int permId,
                          int parentId,
@@ -1311,7 +1234,7 @@ void Client::updateAccountValue(const IBString &key,
 }
 
 void Client::updatePortfolio(const Contract & /*contract*/,
-                             int /*position*/,
+                             double /*position*/,
                              double /*marketPrice*/,
                              double /*marketValue*/,
                              double /*averageCost*/,
@@ -1718,7 +1641,7 @@ void Client::marketDataType(TickerId /*reqId*/, int /*marketDataType*/) {}
 
 void Client::position(const IBString &account,
                       const Contract &contract,
-                      int size,
+                      double size,
                       double avgCost) {
   const bool isInitial = m_connectionState < CONNECTION_STATE_READY;
 

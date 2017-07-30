@@ -1,52 +1,70 @@
-/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is
- * subject to the terms
- * and conditions of the IB API Non-Commercial License or the IB API Commercial
- * License, as applicable. */
+﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+* and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-#ifndef eclientsocket_def
-#define eclientsocket_def
+#pragma once
+#ifndef eposixclientsocket_def
+#define eposixclientsocket_def
 
-#ifndef DLLEXP
-#define DLLEXP
-#endif
-
-#include "EClientSocketBase.h"
-
-#include <memory>
+#include "EClient.h"
+#include "EClientMsgSink.h"
+#include "ESocket.h"
 
 class EWrapper;
+struct EReaderSignal;
 
-class DLLEXP EClientSocket : public EClientSocketBase {
-  class MySocket;
+class TWSAPIDLLEXP EClientSocket : public EClient, public EClientMsgSink
+{
+protected:
+    virtual void prepareBufferImpl(std::ostream&) const;
+	virtual void prepareBuffer(std::ostream&) const;
+	virtual bool closeAndSend(std::string msg, unsigned offset = 0);
 
- public:
-  explicit EClientSocket(EWrapper* ptr);
-  ~EClientSocket();
+public:
 
-  // override virtual funcs from EClient
-  bool eConnect(const char* host,
-                UINT port,
-                int clientId = 0,
-                bool extraAuth = false);
-  void eDisconnect();
+	explicit EClientSocket(EWrapper *ptr, EReaderSignal *pSignal = 0);
+	~EClientSocket();
 
- private:
-  int send(const char* buf, size_t sz);
-  int receive(char* buf, size_t sz);
+	bool eConnect( const char *host, unsigned int port, int clientId = 0, bool extraAuth = false);
+	// override virtual funcs from EClient
+	void eDisconnect();
 
-  // callback from socket
-  void onConnect(int i);
-  void onReceive(int i);
-  void onSend(int i);
-  void onClose(int i);
+	bool isSocketOK() const;
+	int fd() const;
+    bool asyncEConnect() const;
+    void asyncEConnect(bool val);
+    ESocket *getTransport();
 
-  // helper
-  bool handleSocketError(int i);
+private:
 
-  bool isSocketOK() const;
+	bool eConnectImpl(int clientId, bool extraAuth, ConnState* stateOutPt);
 
- private:
-  std::auto_ptr<MySocket> m_pSocket;
+private:
+	void encodeMsgLen(std::string& msg, unsigned offset) const;
+public:
+	bool handleSocketError();
+	int receive( char* buf, size_t sz);
+
+public:
+	// callback from socket
+	void onSend();
+	void onError();
+
+private:
+
+	void onClose();
+
+private:
+
+	int m_fd;
+    bool m_allowRedirect;
+    const char* m_hostNorm;
+    bool m_asyncEConnect;
+    EReaderSignal *m_pSignal;
+
+//EClientMsgSink implementation
+public:
+    void serverVersion(int version, const char *time);
+    void redirect(const char *host, int port);    
 };
 
 #endif

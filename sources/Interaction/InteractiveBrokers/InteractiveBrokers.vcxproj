@@ -279,83 +279,525 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="Api\ContractCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\DefaultEWrapper.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\EClient.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
     <ClCompile Include="Api\EClientSocket.cpp">
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
     </ClCompile>
-    <ClCompile Include="Api\EClientSocketBase.cpp">
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+    <ClCompile Include="Api\EDecoder.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
     </ClCompile>
-    <ClCompile Include="Api\EPosixClientSocket.cpp">
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">TurnOffAllWarnings</WarningLevel>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">TurnOffAllWarnings</WarningLevel>
+    <ClCompile Include="Api\EMessage.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\EMutex.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\EReader.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\EReaderOSSignal.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\EReaderWMSignal.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\ESocket.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\executioncondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\MarginCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\OperatorCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\OrderCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\PercentChangeCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\PriceCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\SoftDollarTier.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\TimeCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Api\VolumeCondition.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">Level2</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Level2</WarningLevel>
     </ClCompile>
     <ClCompile Include="IbClient.cpp" />
     <ClCompile Include="IbSecurity.cpp" />
@@ -381,22 +823,41 @@
     <ClInclude Include="Api\CommissionReport.h" />
     <ClInclude Include="Api\CommonDefs.h" />
     <ClInclude Include="Api\Contract.h" />
+    <ClInclude Include="Api\ContractCondition.h" />
+    <ClInclude Include="Api\DefaultEWrapper.h" />
     <ClInclude Include="Api\EClient.h" />
+    <ClInclude Include="Api\EClientMsgSink.h" />
     <ClInclude Include="Api\EClientSocket.h" />
-    <ClInclude Include="Api\EClientSocketBase.h" />
-    <ClInclude Include="Api\EClientSocketBaseImpl.h" />
-    <ClInclude Include="Api\EPosixClientSocket.h" />
+    <ClInclude Include="Api\EDecoder.h" />
+    <ClInclude Include="Api\EMessage.h" />
+    <ClInclude Include="Api\EMutex.h" />
     <ClInclude Include="Api\EPosixClientSocketPlatform.h" />
+    <ClInclude Include="Api\EReader.h" />
+    <ClInclude Include="Api\EReaderOSSignal.h" />
+    <ClInclude Include="Api\EReaderSignal.h" />
+    <ClInclude Include="Api\EReaderWMSignal.h" />
+    <ClInclude Include="Api\ESocket.h" />
+    <ClInclude Include="Api\ETransport.h" />
     <ClInclude Include="Api\EWrapper.h" />
     <ClInclude Include="Api\Execution.h" />
-    <ClInclude Include="Api\IBString.h" />
+    <ClInclude Include="Api\executioncondition.h" />
+    <ClInclude Include="Api\IExternalizable.h" />
+    <ClInclude Include="Api\MarginCondition.h" />
+    <ClInclude Include="Api\OperatorCondition.h" />
     <ClInclude Include="Api\Order.h" />
+    <ClInclude Include="Api\OrderCondition.h" />
     <ClInclude Include="Api\OrderState.h" />
+    <ClInclude Include="Api\PercentChangeCondition.h" />
+    <ClInclude Include="Api\PriceCondition.h" />
+    <ClInclude Include="Api\Resource.h" />
     <ClInclude Include="Api\ScannerSubscription.h" />
     <ClInclude Include="Api\shared_ptr.h" />
+    <ClInclude Include="Api\SoftDollarTier.h" />
     <ClInclude Include="Api\StdAfx.h" />
     <ClInclude Include="Api\TagValue.h" />
+    <ClInclude Include="Api\TimeCondition.h" />
     <ClInclude Include="Api\TwsSocketClientErrors.h" />
+    <ClInclude Include="Api\VolumeCondition.h" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="IbClient.hpp" />
     <ClInclude Include="IbSecurity.hpp" />
@@ -404,6 +865,7 @@
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Api\TwsSocketClient.def" />
     <None Include="Api\version" />
     <None Include="InteractiveBrokers.def" />
   </ItemGroup>

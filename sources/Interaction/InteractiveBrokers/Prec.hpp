@@ -11,10 +11,14 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #pragma warning(disable : 4800)
+#include "Api/StdAfx.h"
+////////////////////////////////////////////////////////////////////////////////
 #include "Api/Contract.h"
-#include "Api/EPosixClientSocket.h"
+#include "Api/EClientSocket.h"
+#include "Api/EReader.h"
+#include "Api/EReaderOSSignal.h"
 #include "Api/EWrapper.h"
 #include "Api/Order.h"
 #pragma warning(pop)
