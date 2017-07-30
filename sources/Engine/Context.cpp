@@ -84,9 +84,9 @@ class Engine::Context::Implementation : private boost::noncopyable {
           conf.ReadFileSystemPath("Expiration", "calendar_csv");
       m_context.GetLog().Debug("Loading expiration calendar from %1%...",
                                expirationCalendarFilePath);
-      m_expirationCalendar.reset(new ExpirationCalendar);
-      m_expirationCalendar->ReloadCsv(expirationCalendarFilePath);
-      const ExpirationCalendar::Stat stat = m_expirationCalendar->CalcStat();
+      auto expirationCalendar = std::make_unique<ExpirationCalendar>();
+      expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+      const ExpirationCalendar::Stat stat = expirationCalendar->CalcStat();
       const char *const message =
           "Expiration calendar has %1% symbol(s)"
           " and %2% expiration(s).";
@@ -95,6 +95,7 @@ class Engine::Context::Implementation : private boost::noncopyable {
                                     stat.numberOfExpirations)
           : m_context.GetLog().Warn(message, stat.numberOfSymbols,
                                     stat.numberOfExpirations);
+      m_expirationCalendar.swap(expirationCalendar);
     }
 
     BootContext(conf, m_context, m_tradingSystems, m_marketDataSources);
@@ -193,6 +194,21 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
   }
   Assert(m_pimpl->m_modulesDlls.empty());
 
+  // Market data system should be connected before booting as sometimes security
+  // objects can be created without market data source.
+  for (auto &source : m_pimpl->m_marketDataSources) {
+    try {
+      source.marketDataSource->Connect(IniSectionRef(conf, source.section));
+    } catch (const Interactor::ConnectError &ex) {
+      boost::format message("Failed to connect to market data source: \"%1%\"");
+      message % ex;
+      throw Interactor::ConnectError(message.str().c_str());
+    } catch (const Lib::Exception &ex) {
+      GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
+      throw Exception("Failed to make market data connection");
+    }
+  }
+
   // It must be destroyed after state-object, as it state-object has
   // sub-objects from this DLL:
 
@@ -236,19 +252,6 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
         tradingSystemRef.terminal.reset(new Terminal(
             confSection.ReadFileSystemPath(terminalCmdFileKey), tradingSystem));
       }
-    }
-  }
-
-  for (auto &source : m_pimpl->m_marketDataSources) {
-    try {
-      source.marketDataSource->Connect(IniSectionRef(conf, source.section));
-    } catch (const Interactor::ConnectError &ex) {
-      boost::format message("Failed to connect to market data source: \"%1%\"");
-      message % ex;
-      throw Interactor::ConnectError(message.str().c_str());
-    } catch (const Lib::Exception &ex) {
-      GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
-      throw Exception("Failed to make market data connection");
     }
   }
 
@@ -442,6 +445,10 @@ const ExpirationCalendar &Engine::Context::GetExpirationCalendar() const {
     throw Exception("Expiration calendar is not supported");
   }
   return *m_pimpl->m_expirationCalendar;
+}
+
+bool Engine::Context::HasExpirationCalendar() const {
+  return m_pimpl->m_expirationCalendar ? true : false;
 }
 
 size_t Engine::Context::GetNumberOfMarketDataSources() const {

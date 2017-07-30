@@ -9,11 +9,12 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/SecurityMock.hpp"
+#include "Core/ServiceMock.hpp"
+#include "Core/TradingSystemMock.hpp"
 #include "Services/MovingAverageServiceMock.hpp"
 #include "MrigeshKejriwalStrategy.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockSecurity.hpp"
-#include "Tests/MockService.hpp"
 
 using namespace testing;
 using namespace trdk::Tests;
@@ -47,7 +48,7 @@ TEST(MrigeshKejriwal, Setup) {
       "qty=99\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
-  MockContext context;
+  Mocks::Context context;
   EXPECT_CALL(context, GetDropCopy()).WillRepeatedly(Return(nullptr));
   EXPECT_CALL(context, GetCurrentTime())
       .Times(1)
@@ -88,9 +89,9 @@ TEST(MrigeshKejriwal, Setup) {
   EXPECT_TRUE(spotSecurity2.GetRequest().GetTime().is_not_a_date_time());
   EXPECT_EQ(0, spotSecurity2.GetRequest().GetNumberOfTicks());
 
-  MockService unknownService;
+  Mocks::Service unknownService;
   EXPECT_NO_THROW(strategy.OnServiceStart(unknownService));
-  MovingAverageServiceMock maService;
+  Mocks::MovingAverageService maService;
   EXPECT_NO_THROW(strategy.OnServiceStart(maService));
   EXPECT_THROW(strategy.OnServiceStart(maService), trdk::Lib::Exception);
   EXPECT_NO_THROW(strategy.OnServiceStart(unknownService));
@@ -106,7 +107,7 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
       "qty=99\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
-  MockContext context;
+  Mocks::Context context;
   EXPECT_CALL(context, GetDropCopy()).WillRepeatedly(Return(nullptr));
   EXPECT_CALL(context, GetCurrentTime()).WillRepeatedly(Return(currentTime));
 
@@ -117,6 +118,7 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
 
   const lib::Symbol tradingSymbol("XXX*/USD::FUT");
   MockSecurity tradingSecurity;
+  EXPECT_CALL(tradingSecurity, IsOnline()).WillRepeatedly(Return(true));
   tradingSecurity.SetSymbolToMock(tradingSymbol);
   strategy.RegisterSource(tradingSecurity);
 
@@ -125,7 +127,7 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
   spotSecurity.SetSymbolToMock(spotSymbol);
   strategy.RegisterSource(spotSecurity);
 
-  MovingAverageServiceMock ma;
+  Mocks::MovingAverageService ma;
   strategy.OnServiceStart(ma);
 
   {
@@ -142,7 +144,10 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
     EXPECT_CALL(ma, IsEmpty()).Times(0);
     EXPECT_CALL(*trend, Update(_, _)).Times(0);
     EXPECT_CALL(*trend, IsRising()).Times(0);
-    strategy.RaiseLevel1UpdateEvent(tradingSecurity, tms::Milestones());
+    strategy.RaiseLevel1TickEvent(
+        tradingSecurity, pt::ptime(),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(0),
+        tms::Milestones());
   }
 
   {
@@ -150,7 +155,10 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
     EXPECT_CALL(ma, IsEmpty()).WillRepeatedly(Return(true));
     EXPECT_CALL(*trend, Update(_, _)).Times(0);
     EXPECT_CALL(*trend, IsRising()).Times(0);
-    strategy.RaiseLevel1UpdateEvent(spotSecurity, tms::Milestones());
+    strategy.RaiseLevel1TickEvent(
+        spotSecurity, pt::ptime(),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(0),
+        tms::Milestones());
   }
 
   const svc::MovingAverageService::Point point = {
@@ -158,35 +166,39 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
   EXPECT_CALL(ma, GetLastPoint()).WillRepeatedly(ReturnRef(point));
   EXPECT_CALL(ma, IsEmpty()).WillRepeatedly(Return(false));
 
-  const trdk::Price lastPrice(987.65);
-  EXPECT_CALL(spotSecurity, GetLastPrice()).WillRepeatedly(Return(lastPrice));
-
   {
-    EXPECT_CALL(*trend, Update(lastPrice, point)).WillOnce(Return(false));
+    EXPECT_CALL(*trend, Update(trdk::Price(98.65), point))
+        .WillOnce(Return(false));
     EXPECT_CALL(*trend, IsRising()).Times(0);
-    strategy.RaiseLevel1UpdateEvent(spotSecurity, tms::Milestones());
+    strategy.RaiseLevel1TickEvent(
+        spotSecurity, pt::ptime(),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9865),
+        tms::Milestones());
   }
 
-  EXPECT_CALL(*trend, Update(lastPrice, point))
+  Mocks::TradingSystem tradingSystem;
+  EXPECT_CALL(context, GetTradingSystem(0, trdk::TRADING_MODE_PAPER))
       .Times(2)
-      .WillRepeatedly(Return(true));
-
-  //   TradingSystemMock tradingSystem;
-  //   EXPECT_CALL(context, GetTradingSystem(0, "paper"))
-  //       .Times(2)
-  //       .WillRepeatedly(ReturnRef(tradingSystem));
+      .WillRepeatedly(ReturnRef(tradingSystem));
 
   {
+    EXPECT_CALL(*trend, Update(trdk::Price(91.61), point))
+        .WillOnce(Return(true));
     const boost::tribool isRising(true);
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
     const trdk::ScaledPrice askPrice = 87654;
     EXPECT_CALL(tradingSecurity, GetBidPriceScaled()).Times(0);
     EXPECT_CALL(tradingSecurity, GetAskPriceScaled())
         .WillRepeatedly(Return(askPrice));
-    strategy.RaiseLevel1UpdateEvent(spotSecurity, tms::Milestones());
+    strategy.RaiseLevel1TickEvent(
+        spotSecurity, pt::ptime(),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9161),
+        tms::Milestones());
   }
 
   {
+    EXPECT_CALL(*trend, Update(trdk::Price(92.62), point))
+        .WillOnce(Return(true));
     const boost::tribool isRising(false);
     const trdk::ScaledPrice bidPrice = 65478;
     EXPECT_CALL(tradingSecurity, GetBidPriceScaled())
@@ -194,7 +206,10 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
         .WillRepeatedly(Return(bidPrice));
     EXPECT_CALL(tradingSecurity, GetAskPriceScaled()).Times(0);
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
-    strategy.RaiseLevel1UpdateEvent(spotSecurity, tms::Milestones());
+    strategy.RaiseLevel1TickEvent(
+        spotSecurity, pt::ptime(),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9262),
+        tms::Milestones());
   }
 }
 

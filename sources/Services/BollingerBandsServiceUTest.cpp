@@ -9,10 +9,10 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/ContextMock.hpp"
+#include "Core/SecurityMock.hpp"
+#include "BarServiceMock.hpp"
 #include "BollingerBandsService.hpp"
-#include "Tests/MockBarService.hpp"
-#include "Tests/MockContext.hpp"
-#include "Tests/MockSecurity.hpp"
 
 namespace pt = boost::posix_time;
 namespace lib = trdk::Lib;
@@ -163,7 +163,7 @@ class BollingerBandsServiceTest : public testing::Test {
 
     MockSecurity security;
 
-    MockBarService bars;
+    Mocks::BarService bars;
     EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 
     pt::ptime time = pt::microsec_clock::local_time();
@@ -197,7 +197,7 @@ class BollingerBandsServiceTest : public testing::Test {
   }
 
  protected:
-  MockContext m_context;
+  Mocks::Context m_context;
   std::unique_ptr<Service> m_service;
 };
 }

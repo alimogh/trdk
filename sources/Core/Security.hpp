@@ -455,6 +455,24 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     *         the existing.
     */
   bool SetExpiration(const boost::posix_time::ptime &time,
+                     const trdk::Lib::ContractExpiration &&expiration);
+  //! Sets new expiration.
+  /** All marked data for security will be reset (so if security just
+    * started). The request will be reset. The request can be set new at
+    * the event handling.
+    *
+    * @sa GetExpiration
+    *
+    * @param time[in] Event time.
+    * @param expiration[in] New contract expiration.
+    *
+    * @return true if security has new request. Security will not have new
+    *         request if no one subscriber request or if the new contract is
+    *         first contract for security (if security did not have expiration
+    *         before) and if new request after switching "is not earlier"
+    *         the existing.
+    */
+  bool SetExpiration(const boost::posix_time::ptime &time,
                      const trdk::Lib::ContractExpiration &expiration);
 
  private:

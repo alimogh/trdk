@@ -1335,13 +1335,46 @@ void Client::nextValidId(::OrderId id) {
   Assert(m_seqNumber >= 0);
 }
 
-void Client::contractDetails(int /*reqId*/,
-                             const ContractDetails & /*contractDetails*/) {}
+void Client::contractDetails(int reqId,
+                             const ContractDetails &contractDetails) {
+  const auto &request = m_contractRequests.requests.find(reqId);
+  Assert(request != m_contractRequests.requests.cend());
+  if (request == m_contractRequests.requests.cend()) {
+    m_ts.GetMdsLog().Error("Failed to find contract details request %1%.",
+                           reqId);
+    return;
+  }
+  Assert(!request->second.first);
+  if (request->second.first) {
+    m_ts.GetMdsLog().Error("Contract details request %1% already finished.",
+                           reqId);
+    return;
+  }
+  request->second.second.emplace_back(contractDetails);
+}
 
 void Client::bondContractDetails(int /*reqId*/,
                                  const ContractDetails & /*contractDetails*/) {}
 
-void Client::contractDetailsEnd(int /*reqId*/) {}
+void Client::contractDetailsEnd(int reqId) {
+  const auto &request = m_contractRequests.requests.find(reqId);
+  Assert(request != m_contractRequests.requests.cend());
+  if (request == m_contractRequests.requests.cend()) {
+    m_ts.GetMdsLog().Error(
+        "Failed to find contract details request %1% to finish request.",
+        reqId);
+    return;
+  }
+  Assert(!request->second.first);
+  if (request->second.first) {
+    m_ts.GetMdsLog().Error(
+        "Failed to finish contract details request %1% as it already finished.",
+        reqId);
+    return;
+  }
+  request->second.first = true;
+  m_contractRequests.condition.notify_all();
+}
 
 void Client::execDetails(int /*reqId*/,
                          const Contract & /*contract*/,
@@ -1692,7 +1725,10 @@ void Client::realtimeBar(TickerId tickerId,
     return;
   }
   Assert(security->IsBarsRequired());
-  ib::Security::Bar bar(pt::from_time_t(time), ib::Security::Bar::TRADES);
+  ib::Security::Bar bar(
+      pt::from_time_t(time) +
+          m_ts.GetContext().GetSettings().GetTimeZone()->base_utc_offset(),
+      ib::Security::Bar::TRADES);
   bar.openPrice = security->ScalePrice(openPrice);
   bar.highPrice = security->ScalePrice(highPrice);
   bar.lowPrice = security->ScalePrice(lowPrice);
@@ -1852,6 +1888,53 @@ void Client::SwitchToNextContract(ib::Security &security) {
   m_ts.GetMdsLog().Info("%1% switched from %2% to the next contract %3%.",
                         security, prevExpiration->GetDate(),
                         nextExpiration->GetDate());
+}
+
+std::vector<ContractDetails> Client::MatchContractDetails(
+    const Symbol &symbol) const {
+  m_ts.GetMdsLog().Debug("Requesting for matching symbol %1%...", symbol);
+
+  Contract request;
+  static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
+  switch (symbol.GetSecurityType()) {
+    case SECURITY_TYPE_FUTURES:
+      request.secType = "FUT";
+      request.symbol = symbol.GetSymbol();
+      break;
+    default:
+      AssertFail("Security type is not supported by contract search.");
+      return std::vector<ContractDetails>();
+  }
+  request.currency = ConvertToIso(symbol.GetCurrency());
+  request.exchange = symbol.GetExchange();
+
+  Lock lock(m_mutex);
+  CheckState();
+  const auto requestId = const_cast<Client *>(this)->TakeTickerId();
+  m_client->reqContractDetails(requestId, request);
+  const_cast<Client *>(this)->UpdateLastRequestTime();
+  {
+    auto &registeredRequest = m_contractRequests.requests[requestId];
+    AssertEq(0, registeredRequest.second.size());
+    registeredRequest.first = false;
+  }
+
+  m_contractRequests.condition.timed_wait(lock, pt::seconds(15));
+
+  {
+    const auto &requestResult = m_contractRequests.requests.find(requestId);
+    Assert(requestResult != m_contractRequests.requests.cend());
+    if (requestResult == m_contractRequests.requests.cend()) {
+      return std::vector<ContractDetails>();
+    } else if (!requestResult->second.first) {
+      m_ts.GetMdsLog().Error(
+          "Failed to match symbol %1%, not request answer received.");
+      return std::vector<ContractDetails>();
+    }
+    const auto result = std::move(requestResult->second.second);
+    m_contractRequests.requests.erase(requestResult);
+    return result;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

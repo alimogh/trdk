@@ -123,11 +123,11 @@ class TradingSystem : public trdk::TradingSystem,
  public:
   using trdk::TradingSystem::GetContext;
 
-  trdk::TradingSystem::Log &GetTsLog() throw() {
+  trdk::TradingSystem::Log &GetTsLog() const noexcept {
     return trdk::TradingSystem::GetLog();
   }
 
-  trdk::MarketDataSource::Log &GetMdsLog() throw() {
+  trdk::MarketDataSource::Log &GetMdsLog() const noexcept {
     return trdk::MarketDataSource::GetLog();
   }
 
@@ -221,6 +221,9 @@ class TradingSystem : public trdk::TradingSystem,
 
  private:
   void RegOrder(const PlacedOrder &);
+
+  trdk::Lib::ContractExpiration ResolveContractExpiration(
+      const trdk::Lib::Symbol &) const;
 
  private:
   const bool m_isTestSource;

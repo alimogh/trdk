@@ -187,19 +187,8 @@ trdk::Security &ib::TradingSystem::CreateNewSecurityObject(
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FUTURES:
       if (!symbol.IsExplicit()) {
-        const auto &now = GetContext().GetCurrentTime();
-        const auto &expiration =
-            GetContext().GetExpirationCalendar().Find(symbol, now.date());
-        if (!expiration) {
-          boost::format error(
-              "Failed to find expiration info for \"%1%\" and %2%");
-          error % symbol % now;
-          throw trdk::MarketDataSource::Error(error.str().c_str());
-        }
-        GetMdsLog().Info("Current expiration date for \"%1%\": %2% (%3%%4%).",
-                         symbol, expiration->GetDate(), symbol.GetSymbol(),
-                         expiration->GetContract(true));
-        result->SetExpiration(pt::not_a_date_time, *expiration);
+        result->SetExpiration(pt::not_a_date_time,
+                              ResolveContractExpiration(symbol));
       }
       break;
   }
@@ -207,6 +196,38 @@ trdk::Security &ib::TradingSystem::CreateNewSecurityObject(
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
   m_unsubscribedSecurities.emplace_back(result);
+  return *result;
+}
+
+ContractExpiration ib::TradingSystem::ResolveContractExpiration(
+    const Symbol &symbol) const {
+  if (GetContext().HasExpirationCalendar()) {
+    const auto &result = GetContext().GetExpirationCalendar().Find(
+        symbol, GetContext().GetCurrentTime().date());
+    if (result) {
+      GetMdsLog().Info("Current expiration date for \"%1%\": %2% (%3%%4%).",
+                       symbol, result->GetDate(), symbol.GetSymbol(),
+                       result->GetContract(true));
+      return *result;
+    }
+  }
+
+  boost::optional<ContractExpiration> result;
+  for (const ContractDetails &contract :
+       m_client->MatchContractDetails(symbol)) {
+    const ContractExpiration expiration(
+        Lib::ConvertToDateFromYyyyMmDd(contract.summary.expiry));
+    if (!result || *result > expiration) {
+      result = std::move(expiration);
+    }
+  }
+
+  if (!result) {
+    boost::format error("Failed to find expiration info for \"%1%\"");
+    error % symbol;
+    throw trdk::MarketDataSource::Error(error.str().c_str());
+  }
+
   return *result;
 }
 

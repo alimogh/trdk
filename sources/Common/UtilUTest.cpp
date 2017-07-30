@@ -14,7 +14,7 @@ namespace lib = trdk::Lib;
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
 
-TEST(UtilsTest, CovertTimeToFileName) {
+TEST(Utils, CovertTimeToFileName) {
   EXPECT_EQ("20010101_000000",
             lib::ConvertToFileName(
                 pt::ptime(gr::date(2001, 1, 1), pt::time_duration(0, 0, 0))));
@@ -33,7 +33,7 @@ TEST(UtilsTest, CovertTimeToFileName) {
   EXPECT_EQ("121314", lib::ConvertToFileName(pt::time_duration(12, 13, 14)));
 }
 
-TEST(UtilsTest, GetTimeByTimeOfDayAndDate) {
+TEST(Utils, GetTimeByTimeOfDayAndDate) {
   // TZ, control time from prev day, source from next day
   EXPECT_EQ(pt::ptime(gr::date(2016, 12, 7), pt::time_duration(1, 10, 30)),
             lib::GetTimeByTimeOfDayAndDate(
@@ -61,4 +61,18 @@ TEST(UtilsTest, GetTimeByTimeOfDayAndDate) {
                 pt::time_duration(22, 10, 30),
                 pt::ptime(gr::date(2016, 12, 7), pt::time_duration(3, 03, 56)),
                 pt::time_duration(1, 0, 0)));
+}
+
+TEST(Utils, ConvertToDateFromYyyyMmDd) {
+  EXPECT_EQ(gr::date(2016, 12, 6), lib::ConvertToDateFromYyyyMmDd("20161206"));
+  EXPECT_EQ(gr::date(1400, 1, 6), lib::ConvertToDateFromYyyyMmDd("14000106"));
+  EXPECT_EQ(gr::date(2017, 11, 16), lib::ConvertToDateFromYyyyMmDd("20171116"));
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("0171116"), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd(""), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("edwqwdqw"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("00160106"), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20170030"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171330"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171100"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171132"), lib::Exception);
 }

@@ -1,5 +1,5 @@
 /**************************************************************************
- *   Created: 2013/01/31 00:48:06
+ *   Created: 2016/09/12 21:18:06
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,41 +10,25 @@
 
 #pragma once
 
-#include "Core/Context.hpp"
-#include "Api.h"
-#include <Core/DropCopy.hpp>
+#include "Context.hpp"
 
 namespace trdk {
-namespace Engine {
+namespace Tests {
+namespace Dummies {
 
-class TRDK_ENGINE_API Context : public trdk::Context {
+class Context : public trdk::Context {
  public:
-  typedef trdk::Context Base;
+  Context();
+  virtual ~Context() override = default;
 
- public:
-  explicit Context(
-      trdk::Context::Log &,
-      trdk::Context::TradingLog &,
-      const trdk::Settings &,
-      const trdk::Lib::Ini &,
-      const boost::unordered_map<std::string, std::string> &params);
-  virtual ~Context() override;
+  static Context &GetInstance();
 
  public:
-  void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
-  void Stop(const trdk::StopMode &);
-
-  void Add(const trdk::Lib::Ini &);
-  void Update(const trdk::Lib::Ini &);
-
-  void ClosePositions();
-
   virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
- public:
   virtual RiskControl &GetRiskControl(const trdk::TradingMode &) override;
   virtual const RiskControl &GetRiskControl(
-      const trdk::TradingMode &) const override;
+      const trdk::TradingMode &mode) const override;
 
   virtual const trdk::Lib::ExpirationCalendar &GetExpirationCalendar()
       const override;
@@ -52,8 +36,9 @@ class TRDK_ENGINE_API Context : public trdk::Context {
 
   virtual size_t GetNumberOfMarketDataSources() const override;
   virtual const trdk::MarketDataSource &GetMarketDataSource(
-      size_t index) const override;
-  virtual trdk::MarketDataSource &GetMarketDataSource(size_t index) override;
+      size_t) const override;
+  virtual trdk::MarketDataSource &GetMarketDataSource(size_t) override;
+
   virtual void ForEachMarketDataSource(
       const boost::function<bool(const trdk::MarketDataSource &)> &)
       const override;
@@ -62,16 +47,13 @@ class TRDK_ENGINE_API Context : public trdk::Context {
 
   virtual size_t GetNumberOfTradingSystems() const override;
   virtual const trdk::TradingSystem &GetTradingSystem(
-      size_t index, const TradingMode &) const override;
-  virtual trdk::TradingSystem &GetTradingSystem(size_t index,
-                                                const TradingMode &) override;
+      size_t, const trdk::TradingMode &) const override;
+  virtual trdk::TradingSystem &GetTradingSystem(
+      size_t, const trdk::TradingMode &) override;
 
  protected:
   virtual DropCopy *GetDropCopy() const override;
-
- private:
-  class Implementation;
-  std::unique_ptr<Implementation> m_pimpl;
 };
+}
 }
 }

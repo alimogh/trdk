@@ -64,6 +64,11 @@ std::string GetFutureSymbol(const Symbol &symbol) {
 //! Returns symbol price precision.
 uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
+    case SECURITY_TYPE_STOCK:
+      if (symbol.GetSymbol() == "AAPL") {
+        return 2;
+      }
+      break;
     case SECURITY_TYPE_FUTURES: {
       const auto &symbolStr = GetFutureSymbol(symbol);
       if (symbolStr == "CL") {
@@ -108,6 +113,11 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
 
 size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
+    case SECURITY_TYPE_STOCK:
+      if (symbol.GetSymbol() == "AAPL") {
+        return 1;
+      }
+      break;
     case SECURITY_TYPE_FUTURES: {
       const auto &symbolStr = GetFutureSymbol(symbol);
       if (symbolStr == "CL") {
@@ -157,8 +167,7 @@ namespace MarketDataLog {
 
 class Record : public AsyncLogRecord {
  public:
-  explicit Record(const boost::posix_time::ptime &time,
-                  const Log::ThreadId &threadId)
+  explicit Record(const pt::ptime &time, const Log::ThreadId &threadId)
       : AsyncLogRecord(time, threadId) {}
 
  public:
@@ -179,7 +188,7 @@ class OutStream : private boost::noncopyable {
   void Write(const Record &record) { m_log.Write(record); }
   bool IsEnabled() const { return m_log.IsEnabled(); }
   void EnableStream(std::ostream &os) { m_log.EnableStream(os, false); }
-  boost::posix_time::ptime GetTime() const { return m_log.GetTime(); }
+  pt::ptime GetTime() const { return m_log.GetTime(); }
   Log::ThreadId GetThreadId() const { return 0; }
 
  private:
@@ -235,7 +244,7 @@ class Log : private LogBase {
     });
   }
 
-  void WriteTrade(const boost::posix_time::ptime &time,
+  void WriteTrade(const pt::ptime &time,
                   const ScaledPrice &price,
                   const Qty &qty,
                   bool useAsLastTrade) {
@@ -1055,7 +1064,7 @@ void Security::AddLevel1Tick(
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, ticks);
 }
 
-void Security::AddTrade(const boost::posix_time::ptime &time,
+void Security::AddTrade(const pt::ptime &time,
                         const ScaledPrice &price,
                         const Qty &qty,
                         const TimeMeasurement::Milestones &delayMeasurement,
@@ -1167,6 +1176,12 @@ bool Security::HasExpiration() const {
 
 bool Security::SetExpiration(const pt::ptime &time,
                              const ContractExpiration &expiration) {
+  return SetExpiration(time,
+                       std::forward<const ContractExpiration>(expiration));
+}
+
+bool Security::SetExpiration(const pt::ptime &time,
+                             const ContractExpiration &&expiration) {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   if (m_pimpl->m_expiration) {
     AssertLt(*m_pimpl->m_expiration, expiration);
@@ -1191,7 +1206,7 @@ bool Security::SetExpiration(const pt::ptime &time,
     }
 
     m_pimpl->m_isLevel1Started = false;
-    m_pimpl->m_expiration = expiration;
+    m_pimpl->m_expiration = std::move(expiration);
     for (auto &item : m_pimpl->m_level1) {
       Unset(item);
     }

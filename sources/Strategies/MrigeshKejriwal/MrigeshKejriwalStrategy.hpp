@@ -71,6 +71,9 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
  protected:
   virtual void OnSecurityStart(trdk::Security &,
                                trdk::Security::Request &) override;
+  virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
+                                          trdk::Security &,
+                                          trdk::Security::Request &) override;
   virtual void OnPositionUpdate(trdk::Position &) override;
   virtual void OnServiceDataUpdate(
       const trdk::Service &,
@@ -102,8 +105,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   void CheckSignal(const Price &,
                    const trdk::Lib::TimeMeasurement::Milestones &);
 
-  trdk::Position &OpenPosition(bool isLong,
-                               const trdk::Lib::TimeMeasurement::Milestones &);
+  void OpenPosition(bool isLong,
+                    const trdk::Lib::TimeMeasurement::Milestones &);
 
   template <typename PositionType>
   boost::shared_ptr<Position> CreatePosition(
@@ -120,6 +123,10 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   void ReportOperation(const Position &);
 
+  bool StartRollOver();
+  void CancelRollOver();
+  void FinishRollOver(Position &oldPosition);
+
  private:
   const Settings m_settings;
 
@@ -130,6 +137,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   const trdk::Services::MovingAverageService *m_ma;
 
   boost::shared_ptr<Trend> m_trend;
+
+  bool m_isRollover;
 
   std::ofstream m_strategyLog;
 };

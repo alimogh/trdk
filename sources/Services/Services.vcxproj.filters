@@ -32,6 +32,9 @@
     <ClInclude Include="MovingAverageServiceMock.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BarServiceMock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -56,6 +59,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MovingAverageServiceMock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BarServiceMock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

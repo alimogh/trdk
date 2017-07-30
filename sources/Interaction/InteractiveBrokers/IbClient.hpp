@@ -223,9 +223,12 @@ class Client : protected EWrapper {
 
   void SwitchToNextContract(Security &security);
 
+  std::vector<ContractDetails> MatchContractDetails(
+      const trdk::Lib::Symbol &) const;
+
  private:
-  Contract Client::GetContract(const trdk::Security &,
-                               const Lib::ContractExpiration * = nullptr) const;
+  Contract GetContract(const trdk::Security &,
+                       const Lib::ContractExpiration * = nullptr) const;
   Contract GetContract(const trdk::Security &, const OrderParams &) const;
 
   void PostponeMarketDataSubscription(Security &) const;
@@ -436,6 +439,13 @@ class Client : protected EWrapper {
   boost::mutex m_switchMutex;
   boost::condition_variable m_switchCondition;
   boost::atomic<const Security *> m_securityInSwitching;
+
+  mutable struct {
+    boost::condition_variable condition;
+    boost::unordered_map<TickerId,
+                         std::pair<bool, std::vector<ContractDetails>>>
+        requests;
+  } m_contractRequests;
 };
 }
 }
