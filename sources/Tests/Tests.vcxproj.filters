@@ -96,9 +96,6 @@
     <ClCompile Include="..\Services\StochasticIndicatorUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\Interaction\Transaq\TransaqTradingSystemUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\Services\MovingAverageServiceMock.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>

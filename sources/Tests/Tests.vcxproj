@@ -370,7 +370,6 @@
     <ClCompile Include="..\Core\MarketDataSourceMock.cpp" />
     <ClCompile Include="..\Core\ServiceMock.cpp" />
     <ClCompile Include="..\Core\TradingSystemMock.cpp" />
-    <ClCompile Include="..\Interaction\Transaq\TransaqTradingSystemUTest.cpp" />
     <ClCompile Include="..\Services\AdxIndicatorUTest.cpp" />
     <ClCompile Include="..\Services\BarCollectionServiceUTest.cpp" />
     <ClCompile Include="..\Services\BarServiceMock.cpp" />
