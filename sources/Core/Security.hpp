@@ -217,7 +217,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   /** @sa IsActive
     * @sa IsOnline
     */
-  bool IsTradingSessionOpened() const;
+  virtual bool IsTradingSessionOpened() const;
 
   //! Sets requested data start time if it is not later than existing.
   void SetRequest(const trdk::Security::Request &);

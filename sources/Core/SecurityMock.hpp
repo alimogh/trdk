@@ -41,6 +41,7 @@ class Security : public trdk::Security {
   }
 
   MOCK_CONST_METHOD0(IsOnline, bool());
+  MOCK_CONST_METHOD0(IsTradingSessionOpened, bool());
   MOCK_CONST_METHOD0(GetExpiration, const trdk::Lib::ContractExpiration &());
   MOCK_CONST_METHOD0(GetLastPrice, trdk::Price());
   MOCK_CONST_METHOD0(GetAskPriceScaled, trdk::ScaledPrice());

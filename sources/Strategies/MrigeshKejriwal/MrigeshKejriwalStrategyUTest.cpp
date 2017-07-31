@@ -24,6 +24,7 @@ namespace svc = trdk::Services;
 namespace tms = trdk::Lib::TimeMeasurement;
 namespace lib = trdk::Lib;
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
 namespace {
 class TrendMock : public mk::Trend {
@@ -119,11 +120,20 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
   const lib::Symbol tradingSymbol("XXX*/USD::FUT");
   Mocks::Security tradingSecurity;
   EXPECT_CALL(tradingSecurity, IsOnline()).WillRepeatedly(Return(true));
+  EXPECT_CALL(tradingSecurity, IsTradingSessionOpened())
+      .WillRepeatedly(Return(true));
+  const lib::ContractExpiration tradingSecurityContractExpiration(
+      gr::date(2017, 6, 4));
+  EXPECT_CALL(tradingSecurity, GetExpiration())
+      .WillRepeatedly(ReturnRef(tradingSecurityContractExpiration));
   tradingSecurity.SetSymbolToMock(tradingSymbol);
   strategy.RegisterSource(tradingSecurity);
 
   const lib::Symbol spotSymbol("XXX/USD::INDEX");
   Mocks::Security spotSecurity;
+  EXPECT_CALL(spotSecurity, IsOnline()).Times(0);
+  EXPECT_CALL(spotSecurity, IsTradingSessionOpened()).Times(0);
+  EXPECT_CALL(spotSecurity, GetExpiration()).Times(0);
   spotSecurity.SetSymbolToMock(spotSymbol);
   strategy.RegisterSource(spotSecurity);
 
@@ -187,7 +197,10 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
     const boost::tribool isRising(true);
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
     const trdk::ScaledPrice askPrice = 87654;
-    EXPECT_CALL(tradingSecurity, GetBidPriceScaled()).Times(0);
+    // To remember close price.
+    EXPECT_CALL(tradingSecurity, GetBidPriceScaled())
+        .WillRepeatedly(Return(4567));
+    // For open price.
     EXPECT_CALL(tradingSecurity, GetAskPriceScaled())
         .WillRepeatedly(Return(askPrice));
     strategy.RaiseLevel1TickEvent(
@@ -201,10 +214,12 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
         .WillOnce(Return(true));
     const boost::tribool isRising(false);
     const trdk::ScaledPrice bidPrice = 65478;
+    // For open price.
     EXPECT_CALL(tradingSecurity, GetBidPriceScaled())
-        .Times(1)
         .WillRepeatedly(Return(bidPrice));
-    EXPECT_CALL(tradingSecurity, GetAskPriceScaled()).Times(0);
+    // To remember close price.
+    EXPECT_CALL(tradingSecurity, GetAskPriceScaled())
+        .WillRepeatedly(Return(4567));
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
     strategy.RaiseLevel1TickEvent(
         spotSecurity, pt::ptime(),
