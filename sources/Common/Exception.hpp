@@ -20,16 +20,16 @@ namespace Lib {
 
 class Exception : public std::exception {
  public:
-  explicit Exception(const char *what) throw();
-  Exception(const Exception &) throw();
-  virtual ~Exception() throw();
+  explicit Exception(const char *what) noexcept;
+  Exception(const Exception &) noexcept;
+  virtual ~Exception() noexcept;
 
-  Exception &operator=(const Exception &) throw();
+  Exception &operator=(const Exception &) noexcept;
 
   friend std::ostream &operator<<(std::ostream &, const trdk::Lib::Exception &);
 
  public:
-  virtual const char *what() const throw();
+  virtual const char *what() const noexcept;
 
  private:
   const char *m_what;
@@ -40,35 +40,35 @@ class Exception : public std::exception {
 
 class LogicError : public trdk::Lib::Exception {
  public:
-  explicit LogicError(const char *what) throw();
+  explicit LogicError(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class SystemException : public trdk::Lib::Exception {
  public:
-  explicit SystemException(const char *what) throw();
+  explicit SystemException(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class MethodDoesNotImplementedError : public trdk::Lib::Exception {
  public:
-  explicit MethodDoesNotImplementedError(const char *what) throw();
+  explicit MethodDoesNotImplementedError(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class ModuleError : public trdk::Lib::Exception {
  public:
-  explicit ModuleError(const char *what) throw();
+  explicit ModuleError(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class RiskControlException : public trdk::Lib::Exception {
  public:
-  explicit RiskControlException(const char *what) throw();
+  explicit RiskControlException(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////

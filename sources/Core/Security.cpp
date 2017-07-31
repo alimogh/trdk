@@ -506,18 +506,29 @@ class Security::Implementation : private boost::noncopyable {
     }
   }
 
-  void UpdateMarketDataStat(const pt::ptime &time) {
+  void CheckMarketDataUpdate(const pt::ptime &time) {
     if (time.is_not_a_date_time()) {
       return;
     }
+
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
     if (!GetLastMarketDataTime().is_not_a_date_time()) {
       AssertLe(GetLastMarketDataTime(), time);
     }
 #endif
-    const auto &marketDataTime = ConvertToMicroseconds(time);
-    m_marketDataTime = marketDataTime;
+
+    m_marketDataTime = ConvertToMicroseconds(time);
     ++m_numberOfMarketDataUpdates;
+
+    if (m_expiration && m_isOnline && m_expiration->GetDate() <= time.date()) {
+      m_source.GetLog().Info(
+          "Switching \"%1%\" to the next contract as last market data update"
+          " is %2% and expiration date is %3%...",
+          m_self, time, m_expiration->GetDate());
+      Assert(m_expiration->GetDate() == time.date());
+      m_source.SwitchToNextContract(m_self);
+    }
+    Assert(!m_expiration || m_expiration->GetDate() > time.date());
   }
 
   bool AddLevel1Tick(const pt::ptime &time,
@@ -527,7 +538,7 @@ class Security::Implementation : private boost::noncopyable {
                      bool isPreviouslyChanged) {
     const bool isChanged =
         SetLevel1(time, tick, timeMeasurement, flush, isPreviouslyChanged);
-    UpdateMarketDataStat(time);
+    CheckMarketDataUpdate(time);
     if (CheckLevel1Start()) {
       m_level1TickSignal(time, tick, timeMeasurement, flush);
     }
@@ -575,11 +586,11 @@ class Security::Implementation : private boost::noncopyable {
     if (!flush) {
       return;
     } else if (!(isChanged || isPreviouslyChanged)) {
-      UpdateMarketDataStat(time);
+      CheckMarketDataUpdate(time);
       return;
     }
 
-    UpdateMarketDataStat(time);
+    CheckMarketDataUpdate(time);
 
     if (CheckLevel1Start()) {
       m_level1UpdateSignal(timeMeasurement);
@@ -1072,7 +1083,7 @@ void Security::AddTrade(const pt::ptime &time,
   AssertLt(0, price);
   AssertLt(0, qty);
 
-  m_pimpl->UpdateMarketDataStat(time);
+  m_pimpl->CheckMarketDataUpdate(time);
   m_pimpl->m_tradeSignal(time, price, qty, delayMeasurement);
 
   if (useAsLastTrade) {
@@ -1088,7 +1099,7 @@ void Security::AddTrade(const pt::ptime &time,
 }
 
 void Security::AddBar(Bar &&bar) {
-  m_pimpl->UpdateMarketDataStat(bar.time);
+  m_pimpl->CheckMarketDataUpdate(bar.time);
   m_pimpl->m_barSignal(bar);
   m_pimpl->m_marketDataLog.WriteBar(bar);
 }
@@ -1156,7 +1167,7 @@ void Security::SetBook(PriceBook &book,
       Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
           book.GetAsk().IsEmpty() ? Qty(0) : book.GetAsk().GetTop().GetQty()),
       timeMeasurement);
-  m_pimpl->UpdateMarketDataStat(book.GetTime());
+  m_pimpl->CheckMarketDataUpdate(book.GetTime());
 
   m_pimpl->m_bookUpdateTickSignal(book, timeMeasurement);
 }
@@ -1191,12 +1202,10 @@ bool Security::SetExpiration(const pt::ptime &time,
   const bool isFirstContract = m_pimpl->m_expiration ? false : true;
 
   GetSource().GetLog().Info(
-      m_pimpl->m_expiration ? "Switching %1% to the next contract %2%%3% (%4%)"
-                              " by the event at %5%..."
-                            : "Starting %1% with the contract %2%%3% (%4%)"
-                              " by the event at %5%...",
-      *this, GetSymbol().GetSymbol(), expiration.GetContract(true),
-      expiration.GetDate(), time);
+      m_pimpl->m_expiration
+          ? "Switching \"%1%\" to the next contract %2% by the event at %3%..."
+          : "Starting \"%1%\" with the contract %2% by the event at %3%...",
+      *this, expiration.GetDate(), time);
 
   {
     const auto lock = GetSource().GetContext().SyncDispatching();

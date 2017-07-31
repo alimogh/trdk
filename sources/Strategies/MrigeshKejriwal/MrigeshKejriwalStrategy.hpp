@@ -125,6 +125,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   bool StartRollOver();
   void CancelRollOver();
+  void FinishRollOver();
   void FinishRollOver(Position &oldPosition);
 
  private:

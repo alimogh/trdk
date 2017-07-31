@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -44,7 +45,7 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
     GetLog().Info("Source is %1%.", m_filePath);
   }
 
-  virtual ~TrdkMarketDataLogSource() {
+  virtual ~TrdkMarketDataLogSource() override {
     try {
       Stop();
     } catch (...) {
@@ -54,7 +55,8 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
   }
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Symbol &symbol) {
+  virtual trdk::Security &CreateNewSecurityObject(
+      const Symbol &symbol) override {
     if (!symbol.IsExplicit()) {
       throw Exception("Source works only with explicit symbols");
     } else if (m_security) {
@@ -71,7 +73,20 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
     return *result;
   }
 
-  virtual void Run() {
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &,
+      const boost::gregorian::date &) const override {
+    throw MethodDoesNotImplementedError(
+        "TrdkMarketDataLogSource doesn't support contract expiration");
+  }
+
+  virtual void SwitchToContract(
+      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override {
+    throw MethodDoesNotImplementedError(
+        "TrdkMarketDataLogSource doesn't support contract expiration");
+  }
+
+  virtual void Run() override {
     if (!m_security) {
       throw Exception("Security is not set");
     }

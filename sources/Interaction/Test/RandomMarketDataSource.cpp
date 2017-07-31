@@ -15,6 +15,7 @@
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -169,6 +170,19 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
       result);
 
   return *result;
+}
+
+boost::optional<ContractExpiration>
+RandomMarketDataSource::FindContractExpiration(const Symbol &,
+                                               const gr::date &) const {
+  throw MethodDoesNotImplementedError(
+      "RandomMarketDataSource doesn't support contract expiration");
+}
+
+void RandomMarketDataSource::SwitchToContract(
+    trdk::Security &, const ContractExpiration &&) const {
+  throw MethodDoesNotImplementedError(
+      "RandomMarketDataSource doesn't support contract expiration");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

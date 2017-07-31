@@ -36,7 +36,7 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
       const IniSectionRef &conf)
       : Base(index, context, instanceName, conf) {}
 
-  virtual ~CsvContinuousContractMarketDataSource() {
+  virtual ~CsvContinuousContractMarketDataSource() override {
     try {
       Stop();
     } catch (...) {
@@ -46,7 +46,8 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
   }
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Symbol &symbol) {
+  virtual trdk::Security &CreateNewSecurityObject(
+      const Symbol &symbol) override {
     if (symbol.IsExplicit()) {
       throw Exception("Source works only with not explicit symbols");
     } else if (m_security) {
@@ -62,7 +63,22 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
     return *result;
   }
 
-  virtual void Run() {
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &,
+      const boost::gregorian::date &) const override {
+    throw MethodDoesNotImplementedError(
+        "CsvContinuousContractMarketDataSource doesn't support contract "
+        "expiration");
+  }
+
+  virtual void SwitchToContract(
+      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override {
+    throw MethodDoesNotImplementedError(
+        "CsvContinuousContractMarketDataSource doesn't support contract "
+        "expiration");
+  }
+
+  virtual void Run() override {
     size_t fileNo = 1;
     pt::ptime currentTime;
     pt::ptime requestTime;

@@ -195,8 +195,11 @@ void mk::Strategy::OnLevel1Tick(Security &security,
                                 const pt::ptime &,
                                 const Level1TickValue &tick,
                                 const Milestones &delayMeasurement) {
-  if (tick.GetType() != LEVEL1_TICK_LAST_PRICE ||
-      &security != &GetSpotSecurity() || GetMa().IsEmpty()) {
+  if (&security == &GetTradingSecurity()) {
+    FinishRollOver();
+    return;
+  }
+  if (tick.GetType() != LEVEL1_TICK_LAST_PRICE || GetMa().IsEmpty()) {
     return;
   }
   CheckSignal(security.DescalePrice(tick.GetValue()), delayMeasurement);
@@ -367,8 +370,17 @@ bool mk::Strategy::StartRollOver() {
 
 void mk::Strategy::CancelRollOver() { m_isRollover = false; }
 
+void mk::Strategy::FinishRollOver() {
+  if (!GetPositions().GetSize()) {
+    return;
+  }
+  AssertEq(1, GetPositions().GetSize());
+  FinishRollOver(*GetPositions().GetBegin());
+}
+
 void mk::Strategy::FinishRollOver(Position &oldPosition) {
-  if (!m_isRollover || !oldPosition.IsCompleted()) {
+  if (!m_isRollover || !oldPosition.IsCompleted() ||
+      !GetTradingSecurity().IsActive()) {
     return;
   }
   OpenPosition(oldPosition.IsLong(), Milestones());

@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Core/TradingLog.hpp"
 #include "MarketDataSource.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -38,7 +39,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
                   m_halfOfBidAskSpread * 2);
   }
 
-  virtual ~CsvTickMarketDataSource() {
+  virtual ~CsvTickMarketDataSource() override {
     try {
       Stop();
     } catch (...) {
@@ -48,7 +49,8 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
   }
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Symbol &symbol) {
+  virtual trdk::Security &CreateNewSecurityObject(
+      const Symbol &symbol) override {
     if (!symbol.IsExplicit()) {
       throw Exception("Source works only with explicit symbols");
     } else if (m_security) {
@@ -65,7 +67,20 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
     return *result;
   }
 
-  virtual void Run() {
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &,
+      const boost::gregorian::date &) const override {
+    throw MethodDoesNotImplementedError(
+        "CsvTickMarketDataSource doesn't support contract expiration");
+  }
+
+  virtual void SwitchToContract(
+      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override {
+    throw MethodDoesNotImplementedError(
+        "CsvTickMarketDataSource doesn't support contract expiration");
+  }
+
+  virtual void Run() override {
     if (!m_security) {
       throw Exception("Security is not set");
     }

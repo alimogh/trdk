@@ -23,19 +23,24 @@ class RandomMarketDataSource : public trdk::MarketDataSource {
   typedef trdk::MarketDataSource Base;
 
  public:
-  RandomMarketDataSource(size_t index,
-                         Context &context,
-                         const std::string &instanceName,
-                         const Lib::IniSectionRef &);
-  virtual ~RandomMarketDataSource();
+  explicit RandomMarketDataSource(size_t index,
+                                  Context &context,
+                                  const std::string &instanceName,
+                                  const Lib::IniSectionRef &);
+  virtual ~RandomMarketDataSource() override;
 
  public:
-  virtual void Connect(const trdk::Lib::IniSectionRef &);
-
-  virtual void SubscribeToSecurities() {}
+  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
+  virtual void SubscribeToSecurities() override {}
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const trdk::Lib::Symbol &);
+  virtual trdk::Security &CreateNewSecurityObject(
+      const trdk::Lib::Symbol &) override;
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &, const boost::gregorian::date &) const override;
+  virtual void SwitchToContract(
+      trdk::Security &security,
+      const trdk::Lib::ContractExpiration &&expiration) const override;
 
  private:
   void NotificationThread();
