@@ -553,7 +553,7 @@ TEST(AdxIndicator, General) {
 
   Mocks::Context context;
   Mocks::MarketDataSource marketDataSource;
-  MockSecurity security("TEST_SCALE4*/USD::FUT");
+  Mocks::Security security("TEST_SCALE4*/USD::FUT");
   Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 

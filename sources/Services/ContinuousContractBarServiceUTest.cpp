@@ -135,7 +135,7 @@ TEST(ContinuousContractBarServiceTest, DISABLED_History) {
 
   Mocks::Context context;
 
-  MockSecurity security;
+  Mocks::Security security;
   EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(false));
 
   svc::ContinuousContractBarService service(
@@ -250,7 +250,7 @@ TEST(ContinuousContractBarServiceTest, Online) {
 
   Mocks::Context context;
 
-  MockSecurity security;
+  Mocks::Security security;
   EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(true));
 
   svc::ContinuousContractBarService service(

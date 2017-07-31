@@ -16,17 +16,18 @@
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockSecurity : public trdk::Security {
+class Security : public trdk::Security {
  public:
-  MockSecurity(const char *symbol = "TEST_SCALE2*/USD:NYMEX:FUT")
-      : Security(Dummies::Context::GetInstance(),
-                 trdk::Lib::Symbol(symbol),
-                 Dummies::MarketDataSource::GetInstance(),
-                 SupportedLevel1Types()),
+  Security(const char *symbol = "TEST_SCALE2*/USD:NYMEX:FUT")
+      : trdk::Security(Dummies::Context::GetInstance(),
+                       trdk::Lib::Symbol(symbol),
+                       Dummies::MarketDataSource::GetInstance(),
+                       SupportedLevel1Types()),
         m_symbol(nullptr) {}
 
-  virtual ~MockSecurity() override = default;
+  virtual ~Security() override = default;
 
  public:
   //! @todo Fix when Google Test will support noexcept.
@@ -49,5 +50,6 @@ class MockSecurity : public trdk::Security {
   //! @todo Fix when Google Test will support noexcept.
   const trdk::Lib::Symbol *m_symbol;
 };
+}
 }
 }

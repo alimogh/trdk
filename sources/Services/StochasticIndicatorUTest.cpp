@@ -158,7 +158,7 @@ TEST(StochasticIndicator, General) {
 
   Mocks::Context context;
   Mocks::MarketDataSource marketDataSource;
-  MockSecurity security("TEST_SCALE2*/USD::FUT");
+  Mocks::Security security("TEST_SCALE2*/USD::FUT");
   Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 

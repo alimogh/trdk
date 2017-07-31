@@ -105,7 +105,7 @@ TEST(RsiIndicator, General) {
 
   Mocks::Context context;
   Mocks::MarketDataSource marketDataSource;
-  MockSecurity security;
+  Mocks::Security security;
   Mocks::BarService bars;
   EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));
 

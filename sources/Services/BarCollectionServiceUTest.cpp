@@ -58,7 +58,7 @@ Source GetSource(const uint32_t numberOfSets) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(BarServiceTest, ByNumberOfTicks) {
+TEST(BarService, ByNumberOfTicks) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 10 ticks\n"
@@ -165,7 +165,7 @@ TEST(BarServiceTest, ByNumberOfTicks) {
   }
 }
 
-TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
+TEST(BarService, ByNumberOfTicksWithSessionOpenClose) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 10000 ticks\n"
@@ -239,7 +239,7 @@ TEST(BarServiceTest, ByNumberOfTicksWithSessionOpenClose) {
   EXPECT_EQ(3, service.GetLastBar().lowTradePrice);
 }
 
-TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
+TEST(BarService, ClosingCountedBarByLastBarTick) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 2 ticks\n"
@@ -248,7 +248,7 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
 
   Mocks::Context context;
 
-  MockSecurity security;
+  Mocks::Security security;
   svc::BarCollectionService service(context, "Test",
                                     lib::IniSectionRef(settings, "Section"));
 
@@ -274,14 +274,14 @@ TEST(BarServiceTest, ClosingCountedBarByLastBarTick) {
   EXPECT_EQ(2, service.GetSize());
 }
 
-TEST(BarServiceTest, DropCopy) {
+TEST(BarService, DropCopy) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 3 ticks\n"
       "id = {00000000-0000-0000-0000-000000000001}\n"
       "log = none");
 
-  MockDropCopy dropCopy;
+  Mocks::DropCopy dropCopy;
 
   Mocks::Context context;
   Mocks::MarketDataSource marketDataSource;

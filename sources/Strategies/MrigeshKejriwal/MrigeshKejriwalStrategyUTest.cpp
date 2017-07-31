@@ -58,7 +58,7 @@ TEST(MrigeshKejriwal, Setup) {
                         lib::IniSectionRef(settings, "Section"));
 
   const lib::Symbol tradingSymbol("XXX*/USD::FUT");
-  MockSecurity tradingSecurity;
+  Mocks::Security tradingSecurity;
   tradingSecurity.SetSymbolToMock(tradingSymbol);
   {
     tradingSecurity.SetRequest(trdk::Security::Request());
@@ -68,14 +68,14 @@ TEST(MrigeshKejriwal, Setup) {
     EXPECT_EQ(0, tradingSecurity.GetRequest().GetNumberOfTicks());
   }
   const lib::Symbol tradingSymbol2("XXX2*/USD::FUT");
-  MockSecurity tradingSecurity2;
+  Mocks::Security tradingSecurity2;
   tradingSecurity2.SetSymbolToMock(tradingSymbol2);
   EXPECT_THROW(strategy.RegisterSource(tradingSecurity2), lib::Exception);
   EXPECT_TRUE(tradingSecurity2.GetRequest().GetTime().is_not_a_date_time());
   EXPECT_EQ(0, tradingSecurity2.GetRequest().GetNumberOfTicks());
 
   const lib::Symbol spotSymbol("XXX/USD::INDEX");
-  MockSecurity spotSecurity;
+  Mocks::Security spotSecurity;
   spotSecurity.SetSymbolToMock(spotSymbol);
   {
     strategy.RegisterSource(spotSecurity);
@@ -83,7 +83,7 @@ TEST(MrigeshKejriwal, Setup) {
     EXPECT_EQ(0, spotSecurity.GetRequest().GetNumberOfTicks());
   }
   const lib::Symbol spotSymbol2("XXX2/USD::INDEX");
-  MockSecurity spotSecurity2;
+  Mocks::Security spotSecurity2;
   spotSecurity2.SetSymbolToMock(spotSymbol2);
   EXPECT_THROW(strategy.RegisterSource(spotSecurity2), lib::Exception);
   EXPECT_TRUE(spotSecurity2.GetRequest().GetTime().is_not_a_date_time());
@@ -117,13 +117,13 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
                         lib::IniSectionRef(settings, "Section"), trend);
 
   const lib::Symbol tradingSymbol("XXX*/USD::FUT");
-  MockSecurity tradingSecurity;
+  Mocks::Security tradingSecurity;
   EXPECT_CALL(tradingSecurity, IsOnline()).WillRepeatedly(Return(true));
   tradingSecurity.SetSymbolToMock(tradingSymbol);
   strategy.RegisterSource(tradingSecurity);
 
   const lib::Symbol spotSymbol("XXX/USD::INDEX");
-  MockSecurity spotSecurity;
+  Mocks::Security spotSecurity;
   spotSecurity.SetSymbolToMock(spotSymbol);
   strategy.RegisterSource(spotSecurity);
 
