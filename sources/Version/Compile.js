@@ -29,7 +29,6 @@ var requiredModules = [
 	, 'InteractiveBrokers'
 	, 'Services'
 	, 'TestStrategy'
-	, 'IntradayTrend'
 	, 'MrigeshKejriwal'
 ]
 

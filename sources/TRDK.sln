@@ -5,7 +5,6 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine.vcxproj", "{015FB121-6122-4A00-BFBB-545E9E73ABEE}"
 	ProjectSection(ProjectDependencies) = postProject
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01} = {2D2C4119-BC55-4CD5-ADD2-080192B59E01}
 		{9F5E113C-276A-43BF-A8F6-8A9BEE1AD8A1} = {9F5E113C-276A-43BF-A8F6-8A9BEE1AD8A1}
 	EndProjectSection
 EndProject
@@ -33,12 +32,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Interactive Brokers", "Interaction\InteractiveBrokers\InteractiveBrokers.vcxproj", "{BEFE87AE-1376-4C4C-87D5-73E782990306}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Services", "Services\Services.vcxproj", "{4F025D92-8F15-4A05-97B6-CA680CB090D9}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Intraday Trend", "Strategies\IntradayTrend\IntradayTrend.vcxproj", "{2D2C4119-BC55-4CD5-ADD2-080192B59E01}"
-	ProjectSection(ProjectDependencies) = postProject
-		{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4} = {419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}
-		{4F025D92-8F15-4A05-97B6-CA680CB090D9} = {4F025D92-8F15-4A05-97B6-CA680CB090D9}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Trading library", "TradingLib\TradingLib.vcxproj", "{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -420,42 +413,6 @@ Global
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9}.Test Standalone|x64.Build.0 = Test Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|Mixed Platforms.ActiveCfg = Debug DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|Mixed Platforms.Build.0 = Debug DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|Win32.ActiveCfg = Debug DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|Win32.Build.0 = Debug DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|x64.ActiveCfg = Debug DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug DLL|x64.Build.0 = Debug DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|Mixed Platforms.ActiveCfg = Debug Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|Mixed Platforms.Build.0 = Debug Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|Win32.ActiveCfg = Debug Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|Win32.Build.0 = Debug Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|x64.ActiveCfg = Debug Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Debug Standalone|x64.Build.0 = Debug Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|Mixed Platforms.ActiveCfg = Release DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|Mixed Platforms.Build.0 = Release DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|Win32.ActiveCfg = Release DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|Win32.Build.0 = Release DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|x64.ActiveCfg = Release DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release DLL|x64.Build.0 = Release DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|Mixed Platforms.ActiveCfg = Release Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|Mixed Platforms.Build.0 = Release Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|Win32.ActiveCfg = Release Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|Win32.Build.0 = Release Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|x64.ActiveCfg = Release Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Release Standalone|x64.Build.0 = Release Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|Mixed Platforms.ActiveCfg = Test DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|Mixed Platforms.Build.0 = Test DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|Win32.ActiveCfg = Test DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|Win32.Build.0 = Test DLL|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|x64.ActiveCfg = Test DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test DLL|x64.Build.0 = Test DLL|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|Mixed Platforms.ActiveCfg = Test Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|Mixed Platforms.Build.0 = Test Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|Win32.ActiveCfg = Test Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01}.Test Standalone|x64.Build.0 = Test Standalone|x64
 		{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}.Debug DLL|Mixed Platforms.ActiveCfg = Debug DLL|Win32
 		{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}.Debug DLL|Mixed Platforms.Build.0 = Debug DLL|Win32
 		{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}.Debug DLL|Win32.ActiveCfg = Debug DLL|Win32
@@ -572,7 +529,6 @@ Global
 		{3E0187E3-F6E3-48E3-A0E4-1E454B0E7F40} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
 		{9EF13741-7C1B-4A58-B79C-3800B42847E7} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 		{BEFE87AE-1376-4C4C-87D5-73E782990306} = {0472C2A4-F2BB-48CC-A6FE-32B792EE621D}
-		{2D2C4119-BC55-4CD5-ADD2-080192B59E01} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 		{9F5E113C-276A-43BF-A8F6-8A9BEE1AD8A1} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 	EndGlobalSection
 EndGlobal
