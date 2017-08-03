@@ -88,7 +88,6 @@ void mk::Strategy::OnSecurityStart(Security &security,
         throw Exception(
             "Strategy can not work with more than one trading security");
       }
-      request.RequestTime(GetContext().GetCurrentTime() - pt::hours(3));
       m_tradingSecurity = &security;
       GetLog().Info("Using \"%1%\" (%2%) to trade...", *m_tradingSecurity,
                     m_tradingSecurity->GetExpiration().GetDate());
@@ -98,6 +97,7 @@ void mk::Strategy::OnSecurityStart(Security &security,
         throw Exception(
             "Strategy can not work with more than one underlying-security");
       }
+      request.RequestTime(GetContext().GetCurrentTime() - pt::hours(12));
       m_underlyingSecurity = &security;
       GetLog().Info("Using \"%1%\" to get spot price...",
                     *m_underlyingSecurity);
