@@ -27,7 +27,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend {
   virtual ~Trend() {}
 
  public:
-  virtual bool Update(const Price &spotPrice,
+  virtual bool Update(const Price &lastPrice,
                       const trdk::Services::MovingAverageService::Point &);
 
  public:
@@ -91,9 +91,9 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
     TrdkAssert(m_tradingSecurity);
     return *m_tradingSecurity;
   }
-  const trdk::Security &GetSpotSecurity() const {
-    TrdkAssert(m_tradingSecurity);
-    return *m_spotSecurity;
+  const trdk::Security &GetUnderlyingSecurity() const {
+    TrdkAssert(m_underlyingSecurity);
+    return *m_underlyingSecurity;
   }
   const trdk::Services::MovingAverageService &GetMa() const {
     TrdkAssert(m_ma);
@@ -102,8 +102,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   void OnMaServiceStart(const trdk::Services::MovingAverageService &);
 
-  void CheckSignal(const Price &,
-                   const trdk::Lib::TimeMeasurement::Milestones &);
+  void CheckSignal(const trdk::Lib::TimeMeasurement::Milestones &);
 
   void OpenPosition(bool isLong,
                     const trdk::Lib::TimeMeasurement::Milestones &);
@@ -134,7 +133,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   boost::uuids::random_generator m_generateUuid;
 
   trdk::Security *m_tradingSecurity;
-  trdk::Security *m_spotSecurity;
+  trdk::Security *m_underlyingSecurity;
   const trdk::Services::MovingAverageService *m_ma;
 
   boost::shared_ptr<Trend> m_trend;

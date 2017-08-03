@@ -170,6 +170,7 @@ void Dispatcher::SignalLevel1Update(
     m_level1Updates.Queue(
         boost::make_tuple(&security, subscriber, delayMeasurement), true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -193,6 +194,7 @@ void Dispatcher::SignalLevel1Tick(
             subscriber, delayMeasurement),
         flush);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -216,6 +218,7 @@ void Dispatcher::SignalNewTrade(
             subscriber, delayMeasurement),
         true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -228,6 +231,7 @@ void Dispatcher::SignalPositionUpdate(SubscriberPtrWrapper &subscriber,
     m_positionsUpdates.Queue(
         boost::make_tuple(position.shared_from_this(), subscriber), true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -245,6 +249,7 @@ void Dispatcher::SignalBrokerPositionUpdate(SubscriberPtrWrapper &subscriber,
             subscriber),
         true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -260,6 +265,7 @@ void Dispatcher::SignalNewBar(SubscriberPtrWrapper &subscriber,
     }
     m_newBars.Queue(boost::make_tuple(&security, bar, subscriber), true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -278,6 +284,7 @@ void Dispatcher::SignalBookUpdateTick(
     m_bookUpdateTicks.Queue(
         boost::make_tuple(&security, book, timeMeasurement, subscriber), true);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -296,6 +303,7 @@ void Dispatcher::SignalSecurityServiceEvents(
     }
     subscriber.RaiseSecurityServiceEvent(time, security, serviceEvent);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
@@ -314,6 +322,7 @@ void Dispatcher::SignalSecurityContractSwitched(
     }
     subscriber.RaiseSecurityContractSwitchedEvent(time, security, request);
   } catch (...) {
+    AssertFailNoException();
     //! Blocking as irreversible error, data loss.
     subscriber.Block();
     throw;
