@@ -26,12 +26,12 @@ namespace mk = trdk::Strategies::MrigeshKejriwal;
 
 Trend::Trend() : m_isRising(boost::indeterminate) {}
 
-bool Trend::Update(const Price &spotPrice,
+bool Trend::Update(const Price &lastPrice,
                    const MovingAverageService::Point &ma) {
-  if (spotPrice == ma.value) {
+  if (lastPrice == ma.value) {
     return false;
   }
-  const boost::tribool isRising(ma.value < spotPrice);
+  const boost::tribool isRising(ma.value < lastPrice);
   if (isRising == m_isRising) {
     return false;
   }
@@ -70,7 +70,7 @@ mk::Strategy::Strategy(Context &context,
            conf),
       m_settings(conf),
       m_tradingSecurity(nullptr),
-      m_spotSecurity(nullptr),
+      m_underlyingSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
       m_isRollover(false),
@@ -94,12 +94,13 @@ void mk::Strategy::OnSecurityStart(Security &security,
                     m_tradingSecurity->GetExpiration().GetDate());
       break;
     case SECURITY_TYPE_INDEX:
-      if (m_spotSecurity) {
+      if (m_underlyingSecurity) {
         throw Exception(
-            "Strategy can not work with more than one spot-security");
+            "Strategy can not work with more than one underlying-security");
       }
-      m_spotSecurity = &security;
-      GetLog().Info("Using \"%1%\" to get spot price...", *m_spotSecurity);
+      m_underlyingSecurity = &security;
+      GetLog().Info("Using \"%1%\" to get spot price...",
+                    *m_underlyingSecurity);
       break;
     default:
       throw Exception("Strategy can not work with security with unknown type");
@@ -219,7 +220,7 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   } else {
     m_isTradingSecurityActivationReported = false;
   }
-  CheckSignal(security.DescalePrice(tick.GetValue()), delayMeasurement);
+  CheckSignal(delayMeasurement);
 }
 
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}
@@ -230,20 +231,22 @@ void mk::Strategy::OnPostionsCloseRequest() {
       "::OnPostionsCloseRequest is not implemented");
 }
 
-void mk::Strategy::CheckSignal(const Price &spotPrice,
-                               const Milestones &delayMeasurement) {
+void mk::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   const auto &lastPoint = GetMa().GetLastPoint();
-  if (!m_trend->Update(spotPrice, lastPoint)) {
+  const auto &lastPrice = GetUnderlyingSecurity().GetLastPrice();
+  if (!m_trend->Update(lastPrice, lastPoint)) {
     return;
   }
   Assert(!boost::indeterminate(m_trend->IsRising()));
   GetTradingLog().Write(
-      "trend changed\tprice=%1%\tema=%2%\tspot-price=%3%\tnew-direction=%4%",
-      [this, &lastPoint, &spotPrice](TradingRecord &record) {
-        record % lastPoint.source                            // 1
-            % lastPoint.value                                // 2
-            % spotPrice                                      // 3
-            % (m_trend->IsRising() ? "rising" : "falling");  // 4
+      "trend"
+      "changed\tdirection=%1%\tlast-price=%2%"
+      "\tclose-price=%3%\tclose-price-ema=%4%",
+      [this, &lastPoint, &lastPrice](TradingRecord &record) {
+        record % (m_trend->IsRising() ? "rising" : "falling")  // 1
+            % lastPrice                                        // 2
+            % lastPoint.source                                 // 3
+            % lastPoint.value;                                 // 4
       });
 
   Position *position = nullptr;
