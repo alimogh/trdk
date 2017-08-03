@@ -16,12 +16,12 @@ class TRDK_CORE_API Interactor : private boost::noncopyable {
  public:
   class TRDK_CORE_API Error : public trdk::Lib::Exception {
    public:
-    explicit Error(const char *what) throw();
+    explicit Error(const char *what) noexcept;
   };
 
   class TRDK_CORE_API ConnectError : public Error {
    public:
-    ConnectError(const char *what) throw();
+    ConnectError(const char *what) noexcept;
   };
 
  public:

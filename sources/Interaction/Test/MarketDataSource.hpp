@@ -27,12 +27,12 @@ class MarketDataSource : public trdk::MarketDataSource {
                    Context &context,
                    const std::string &instanceName,
                    const Lib::IniSectionRef &);
-  virtual ~MarketDataSource();
+  virtual ~MarketDataSource() override;
 
  public:
-  virtual void Connect(const trdk::Lib::IniSectionRef &);
+  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
 
-  virtual void SubscribeToSecurities();
+  virtual void SubscribeToSecurities() override;
 
  protected:
   virtual void Run() = 0;

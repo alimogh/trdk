@@ -15,7 +15,7 @@ using namespace trdk::Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
-Exception::Exception(const char *what) throw() : m_doFree(false) {
+Exception::Exception(const char *what) noexcept : m_doFree(false) {
   const size_t buffSize = (strlen(what) + 1) * sizeof(char);
   m_what = static_cast<char *>(malloc(buffSize));
   if (m_what) {
@@ -26,7 +26,7 @@ Exception::Exception(const char *what) throw() : m_doFree(false) {
   }
 }
 
-Exception::Exception(const Exception &rhs) throw() {
+Exception::Exception(const Exception &rhs) noexcept {
   m_doFree = rhs.m_doFree;
   if (m_doFree) {
     const size_t buffSize = (strlen(rhs.m_what) + 1) * sizeof(char);
@@ -41,15 +41,15 @@ Exception::Exception(const Exception &rhs) throw() {
   }
 }
 
-Exception::~Exception() throw() {
+Exception::~Exception() noexcept {
   if (m_doFree) {
     free(const_cast<char *>(m_what));
   }
 }
 
-const char *Exception::what() const throw() { return m_what; }
+const char *Exception::what() const noexcept { return m_what; }
 
-Exception &Exception::operator=(const Exception &rhs) throw() {
+Exception &Exception::operator=(const Exception &rhs) noexcept {
   if (this == &rhs) {
     return *this;
   }
@@ -76,25 +76,25 @@ std::ostream &trdk::Lib::operator<<(std::ostream &oss,
 
 //////////////////////////////////////////////////////////////////////////
 
-LogicError::LogicError(const char *what) throw() : Exception(what) {}
+LogicError::LogicError(const char *what) noexcept : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-SystemException::SystemException(const char *what) throw() : Exception(what) {}
+SystemException::SystemException(const char *what) noexcept : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
 MethodDoesNotImplementedError::MethodDoesNotImplementedError(
-    const char *what) throw()
+    const char *what) noexcept
     : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-ModuleError::ModuleError(const char *what) throw() : Exception(what) {}
+ModuleError::ModuleError(const char *what) noexcept : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-RiskControlException::RiskControlException(const char *what) throw()
+RiskControlException::RiskControlException(const char *what) noexcept
     : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////

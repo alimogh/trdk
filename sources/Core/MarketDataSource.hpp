@@ -39,14 +39,14 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
  public:
   class TRDK_CORE_API Error : public Base::Error {
    public:
-    explicit Error(const char *what) throw();
+    explicit Error(const char *what) noexcept;
   };
 
  public:
   explicit MarketDataSource(size_t index,
                             trdk::Context &,
                             const std::string &instanceName);
-  virtual ~MarketDataSource();
+  virtual ~MarketDataSource() override;
 
   bool operator==(const MarketDataSource &rhs) const { return this == &rhs; }
   bool operator!=(const MarketDataSource &rhs) const {
@@ -62,14 +62,14 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   trdk::Context &GetContext();
   const trdk::Context &GetContext() const;
 
-  trdk::MarketDataSource::Log &GetLog() const throw();
-  trdk::MarketDataSource::TradingLog &GetTradingLog() const throw();
+  trdk::MarketDataSource::Log &GetLog() const noexcept;
+  trdk::MarketDataSource::TradingLog &GetTradingLog() const noexcept;
 
   //! Identifies Market Data Source object by verbose name.
   /** Market Data Source instance name is unique, but can be empty.
     */
   const std::string &GetInstanceName() const;
-  const std::string &GetStringId() const throw();
+  const std::string &GetStringId() const noexcept;
 
  public:
   //! Makes connection with Market Data Source.
@@ -126,14 +126,13 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   void ForEachSecurity(
       const boost::function<bool(const trdk::Security &)> &) const;
 
-  //! Switches security to the next contract ordered by expiration date.
-  /** @param security  Security to switch. Should be not explicit.
+  //! Starts the asynchronous operation of switching security to the contract
+  //! with the next expiry date.
+  /** @param[in,out] security Security to switch. Should be not explicit.
     */
-  virtual void SwitchToNextContract(trdk::Security &security);
+  void SwitchToNextContract(trdk::Security &security) const;
 
  protected:
-  trdk::Security &CreateSecurity(const trdk::Lib::Symbol &);
-
   //! Creates security object.
   /** Each object, that implements CreateNewSecurityObject should wait
     * for log flushing before destroying objects.
@@ -141,9 +140,27 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   virtual trdk::Security &CreateNewSecurityObject(
       const trdk::Lib::Symbol &) = 0;
 
+  //! Finds an expiration.
+  /** Returns expiration by any previous date, even if contract is not started
+    * yet.
+    */
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &, const boost::gregorian::date &) const = 0;
+
+  //! Switches security to the contract with specified expiration.
+  /** @param[in,out] security   Security to switch. Should be not explicit.
+    * @param[in,out] expiration Required expiration.
+    */
+  virtual void SwitchToContract(
+      trdk::Security &security,
+      const trdk::Lib::ContractExpiration &&expiration) const = 0;
+
+ protected:
+  trdk::Security &CreateSecurity(const trdk::Lib::Symbol &);
+
  private:
   class Implementation;
-  Implementation *const m_pimpl;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

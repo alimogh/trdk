@@ -158,12 +158,12 @@ struct SmMaTrait {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename Policy>
-class MovingAverageServiceTypedTest : public testing::Test {};
-TYPED_TEST_CASE_P(MovingAverageServiceTypedTest);
+class MovingAverageServiceTyped : public testing::Test {};
+TYPED_TEST_CASE_P(MovingAverageServiceTyped);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
+TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
   typedef typename TypeParam Policy;
 
   boost::format settingsString(
@@ -306,7 +306,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithHistory) {
   }
 }
 
-TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
+TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithoutHistory) {
   typedef typename TypeParam Policy;
 
   boost::format settingsString(
@@ -400,7 +400,7 @@ TYPED_TEST_P(MovingAverageServiceTypedTest, RealTimeWithoutHistory) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-REGISTER_TYPED_TEST_CASE_P(MovingAverageServiceTypedTest,
+REGISTER_TYPED_TEST_CASE_P(MovingAverageServiceTyped,
                            RealTimeWithHistory,
                            RealTimeWithoutHistory);
 
@@ -410,12 +410,12 @@ typedef ::testing::Types<SmaTrait, EmaTrait, SmMaTrait>
     MovingAverageServiceTestPolicies;
 
 INSTANTIATE_TYPED_TEST_CASE_P(MovingAverageService,
-                              MovingAverageServiceTypedTest,
+                              MovingAverageServiceTyped,
                               MovingAverageServiceTestPolicies);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(MovingAverageServiceTypedTest, DropCopy) {
+TEST(MovingAverageServiceTyped, DropCopy) {
   const lib::IniString settings(
       "[Section]\n"
       "id = 00000000-0000-0000-0000-000000000001\n"
@@ -425,7 +425,7 @@ TEST(MovingAverageServiceTypedTest, DropCopy) {
       "period = 2\n"
       "log = none");
 
-  MockDropCopy dropCopy;
+  Mocks::DropCopy dropCopy;
 
   pt::ptime time = pt::microsec_clock::local_time();
 

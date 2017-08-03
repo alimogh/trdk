@@ -132,33 +132,38 @@ class TradingSystem : public trdk::TradingSystem,
   }
 
  public:
-  virtual bool IsConnected() const;
-  virtual void Connect(const trdk::Lib::IniSectionRef &);
+  virtual bool IsConnected() const override;
+  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
 
-  virtual void SubscribeToSecurities();
-
-  virtual void SwitchToNextContract(trdk::Security &);
+  virtual void SubscribeToSecurities() override;
 
  public:
-  virtual const Account &GetAccount() const;
+  virtual const Account &GetAccount() const override;
 
   virtual trdk::TradingSystem::Position GetBrokerPostion(
-      const std::string &account, const trdk::Lib::Symbol &) const;
+      const std::string &account, const trdk::Lib::Symbol &) const override;
   virtual void TradingSystem::ForEachBrokerPostion(
       const std::string &,
       const boost::function<bool(const trdk::TradingSystem::Position &)> &)
-      const;
+      const override;
 
  protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &);
+  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
-  virtual trdk::Security &CreateNewSecurityObject(const trdk::Lib::Symbol &);
+  virtual trdk::Security &CreateNewSecurityObject(
+      const trdk::Lib::Symbol &) override;
+
+  virtual void SwitchToContract(
+      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override;
+
+  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
+      const trdk::Lib::Symbol &, const boost::gregorian::date &) const override;
 
   virtual OrderId SendSellAtMarketPrice(trdk::Security &,
                                         const trdk::Lib::Currency &,
                                         const trdk::Qty &,
                                         const trdk::OrderParams &,
-                                        const OrderStatusUpdateSlot &);
+                                        const OrderStatusUpdateSlot &) override;
   virtual OrderId SendSell(trdk::Security &,
                            const trdk::Lib::Currency &,
                            const trdk::Qty &,
@@ -171,19 +176,20 @@ class TradingSystem : public trdk::TradingSystem,
       const trdk::Qty &,
       const trdk::ScaledPrice &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &);
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const trdk::Lib::Currency &,
-                                              const trdk::Qty &,
-                                              const trdk::ScaledPrice &,
-                                              const trdk::OrderParams &,
-                                              const OrderStatusUpdateSlot &);
+      const OrderStatusUpdateSlot &) override;
+  virtual OrderId SendSellImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::ScaledPrice &,
+      const trdk::OrderParams &,
+      const OrderStatusUpdateSlot &) override;
   virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &);
+      const OrderStatusUpdateSlot &) override;
 
   virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
                                        const trdk::Lib::Currency &,
@@ -202,28 +208,25 @@ class TradingSystem : public trdk::TradingSystem,
       const trdk::Qty &,
       const trdk::ScaledPrice &stopPrice,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &);
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const trdk::Lib::Currency &,
-                                             const trdk::Qty &,
-                                             const trdk::ScaledPrice &,
-                                             const trdk::OrderParams &,
-                                             const OrderStatusUpdateSlot &);
+      const OrderStatusUpdateSlot &) override;
+  virtual OrderId SendBuyImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::ScaledPrice &,
+      const trdk::OrderParams &,
+      const OrderStatusUpdateSlot &) override;
   virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &);
+      const OrderStatusUpdateSlot &) override;
 
-  virtual void SendCancelOrder(const OrderId &);
-  virtual void SendCancelAllOrders(trdk::Security &);
+  virtual void SendCancelOrder(const OrderId &) override;
 
  private:
   void RegOrder(const PlacedOrder &);
-
-  trdk::Lib::ContractExpiration ResolveContractExpiration(
-      const trdk::Lib::Symbol &) const;
 
  private:
   const bool m_isTestSource;

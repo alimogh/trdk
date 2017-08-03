@@ -161,7 +161,7 @@ class BollingerBandsServiceTest : public testing::Test {
   void TestOnlineResult() {
     SCOPED_TRACE(__FUNCTION__);
 
-    MockSecurity security;
+    Mocks::Security security;
 
     Mocks::BarService bars;
     EXPECT_CALL(bars, GetSecurity()).WillRepeatedly(ReturnRef(security));

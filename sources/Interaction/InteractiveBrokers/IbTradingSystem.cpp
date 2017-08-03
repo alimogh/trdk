@@ -19,6 +19,7 @@ using namespace trdk::Interaction::InteractiveBrokers;
 
 namespace ib = trdk::Interaction::InteractiveBrokers;
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
 ib::TradingSystem::TradingSystem(const TradingMode &mode,
                                  size_t tradingSystemIndex,
@@ -183,73 +184,38 @@ trdk::Security &ib::TradingSystem::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &result = boost::make_shared<ib::Security>(GetContext(), symbol,
                                                         *this, m_isTestSource);
-
-  switch (symbol.GetSecurityType()) {
-    case SECURITY_TYPE_FUTURES:
-      if (!symbol.IsExplicit()) {
-        result->SetExpiration(pt::not_a_date_time,
-                              ResolveContractExpiration(symbol));
-      }
-      break;
-  }
-
   result->SetTradingSessionState(pt::not_a_date_time, true);
-
   m_unsubscribedSecurities.emplace_back(result);
   return *result;
 }
 
-ContractExpiration ib::TradingSystem::ResolveContractExpiration(
-    const Symbol &symbol) const {
-  if (GetContext().HasExpirationCalendar()) {
-    const auto &result = GetContext().GetExpirationCalendar().Find(
-        symbol, GetContext().GetCurrentTime().date());
-    if (result) {
-      GetMdsLog().Info("Current expiration date for \"%1%\": %2% (%3%%4%).",
-                       symbol, result->GetDate(), symbol.GetSymbol(),
-                       result->GetContract(true));
-      return *result;
-    }
-  }
+void ib::TradingSystem::SwitchToContract(
+    trdk::Security &security, const ContractExpiration &&expiration) const {
+  m_client->SwitchToContract(
+      *boost::polymorphic_downcast<ib::Security *>(&security),
+      std::move(expiration));
+}
 
+boost::optional<ContractExpiration> ib::TradingSystem::FindContractExpiration(
+    const Symbol &symbol, const gr::date &date) const {
   boost::optional<ContractExpiration> result;
   for (const ContractDetails &contract :
        m_client->MatchContractDetails(symbol)) {
     const ContractExpiration expiration(
         Lib::ConvertToDateFromYyyyMmDd(contract.summary.expiry));
+    if (date > expiration.GetDate()) {
+      continue;
+    }
     if (!result || *result > expiration) {
       result = std::move(expiration);
     }
   }
-
-  if (!result) {
-    boost::format error("Failed to find expiration info for \"%1%\"");
-    error % symbol;
-    throw trdk::MarketDataSource::Error(error.str().c_str());
-  }
-
-  return *result;
+  Assert(!result || date <= result->GetDate());
+  return result;
 }
 
 void ib::TradingSystem::SendCancelOrder(const trdk::OrderId &orderId) {
   m_client->CancelOrder(orderId);
-}
-
-void ib::TradingSystem::SendCancelAllOrders(trdk::Security &security) {
-  std::list<trdk::OrderId> ids;
-  std::list<std::string> idsStr;
-  {
-    const OrdersReadLock lock(m_ordersMutex);
-    const auto &index = m_placedOrders.get<BySymbol>();
-    for (auto i = index.find(&security);
-         i != index.end() && i->security == &security; ++i) {
-      ids.push_back(i->id);
-      idsStr.push_back(boost::lexical_cast<std::string>(i->id));
-    }
-  }
-  std::for_each(ids.begin(), ids.end(), [this](trdk::OrderId orderId) {
-    m_client->CancelOrder(orderId);
-  });
 }
 
 trdk::OrderId ib::TradingSystem::SendSellAtMarketPrice(
@@ -415,9 +381,4 @@ void ib::TradingSystem::RegOrder(const PlacedOrder &order) {
   Assert(m_placedOrders.get<ByOrder>().find(order.id) ==
          m_placedOrders.get<ByOrder>().end());
   m_placedOrders.insert(order);
-}
-
-void ib::TradingSystem::SwitchToNextContract(trdk::Security &security) {
-  m_client->SwitchToNextContract(
-      *boost::polymorphic_downcast<ib::Security *>(&security));
 }

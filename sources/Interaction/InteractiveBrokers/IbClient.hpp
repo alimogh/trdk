@@ -221,7 +221,7 @@ class Client : protected EWrapper {
   void SubscribeToMarketData(Security &);
   void SubscribeToMarketDepthLevel2(Security &);
 
-  void SwitchToNextContract(Security &security);
+  void SwitchToContract(Security &, const Lib::ContractExpiration &&);
 
   std::vector<ContractDetails> MatchContractDetails(
       const trdk::Lib::Symbol &) const;
@@ -435,10 +435,6 @@ class Client : protected EWrapper {
 
   std::string m_account;
   TradingSystem::Account *m_accountInfo;
-
-  boost::mutex m_switchMutex;
-  boost::condition_variable m_switchCondition;
-  boost::atomic<const Security *> m_securityInSwitching;
 
   mutable struct {
     boost::condition_variable condition;

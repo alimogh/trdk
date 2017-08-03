@@ -20,6 +20,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -65,6 +66,8 @@ std::string FormatStringId(const std::string &instanceName) {
 
 class MarketDataSource::Implementation : private boost::noncopyable {
  public:
+  MarketDataSource &m_self;
+
   const size_t m_index;
 
   Context &m_context;
@@ -85,11 +88,18 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     std::map<std::pair<Symbol, ContractExpiration>, Security *> list;
   } m_securitiesWithExpiration;
 
+  struct AsyncTask {
+    boost::mutex mutex;
+    std::vector<boost::unique_future<void>> list;
+  } m_asyncTasks;
+
  public:
-  explicit Implementation(size_t index,
+  explicit Implementation(MarketDataSource &self,
+                          size_t index,
                           Context &context,
                           const std::string &instanceName)
-      : m_index(index),
+      : m_self(self),
+        m_index(index),
         m_context(context),
         m_instanceName(instanceName),
         m_stringId(FormatStringId(m_instanceName)),
@@ -107,20 +117,75 @@ class MarketDataSource::Implementation : private boost::noncopyable {
       }
     }
   }
-};
 
+  ContractExpiration ResolveContractExpiration(const Symbol &symbol) const {
+    const auto &date = m_context.GetCurrentTime().date();
+    if (m_context.HasExpirationCalendar()) {
+      const auto &result = m_context.GetExpirationCalendar().Find(symbol, date);
+      if (result) {
+        return *result;
+      }
+    } else {
+      const auto &result = m_self.FindContractExpiration(symbol, date);
+      if (result) {
+        return *result;
+      }
+    }
+    boost::format error("Failed to find expiration info for \"%1%\"");
+    error % symbol;
+    throw Error(error.str().c_str());
+  }
+
+  ContractExpiration ResolveNextContractExpiration(
+      const Security &security) const {
+    if (m_context.HasExpirationCalendar()) {
+      auto it = m_context.GetExpirationCalendar().Find(
+          security.GetSymbol(), security.GetExpiration().GetDate());
+      Assert(it);
+      AssertEq(security.GetExpiration().GetDate(), it->GetDate());
+      if (it && ++it) {
+        return *it;
+      }
+    } else {
+      const auto &result = m_self.FindContractExpiration(
+          security.GetSymbol(),
+          security.GetExpiration().GetDate() + gr::days(1));
+      if (result) {
+        return std::move(*result);
+      }
+    }
+    boost::format error("Failed to find next expiration info for \"%1%\" %2%");
+    error % security % security.GetExpiration();
+    throw Error(error.str().c_str());
+  }
+};
 //////////////////////////////////////////////////////////////////////////
 
-MarketDataSource::Error::Error(const char *what) throw() : Base::Error(what) {}
+MarketDataSource::Error::Error(const char *what) noexcept : Base::Error(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
 MarketDataSource::MarketDataSource(size_t index,
                                    Context &context,
                                    const std::string &instanceName)
-    : m_pimpl(new Implementation(index, context, instanceName)) {}
+    : m_pimpl(std::make_unique<Implementation>(
+          *this, index, context, instanceName)) {}
 
-MarketDataSource::~MarketDataSource() { delete m_pimpl; }
+MarketDataSource::~MarketDataSource() {
+  try {
+    if (!m_pimpl->m_asyncTasks.list.empty()) {
+      m_pimpl->m_log.Debug("Waiting for %1% asynchronous tasks...",
+                           m_pimpl->m_asyncTasks.list.size());
+      for (auto &task : m_pimpl->m_asyncTasks.list) {
+        task.wait();
+      }
+      m_pimpl->m_log.Debug("All asynchronous tasks completed.");
+    }
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
+}
 
 size_t MarketDataSource::GetIndex() const { return m_pimpl->m_index; }
 
@@ -130,11 +195,11 @@ const Context &MarketDataSource::GetContext() const {
   return const_cast<MarketDataSource *>(this)->GetContext();
 }
 
-MarketDataSource::Log &MarketDataSource::GetLog() const throw() {
+MarketDataSource::Log &MarketDataSource::GetLog() const noexcept {
   return m_pimpl->m_log;
 }
 
-MarketDataSource::TradingLog &MarketDataSource::GetTradingLog() const throw() {
+MarketDataSource::TradingLog &MarketDataSource::GetTradingLog() const noexcept {
   return m_pimpl->m_tradingLog;
 }
 
@@ -142,7 +207,7 @@ const std::string &MarketDataSource::GetInstanceName() const {
   return m_pimpl->m_instanceName;
 }
 
-const std::string &MarketDataSource::GetStringId() const throw() {
+const std::string &MarketDataSource::GetStringId() const noexcept {
   return m_pimpl->m_stringId;
 }
 
@@ -199,6 +264,15 @@ Security &MarketDataSource::GetSecurity(const Symbol &symbol,
 Security &MarketDataSource::CreateSecurity(const Symbol &symbol) {
   auto &result = CreateNewSecurityObject(symbol);
   Assert(this == &result.GetSource());
+  switch (result.GetSymbol().GetSecurityType()) {
+    case SECURITY_TYPE_FUTURES:
+      if (!result.GetSymbol().IsExplicit()) {
+        result.SetExpiration(
+            pt::not_a_date_time,
+            m_pimpl->ResolveContractExpiration(result.GetSymbol()));
+      }
+      break;
+  }
   return result;
 }
 
@@ -238,12 +312,15 @@ void MarketDataSource::ForEachSecurity(
   m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, pred);
 }
 
-void MarketDataSource::SwitchToNextContract(trdk::Security &security) {
-  GetLog().Error(
-      "Market data source does not support contact switching for %1%.",
-      security);
-  throw MethodDoesNotImplementedError(
-      "Market data source does not support contact switching");
+void MarketDataSource::SwitchToNextContract(Security &security) const {
+  const boost::mutex::scoped_lock lock(m_pimpl->m_asyncTasks.mutex);
+  m_pimpl->m_asyncTasks.list.emplace_back(boost::async([this, &security]() {
+    GetLog().Debug("Started asynchronous task of switching \"%1%\"...",
+                   security);
+    SwitchToContract(security,
+                     m_pimpl->ResolveNextContractExpiration(security));
+    GetLog().Debug("Asynchronous task for \"%1%\" is completed.", security);
+  }));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -86,8 +86,7 @@ Client::Client(ib::TradingSystem &ts,
       m_thread(nullptr),
       m_orderStatusesMap(GetOrderStatusesMap()),
       m_seqNumber(-1),
-      m_accountInfo(nullptr),
-      m_securityInSwitching(nullptr) {
+      m_accountInfo(nullptr) {
   m_client.reset(new EPosixClientSocket(this));
   LogConnectionAttempt();
   const bool connectResult =
@@ -438,8 +437,6 @@ void Client::SendMarketDataRequest(ib::Security &security) {
 
     if (!request.security->IsOnline()) {
       request.security->SetOnline(pt::not_a_date_time, true);
-    } else {
-      Assert(m_securityInSwitching);
     }
 
     requests.swap(m_marketDataRequests);
@@ -1182,15 +1179,6 @@ void Client::tickPrice(TickerId tickerId,
   if (!security) {
     return;
   }
-  if (m_securityInSwitching && m_securityInSwitching == security) {
-    {
-      boost::mutex::scoped_lock lock(m_switchMutex);
-      Assert(m_securityInSwitching);
-      Assert(m_securityInSwitching == security);
-      m_securityInSwitching = nullptr;
-    }
-    m_switchCondition.notify_all();
-  }
   security->AddLevel1Tick(now, valueCtor(security->ScalePrice(price)),
                           timeMeasurement);
 }
@@ -1223,15 +1211,6 @@ void Client::tickSize(TickerId tickerId, TickType field, int size) {
   ib::Security *const security = GetMarketDataRequest(tickerId);
   if (!security) {
     return;
-  }
-  if (m_securityInSwitching && m_securityInSwitching == security) {
-    {
-      boost::mutex::scoped_lock lock(m_switchMutex);
-      Assert(m_securityInSwitching);
-      Assert(m_securityInSwitching == security);
-      m_securityInSwitching = nullptr;
-    }
-    m_switchCondition.notify_all();
   }
   security->AddLevel1Tick(now, valueCtor(size), timeMeasurement);
 }
@@ -1841,58 +1820,28 @@ void Client::displayGroupUpdated(int /*reqId*/,
   AssertFail("Unexpected method call.");
 }
 
-void Client::SwitchToNextContract(ib::Security &security) {
-  boost::mutex::scoped_lock switchLock(m_switchMutex);
-  Assert(!m_securityInSwitching);
+void Client::SwitchToContract(ib::Security &security,
+                              const ContractExpiration &&expiration) {
+  const Lock lock(m_mutex);
 
-  auto &index = m_marketDataRequests.get<BySecurity>();
-  auto oldRequest = index.find(&security);
-  if (oldRequest == index.end()) {
-    throw MarketDataSource::Error("Failed to find old request");
+  auto &marketDataRequestsIndex = m_marketDataRequests.get<BySecurity>();
+  const auto oldRequest = marketDataRequestsIndex.find(&security);
+  if (oldRequest == marketDataRequestsIndex.cend()) {
+    throw MarketDataSource::Error(
+        "Failed to find old request to switch security to next contract");
   }
 
-  const auto prevExpiration = m_ts.GetContext().GetExpirationCalendar().Find(
-      security.GetSymbol(), m_ts.GetContext().GetCurrentTime().date());
-  if (!prevExpiration) {
-    boost::format error("Failed to find current expiration info for \"%1%\"");
-    error % security;
-    throw trdk::MarketDataSource::Error(error.str().c_str());
-  }
-  AssertEq(security.GetExpiration().GetDate(), prevExpiration->GetDate());
-  auto nextExpiration = prevExpiration;
-  if (!++nextExpiration) {
-    boost::format error("Failed to find next expiration info for \"%1%\"");
-    error % security;
-    throw trdk::MarketDataSource::Error(error.str().c_str());
-  }
+  m_client->cancelMktData(oldRequest->tickerId);
+  m_marketDataRequests.erase(oldRequest);
 
-  {
-    Lock lock(m_mutex);
+  security.SetExpiration(pt::not_a_date_time, std::move(expiration));
 
-    m_ts.GetMdsLog().Info("Switching %1% contract from %3% to %4%...", security,
-                          prevExpiration->GetDate(), nextExpiration->GetDate());
-
-    m_client->cancelMktData(oldRequest->tickerId);
-    m_marketDataRequests.erase(oldRequest);
-
-    m_securityInSwitching = &security;
-
-    security.SetExpiration(pt::not_a_date_time, *nextExpiration);
-    SendMarketDataRequest(security);
-  }
-
-  m_switchCondition.wait(switchLock);
-
-  Assert(!m_securityInSwitching);
-
-  m_ts.GetMdsLog().Info("%1% switched from %2% to the next contract %3%.",
-                        security, prevExpiration->GetDate(),
-                        nextExpiration->GetDate());
+  SendMarketDataRequest(security);
 }
 
 std::vector<ContractDetails> Client::MatchContractDetails(
     const Symbol &symbol) const {
-  m_ts.GetMdsLog().Debug("Requesting for matching symbol %1%...", symbol);
+  m_ts.GetMdsLog().Debug("Requesting for matching symbol \"%1%\"...", symbol);
 
   Contract request;
   static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
@@ -1928,7 +1877,8 @@ std::vector<ContractDetails> Client::MatchContractDetails(
       return std::vector<ContractDetails>();
     } else if (!requestResult->second.first) {
       m_ts.GetMdsLog().Error(
-          "Failed to match symbol %1%, not request answer received.");
+          "Failed to match symbol \"%1%\", not request answer received.",
+          symbol);
       return std::vector<ContractDetails>();
     }
     const auto result = std::move(requestResult->second.second);

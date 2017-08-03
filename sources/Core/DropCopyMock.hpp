@@ -15,11 +15,11 @@
 
 namespace trdk {
 namespace Tests {
+namespace Mocks {
 
-class MockDropCopy : public trdk::DropCopy {
+class DropCopy : public trdk::DropCopy {
  public:
-  MockDropCopy() {}
-  virtual ~MockDropCopy() {}
+  virtual ~DropCopy() override = default;
 
  public:
   MOCK_METHOD0(Flush, void());
@@ -106,5 +106,6 @@ class MockDropCopy : public trdk::DropCopy {
                     const boost::posix_time::ptime &,
                     double value));
 };
+}
 }
 }

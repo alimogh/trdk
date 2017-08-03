@@ -217,7 +217,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   /** @sa IsActive
     * @sa IsOnline
     */
-  bool IsTradingSessionOpened() const;
+  virtual bool IsTradingSessionOpened() const;
 
   //! Sets requested data start time if it is not later than existing.
   void SetRequest(const trdk::Security::Request &);
@@ -264,10 +264,13 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   //! Returns next expiration time.
   /** Throws exception if expiration is not provided.
-    * @sa GetExpiration
+    * @sa HasExpiration
     */
   virtual const trdk::Lib::ContractExpiration &GetExpiration() const;
-
+  //! Returns true if security has expiration.
+  /** Throws exception if expiration is not provided.
+    * @sa GetExpiration
+    */
   bool HasExpiration() const;
 
  public:
