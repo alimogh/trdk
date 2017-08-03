@@ -60,6 +60,10 @@ TEST(MrigeshKejriwal, Setup) {
 
   const lib::Symbol tradingSymbol("XXX*/USD::FUT");
   Mocks::Security tradingSecurity;
+  const lib::ContractExpiration tradingSecurityContractExpiration(
+      gr::date(2017, 6, 4));
+  EXPECT_CALL(tradingSecurity, GetExpiration())
+      .WillRepeatedly(ReturnRef(tradingSecurityContractExpiration));
   tradingSecurity.SetSymbolToMock(tradingSymbol);
   {
     tradingSecurity.SetRequest(trdk::Security::Request());
