@@ -147,9 +147,10 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
     Assert(!position.HasActiveOrders());
 
     if (position.GetNumberOfCloseOrders()) {
-      // Position fully closed. Maybe it better to open opposite position here
-      // as position should be closed by signal?
+      // Position fully closed.
       ReportOperation(position);
+      // Opening opposite position.
+      OpenPosition(!position.IsLong(), Milestones());
       return;
     }
 
