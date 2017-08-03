@@ -142,6 +142,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   bool m_isRollover;
 
   std::ofstream m_strategyLog;
+  bool m_isTradingSecurityActivationReported;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

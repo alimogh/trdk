@@ -73,7 +73,8 @@ mk::Strategy::Strategy(Context &context,
       m_spotSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
-      m_isRollover(false) {
+      m_isRollover(false),
+      m_isTradingSecurityActivationReported(false) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
@@ -89,7 +90,8 @@ void mk::Strategy::OnSecurityStart(Security &security,
       }
       request.RequestTime(GetContext().GetCurrentTime() - pt::hours(3));
       m_tradingSecurity = &security;
-      GetLog().Info("Using \"%1%\" to trade...", *m_tradingSecurity);
+      GetLog().Info("Using \"%1%\" (%2%) to trade...", *m_tradingSecurity,
+                    m_tradingSecurity->GetExpiration().GetDate());
       break;
     case SECURITY_TYPE_INDEX:
       if (m_spotSecurity) {
@@ -112,7 +114,9 @@ void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
     return;
   }
   request.RequestTime(GetContext().GetCurrentTime() - pt::hours(3));
-  GetLog().Info("Using new contract \"%1%\" to trade...", GetTradingSecurity());
+  GetLog().Info("Using new contract \"%1%\" (%2%) to trade...",
+                GetTradingSecurity(),
+                GetTradingSecurity().GetExpiration().GetDate());
   StartRollOver();
 }
 
@@ -201,6 +205,18 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   }
   if (tick.GetType() != LEVEL1_TICK_LAST_PRICE || GetMa().IsEmpty()) {
     return;
+  } else if (!GetTradingSecurity().IsActive()) {
+    if (!m_isTradingSecurityActivationReported) {
+      GetLog().Warn(
+          "Trading security \"%1%\" is not active (%2%/%3%).",
+          GetTradingSecurity(),
+          GetTradingSecurity().IsOnline() ? "online" : "offline",
+          GetTradingSecurity().IsTradingSessionOpened() ? "opened" : "closed");
+      m_isTradingSecurityActivationReported = true;
+    }
+    return;
+  } else {
+    m_isTradingSecurityActivationReported = false;
   }
   CheckSignal(security.DescalePrice(tick.GetValue()), delayMeasurement);
 }
@@ -362,6 +378,7 @@ bool mk::Strategy::StartRollOver() {
     return false;
   }
 
+  position.SetCloseReason(CLOSE_REASON_ROLLOVER);
   position.CloseAtMarketPrice();
 
   m_isRollover = true;
@@ -379,9 +396,19 @@ void mk::Strategy::FinishRollOver() {
 }
 
 void mk::Strategy::FinishRollOver(Position &oldPosition) {
-  if (!m_isRollover || !oldPosition.IsCompleted() ||
-      !GetTradingSecurity().IsActive()) {
+  if (!m_isRollover || !oldPosition.IsCompleted()) {
     return;
+  } else if (!GetTradingSecurity().IsActive()) {
+    if (!m_isTradingSecurityActivationReported) {
+      GetLog().Warn(
+          "Postponing rollover finishing as \"%1%\" is not active (%2%/%3%).",
+          GetTradingSecurity(),
+          GetTradingSecurity().IsOnline() ? "online" : "offline",
+          GetTradingSecurity().IsTradingSessionOpened() ? "opened" : "closed");
+      m_isTradingSecurityActivationReported = true;
+    }
+  } else {
+    m_isTradingSecurityActivationReported = false;
   }
   OpenPosition(oldPosition.IsLong(), Milestones());
   m_isRollover = false;
