@@ -1831,10 +1831,6 @@ void Client::SwitchToContract(ib::Security &security,
         "Failed to find old request to switch security to next contract");
   }
 
-  m_ts.GetMdsLog().Debug("Switching \"%1%\" contract from %3% to %4%...",
-                         security, security.GetExpiration().GetDate(),
-                         expiration.GetDate());
-
   m_client->cancelMktData(oldRequest->tickerId);
   m_marketDataRequests.erase(oldRequest);
 
@@ -1845,7 +1841,7 @@ void Client::SwitchToContract(ib::Security &security,
 
 std::vector<ContractDetails> Client::MatchContractDetails(
     const Symbol &symbol) const {
-  m_ts.GetMdsLog().Debug("Requesting for matching symbol %1%...", symbol);
+  m_ts.GetMdsLog().Debug("Requesting for matching symbol \"%1%\"...", symbol);
 
   Contract request;
   static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
@@ -1881,7 +1877,8 @@ std::vector<ContractDetails> Client::MatchContractDetails(
       return std::vector<ContractDetails>();
     } else if (!requestResult->second.first) {
       m_ts.GetMdsLog().Error(
-          "Failed to match symbol %1%, not request answer received.");
+          "Failed to match symbol \"%1%\", not request answer received.",
+          symbol);
       return std::vector<ContractDetails>();
     }
     const auto result = std::move(requestResult->second.second);

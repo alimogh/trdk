@@ -623,7 +623,7 @@ class Security::Implementation : private boost::noncopyable {
     if (!IsSet(value)) {
       Assert(IsSet(value));
       boost::format message(
-          "Market data value \"%1%\" does not exists for %2%");
+          "Market data value \"%1%\" does not exist for \"%2%\"");
       message % ConvertToPch(tick) % m_self;
       throw MarketDataValueDoesNotExist(message.str().c_str());
     }
@@ -654,8 +654,8 @@ class Security::Implementation : private boost::noncopyable {
 
     m_marketDataLog.EnableStream(m_marketDataLogFile);
 
-    m_self.GetContext().GetLog().Info("Market data log for %1%: %2%.", m_self,
-                                      path);
+    m_self.GetContext().GetLog().Info("Market data log for \"%1%\": %2%.",
+                                      m_self, path);
   }
 };
 
@@ -734,7 +734,7 @@ void Security::SetOnline(const pt::ptime &time, bool isOnline) {
   }
 
   GetContext().GetLog().Info(
-      "%1% now is %2% by the event %3%. Last data time: %4%.", *this,
+      "\"%1%\" now is %2% by the event %3%. Last data time: %4%.", *this,
       isOnline ? "online" : "offline", time, GetLastMarketDataTime());
 
   {
@@ -754,7 +754,8 @@ void Security::SetTradingSessionState(const pt::ptime &time, bool isOpened) {
   }
 
   GetContext().GetLog().Info(
-      "%1% trading session is %2% by the event at %3%. Last data time: %4%.",
+      "\"%1%\" trading session is %2% by the event at %3%."
+      "Last data time: %4%.",
       *this, isOpened ? "opened" : "closed", time, GetLastMarketDataTime());
 
   {
