@@ -55,16 +55,7 @@ boost::shared_ptr<lt::posix_time_zone> GetMskTimeZone() {
 
 pt::time_duration CalcTimeZoneOffset(const pt::ptime &time1,
                                      const pt::ptime &time2) {
-  pt::time_duration result = time1 - time2;
-  if (result != pt::time_duration(result.hours(), 0, 0)) {
-    const auto minutes = abs(result.minutes());
-    if ((minutes > 55 && minutes <= 59) || (minutes >= 0 && minutes <= 5)) {
-      result = pt::time_duration(result.hours(), 0, 0);
-    } else {
-      AssertFail("Timezone offset with 15 and 30 minutes is not supported.");
-    }
-  }
-  return result;
+  return time1 - time2;
 }
 }
 
