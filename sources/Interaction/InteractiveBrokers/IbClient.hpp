@@ -163,7 +163,8 @@ class Client : protected EWrapper {
          bool isNoHistoryMode,
          int clientId,
          const std::string &host,
-         unsigned short port);
+         unsigned short port,
+         const std::string &barSizeMins);
   virtual ~Client();
 
  public:
@@ -442,6 +443,8 @@ class Client : protected EWrapper {
                          std::pair<bool, std::vector<ContractDetails>>>
         requests;
   } m_contractRequests;
+
+  const std::string m_barSizeMins;
 };
 }
 }

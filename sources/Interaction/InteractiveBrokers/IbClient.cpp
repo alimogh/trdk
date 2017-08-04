@@ -75,7 +75,8 @@ Client::Client(ib::TradingSystem &ts,
                bool isNoHistoryMode,
                int clientId,
                const std::string &host,
-               unsigned short port)
+               unsigned short port,
+               const std::string &barSizeMins)
     : m_ts(ts),
       m_isNoHistoryMode(isNoHistoryMode),
       m_host(host),
@@ -86,7 +87,8 @@ Client::Client(ib::TradingSystem &ts,
       m_thread(nullptr),
       m_orderStatusesMap(GetOrderStatusesMap()),
       m_seqNumber(-1),
-      m_accountInfo(nullptr) {
+      m_accountInfo(nullptr),
+      m_barSizeMins(barSizeMins) {
   m_client.reset(new EPosixClientSocket(this));
   LogConnectionAttempt();
   const bool connectResult =
@@ -511,12 +513,12 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security,
     request.numberOfPrevRequests = 1;
   }
 
-  {
-    const auto maxDuration = pt::seconds(86400);
-    if (request.subRequestEnd - request.subRequestStart > maxDuration) {
-      request.subRequestStart = request.subRequestEnd - maxDuration;
-    }
-  }
+  //   {
+  //     const auto maxDuration = pt::seconds(86400);
+  //     if (request.subRequestEnd - request.subRequestStart > maxDuration) {
+  //       request.subRequestStart = request.subRequestEnd - maxDuration;
+  //     }
+  //   }
 
   auto requests(m_historyRequest);
   Verify(requests.emplace(std::move(request)).second);
@@ -541,14 +543,16 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security,
            (request.subRequestEnd - request.subRequestStart).total_seconds()))
           .str();
 
+  boost::smatch match;
+  if (boost::regex_match(m_barSizeMins, match, boost::regex("(\\d+) mins"))) {
+    throw Exception("Failed to parse bar size");
+  }
+
   // @sa
   // https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
-  m_client->reqHistoricalData(
-      request.tickerId, contract, endTime, period,
-      // Sends as often as possible, but only for bars it doesn't make sense
-      // less as 5 second as "Currently only 5 second bars are supported, if
-      // any other value is used, an exception will be thrown" for real bars:
-      "5 mins", "TRADES", 0, 1, TagValueListSPtr());
+  m_client->reqHistoricalData(request.tickerId, contract, endTime, period,
+                              (match[1] + " mins").c_str(), "TRADES", 0, 1,
+                              TagValueListSPtr());
 
   {
     const char *const message =

@@ -57,7 +57,8 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
       new Client(*this, settings.ReadBoolKey("no_history", false),
                  settings.ReadTypedKey<int>("client_id", 0),
                  settings.ReadKey("ip_address", "127.0.0.1"),
-                 settings.ReadTypedKey<unsigned short>("port", 7497)));
+                 settings.ReadTypedKey<unsigned short>("port", 7497),
+                 settings.GetBase().ReadKey("Service.Bars", "size")));
 
   if (settings.IsKeyExist("account")) {
     account.reset(new Account);
