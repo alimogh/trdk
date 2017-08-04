@@ -42,7 +42,8 @@ bool Trend::Update(const Price &lastPrice,
 ////////////////////////////////////////////////////////////////////////////////
 
 mk::Strategy::Settings::Settings(const IniSectionRef &conf)
-    : qty(conf.ReadTypedKey<Qty>("qty")) {}
+    : qty(conf.ReadTypedKey<Qty>("qty")),
+      numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")) {}
 
 void mk::Strategy::Settings::Validate() const {
   if (qty < 1) {
@@ -51,8 +52,9 @@ void mk::Strategy::Settings::Validate() const {
 }
 
 void mk::Strategy::Settings::Log(Module::Log &log) const {
-  boost::format info("Position size: %1%.");
-  info % qty;  // 1
+  boost::format info("Position size: %1%. Number of history hours: %2%.");
+  info % qty                   // 1
+      % numberOfHistoryHours;  // 2
   log.Info(info.str().c_str());
 }
 
@@ -97,7 +99,8 @@ void mk::Strategy::OnSecurityStart(Security &security,
         throw Exception(
             "Strategy can not work with more than one underlying-security");
       }
-      request.RequestTime(GetContext().GetCurrentTime() - pt::hours(12));
+      request.RequestTime(GetContext().GetCurrentTime() -
+                          pt::hours(m_settings.numberOfHistoryHours));
       m_underlyingSecurity = &security;
       GetLog().Info("Using \"%1%\" to get spot price...",
                     *m_underlyingSecurity);
@@ -114,7 +117,8 @@ void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
   if (&security != &GetTradingSecurity()) {
     return;
   }
-  request.RequestTime(GetContext().GetCurrentTime() - pt::hours(3));
+  request.RequestTime(GetContext().GetCurrentTime() -
+                      pt::hours(m_settings.numberOfHistoryHours));
   GetLog().Info("Using new contract \"%1%\" (%2%) to trade...",
                 GetTradingSecurity(),
                 GetTradingSecurity().GetExpiration().GetDate());

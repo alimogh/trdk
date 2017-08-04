@@ -50,6 +50,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
  private:
   struct Settings {
     const Qty qty;
+    const uint16_t numberOfHistoryHours;
 
     explicit Settings(const Lib::IniSectionRef &);
 
