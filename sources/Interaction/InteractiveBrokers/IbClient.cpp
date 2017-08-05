@@ -536,44 +536,75 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security,
              << request.subRequestEnd.time_of_day().seconds();
   const auto &endTime = endTimeOss.str();
 
-  const auto period =
-      (boost::format("%1% S") %
-       std::max(
-           60,
-           (request.subRequestEnd - request.subRequestStart).total_seconds()))
-          .str();
+  std::string periodStr;
+  const auto &period = request.subRequestEnd - request.subRequestStart;
+  if (period < pt::hours(24)) {
+    periodStr =
+        (boost::format("%1% S") %
+         std::max(
+             60,
+             (request.subRequestEnd - request.subRequestStart).total_seconds()))
+            .str();
+  } else if (period < pt::hours(24) * 7) {
+    periodStr = boost::lexical_cast<std::string>(
+        period.hours() % 24 ? (period.hours() / 24) + 1 : period.hours() / 24);
+    periodStr += " D";
+  } else {
+    periodStr = boost::lexical_cast<std::string>(
+        period.hours() % (24 * 7) ? (period.hours() / (24 * 7)) + 1
+                                  : period.hours() / (24 * 7));
+    periodStr += " W";
+  }
 
-  boost::smatch match;
-  if (boost::regex_match(m_barSizeMins, match, boost::regex("(\\d+) mins"))) {
-    throw Exception("Failed to parse bar size");
+  boost::smatch sizeMatch;
+  if (!boost::regex_match(m_barSizeMins, sizeMatch,
+                          boost::regex("(\\d+) minutes"))) {
+    throw Exception(
+        "Failed to parse bar size, legal ones are: 1 minutes, 2 minutes, 3 "
+        "minutes, 5 minutes, 10 minutes, 15 minutes, 20 minutes, 30 minutes");
+  }
+  std::string size = sizeMatch[1];
+  if (size == "1") {
+    size += " min";
+  } else {
+    size += " mins";
   }
 
   // @sa
   // https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm
-  m_client->reqHistoricalData(request.tickerId, contract, endTime, period,
-                              (match[1] + " mins").c_str(), "TRADES", 0, 1,
-                              TagValueListSPtr());
+  m_client->reqHistoricalData(request.tickerId, contract, endTime, periodStr,
+                              size, "TRADES", 0, 1, TagValueListSPtr());
 
   {
     const char *const message =
         "Sent Level I"
         " market data history request for \"%1%\": %2% - %3%"
         " (symbol: \"%4%\""
-        ", end time: \"%5%\", period: \"%6%\", ticker ID: %7%).";
+        ", end time: \"%5%\", period: \"%6%\", ticker ID: %7%, size: \"%8%\").";
     if (numberOfPrevRequests == 0) {
       m_ts.GetMdsLog().Info(
-          message, *request.security, request.subRequestStart,
-          request.subRequestEnd,
+          message,
+          *request.security,        // 1
+          request.subRequestStart,  // 2
+          request.subRequestEnd,    // 3
           (!contract.localSymbol.empty() ? contract.localSymbol
-                                         : contract.symbol),
-          endTime, period, request.tickerId);
+                                         : contract.symbol),  // 4
+          endTime,                                            // 5
+          periodStr,                                          // 6
+          request.tickerId,                                   // 7
+          size);                                              // 8
     } else {
       m_ts.GetMdsLog().Debug(
-          message, *request.security, request.subRequestStart,
-          request.subRequestEnd,
+          message,
+          *request.security,        // 1
+          request.subRequestStart,  // 2
+          request.subRequestEnd,    // 3
           (!contract.localSymbol.empty() ? contract.localSymbol
-                                         : contract.symbol),
-          endTime, period, request.tickerId);
+                                         : contract.symbol),  // 4
+          endTime,                                            // 5
+          periodStr,                                          // 6
+          request.tickerId,                                   // 7
+          size);                                              // 8
     }
   }
 
