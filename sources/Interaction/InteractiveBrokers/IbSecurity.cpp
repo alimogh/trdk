@@ -23,8 +23,5 @@ ib::Security::Security(Context &context,
     : Base(context,
            symbol,
            source,
-           SupportedLevel1Types()
-               .set(LEVEL1_TICK_LAST_PRICE)
-               .set(LEVEL1_TICK_BID_PRICE)
-               .set(LEVEL1_TICK_ASK_PRICE)),
+           SupportedLevel1Types().set(LEVEL1_TICK_LAST_PRICE)),
       m_isTestSource(isTestSource) {}
