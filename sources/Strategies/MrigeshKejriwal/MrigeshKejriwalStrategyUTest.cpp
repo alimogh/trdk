@@ -46,14 +46,13 @@ TEST(MrigeshKejriwal, Setup) {
       "title = Test\n"
       "is_enabled = true\n"
       "trading_mode = paper\n"
-      "qty=99\n");
+      "qty=99\n"
+      "history_hours=129\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
   EXPECT_CALL(context, GetDropCopy()).WillRepeatedly(Return(nullptr));
-  EXPECT_CALL(context, GetCurrentTime())
-      .Times(1)
-      .WillRepeatedly(Return(currentTime));
+  EXPECT_CALL(context, GetCurrentTime()).WillRepeatedly(Return(currentTime));
 
   mk::Strategy strategy(context, "test",
                         lib::IniSectionRef(settings, "Section"));
@@ -302,4 +301,84 @@ TEST(MrigeshKejriwal, Trend) {
     ASSERT_TRUE(trend.Update(49, point));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
+}
+
+TEST(MrigeshKejriwal, TrendBag) {
+  const auto &now = pt::second_clock::local_time();
+  const svc::MovingAverageService::Point emaAt14_53 = {now, 9981.3, 9980.86};
+  const svc::MovingAverageService::Point emaAt14_54 = {now + pt::minutes(1),
+                                                       9982.85, 9981.52};
+
+  mk::Trend trend;
+
+  ASSERT_FALSE(trend.Update(9982.3, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9982.25, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.9, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.75, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.8, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.9, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.65, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.3, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.55, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.25, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.75, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.45, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.7, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.25, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.15, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.3, emaAt14_53));
+  ASSERT_FALSE(trend.Update(9981.45, emaAt14_53));
+
+  ASSERT_TRUE(trend.Update(9981.2, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.35, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.4, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.5, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.25, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.45, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.5, emaAt14_54));
+  ASSERT_TRUE(trend.Update(9981.55, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.7, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.8, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.75, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.8, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.05, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.65, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.55, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.05, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.15, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9981.95, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.15, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.25, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.45, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.2, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.6, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.7, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.45, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.35, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.1, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.3, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.25, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.7, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9983.3, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.8, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.8, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.85, emaAt14_54));
+  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
 }

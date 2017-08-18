@@ -24,7 +24,7 @@ namespace MrigeshKejriwal {
 class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend {
  public:
   Trend();
-  virtual ~Trend() {}
+  virtual ~Trend() = default;
 
  public:
   virtual bool Update(const Price &lastPrice,
@@ -103,7 +103,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   void OnMaServiceStart(const trdk::Services::MovingAverageService &);
 
-  void CheckSignal(const trdk::Lib::TimeMeasurement::Milestones &);
+  void CheckSignal(const trdk::Price &spotPrice,
+                   const trdk::Lib::TimeMeasurement::Milestones &);
 
   void OpenPosition(bool isLong,
                     const trdk::Lib::TimeMeasurement::Milestones &);
@@ -127,6 +128,9 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   void CancelRollOver();
   void FinishRollOver();
   void FinishRollOver(Position &oldPosition);
+
+  void ReportDebug(const char *,
+                   const boost::optional<Level1TickValue> & = boost::none);
 
  private:
   const Settings m_settings;
