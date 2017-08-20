@@ -460,6 +460,12 @@ std::vector<std::string> IniSectionRef::ReadList(bool isRequired) const {
   return GetBase().ReadList(GetName(), isRequired);
 }
 
+std::vector<std::string> IniSectionRef::ReadList(const std::string &key,
+                                                 const std::string &delimiter,
+                                                 bool isRequired) const {
+  return GetBase().ReadList(GetName(), key, delimiter, isRequired);
+}
+
 std::set<Symbol> IniSectionRef::ReadSymbols(const SecurityType &defSecurityType,
                                             const Currency &defCurrency) const {
   return GetBase().ReadSymbols(GetName(), defSecurityType, defCurrency);
