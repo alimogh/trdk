@@ -444,9 +444,10 @@ void Client::SendMarketDataRequest(ib::Security &security) {
     requests.swap(m_marketDataRequests);
   }
 
+  // Custom branch for Mrigesh Kejriwal doesn't use online bars:
+  /*
   if (security.IsBarsRequired()) {
-    const char *const whatToShowList[] = {"TRADES", "BID",
-                                          "ASK" /*, MIDPOINT*/};
+    const char *const whatToShowList[] = {"TRADES", "BID", "ASK"};
     foreach (const char *const whatToShow, whatToShowList) {
       const SecurityRequest request(security, TakeTickerId());
       const auto &contract = GetContract(*request.security);
@@ -472,6 +473,7 @@ void Client::SendMarketDataRequest(ib::Security &security) {
       requests.swap(m_barsRequest);
     }
   }
+  */
 }
 
 bool Client::SendMarketDataHistoryRequest(ib::Security &security) {
