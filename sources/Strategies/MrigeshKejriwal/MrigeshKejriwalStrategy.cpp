@@ -206,17 +206,12 @@ void mk::Strategy::OnLevel1Tick(Security &security,
                                 const Level1TickValue &tick,
                                 const Milestones &delayMeasurement) {
   if (&security == &GetTradingSecurity()) {
-    ReportDebug("trading-price", tick);
     FinishRollOver();
     return;
   }
   if (tick.GetType() != LEVEL1_TICK_LAST_PRICE || GetMa().IsEmpty()) {
-    ReportDebug(tick.GetType() != LEVEL1_TICK_LAST_PRICE ? "spot-price-type"
-                                                         : "spot-price-ema",
-                tick);
     return;
   } else if (!GetTradingSecurity().IsActive()) {
-    ReportDebug("spot-price-inactive", tick);
     if (!m_isTradingSecurityActivationReported) {
       GetLog().Warn(
           "Trading security \"%1%\" is not active (%2%/%3%).",
@@ -229,7 +224,6 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   } else {
     m_isTradingSecurityActivationReported = false;
   }
-  ReportDebug("trend-test", tick);
   CheckSignal(GetUnderlyingSecurity().DescalePrice(tick.GetValue()),
               delayMeasurement);
 }
@@ -246,7 +240,6 @@ void mk::Strategy::CheckSignal(const trdk::Price &spotPrice,
                                const Milestones &delayMeasurement) {
   const auto &lastPoint = GetMa().GetLastPoint();
   if (!m_trend->Update(spotPrice, lastPoint)) {
-    ReportDebug("trend-unchanged");
     return;
   }
   Assert(!boost::indeterminate(m_trend->IsRising()));
@@ -428,38 +421,6 @@ void mk::Strategy::FinishRollOver(Position &oldPosition) {
   }
   OpenPosition(oldPosition.IsLong(), Milestones());
   m_isRollover = false;
-}
-
-void mk::Strategy::ReportDebug(const char *event,
-                               const boost::optional<Level1TickValue> &tick) {
-  GetTradingLog().Write(
-      "[debug]\t%1%\t%2%\t%3%\t%4%\t%5%\t%6%\t%7%\t%8%",
-      [this, event, &tick](TradingRecord &record) {
-        record % event                          // 1
-            % GetTradingSecurity().IsActive();  // 2
-        if (boost::indeterminate(m_trend->IsRising())) {
-          record % "-";  // 3
-        } else {
-          record % (m_trend->IsRising() ? true : false);  // 3
-        }
-        if (GetMa().IsEmpty()) {
-          record % "-"  // 4
-              % "-";    // 5
-        } else {
-          const auto &lastPoint = GetMa().GetLastPoint();
-          record % lastPoint.source  // 4
-              % lastPoint.value;     // 5
-        }
-        if (!tick) {
-          record % "-"  // 6
-              % "-"     // 7
-              % "-";    // 8
-        } else {
-          record % tick->GetType()                                       // 6
-              % tick->GetValue()                                         // 7
-              % GetUnderlyingSecurity().DescalePrice(tick->GetValue());  // 8
-        }
-      });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
