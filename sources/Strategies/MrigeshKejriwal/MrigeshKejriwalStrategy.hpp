@@ -129,9 +129,6 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   void FinishRollOver();
   void FinishRollOver(Position &oldPosition);
 
-  void ReportDebug(const char *,
-                   const boost::optional<Level1TickValue> & = boost::none);
-
  private:
   const Settings m_settings;
 
