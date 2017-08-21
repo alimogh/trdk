@@ -554,20 +554,29 @@ class BarCollectionService::Implementation : private boost::noncopyable {
             }
             AssertLe(bar.lowTradePrice, bar.highTradePrice);
           }
+          // Custom branch for Mrigesh Kejriwal uses NIFTY index which has no
+          // bid and ask prices:
+          /*
           RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
-              [this]() { return m_security->GetBidPriceScaled(); });
+              [this]() { return m_security->GetBidPriceScaled();
+              });
           RestoreBarFieldsFromPrevBar(
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
-              [this]() { return m_security->GetAskPriceScaled(); });
+              [this]() { return m_security->GetAskPriceScaled();
+              });
+          */
           break;
 
         case LEVEL1_TICK_LAST_QTY:
           bar.tradingVolume += value.GetValue();
           RestoreBarTradePriceFromPrevBar(bar);
-          RestoreBarFieldsFromPrevBar(
+          // Custom branch for Mrigesh Kejriwal uses NIFTY index which has no
+          // bid and ask prices:
+          /*
+                  RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
               [this]() { return m_security->GetBidPriceScaled(); });
@@ -575,6 +584,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
               [this]() { return m_security->GetAskPriceScaled(); });
+          */
           break;
 
         case LEVEL1_TICK_BID_PRICE:
@@ -590,10 +600,14 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           AssertNe(0, bar.minBidPrice);
           AssertNe(0, bar.closeBidPrice);
           RestoreBarTradePriceFromPrevBar(bar);
+          // Custom branch for Mrigesh Kejriwal uses NIFTY index which has no
+          // bid and ask prices:
+          /*
           RestoreBarFieldsFromPrevBar(
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
               [this]() { return m_security->GetAskPriceScaled(); });
+          */
           break;
 
         case LEVEL1_TICK_ASK_PRICE:
@@ -609,10 +623,14 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           AssertNe(0, bar.maxAskPrice);
           AssertNe(0, bar.closeAskPrice);
           RestoreBarTradePriceFromPrevBar(bar);
+          // Custom branch for Mrigesh Kejriwal uses NIFTY index which has no
+          // bid and ask prices:
+          /*
           RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
               [this]() { return m_security->GetBidPriceScaled(); });
+          */
           break;
 
         default:
