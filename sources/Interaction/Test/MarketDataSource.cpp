@@ -28,8 +28,6 @@ Test::MarketDataSource::MarketDataSource(size_t index,
   }
 }
 
-Test::MarketDataSource::~MarketDataSource() {}
-
 void Test::MarketDataSource::Stop() {
   Assert(!m_stopFlag);
   m_stopFlag = true;
@@ -39,7 +37,10 @@ void Test::MarketDataSource::Stop() {
   GetTradingLog().WaitForFlush();
 }
 
-void Test::MarketDataSource::Connect(const IniSectionRef &) {
+void Test::MarketDataSource::Connect(const IniSectionRef &) {}
+
+void Test::MarketDataSource::SubscribeToSecurities() {
+  AssertEq(0, m_threads.size());
   if (m_threads.size()) {
     return;
   }
@@ -57,5 +58,3 @@ void Test::MarketDataSource::Connect(const IniSectionRef &) {
     }
   });
 }
-
-void Test::MarketDataSource::SubscribeToSecurities() {}

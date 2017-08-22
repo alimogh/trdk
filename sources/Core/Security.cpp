@@ -86,6 +86,8 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
       }
       break;
     }
+    case SECURITY_TYPE_FOR:
+      return 6;
     case SECURITY_TYPE_OPTIONS:
       if (symbol.GetSymbol() == "AAPL") {
         return 2;
@@ -135,6 +137,8 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
       }
       break;
     }
+    case SECURITY_TYPE_FOR:
+      return 1;
     case SECURITY_TYPE_OPTIONS:
       if (symbol.GetSymbol() == "AAPL") {
         return 1;

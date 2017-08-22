@@ -34,6 +34,7 @@ class Security : public trdk::Security {
   using Base::SetBook;
   using Base::AddTrade;
   using Base::SetLevel1;
+  using Base::AddLevel1Tick;
   using Base::AddBar;
 };
 }
