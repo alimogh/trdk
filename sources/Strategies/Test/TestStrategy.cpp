@@ -9,18 +9,16 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/DropCopy.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Position.hpp"
-#include "Core/PriceBook.hpp"
 #include "Core/Security.hpp"
 #include "Core/Strategy.hpp"
+#include "Core/TradingLog.hpp"
 #include "Api.h"
-#include "Common/Assert.hpp"
-#include "Common/Common.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
@@ -46,136 +44,243 @@ class TestStrategy : public Strategy {
             name,
             instanceName,
             conf),
-        m_numberOfOperations(0),
-        m_finResultRange(0, 1000),
-        m_generateFinResultRandom(m_random, m_finResultRange) {}
+        m_direction(0),
+        m_prevPrice(0) {}
 
-  virtual ~TestStrategy() {}
+  virtual ~TestStrategy() override = default;
 
  protected:
   void OnPositionUpdate(Position &position) {
-    Assert(m_operationId);
-    if (position.IsError()) {
-      Assert(IsBlocked());
-      return;
-    }
-    if (position.HasActiveOrders()) {
-      return;
-    }
-    Assert(!position.IsCompleted() || position.GetOpenedQty() == 0);
+    AssertLt(0, position.GetNumberOfOpenOrders());
 
-    if (position.GetOpenedQty()) {
-      GetContext().InvokeDropCopy([this, &position](DropCopy &dropCopy) {
+    if (position.IsCompleted()) {
+      // No active order, no active qty...
 
-        FinancialResult financialResult;
-        financialResult.emplace_back(std::make_pair(
-            position.GetSecurity().GetSymbol().GetFotBaseCurrency(),
-            m_generateFinResultRandom()));
-        financialResult.emplace_back(std::make_pair(
-            position.GetSecurity().GetSymbol().GetFotQuoteCurrency(),
-            m_generateFinResultRandom()));
+      Assert(!position.HasActiveOrders());
+      const auto &isRising = GetIsRising();
+      if (position.GetNumberOfCloseOrders()) {
+        // Position fully closed.
+        ReportOperation(position);
+        if (isRising && *isRising != position.IsLong()) {
+          // Opening opposite position.
+          OpenPosition(position.GetSecurity(), !position.IsLong(),
+                       Milestones());
+        }
+        return;
+      }
+      // Open order was canceled by some condition. Checking open
+      // signal again and sending new open order...
+      if (isRising && *isRising == position.IsLong()) {
+        ContinuePosition(position);
+      }
 
-        dropCopy.ReportOperationEnd(
-            *m_operationId, GetContext().GetCurrentTime(), CLOSE_REASON_NONE,
-            m_generateFinResultRandom() >= 800 ? OPERATION_RESULT_LOSS
-                                               : OPERATION_RESULT_PROFIT,
-            m_generateFinResultRandom() / m_generateFinResultRandom(),
-            std::move(financialResult));
+      // Position will be deleted if was not continued.
 
-      });
-    }
+    } else if (position.GetNumberOfCloseOrders()) {
+      // Position closing started.
 
-    m_operationId.reset();
-  }
+      Assert(!position.HasActiveOpenOrders());
+      AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
 
-  virtual void OnBookUpdateTick(
-      Security &security,
-      const PriceBook &book,
-      const TimeMeasurement::Milestones &timeMeasurement) {
-    if (m_operationId) {
-      return;
-    }
+      if (position.HasActiveCloseOrders()) {
+        // Closing in progress.
+      } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
+        // Close order was canceled by some condition. Sending
+        // new close order.
+        ClosePosition(position);
+      }
 
-    const auto &now = GetContext().GetCurrentTime();
-    if (m_lastOperationTime != pt::not_a_date_time &&
-        now - m_lastOperationTime > pt::minutes(3)) {
-      return;
-    }
+    } else if (position.HasActiveOrders()) {
+      // Opening in progress.
 
-    if (book.GetAsk().IsEmpty() || book.GetBid().IsEmpty()) {
-      return;
-    }
+      Assert(!position.HasActiveCloseOrders());
 
-    const auto &operationId = m_generateUuid();
+      const auto &isRising = GetIsRising();
+      if (isRising && *isRising != position.IsLong()) {
+        // Close signal received, closing position...
+        ClosePosition(position);
+      }
 
-    const auto price = m_numberOfOperations % 2
-                           ? book.GetAsk().GetTop().GetPrice()
-                           : book.GetBid().GetTop().GetPrice();
-    Assert(!IsZero(price));
-
-    boost::shared_ptr<Position> position;
-    if (m_numberOfOperations % 2) {
-      position.reset(new LongPosition(
-          *this, operationId, m_numberOfOperations + 111,
-          GetTradingSystem(security.GetSource().GetIndex()), security,
-          security.GetSymbol().GetFotBaseCurrency(), 100000,
-          security.ScalePrice(price), timeMeasurement));
     } else {
-      position.reset(new ShortPosition(
-          *this, operationId, m_numberOfOperations + 222,
-          GetTradingSystem(security.GetSource().GetIndex()), security,
-          security.GetSymbol().GetFotBaseCurrency(), 200000,
-          security.ScalePrice(price), timeMeasurement));
+      // Position is active.
+
+      const auto &isRising = GetIsRising();
+      if (isRising) {
+        if (*isRising == position.IsLong()) {
+          // Holding position and waiting for close signal...
+          AssertLt(0, position.GetActiveQty());
+        } else {
+          // Holding position and received close signal...
+          AssertLt(0, position.GetActiveQty());
+          ClosePosition(position);
+        }
+      }
     }
-
-    GetContext().InvokeDropCopy([this, &operationId](DropCopy &dropCopy) {
-      dropCopy.ReportOperationStart(*this, operationId,
-                                    GetContext().GetCurrentTime());
-    });
-
-    position->OpenImmediatelyOrCancel(security.ScalePrice(price));
-
-    m_operationId = operationId;
-    ++m_numberOfOperations;
-
-    m_lastOperationTime = now;
   }
 
-  virtual void OnLevel1Update(
-      Security &security,
-      const Lib::TimeMeasurement::Milestones &timeMeasurement) {
-    GetContext().GetLog().Debug(
-        "%1% (%6%): bid = %2% / %3%, ask = %4% / %5%;", security.GetSymbol(),
-        security.GetBidPrice(), security.GetBidQty(), security.GetAskPrice(),
-        security.GetAskQty(), security.GetSource().GetInstanceName());
-    const auto &lastPrice = security.GetLastPriceScaled();
-    if (lastPrice > security.ScalePrice(10.99) ||
-        lastPrice < security.ScalePrice(10.01)) {
+  virtual void OnLevel1Tick(Security &security,
+                            const pt::ptime &,
+                            const Level1TickValue &tick,
+                            const Milestones &delayMeasurement) override {
+    if (tick.GetType() != LEVEL1_TICK_LAST_PRICE) {
       return;
     }
-    const auto &priceToBuy = lastPrice - security.ScalePrice(.01);
-    boost::shared_ptr<LongPosition> pos(new LongPosition(
-        *this, m_generateUuid(), 999, GetTradingSystem(0), security,
-        CURRENCY_EUR, 1000000, priceToBuy, timeMeasurement));
-    pos->OpenAtMarketPrice();
+
+    {
+      const auto &lastPrice = security.DescalePrice(tick.GetValue());
+      if (m_prevPrice < lastPrice) {
+        if (m_direction < 0) {
+          m_direction = 1;
+        } else {
+          ++m_direction;
+        }
+      } else if (m_prevPrice > lastPrice) {
+        if (m_direction > 0) {
+          m_direction = -1;
+        } else {
+          --m_direction;
+        }
+      }
+      m_prevPrice = std::move(lastPrice);
+    }
+
+    CheckSignal(security, delayMeasurement);
   }
 
-  virtual void OnPostionsCloseRequest() {
-    GetContext().GetLog().Debug("All positions closed.");
+  virtual void OnPostionsCloseRequest() override {
+    throw MethodDoesNotImplementedError(
+        "trdk::Strategies::Test::TestStrategy"
+        "::OnPostionsCloseRequest is not implemented");
+  }
+
+ private:
+  boost::optional<bool> GetIsRising() const {
+    if (abs(m_direction) < 3) {
+      return boost::none;
+    }
+    return m_direction > 0;
+  }
+
+  void CheckSignal(Security &security, const Milestones &delayMeasurement) {
+    const auto &isRising = GetIsRising();
+    if (!isRising) {
+      return;
+    }
+
+    Position *position = nullptr;
+    if (!GetPositions().IsEmpty()) {
+      AssertEq(1, GetPositions().GetSize());
+      position = &*GetPositions().GetBegin();
+      if (position->IsCompleted()) {
+        position = nullptr;
+      } else if (*isRising == position->IsLong()) {
+        delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
+        return;
+      }
+    }
+
+    GetTradingLog().Write("trend\tchanged\t%1%",
+                          [&isRising](TradingRecord &record) {
+                            record % (*isRising ? "rising" : "falling");  // 1
+                          });
+
+    if (position) {
+      if (position->IsCancelling() || position->HasActiveCloseOrders()) {
+        return;
+      }
+    }
+
+    delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
+
+    if (!position) {
+      OpenPosition(security, *isRising, delayMeasurement);
+    } else if (position->HasActiveOpenOrders()) {
+      try {
+        Verify(position->CancelAllOrders());
+      } catch (const TradingSystem::UnknownOrderCancelError &ex) {
+        GetTradingLog().Write("failed to cancel order");
+        GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
+        return;
+      }
+    } else {
+      ClosePosition(*position);
+    }
+
+    delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
+  }
+
+  void OpenPosition(Security &security,
+                    bool isLong,
+                    const Milestones &delayMeasurement) {
+    auto position =
+        isLong ? CreatePosition<LongPosition>(
+                     security, security.GetAskPriceScaled(), delayMeasurement)
+               : CreatePosition<ShortPosition>(
+                     security, security.GetBidPriceScaled(), delayMeasurement);
+    ContinuePosition(*position);
+  }
+
+  template <typename PositionType>
+  boost::shared_ptr<Position> CreatePosition(
+      Security &security,
+      const ScaledPrice &price,
+      const Milestones &delayMeasurement) {
+    return boost::make_shared<PositionType>(
+        *this, m_generateUuid(), 1,
+        GetTradingSystem(security.GetSource().GetIndex()), security,
+        security.GetSymbol().GetCurrency(), 1, price, delayMeasurement);
+  }
+
+  void ContinuePosition(Position &position) {
+    Assert(!position.HasActiveOrders());
+    position.Open(position.GetMarketOpenPrice());
+  }
+
+  void ClosePosition(Position &position) {
+    Assert(!position.HasActiveOrders());
+    position.SetCloseReason(CLOSE_REASON_SIGNAL);
+    position.Close(position.GetMarketClosePrice());
+  }
+
+  void ReportOperation(const Position &pos) {
+    if (!m_strategyLog.is_open()) {
+      m_strategyLog = OpenDataLog("csv");
+      m_strategyLog << "Date,Open Start Time,Open Time,Opening Duration"
+                    << ",Close Start Time,Close Time,Closing Duration"
+                    << ",Position Duration,Type,P&L Volume,P&L %,Is Profit"
+                    << ",Is Loss,Qty,Open Price,Open Orders,Open Trades"
+                    << ",Close Reason,Close Price,Close Orders, Close Trades,ID"
+                    << std::endl;
+    }
+
+    const auto &security = pos.GetSecurity();
+
+    m_strategyLog
+        << pos.GetOpenStartTime().date() << ','
+        << ExcelTextField(pos.GetOpenStartTime().time_of_day()) << ','
+        << ExcelTextField(pos.GetOpenTime().time_of_day()) << ','
+        << ExcelTextField(pos.GetOpenTime() - pos.GetOpenStartTime()) << ','
+        << ExcelTextField(pos.GetCloseStartTime().time_of_day()) << ','
+        << ExcelTextField(pos.GetCloseTime().time_of_day()) << ','
+        << ExcelTextField(pos.GetCloseTime() - pos.GetCloseStartTime()) << ','
+        << ExcelTextField(pos.GetCloseTime() - pos.GetOpenTime()) << ','
+        << pos.GetType() << ',' << pos.GetRealizedPnlVolume() << ','
+        << pos.GetRealizedPnlRatio() << (pos.IsProfit() ? ",1,0" : ",0,1")
+        << ',' << pos.GetOpenedQty() << ','
+        << security.DescalePrice(pos.GetOpenAvgPrice()) << ','
+        << pos.GetNumberOfOpenOrders() << ',' << pos.GetNumberOfOpenTrades()
+        << ',' << pos.GetCloseReason() << ','
+        << security.DescalePrice(pos.GetCloseAvgPrice()) << ','
+        << pos.GetNumberOfCloseOrders() << ',' << pos.GetNumberOfCloseTrades()
+        << ',' << pos.GetId() << std::endl;
   }
 
  private:
   boost::uuids::random_generator m_generateUuid;
+  std::ofstream m_strategyLog;
 
-  size_t m_numberOfOperations;
-
-  boost::optional<boost::uuids::uuid> m_operationId;
-  pt::ptime m_lastOperationTime;
-
-  boost::mt19937 m_random;
-  boost::uniform_int<uint32_t> m_finResultRange;
-  boost::variate_generator<boost::mt19937, boost::uniform_int<uint32_t>>
-      m_generateFinResultRandom;
+  intmax_t m_direction;
+  Price m_prevPrice;
 };
 }
 }
