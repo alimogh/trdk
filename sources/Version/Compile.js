@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
+var branch = "DocFeels"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
@@ -26,10 +26,7 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'TestTradingSystems'
-	, 'InteractiveBrokers'
-	, 'Services'
 	, 'TestStrategy'
-	, 'MrigeshKejriwal'
 ]
 
 //////////////////////////////////////////////////////////////////////////
