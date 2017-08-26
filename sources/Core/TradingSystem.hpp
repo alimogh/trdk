@@ -169,18 +169,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
-  //! Returns broker position by symbol.
-  virtual trdk::TradingSystem::Position GetBrokerPostion(
-      const std::string &account, const trdk::Lib::Symbol &) const;
-  //! Retrieves all positions for account.
-  /** @param account    Account for positions search.
-    * @param predicate  Predicate, iteration will be stopped if it returns
-    *                   false. Must be very fast as call can be at lock.
-    */
-  virtual void ForEachBrokerPostion(
-      const std::string &account,
-      const boost::function<bool(const Position &)> &predicate) const;
-
  public:
   OrderId SellAtMarketPrice(
       trdk::Security &,

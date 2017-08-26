@@ -75,6 +75,10 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           trdk::Security &,
                                           trdk::Security::Request &) override;
+  virtual void OnBrokerPositionUpdate(trdk::Security &,
+                                      const trdk::Qty &,
+                                      const trdk::Volume &,
+                                      bool isInitial) override;
   virtual void OnPositionUpdate(trdk::Position &) override;
   virtual void OnServiceDataUpdate(
       const trdk::Service &,
@@ -112,12 +116,13 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   template <typename PositionType>
   boost::shared_ptr<Position> CreatePosition(
       const trdk::ScaledPrice &price,
+      const trdk::Qty &qty,
       const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
     return boost::make_shared<PositionType>(
         *this, m_generateUuid(), 1,
         GetTradingSystem(GetTradingSecurity().GetSource().GetIndex()),
         GetTradingSecurity(), GetTradingSecurity().GetSymbol().GetCurrency(),
-        m_settings.qty, price, delayMeasurement);
+        qty, price, delayMeasurement);
   }
   void ContinuePosition(trdk::Position &);
   void ClosePosition(trdk::Position &);

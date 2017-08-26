@@ -125,6 +125,25 @@ void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
   StartRollOver();
 }
 
+void mk::Strategy::OnBrokerPositionUpdate(Security &security,
+                                          const Qty &qty,
+                                          const Volume &volume,
+                                          bool isInitial) {
+  Assert(isInitial);
+  Assert(&security == &GetTradingSecurity());
+
+  if (&security != &GetTradingSecurity() || !isInitial || qty == 0) {
+    return;
+  }
+
+  const auto price = volume / qty;
+  auto position = qty > 0 ? CreatePosition<LongPosition>(
+                                security.ScalePrice(price), qty, Milestones())
+                          : CreatePosition<ShortPosition>(
+                                security.ScalePrice(price), -qty, Milestones());
+  position->RestoreOpenState(price);
+}
+
 void mk::Strategy::OnServiceStart(const Service &service) {
   const auto *const ma = dynamic_cast<const MovingAverageService *>(&service);
   if (ma) {
@@ -298,11 +317,12 @@ void mk::Strategy::CheckSignal(const trdk::Price &spotPrice,
 
 void mk::Strategy::OpenPosition(bool isLong,
                                 const Milestones &delayMeasurement) {
-  auto position =
-      isLong ? CreatePosition<LongPosition>(
-                   GetTradingSecurity().GetAskPriceScaled(), delayMeasurement)
-             : CreatePosition<ShortPosition>(
-                   GetTradingSecurity().GetBidPriceScaled(), delayMeasurement);
+  auto position = isLong ? CreatePosition<LongPosition>(
+                               GetTradingSecurity().GetAskPriceScaled(),
+                               m_settings.qty, delayMeasurement)
+                         : CreatePosition<ShortPosition>(
+                               GetTradingSecurity().GetBidPriceScaled(),
+                               m_settings.qty, delayMeasurement);
   ContinuePosition(*position);
 }
 
