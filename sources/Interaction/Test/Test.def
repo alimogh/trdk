@@ -1,8 +1,0 @@
-
-EXPORTS
-	CreateTradingSystem
-	CreateRandomMarketDataSource
-	CreateCsvTickMarketDataSource
-	CreateCsvContinuousContractMarketDataSource
-	CreateTrdkMarketDataLogSource
-	GetTrdkModuleVersionInfoV1

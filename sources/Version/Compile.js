@@ -25,10 +25,8 @@ var concurrencyProfileRelease = "PROFILE_RELAX"
 var requiredModules = [
 	'Core'
 	, 'Engine'
-	, 'TestTradingSystems'
 	, 'InteractiveBrokers'
 	, 'Services'
-	, 'TestStrategy'
 	, 'MrigeshKejriwal'
 ]
 
