@@ -30,7 +30,7 @@ class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
   virtual ~ContinuousContractBarService();
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   virtual size_t GetSize() const override;
   virtual bool IsEmpty() const override;

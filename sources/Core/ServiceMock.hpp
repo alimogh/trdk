@@ -22,7 +22,7 @@ class Service : public trdk::Service {
   virtual ~Service() override = default;
 
  public:
-  MOCK_CONST_METHOD0(GetLastDataTime, const boost::posix_time::ptime &());
+  MOCK_CONST_METHOD0(GetLastDataTime, boost::posix_time::ptime());
 };
 }
 }

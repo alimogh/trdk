@@ -290,7 +290,7 @@ ContinuousContractBarService::ContinuousContractBarService(
 
 ContinuousContractBarService::~ContinuousContractBarService() {}
 
-const pt::ptime &ContinuousContractBarService::GetLastDataTime() const {
+pt::ptime ContinuousContractBarService::GetLastDataTime() const {
   return GetLastBar().time;
 }
 

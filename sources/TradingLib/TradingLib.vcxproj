@@ -248,6 +248,8 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="PositionController.cpp" />
+    <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -280,14 +282,32 @@
     <ClCompile Include="StopOrder.cpp" />
     <ClCompile Include="TakeProfit.cpp" />
     <ClCompile Include="TrailingStop.cpp" />
+    <ClCompile Include="Trend.cpp" />
+    <ClCompile Include="TrendUTest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PositionController.hpp" />
+    <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SourcesSynchronizer.hpp" />
     <ClInclude Include="StopLoss.hpp" />
     <ClInclude Include="StopOrder.hpp" />
     <ClInclude Include="TakeProfit.hpp" />
     <ClInclude Include="TrailingStop.hpp" />
+    <ClInclude Include="Trend.hpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

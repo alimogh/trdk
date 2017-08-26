@@ -544,7 +544,7 @@ class Indicator : public is::Adx {
 };
 }
 
-TEST(AdxIndicator, General) {
+TEST(Services_AdxIndicator, General) {
   const lib::IniString settings(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"

@@ -68,7 +68,7 @@ class TRDK_SERVICES_API Adx : public trdk::Service {
   virtual ~Adx() noexcept;
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   bool IsEmpty() const;
 

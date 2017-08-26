@@ -52,10 +52,6 @@ Position::NotOpenedError::NotOpenedError() noexcept
 Position::AlreadyClosedError::AlreadyClosedError() noexcept
     : Exception("Position already closed") {}
 
-////////////////////////////////////////////////////////////////////////////////
-
-Position::Algo::~Algo() {}
-
 //////////////////////////////////////////////////////////////////////////
 
 class Position::Implementation : private boost::noncopyable {

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#include <boost/uuid/uuid_generators.hpp>
 
 #ifdef BOOST_WINDOWS
 #undef SendMessage

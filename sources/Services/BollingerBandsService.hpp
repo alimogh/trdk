@@ -52,7 +52,7 @@ class TRDK_SERVICES_API BollingerBandsService : public trdk::Service {
   virtual ~BollingerBandsService();
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   //! UUID for values channel "low value".
   /** @sa GetId

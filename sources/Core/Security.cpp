@@ -757,7 +757,7 @@ void Security::SetTradingSessionState(const pt::ptime &time, bool isOpened) {
 
   GetContext().GetLog().Info(
       "\"%1%\" trading session is %2% by the event at %3%."
-      "Last data time: %4%.",
+      " Last data time: %4%.",
       *this, isOpened ? "opened" : "closed", time, GetLastMarketDataTime());
 
   {

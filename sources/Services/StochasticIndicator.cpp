@@ -188,7 +188,7 @@ Stochastic::Stochastic(Context &context,
 
 Stochastic::~Stochastic() noexcept {}
 
-const pt::ptime &Stochastic::GetLastDataTime() const {
+pt::ptime Stochastic::GetLastDataTime() const {
   return GetLastPoint().source.time;
 }
 

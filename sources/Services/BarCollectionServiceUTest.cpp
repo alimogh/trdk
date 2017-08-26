@@ -58,7 +58,7 @@ Source GetSource(const uint32_t numberOfSets) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(BarService, ByNumberOfTicks) {
+TEST(Services_BarService, ByNumberOfTicks) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 10 ticks\n"
@@ -165,7 +165,7 @@ TEST(BarService, ByNumberOfTicks) {
   }
 }
 
-TEST(BarService, ByNumberOfTicksWithSessionOpenClose) {
+TEST(Services_BarService, ByNumberOfTicksWithSessionOpenClose) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 10000 ticks\n"
@@ -239,7 +239,7 @@ TEST(BarService, ByNumberOfTicksWithSessionOpenClose) {
   EXPECT_EQ(3, service.GetLastBar().lowTradePrice);
 }
 
-TEST(BarService, ClosingCountedBarByLastBarTick) {
+TEST(Services_BarService, ClosingCountedBarByLastBarTick) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 2 ticks\n"
@@ -274,7 +274,7 @@ TEST(BarService, ClosingCountedBarByLastBarTick) {
   EXPECT_EQ(2, service.GetSize());
 }
 
-TEST(BarService, DropCopy) {
+TEST(Services_BarService, DropCopy) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 3 ticks\n"

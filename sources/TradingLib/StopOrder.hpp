@@ -18,7 +18,7 @@ namespace TradingLib {
 class StopOrder : public trdk::Position::Algo {
  public:
   explicit StopOrder(trdk::Position &);
-  virtual ~StopOrder();
+  virtual ~StopOrder() override = default;
 
  public:
   trdk::ModuleTradingLog &GetTradingLog() const noexcept;

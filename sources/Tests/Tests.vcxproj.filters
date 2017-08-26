@@ -123,6 +123,12 @@
     <ClCompile Include="..\Services\BarServiceMock.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
+    <ClCompile Include="..\Strategies\DocFeels\DocFeelsStrategyUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TradingLib\TrendUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />
@@ -162,42 +168,6 @@
       <Filter>Lib Files</Filter>
     </Library>
     <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug DLL\Transaq_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug Standalone\Transaq_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test DLL\Transaq_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test Standalone\Transaq_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release DLL\Transaq.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release Standalone\Transaq.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug DLL\Transaq_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug Standalone\Transaq_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test DLL\Transaq_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test Standalone\Transaq_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release DLL\Transaq.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release Standalone\Transaq.lib">
       <Filter>Lib Files</Filter>
     </Library>
     <Library Include="..\..\output\x86\lib\Debug DLL\MrigeshKejriwal_dbg.lib">

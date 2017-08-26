@@ -284,7 +284,7 @@ BollingerBandsService::BollingerBandsService(Context &context,
 
 BollingerBandsService::~BollingerBandsService() {}
 
-const pt::ptime &BollingerBandsService::GetLastDataTime() const {
+pt::ptime BollingerBandsService::GetLastDataTime() const {
   return GetLastPoint().time;
 }
 

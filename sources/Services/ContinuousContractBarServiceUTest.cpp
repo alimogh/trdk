@@ -126,7 +126,7 @@ const Tick source[] = {
 };
 }
 
-TEST(ContinuousContractBarServiceTest, DISABLED_History) {
+TEST(Services_ContinuousContractBarService, DISABLED_History) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 4 ticks\n"
@@ -241,7 +241,7 @@ TEST(ContinuousContractBarServiceTest, DISABLED_History) {
   }
 }
 
-TEST(ContinuousContractBarServiceTest, Online) {
+TEST(Services_ContinuousContractBarService, Online) {
   const lib::IniString settings(
       "[Section]\n"
       "size = 4 ticks\n"
@@ -252,6 +252,8 @@ TEST(ContinuousContractBarServiceTest, Online) {
 
   Mocks::Security security;
   EXPECT_CALL(security, IsOnline()).WillRepeatedly(Return(true));
+  lib::Symbol symbol("CL*/USD:NYMEX:FUT");
+  security.SetSymbolToMock(symbol);
 
   svc::ContinuousContractBarService service(
       context, "Test", lib::IniSectionRef(settings, "Section"));

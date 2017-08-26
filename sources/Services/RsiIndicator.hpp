@@ -46,7 +46,7 @@ class TRDK_SERVICES_API Rsi : public trdk::Service {
   virtual ~Rsi() noexcept;
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   bool IsEmpty() const;
 

@@ -19,8 +19,6 @@ using namespace trdk::TradingLib;
 
 StopOrder::StopOrder(Position &position) : m_position(position) {}
 
-StopOrder::~StopOrder() {}
-
 Module::TradingLog &StopOrder::GetTradingLog() const noexcept {
   return GetPosition().GetStrategy().GetTradingLog();
 }

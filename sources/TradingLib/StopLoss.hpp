@@ -20,7 +20,7 @@ namespace TradingLib {
 class StopLossOrder : public trdk::TradingLib::StopOrder {
  public:
   explicit StopLossOrder(trdk::Position &);
-  virtual ~StopLossOrder();
+  virtual ~StopLossOrder() override = default;
 
  public:
   virtual void Run() override;
@@ -46,7 +46,7 @@ class StopPrice : public trdk::TradingLib::StopLossOrder {
 
  public:
   explicit StopPrice(const boost::shared_ptr<const Params> &, trdk::Position &);
-  virtual ~StopPrice();
+  virtual ~StopPrice() override = default;
 
  protected:
   virtual const char *GetName() const override;
@@ -74,7 +74,41 @@ class StopLoss : public trdk::TradingLib::StopLossOrder {
 
  public:
   explicit StopLoss(const boost::shared_ptr<const Params> &, trdk::Position &);
-  virtual ~StopLoss();
+  virtual ~StopLoss() override = default;
+
+ protected:
+  virtual const char *GetName() const override;
+
+  virtual bool Activate() override;
+
+ private:
+  const boost::shared_ptr<const Params> m_params;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class StopLossShare : public trdk::TradingLib::StopLossOrder {
+ public:
+  class Params {
+   public:
+    //! Constructor.
+    /** @param[in] maxLossShare Maximum share of loss where 1.00 is 100% of
+      *                         position volume at opening. Minus means profit.
+      */
+    explicit Params(const trdk::Lib::Double &maxLossShare);
+
+   public:
+    const trdk::Lib::Double &GetMaxLossShare() const;
+
+   private:
+    trdk::Lib::Double m_maxLossShare;
+  };
+
+ public:
+  explicit StopLossShare(const boost::shared_ptr<const Params> &,
+                         trdk::Position &);
+  explicit StopLossShare(const trdk::Lib::Double &maxLossShare,
+                         trdk::Position &);
 
  protected:
   virtual const char *GetName() const override;

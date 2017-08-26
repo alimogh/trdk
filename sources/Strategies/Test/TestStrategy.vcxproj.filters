@@ -31,8 +31,10 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

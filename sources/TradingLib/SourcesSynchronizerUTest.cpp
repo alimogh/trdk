@@ -20,7 +20,7 @@ namespace gr = boost::gregorian;
 using namespace testing;
 using namespace trdk::Tests;
 
-TEST(SourcesSynchronizer, OneStartedEarly2) {
+TEST(TradingLib_SourcesSynchronizer, OneStartedEarly2) {
   Mocks::Service service1;
   Mocks::Service service2;
 
@@ -31,16 +31,14 @@ TEST(SourcesSynchronizer, OneStartedEarly2) {
 
   pt::ptime service1Time(gr::date(2017, 01, 9), pt::time_duration(0, 25, 43));
 
-  EXPECT_CALL(service1, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service1Time));
+  EXPECT_CALL(service1, GetLastDataTime()).WillRepeatedly(Return(service1Time));
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_FALSE(sync.Sync(service1)) << i;
     service1Time += pt::minutes(5);
   }
 
   auto service2Time = service1Time;
-  EXPECT_CALL(service2, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service2Time));
+  EXPECT_CALL(service2, GetLastDataTime()).WillRepeatedly(Return(service2Time));
   EXPECT_FALSE(sync.Sync(service2));
   EXPECT_TRUE(sync.Sync(service1));
 

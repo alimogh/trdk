@@ -33,7 +33,7 @@ class TRDK_SERVICES_API BarCollectionService : public BarService {
   virtual ~BarCollectionService();
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   //! Applies callback for each bar in the reversed order.
   /** Stops if callback returns false.

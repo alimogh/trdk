@@ -39,7 +39,7 @@ class TrendMock : public mk::Trend {
 };
 }
 
-TEST(MrigeshKejriwal, Setup) {
+TEST(MrigeshKejriwal_Strategy, Setup) {
   lib::IniString settings(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"
@@ -47,7 +47,8 @@ TEST(MrigeshKejriwal, Setup) {
       "is_enabled = true\n"
       "trading_mode = paper\n"
       "qty=99\n"
-      "history_hours=129\n");
+      "history_hours=129\n"
+      "cost_of_funds=0.12\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
@@ -67,8 +68,7 @@ TEST(MrigeshKejriwal, Setup) {
   {
     tradingSecurity.SetRequest(trdk::Security::Request());
     strategy.RegisterSource(tradingSecurity);
-    EXPECT_EQ(currentTime - pt::hours(3),
-              tradingSecurity.GetRequest().GetTime());
+    EXPECT_TRUE(tradingSecurity.GetRequest().GetTime().is_not_a_date_time());
     EXPECT_EQ(0, tradingSecurity.GetRequest().GetNumberOfTicks());
   }
   const lib::Symbol tradingSymbol2("XXX2*/USD::FUT");
@@ -83,7 +83,7 @@ TEST(MrigeshKejriwal, Setup) {
   spotSecurity.SetSymbolToMock(spotSymbol);
   {
     strategy.RegisterSource(spotSecurity);
-    EXPECT_TRUE(spotSecurity.GetRequest().GetTime().is_not_a_date_time());
+    EXPECT_TRUE(tradingSecurity.GetRequest().GetTime().is_not_a_date_time());
     EXPECT_EQ(0, spotSecurity.GetRequest().GetNumberOfTicks());
   }
   const lib::Symbol spotSymbol2("XXX2/USD::INDEX");
@@ -101,14 +101,15 @@ TEST(MrigeshKejriwal, Setup) {
   EXPECT_NO_THROW(strategy.OnServiceStart(unknownService));
 }
 
-TEST(MrigeshKejriwal, DISABLED_Position) {
+TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
   const lib::IniString settings(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"
       "title = Test\n"
       "is_enabled = true\n"
       "trading_mode = paper\n"
-      "qty=99\n");
+      "qty=99\n"
+      "cost_of_funds=0.12\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
@@ -231,7 +232,7 @@ TEST(MrigeshKejriwal, DISABLED_Position) {
   }
 }
 
-TEST(MrigeshKejriwal, Trend) {
+TEST(MrigeshKejriwal_Strategy, Trend) {
   mk::Trend trend;
   EXPECT_TRUE(boost::indeterminate(trend.IsRising()));
   {

@@ -164,7 +164,7 @@ Rsi::Rsi(Context &context,
 
 Rsi::~Rsi() noexcept {}
 
-const pt::ptime &Rsi::GetLastDataTime() const { return GetLastPoint().time; }
+pt::ptime Rsi::GetLastDataTime() const { return GetLastPoint().time; }
 
 bool Rsi::IsEmpty() const { return m_pimpl->m_lastValueNo == 0; }
 

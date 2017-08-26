@@ -59,7 +59,7 @@ class TRDK_SERVICES_API Stochastic : public trdk::Service {
   virtual ~Stochastic() noexcept;
 
  public:
-  virtual const boost::posix_time::ptime &GetLastDataTime() const override;
+  virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   bool IsEmpty() const;
 

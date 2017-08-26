@@ -96,7 +96,7 @@ class Service : public is::Rsi {
 };
 }
 
-TEST(RsiIndicator, General) {
+TEST(Services_RsiIndicator, General) {
   const lib::IniString settings(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"

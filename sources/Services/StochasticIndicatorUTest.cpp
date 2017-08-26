@@ -147,7 +147,7 @@ class Indicator : public is::Stochastic {
 };
 }
 
-TEST(StochasticIndicator, General) {
+TEST(Services_StochasticIndicator, General) {
   const lib::IniString settings(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"
