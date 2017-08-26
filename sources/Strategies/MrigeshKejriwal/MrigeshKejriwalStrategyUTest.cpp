@@ -236,149 +236,47 @@ TEST(MrigeshKejriwal, Trend) {
   EXPECT_TRUE(boost::indeterminate(trend.IsRising()));
   {
     // Waiting for 1st signal.
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10, 20};
-    ASSERT_FALSE(trend.Update(5, point));
+    ASSERT_FALSE(trend.Update(5, 20));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10, 20};
-    ASSERT_FALSE(trend.Update(10, point));
+    ASSERT_FALSE(trend.Update(10, 20));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 1000, 30};
-    ASSERT_FALSE(trend.Update(20, point));
+    ASSERT_FALSE(trend.Update(20, 30));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 30};
-    ASSERT_TRUE(trend.Update(40, point));
+    ASSERT_TRUE(trend.Update(40, 30));
     EXPECT_EQ(boost::tribool(true), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_FALSE(trend.Update(51, point));
+    ASSERT_FALSE(trend.Update(51, 50));
     EXPECT_EQ(boost::tribool(true), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_FALSE(trend.Update(51, point));
+    ASSERT_FALSE(trend.Update(51, 50));
     EXPECT_EQ(boost::tribool(true), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_FALSE(trend.Update(50, point));
+    ASSERT_FALSE(trend.Update(50, 50));
     EXPECT_EQ(boost::tribool(true), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_TRUE(trend.Update(49, point));
+    ASSERT_TRUE(trend.Update(49, 50));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_FALSE(trend.Update(50, point));
+    ASSERT_FALSE(trend.Update(50, 50));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_TRUE(trend.Update(51, point));
+    ASSERT_TRUE(trend.Update(51, 50));
     EXPECT_EQ(boost::tribool(true), trend.IsRising());
   }
   {
-    const svc::MovingAverageService::Point point = {
-        pt::second_clock::local_time(), 10000, 50};
-    ASSERT_TRUE(trend.Update(49, point));
+    ASSERT_TRUE(trend.Update(49, 50));
     EXPECT_EQ(boost::tribool(false), trend.IsRising());
   }
-}
-
-TEST(MrigeshKejriwal, TrendBag) {
-  const auto &now = pt::second_clock::local_time();
-  const svc::MovingAverageService::Point emaAt14_53 = {now, 9981.3, 9980.86};
-  const svc::MovingAverageService::Point emaAt14_54 = {now + pt::minutes(1),
-                                                       9982.85, 9981.52};
-
-  mk::Trend trend;
-
-  ASSERT_FALSE(trend.Update(9982.3, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9982.25, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.9, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.75, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.8, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.9, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.65, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.3, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.55, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.25, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.75, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.45, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.7, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.25, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.15, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.3, emaAt14_53));
-  ASSERT_FALSE(trend.Update(9981.45, emaAt14_53));
-
-  ASSERT_TRUE(trend.Update(9981.2, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.35, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.4, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.5, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.25, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.45, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.5, emaAt14_54));
-  ASSERT_TRUE(trend.Update(9981.55, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.7, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.8, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.75, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.8, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.05, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.65, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.55, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.05, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.15, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9981.95, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.3, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.15, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.25, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.1, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.45, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.2, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.6, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.7, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.45, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.35, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.35, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.1, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.3, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.25, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.7, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9983.3, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.8, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.95, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.8, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.85, emaAt14_54));
-  ASSERT_FALSE(trend.Update(9982.75, emaAt14_54));
 }

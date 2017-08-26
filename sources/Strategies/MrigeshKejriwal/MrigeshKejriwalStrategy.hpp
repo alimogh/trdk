@@ -27,8 +27,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend {
   virtual ~Trend() = default;
 
  public:
-  virtual bool Update(const Price &lastPrice,
-                      const trdk::Services::MovingAverageService::Point &);
+  virtual bool Update(const Price &lastPrice, double controlValue);
 
  public:
   //! Actual trend.
@@ -49,8 +48,9 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
  private:
   struct Settings {
-    const Qty qty;
-    const uint16_t numberOfHistoryHours;
+    Qty qty;
+    uint16_t numberOfHistoryHours;
+    double costOfFunds;
 
     explicit Settings(const Lib::IniSectionRef &);
 
@@ -107,7 +107,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   void OnMaServiceStart(const trdk::Services::MovingAverageService &);
 
-  void CheckSignal(const trdk::Price &spotPrice,
+  void CheckSignal(const trdk::Price &tradePrice,
                    const trdk::Lib::TimeMeasurement::Milestones &);
 
   void OpenPosition(bool isLong,
@@ -131,8 +131,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
   bool StartRollOver();
   void CancelRollOver();
-  void FinishRollOver();
-  void FinishRollOver(Position &oldPosition);
+  bool FinishRollOver();
+  bool FinishRollOver(Position &oldPosition);
 
  private:
   const Settings m_settings;
