@@ -11,8 +11,6 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
 #include <boost/algorithm/string_regex.hpp>
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>

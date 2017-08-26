@@ -29,11 +29,7 @@ ib::TradingSystem::TradingSystem(const TradingMode &mode,
                                  const Lib::IniSectionRef &conf)
     : trdk::TradingSystem(mode, tradingSystemIndex, context, instanceName),
       trdk::MarketDataSource(marketDataSourceIndex, context, instanceName),
-      m_isTestSource(conf.ReadBoolKey("test_source", false)) {
-  if (conf.ReadBoolKey("positions", false)) {
-    m_positions.reset(new Positions);
-  }
-}
+      m_isTestSource(conf.ReadBoolKey("test_source", false)) {}
 
 ib::TradingSystem::~TradingSystem() {}
 
@@ -122,7 +118,7 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
         });
   });
 
-  client->StartData();
+  client->Start();
 
   client.swap(m_client);
   account.swap(m_account);
@@ -136,7 +132,7 @@ void ib::TradingSystem::SubscribeToSecurities() {
   while (!m_unsubscribedSecurities.empty()) {
     auto security = m_unsubscribedSecurities.front();
     m_unsubscribedSecurities.pop_front();
-    m_securities.push_back(security);
+    m_securities.emplace_back(security);
     m_client->SubscribeToMarketData(*security);
   }
 }
@@ -146,39 +142,6 @@ const ib::TradingSystem::Account &ib::TradingSystem::GetAccount() const {
     throw UnknownAccountError("Account not specified");
   }
   return *m_account;
-}
-
-trdk::TradingSystem::Position ib::TradingSystem::GetBrokerPostion(
-    const std::string &account, const Symbol &symbol) const {
-  if (!m_positions) {
-    throw PositionError("Positions storage not enabled");
-  }
-  {
-    const auto &index = m_positions->get<BySymbol>();
-    const auto &key = boost::make_tuple(boost::cref(account),
-                                        boost::cref(symbol.GetCurrency()),
-                                        boost::cref(symbol.GetSymbol()));
-    const PositionsReadLock lock(m_positionsMutex);
-    const auto &it = index.find(key);
-    if (it != index.end()) {
-      return *it;
-    }
-  }
-  return trdk::TradingSystem::Position();
-}
-
-void ib::TradingSystem::ForEachBrokerPostion(
-    const std::string &account,
-    const boost::function<bool(const trdk::TradingSystem::Position &)> &pred)
-    const {
-  if (!m_positions) {
-    throw PositionError("Positions storage not enabled");
-  }
-  const auto &index = m_positions->get<ByAccount>();
-  const PositionsReadLock lock(m_positionsMutex);
-  const auto &end = index.upper_bound(account);
-  for (auto it = index.lower_bound(account); it != end && pred(*it); ++it)
-    ;
 }
 
 trdk::Security &ib::TradingSystem::CreateNewSecurityObject(

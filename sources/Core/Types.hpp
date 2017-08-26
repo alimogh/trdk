@@ -231,6 +231,29 @@ class Level1TickValue {
   static Level1TickValue Create(const Value &value) {
     return Level1TickValue(type, value);
   }
+  template <typename Value>
+  static Level1TickValue Create(const trdk::Level1TickType &type,
+                                const Value &value) {
+    static_assert(numberOfLevel1TickTypes == 7, "List changed.");
+    switch (type) {
+      case LEVEL1_TICK_LAST_PRICE:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_LAST_QTY:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_BID_PRICE:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_BID_QTY:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_ASK_PRICE:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_ASK_QTY:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+      case LEVEL1_TICK_TRADING_VOLUME:
+        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+    }
+    AssertEq(LEVEL1_TICK_LAST_PRICE, type);
+    throw Exception("Unknown Level 1 Tick Value Type");
+  }
 
   const Level1TickType &GetType() const { return m_type; }
 

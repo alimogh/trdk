@@ -326,6 +326,7 @@ class Dispatcher : private boost::noncopyable {
   void SignalBrokerPositionUpdate(SubscriberPtrWrapper &,
                                   Security &,
                                   const Qty &,
+                                  const Volume &,
                                   bool isInitial);
   void SignalNewBar(SubscriberPtrWrapper &, Security &, const Security::Bar &);
   void SignalBookUpdateTick(SubscriberPtrWrapper &,

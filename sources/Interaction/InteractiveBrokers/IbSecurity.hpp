@@ -29,16 +29,17 @@ class Security : public trdk::Security {
  public:
   bool IsTestSource() const { return m_isTestSource; }
 
-  bool IsLevel1Required() const { return Base::IsLevel1Required(); }
-  bool IsLevel1UpdatesRequired() const {
-    return Base::IsLevel1UpdatesRequired();
-  }
-  bool IsLevel1TicksRequired() const { return Base::IsLevel1TicksRequired(); }
-  bool IsTradesRequired() const { return Base::IsTradesRequired(); }
-  bool IsBrokerPositionRequired() const {
-    return Base::IsBrokerPositionRequired();
-  }
-  bool IsBarsRequired() const { return Base::IsBarsRequired(); }
+  using Base::IsLevel1Required;
+  using Base::IsLevel1UpdatesRequired;
+  using Base::IsLevel1TicksRequired;
+  using Base::IsTradesRequired;
+  using Base::IsBrokerPositionRequired;
+  using Base::IsBarsRequired;
+  using Base::AddBar;
+  using Base::SetBrokerPosition;
+  using Base::SetExpiration;
+  using Base::SetOnline;
+  using Base::SetTradingSessionState;
 
   void AddLevel1Tick(const boost::posix_time::ptime &time,
                      const Level1TickValue &tick,
@@ -66,16 +67,6 @@ class Security : public trdk::Security {
     CheckLastTrade(time, tick4, timeMeasurement);
     Base::AddLevel1Tick(time, tick1, tick2, tick3, tick4, timeMeasurement);
   }
-
-  void AddBar(Bar &&bar) { Base::AddBar(std::move(bar)); }
-
-  void SetBrokerPosition(Qty qty, bool isInitial) {
-    Base::SetBrokerPosition(qty, isInitial);
-  }
-
-  using Base::SetExpiration;
-  using Base::SetOnline;
-  using Base::SetTradingSessionState;
 
  private:
   void CheckLastTrade(const boost::posix_time::ptime &time,

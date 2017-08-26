@@ -37,13 +37,6 @@ class TradingSystem : public trdk::TradingSystem {
 
   MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
 
-  MOCK_CONST_METHOD2(GetBrokerPostion,
-                     trdk::TradingSystem::Position(const std::string &account,
-                                                   const trdk::Lib::Symbol &));
-  MOCK_CONST_METHOD2(ForEachBrokerPostion,
-                     void(const std::string &,
-                          const boost::function<bool(const Position &)> &));
-
   MOCK_METHOD7(SellAtMarketPrice,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,

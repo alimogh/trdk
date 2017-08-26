@@ -125,8 +125,7 @@ class Client : protected EWrapper {
                                          &SecurityRequest::tickerId>>>>
       MarketLevel1HistoryRequests;
 
-  typedef std::list<Security *> PostponedSecurityRequestList;
-  typedef PostponedSecurityRequestList PostponedMarketLevel1Requests;
+  typedef std::deque<Security *> PostponedMarketLevel1Requests;
 
   struct HistoryUpdate {
     boost::posix_time::ptime time;
@@ -178,8 +177,8 @@ class Client : protected EWrapper {
   }
 
  public:
-  //! Starts data.
-  void StartData();
+  //! Starts client.
+  void Start();
 
  public:
   trdk::OrderId PlaceBuyOrder(const trdk::Security &,
@@ -276,7 +275,7 @@ class Client : protected EWrapper {
 
   static bool IsSubscribed(const SecurityRequestList &, const Security &);
   static bool IsSubscribed(const SecurityRequestList &,
-                           const PostponedSecurityRequestList &,
+                           const PostponedMarketLevel1Requests &,
                            const Security &);
 
   void ApplyOrderParams(const OrderParams &, Order &) const;

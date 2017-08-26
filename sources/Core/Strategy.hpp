@@ -138,6 +138,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
                                               const trdk::Qty &,
+                                              const trdk::Volume &,
                                               bool isInitial);
 
   virtual void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);

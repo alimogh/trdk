@@ -281,6 +281,14 @@ class TRDK_CORE_API Position
   size_t GetNumberOfCloseTrades() const;
 
  public:
+  //! Restores position in open-state.
+  /** Sets position in open state at current strategy, doesn't make any trading
+    * actions.
+    * @param[in] openPrice   Position opening price.
+    */
+  void RestoreOpenState(const trdk::Price &openPrice);
+
+ public:
   trdk::OrderId OpenAtMarketPrice();
   trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
   trdk::OrderId Open(const trdk::ScaledPrice &);
@@ -295,6 +303,7 @@ class TRDK_CORE_API Position
   trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel();
   trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(const trdk::OrderParams &);
 
+ public:
   trdk::OrderId CloseAtMarketPrice();
   trdk::OrderId CloseAtMarketPrice(const trdk::OrderParams &);
   trdk::OrderId Close(const trdk::ScaledPrice &);
@@ -314,6 +323,7 @@ class TRDK_CORE_API Position
   trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
       const trdk::OrderParams &);
 
+ public:
   //! Cancels all active orders.
   /** @sa IsCancelling
     * @return True if sent cancel request for one or more orders.

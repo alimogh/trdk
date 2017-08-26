@@ -398,6 +398,29 @@ class Position::Implementation : private boost::noncopyable {
   void SignalUpdate() { m_stateUpdateSignal(); }
 
  public:
+  void ReportOpeningStateRestpration() const noexcept {
+    Assert(!m_open.orders.empty());
+    m_strategy.GetTradingLog().Write(
+        "order\trestored\t%1%\t%2%\t%3%.%4%"
+        "\tprice=%5$.8f->%6$.8f\t%7%\tqty=%8$.8f\tpos=%9%",
+        [this](TradingRecord &record) {
+          const auto &order = m_open.orders.back();
+          record % m_self.GetOpenOrderSide()                         // 1
+              % m_security.GetSymbol().GetSymbol().c_str()           // 2
+              % m_self.GetTradingSystem().GetInstanceName().c_str()  // 3
+              % m_tradingSystem.GetMode()                            // 4
+              % m_security.DescalePrice(m_open.startPrice);          // 5
+          if (order.price) {
+            record % m_security.DescalePrice(*order.price);  // 6
+          } else {
+            record % '-';  // 6
+          }
+          record % m_self.GetCurrency()  // 7
+              % m_self.GetPlanedQty()    // 8
+              % m_operationId;           // 9
+        });
+  }
+
   void ReportOpeningStart(const char *eventDesc,
                           const boost::optional<OrderId> &id) const noexcept {
     Assert(!m_open.orders.empty());
@@ -552,6 +575,72 @@ class Position::Implementation : private boost::noncopyable {
   }
 
  public:
+  void RestoreOpenState(const Price &openPrice) {
+    const auto now = m_strategy.GetContext().GetCurrentTime();
+
+    if (m_self.IsCancelling()) {
+      throw Exception(
+          "Failed to restore open-stat as canceling is not completed");
+    } else if (m_self.IsOpened() || !m_close.orders.empty() ||
+               m_self.IsError()) {
+      throw AlreadyStartedError();
+    }
+
+    Assert(!m_self.IsClosed());
+    Assert(!m_self.IsCompleted());
+    Assert(!m_self.HasActiveOrders());
+    AssertLt(0, m_planedQty);
+    AssertEq(0, m_open.qty);
+    AssertLt(0, m_open.startPrice);
+    Assert(m_open.time.is_not_a_date_time());
+    AssertEq(0, m_open.volume);
+    AssertEq(0, m_open.numberOfTrades);
+    AssertEq(0, m_open.lastTradePrice);
+    AssertEq(0, m_open.orders.size());
+    AssertEq(0, m_close.qty);
+    AssertEq(0, m_close.startPrice);
+    Assert(m_close.time.is_not_a_date_time());
+    AssertEq(0, m_close.volume);
+    AssertEq(0, m_close.numberOfTrades);
+    AssertEq(0, m_close.lastTradePrice);
+    AssertEq(0, m_close.orders.size());
+
+    if (!m_isRegistered) {
+      m_strategy.Register(m_self);
+      // supporting prev. logic (when was m_strategy = nullptr),
+      // don't know why set flag in other place.
+    }
+
+    if (!m_security.GetSymbol().IsExplicit()) {
+      m_expiration = m_security.GetExpiration();
+    }
+
+    m_open.orders.emplace_back(std::move(now), boost::none, m_planedQty,
+                               generateUuid());
+    auto &order = m_open.orders.back();
+
+    try {
+      m_open.time = order.time;
+      m_open.qty = order.qty;
+      m_open.OnNewTrade(TradingSystem::TradeInfo{
+          "", order.qty, m_security.ScalePrice(openPrice)});
+
+      m_isRegistered = true;  // supporting prev. logic
+                              // (when was m_strategy = nullptr),
+                              // don't know why set flag only here.
+    } catch (...) {
+      if (m_isRegistered) {
+        m_strategy.Unregister(m_self);
+      }
+      m_open.orders.pop_back();
+      throw;
+    }
+
+    ReportOpeningStateRestpration();
+
+    SignalUpdate();
+  }
+
   template <typename OpenImpl>
   OrderId Open(const OpenImpl &openImpl,
                const TimeInForce &timeInForce,
@@ -563,10 +652,10 @@ class Position::Implementation : private boost::noncopyable {
       throw Exception("Security is not online");
     } else if (!m_security.IsTradingSessionOpened()) {
       throw Exception("Security trading session is closed");
-    } else if (!m_close.orders.empty()) {
-      throw AlreadyStartedError();
     } else if (m_self.IsCancelling()) {
       throw Exception("Failed to start opening as canceling is not completed");
+    } else if (!m_close.orders.empty()) {
+      throw AlreadyStartedError();
     }
 
     Assert(!m_self.IsOpened());
@@ -580,10 +669,6 @@ class Position::Implementation : private boost::noncopyable {
       m_strategy.Register(m_self);
       // supporting prev. logic (when was m_strategy = nullptr),
       // don't know why set flag in other place.
-    }
-
-    if (!m_close.startPrice) {
-      m_close.startPrice = m_self.GetMarketClosePrice();
     }
 
     m_open.orders.emplace_back(std::move(now), std::move(price), qty,
@@ -1219,6 +1304,10 @@ const ScaledPrice &Position::GetLastCloseTradePrice() const {
     throw Exception("Position has no close trades");
   }
   return m_pimpl->m_close.lastTradePrice;
+}
+
+void Position::RestoreOpenState(const trdk::Price &openPrice) {
+  m_pimpl->RestoreOpenState(openPrice);
 }
 
 OrderId Position::OpenAtMarketPrice() {

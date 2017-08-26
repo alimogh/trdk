@@ -263,7 +263,7 @@ Contract Client::GetContract(const trdk::Security &security,
   return GetContract(security, params.expiration);
 }
 
-void Client::StartData() {
+void Client::Start() {
   Lock lock(m_mutex);
   Assert(!m_thread);
   AssertEq(CONNECTION_STATE_CONNECTED, m_connectionState);
@@ -277,21 +277,7 @@ void Client::StartData() {
     m_client->reqAccountUpdates(true, m_account);
   }
 
-  bool isBrokerPositionsRequred = m_ts.m_positions ? true : false;
-  if (!isBrokerPositionsRequred) {
-    foreach (const auto &security, m_ts.m_securities) {
-      if (security->IsBrokerPositionRequired()) {
-        isBrokerPositionsRequred = true;
-        break;
-      }
-    }
-  }
-  if (isBrokerPositionsRequred) {
-    m_ts.GetMdsLog().Info("Requesting positions info...");
-    m_client->reqPositions();
-  } else {
-    m_connectionState = CONNECTION_STATE_READY;
-  }
+  m_connectionState = CONNECTION_STATE_READY;
 
   m_thread = new boost::thread([this]() { Task(); });
   if (!m_condition.timed_wait(lock, timeout)) {
@@ -364,6 +350,8 @@ void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) {
 }
 
 void Client::SubscribeToMarketData(ib::Security &security) {
+  AssertEq(CONNECTION_STATE_READY, m_connectionState);
+
   if (security.IsTradesRequired() && !security.IsTestSource()) {
     throw trdk::TradingSystem::Error(
         "Interactive Brokers doesn't provide trades info");
@@ -379,16 +367,26 @@ void Client::SubscribeToMarketData(ib::Security &security) {
   }
   CheckState();
 
-  m_connectionState < CONNECTION_STATE_READY
-      ? PostponeMarketDataSubscription(security)
-      : DoMarketDataSubscription(security);
+  if (security.IsBrokerPositionRequired()) {
+    /** @todo Not the best place to request position - positions will be
+      *       requested so many times, how much securities asks it.But position
+      *       request can't be filtered by security. It better to request
+      *       positions one time for all securities.
+      */
+    m_ts.GetMdsLog().Info("Requesting positions info by \"%1%\"...", security);
+    PostponeMarketDataSubscription(security);
+    m_client->reqPositions();
+    return;
+  }
+
+  DoMarketDataSubscription(security);
 }
 
 void Client::PostponeMarketDataSubscription(ib::Security &security) const {
   Assert(std::find(m_postponedMarketDataRequests.begin(),
                    m_postponedMarketDataRequests.end(),
                    &security) == m_postponedMarketDataRequests.end());
-  m_postponedMarketDataRequests.push_back(&security);
+  m_postponedMarketDataRequests.emplace_back(&security);
 }
 
 void Client::FlushPostponedMarketDataSubscription() {
@@ -1106,15 +1104,15 @@ ib::Security *Client::GetBarsRequest(const TickerId &tickerId) {
 bool Client::IsSubscribed(const SecurityRequestList &list,
                           const ib::Security &security) {
   const auto &index = list.get<BySecurity>();
-  return index.find(const_cast<ib::Security *>(&security)) != index.end();
+  return index.find(const_cast<ib::Security *>(&security)) != index.cend();
 }
 
 bool Client::IsSubscribed(const SecurityRequestList &requested,
-                          const PostponedSecurityRequestList &postponed,
+                          const PostponedMarketLevel1Requests &postponed,
                           const ib::Security &security) {
   return IsSubscribed(requested, security) ||
-         std::find(postponed.begin(), postponed.end(), &security) !=
-             postponed.end();
+         std::find(postponed.cbegin(), postponed.cend(), &security) !=
+             postponed.cend();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1769,65 +1767,27 @@ void Client::position(const IBString &account,
                       const Contract &contract,
                       int size,
                       double avgCost) {
-  const bool isInitial = m_connectionState < CONNECTION_STATE_READY;
-
   m_ts.GetTsLog().Info(
       "Position info for account \"%1%\""
       " - \"%2%:%3% (%4%)\" = %5% (average cost: %6%).",
-      account, contract.symbol, contract.currency, contract.secType, size,
-      avgCost);
+      account,            // 1
+      contract.symbol,    // 2
+      contract.currency,  // 3
+      contract.secType,   // 4
+      size,               // 5
+      avgCost);           // 6
 
-  //! @todo place for optimization (if position will be used not only at
-  //! start):
-  foreach (auto &security, m_ts.m_securities) {
+  for (auto &security : m_ts.m_securities) {
     //! @todo compares only symbols, not exchanges
     if (security->GetSymbol().GetSymbol() == contract.symbol) {
-      security->SetBrokerPosition(size, isInitial);
+      security->SetBrokerPosition(size, avgCost, true);
       break;
-    }
-  }
-
-  if (m_ts.m_positions) {
-    Symbol symbol;
-
-    if (contract.secType == "STK") {
-      symbol = Symbol(
-          (boost::format("%1%/%2%::STK") % contract.symbol % contract.currency)
-              .str());
-    } else {
-      boost::format message(
-          "Security type \"%1%\" is not supported by position list");
-      message % contract.secType;
-      throw MethodDoesNotImplementedError(message.str().c_str());
-    }
-
-    if (symbol) {
-      ib::TradingSystem::Position position(account, symbol, size);
-
-      auto &index = m_ts.m_positions->get<ib::TradingSystem::BySymbol>();
-
-      const ib::TradingSystem::PositionsWriteLock positionsLock(
-          m_ts.m_positionsMutex);
-
-      auto it = index.find(boost::make_tuple(
-          boost::cref(account), boost::cref(position.symbol.GetCurrency()),
-          boost::cref(position.symbol.GetSymbol())));
-      if (it == index.end()) {
-        index.insert(position);
-      } else {
-        index.modify(it, [&position](ib::TradingSystem::Position &storage) {
-          storage = position;
-        });
-      }
     }
   }
 }
 
 void Client::positionEnd() {
-  AssertGt(CONNECTION_STATE_READY, m_connectionState);
   m_ts.GetTsLog().Debug("Positions info completed.");
-  // m_client->cancelPositions();
-  m_connectionState = CONNECTION_STATE_READY;
   FlushPostponedMarketDataSubscription();
 }
 

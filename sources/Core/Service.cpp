@@ -186,9 +186,10 @@ bool Service::RaiseServiceDataUpdateEvent(
 
 bool Service::RaiseBrokerPositionUpdateEvent(const Security &security,
                                              const Qty &qty,
+                                             const Volume &volume,
                                              bool isInitial) {
   const auto lock = LockForOtherThreads();
-  return OnBrokerPositionUpdate(security, qty, isInitial);
+  return OnBrokerPositionUpdate(security, qty, volume, isInitial);
 }
 
 bool Service::RaiseNewBarEvent(const Security &security,
@@ -258,7 +259,8 @@ bool Service::OnServiceDataUpdate(const Service &service,
 
 bool Service::OnBrokerPositionUpdate(const Security &security,
                                      const Qty &,
-                                     bool /*isInitial*/) {
+                                     const Volume &,
+                                     bool) {
   GetLog().Error(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",

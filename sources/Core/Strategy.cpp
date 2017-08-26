@@ -585,6 +585,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
 
 void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
                                               const Qty &qty,
+                                              const Volume &volume,
                                               bool isInitial) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),
@@ -594,7 +595,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
     return;
   }
   try {
-    OnBrokerPositionUpdate(security, qty, isInitial);
+    OnBrokerPositionUpdate(security, qty, volume, isInitial);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
   }

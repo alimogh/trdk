@@ -26,12 +26,11 @@ namespace mk = trdk::Strategies::MrigeshKejriwal;
 
 Trend::Trend() : m_isRising(boost::indeterminate) {}
 
-bool Trend::Update(const Price &lastPrice,
-                   const MovingAverageService::Point &ma) {
-  if (lastPrice == ma.value) {
+bool Trend::Update(const Price &lastPrice, double controlValue) {
+  if (lastPrice == controlValue) {
     return false;
   }
-  const boost::tribool isRising(ma.value < lastPrice);
+  const boost::tribool isRising(controlValue < lastPrice);
   if (isRising == m_isRising) {
     return false;
   }
@@ -43,7 +42,8 @@ bool Trend::Update(const Price &lastPrice,
 
 mk::Strategy::Settings::Settings(const IniSectionRef &conf)
     : qty(conf.ReadTypedKey<Qty>("qty")),
-      numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")) {}
+      numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")),
+      costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")) {}
 
 void mk::Strategy::Settings::Validate() const {
   if (qty < 1) {
@@ -52,9 +52,11 @@ void mk::Strategy::Settings::Validate() const {
 }
 
 void mk::Strategy::Settings::Log(Module::Log &log) const {
-  boost::format info("Position size: %1%. Number of history hours: %2%.");
-  info % qty                   // 1
-      % numberOfHistoryHours;  // 2
+  boost::format info(
+      "Position size: %1%. Number of history hours: %2%. Cost of funds: %3%.");
+  info % qty                  // 1
+      % numberOfHistoryHours  // 2
+      % costOfFunds;          // 3
   log.Info(info.str().c_str());
 }
 
@@ -123,6 +125,25 @@ void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
                 GetTradingSecurity(),
                 GetTradingSecurity().GetExpiration().GetDate());
   StartRollOver();
+}
+
+void mk::Strategy::OnBrokerPositionUpdate(Security &security,
+                                          const Qty &qty,
+                                          const Volume &volume,
+                                          bool isInitial) {
+  Assert(isInitial);
+  Assert(&security == &GetTradingSecurity());
+
+  if (&security != &GetTradingSecurity() || !isInitial || qty == 0) {
+    return;
+  }
+
+  const auto price = volume / qty;
+  auto position = qty > 0 ? CreatePosition<LongPosition>(
+                                security.ScalePrice(price), qty, Milestones())
+                          : CreatePosition<ShortPosition>(
+                                security.ScalePrice(price), -qty, Milestones());
+  position->RestoreOpenState(price);
 }
 
 void mk::Strategy::OnServiceStart(const Service &service) {
@@ -205,8 +226,10 @@ void mk::Strategy::OnLevel1Tick(Security &security,
                                 const pt::ptime &,
                                 const Level1TickValue &tick,
                                 const Milestones &delayMeasurement) {
-  if (&security == &GetTradingSecurity()) {
-    FinishRollOver();
+  if (&security != &GetTradingSecurity()) {
+    return;
+  }
+  if (FinishRollOver()) {
     return;
   }
   if (tick.GetType() != LEVEL1_TICK_LAST_PRICE || GetMa().IsEmpty()) {
@@ -224,7 +247,7 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   } else {
     m_isTradingSecurityActivationReported = false;
   }
-  CheckSignal(GetUnderlyingSecurity().DescalePrice(tick.GetValue()),
+  CheckSignal(GetTradingSecurity().DescalePrice(tick.GetValue()),
               delayMeasurement);
 }
 
@@ -236,22 +259,29 @@ void mk::Strategy::OnPostionsCloseRequest() {
       "::OnPostionsCloseRequest is not implemented");
 }
 
-void mk::Strategy::CheckSignal(const trdk::Price &spotPrice,
+void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
                                const Milestones &delayMeasurement) {
+  const auto numberOfDaysToExpiry =
+      (GetTradingSecurity().GetExpiration().GetDate() -
+       GetContext().GetCurrentTime().date())
+          .days();
   const auto &lastPoint = GetMa().GetLastPoint();
-  if (!m_trend->Update(spotPrice, lastPoint)) {
+  const auto controlValue = lastPoint.value * (1 + m_settings.costOfFunds) *
+                            numberOfDaysToExpiry / 365;
+  if (!m_trend->Update(tradePrice, controlValue)) {
     return;
   }
   Assert(!boost::indeterminate(m_trend->IsRising()));
   GetTradingLog().Write(
-      "trend"
-      "changed\tdirection=%1%\tlast-price=%2%"
-      "\tclose-price=%3%\tclose-price-ema=%4%",
-      [this, &lastPoint, &spotPrice](TradingRecord &record) {
+      "trend changed\tdirection=%1%\tlast-price=%2%\tclose-price=%3%"
+      "\tclose-price-ema=%4%\tdays-to-expiry=%5%\tcontol=%6%",
+      [&](TradingRecord &record) {
         record % (m_trend->IsRising() ? "rising" : "falling")  // 1
-            % spotPrice                                        // 2
+            % tradePrice                                       // 2
             % lastPoint.source                                 // 3
-            % lastPoint.value;                                 // 4
+            % lastPoint.value                                  // 4
+            % numberOfDaysToExpiry                             // 5
+            % controlValue;                                    // 6
       });
 
   Position *position = nullptr;
@@ -298,11 +328,12 @@ void mk::Strategy::CheckSignal(const trdk::Price &spotPrice,
 
 void mk::Strategy::OpenPosition(bool isLong,
                                 const Milestones &delayMeasurement) {
-  auto position =
-      isLong ? CreatePosition<LongPosition>(
-                   GetTradingSecurity().GetAskPriceScaled(), delayMeasurement)
-             : CreatePosition<ShortPosition>(
-                   GetTradingSecurity().GetBidPriceScaled(), delayMeasurement);
+  auto position = isLong ? CreatePosition<LongPosition>(
+                               GetTradingSecurity().GetAskPriceScaled(),
+                               m_settings.qty, delayMeasurement)
+                         : CreatePosition<ShortPosition>(
+                               GetTradingSecurity().GetBidPriceScaled(),
+                               m_settings.qty, delayMeasurement);
   ContinuePosition(*position);
 }
 
@@ -396,17 +427,17 @@ bool mk::Strategy::StartRollOver() {
 
 void mk::Strategy::CancelRollOver() { m_isRollover = false; }
 
-void mk::Strategy::FinishRollOver() {
+bool mk::Strategy::FinishRollOver() {
   if (!GetPositions().GetSize()) {
-    return;
+    return false;
   }
   AssertEq(1, GetPositions().GetSize());
-  FinishRollOver(*GetPositions().GetBegin());
+  return FinishRollOver(*GetPositions().GetBegin());
 }
 
-void mk::Strategy::FinishRollOver(Position &oldPosition) {
+bool mk::Strategy::FinishRollOver(Position &oldPosition) {
   if (!m_isRollover || !oldPosition.IsCompleted()) {
-    return;
+    return false;
   } else if (!GetTradingSecurity().IsActive()) {
     if (!m_isTradingSecurityActivationReported) {
       GetLog().Warn(
@@ -421,6 +452,7 @@ void mk::Strategy::FinishRollOver(Position &oldPosition) {
   }
   OpenPosition(oldPosition.IsLong(), Milestones());
   m_isRollover = false;
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

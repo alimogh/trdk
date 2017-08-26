@@ -34,10 +34,8 @@ class TradingSystem : public trdk::TradingSystem,
   friend class trdk::Interaction::InteractiveBrokers::Client;
 
  private:
-  struct ByAccount {};
   struct BySymbol {};
   struct ByOrder {};
-  struct BySymbolAndOrder {};
 
   typedef Concurrency::reader_writer_lock OrdersMutex;
   typedef OrdersMutex::scoped_lock OrdersWriteLock;
@@ -48,7 +46,7 @@ class TradingSystem : public trdk::TradingSystem,
   typedef PositionsMutex::scoped_lock PositionsWriteLock;
   struct Position : public trdk::TradingSystem::Position {
     typedef trdk::TradingSystem::Position Base;
-    Position() {}
+    Position() = default;
     explicit Position(const std::string &account,
                       const Lib::Symbol &symbol,
                       Qty qty)
@@ -56,30 +54,6 @@ class TradingSystem : public trdk::TradingSystem,
     const std::string &GetSymbol() const { return symbol.GetSymbol(); }
     const Lib::Currency &GetCurrency() const { return symbol.GetCurrency(); }
   };
-  typedef boost::multi_index_container<
-      Position,
-      boost::multi_index::indexed_by<
-          boost::multi_index::ordered_non_unique<
-              boost::multi_index::tag<ByAccount>,
-              boost::multi_index::member<
-                  trdk::TradingSystem::Position,
-                  std::string,
-                  &trdk::TradingSystem::Position::account>>,
-          boost::multi_index::hashed_unique<
-              boost::multi_index::tag<BySymbol>,
-              boost::multi_index::composite_key<
-                  Position,
-                  boost::multi_index::member<
-                      trdk::TradingSystem::Position,
-                      std::string,
-                      &trdk::TradingSystem::Position::account>,
-                  boost::multi_index::const_mem_fun<Position,
-                                                    const Lib::Currency &,
-                                                    &Position::GetCurrency>,
-                  boost::multi_index::const_mem_fun<Position,
-                                                    const std::string &,
-                                                    &Position::GetSymbol>>>>>
-      Positions;
 
   struct PlacedOrder {
     OrderId id;
@@ -139,13 +113,6 @@ class TradingSystem : public trdk::TradingSystem,
 
  public:
   virtual const Account &GetAccount() const override;
-
-  virtual trdk::TradingSystem::Position GetBrokerPostion(
-      const std::string &account, const trdk::Lib::Symbol &) const override;
-  virtual void TradingSystem::ForEachBrokerPostion(
-      const std::string &,
-      const boost::function<bool(const trdk::TradingSystem::Position &)> &)
-      const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
@@ -239,9 +206,6 @@ class TradingSystem : public trdk::TradingSystem,
   mutable std::deque<boost::shared_ptr<Security>> m_unsubscribedSecurities;
 
   std::unique_ptr<Account> m_account;
-
-  mutable PositionsMutex m_positionsMutex;
-  std::unique_ptr<Positions> m_positions;
 };
 }
 }
