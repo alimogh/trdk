@@ -268,21 +268,24 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
   const auto &lastPoint = GetMa().GetLastPoint();
   const auto controlValue = lastPoint.value * (1 + m_settings.costOfFunds) *
                             numberOfDaysToExpiry / 365;
-  if (!m_trend->Update(tradePrice, controlValue)) {
+  const bool isTrendChanged = m_trend->Update(tradePrice, controlValue);
+  GetTradingLog().Write(
+      "trend\t%1%\tdirection=%2%\tlast-price=%3%\tclose-price=%4%"
+      "\tclose-price-ema=%5%\tdays-to-expiry=%6%\tcontol=%7%",
+      [&](TradingRecord &record) {
+        record % (isTrendChanged ? "CHANGED" : "-------")  // 1
+            % (m_trend->IsRising()
+                   ? "rising"
+                   : !m_trend->IsRising() ? "falling" : "-------")  // 2
+            % tradePrice                                            // 3
+            % lastPoint.source                                      // 4
+            % lastPoint.value                                       // 5
+            % numberOfDaysToExpiry                                  // 6
+            % controlValue;                                         // 7
+      });
+  if (!isTrendChanged) {
     return;
   }
-  Assert(!boost::indeterminate(m_trend->IsRising()));
-  GetTradingLog().Write(
-      "trend changed\tdirection=%1%\tlast-price=%2%\tclose-price=%3%"
-      "\tclose-price-ema=%4%\tdays-to-expiry=%5%\tcontol=%6%",
-      [&](TradingRecord &record) {
-        record % (m_trend->IsRising() ? "rising" : "falling")  // 1
-            % tradePrice                                       // 2
-            % lastPoint.source                                 // 3
-            % lastPoint.value                                  // 4
-            % numberOfDaysToExpiry                             // 5
-            % controlValue;                                    // 6
-      });
 
   Position *position = nullptr;
   if (!GetPositions().IsEmpty()) {
