@@ -266,8 +266,9 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
        GetContext().GetCurrentTime().date())
           .days();
   const auto &lastPoint = GetMa().GetLastPoint();
-  const auto controlValue = lastPoint.value * (1 + m_settings.costOfFunds) *
-                            numberOfDaysToExpiry / 365;
+  const auto controlValue =
+      lastPoint.value *
+      (1 + m_settings.costOfFunds * numberOfDaysToExpiry / 365);
   const bool isTrendChanged = m_trend->Update(tradePrice, controlValue);
   GetTradingLog().Write(
       "trend\t%1%\tdirection=%2%\tlast-price=%3%\tclose-price=%4%"
