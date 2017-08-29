@@ -444,6 +444,8 @@ class Client : protected EWrapper {
   } m_contractRequests;
 
   const std::string m_barSizeMins;
+
+  bool m_isInitialBrokerPositionLoaded;
 };
 }
 }

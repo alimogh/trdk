@@ -30,8 +30,6 @@ const pt::time_duration pingRequestPeriod = pt::seconds(120);
 const pt::time_duration timeout = pt::seconds(10);
 const pt::time_duration maxIterationTime = pt::milliseconds(10);
 
-//////////////////////////////////////////////////////////////////////////
-
 class ConvertToIbQtyTypeProxy {
  public:
   explicit ConvertToIbQtyTypeProxy(const Qty &source) : m_source(&source) {}
@@ -50,8 +48,6 @@ ConvertToIbQtyTypeProxy ConvertToIbType(const Qty &source) {
   return ConvertToIbQtyTypeProxy(source);
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 void FormatOrderDateTime(const pt::ptime &dateTime, IBString &destination) {
   // Format: 20060505 08:00:00 {time zone}
   boost::format result("%d%02d%02d %02d:%02d:%02d UTC");
@@ -66,7 +62,23 @@ void FormatOrderDateTime(const pt::ptime &dateTime, IBString &destination) {
   destination = result.str();
 }
 
-////////////////////////////////////////////////////////////////////////////////
+SecurityType ConvertIbStringToSecurityType(const std::string &source) {
+  if (source == "IND") {
+    return SECURITY_TYPE_INDEX;
+  } else if (source == "STK") {
+    return SECURITY_TYPE_STOCK;
+  } else if (source == "FUT") {
+    return SECURITY_TYPE_FUTURES;
+  } else if (source == "FOP") {
+    return SECURITY_TYPE_FUTURES_OPTIONS;
+  } else if (source == "OPT") {
+    return SECURITY_TYPE_OPTIONS;
+  } else {
+    boost::format error("Unknown IB TWS security type \"%1%\"");
+    error % source;
+    throw trdk::Interactor::Error(error.str().c_str());
+  }
+}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +100,8 @@ Client::Client(ib::TradingSystem &ts,
       m_orderStatusesMap(GetOrderStatusesMap()),
       m_seqNumber(-1),
       m_accountInfo(nullptr),
-      m_barSizeMins(barSizeMins) {
+      m_barSizeMins(barSizeMins),
+      m_isInitialBrokerPositionLoaded(false) {
   m_client.reset(new EPosixClientSocket(this));
   LogConnectionAttempt();
   const bool connectResult =
@@ -1768,8 +1781,8 @@ void Client::position(const IBString &account,
                       int size,
                       double avgCost) {
   m_ts.GetTsLog().Info(
-      "Position info for account \"%1%\""
-      " - \"%2%:%3% (%4%)\" = %5% (average cost: %6%).",
+      "Broker position info for account \"%1%\""
+      " - \"%2%:%3%(%4%)\" = %5% (average cost: %6%).",
       account,            // 1
       contract.symbol,    // 2
       contract.currency,  // 3
@@ -1777,16 +1790,32 @@ void Client::position(const IBString &account,
       size,               // 5
       avgCost);           // 6
 
-  for (auto &security : m_ts.m_securities) {
-    //! @todo compares only symbols, not exchanges
-    if (security->GetSymbol().GetSymbol() == contract.symbol) {
-      security->SetBrokerPosition(size, avgCost, true);
-      break;
+  try {
+    const auto &securityType = ConvertIbStringToSecurityType(contract.secType);
+#ifdef BOOST_ENABLE_ASSERT_HANDLER
+    size_t numberOfSecurities = 0;
+#endif
+    for (auto &security : m_ts.m_securities) {
+      //! @todo compares only symbols and security type, not exchanges
+      if (security->GetSymbol().GetSecurityType() == securityType &&
+          security->GetSymbol().GetSymbol() == contract.symbol) {
+        security->SetBrokerPosition(
+            size, (avgCost / security->GetQuoteSize()) * abs(size),
+            !m_isInitialBrokerPositionLoaded);
+        AssertEq(1, ++numberOfSecurities);
+#ifndef BOOST_ENABLE_ASSERT_HANDLER
+        break;
+#endif
+      }
     }
+    AssertEq(1, numberOfSecurities);
+  } catch (const std::exception &ex) {
+    m_ts.GetTsLog().Error("Failed to set broker position \"%1%\".", ex.what());
   }
 }
 
 void Client::positionEnd() {
+  Assert(!m_isInitialBrokerPositionLoaded);
   m_ts.GetTsLog().Debug("Positions info completed.");
   FlushPostponedMarketDataSubscription();
 }
