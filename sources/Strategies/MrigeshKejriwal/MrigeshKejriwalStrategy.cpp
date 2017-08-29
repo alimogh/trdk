@@ -133,12 +133,25 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
                                           bool isInitial) {
   Assert(isInitial);
   Assert(&security == &GetTradingSecurity());
-
   if (&security != &GetTradingSecurity() || !isInitial || qty == 0) {
+    GetLog().Debug(
+        "Skipped broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
+        qty,                                // 1
+        volume,                             // 2
+        security,                           // 3
+        isInitial ? "initial" : "online");  // 4
     return;
   }
 
-  const auto price = volume / qty;
+  const auto price = abs(volume / qty);
+  GetLog().Info(
+      "Accepting broker position %1% (volume %2$.8f, start price %3$.8f) for "
+      "\"%4%\"...",
+      qty,        // 1
+      volume,     // 2
+      price,      // 3
+      security);  // 4
+
   auto position = qty > 0 ? CreatePosition<LongPosition>(
                                 security.ScalePrice(price), qty, Milestones())
                           : CreatePosition<ShortPosition>(

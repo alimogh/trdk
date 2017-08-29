@@ -441,6 +441,8 @@ class Client : protected EWrapper {
                          std::pair<bool, std::vector<ContractDetails>>>
         requests;
   } m_contractRequests;
+
+  bool m_isInitialBrokerPositionLoaded;
 };
 }
 }
