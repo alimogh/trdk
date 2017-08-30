@@ -325,14 +325,14 @@ bool BollingerBandsService::IsEmpty() const {
 const BollingerBandsService::Point &BollingerBandsService::GetLastPoint()
     const {
   if (!m_pimpl->m_lastValue) {
-    throw ValueDoesNotExistError("MovingAverageService is empty");
+    throw ValueDoesNotExistError("BollingerBandsService is empty");
   }
   return *m_pimpl->m_lastValue;
 }
 
 size_t BollingerBandsService::GetHistorySize() const {
   if (!m_pimpl->m_history) {
-    throw HasNotHistory("MovingAverageService doesn't have history");
+    throw HasNotHistory("BollingerBandsService doesn't have history");
   }
   return m_pimpl->m_history->GetSize();
 }
