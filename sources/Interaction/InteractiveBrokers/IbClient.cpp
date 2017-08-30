@@ -1743,17 +1743,26 @@ void Client::position(const IBString &account,
                       const Contract &contract,
                       int size,
                       double avgCost) {
-  m_ts.GetTsLog().Info(
-      "Broker position info for account \"%1%\""
-      " - \"%2%:%3%(%4%)\" = %5% (average cost: %6%).",
-      account,            // 1
-      contract.symbol,    // 2
-      contract.currency,  // 3
-      contract.secType,   // 4
-      size,               // 5
-      avgCost);           // 6
-
   try {
+    boost::optional<gr::date> expiryDate;
+    std::string expiryDateStr;
+    if (!contract.expiry.empty()) {
+      expiryDate = gr::date_from_iso_string(contract.expiry);
+      expiryDateStr = "/";
+      expiryDateStr += gr::to_iso_extended_string(*expiryDate);
+    }
+
+    m_ts.GetTsLog().Info(
+        "Broker position info for account \"%1%\""
+        " - \"%2%%3%/%4%(%5%)\" = %6% (average cost: %7%).",
+        account,            // 1
+        contract.symbol,    // 2
+        expiryDateStr,      // 3
+        contract.currency,  // 4
+        contract.secType,   // 5
+        size,               // 6
+        avgCost);           // 7
+
     const auto &securityType = ConvertIbStringToSecurityType(contract.secType);
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
     size_t numberOfSecurities = 0;
@@ -1761,7 +1770,10 @@ void Client::position(const IBString &account,
     for (auto &security : m_ts.m_securities) {
       //! @todo compares only symbols and security type, not exchanges
       if (security->GetSymbol().GetSecurityType() == securityType &&
-          security->GetSymbol().GetSymbol() == contract.symbol) {
+          security->GetSymbol().GetSymbol() == contract.symbol &&
+          ((!expiryDate && !security->HasExpiration()) ||
+           (expiryDate && security->HasExpiration() &&
+            expiryDate == security->GetExpiration().GetDate()))) {
         security->SetBrokerPosition(
             size, (avgCost / security->GetQuoteSize()) * abs(size),
             !m_isInitialBrokerPositionLoaded);
@@ -1771,7 +1783,7 @@ void Client::position(const IBString &account,
 #endif
       }
     }
-    AssertEq(1, numberOfSecurities);
+    AssertGe(1, numberOfSecurities);
   } catch (const std::exception &ex) {
     m_ts.GetTsLog().Error("Failed to set broker position \"%1%\".", ex.what());
   }
@@ -1779,6 +1791,7 @@ void Client::position(const IBString &account,
 
 void Client::positionEnd() {
   Assert(!m_isInitialBrokerPositionLoaded);
+  m_isInitialBrokerPositionLoaded = true;
   m_ts.GetTsLog().Debug("Positions info completed.");
   FlushPostponedMarketDataSubscription();
 }
