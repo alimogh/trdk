@@ -459,7 +459,6 @@ class Security::Implementation : private boost::noncopyable {
       m_contractSwitchedSignal;
 
   Level1 m_level1;
-  boost::atomic<Qty::ValueType> m_brokerPosition;
   boost::atomic_int64_t m_marketDataTime;
   boost::atomic_size_t m_numberOfMarketDataUpdates;
   mutable boost::atomic_bool m_isLevel1Started;
@@ -485,7 +484,6 @@ class Security::Implementation : private boost::noncopyable {
         m_pricePrecision(GetPrecisionBySymbol(symbol)),
         m_priceScale(size_t(std::pow(10, m_pricePrecision))),
         m_quoteSize(GetQuoteSizeBySymbol(symbol)),
-        m_brokerPosition(0),
         m_marketDataTime(0),
         m_numberOfMarketDataUpdates(0),
         m_isLevel1Started(false),
@@ -759,7 +757,7 @@ void Security::SetTradingSessionState(const pt::ptime &time, bool isOpened) {
 
   GetContext().GetLog().Info(
       "\"%1%\" trading session is %2% by the event at %3%."
-      "Last data time: %4%.",
+      " Last data time: %4%.",
       *this, isOpened ? "opened" : "closed", time, GetLastMarketDataTime());
 
   {
@@ -877,10 +875,6 @@ Qty Security::GetBidQtyValue() const {
   } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
     return Qty(std::numeric_limits<double>::quiet_NaN());
   }
-}
-
-Qty Security::GetBrokerPosition() const {
-  return Qty(m_pimpl->m_brokerPosition.load());
 }
 
 Security::ContractSwitchingSlotConnection
@@ -1109,11 +1103,10 @@ void Security::AddBar(Bar &&bar) {
   m_pimpl->m_marketDataLog.WriteBar(bar);
 }
 
-void Security::SetBrokerPosition(const Qty &qty, bool isInitial) {
-  if (m_pimpl->m_brokerPosition.exchange(qty) == qty) {
-    return;
-  }
-  m_pimpl->m_brokerPositionUpdateSignal(qty, isInitial);
+void Security::SetBrokerPosition(const Qty &qty,
+                                 const Volume &volume,
+                                 bool isInitial) {
+  m_pimpl->m_brokerPositionUpdateSignal(qty, volume, isInitial);
 }
 
 void Security::SetBook(PriceBook &book,

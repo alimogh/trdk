@@ -26,7 +26,9 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'TestTradingSystems'
+	, 'Services'
 	, 'TestStrategy'
+	, 'DocFeels'
 ]
 
 //////////////////////////////////////////////////////////////////////////

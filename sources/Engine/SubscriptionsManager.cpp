@@ -132,7 +132,7 @@ void SubscriptionsManager::SubscribeToBrokerPositionUpdates(
     std::list<sig::connection> &slotConnections) {
   const auto slot = Security::BrokerPositionUpdateSlot(
       boost::bind(&Dispatcher::SignalBrokerPositionUpdate, &m_dispatcher,
-                  subscriber, boost::ref(security), _1, _2));
+                  subscriber, boost::ref(security), _1, _2, _3));
   const auto &connection = security.SubscribeToBrokerPositionUpdates(slot);
   try {
     slotConnections.emplace_back(connection);

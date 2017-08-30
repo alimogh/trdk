@@ -238,19 +238,6 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
   throw MethodDoesNotImplementedError("Account Cash Balance not implemented");
 }
 
-TradingSystem::Position TradingSystem::GetBrokerPostion(const std::string &,
-                                                        const Symbol &) const {
-  throw MethodDoesNotImplementedError(
-      "Broker Position Info is not implemented");
-}
-
-void TradingSystem::ForEachBrokerPostion(
-    const std::string &,
-    const boost::function<bool(const Position &)> &) const {
-  throw MethodDoesNotImplementedError(
-      "Broker Position Info is not implemented");
-}
-
 void TradingSystem::Connect(const IniSectionRef &conf) {
   if (IsConnected()) {
     return;

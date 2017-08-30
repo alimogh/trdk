@@ -51,7 +51,7 @@ fs::path CreateCsvOkSource() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ExpirationCalendarTest : public testing::Test {
+class Lib_ExpirationCalendarTest : public testing::Test {
  protected:
   typedef trdk::Lib::ExpirationCalendar Calendar;
   typedef trdk::Lib::ContractExpiration Expiration;
@@ -63,11 +63,11 @@ class ExpirationCalendarTest : public testing::Test {
   static fs::path m_csvSourceFilePath;
 };
 
-fs::path ExpirationCalendarTest::m_csvSourceFilePath;
+fs::path Lib_ExpirationCalendarTest::m_csvSourceFilePath;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(ExpirationCalendarTest, FindByDate) {
+TEST_F(Lib_ExpirationCalendarTest, FindByDate) {
   Calendar calendar;
   calendar.ReloadCsv(m_csvSourceFilePath);
 
@@ -189,7 +189,7 @@ TEST_F(ExpirationCalendarTest, FindByDate) {
   }
 }
 
-TEST_F(ExpirationCalendarTest, FindByTime) {
+TEST_F(Lib_ExpirationCalendarTest, FindByTime) {
   Calendar calendar;
   calendar.ReloadCsv(m_csvSourceFilePath);
 
@@ -226,7 +226,7 @@ TEST_F(ExpirationCalendarTest, FindByTime) {
   }
 }
 
-TEST_F(ExpirationCalendarTest, WrongInstrumnetType) {
+TEST_F(Lib_ExpirationCalendarTest, WrongInstrumnetType) {
   Calendar calendar;
   calendar.ReloadCsv(m_csvSourceFilePath);
 
@@ -257,7 +257,7 @@ TEST_F(ExpirationCalendarTest, WrongInstrumnetType) {
   }
 }
 
-TEST_F(ExpirationCalendarTest, ErrorNoFile) {
+TEST_F(Lib_ExpirationCalendarTest, ErrorNoFile) {
   fs::path wrongPath = lib::GetExeWorkingDir() / "NoSuchFile.csv";
   boost::format error("Filed to open CSV-file %1% with expiration info");
   error % wrongPath;
@@ -269,7 +269,7 @@ TEST_F(ExpirationCalendarTest, ErrorNoFile) {
   }
 }
 
-TEST_F(ExpirationCalendarTest, Stat) {
+TEST_F(Lib_ExpirationCalendarTest, Stat) {
   Calendar calendar;
   calendar.ReloadCsv(m_csvSourceFilePath);
   const Calendar::Stat &stat = calendar.CalcStat();
@@ -278,7 +278,7 @@ TEST_F(ExpirationCalendarTest, Stat) {
   EXPECT_EQ(9, stat.numberOfExpirations);
 }
 
-TEST_F(ExpirationCalendarTest, Iterator) {
+TEST_F(Lib_ExpirationCalendarTest, Iterator) {
   Calendar calendar;
   calendar.ReloadCsv(m_csvSourceFilePath);
 

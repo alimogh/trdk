@@ -38,6 +38,7 @@ class TRDK_CORE_API Consumer : public trdk::Module {
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
                                               const trdk::Qty &,
+                                              const trdk::Volume &,
                                               bool isInitial) = 0;
 
   virtual void RaiseSecurityServiceEvent(
@@ -71,15 +72,15 @@ class TRDK_CORE_API Consumer : public trdk::Module {
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
 
   //! Notifies about broker position update.
-  /** @sa trdk::Security::GetBrokerPosition
-    * @param security Security.
-    * @param qty        Position size. Negative value means "short position",
-    *                   positive - "long position". May differ from current
-    *                   trdk::Security::GetBrokerPosition.
-    * @param isInitial  true if it initial data at start.
+  /** @param[in, out] security  Security.
+    * @param[in]      qty       Position size. Negative value means "short
+    *                           position", positive - "long position".
+    * @param[in]      volume    Position volume.
+    * @param[in]      isInitial true if it initial data at start.
     */
-  virtual void OnBrokerPositionUpdate(trdk::Security &,
-                                      const trdk::Qty &,
+  virtual void OnBrokerPositionUpdate(trdk::Security &security,
+                                      const trdk::Qty &qty,
+                                      const trdk::Volume &volume,
                                       bool isInitial);
 
   virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);

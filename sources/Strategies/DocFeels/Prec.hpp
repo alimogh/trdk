@@ -1,19 +1,13 @@
-/**************************************************************************
- *   Created: 2014/08/10 21:09:32
+/*******************************************************************************
+ *   Created: 2017/08/20 14:22:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot Development Kit
  *       URL: http://robotdk.com
  * Copyright: Eugene V. Palchukovsky
- **************************************************************************/
+ ******************************************************************************/
 
 #pragma once
 
 #include "Common/Common.hpp"
-
-#ifdef BOOST_WINDOWS
-#undef SendMessage
-#undef ERROR
-#undef GetCurrentTime
-#endif

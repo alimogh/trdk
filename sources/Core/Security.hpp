@@ -77,6 +77,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   /** Information from broker, not relevant to trdk::Position.
     */
   typedef void(BrokerPositionUpdateSlotSignature)(const trdk::Qty &,
+                                                  const trdk::Volume &,
                                                   bool isInitial);
   typedef boost::function<BrokerPositionUpdateSlotSignature>
       BrokerPositionUpdateSlot;
@@ -426,10 +427,13 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   //! Sets security broker position info.
   /** Subscribers will be notified only if parameter will be changed.
-    * @param qty        Position size.
-    * @param isInitial  true if it initial data at start.
+    * @param[in] qty        Position size.
+    * @param[in] volume     Position volume.
+    * @param[in] isInitial  true if it initial data at start.
     */
-  void SetBrokerPosition(const trdk::Qty &, bool isInitial);
+  void SetBrokerPosition(const trdk::Qty &qty,
+                         const Volume &volume,
+                         bool isInitial);
 
   //! Sets price book snapshot with current data, but new time.
   /** Not thread-safe, caller should provide thread synchronization.

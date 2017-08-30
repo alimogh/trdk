@@ -55,7 +55,11 @@ class TRDK_CORE_API Module : private boost::noncopyable {
  public:
   trdk::Module::Log &GetLog() const noexcept;
   trdk::Module::TradingLog &GetTradingLog() const noexcept;
+  //! Opens file stream to log module data and reports and reports file
+  //! path to log.
+  std::ofstream OpenDataLog(const std::string &fileExtension) const;
 
+ public:
   Lock LockForOtherThreads();
 
  public:
@@ -68,10 +72,6 @@ class TRDK_CORE_API Module : private boost::noncopyable {
 
  protected:
   virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
-
-  //! Opens file stream to log module data and reports and reports file
-  //! path to log.
-  std::ofstream OpenDataLog(const std::string &fileExtension) const;
 
  private:
   class Implementation;

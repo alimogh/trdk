@@ -33,7 +33,7 @@ class TRDK_CORE_API Service : public trdk::Module {
   const boost::uuids::uuid &GetTypeId() const;
   const std::string &GetTag() const;
 
-  virtual const boost::posix_time::ptime &GetLastDataTime() const = 0;
+  virtual boost::posix_time::ptime GetLastDataTime() const = 0;
 
  public:
   void RegisterSource(trdk::Security &);
@@ -58,8 +58,9 @@ class TRDK_CORE_API Service : public trdk::Module {
                           const trdk::Qty &);
   bool RaiseServiceDataUpdateEvent(
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
-  bool RaiseBrokerPositionUpdateEvent(const trdk::Security &security,
-                                      const trdk::Qty &qty,
+  bool RaiseBrokerPositionUpdateEvent(const trdk::Security &,
+                                      const trdk::Qty &,
+                                      const trdk::Volume &,
                                       bool isInitial);
   bool RaiseNewBarEvent(const trdk::Security &, const trdk::Security::Bar &);
   bool RaiseBookUpdateTickEvent(const trdk::Security &,
@@ -96,13 +97,15 @@ class TRDK_CORE_API Service : public trdk::Module {
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
 
   //! Notifies about broker position update.
-  /** @param security   Security.
-    * @param qty        Position size (may differ from current
-    *                   trdk::Security::GetBrokerPosition).
-    * @param isInitial  true if it initial data at start.
+  /** @param[in, out] security  Security.
+    * @param[in]      qty       Position size. Negative value means "short
+    *                           position", positive - "long position".
+    * @param[in]      volume    Position volume.
+    * @param[in]      isInitial true if it initial data at start.
     */
-  virtual bool OnBrokerPositionUpdate(const trdk::Security &,
-                                      const trdk::Qty &,
+  virtual bool OnBrokerPositionUpdate(const trdk::Security &security,
+                                      const trdk::Qty &qty,
+                                      const trdk::Volume &volume,
                                       bool isInitial);
 
   virtual bool OnNewBar(const trdk::Security &, const trdk::Security::Bar &);

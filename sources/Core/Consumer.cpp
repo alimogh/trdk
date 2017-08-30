@@ -88,7 +88,8 @@ void Consumer::OnServiceDataUpdate(const Service &service,
 
 void Consumer::OnBrokerPositionUpdate(Security &security,
                                       const Qty &,
-                                      bool /*isInitial*/) {
+                                      const Volume &,
+                                      bool) {
   GetLog().Error(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",

@@ -14,11 +14,11 @@ namespace lib = trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(Symbol, Operators) {
+TEST(Lib_Symbol, Operators) {
   //! @todo add tests for ==, !=, >, >=, <, <=, = and so on...
 }
 
-TEST(Symbol, Fields) {
+TEST(Lib_Symbol, Fields) {
   lib::Symbol symbol;
 
   try {
@@ -138,7 +138,7 @@ TEST(Symbol, Fields) {
   EXPECT_EQ(std::string("PUT"), symbol.GetRightAsString());
 }
 
-TEST(Symbol, GeneralErrors) {
+TEST(Lib_Symbol, GeneralErrors) {
   try {
     lib::Symbol("");
     EXPECT_TRUE(false) << "Exception expected.";
@@ -175,7 +175,7 @@ TEST(Symbol, GeneralErrors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(Symbol, Stock) {
+TEST(Lib_Symbol, Stock) {
   {
     const lib::Symbol symbol("XXX/USD:NYMEX:STK");
     EXPECT_EQ(lib::SECURITY_TYPE_STOCK, symbol.GetSecurityType());
@@ -257,7 +257,7 @@ TEST(Symbol, Stock) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(Symbol, FuturesOk) {
+TEST(Lib_Symbol, FuturesOk) {
   {
     const lib::Symbol symbol("XXX/USD:NYMEX:FUT");
     EXPECT_EQ(lib::SECURITY_TYPE_FUTURES, symbol.GetSecurityType());
@@ -355,7 +355,7 @@ TEST(Symbol, FuturesOk) {
   }
 }
 
-TEST(Symbol, FuturesErrors) {
+TEST(Lib_Symbol, FuturesErrors) {
   try {
     lib::Symbol("XXX/20161328/USD::FUT", lib::SECURITY_TYPE_FUTURES,
                 lib::CURRENCY_AUD);
@@ -385,7 +385,7 @@ TEST(Symbol, FuturesErrors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(Symbol, OptionsAsString) {
+TEST(Lib_Symbol, OptionsAsString) {
   lib::Symbol symbol;
   symbol.SetSecurityType(lib::SECURITY_TYPE_OPTIONS);
   symbol.SetSymbol("XXXX");
@@ -400,7 +400,7 @@ TEST(Symbol, OptionsAsString) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(Symbol, Index) {
+TEST(Lib_Symbol, Index) {
   {
     const lib::Symbol symbol("XXX/USD:NYMEX:INDEX");
     EXPECT_EQ(lib::SECURITY_TYPE_INDEX, symbol.GetSecurityType());

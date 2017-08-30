@@ -35,7 +35,8 @@ class Security : public trdk::Security {
   //! @todo Fix when Google Test will support noexcept.
   const trdk::Lib::Symbol &GetSymbol() const noexcept override {
     if (!m_symbol) {
-      return Security::GetSymbol();
+      AssertFail("Symbol is not set for Security mock-object");
+      terminate();
     }
     return *m_symbol;
   }

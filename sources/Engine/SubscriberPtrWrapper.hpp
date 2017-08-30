@@ -35,6 +35,7 @@ class SubscriberPtrWrapper {
   struct BrokerPosition {
     trdk::Security *security;
     Qty qty;
+    Volume volume;
     bool isInitial;
   };
 
