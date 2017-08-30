@@ -34,9 +34,8 @@ bool Trend::Update(const Price &lastPrice, double controlValue) {
   if (isRising == m_isRising) {
     return false;
   }
-  const bool isNewTrand = boost::indeterminate(m_isRising);
   m_isRising = std::move(isRising);
-  return !isNewTrand;
+  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -130,7 +129,6 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
                                           const Qty &qty,
                                           const Volume &volume,
                                           bool isInitial) {
-  Assert(isInitial);
   Assert(&security == &GetTradingSecurity());
   if (&security != &GetTradingSecurity() || !isInitial || qty == 0) {
     GetLog().Debug(
