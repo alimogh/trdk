@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 23:52:23
+ *   Created: 2017/08/30 10:04:46
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "DocFeelsSmaTrend.hpp"
+#include "DocFeelsBbTrend.hpp"
 #include "Core/Position.hpp"
-#include "Services/MovingAverageService.hpp"
+#include "Services/BollingerBandsService.hpp"
 #include "DocFeelsPositionController.hpp"
 
 using namespace trdk;
@@ -20,17 +20,19 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Services;
 using namespace trdk::Strategies::DocFeels;
 
-SmaTrend::SmaTrend(const Lib::IniSectionRef &) {}
+BbTrend::BbTrend(const Lib::IniSectionRef &) {}
 
-bool SmaTrend::OnServiceStart(const Service &service) {
-  return SetService<MovingAverageService>(service);
+bool BbTrend::OnServiceStart(const Service &service) {
+  return SetService<BollingerBandsService>(service);
 }
 
-Price SmaTrend::GetUpperControlValue() const { return GetControlValue(); }
-Price SmaTrend::GetLowerControlValue() const { return GetControlValue(); }
-
-Price SmaTrend::GetControlValue() const {
-  const auto &ma = GetService<MovingAverageService>();
-  Assert(!ma.IsEmpty());
-  return ma.GetLastPoint().value;
+Price BbTrend::GetUpperControlValue() const {
+  const auto &bb = GetService<BollingerBandsService>();
+  Assert(!bb.IsEmpty());
+  return bb.GetLastPoint().high;
+}
+Price BbTrend::GetLowerControlValue() const {
+  const auto &bb = GetService<BollingerBandsService>();
+  Assert(!bb.IsEmpty());
+  return bb.GetLastPoint().low;
 }

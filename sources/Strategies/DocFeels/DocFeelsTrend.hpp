@@ -23,12 +23,19 @@ class Trend : public TradingLib::Trend {
 
  public:
   virtual bool OnServiceStart(const trdk::Service &) = 0;
-  virtual Price GetControlValue() const = 0;
+  virtual Price GetUpperControlValue() const = 0;
+  virtual Price GetLowerControlValue() const = 0;
 
  public:
   bool Update(const Price &price) {
-    const auto &controlValue = GetControlValue();
-    return price == controlValue ? false : SetIsRising(price > controlValue);
+    AssertLe(GetLowerControlValue(), GetUpperControlValue());
+    if (price > GetUpperControlValue()) {
+      return SetIsRising(true);
+    } else if (price < GetLowerControlValue()) {
+      return SetIsRising(false);
+    } else {
+      return false;
+    }
   }
 
  protected:

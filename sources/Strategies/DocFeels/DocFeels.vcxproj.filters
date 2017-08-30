@@ -43,6 +43,9 @@
     <ClCompile Include="DocFeelsSmaTrend.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DocFeelsBbTrend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DocFeels.rc">
@@ -74,10 +77,33 @@
     <ClInclude Include="DocFeelsPositionController.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DocFeelsBbTrend.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="DocFeels.def">
       <Filter>Header Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\Services.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\Services_dbg.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\Services_test.lib">
+      <Filter>Lib Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>

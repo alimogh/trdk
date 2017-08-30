@@ -1,3 +1,4 @@
 EXPORTS
 	CreateSmaStrategy
+	CreateBbStrategy
 	GetTrdkModuleVersionInfoV1

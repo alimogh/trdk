@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "DocFeelsBbTrend.hpp"
 #include "DocFeelsSmaTrend.hpp"
 #include "DocFeelsStrategy.hpp"
 #include "Common/VersionInfo.hpp"
@@ -24,6 +25,12 @@ boost::shared_ptr<Strategy> CreateSmaStrategy(Context &context,
                                               const IniSectionRef &conf) {
   return boost::make_shared<df::Strategy>(
       context, instanceName, conf, boost::make_shared<df::SmaTrend>(conf));
+}
+boost::shared_ptr<Strategy> CreateBbStrategy(Context &context,
+                                             const std::string &instanceName,
+                                             const IniSectionRef &conf) {
+  return boost::make_shared<df::Strategy>(
+      context, instanceName, conf, boost::make_shared<df::BbTrend>(conf));
 }
 
 extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {

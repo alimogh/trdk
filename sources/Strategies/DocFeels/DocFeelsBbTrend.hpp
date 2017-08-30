@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 18:53:27
+ *   Created: 2017/08/30 10:02:14
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -15,18 +15,15 @@ namespace trdk {
 namespace Strategies {
 namespace DocFeels {
 
-class SmaTrend : public Trend {
+class BbTrend : public Trend {
  public:
-  explicit SmaTrend(const Lib::IniSectionRef &);
-  virtual ~SmaTrend() override = default;
+  explicit BbTrend(const Lib::IniSectionRef &);
+  virtual ~BbTrend() override = default;
 
  public:
   virtual bool OnServiceStart(const trdk::Service &) override;
   virtual Price GetUpperControlValue() const override;
   virtual Price GetLowerControlValue() const override;
-
- private:
-  Price GetControlValue() const;
 };
 }
 }

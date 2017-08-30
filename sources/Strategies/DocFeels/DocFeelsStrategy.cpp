@@ -101,13 +101,15 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   const bool isTrendChanged = m_trend->Update(price);
 
   GetTradingLog().Write(
-      "trend\t%1%\t%2%\tprice=%3%\tcontrol=%4%", [&](TradingRecord &record) {
+      "trend\t%1%\t%2%\tprice=%3$.8f\tcontrol=%4$.8f-%5$.8f",
+      [&](TradingRecord &record) {
         record % (isTrendChanged ? "changed" : "not-changed")  // 1
             %
             (m_trend->IsRising() ? "rising"
                                  : m_trend->IsFalling() ? "falling" : "-")  // 2
             % price                                                         // 3
-            % m_trend->GetControlValue();                                   // 4
+            % m_trend->GetLowerControlValue()                               // 4
+            % m_trend->GetUpperControlValue();                              // 5
       });
 
   if (isTrendChanged) {
