@@ -748,7 +748,7 @@ BarCollectionService::BarCollectionService(Context &context,
 
 BarCollectionService::~BarCollectionService() {}
 
-const pt::ptime &BarCollectionService::GetLastDataTime() const {
+pt::ptime BarCollectionService::GetLastDataTime() const {
   return GetLastBar().time;
 }
 

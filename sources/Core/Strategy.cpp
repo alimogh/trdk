@@ -270,10 +270,10 @@ class Strategy::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(Strategy &strategy,
-                          const uuids::uuid &typeId,
+                          const std::string &typeUuid,
                           const IniSectionRef &conf)
       : m_strategy(strategy),
-        m_typeId(typeId),
+        m_typeId(boost::uuids::string_generator()(typeUuid)),
         m_title(conf.ReadKey("title")),
         m_tradingMode(
             ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
@@ -325,12 +325,12 @@ class Strategy::Implementation : private boost::noncopyable {
 //////////////////////////////////////////////////////////////////////////
 
 Strategy::Strategy(trdk::Context &context,
-                   const uuids::uuid &typeId,
+                   const std::string &typeUuid,
                    const std::string &implementationName,
                    const std::string &instanceName,
                    const IniSectionRef &conf)
     : Consumer(context, "Strategy", implementationName, instanceName, conf),
-      m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {
+      m_pimpl(boost::make_unique<Implementation>(*this, typeUuid, conf)) {
   std::string dropCopyInstanceIdStr = "not used";
   GetContext().InvokeDropCopy([this,
                                &dropCopyInstanceIdStr](DropCopy &dropCopy) {

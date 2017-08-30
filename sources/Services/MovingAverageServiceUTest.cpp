@@ -415,7 +415,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(MovingAverageService,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST(MovingAverageServiceTyped, DropCopy) {
+TEST(Services_MovingAverageServiceTyped, DropCopy) {
   const lib::IniString settings(
       "[Section]\n"
       "id = 00000000-0000-0000-0000-000000000001\n"

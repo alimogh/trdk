@@ -18,7 +18,7 @@ using namespace testing;
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
 
-TEST(SecurityTest, Request) {
+TEST(Core_SecurityTest, Request) {
   using Request = trdk::Security::Request;
 
   {

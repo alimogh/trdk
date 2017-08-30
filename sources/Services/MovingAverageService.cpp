@@ -409,7 +409,7 @@ MovingAverageService::MovingAverageService(Context &context,
 
 MovingAverageService::~MovingAverageService() {}
 
-const pt::ptime &MovingAverageService::GetLastDataTime() const {
+pt::ptime MovingAverageService::GetLastDataTime() const {
   return GetLastPoint().time;
 }
 

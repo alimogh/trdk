@@ -67,8 +67,7 @@ mk::Strategy::Strategy(Context &context,
                        const IniSectionRef &conf,
                        const boost::shared_ptr<Trend> &trend)
     : Base(context,
-           boost::uuids::string_generator()(
-               "{ade86a15-32fe-41eb-a2b8-b7094e02669e}"),
+           "{ade86a15-32fe-41eb-a2b8-b7094e02669e}",
            "MrigeshKejriwal",
            instanceName,
            conf),

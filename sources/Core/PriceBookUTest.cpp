@@ -41,7 +41,7 @@ void TestPriceBookClean(trdk::PriceBook &book) {
 }
 }
 
-TEST(BookPriceTest, NewBook) {
+TEST(Core_BookPriceTest, NewBook) {
   {
     trdk::PriceBook book;
     EXPECT_EQ(book.GetTime(), pt::not_a_date_time);
@@ -57,7 +57,7 @@ TEST(BookPriceTest, NewBook) {
   }
 }
 
-TEST(BookPriceTest, Level) {
+TEST(Core_BookPriceTest, Level) {
   trdk::PriceBook::Level level;
 
   EXPECT_EQ(level.GetTime(), pt::not_a_date_time);
@@ -92,7 +92,7 @@ TEST(BookPriceTest, Level) {
   EXPECT_DOUBLE_EQ(qty * 3, level2.GetQty());
 }
 
-TEST(BookPriceTest, SetTime) {
+TEST(Core_BookPriceTest, SetTime) {
   trdk::PriceBook book;
   EXPECT_EQ(book.GetTime(), pt::not_a_date_time);
   const pt::ptime &time = pt::microsec_clock::local_time();
@@ -296,7 +296,7 @@ void TestRandomPriceBookLevelsUpdate(trdk::PriceBook &book, size_t size) {
   }
 }
 
-TEST(BookPriceTest, UpdateRandomLevels) {
+TEST(Core_BookPriceTest, UpdateRandomLevels) {
   trdk::PriceBook book;
   {
     SCOPED_TRACE("Full");
@@ -347,7 +347,7 @@ void TestRandomPriceBookLevelsAdd(trdk::PriceBook &book, size_t size) {
   }
 }
 
-TEST(BookPriceTest, AddRandomLevels) {
+TEST(Core_BookPriceTest, AddRandomLevels) {
   trdk::PriceBook book;
   {
     SCOPED_TRACE("Full");
@@ -364,7 +364,7 @@ TEST(BookPriceTest, AddRandomLevels) {
   }
 }
 
-TEST(BookPriceTest, UpdatePredefinedLevels) {
+TEST(Core_BookPriceTest, UpdatePredefinedLevels) {
   trdk::PriceBook book;
   trdk::PriceBook::Bid &bid = book.GetBid();
   trdk::PriceBook::Ask &ask = book.GetAsk();
@@ -445,7 +445,7 @@ TEST(BookPriceTest, UpdatePredefinedLevels) {
   EXPECT_THROW(ask.PopTop(), trdk::Lib::LogicError);
 }
 
-TEST(BookPriceTest, AddPredefinedLevels) {
+TEST(Core_BookPriceTest, AddPredefinedLevels) {
   trdk::PriceBook book;
   trdk::PriceBook::Bid &bid = book.GetBid();
   trdk::PriceBook::Ask &ask = book.GetAsk();

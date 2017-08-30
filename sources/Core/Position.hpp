@@ -51,7 +51,7 @@ class TRDK_CORE_API Position
 
   class TRDK_CORE_API Algo : private boost::noncopyable {
    public:
-    virtual ~Algo() noexcept;
+    virtual ~Algo() noexcept = default;
 
    public:
     //! Runs algorithm iteration.

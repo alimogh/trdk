@@ -104,7 +104,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
  public:
   explicit Strategy(trdk::Context &,
-                    const boost::uuids::uuid &typeId,
+                    const std::string &typeUuid,
                     const std::string &implementationName,
                     const std::string &instanceName,
                     const trdk::Lib::IniSectionRef &);
