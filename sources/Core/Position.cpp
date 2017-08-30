@@ -613,9 +613,10 @@ class Position::Implementation : private boost::noncopyable {
 
     m_open.orders.emplace_back(std::move(now), boost::none, m_planedQty,
                                generateUuid());
-    auto &order = m_open.orders.back();
-
     try {
+      auto &order = m_open.orders.back();
+      order.isActive = false;
+
       m_open.time = order.time;
       m_open.qty = order.qty;
       m_open.OnNewTrade(TradingSystem::TradeInfo{
