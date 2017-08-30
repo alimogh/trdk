@@ -618,7 +618,6 @@ class Position::Implementation : private boost::noncopyable {
       order.isActive = false;
 
       m_open.time = order.time;
-      m_open.qty = order.qty;
       m_open.OnNewTrade(TradingSystem::TradeInfo{
           "", order.qty, m_security.ScalePrice(openPrice)});
 
@@ -634,8 +633,6 @@ class Position::Implementation : private boost::noncopyable {
     }
 
     ReportOpeningStateRestpration();
-
-    SignalUpdate();
   }
 
   template <typename OpenImpl>
