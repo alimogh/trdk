@@ -57,7 +57,7 @@ TEST(TradingLib_SourcesSynchronizer, OneStartedEarly2) {
   }
 }
 
-TEST(SourcesSynchronizer, OneStartedEarly3) {
+TEST(TradingLib_SourcesSynchronizer, OneStartedEarly3) {
   Mocks::Service service1;
   Mocks::Service service2;
   Mocks::Service service3;
@@ -70,16 +70,14 @@ TEST(SourcesSynchronizer, OneStartedEarly3) {
 
   pt::ptime service1Time(gr::date(2017, 01, 9), pt::time_duration(0, 25, 43));
 
-  EXPECT_CALL(service1, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service1Time));
+  EXPECT_CALL(service1, GetLastDataTime()).WillRepeatedly(Return(service1Time));
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_FALSE(sync.Sync(service1)) << i;
     service1Time += pt::minutes(5);
   }
 
   auto service2Time = service1Time;
-  EXPECT_CALL(service2, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service2Time));
+  EXPECT_CALL(service2, GetLastDataTime()).WillRepeatedly(Return(service2Time));
   EXPECT_FALSE(sync.Sync(service2));
   EXPECT_FALSE(sync.Sync(service1));
 
@@ -91,8 +89,7 @@ TEST(SourcesSynchronizer, OneStartedEarly3) {
   }
 
   auto service3Time = service1Time;
-  EXPECT_CALL(service3, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service3Time));
+  EXPECT_CALL(service3, GetLastDataTime()).WillRepeatedly(Return(service3Time));
   EXPECT_FALSE(sync.Sync(service3));
   EXPECT_FALSE(sync.Sync(service1));
   EXPECT_TRUE(sync.Sync(service2));
@@ -122,7 +119,7 @@ TEST(SourcesSynchronizer, OneStartedEarly3) {
   }
 }
 
-TEST(SourcesSynchronizer, LostUpdate) {
+TEST(TradingLib_SourcesSynchronizer, LostUpdate) {
   Mocks::Service service1;
   Mocks::Service service2;
 
@@ -133,14 +130,12 @@ TEST(SourcesSynchronizer, LostUpdate) {
 
   pt::ptime service1Time(gr::date(2017, 01, 9), pt::time_duration(0, 25, 43));
 
-  EXPECT_CALL(service1, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service1Time));
+  EXPECT_CALL(service1, GetLastDataTime()).WillRepeatedly(Return(service1Time));
   EXPECT_FALSE(sync.Sync(service1));
 
   service1Time += pt::minutes(5);
   auto service2Time = service1Time;
-  EXPECT_CALL(service2, GetLastDataTime())
-      .WillRepeatedly(ReturnRef(service2Time));
+  EXPECT_CALL(service2, GetLastDataTime()).WillRepeatedly(Return(service2Time));
   EXPECT_FALSE(sync.Sync(service2));
   EXPECT_TRUE(sync.Sync(service1));
 
@@ -167,8 +162,8 @@ TEST(SourcesSynchronizer, UnknownService) {
   ASSERT_EQ(2, sync.GetSize());
 
   pt::ptime time(gr::date(2017, 01, 9), pt::time_duration(0, 25, 43));
-  EXPECT_CALL(service1, GetLastDataTime()).WillRepeatedly(ReturnRef(time));
-  EXPECT_CALL(service2, GetLastDataTime()).WillRepeatedly(ReturnRef(time));
+  EXPECT_CALL(service1, GetLastDataTime()).WillRepeatedly(Return(time));
+  EXPECT_CALL(service2, GetLastDataTime()).WillRepeatedly(Return(time));
   EXPECT_CALL(service3, GetLastDataTime()).Times(0);
 
   EXPECT_FALSE(sync.Sync(service3));
