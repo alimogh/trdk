@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MrigeshKejriwalStrategy.hpp"
+#include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -24,38 +25,75 @@ namespace mk = trdk::Strategies::MrigeshKejriwal;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Trend::Trend() : m_isRising(boost::indeterminate) {}
-
 bool Trend::Update(const Price &lastPrice, double controlValue) {
   if (lastPrice == controlValue) {
     return false;
   }
-  const boost::tribool isRising(controlValue < lastPrice);
-  if (isRising == m_isRising) {
-    return false;
-  }
-  m_isRising = std::move(isRising);
-  return true;
+  return SetIsRising(controlValue < lastPrice);
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 
-mk::Strategy::Settings::Settings(const IniSectionRef &conf)
+PositionController::PositionController(trdk::Strategy &strategy,
+                                       const Trend &trend,
+                                       const mk::Settings &settings)
+    : Base(strategy), m_trend(trend), m_settings(settings) {}
+
+Position &PositionController::OpenPosition(Security &security,
+                                           const Milestones &delayMeasurement) {
+  Assert(m_trend.IsExistent());
+  return OpenPosition(security, m_trend.IsRising(), delayMeasurement);
+}
+
+Position &PositionController::OpenPosition(Security &security,
+                                           bool isLong,
+                                           const Milestones &delayMeasurement) {
+  auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
+  result.AttachAlgo(std::make_unique<TradingLib::StopLossShare>(
+      m_settings.maxLossShare, result));
+  return result;
+}
+
+void PositionController::ContinuePosition(Position &position) {
+  Assert(!position.HasActiveOrders());
+  position.Open(position.GetMarketOpenPrice());
+}
+
+void PositionController::ClosePosition(Position &position,
+                                       const CloseReason &reason) {
+  Assert(!position.HasActiveOrders());
+  position.SetCloseReason(reason);
+  position.Close(position.GetMarketClosePrice());
+}
+
+Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
+
+bool PositionController::IsPositionCorrect(const Position &position) const {
+  return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+mk::Settings::Settings(const IniSectionRef &conf)
     : qty(conf.ReadTypedKey<Qty>("qty")),
       numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")),
-      costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")) {}
+      costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
+      maxLossShare(conf.ReadTypedKey<double>("max_loss_share")) {}
 
-void mk::Strategy::Settings::Validate() const {
+void mk::Settings::Validate() const {
   if (qty < 1) {
     throw Exception("Position size is not set");
   }
 }
 
-void mk::Strategy::Settings::Log(Module::Log &log) const {
+void mk::Settings::Log(Module::Log &log) const {
   boost::format info(
-      "Position size: %1%. Number of history hours: %2%. Cost of funds: %3%.");
+      "Position size: %1%. Number of history hours: %2%. Cost of funds: %3%. "
+      "Max. share of loss: %4%.");
   info % qty                  // 1
       % numberOfHistoryHours  // 2
-      % costOfFunds;          // 3
+      % costOfFunds           // 3
+      % maxLossShare;         // 4
   log.Info(info.str().c_str());
 }
 
@@ -75,6 +113,7 @@ mk::Strategy::Strategy(Context &context,
       m_underlyingSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
+      m_positionController(*this, *m_trend, m_settings),
       m_isRollover(false),
       m_isTradingSecurityActivationReported(false) {
   m_settings.Log(GetLog());
@@ -130,30 +169,16 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
                                           const Volume &volume,
                                           bool isInitial) {
   Assert(&security == &GetTradingSecurity());
-  if (&security != &GetTradingSecurity() || !isInitial || qty == 0) {
-    GetLog().Debug(
-        "Skipped broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
+  if (&security != &GetTradingSecurity()) {
+    GetLog().Error(
+        "Wrong wrong broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
         qty,                                // 1
         volume,                             // 2
         security,                           // 3
         isInitial ? "initial" : "online");  // 4
-    return;
+    throw Exception("Broker position for wrong security");
   }
-
-  const auto price = abs(volume / qty);
-  GetLog().Info(
-      "Accepting broker position %1% (volume %2$.8f, start price %3$.8f) for "
-      "\"%4%\"...",
-      qty,        // 1
-      volume,     // 2
-      price,      // 3
-      security);  // 4
-
-  auto position = qty > 0 ? CreatePosition<LongPosition>(
-                                security.ScalePrice(price), qty, Milestones())
-                          : CreatePosition<ShortPosition>(
-                                security.ScalePrice(price), -qty, Milestones());
-  position->RestoreOpenState(price);
+  m_positionController.OnBrokerPositionUpdate(security, qty, volume, isInitial);
 }
 
 void mk::Strategy::OnServiceStart(const Service &service) {
@@ -173,63 +198,8 @@ void mk::Strategy::OnMaServiceStart(const MovingAverageService &service) {
 }
 
 void mk::Strategy::OnPositionUpdate(Position &position) {
-  AssertLt(0, position.GetNumberOfOpenOrders());
-
   FinishRollOver(position);
-
-  if (position.IsCompleted()) {
-    // No active order, no active qty...
-
-    Assert(!position.HasActiveOrders());
-
-    if (position.GetNumberOfCloseOrders()) {
-      // Position fully closed.
-      ReportOperation(position);
-      // Opening opposite position.
-      OpenPosition(!position.IsLong(), Milestones());
-      return;
-    }
-
-    // Open order was canceled by some condition. Checking open
-    // signal again and sending new open order...
-    if (m_trend->IsRising() == position.IsLong()) {
-      ContinuePosition(position);
-    }
-
-    // Position will be deleted if was not continued.
-
-  } else if (position.GetNumberOfCloseOrders()) {
-    // Position closing started.
-
-    Assert(!position.HasActiveOpenOrders());
-    AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
-
-    if (position.HasActiveCloseOrders()) {
-      // Closing in progress.
-    } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
-      // Close order was canceled by some condition. Sending
-      // new close order.
-      ClosePosition(position);
-    }
-
-  } else if (position.HasActiveOrders()) {
-    // Opening in progress.
-
-    Assert(!position.HasActiveCloseOrders());
-
-    if (m_trend->IsRising() != position.IsLong()) {
-      // Close signal received, closing position...
-      ClosePosition(position);
-    }
-
-  } else if (m_trend->IsRising() == position.IsLong()) {
-    // Holding position and waiting for close signal...
-    AssertLt(0, position.GetActiveQty());
-  } else {
-    // Holding position and received close signal...
-    AssertLt(0, position.GetActiveQty());
-    ClosePosition(position);
-  }
+  m_positionController.OnPositionUpdate(position);
 }
 
 void mk::Strategy::OnLevel1Tick(Security &security,
@@ -264,9 +234,7 @@ void mk::Strategy::OnLevel1Tick(Security &security,
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}
 
 void mk::Strategy::OnPostionsCloseRequest() {
-  throw MethodDoesNotImplementedError(
-      "trdk::Strategies::MrigeshKejriwal::Strategy"
-      "::OnPostionsCloseRequest is not implemented");
+  m_positionController.OnPostionsCloseRequest();
 }
 
 void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
@@ -298,102 +266,7 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
     return;
   }
 
-  Position *position = nullptr;
-  if (!GetPositions().IsEmpty()) {
-    AssertEq(1, GetPositions().GetSize());
-    position = &*GetPositions().GetBegin();
-    if (position->IsCompleted()) {
-      position = nullptr;
-    } else if (m_trend->IsRising() == position->IsLong()) {
-      delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
-      return;
-    }
-  }
-
-  if (!position) {
-    if (boost::indeterminate(m_trend->IsRising())) {
-      return;
-    }
-  } else if (position->IsCancelling() || position->HasActiveCloseOrders()) {
-    return;
-  }
-
-  CancelRollOver();
-
-  delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
-
-  if (!position) {
-    Assert(m_trend->IsRising() || !m_trend->IsRising());
-    OpenPosition(m_trend->IsRising(), delayMeasurement);
-  } else if (position->HasActiveOpenOrders()) {
-    try {
-      Verify(position->CancelAllOrders());
-    } catch (const TradingSystem::UnknownOrderCancelError &ex) {
-      GetTradingLog().Write("failed to cancel order");
-      GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
-      return;
-    }
-  } else {
-    ClosePosition(*position);
-  }
-
-  delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
-}
-
-void mk::Strategy::OpenPosition(bool isLong,
-                                const Milestones &delayMeasurement) {
-  auto position = isLong ? CreatePosition<LongPosition>(
-                               GetTradingSecurity().GetAskPriceScaled(),
-                               m_settings.qty, delayMeasurement)
-                         : CreatePosition<ShortPosition>(
-                               GetTradingSecurity().GetBidPriceScaled(),
-                               m_settings.qty, delayMeasurement);
-  ContinuePosition(*position);
-}
-
-void mk::Strategy::ContinuePosition(Position &position) {
-  Assert(!position.HasActiveOrders());
-  position.Open(position.GetMarketOpenPrice());
-}
-
-void mk::Strategy::ClosePosition(Position &position) {
-  Assert(!position.HasActiveOrders());
-  position.SetCloseReason(CLOSE_REASON_SIGNAL);
-  position.Close(position.GetMarketClosePrice());
-}
-
-void mk::Strategy::ReportOperation(const Position &pos) {
-  if (!m_strategyLog.is_open()) {
-    m_strategyLog = OpenDataLog("csv");
-    m_strategyLog << "Date,Open Start Time,Open Time,Opening Duration"
-                  << ",Close Start Time,Close Time,Closing Duration"
-                  << ",Position Duration,Type,P&L Volume,P&L %,Is Profit"
-                  << ",Is Loss,Qty,Open Price,Open Orders,Open Trades"
-                  << ",Close Reason,Close Price,Close Orders, Close Trades,ID"
-                  << std::endl;
-  }
-
-  m_strategyLog << pos.GetOpenStartTime().date() << ','
-                << ExcelTextField(pos.GetOpenStartTime().time_of_day()) << ','
-                << ExcelTextField(pos.GetOpenTime().time_of_day()) << ','
-                << ExcelTextField(pos.GetOpenTime() - pos.GetOpenStartTime())
-                << ',' << ExcelTextField(pos.GetCloseStartTime().time_of_day())
-                << ',' << ExcelTextField(pos.GetCloseTime().time_of_day())
-                << ','
-                << ExcelTextField(pos.GetCloseTime() - pos.GetCloseStartTime())
-                << ',' << ExcelTextField(pos.GetCloseTime() - pos.GetOpenTime())
-                << ',' << pos.GetType() << ',' << pos.GetRealizedPnlVolume()
-                << ',' << pos.GetRealizedPnlRatio()
-                << (pos.IsProfit() ? ",1,0" : ",0,1") << ','
-                << pos.GetOpenedQty() << ','
-                << GetTradingSecurity().DescalePrice(pos.GetOpenAvgPrice())
-                << ',' << pos.GetNumberOfOpenOrders() << ','
-                << pos.GetNumberOfOpenTrades() << ',' << pos.GetCloseReason()
-                << ','
-                << GetTradingSecurity().DescalePrice(pos.GetCloseAvgPrice())
-                << ',' << pos.GetNumberOfCloseOrders() << ','
-                << pos.GetNumberOfCloseTrades() << ',' << pos.GetId()
-                << std::endl;
+  m_positionController.OnSignal(GetTradingSecurity(), delayMeasurement);
 }
 
 bool mk::Strategy::StartRollOver() {
@@ -464,7 +337,8 @@ bool mk::Strategy::FinishRollOver(Position &oldPosition) {
   } else {
     m_isTradingSecurityActivationReported = false;
   }
-  OpenPosition(oldPosition.IsLong(), Milestones());
+  m_positionController.OpenPosition(GetTradingSecurity(), oldPosition.IsLong(),
+                                    Milestones());
   m_isRollover = false;
   return true;
 }

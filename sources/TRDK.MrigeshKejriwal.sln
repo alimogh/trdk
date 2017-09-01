@@ -26,6 +26,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Services", "Services\Servic
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mrigesh Kejriwal", "Strategies\MrigeshKejriwal\MrigeshKejriwal.vcxproj", "{9F5E113C-276A-43BF-A8F6-8A9BEE1AD8A1}"
 	ProjectSection(ProjectDependencies) = postProject
+		{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4} = {419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9} = {4F025D92-8F15-4A05-97B6-CA680CB090D9}
 	EndProjectSection
 EndProject
