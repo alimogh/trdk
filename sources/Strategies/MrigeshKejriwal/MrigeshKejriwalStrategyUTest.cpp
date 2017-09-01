@@ -48,7 +48,8 @@ TEST(MrigeshKejriwal_Strategy, Setup) {
       "trading_mode = paper\n"
       "qty=99\n"
       "history_hours=129\n"
-      "cost_of_funds=0.12\n");
+      "cost_of_funds=0.12\n"
+      "max_loss_share = 0.03\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
@@ -108,8 +109,9 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
       "title = Test\n"
       "is_enabled = true\n"
       "trading_mode = paper\n"
-      "qty=99\n"
-      "cost_of_funds=0.12\n");
+      "qty = 99\n"
+      "cost_of_funds = 0.12\n"
+      "max_loss_share = 0.03\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
@@ -234,50 +236,73 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
 
 TEST(MrigeshKejriwal_Strategy, Trend) {
   mk::Trend trend;
-  EXPECT_TRUE(boost::indeterminate(trend.IsRising()));
+  EXPECT_FALSE(trend.IsRising());
+  EXPECT_FALSE(trend.IsFalling());
+  EXPECT_FALSE(trend.IsExistent());
   {
-    // Waiting for 1st signal.
-    ASSERT_FALSE(trend.Update(5, 20));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    ASSERT_TRUE(trend.Update(5, 20));
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(10, 20));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(20, 30));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_TRUE(trend.Update(40, 30));
-    EXPECT_EQ(boost::tribool(true), trend.IsRising());
+    EXPECT_TRUE(trend.IsRising());
+    EXPECT_FALSE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(51, 50));
-    EXPECT_EQ(boost::tribool(true), trend.IsRising());
+    EXPECT_TRUE(trend.IsRising());
+    EXPECT_FALSE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(51, 50));
-    EXPECT_EQ(boost::tribool(true), trend.IsRising());
+    EXPECT_TRUE(trend.IsRising());
+    EXPECT_FALSE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(50, 50));
-    EXPECT_EQ(boost::tribool(true), trend.IsRising());
+    EXPECT_TRUE(trend.IsRising());
+    EXPECT_FALSE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_TRUE(trend.Update(49, 50));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_FALSE(trend.Update(50, 50));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_TRUE(trend.Update(51, 50));
-    EXPECT_EQ(boost::tribool(true), trend.IsRising());
+    EXPECT_TRUE(trend.IsRising());
+    EXPECT_FALSE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
   {
     ASSERT_TRUE(trend.Update(49, 50));
-    EXPECT_EQ(boost::tribool(false), trend.IsRising());
+    EXPECT_FALSE(trend.IsRising());
+    EXPECT_TRUE(trend.IsFalling());
+    EXPECT_TRUE(trend.IsExistent());
   }
 }

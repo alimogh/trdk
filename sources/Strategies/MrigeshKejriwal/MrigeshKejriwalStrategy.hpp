@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "TradingLib/PositionController.hpp"
+#include "TradingLib/Trend.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Strategy.hpp"
 #include "Services/MovingAverageService.hpp"
@@ -21,23 +23,55 @@ namespace MrigeshKejriwal {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend {
+struct Settings {
+  Qty qty;
+  uint16_t numberOfHistoryHours;
+  double costOfFunds;
+  double maxLossShare;
+
+  explicit Settings(const Lib::IniSectionRef &);
+
+  void Validate() const;
+  void Log(Module::Log &) const;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend : public TradingLib::Trend {
  public:
-  Trend();
   virtual ~Trend() = default;
 
  public:
   virtual bool Update(const Price &lastPrice, double controlValue);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class PositionController : public TradingLib::PositionController {
+ public:
+  typedef TradingLib::PositionController Base;
 
  public:
-  //! Actual trend.
-  /** @return True, if trend is "rising", false if trend is "falling", not
-    *         true and not false if there is no trend at this moment.
-    */
-  virtual const boost::tribool &IsRising() const { return m_isRising; }
+  explicit PositionController(Strategy &, const Trend &, const Settings &);
+  virtual ~PositionController() override = default;
+
+ public:
+  virtual Position &OpenPosition(
+      Security &, const Lib::TimeMeasurement::Milestones &) override;
+  virtual Position &OpenPosition(
+      Security &,
+      bool isLong,
+      const Lib::TimeMeasurement::Milestones &) override;
+  virtual void ContinuePosition(Position &) override;
+  virtual void ClosePosition(Position &, const CloseReason &) override;
+
+ protected:
+  virtual trdk::Qty GetNewPositionQty() const override;
+  virtual bool IsPositionCorrect(const Position &position) const override;
 
  private:
-  boost::tribool m_isRising;
+  const Trend &m_trend;
+  const Settings &m_settings;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,18 +79,6 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Trend {
 class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
-
- private:
-  struct Settings {
-    Qty qty;
-    uint16_t numberOfHistoryHours;
-    double costOfFunds;
-
-    explicit Settings(const Lib::IniSectionRef &);
-
-    void Validate() const;
-    void Log(Module::Log &) const;
-  };
 
  public:
   explicit Strategy(
@@ -110,25 +132,6 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   void CheckSignal(const trdk::Price &tradePrice,
                    const trdk::Lib::TimeMeasurement::Milestones &);
 
-  void OpenPosition(bool isLong,
-                    const trdk::Lib::TimeMeasurement::Milestones &);
-
-  template <typename PositionType>
-  boost::shared_ptr<Position> CreatePosition(
-      const trdk::ScaledPrice &price,
-      const trdk::Qty &qty,
-      const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
-    return boost::make_shared<PositionType>(
-        *this, m_generateUuid(), 1,
-        GetTradingSystem(GetTradingSecurity().GetSource().GetIndex()),
-        GetTradingSecurity(), GetTradingSecurity().GetSymbol().GetCurrency(),
-        qty, price, delayMeasurement);
-  }
-  void ContinuePosition(trdk::Position &);
-  void ClosePosition(trdk::Position &);
-
-  void ReportOperation(const Position &);
-
   bool StartRollOver();
   void CancelRollOver();
   bool FinishRollOver();
@@ -137,17 +140,15 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
  private:
   const Settings m_settings;
 
-  boost::uuids::random_generator m_generateUuid;
-
   trdk::Security *m_tradingSecurity;
   trdk::Security *m_underlyingSecurity;
   const trdk::Services::MovingAverageService *m_ma;
 
   boost::shared_ptr<Trend> m_trend;
+  PositionController m_positionController;
 
   bool m_isRollover;
 
-  std::ofstream m_strategyLog;
   bool m_isTradingSecurityActivationReported;
 };
 

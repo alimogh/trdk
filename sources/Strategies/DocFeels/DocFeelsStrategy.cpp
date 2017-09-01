@@ -85,9 +85,7 @@ void df::Strategy::OnPositionUpdate(Position &position) {
 }
 
 void df::Strategy::OnPostionsCloseRequest() {
-  throw MethodDoesNotImplementedError(
-      "trdk::Strategies::DocFeels::Strategy::OnPostionsCloseRequest is not "
-      "implemented");
+  m_positionController.OnPostionsCloseRequest();
 }
 
 void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {

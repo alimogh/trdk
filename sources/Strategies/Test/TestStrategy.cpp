@@ -40,8 +40,8 @@ class PositionController : public TradingLib::PositionController {
   virtual ~PositionController() override = default;
 
  public:
-  virtual trdk::Position &OpenPosition(
-      Security &security, const Milestones &delayMeasurement) override {
+  virtual Position &OpenPosition(Security &security,
+                                 const Milestones &delayMeasurement) override {
     Assert(GetIsRising());
     return OpenPosition(security, *GetIsRising(), delayMeasurement);
   }
@@ -53,14 +53,17 @@ class PositionController : public TradingLib::PositionController {
     position.Open(position.GetMarketOpenPrice());
   }
 
-  virtual void ClosePosition(Position &position, const CloseReason &reason) {
+  virtual void ClosePosition(Position &position,
+                             const CloseReason &reason) override {
     Assert(!position.HasActiveOrders());
     position.SetCloseReason(reason);
     position.Close(position.GetMarketClosePrice());
   }
 
  protected:
-  virtual bool IsPositionCorrect(const Position &position) const {
+  virtual Qty GetNewPositionQty() const override { return 10; }
+
+  virtual bool IsPositionCorrect(const Position &position) const override {
     const auto &isRising = GetIsRising();
     return !isRising || *isRising == position.IsLong();
   }
@@ -128,9 +131,7 @@ class TestStrategy : public Strategy {
   }
 
   virtual void OnPostionsCloseRequest() override {
-    throw MethodDoesNotImplementedError(
-        "trdk::Strategies::Test::TestStrategy"
-        "::OnPostionsCloseRequest is not implemented");
+    m_positionController.OnPostionsCloseRequest();
   }
 
  private:

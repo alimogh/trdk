@@ -67,11 +67,13 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 
 trdk::Position &PositionController::OpenPosition(
     Security &security, bool isLong, const Milestones &delayMeasurement) {
+  const auto &qty = GetNewPositionQty();
   auto position =
-      isLong ? CreatePosition<LongPosition>(
-                   security, security.GetAskPriceScaled(), delayMeasurement)
-             : CreatePosition<ShortPosition>(
-                   security, security.GetBidPriceScaled(), delayMeasurement);
+      isLong
+          ? CreatePosition<LongPosition>(
+                security, qty, security.GetAskPriceScaled(), delayMeasurement)
+          : CreatePosition<ShortPosition>(
+                security, qty, security.GetBidPriceScaled(), delayMeasurement);
   ContinuePosition(*position);
   return *position;
 }
@@ -172,4 +174,40 @@ void PositionController::OnPositionUpdate(Position &position) {
       ClosePosition(position, CLOSE_REASON_SIGNAL);
     }
   }
+}
+
+void PositionController::OnPostionsCloseRequest() {
+  throw MethodDoesNotImplementedError(
+      "OnPostionsCloseRequest is not implemented");
+}
+
+void PositionController::OnBrokerPositionUpdate(Security &security,
+                                                const Qty &qty,
+                                                const Volume &volume,
+                                                bool isInitial) {
+  if (!isInitial || qty == 0) {
+    GetStrategy().GetLog().Debug(
+        "Skipped broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
+        qty,                                // 1
+        volume,                             // 2
+        security,                           // 3
+        isInitial ? "initial" : "online");  // 4
+    return;
+  }
+
+  const auto price = abs(volume / qty);
+  GetStrategy().GetLog().Info(
+      "Accepting broker position %1% (volume %2$.8f, start price %3$.8f) for "
+      "\"%4%\"...",
+      qty,        // 1
+      volume,     // 2
+      price,      // 3
+      security);  // 4
+
+  auto position =
+      qty > 0 ? CreatePosition<LongPosition>(
+                    security, qty, security.ScalePrice(price), Milestones())
+              : CreatePosition<ShortPosition>(
+                    security, -qty, security.ScalePrice(price), Milestones());
+  position->RestoreOpenState(price);
 }

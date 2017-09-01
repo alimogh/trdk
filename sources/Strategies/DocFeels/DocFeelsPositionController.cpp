@@ -30,9 +30,8 @@ Position &PositionController::OpenPosition(Security &security,
 Position &PositionController::OpenPosition(Security &security,
                                            bool isLong,
                                            const Milestones &delayMeasurement) {
-  using namespace trdk::TradingLib;
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  result.AttachAlgo(std::make_unique<StopLossShare>(0.2, result));
+  result.AttachAlgo(std::make_unique<TradingLib::StopLossShare>(0.2, result));
   return result;
 }
 
@@ -47,6 +46,8 @@ void PositionController::ClosePosition(Position &position,
   position.SetCloseReason(reason);
   position.Close(position.GetMarketClosePrice(), reason);
 }
+
+Qty PositionController::GetNewPositionQty() const { return 1; }
 
 bool PositionController::IsPositionCorrect(const Position &position) const {
   return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
