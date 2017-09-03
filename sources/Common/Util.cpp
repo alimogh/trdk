@@ -186,34 +186,7 @@ pt::ptime Lib::ConvertToTime(unsigned int dateAsInt, unsigned int timeAsInt) {
 }
 
 gr::date Lib::ConvertToDateFromYyyyMmDd(const std::string &source) {
-  uint32_t sourceInt;
-  try {
-    sourceInt = boost::lexical_cast<uint32_t>(source);
-  } catch (const boost::bad_lexical_cast &) {
-    boost::format error("Wrong YYYYMMDD-string format \"%1%\"");
-    error % source;
-    throw Exception(error.str().c_str());
-  }
-
-  struct {
-    uint16_t year;
-    uint8_t month;
-    uint8_t day;
-  } date;
-  date.year = uint16_t(sourceInt / 10000);
-  date.month = uint8_t((sourceInt - (date.year * 10000)) / 100);
-  if (date.month < 1 || date.month > 12) {
-    boost::format error("Wrong month format in YYYYMMDD-string \"%1%\"");
-    error % source;
-    throw Exception(error.str().c_str());
-  }
-  date.day = uint8_t(sourceInt - (date.year * 10000) - (date.month * 100));
-  if (date.day < 1 || date.day > 31) {
-    boost::format error("Wrong month day format in YYYYMMDD-string \"%1%\"");
-    error % source;
-    throw Exception(error.str().c_str());
-  }
-  return gr::date(date.year, date.month, date.day);
+  return gr::date_from_iso_string(source);
 }
 
 //////////////////////////////////////////////////////////////////////////

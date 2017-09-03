@@ -1747,7 +1747,7 @@ void Client::position(const IBString &account,
     boost::optional<gr::date> expiryDate;
     std::string expiryDateStr;
     if (!contract.expiry.empty()) {
-      expiryDate = gr::date_from_iso_string(contract.expiry);
+      expiryDate = ConvertToDateFromYyyyMmDd(contract.expiry);
       expiryDateStr = "/";
       expiryDateStr += gr::to_iso_extended_string(*expiryDate);
     }
