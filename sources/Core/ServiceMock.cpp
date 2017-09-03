@@ -21,7 +21,7 @@ namespace uuids = boost::uuids;
 Mocks::Service::Service()
     : trdk::Service(
           Dummies::Context::GetInstance(),
-          uuids::uuid(),
+          "{00000000-0000-0000-0000-000000000000}",
           "Mock",
           "Test",
           IniSectionRef(

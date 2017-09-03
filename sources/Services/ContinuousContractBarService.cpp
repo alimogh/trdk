@@ -281,7 +281,7 @@ ContinuousContractBarService::ContinuousContractBarService(
     const std::string &instanceName,
     const IniSectionRef &conf)
     : Base(context,
-           uuids::string_generator()("{2C1A33FF-D2B0-40F2-9C2A-B46306902712}"),
+           "{2C1A33FF-D2B0-40F2-9C2A-B46306902712}",
            "ContinuousContractBars",
            instanceName,
            conf),

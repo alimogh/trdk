@@ -41,11 +41,11 @@ BarService::Bar::Bar()
 //////////////////////////////////////////////////////////////////////////
 
 BarService::BarService(Context &context,
-                       const boost::uuids::uuid &typeId,
+                       const std::string &typeUuid,
                        const std::string &implementationName,
                        const std::string &instanceName,
                        const IniSectionRef &conf)
-    : Base(context, typeId, implementationName, instanceName, conf) {}
+    : Base(context, typeUuid, implementationName, instanceName, conf) {}
 
 BarService::~BarService() {}
 

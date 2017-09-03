@@ -271,12 +271,11 @@ Adx::ValueDoesNotExistError::ValueDoesNotExistError(const char *what) noexcept
 Adx::Adx(Context &context,
          const std::string &instanceName,
          const IniSectionRef &conf)
-    : Service(
-          context,
-          uuids::string_generator()("{e15e8918-c7a9-4875-a02f-c80f8ab4e90c}"),
-          "AdxIndicator",
-          instanceName,
-          conf),
+    : Service(context,
+              "{e15e8918-c7a9-4875-a02f-c80f8ab4e90c}",
+              "AdxIndicator",
+              instanceName,
+              conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 Adx::~Adx() noexcept {}

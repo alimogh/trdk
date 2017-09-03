@@ -274,12 +274,11 @@ class BollingerBandsService::Implementation : private boost::noncopyable {
 BollingerBandsService::BollingerBandsService(Context &context,
                                              const std::string &instanceName,
                                              const IniSectionRef &configuration)
-    : Service(
-          context,
-          uuids::string_generator()("{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}"),
-          "BollingerBands",
-          instanceName,
-          configuration),
+    : Service(context,
+              "{64bcd2ba-4ff6-4e0f-9c64-4e4dad0ae9b7}",
+              "BollingerBands",
+              instanceName,
+              configuration),
       m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {}
 
 BollingerBandsService::~BollingerBandsService() {}

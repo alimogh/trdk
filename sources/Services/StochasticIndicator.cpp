@@ -178,12 +178,11 @@ Stochastic::ValueDoesNotExistError::ValueDoesNotExistError(
 Stochastic::Stochastic(Context &context,
                        const std::string &instanceName,
                        const IniSectionRef &conf)
-    : Service(
-          context,
-          uuids::string_generator()("{349626de-1263-40cf-8abc-596392b19977}"),
-          "StochasticIndicator",
-          instanceName,
-          conf),
+    : Service(context,
+              "{349626de-1263-40cf-8abc-596392b19977}",
+              "StochasticIndicator",
+              instanceName,
+              conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 Stochastic::~Stochastic() noexcept {}

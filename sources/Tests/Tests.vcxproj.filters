@@ -123,10 +123,13 @@
     <ClCompile Include="..\Services\BarServiceMock.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
-    <ClCompile Include="..\Strategies\DocFeels\DocFeelsStrategyUTest.cpp">
+    <ClCompile Include="..\TradingLib\TrendUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\TradingLib\TrendUTest.cpp">
+    <ClCompile Include="..\Strategies\DocFeels\DocFeelsTradingStrategyUTest.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Strategies\DocFeels\DocFeelsCumulativeReturnServiceUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
   </ItemGroup>

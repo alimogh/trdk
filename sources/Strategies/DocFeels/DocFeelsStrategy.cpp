@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "DocFeelsStrategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "DocFeelsCumulativeReturnService.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -46,10 +47,13 @@ void df::Strategy::OnSecurityStart(Security &security,
 }
 
 void df::Strategy::OnServiceStart(const Service &service) {
+  if (dynamic_cast<const CumulativeReturnService *>(&service)) {
+    return;
+  }
   if (m_sourcesSync.GetSize() >= 2) {
     GetLog().Error(
-        "Strategy works with one bar service and one control service, but set "
-        "more (\"%1%\").",
+        "Strategy works with one bar service and one control service, but "
+        "set more (\"%1%\").",
         service);
     throw Exception("Too many services set for strategy");
   }

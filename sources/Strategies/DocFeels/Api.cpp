@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "DocFeelsBbTrend.hpp"
+#include "DocFeelsCumulativeReturnService.hpp"
 #include "DocFeelsSmaTrend.hpp"
 #include "DocFeelsStrategy.hpp"
 #include "Common/VersionInfo.hpp"
@@ -31,6 +32,14 @@ boost::shared_ptr<Strategy> CreateBbStrategy(Context &context,
                                              const IniSectionRef &conf) {
   return boost::make_shared<df::Strategy>(
       context, instanceName, conf, boost::make_shared<df::BbTrend>(conf));
+}
+
+boost::shared_ptr<Service> CreateCumulativeReturnService(
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<df::CumulativeReturnService>(context, instanceName,
+                                                         configuration);
 }
 
 extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {

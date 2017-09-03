@@ -154,12 +154,11 @@ class Rsi::Implementation : private boost::noncopyable {
 Rsi::Rsi(Context &context,
          const std::string &instanceName,
          const IniSectionRef &conf)
-    : Service(
-          context,
-          uuids::string_generator()("{bc5436e2-33cf-411c-b88a-02a5b84e1cc0}"),
-          "RsiIndicator",
-          instanceName,
-          conf),
+    : Service(context,
+              "{bc5436e2-33cf-411c-b88a-02a5b84e1cc0}",
+              "RsiIndicator",
+              instanceName,
+              conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 Rsi::~Rsi() noexcept {}
