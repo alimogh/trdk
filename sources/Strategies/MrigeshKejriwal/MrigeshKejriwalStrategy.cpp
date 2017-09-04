@@ -85,12 +85,15 @@ void mk::Settings::Validate() const {
   if (qty < 1) {
     throw Exception("Position size is not set");
   }
+  if (minQty < 1) {
+    throw Exception("Min. order size is not set");
+  }
 }
 
 void mk::Settings::Log(Module::Log &log) const {
   boost::format info(
-      "Position size: %1%. Min. order size: %2%. Number of history hours: %2%. "
-      "Cost of funds: %3%. Max. share of loss: %4%.");
+      "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
+      "Cost of funds: %4%. Max. share of loss: %5%.");
   info % qty                  // 1
       % minQty                // 2
       % numberOfHistoryHours  // 3
