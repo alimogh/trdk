@@ -76,6 +76,7 @@ bool PositionController::IsPositionCorrect(const Position &position) const {
 
 mk::Settings::Settings(const IniSectionRef &conf)
     : qty(conf.ReadTypedKey<Qty>("qty")),
+      minQty(conf.ReadTypedKey<Qty>("qty_min")),
       numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")),
       costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
       maxLossShare(conf.ReadTypedKey<double>("max_loss_share")) {}
@@ -88,12 +89,13 @@ void mk::Settings::Validate() const {
 
 void mk::Settings::Log(Module::Log &log) const {
   boost::format info(
-      "Position size: %1%. Number of history hours: %2%. Cost of funds: %3%. "
-      "Max. share of loss: %4%.");
+      "Position size: %1%. Min. order size: %2%. Number of history hours: %2%. "
+      "Cost of funds: %3%. Max. share of loss: %4%.");
   info % qty                  // 1
-      % numberOfHistoryHours  // 2
-      % costOfFunds           // 3
-      % maxLossShare;         // 4
+      % minQty                // 2
+      % numberOfHistoryHours  // 3
+      % costOfFunds           // 4
+      % maxLossShare;         // 5
   log.Info(info.str().c_str());
 }
 
@@ -178,7 +180,15 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
         isInitial ? "initial" : "online");  // 4
     throw Exception("Broker position for wrong security");
   }
-  m_positionController.OnBrokerPositionUpdate(security, qty, volume, isInitial);
+  auto posQty = qty;
+  if (abs(posQty) < m_settings.minQty) {
+    posQty = m_settings.minQty;
+    if (qty < 0) {
+      posQty *= -1;
+    }
+  }
+  m_positionController.OnBrokerPositionUpdate(security, posQty, volume,
+                                              isInitial);
 }
 
 void mk::Strategy::OnServiceStart(const Service &service) {

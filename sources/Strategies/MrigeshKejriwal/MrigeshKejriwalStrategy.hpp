@@ -25,6 +25,7 @@ namespace MrigeshKejriwal {
 
 struct Settings {
   Qty qty;
+  Qty minQty;
   uint16_t numberOfHistoryHours;
   double costOfFunds;
   double maxLossShare;
