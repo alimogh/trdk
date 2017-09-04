@@ -960,6 +960,12 @@ void Client::LogError(const int id, const int code, const IBString &message) {
           "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
           id);
       break;
+    case 2137:
+      // The closing order quantity is greater than your current position.
+      m_ts.GetTsLog().Warn(
+          "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
+          id);
+      break;
     default:
       m_ts.GetTsLog().Error(
           "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
@@ -1045,6 +1051,9 @@ void Client::HandleError(const int id,
       // being dropped.
       AssertEq(-1, id);
       m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
+      break;
+    case 2137:
+      // The closing order quantity is greater than your current position.
       break;
   }
 }
