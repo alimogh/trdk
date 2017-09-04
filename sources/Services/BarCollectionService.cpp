@@ -722,7 +722,7 @@ BarCollectionService::BarCollectionService(Context &context,
                                            const std::string &instanceName,
                                            const IniSectionRef &configuration)
     : Base(context,
-           uuids::string_generator()("{7619E946-BDE0-4FB6-94A6-CFFF3F183D92}"),
+           "{7619E946-BDE0-4FB6-94A6-CFFF3F183D92}",
            "Bars",
            instanceName,
            configuration),

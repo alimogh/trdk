@@ -23,7 +23,7 @@ class TRDK_CORE_API Service : public trdk::Module {
 
  public:
   explicit Service(trdk::Context &,
-                   const boost::uuids::uuid &typeId,
+                   const std::string &typeUuid,
                    const std::string &implementationName,
                    const std::string &instanceName,
                    const trdk::Lib::IniSectionRef &);

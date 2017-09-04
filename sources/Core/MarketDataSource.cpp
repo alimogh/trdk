@@ -119,7 +119,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
   }
 
   ContractExpiration ResolveContractExpiration(const Symbol &symbol) const {
-    const auto &date = m_context.GetCurrentTime().date();
+    const auto &date = m_context.GetCurrentTime().date() + gr::date_duration(1);
     if (m_context.HasExpirationCalendar()) {
       const auto &result = m_context.GetExpirationCalendar().Find(symbol, date);
       if (result) {

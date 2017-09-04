@@ -16,7 +16,7 @@ namespace TradingLib {
 class Trend : private boost::noncopyable {
  public:
   Trend();
-  virtual ~Trend();
+  ~Trend();
 
  public:
   //! Is trend registered or not.

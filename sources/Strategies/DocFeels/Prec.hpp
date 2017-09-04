@@ -11,3 +11,7 @@
 #pragma once
 
 #include "Common/Common.hpp"
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+#include <boost/accumulators/statistics/rolling_sum.hpp>
+#include <boost/random.hpp>

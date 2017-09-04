@@ -88,9 +88,11 @@ class Service::Implementation : private boost::noncopyable {
   SubscriberList m_subscribers;
 
   explicit Implementation(Service &service,
-                          const uuids::uuid &typeId,
+                          const std::string &typeUuid,
                           const IniSectionRef &conf)
-      : m_service(service), m_typeId(typeId), m_tag(conf.ReadKey("tag", "")) {}
+      : m_service(service),
+        m_typeId(boost::uuids::string_generator()(typeUuid)),
+        m_tag(conf.ReadKey("tag", "")) {}
 
   void CheckRecursiveSubscription(const Subscriber &subscriber) const {
     const FindSubscribedModule find(ModuleRef(m_service));
@@ -124,12 +126,12 @@ class Service::Implementation : private boost::noncopyable {
 };
 
 Service::Service(Context &context,
-                 const uuids::uuid &typeId,
+                 const std::string &typeUuid,
                  const std::string &implementationName,
                  const std::string &instanceName,
                  const IniSectionRef &conf)
     : Module(context, "Service", implementationName, instanceName, conf),
-      m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {}
+      m_pimpl(boost::make_unique<Implementation>(*this, typeUuid, conf)) {}
 
 Service::~Service() {}
 

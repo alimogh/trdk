@@ -37,6 +37,7 @@ class PositionController : public TradingLib::PositionController {
                              const trdk::CloseReason &) override;
 
  protected:
+  virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const trdk::Position &) const override;
 
  private:

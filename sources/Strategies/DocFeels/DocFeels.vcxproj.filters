@@ -46,6 +46,12 @@
     <ClCompile Include="DocFeelsBbTrend.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DocFeelsCumulativeReturnService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocFeelsCumulativeReturnServiceUTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DocFeels.rc">
@@ -78,6 +84,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DocFeelsBbTrend.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsCumulativeReturnService.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
