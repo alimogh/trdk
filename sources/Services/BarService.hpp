@@ -58,7 +58,7 @@ class TRDK_SERVICES_API BarService : public trdk::Service {
 
  public:
   explicit BarService(Context &context,
-                      const boost::uuids::uuid &typeId,
+                      const std::string &typeUuid,
                       const std::string &implementationName,
                       const std::string &instanceName,
                       const Lib::IniSectionRef &);

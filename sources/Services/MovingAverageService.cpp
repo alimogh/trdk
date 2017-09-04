@@ -399,12 +399,11 @@ class MovingAverageService::Implementation : private boost::noncopyable {
 MovingAverageService::MovingAverageService(Context &context,
                                            const std::string &instanceName,
                                            const IniSectionRef &configuration)
-    : Service(
-          context,
-          uuids::string_generator()("{E1C56A8F-637B-4F73-8F15-A106845F6F71}"),
-          "MovingAverage",
-          instanceName,
-          configuration),
+    : Service(context,
+              "{E1C56A8F-637B-4F73-8F15-A106845F6F71}",
+              "MovingAverage",
+              instanceName,
+              configuration),
       m_pimpl(boost::make_unique<Implementation>(*this, configuration)) {}
 
 MovingAverageService::~MovingAverageService() {}

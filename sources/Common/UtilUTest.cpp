@@ -68,11 +68,11 @@ TEST(Lib_Utils, ConvertToDateFromYyyyMmDd) {
   EXPECT_EQ(gr::date(1400, 1, 6), lib::ConvertToDateFromYyyyMmDd("14000106"));
   EXPECT_EQ(gr::date(2017, 11, 16), lib::ConvertToDateFromYyyyMmDd("20171116"));
   EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("0171116"), std::exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd(""), lib::Exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("edwqwdqw"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd(""), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("edwqwdqw"), std::exception);
   EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("00160106"), std::exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20170030"), lib::Exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171330"), lib::Exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171100"), lib::Exception);
-  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171132"), lib::Exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20170030"), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171330"), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171100"), std::exception);
+  EXPECT_THROW(lib::ConvertToDateFromYyyyMmDd("20171132"), std::exception);
 }

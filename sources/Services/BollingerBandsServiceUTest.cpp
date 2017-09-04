@@ -151,7 +151,7 @@ class Service : public svc::BollingerBandsService {
   using BollingerBandsService::OnServiceDataUpdate;
 };
 
-class BollingerBandsServiceTest : public testing::Test {
+class Services_BollingerBandsServiceTest : public testing::Test {
  protected:
   virtual void SetUp() {}
 
@@ -202,7 +202,7 @@ class BollingerBandsServiceTest : public testing::Test {
 };
 }
 
-TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
+TEST_F(Services_BollingerBandsServiceTest, RealTimeWithHistory) {
   std::string settingsString(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"
@@ -294,7 +294,7 @@ TEST_F(BollingerBandsServiceTest, RealTimeWithHistory) {
   }
 }
 
-TEST_F(BollingerBandsServiceTest, RealTimeWithoutHistory) {
+TEST_F(Services_BollingerBandsServiceTest, RealTimeWithoutHistory) {
   std::string settingsString(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000001}\n"
