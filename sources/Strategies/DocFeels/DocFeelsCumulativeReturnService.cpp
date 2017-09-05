@@ -88,7 +88,8 @@ class CumulativeReturnService::Implementation : private boost::noncopyable {
 
   const boost::shared_ptr<RGenerator> m_rGenerator;
 
-  std::ofstream m_pointsLog;
+  std::ofstream m_tOldLog;
+  std::ofstream m_tNewLog;
 
   Implementation(CumulativeReturnService &self,
                  const IniSectionRef &conf,
@@ -124,71 +125,78 @@ class CumulativeReturnService::Implementation : private boost::noncopyable {
   }
 
   void OpenPointsLog() {
-    Assert(!m_pointsLog.is_open());
-    auto log = m_self.OpenDataLog("csv");
+    Assert(!m_tOldLog.is_open());
+    Assert(!m_tNewLog.is_open());
+    auto tOldLog = m_self.OpenDataLog("csv", "_tOld");
+    auto tNewLog = m_self.OpenDataLog("csv", "_tNew");
+    OpenTLog(tOldLog);
+    OpenTLog(tNewLog);
+    m_tOldLog = std::move(tOldLog);
+    m_tNewLog = std::move(tNewLog);
+  }
+
+  void OpenTLog(std::ostream &log) {
     log << "Date"      // 1
         << ",Time"     // 2
         << ",Close"    // 3
         << ",%Change"  // 4
-        << ",t(old)"   // 5
-        << ",t(new)";  // 6
+        << ",t";       // 5
     for (size_t i = 1; i <= m_crStat.size(); ++i) {
       log << ",R." << i;
     }
     for (size_t i = 1; i <= m_crStat.size(); ++i) {
-      log << ",RT." << i << ".t(old)"
-          << ",RT." << i << ".t(new)";
+      log << ",RT." << i;
     }
     for (size_t i = 1; i <= m_crStat.size(); ++i) {
-      log << ",CR(RT." << i << ").t(old)"
-          << ",CR(RT." << i << ").t(new)";
+      log << ",CR(RT." << i << ')';
     }
     for (size_t i = 1; i <= m_crStat.size(); ++i) {
-      log << ',' << m_numberOfCpPeriods << " - CR(RT." << i << ").t(old)" << ','
-          << m_numberOfCpPeriods << " - CR(RT." << i << ").t(new)";
+      log << ',' << m_numberOfCpPeriods << " - CR(RT." << i << ')';
     }
     log << std::endl;
     log << std::setfill('0');
-    m_pointsLog = std::move(log);
   }
 
   void LogEmptyPoint(const Point &point) {
-    if (!m_pointsLog.is_open()) {
+    if (!m_tOldLog.is_open()) {
       return;
     }
-    m_pointsLog << point.time.date()                                // 1
-                << ',' << ExcelTextField(point.time.time_of_day())  // 2
-                << ',' << point.source                              // 3
-                << ",,," << point.change;                           // 4, 5, 6
-    for (size_t i = 0; i < point.branches.size(); ++i) {
-      m_pointsLog << ",,,,,,,";
-    }
-    m_pointsLog << std::endl;
+    LogTEmpty(point, m_tOldLog);
+    LogTEmpty(point, m_tNewLog);
+  }
+  void LogTEmpty(const Point &point, std::ostream &log) {
+    log << point.time.date()                                // 1
+        << ',' << ExcelTextField(point.time.time_of_day())  // 2
+        << ',' << point.source                              // 3
+        << std::endl;
   }
 
   void LogPoint(const Point &point) {
-    if (!m_pointsLog.is_open()) {
+    if (!m_tOldLog.is_open()) {
       return;
     }
-    m_pointsLog << point.time.date()                                // 1
-                << ',' << ExcelTextField(point.time.time_of_day())  // 2
-                << ',' << point.source                              // 3
-                << ',' << point.change                              // 4
-                << ',' << point.tOld                                // 5
-                << ',' << point.tNew;                               // 6
+    LogTPoint(point, false, m_tOldLog);
+    LogTPoint(point, true, m_tNewLog);
+  }
+  void LogTPoint(const Point &point, bool isNew, std::ostream &log) {
+    log << point.time.date()                                // 1
+        << ',' << ExcelTextField(point.time.time_of_day())  // 2
+        << ',' << point.source                              // 3
+        << ',' << point.change                              // 4
+        << ',' << (!isNew ? point.tOld : point.tNew);       // 5
     for (const auto &branch : point.branches) {
-      m_pointsLog << ',' << branch.r;
+      log << ',' << branch.r;
     }
     for (const auto &branch : point.branches) {
-      m_pointsLog << ',' << branch.tOld.rt << ',' << branch.tNew.rt;
+      log << ',' << (!isNew ? branch.tOld.rt : branch.tNew.rt);
     }
     for (const auto &branch : point.branches) {
-      m_pointsLog << ',' << branch.tOld.cr << ',' << branch.tNew.cr;
+      log << ',' << (!isNew ? branch.tOld.cr : branch.tNew.cr);
     }
     for (const auto &branch : point.branches) {
-      m_pointsLog << ',' << branch.tOld.crPeriod << ',' << branch.tNew.crPeriod;
+      log << ',' << (!isNew ? branch.tOld.crPeriod : branch.tNew.crPeriod);
     }
-    m_pointsLog << std::endl;
+    log << std::endl;
   }
 
   void OnPriceUpdate(const pt::ptime &time, const Price &price) {

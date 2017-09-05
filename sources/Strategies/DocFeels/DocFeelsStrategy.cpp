@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "DocFeelsStrategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "DocFeelsCumulativeReturnService.hpp"
 
 using namespace trdk;
@@ -47,7 +48,8 @@ void df::Strategy::OnSecurityStart(Security &security,
 }
 
 void df::Strategy::OnServiceStart(const Service &service) {
-  if (dynamic_cast<const CumulativeReturnService *>(&service)) {
+  if (dynamic_cast<const CumulativeReturnService *>(&service) ||
+      dynamic_cast<const CumulativeReturnFilterService *>(&service)) {
     return;
   }
   if (m_sourcesSync.GetSize() >= 2) {

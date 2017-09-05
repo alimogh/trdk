@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "DocFeelsBbTrend.hpp"
+#include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "DocFeelsCumulativeReturnService.hpp"
 #include "DocFeelsSmaTrend.hpp"
 #include "DocFeelsStrategy.hpp"
@@ -40,6 +41,13 @@ boost::shared_ptr<Service> CreateCumulativeReturnService(
     const IniSectionRef &configuration) {
   return boost::make_shared<df::CumulativeReturnService>(context, instanceName,
                                                          configuration);
+}
+boost::shared_ptr<Service> CreateCumulativeReturnFilterService(
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<df::CumulativeReturnFilterService>(
+      context, instanceName, configuration);
 }
 
 extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {

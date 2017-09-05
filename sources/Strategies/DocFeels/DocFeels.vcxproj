@@ -270,6 +270,7 @@
     <ClCompile Include="..\..\Common\Assert.cpp" />
     <ClCompile Include="Api.cpp" />
     <ClCompile Include="DocFeelsBbTrend.cpp" />
+    <ClCompile Include="DocFeelsCumulativeReturnFilterService.cpp" />
     <ClCompile Include="DocFeelsCumulativeReturnService.cpp" />
     <ClCompile Include="DocFeelsCumulativeReturnServiceUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -334,6 +335,7 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="DocFeelsBbTrend.hpp" />
+    <ClInclude Include="DocFeelsCumulativeReturnFilterService.hpp" />
     <ClInclude Include="DocFeelsCumulativeReturnService.hpp" />
     <ClInclude Include="DocFeelsPositionController.hpp" />
     <ClInclude Include="DocFeelsStrategy.hpp" />

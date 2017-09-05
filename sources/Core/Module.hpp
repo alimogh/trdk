@@ -57,7 +57,8 @@ class TRDK_CORE_API Module : private boost::noncopyable {
   trdk::Module::TradingLog &GetTradingLog() const noexcept;
   //! Opens file stream to log module data and reports and reports file
   //! path to log.
-  std::ofstream OpenDataLog(const std::string &fileExtension) const;
+  std::ofstream OpenDataLog(const std::string &fileExtension,
+                            const std::string &suffix = std::string()) const;
 
  public:
   Lock LockForOtherThreads();
