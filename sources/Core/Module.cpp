@@ -227,14 +227,17 @@ void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
   OnSettingsUpdate(conf);
 }
 
-std::ofstream Module::OpenDataLog(const std::string &fileExtension) const {
+std::ofstream Module::OpenDataLog(const std::string &fileExtension,
+                                  const std::string &suffix) const {
   fs::path path = GetContext().GetSettings().GetLogsInstanceDir();
   path /= GetImplementationName();
   {
-    boost::format fileName("%1%__%2%__%3%_%4%");
-    fileName % GetInstanceName() %
-        ConvertToFileName(GetContext().GetStartTime()) % GetId() %
-        GetInstanceId();
+    boost::format fileName("%1%__%2%__%3%_%4%%5%");
+    fileName % GetInstanceName()                          // 1
+        % ConvertToFileName(GetContext().GetStartTime())  // 2
+        % GetId()                                         // 3
+        % GetInstanceId()                                 // 4
+        % suffix;                                         // 5
     path /= SymbolToFileName(fileName.str(), fileExtension);
   }
 
