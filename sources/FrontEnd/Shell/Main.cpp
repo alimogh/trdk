@@ -14,7 +14,10 @@
 
 int main(int argc, char *argv[]) {
   QApplication application(argc, argv);
+  application.setApplicationName(TRDK_NAME);
+
   Shell shell;
   shell.show();
+
   return application.exec();
 }

@@ -16,7 +16,10 @@ class Shell : public QMainWindow {
   Q_OBJECT
 
  public:
-  Shell(QWidget *parent = Q_NULLPTR);
+  explicit Shell(QWidget *parent = Q_NULLPTR);
+
+ private slots:
+  void ShowAboutInfo();
 
  private:
   Ui::ShellClass ui;
