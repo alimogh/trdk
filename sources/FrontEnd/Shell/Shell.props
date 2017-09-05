@@ -3,11 +3,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(SolutionDir)..\externals\autobahn\;$(SolutionDir)..\externals\msgpack-c\include;$(IncludePath)</IncludePath>
+    <_PropertySheetDisplayName>Front-end shell</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile>
-      <PreprocessorDefinitions>MSGPACK_USE_BOOST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
   </ItemDefinitionGroup>
+  <ItemGroup />
 </Project>

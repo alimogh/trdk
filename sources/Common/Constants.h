@@ -180,6 +180,10 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_INTERACTION_FIXPROTOCOL_DLL_FILE_NAME \
   TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
+#define TRDK_FRONTEND_SHELL_FILE_NAME "RobotShell"
+#define TRDK_FRONTEND_SHELL_EXE_FILE_NAME \
+  TRDK_FRONTEND_SHELL_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
+
 #define TRDK_GET_MODUE_FILE_NAME_LIST()                                        \
   {                                                                            \
     TRDK_CORE_FILE_NAME, TRDK_SERVICES_FILE_NAME, TRDK_PYAPI_FILE_NAME,        \
