@@ -37,12 +37,14 @@ class CumulativeReturnFilterService::Implementation
 
   Point m_data;
 
-  std::unique_ptr<CumulativeReturnService> m_source;
+  CumulativeReturnService m_source;
 
  public:
   explicit Implementation(CumulativeReturnFilterService &self,
                           const IniSectionRef &conf)
-      : m_self(self), m_size(conf.ReadTypedKey<size_t>("size")) {
+      : m_self(self),
+        m_size(conf.ReadTypedKey<size_t>("size")),
+        m_source(m_self.GetContext(), "CumulativeReturn", conf) {
     const bool isLogEnabled = conf.ReadBoolKey("log");
     m_self.GetLog().Info("Size: %1%. Log: %2%.",
                          m_size,                        // 1
@@ -178,11 +180,10 @@ CumulativeReturnFilterService::GetLastPoint() const {
 
 bool CumulativeReturnFilterService::OnServiceDataUpdate(
     const Service &service, const TimeMeasurement::Milestones &milestones) {
-  Assert(m_pimpl->m_source);
-  if (!m_pimpl->m_source->RaiseServiceDataUpdateEvent(service, milestones)) {
+  if (!m_pimpl->m_source.RaiseServiceDataUpdateEvent(service, milestones)) {
     return false;
   }
-  const auto *const crService = &*m_pimpl->m_source;
+  const auto *const crService = &m_pimpl->m_source;
   /*  const auto *const crService =
         dynamic_cast<const CumulativeReturnService *>(&service);
     if (!crService) {
@@ -198,15 +199,5 @@ bool CumulativeReturnFilterService::OnServiceDataUpdate(
 }
 
 void CumulativeReturnFilterService::OnServiceStart(const Service &service) {
-  Assert(!m_pimpl->m_source);
-  std::string settingsString(
-      "[Section]\n"
-      "id = 98C7DD36-28CC-4202-A103-0352BF0B2066\n"
-      "cr_period = 30\n"
-      "size_of_rt_set = 100\n"
-      "log = yes\n");
-  const IniString settings(settingsString);
-  m_pimpl->m_source = boost::make_unique<CumulativeReturnService>(
-      GetContext(), "CumulativeReturn", IniSectionRef(settings, "Section"));
-  m_pimpl->m_source->OnServiceStart(service);
+  m_pimpl->m_source.OnServiceStart(service);
 }
