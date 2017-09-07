@@ -27,11 +27,11 @@ namespace tl = trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Trend::Update(const Price & /*lastPrice*/, double /*controlValue*/) {
-  //   if (lastPrice == controlValue) {
-  //     return false;
-  //   }
-  return SetIsRising(!IsRising());
+bool Trend::Update(const Price &lastPrice, double controlValue) {
+  if (lastPrice == controlValue) {
+    return false;
+  }
+  return SetIsRising(controlValue < lastPrice);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
