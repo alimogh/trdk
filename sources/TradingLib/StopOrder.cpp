@@ -12,12 +12,15 @@
 #include "StopOrder.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "OrderPolicy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
-StopOrder::StopOrder(Position &position) : m_position(position) {}
+StopOrder::StopOrder(Position &position,
+                     const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : m_position(position), m_orderPolicy(std::move(orderPolicy)) {}
 
 Module::TradingLog &StopOrder::GetTradingLog() const noexcept {
   return GetPosition().GetStrategy().GetTradingLog();
@@ -71,7 +74,7 @@ void StopOrder::OnHit() {
       record % GetName() % GetPosition().GetId();
     });
 
-    GetPosition().Close(GetPosition().GetMarketClosePrice());
+    m_orderPolicy->Close(GetPosition());
   }
 }
 

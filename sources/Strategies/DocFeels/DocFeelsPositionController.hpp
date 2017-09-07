@@ -41,6 +41,7 @@ class PositionController : public TradingLib::PositionController {
   virtual bool IsPositionCorrect(const trdk::Position &) const override;
 
  private:
+  const boost::shared_ptr<const TradingLib::OrderPolicy> m_stopOrderPolicy;
   const Trend &m_trend;
 };
 }

@@ -11,13 +11,15 @@
 #pragma once
 
 #include "Core/Position.hpp"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace TradingLib {
 
 class StopOrder : public trdk::Position::Algo {
  public:
-  explicit StopOrder(trdk::Position &);
+  explicit StopOrder(trdk::Position &,
+                     const boost::shared_ptr<const OrderPolicy> &);
   virtual ~StopOrder() override = default;
 
  public:
@@ -33,6 +35,7 @@ class StopOrder : public trdk::Position::Algo {
 
  private:
   trdk::Position &m_position;
+  const boost::shared_ptr<const OrderPolicy> m_orderPolicy;
 };
 }
 }

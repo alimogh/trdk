@@ -35,8 +35,9 @@ const Volume &TakeProfit::Params::GetMaxPriceOffsetPerLotToClose() const {
 ////////////////////////////////////////////////////////////////////////////////
 
 TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
-                       Position &position)
-    : StopOrder(position), m_params(params), m_isActivated(false) {
+                       Position &position,
+                       const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopOrder(position, orderPolicy), m_params(params), m_isActivated(false) {
   Assert(m_params);
 }
 

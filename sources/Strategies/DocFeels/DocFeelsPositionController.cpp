@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "DocFeelsPositionController.hpp"
+#include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/Position.hpp"
 #include "DocFeelsTrend.hpp"
@@ -18,8 +19,12 @@ using namespace trdk;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Strategies::DocFeels;
 
+namespace tl = trdk::TradingLib;
+
 PositionController::PositionController(Strategy &strategy, const Trend &trend)
-    : Base(strategy), m_trend(trend) {}
+    : Base(strategy),
+      m_stopOrderPolicy(boost::make_shared<tl::LimitGtcOrderPolicy>()),
+      m_trend(trend) {}
 
 Position &PositionController::OpenPosition(Security &security,
                                            const Milestones &delayMeasurement) {
@@ -31,7 +36,8 @@ Position &PositionController::OpenPosition(Security &security,
                                            bool isLong,
                                            const Milestones &delayMeasurement) {
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  result.AttachAlgo(std::make_unique<TradingLib::StopLossShare>(0.2, result));
+  result.AttachAlgo(
+      std::make_unique<tl::StopLossShare>(0.2, result, m_stopOrderPolicy));
   return result;
 }
 
