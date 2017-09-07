@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MrigeshKejriwalStrategy.hpp"
+#include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -22,14 +23,15 @@ using namespace trdk::Strategies::MrigeshKejriwal;
 
 namespace pt = boost::posix_time;
 namespace mk = trdk::Strategies::MrigeshKejriwal;
+namespace tl = trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Trend::Update(const Price &lastPrice, double controlValue) {
-  if (lastPrice == controlValue) {
-    return false;
-  }
-  return SetIsRising(controlValue < lastPrice);
+bool Trend::Update(const Price & /*lastPrice*/, double /*controlValue*/) {
+  //   if (lastPrice == controlValue) {
+  //     return false;
+  //   }
+  return SetIsRising(!IsRising());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +39,10 @@ bool Trend::Update(const Price &lastPrice, double controlValue) {
 PositionController::PositionController(trdk::Strategy &strategy,
                                        const Trend &trend,
                                        const mk::Settings &settings)
-    : Base(strategy), m_trend(trend), m_settings(settings) {}
+    : Base(strategy),
+      m_orderPolicy(boost::make_shared<tl::LimitIocOrderPolicy>()),
+      m_trend(trend),
+      m_settings(settings) {}
 
 Position &PositionController::OpenPosition(Security &security,
                                            const Milestones &delayMeasurement) {
@@ -49,21 +54,21 @@ Position &PositionController::OpenPosition(Security &security,
                                            bool isLong,
                                            const Milestones &delayMeasurement) {
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  result.AttachAlgo(std::make_unique<TradingLib::StopLossShare>(
-      m_settings.maxLossShare, result));
+  result.AttachAlgo(std::make_unique<tl::StopLossShare>(m_settings.maxLossShare,
+                                                        result, m_orderPolicy));
   return result;
 }
 
 void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  position.Open(position.GetMarketOpenPrice());
+  m_orderPolicy->Open(position);
 }
 
 void PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
   Assert(!position.HasActiveOrders());
   position.SetCloseReason(reason);
-  position.Close(position.GetMarketClosePrice());
+  m_orderPolicy->Close(position);
 }
 
 Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
@@ -184,7 +189,7 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
     throw Exception("Broker position for wrong security");
   }
   auto posQty = qty;
-  if (abs(posQty) < m_settings.minQty) {
+  if (posQty != 0 && abs(posQty) < m_settings.minQty) {
     posQty = m_settings.minQty;
     if (qty < 0) {
       posQty *= -1;

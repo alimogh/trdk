@@ -515,7 +515,7 @@ class Security::Implementation : private boost::noncopyable {
 
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
     if (!GetLastMarketDataTime().is_not_a_date_time()) {
-      AssertLe(GetLastMarketDataTime(), time);
+      // AssertLe(GetLastMarketDataTime(), time);
     }
 #endif
 
