@@ -32,16 +32,15 @@ class PositionController : public TradingLib::PositionController {
       trdk::Security &,
       bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual void ContinuePosition(trdk::Position &) override;
-  virtual void ClosePosition(trdk::Position &,
-                             const trdk::CloseReason &) override;
 
  protected:
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const trdk::Position &) const override;
 
  private:
-  const boost::shared_ptr<const TradingLib::OrderPolicy> m_stopOrderPolicy;
+  const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
   const Trend &m_trend;
 };
 }

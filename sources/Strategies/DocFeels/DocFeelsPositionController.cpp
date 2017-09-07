@@ -23,7 +23,7 @@ namespace tl = trdk::TradingLib;
 
 PositionController::PositionController(Strategy &strategy, const Trend &trend)
     : Base(strategy),
-      m_stopOrderPolicy(boost::make_shared<tl::LimitGtcOrderPolicy>()),
+      m_orderPolicy(boost::make_shared<tl::LimitGtcOrderPolicy>()),
       m_trend(trend) {}
 
 Position &PositionController::OpenPosition(Security &security,
@@ -37,20 +37,15 @@ Position &PositionController::OpenPosition(Security &security,
                                            const Milestones &delayMeasurement) {
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
   result.AttachAlgo(
-      std::make_unique<tl::StopLossShare>(0.2, result, m_stopOrderPolicy));
+      std::make_unique<tl::StopLossShare>(0.2, result, m_orderPolicy));
   return result;
 }
 
-void PositionController::ContinuePosition(Position &position) {
-  Assert(!position.HasActiveOrders());
-  position.Open(position.GetMarketOpenPrice());
+const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
+  return *m_orderPolicy;
 }
-
-void PositionController::ClosePosition(Position &position,
-                                       const CloseReason &reason) {
-  Assert(!position.HasActiveOrders());
-  position.SetCloseReason(reason);
-  position.Close(position.GetMarketClosePrice(), reason);
+const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
+  return *m_orderPolicy;
 }
 
 Qty PositionController::GetNewPositionQty() const { return 1; }

@@ -9,6 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
@@ -35,7 +36,9 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &strategy) : Base(strategy) {}
+  explicit PositionController(Strategy &strategy)
+      : Base(strategy),
+        m_orderPolicy(boost::make_shared<TradingLib::LimitGtcOrderPolicy>()) {}
 
   virtual ~PositionController() override = default;
 
@@ -48,19 +51,14 @@ class PositionController : public TradingLib::PositionController {
 
   using Base::OpenPosition;
 
-  virtual void ContinuePosition(Position &position) override {
-    Assert(!position.HasActiveOrders());
-    position.Open(position.GetMarketOpenPrice());
-  }
-
-  virtual void ClosePosition(Position &position,
-                             const CloseReason &reason) override {
-    Assert(!position.HasActiveOrders());
-    position.SetCloseReason(reason);
-    position.Close(position.GetMarketClosePrice());
-  }
-
  protected:
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override {
+    return *m_orderPolicy;
+  }
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override {
+    return *m_orderPolicy;
+  }
+
   virtual Qty GetNewPositionQty() const override { return 10; }
 
   virtual bool IsPositionCorrect(const Position &position) const override {
@@ -70,6 +68,9 @@ class PositionController : public TradingLib::PositionController {
 
  private:
   boost::optional<bool> GetIsRising() const;
+
+ private:
+  const boost::shared_ptr<TradingLib::OrderPolicy> m_orderPolicy;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

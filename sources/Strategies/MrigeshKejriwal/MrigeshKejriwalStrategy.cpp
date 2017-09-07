@@ -59,22 +59,17 @@ Position &PositionController::OpenPosition(Security &security,
   return result;
 }
 
-void PositionController::ContinuePosition(Position &position) {
-  Assert(!position.HasActiveOrders());
-  m_orderPolicy->Open(position);
-}
-
-void PositionController::ClosePosition(Position &position,
-                                       const CloseReason &reason) {
-  Assert(!position.HasActiveOrders());
-  position.SetCloseReason(reason);
-  m_orderPolicy->Close(position);
-}
-
 Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
 
 bool PositionController::IsPositionCorrect(const Position &position) const {
   return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
+}
+
+const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
+  return *m_orderPolicy;
+}
+const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
+  return *m_orderPolicy;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
