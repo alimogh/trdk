@@ -43,7 +43,8 @@ void Consumer::OnSecurityStart(Security &, Security::Request &) {}
 
 void Consumer::OnSecurityContractSwitched(const pt::ptime &,
                                           Security &security,
-                                          Security::Request &) {
+                                          Security::Request &,
+                                          bool &) {
   GetLog().Error(
       "Subscribed to %1% contract switch event, but can't work with it"
       " (doesn't have OnSecurityContractSwitched method implementation).",

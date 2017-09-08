@@ -427,7 +427,8 @@ bool MovingAverageService::OnServiceDataUpdate(
 
 void MovingAverageService::OnSecurityContractSwitched(const pt::ptime &,
                                                       const Security &,
-                                                      Security::Request &) {}
+                                                      Security::Request &,
+                                                      bool &) {}
 
 bool MovingAverageService::OnLevel1Tick(const Security &security,
                                         const pt::ptime &time,

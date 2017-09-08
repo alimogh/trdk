@@ -94,7 +94,8 @@ class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
  protected:
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           const trdk::Security &,
-                                          trdk::Security::Request &) override;
+                                          trdk::Security::Request &,
+                                          bool &isSwitched) override;
 
   virtual bool OnServiceDataUpdate(
       const trdk::Service &,

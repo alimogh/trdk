@@ -306,7 +306,8 @@ class Dispatcher : private boost::noncopyable {
   void SignalSecurityContractSwitched(SubscriberPtrWrapper &,
                                       const boost::posix_time::ptime &,
                                       Security &,
-                                      Security::Request &);
+                                      Security::Request &,
+                                      bool &isSwitched);
   void SignalLevel1Update(SubscriberPtrWrapper &,
                           Security &,
                           const Lib::TimeMeasurement::Milestones &);

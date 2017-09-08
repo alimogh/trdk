@@ -41,6 +41,11 @@ class PositionController : private boost::noncopyable {
       trdk::Security &,
       bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &);
+  virtual trdk::Position &OpenPosition(
+      trdk::Security &,
+      bool isLong,
+      const trdk::Qty &,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void ClosePosition(trdk::Position &, const trdk::CloseReason &);
 
  protected:

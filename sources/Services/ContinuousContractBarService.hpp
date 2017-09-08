@@ -52,7 +52,8 @@ class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
 
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           const trdk::Security &,
-                                          trdk::Security::Request &) override;
+                                          trdk::Security::Request &,
+                                          bool &isSwitched) override;
 
   virtual bool OnSecurityServiceEvent(const boost::posix_time::ptime &,
                                       const Security &,

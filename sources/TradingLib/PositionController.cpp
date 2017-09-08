@@ -69,7 +69,14 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 
 trdk::Position &PositionController::OpenPosition(
     Security &security, bool isLong, const Milestones &delayMeasurement) {
-  const auto &qty = GetNewPositionQty();
+  return OpenPosition(security, isLong, GetNewPositionQty(), delayMeasurement);
+}
+
+trdk::Position &PositionController::OpenPosition(
+    Security &security,
+    bool isLong,
+    const Qty &qty,
+    const Milestones &delayMeasurement) {
   auto position =
       isLong
           ? CreatePosition<LongPosition>(

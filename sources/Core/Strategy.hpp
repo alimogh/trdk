@@ -134,18 +134,22 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
  public:
   virtual void RaiseSecurityContractSwitchedEvent(
-      const boost::posix_time::ptime &, Security &, Security::Request &);
+      const boost::posix_time::ptime &,
+      Security &,
+      Security::Request &,
+      bool &isSwitched) override;
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
-                                              bool isInitial);
+                                              bool isInitial) override;
 
   virtual void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
 
-  virtual void RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
-                                         trdk::Security &,
-                                         const trdk::Security::ServiceEvent &);
+  virtual void RaiseSecurityServiceEvent(
+      const boost::posix_time::ptime &,
+      trdk::Security &,
+      const trdk::Security::ServiceEvent &) override;
 
   void RaiseLevel1UpdateEvent(trdk::Security &,
                               const trdk::Lib::TimeMeasurement::Milestones &);

@@ -156,14 +156,20 @@ TEST(Services_ContinuousContractBarService, DISABLED_History) {
 
     if (i == 0) {
       trdk::Security::Request request = {};
-      service.OnSecurityContractSwitched(tick.time, security, request);
+      bool isSwithed = true;
+      service.OnSecurityContractSwitched(tick.time, security, request,
+                                         isSwithed);
+      ASSERT_TRUE(isSwithed);
       ASSERT_EQ(0, request.GetNumberOfTicks());
       ASSERT_EQ(request.GetTime(), pt::not_a_date_time);
 
     } else if (!source[i - 1].isCurrent) {
       ASSERT_LE(6, i);
       trdk::Security::Request request = {};
-      service.OnSecurityContractSwitched(tick.time, security, request);
+      bool isSwithed = true;
+      service.OnSecurityContractSwitched(tick.time, security, request,
+                                         isSwithed);
+      ASSERT_TRUE(isSwithed);
       ASSERT_EQ(0, request.GetNumberOfTicks());
       ASSERT_EQ(tick.time - pt::hours(24), request.GetTime());
 
@@ -273,14 +279,20 @@ TEST(Services_ContinuousContractBarService, Online) {
 
     if (i == 0) {
       trdk::Security::Request request = {};
-      service.OnSecurityContractSwitched(tick.time, security, request);
+      bool isSwitched = true;
+      service.OnSecurityContractSwitched(tick.time, security, request,
+                                         isSwitched);
+      ASSERT_TRUE(isSwitched);
       ASSERT_EQ(0, request.GetNumberOfTicks());
       ASSERT_EQ(request.GetTime(), pt::not_a_date_time);
 
     } else if (!source[i - 1].isCurrent) {
       ASSERT_LE(6, i);
       trdk::Security::Request request = {};
-      service.OnSecurityContractSwitched(tick.time, security, request);
+      bool isSwitched = true;
+      service.OnSecurityContractSwitched(tick.time, security, request,
+                                         isSwitched);
+      ASSERT_TRUE(isSwitched);
       ASSERT_EQ(0, request.GetNumberOfTicks());
       ASSERT_EQ(tick.time - pt::hours(24), request.GetTime());
 

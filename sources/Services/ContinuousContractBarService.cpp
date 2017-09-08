@@ -345,9 +345,12 @@ void ContinuousContractBarService::OnSecurityStart(const Security &security,
 void ContinuousContractBarService::OnSecurityContractSwitched(
     const pt::ptime &time,
     const Security &security,
-    Security::Request &request) {
+    Security::Request &request,
+    bool &isSwitched) {
   if (&security != &GetSecurity()) {
-    Base::OnSecurityContractSwitched(time, security, request);
+    Base::OnSecurityContractSwitched(time, security, request, isSwitched);
+    return;
+  } else if (!isSwitched) {
     return;
   }
 

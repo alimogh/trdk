@@ -467,6 +467,7 @@ class Security::Implementation : private boost::noncopyable {
   bool m_isOpened;
 
   boost::optional<ContractExpiration> m_expiration;
+  bool m_isContractSwitchingActive;
 
   Request m_request;
 
@@ -490,6 +491,7 @@ class Security::Implementation : private boost::noncopyable {
         m_supportedLevel1Types(supportedLevel1Types),
         m_isOnline(false),
         m_isOpened(false),
+        m_isContractSwitchingActive(false),
         m_request({}),
         m_marketDataLog(m_source.GetContext(), self) {
     static_assert(numberOfTradingModes == 3, "List changed.");
@@ -515,19 +517,24 @@ class Security::Implementation : private boost::noncopyable {
 
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
     if (!GetLastMarketDataTime().is_not_a_date_time()) {
-      // AssertLe(GetLastMarketDataTime(), time);
+      AssertLe(GetLastMarketDataTime(), time);
     }
 #endif
 
     m_marketDataTime = ConvertToMicroseconds(time);
     ++m_numberOfMarketDataUpdates;
 
-    if (m_expiration && m_isOnline && m_expiration->GetDate() <= time.date()) {
+    if (m_expiration && m_isOnline && !m_isContractSwitchingActive &&
+        m_expiration->GetDate() <=
+            time.date() +
+                m_self.GetContext()
+                    .GetSettings()
+                    .GetPeriodBeforeExpiryDayToSwitchContract()) {
+      m_isContractSwitchingActive = true;
       m_source.GetLog().Info(
           "Switching \"%1%\" to the next contract as last market data update"
           " is %2% and expiration date is %3%...",
           m_self, time, m_expiration->GetDate());
-      Assert(m_expiration->GetDate() == time.date());
       m_source.SwitchToNextContract(m_self);
     }
     Assert(!m_expiration || m_expiration->GetDate() > time.date());
@@ -1208,19 +1215,31 @@ bool Security::SetExpiration(const pt::ptime &time,
   {
     const auto lock = GetSource().GetContext().SyncDispatching();
 
+    Assert(m_pimpl->m_isContractSwitchingActive || !m_pimpl->m_expiration);
+
     if (m_pimpl->m_expiration) {
       m_pimpl->m_request = {};
     }
 
+    Request request;
+    bool isSwitched = true;
+    m_pimpl->m_contractSwitchedSignal(time, request, isSwitched);
+    AssertEq(0, m_pimpl->m_request.GetNumberOfTicks());
+    Assert(m_pimpl->m_request.GetTime().is_not_a_date_time());
+    if (!isSwitched) {
+      m_pimpl->m_isContractSwitchingActive = true;
+      GetSource().GetLog().Info(
+          "Switching \"%1%\" to the next contract is delayed.", *this);
+      return false;
+    }
+
+    m_pimpl->m_isContractSwitchingActive = false;
     m_pimpl->m_isLevel1Started = false;
     m_pimpl->m_expiration = std::move(expiration);
     for (auto &item : m_pimpl->m_level1) {
       Unset(item);
     }
     m_pimpl->m_marketDataTime = 0;
-
-    Request request;
-    m_pimpl->m_contractSwitchedSignal(time, request);
 
     if (request.IsEarlier(m_pimpl->m_request)) {
       m_pimpl->m_request.Merge(request);
@@ -1229,6 +1248,11 @@ bool Security::SetExpiration(const pt::ptime &time,
       return false;
     }
   }
+}
+
+void Security::ContinueContractSwitchingToNextExpiration() {
+  Assert(m_pimpl->m_isContractSwitchingActive);
+  GetSource().SwitchToNextContract(*this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

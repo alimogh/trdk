@@ -59,6 +59,11 @@ class TRDK_CORE_API Settings {
     return m_timeZone;
   }
 
+  const boost::gregorian::date_duration &
+  GetPeriodBeforeExpiryDayToSwitchContract() const {
+    return m_periodBeforeExpiryDayToSwitchContract;
+  }
+
  private:
   const trdk::Lib::SecurityType m_defaultSecurityType;
   const trdk::Lib::Currency m_defaultCurrency;
@@ -68,5 +73,6 @@ class TRDK_CORE_API Settings {
   const boost::filesystem::path m_logsRootDir;
   const boost::filesystem::path m_logsInstanceDir;
   const boost::local_time::time_zone_ptr m_timeZone;
+  const boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
 };
 }
