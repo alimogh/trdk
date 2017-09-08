@@ -568,7 +568,8 @@ void Strategy::OnPositionMarkedAsCompleted(const Position &position) {
 
 void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
                                                   Security &security,
-                                                  Security::Request &request) {
+                                                  Security::Request &request,
+                                                  bool &isSwitched) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -577,7 +578,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
     return;
   }
   try {
-    OnSecurityContractSwitched(time, security, request);
+    OnSecurityContractSwitched(time, security, request, isSwitched);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
   }

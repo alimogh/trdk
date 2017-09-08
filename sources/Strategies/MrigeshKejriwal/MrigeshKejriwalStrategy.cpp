@@ -27,11 +27,11 @@ namespace tl = trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Trend::Update(const Price & /*lastPrice*/, double /*controlValue*/) {
-  //   if (lastPrice == controlValue) {
-  //     return false;
-  //   }
-  return SetIsRising(!IsRising());
+bool Trend::Update(const Price &lastPrice, double controlValue) {
+  if (lastPrice == controlValue) {
+    return false;
+  }
+  return SetIsRising(controlValue < lastPrice);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,22 +59,17 @@ Position &PositionController::OpenPosition(Security &security,
   return result;
 }
 
-void PositionController::ContinuePosition(Position &position) {
-  Assert(!position.HasActiveOrders());
-  m_orderPolicy->Open(position);
-}
-
-void PositionController::ClosePosition(Position &position,
-                                       const CloseReason &reason) {
-  Assert(!position.HasActiveOrders());
-  position.SetCloseReason(reason);
-  m_orderPolicy->Close(position);
-}
-
 Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
 
 bool PositionController::IsPositionCorrect(const Position &position) const {
   return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
+}
+
+const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
+  return *m_orderPolicy;
+}
+const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
+  return *m_orderPolicy;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,9 +118,7 @@ mk::Strategy::Strategy(Context &context,
       m_underlyingSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
-      m_positionController(*this, *m_trend, m_settings),
-      m_isRollover(false),
-      m_isTradingSecurityActivationReported(false) {
+      m_positionController(*this, *m_trend, m_settings) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
@@ -161,17 +154,25 @@ void mk::Strategy::OnSecurityStart(Security &security,
 
 void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
                                               Security &security,
-                                              Security::Request &request) {
+                                              Security::Request &request,
+                                              bool &isSwitched) {
   Assert(&security == &GetTradingSecurity());
   if (&security != &GetTradingSecurity()) {
     return;
+  } else if (!isSwitched) {
+    return;
+  } else if (!StartRollOver()) {
+    request.RequestTime(GetContext().GetCurrentTime() -
+                        pt::hours(m_settings.numberOfHistoryHours));
+    GetLog().Info("Using new contract \"%1%\" (%2%) to trade...",
+                  GetTradingSecurity(),
+                  GetTradingSecurity().GetExpiration().GetDate());
+    if (m_rollover) {
+      m_rollover->isCompleted = true;
+    }
+  } else {
+    isSwitched = false;
   }
-  request.RequestTime(GetContext().GetCurrentTime() -
-                      pt::hours(m_settings.numberOfHistoryHours));
-  GetLog().Info("Using new contract \"%1%\" (%2%) to trade...",
-                GetTradingSecurity(),
-                GetTradingSecurity().GetExpiration().GetDate());
-  StartRollOver();
 }
 
 void mk::Strategy::OnBrokerPositionUpdate(Security &security,
@@ -216,7 +217,9 @@ void mk::Strategy::OnMaServiceStart(const MovingAverageService &service) {
 }
 
 void mk::Strategy::OnPositionUpdate(Position &position) {
-  FinishRollOver(position);
+  if (ContinueRollOver()) {
+    return;
+  }
   m_positionController.OnPositionUpdate(position);
 }
 
@@ -227,23 +230,11 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   if (&security != &GetTradingSecurity()) {
     return;
   }
-  if (FinishRollOver()) {
-    return;
-  }
   if (tick.GetType() != LEVEL1_TICK_LAST_PRICE || GetMa().IsEmpty()) {
     return;
-  } else if (!GetTradingSecurity().IsActive()) {
-    if (!m_isTradingSecurityActivationReported) {
-      GetLog().Warn(
-          "Trading security \"%1%\" is not active (%2%/%3%).",
-          GetTradingSecurity(),
-          GetTradingSecurity().IsOnline() ? "online" : "offline",
-          GetTradingSecurity().IsTradingSessionOpened() ? "opened" : "closed");
-      m_isTradingSecurityActivationReported = true;
-    }
+  }
+  if (FinishRollOver() || ContinueRollOver()) {
     return;
-  } else {
-    m_isTradingSecurityActivationReported = false;
   }
   CheckSignal(GetTradingSecurity().DescalePrice(tick.GetValue()),
               delayMeasurement);
@@ -288,11 +279,11 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
 }
 
 bool mk::Strategy::StartRollOver() {
-  if (m_isRollover) {
-    return false;
+  if (m_rollover) {
+    return !GetPositions().IsEmpty() &&
+           !GetPositions().GetBegin()->IsCompleted();
   }
-
-  if (!GetPositions().GetSize()) {
+  if (GetPositions().IsEmpty()) {
     return false;
   }
   AssertEq(1, GetPositions().GetSize());
@@ -302,17 +293,33 @@ bool mk::Strategy::StartRollOver() {
     return false;
   }
 
-  const Security &security = GetTradingSecurity();
-  Assert(security.HasExpiration());
-  if (position.GetExpiration() == security.GetExpiration()) {
+  GetLog().Info("Starting rollover...");
+  Assert(&position.GetSecurity() == &GetTradingSecurity());
+  m_rollover = Rollover{false, position.IsLong(), position.GetOpenedQty()};
+
+  return true;
+}
+
+bool mk::Strategy::ContinueRollOver() {
+  if (!m_rollover || GetPositions().IsEmpty()) {
     return false;
   }
 
-  GetTradingLog().Write("rollover\texpiration=%1%\tposition=%2%",
-                        [&security, &position](TradingRecord &record) {
-                          record % security.GetExpiration().GetDate() %
-                              position.GetId();
+  Position &position = *GetPositions().GetBegin();
+  if (position.HasActiveCloseOrders()) {
+    return false;
+  }
+  if (GetPositions().GetBegin()->IsCompleted()) {
+    position.GetSecurity().ContinueContractSwitchingToNextExpiration();
+    return true;
+  }
+
+  GetTradingLog().Write("rollover\tposition-expiration=%1%\tposition=%2%",
+                        [&position](TradingRecord &record) {
+                          record % position.GetExpiration().GetDate()  // 1
+                              % position.GetId();                      // 2
                         });
+  m_rollover->isStarted = true;
 
   if (position.HasActiveOpenOrders()) {
     try {
@@ -322,42 +329,20 @@ bool mk::Strategy::StartRollOver() {
     }
     return false;
   }
+  m_positionController.ClosePosition(position, CLOSE_REASON_ROLLOVER);
 
-  position.SetCloseReason(CLOSE_REASON_ROLLOVER);
-  position.CloseAtMarketPrice();
-
-  m_isRollover = true;
   return true;
 }
 
-void mk::Strategy::CancelRollOver() { m_isRollover = false; }
-
 bool mk::Strategy::FinishRollOver() {
-  if (!GetPositions().GetSize()) {
+  if (!m_rollover || !m_rollover->isCompleted) {
     return false;
   }
-  AssertEq(1, GetPositions().GetSize());
-  return FinishRollOver(*GetPositions().GetBegin());
-}
-
-bool mk::Strategy::FinishRollOver(Position &oldPosition) {
-  if (!m_isRollover || !oldPosition.IsCompleted()) {
-    return false;
-  } else if (!GetTradingSecurity().IsActive()) {
-    if (!m_isTradingSecurityActivationReported) {
-      GetLog().Warn(
-          "Postponing rollover finishing as \"%1%\" is not active (%2%/%3%).",
-          GetTradingSecurity(),
-          GetTradingSecurity().IsOnline() ? "online" : "offline",
-          GetTradingSecurity().IsTradingSessionOpened() ? "opened" : "closed");
-      m_isTradingSecurityActivationReported = true;
-    }
-  } else {
-    m_isTradingSecurityActivationReported = false;
-  }
-  m_positionController.OpenPosition(GetTradingSecurity(), oldPosition.IsLong(),
-                                    Milestones());
-  m_isRollover = false;
+  GetLog().Info("Finishing rollover...");
+  AssertEq(0, GetPositions().GetSize());
+  m_positionController.OpenPosition(GetTradingSecurity(), m_rollover->isLong,
+                                    m_rollover->qty, Milestones());
+  m_rollover = boost::none;
   return true;
 }
 

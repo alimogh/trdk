@@ -947,21 +947,16 @@ void Client::LogError(const int id, const int code, const IBString &message) {
                 // but should be available upon demand.
     case 2108:  // A market data farm connection has become inactive but
       // should be available upon demand.
-      m_ts.GetMdsLog().Warn(
-          "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
-          id);
       break;
     case 2109:  // Order Event Warning: Attribute “Outside Regular Trading
                 // Hours” is ignored based on the order type and
                 // destination. PlaceOrder is now processed.
     case 2110:  // Connectivity between TWS and server is broken. It will
-      // be restored automatically.
-      m_ts.GetTsLog().Warn(
-          "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
-          id);
-      break;
+    // be restored automatically.
     case 2137:
-      // The closing order quantity is greater than your current position.
+    // The closing order quantity is greater than your current position.
+    case 10148:
+      // Order that needs to be cancelled can not be cancelled, state: XXX"
       m_ts.GetTsLog().Warn(
           "\"%1%\" (error code: %2%, order or ticket ID: %3%).", message, code,
           id);
@@ -1050,10 +1045,11 @@ void Client::HandleError(const int id,
     case 1300:  // TWS socket port has been reset and this connection is
       // being dropped.
       AssertEq(-1, id);
-      m_connectionState = CONNECTION_STATE_NOT_CONNECTED;
       break;
     case 2137:
-      // The closing order quantity is greater than your current position.
+    // The closing order quantity is greater than your current position.
+    case 10148:
+      // Order that needs to be cancelled can not be cancelled, state: XXX"
       break;
   }
 }

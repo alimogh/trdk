@@ -57,21 +57,22 @@ class PositionController : public TradingLib::PositionController {
   virtual ~PositionController() override = default;
 
  public:
+  using Base::OpenPosition;
   virtual Position &OpenPosition(
       Security &, const Lib::TimeMeasurement::Milestones &) override;
   virtual Position &OpenPosition(
       Security &,
       bool isLong,
       const Lib::TimeMeasurement::Milestones &) override;
-  virtual void ContinuePosition(Position &) override;
-  virtual void ClosePosition(Position &, const CloseReason &) override;
 
  protected:
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const Position &position) const override;
 
  private:
-  const boost::shared_ptr<TradingLib::OrderPolicy> m_orderPolicy;
+  const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
   const Trend &m_trend;
   const Settings &m_settings;
 };
@@ -81,6 +82,14 @@ class PositionController : public TradingLib::PositionController {
 class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
+
+ private:
+  struct Rollover {
+    bool isStarted;
+    bool isLong;
+    trdk::Qty qty;
+    bool isCompleted;
+  };
 
  public:
   explicit Strategy(
@@ -98,7 +107,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
                                trdk::Security::Request &) override;
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           trdk::Security &,
-                                          trdk::Security::Request &) override;
+                                          trdk::Security::Request &,
+                                          bool &isSwitched) override;
   virtual void OnBrokerPositionUpdate(trdk::Security &,
                                       const trdk::Qty &,
                                       const trdk::Volume &,
@@ -135,9 +145,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
                    const trdk::Lib::TimeMeasurement::Milestones &);
 
   bool StartRollOver();
-  void CancelRollOver();
+  bool ContinueRollOver();
   bool FinishRollOver();
-  bool FinishRollOver(Position &oldPosition);
 
  private:
   const Settings m_settings;
@@ -149,9 +158,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   boost::shared_ptr<Trend> m_trend;
   PositionController m_positionController;
 
-  bool m_isRollover;
-
-  bool m_isTradingSecurityActivationReported;
+  boost::optional<Rollover> m_rollover;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

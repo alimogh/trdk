@@ -46,9 +46,10 @@ TEST(MrigeshKejriwal_Strategy, Setup) {
       "title = Test\n"
       "is_enabled = true\n"
       "trading_mode = paper\n"
-      "qty=99\n"
-      "history_hours=129\n"
-      "cost_of_funds=0.12\n"
+      "qty = 99\n"
+      "qty_min = 123\n"
+      "history_hours=  129\n"
+      "cost_of_funds = 0.12\n"
       "max_loss_share = 0.03\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
@@ -110,6 +111,7 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
       "is_enabled = true\n"
       "trading_mode = paper\n"
       "qty = 99\n"
+      "qty_min = 123\n"
       "cost_of_funds = 0.12\n"
       "max_loss_share = 0.03\n");
   const auto &currentTime = pt::microsec_clock::local_time();

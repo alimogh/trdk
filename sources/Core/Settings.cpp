@@ -13,6 +13,7 @@
 #include "Security.hpp"
 
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 
@@ -75,6 +76,15 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
     }
   }
 
+  {
+    const char *const key =
+        "number_of_days_before_expiry_day_to_switch_contract";
+    if (commonConf.IsKeyExist(key)) {
+      const_cast<gr::date_duration &>(m_periodBeforeExpiryDayToSwitchContract) =
+          gr::days(commonConf.ReadTypedKey<long>(key));
+    }
+  }
+
   const_cast<pt::ptime &>(m_startTime) =
       lt::local_date_time(universalStartTime, m_timeZone).local_time();
 
@@ -97,8 +107,11 @@ void Settings::Log(Context::Log &log) const {
     log.Info("======================= REPLAY MODE =======================");
   }
   log.Info(
-      "Timezone: %1%. Default currenct: %2%. Default security type: %3%."
-      " Market data log: %4%.",
-      m_timeZone->to_posix_string(), m_defaultCurrency, m_defaultSecurityType,
-      m_isMarketDataLogEnabled ? "enabled" : "disabled");
+      "Timezone: %1%. Default currency: %2%. Default security type: %3%."
+      " Market data log: %4%. Contract switching before: %5%.",
+      m_timeZone->to_posix_string(),                      // 1
+      m_defaultCurrency,                                  // 2
+      m_defaultSecurityType,                              // 3
+      m_isMarketDataLogEnabled ? "enabled" : "disabled",  // 4
+      m_periodBeforeExpiryDayToSwitchContract);           // 5
 }

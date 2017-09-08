@@ -21,18 +21,19 @@ class TRDK_CORE_API Observer : public trdk::Consumer {
            const std::string &implementationName,
            const std::string &instanceName,
            const trdk::Lib::IniSectionRef &);
-  ~Observer();
+  virtual ~Observer() override;
 
  public:
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
-                                              bool isInitial);
+                                              bool isInitial) override;
 
   virtual void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
-  virtual void RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
-                                         trdk::Security &,
-                                         const trdk::Security::ServiceEvent &);
+  virtual void RaiseSecurityServiceEvent(
+      const boost::posix_time::ptime &,
+      trdk::Security &,
+      const trdk::Security::ServiceEvent &) override;
 
   void RaiseLevel1UpdateEvent(Security &);
   void RaiseLevel1TickEvent(trdk::Security &,

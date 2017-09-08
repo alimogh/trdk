@@ -315,13 +315,15 @@ void Dispatcher::SignalSecurityContractSwitched(
     SubscriberPtrWrapper &subscriber,
     const pt::ptime &time,
     Security &security,
-    Security::Request &request) {
+    Security::Request &request,
+    bool &isSwitched) {
   Assert(!m_syncMutex.try_lock_shared());
   try {
     if (subscriber.IsBlocked()) {
       return;
     }
-    subscriber.RaiseSecurityContractSwitchedEvent(time, security, request);
+    subscriber.RaiseSecurityContractSwitchedEvent(time, security, request,
+                                                  isSwitched);
   } catch (...) {
     AssertFailNoException();
     //! Blocking as irreversible error, data loss.

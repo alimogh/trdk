@@ -197,18 +197,20 @@ void SubscriptionsManager::SubscribeToSecurityContractSwitching(
     const SubscriberPtrWrapper &subscriber,
     std::list<sig::connection> &slotConnections) {
   typedef void(CallbackProto)(SubscriberPtrWrapper &, const pt::ptime &,
-                              const Security::Request &);
+                              const Security::Request &, const bool &);
   const boost::function<CallbackProto> &callback = [this, &security](
       SubscriberPtrWrapper &subscriber, const pt::ptime &time,
-      const Security::Request &request) {
+      const Security::Request &request, const bool &isSwitched) {
     m_dispatcher.SignalSecurityContractSwitched(
         subscriber, time, security,
         // workaround for boost::bind "forwarding problem":
-        const_cast<Security::Request &>(request));
+        const_cast<Security::Request &>(request),
+        // workaround for boost::bind "forwarding problem":
+        const_cast<bool &>(isSwitched));
   };
 
   const auto slot = Security::ContractSwitchingSlot(
-      boost::bind(callback, subscriber, _1, _2));
+      boost::bind(callback, subscriber, _1, _2, _3));
   const auto &connection = security.SubscribeToContractSwitching(slot);
   try {
     slotConnections.emplace_back(connection);
