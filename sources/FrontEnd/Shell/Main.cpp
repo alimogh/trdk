@@ -15,6 +15,13 @@
 int main(int argc, char *argv[]) {
   QApplication application(argc, argv);
   application.setApplicationName(TRDK_NAME);
+  {
+    QFile qdarkstyleStyleFile(":qdarkstyle/style.qss");
+    if (qdarkstyleStyleFile.exists()) {
+      qdarkstyleStyleFile.open(QFile::ReadOnly | QFile::Text);
+      application.setStyleSheet(QTextStream(&qdarkstyleStyleFile).readAll());
+    }
+  }
 
   Shell shell;
   shell.show();

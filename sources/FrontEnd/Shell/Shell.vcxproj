@@ -91,6 +91,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_style.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+      </PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_Shell.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
@@ -162,6 +170,71 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Shell.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\qdarkstyle\rc\branch_closed-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_closed.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-hover.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-pressed.png" />
+    <Image Include="Resources\qdarkstyle\rc\close.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hsepartoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\sizegrip.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-end.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-more.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-vline.png" />
+    <Image Include="Resources\qdarkstyle\rc\transparent.png" />
+    <Image Include="Resources\qdarkstyle\rc\undock.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vsepartoolbar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Resources\qdarkstyle\style.qrc">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\qdarkstyle\style.qss">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
