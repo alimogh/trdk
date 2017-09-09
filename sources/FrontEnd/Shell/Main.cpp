@@ -9,8 +9,9 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Shell.hpp"
-#include <QtWidgets/QApplication>
+#include "MainWindow.hpp"
+
+using namespace trdk::Frontend::Shell;
 
 int main(int argc, char *argv[]) {
   QApplication application(argc, argv);
@@ -23,8 +24,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  Shell shell;
-  shell.show();
+  MainWindow mainWindow;
+  mainWindow.show();
 
   return application.exec();
 }

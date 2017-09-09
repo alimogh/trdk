@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:18:20
+ *   Created: 2017/09/09 01:56:04
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,17 +8,23 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Fwd.hpp"
+#pragma once
 
-#include "Common/Common.hpp"
-#include "Engine/Fwd.hpp"
+namespace trdk {
+namespace Frontend {
+namespace Shell {
 
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
+class Engine : private boost::noncopyable {
+ public:
+  explicit Engine(const boost::filesystem::path &);
+  Engine(Engine &&);
 
-#include <boost/algorithm/string.hpp>
-#include <boost/cast.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/make_unique.hpp>
+ public:
+  const boost::filesystem::path &GetConfigurationFilePath() const;
+
+ private:
+  const boost::filesystem::path m_path;
+};
+}
+}
+}

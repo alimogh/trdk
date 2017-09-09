@@ -9,17 +9,32 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Shell.hpp"
+#include "MainWindow.hpp"
+#include "Engine.hpp"
+#include "EngineListModel.hpp"
 
-Shell::Shell(QWidget *parent) : QMainWindow(parent) {
+using namespace trdk::Lib;
+using namespace trdk::Frontend::Shell;
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
 
-  connect(ui.actionAbout, &QAction::triggered, this, &Shell::ShowAboutInfo);
+  connect(ui.actionAbout, &QAction::triggered, this,
+          &MainWindow::ShowAboutInfo);
+  connect(ui.engineListView, &QListView::clicked, this,
+          &MainWindow::ShowEngine);
+
+  auto engineListModel = boost::make_unique<EngineListModel>(
+      GetExeFilePath().branch_path() / "etc");
+  m_engineListModel = &*engineListModel;
+  ui.engineListView->setModel(engineListModel.release());
 }
 
-void Shell::ShowAboutInfo() {
+void MainWindow::ShowEngine(const QModelIndex &) {}
+
+void MainWindow::ShowAboutInfo() {
   const auto &text = tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "
                         "%6\nSupport email: %7")
                          .arg(TRDK_NAME,            // 1

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:18:20
+ *   Created: 2017/09/05 08:25:07
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,17 +8,29 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Fwd.hpp"
+#pragma once
 
-#include "Common/Common.hpp"
-#include "Engine/Fwd.hpp"
+#include "ui_MainWindow.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
+namespace trdk {
+namespace Frontend {
+namespace Shell {
 
-#include <boost/algorithm/string.hpp>
-#include <boost/cast.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/make_unique.hpp>
+class MainWindow : public QMainWindow {
+  Q_OBJECT
+
+ public:
+  explicit MainWindow(QWidget *parent = Q_NULLPTR);
+
+ private slots:
+  void ShowAboutInfo();
+  void ShowEngine(const QModelIndex &);
+
+ private:
+  Ui::MainWindowClass ui;
+
+  EngineListModel *m_engineListModel;
+};
+}
+}
+}

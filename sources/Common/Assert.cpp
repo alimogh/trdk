@@ -29,7 +29,7 @@ using namespace trdk::Debug;
 
 namespace {
 
-void BreakDebug() throw() {
+void BreakDebug() noexcept {
 #if IS_DEBUG_BREAK_ENABLED == 1
 #if defined(BOOST_MSVC)
   DebugBreak();
@@ -105,7 +105,7 @@ void Detail::ReportCompareAssertFail(const std::string &val1,
 
 void Detail::ReportAssertFail(const char *expr,
                               const char *file,
-                              int line) throw() {
+                              int line) noexcept {
   try {
     boost::format message(
         "Assertion Failed (predefined): \"%1%\" in file %2%, line %3%.");
@@ -119,13 +119,13 @@ void Detail::ReportAssertFail(const char *expr,
 
 void Detail::RegisterUnhandledException(const char *function,
                                         const char *file,
-                                        long line) throw() {
+                                        long line) noexcept {
   EventsLog::BroadcastUnhandledException(function, file, line);
 }
 
 void Detail::AssertFailNoExceptionImpl(const char *function,
                                        const char *file,
-                                       long line) throw() {
+                                       long line) noexcept {
   RegisterUnhandledException(function, file, line);
   BreakDebug();
 }

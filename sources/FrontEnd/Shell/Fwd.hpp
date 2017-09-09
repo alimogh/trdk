@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:25:07
+ *   Created: 2017/09/09 01:43:03
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,17 +10,11 @@
 
 #pragma once
 
-#include "ui_Shell.h"
-
-class Shell : public QMainWindow {
-  Q_OBJECT
-
- public:
-  explicit Shell(QWidget *parent = Q_NULLPTR);
-
- private slots:
-  void ShowAboutInfo();
-
- private:
-  Ui::ShellClass ui;
-};
+namespace trdk {
+namespace Frontend {
+namespace Shell {
+class Engine;
+class EngineListModel;
+}
+}
+}
