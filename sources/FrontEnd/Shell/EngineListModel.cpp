@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "EngineListModel.hpp"
-#include "Engine.hpp"
+#include "EngineWindow.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::Frontend::Shell;
@@ -18,15 +18,17 @@ using namespace trdk::Frontend::Shell;
 namespace fs = boost::filesystem;
 
 EngineListModel::EngineListModel(const fs::path &configPathFolderPath,
-                                 QObject *parent)
-    : QAbstractItemModel(parent), m_configPathFolderPath(configPathFolderPath) {
+                                 QWidget *parent)
+    : QAbstractItemModel(parent) {
   foreach (
       const auto &it,
-      std::make_pair(fs::recursive_directory_iterator(m_configPathFolderPath),
+      std::make_pair(fs::recursive_directory_iterator(configPathFolderPath),
                      fs::recursive_directory_iterator())) {
     if (fs::is_regular_file(it)) {
       try {
-        m_engines.emplace_back(it.path());
+        m_engines.emplace_back(boost::make_unique<EngineWindow>(
+            configPathFolderPath, fs::relative(it.path(), configPathFolderPath),
+            parent));
       } catch (const std::exception &ex) {
         qDebug() << QString("Failed to read engine configuration '%1': '%2'.")
                         .arg(QString::fromStdString(it.path().string()),
@@ -36,13 +38,15 @@ EngineListModel::EngineListModel(const fs::path &configPathFolderPath,
   }
 }
 
-void *EngineListModel::ExportEngine(int row) const {
-  AssertLe(0, row);
-  AssertLt(row, m_engines.size());
-  return const_cast<Engine *>(&m_engines[row]);
+EngineWindow &EngineListModel::GetEngine(const QModelIndex &index) {
+  Assert(index.isValid());
+  if (!index.isValid()) {
+    throw LogicError("Engine index is not valid");
+  }
+  return *static_cast<EngineWindow *>(index.internalPointer());
 }
-const Engine &EngineListModel::ImportEngine(const QModelIndex &source) const {
-  return *static_cast<const Engine *>(source.internalPointer());
+const EngineWindow &EngineListModel::GetEngine(const QModelIndex &index) const {
+  return const_cast<EngineListModel *>(this)->GetEngine(index);
 }
 
 QVariant EngineListModel::data(const QModelIndex &index, int role) const {
@@ -52,31 +56,14 @@ QVariant EngineListModel::data(const QModelIndex &index, int role) const {
 
   switch (role) {
     case Qt::DisplayRole:
-    case Qt::StatusTipRole: {
-      QString result;
-      const auto &engine = ImportEngine(index);
-      auto path = engine.GetConfigurationFilePath().branch_path();
-      std::vector<std::string> name;
-      while (path != m_configPathFolderPath) {
-        name.emplace_back(path.filename().string());
-        path = path.branch_path();
-      }
-      {
-        const auto &filename = engine.GetConfigurationFilePath().filename();
-        if (boost::iequals(filename.extension().string(), ".ini")) {
-          name.emplace_back(filename.stem().string());
-        } else {
-          name.emplace_back(filename.string());
-        }
-      }
-      return QString::fromStdString(boost::join(name, " / "));
-    }
+    case Qt::StatusTipRole:
+      return GetEngine(index).GetName();
     case Qt::ToolTipRole:
       return QString::fromStdString(
-          ImportEngine(index).GetConfigurationFilePath().string());
-    default:
-      return QVariant();
+          GetEngine(index).GetConfigurationFilePath().string());
   }
+
+  return QVariant();
 }
 
 QModelIndex EngineListModel::index(int row,
@@ -90,7 +77,8 @@ QModelIndex EngineListModel::index(int row,
     return QModelIndex();
   }
 
-  return createIndex(row, column, ExportEngine(row));
+  return createIndex(row, column,
+                     &*const_cast<EngineListModel *>(this)->m_engines[row]);
 }
 
 QModelIndex EngineListModel::parent(const QModelIndex &) const {

@@ -17,8 +17,12 @@ class EngineListModel : public QAbstractItemModel {
 
  public:
   explicit EngineListModel(const boost::filesystem::path &configPathFolderPath,
-                           QObject *parent = Q_NULLPTR);
+                           QWidget *parent = Q_NULLPTR);
   virtual ~EngineListModel() override = default;
+
+ public:
+  EngineWindow &GetEngine(const QModelIndex &);
+  const EngineWindow &GetEngine(const QModelIndex &) const;
 
  public:
   virtual QVariant data(const QModelIndex &index, int role) const override;
@@ -29,13 +33,8 @@ class EngineListModel : public QAbstractItemModel {
   virtual int rowCount(const QModelIndex &parent) const override;
   virtual int columnCount(const QModelIndex &parent) const override;
 
- protected:
-  void *ExportEngine(int row) const;
-  const Engine &ImportEngine(const QModelIndex &) const;
-
  private:
-  const boost::filesystem::path m_configPathFolderPath;
-  std::vector<Engine> m_engines;
+  std::vector<std::unique_ptr<EngineWindow>> m_engines;
 };
 }
 }

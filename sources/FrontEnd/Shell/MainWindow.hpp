@@ -20,16 +20,23 @@ class MainWindow : public QMainWindow {
   Q_OBJECT
 
  public:
+  typedef QMainWindow Base;
+
+ public:
   explicit MainWindow(QWidget *parent = Q_NULLPTR);
+  virtual ~MainWindow() override = default;
+
+ protected:
+  virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
   void ShowAboutInfo();
   void ShowEngine(const QModelIndex &);
 
  private:
-  Ui::MainWindowClass ui;
+  Ui::MainWindow ui;
 
-  EngineListModel *m_engineListModel;
+  std::unique_ptr<EngineListModel> m_engineListModel;
 };
 }
 }

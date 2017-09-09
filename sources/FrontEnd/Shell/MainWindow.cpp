@@ -10,13 +10,16 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
-#include "Engine.hpp"
 #include "EngineListModel.hpp"
+#include "EngineWindow.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::Frontend::Shell;
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QWidget *parent)
+    : Base(parent),
+      m_engineListModel(boost::make_unique<EngineListModel>(
+          GetExeFilePath().branch_path() / "etc")) {
   ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
@@ -26,13 +29,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   connect(ui.engineListView, &QListView::clicked, this,
           &MainWindow::ShowEngine);
 
-  auto engineListModel = boost::make_unique<EngineListModel>(
-      GetExeFilePath().branch_path() / "etc");
-  m_engineListModel = &*engineListModel;
-  ui.engineListView->setModel(engineListModel.release());
+  ui.engineListView->setModel(&*m_engineListModel);
 }
 
-void MainWindow::ShowEngine(const QModelIndex &) {}
+void MainWindow::closeEvent(QCloseEvent *closeEvent) {
+  Base::closeEvent(closeEvent);
+  QApplication::quit();
+}
+
+void MainWindow::ShowEngine(const QModelIndex &index) {
+  auto &engine = m_engineListModel->GetEngine(index);
+  engine.show();
+  engine.activateWindow();
+}
 
 void MainWindow::ShowAboutInfo() {
   const auto &text = tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "

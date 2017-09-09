@@ -13,7 +13,8 @@
 namespace trdk {
 namespace Frontend {
 namespace Shell {
-class Engine;
+
+class EngineWindow;
 class EngineListModel;
 }
 }
