@@ -284,6 +284,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="MrigeshKejriwalOrderPolicy.cpp" />
     <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
@@ -303,6 +304,7 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="MrigeshKejriwalStrategy.hpp" />
+    <ClInclude Include="MrigeshKejriwalOrderPolicy.hpp" />
     <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>

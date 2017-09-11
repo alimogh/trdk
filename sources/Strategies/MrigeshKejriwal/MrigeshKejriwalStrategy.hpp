@@ -29,6 +29,7 @@ struct Settings {
   uint16_t numberOfHistoryHours;
   double costOfFunds;
   double maxLossShare;
+  Price signalPriceCorrection;
 
   explicit Settings(const Lib::IniSectionRef &);
 
