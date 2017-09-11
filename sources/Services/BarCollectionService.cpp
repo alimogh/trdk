@@ -161,11 +161,9 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     } else if (boost::iequals(m_unitsStr, "days")) {
       m_units = UNITS_DAYS;
       m_timedBarSize = pt::hours(m_barSizeUnits * 24);
-      throw Error("Days units is not implemented");
     } else if (boost::iequals(m_unitsStr, "weeks")) {
       m_units = UNITS_WEEKS;
       m_timedBarSize = pt::hours((m_barSizeUnits * 24) * 7);
-      throw Error("Weeks units is not implemented");
     } else if (boost::iequals(m_unitsStr, "ticks")) {
       m_units = UNITS_TICKS;
       m_countedBarSize = m_barSizeUnits;
@@ -337,11 +335,17 @@ class BarCollectionService::Implementation : private boost::noncopyable {
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_DAYS:
-        //! @todo Implement days bar service
-        throw Error("Days units is not implemented");
+        endTime = pt::ptime(tradeTime.date()) +
+                  (pt::hours(((time.hours() / m_barSizeUnits) + 1) * 24) *
+                   m_barSizeUnits);
+        startTime = endTime - m_timedBarSize;
+        break;
       case UNITS_WEEKS:
-        //! @todo Implement days bar service
-        throw Error("Weeks units is not implemented");
+        endTime = pt::ptime(tradeTime.date()) +
+                  ((pt::hours(((time.hours() / m_barSizeUnits) + 1) * 24) * 7) *
+                   m_barSizeUnits);
+        startTime = endTime - m_timedBarSize;
+        break;
       case UNITS_TICKS:
         AssertEq(endTime, pt::not_a_date_time);
         startTime = tradeTime;
