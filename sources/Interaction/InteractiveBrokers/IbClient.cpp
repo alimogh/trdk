@@ -88,7 +88,7 @@ Client::Client(ib::TradingSystem &ts,
                int clientId,
                const std::string &host,
                unsigned short port,
-               const std::string &barSizeMins)
+               const std::string &barSize)
     : m_ts(ts),
       m_isNoHistoryMode(isNoHistoryMode),
       m_host(host),
@@ -100,7 +100,7 @@ Client::Client(ib::TradingSystem &ts,
       m_orderStatusesMap(GetOrderStatusesMap()),
       m_seqNumber(-1),
       m_accountInfo(nullptr),
-      m_barSizeMins(barSizeMins),
+      m_barSize(barSize),
       m_isInitialBrokerPositionLoaded(false) {
   m_client.reset(new EPosixClientSocket(this));
   LogConnectionAttempt();
@@ -459,30 +459,30 @@ void Client::SendMarketDataRequest(ib::Security &security) {
   /*
   if (security.IsBarsRequired()) {
     const char *const whatToShowList[] = {"TRADES", "BID", "ASK"};
-    for (const char *const whatToShow : whatToShowList) {
-      const SecurityRequest request(security, TakeTickerId());
-      const auto &contract = GetContract(*request.security);
+  for (const char *const whatToShow : whatToShowList) {
+    const SecurityRequest request(security, TakeTickerId());
+    const auto &contract = GetContract(*request.security);
 
-      auto requests(m_barsRequest);
-      requests.emplace(request);
+    auto requests(m_barsRequest);
+    requests.emplace(request);
 
-      m_client->reqRealTimeBars(
-          request.tickerId, contract,
-          // Currently only 5 second bars are supported, if any other
-          // value is used, an exception will be thrown.
-          5, whatToShow, false, TagValueListSPtr());
+    m_client->reqRealTimeBars(
+        request.tickerId, contract,
+        // Currently only 5 second bars are supported, if any other
+        // value is used, an exception will be thrown.
+        5, whatToShow, false, TagValueListSPtr());
 
-      m_ts.GetMdsLog().Info(
-          "Sent Real Time Bars (%1%) subscription request for \"%2%\""
-          " (ticker ID: %3%).",
-          whatToShow, *request.security, request.tickerId);
+    m_ts.GetMdsLog().Info(
+        "Sent Real Time Bars (%1%) subscription request for \"%2%\""
+        " (ticker ID: %3%).",
+        whatToShow, *request.security, request.tickerId);
 
-      if (!request.security->IsOnline()) {
-        request.security->SetOnline(pt::not_a_date_time, true);
-      }
-
-      requests.swap(m_barsRequest);
+    if (!request.security->IsOnline()) {
+      request.security->SetOnline(pt::not_a_date_time, true);
     }
+
+    requests.swap(m_barsRequest);
+  }
   }
   */
 }
@@ -569,18 +569,58 @@ bool Client::SendMarketDataHistoryRequest(ib::Security &security,
     periodStr += " W";
   }
 
-  boost::smatch sizeMatch;
-  if (!boost::regex_match(m_barSizeMins, sizeMatch,
-                          boost::regex("(\\d+) minutes"))) {
-    throw Exception(
-        "Failed to parse bar size, legal ones are: 1 minutes, 2 minutes, 3 "
-        "minutes, 5 minutes, 10 minutes, 15 minutes, 20 minutes, 30 minutes");
+  std::string size;
+  std::vector<std::string> sizeMatch;
+  boost::split(sizeMatch, m_barSize, boost::is_any_of(" "));
+  if (sizeMatch.size() == 2) {
+    boost::trim(sizeMatch.front());
+    boost::trim(sizeMatch.back());
+    size = sizeMatch.front();
+    if (sizeMatch.back() == "minutes") {
+      if (size == "1") {
+        size += " min";
+      } else if (size == "2" || size == "3" || size == "5" || size == "10" ||
+                 size == "15" || size == "20" || size == "30") {
+        size += " mins";
+      } else {
+        size.clear();
+      }
+    } else if (sizeMatch.back() == "hours") {
+      if (size == "1") {
+        size += " hour";
+      } else if (size == "2" || size == "3" || size == "4" || size == "8") {
+        size += " hours";
+      } else {
+        size.clear();
+      }
+    } else if (sizeMatch.back() == "days") {
+      if (size == "1") {
+        size += " day";
+      } else {
+        size.clear();
+      }
+    } else if (sizeMatch.back() == "weeks") {
+      if (size == "1") {
+        size += " week";
+      } else {
+        size.clear();
+      }
+    } /* else if (sizeMatch.back() == "months") {
+       if (size == "1") {
+         size += " month";
+       } else {
+         size.clear();
+       }
+     }*/
   }
-  std::string size = sizeMatch[1];
-  if (size == "1") {
-    size += " min";
-  } else {
-    size += " mins";
+  if (size.empty()) {
+    boost::format error(
+        "Failed to parse bar size \"%1%\", legal ones are: 1 minutes, 2 "
+        "minutes, 3 minutes, 5 minutes, 10 minutes, 15 minutes, 20 minutes, "
+        "30 minutes, 1 hours, 2 hours, 3 hours, 4 hours, 8 hours, 1 days, 1 "
+        "weeks.");
+    error % m_barSize;
+    throw Exception(error.str().c_str());
   }
 
   // @sa
@@ -905,12 +945,12 @@ void Client::LogError(const int id, const int code, const IBString &message) {
       m_ts.GetTsLog().Error("Order rejected: %1%.", message);
       break;
     case 202:  // Order canceled - Reason:
-      /*
-      m_log.Debug(
-              INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
-                      " order canceled: %1%.",
-              message);
-      */
+               /*
+               m_log.Debug(
+                       INTERACTIVE_BROKERS_CLIENT_CONNECTION_NAME
+                               " order canceled: %1%.",
+                       message);
+               */
       break;
     // case 203: //  The security <security> is not available or allowed
     //  for this account.

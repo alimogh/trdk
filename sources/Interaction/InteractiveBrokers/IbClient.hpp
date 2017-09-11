@@ -443,7 +443,7 @@ class Client : protected EWrapper {
         requests;
   } m_contractRequests;
 
-  const std::string m_barSizeMins;
+  const std::string m_barSize;
 
   bool m_isInitialBrokerPositionLoaded;
 };
