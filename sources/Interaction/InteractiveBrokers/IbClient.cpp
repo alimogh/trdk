@@ -432,10 +432,10 @@ void Client::SendMarketDataRequest(ib::Security &security) {
     const auto &contract = GetContract(*request.security);
 
     auto requests(m_marketDataRequests);
-    Verify(requests.insert(request).second);
+    Verify(requests.emplace(request).second);
 
     std::list<IBString> genericTicklist;
-    genericTicklist.push_back("233");
+    genericTicklist.emplace_back("233");
 
     m_client->reqMktData(request.tickerId, contract,
                          boost::join(genericTicklist, ","), false,
@@ -459,12 +459,12 @@ void Client::SendMarketDataRequest(ib::Security &security) {
   /*
   if (security.IsBarsRequired()) {
     const char *const whatToShowList[] = {"TRADES", "BID", "ASK"};
-    foreach (const char *const whatToShow, whatToShowList) {
+    for (const char *const whatToShow : whatToShowList) {
       const SecurityRequest request(security, TakeTickerId());
       const auto &contract = GetContract(*request.security);
 
       auto requests(m_barsRequest);
-      requests.insert(request);
+      requests.emplace(request);
 
       m_client->reqRealTimeBars(
           request.tickerId, contract,

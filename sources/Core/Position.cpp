@@ -745,6 +745,11 @@ class Position::Implementation : private boost::noncopyable {
     Assert(!m_self.HasActiveOrders());
     Assert(!m_self.IsCompleted());
 
+    if (!m_close.startPrice) {
+      m_close.startPrice = m_self.GetMarketClosePrice();
+      Assert(m_close.startPrice);
+    }
+
     m_close.orders.emplace_back(std::move(now), std::move(price),
                                 std::min<Qty>(maxQty, m_self.GetActiveQty()),
                                 std::move(uuid));
