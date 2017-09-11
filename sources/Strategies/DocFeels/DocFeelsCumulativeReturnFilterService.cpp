@@ -31,8 +31,6 @@ class CumulativeReturnFilterService::Implementation
  public:
   CumulativeReturnFilterService &m_self;
 
-  const size_t m_size;
-
   std::ofstream m_tOldLog;
   std::ofstream m_tNewLog;
 
@@ -49,16 +47,13 @@ class CumulativeReturnFilterService::Implementation
   explicit Implementation(CumulativeReturnFilterService &self,
                           const IniSectionRef &conf)
       : m_self(self),
-        m_size(conf.ReadTypedKey<size_t>("size")),
         m_source(m_self.GetContext(), "CumulativeReturn", conf),
         m_crAccumTOld(accs::tag::rolling_window::window_size =
                           conf.ReadTypedKey<size_t>("cr_period")),
         m_crAccumTNew(accs::tag::rolling_window::window_size =
                           conf.ReadTypedKey<size_t>("cr_period")) {
-    const bool isLogEnabled = conf.ReadBoolKey("log");
-    m_self.GetLog().Info("Size: %1%. Log: %2%.",
-                         m_size,                        // 1
-                         isLogEnabled ? "yes" : "no");  // 2
+    const bool isLogEnabled = conf.ReadBoolKey("cts1_log");
+    m_self.GetLog().Info("Log: %1%.", isLogEnabled ? "yes" : "no");
     if (isLogEnabled) {
       OpenPointsLog();
     }
