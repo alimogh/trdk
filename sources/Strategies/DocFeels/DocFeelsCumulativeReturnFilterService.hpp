@@ -21,21 +21,28 @@ namespace DocFeels {
 class TRDK_STRATEGY_DOCFEELS_API CumulativeReturnFilterService
     : public Service {
  public:
+  typedef CumulativeReturnService::Point::R R;
   struct Point {
     struct Value {
       size_t number;
+      //! Signal of CR(RT.X) which was the highest.
       CumulativeReturnService::Point::R r;
-      trdk::Lib::Double rt;
+      //! Select CR(RT.X) which was the highest 30-CR(RT.X).
       trdk::Lib::Double cr;
+      //! SMA(CR(RT.X)).
+      trdk::Lib::Double crSma;
+      //! Select highest 30-CR(RT.X).
       trdk::Lib::Double crPeriod;
+      R signal;
+      R nprtf;
     };
     boost::posix_time::ptime time;
     trdk::Price source;
     trdk::Price change;
     trdk::Lib::Double tOld;
     trdk::Lib::Double tNew;
-    std::vector<Value> bestTOldValues;
-    std::vector<Value> bestTNewValues;
+    Value bestTOldValues;
+    Value bestTNewValues;
   };
 
  public:
