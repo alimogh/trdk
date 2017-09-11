@@ -34,10 +34,10 @@
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PositionReport.cpp">
+    <ClCompile Include="MrigeshKejriwalOrderPolicy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MrigeshKejriwalOrderPolicy.cpp">
+    <ClCompile Include="MrigeshKejriwalPositionReport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,10 +56,10 @@
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PositionReport.hpp">
+    <ClInclude Include="MrigeshKejriwalOrderPolicy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MrigeshKejriwalOrderPolicy.hpp">
+    <ClInclude Include="MrigeshKejriwalPositionReport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

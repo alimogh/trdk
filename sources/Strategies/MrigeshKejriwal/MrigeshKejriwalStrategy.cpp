@@ -14,7 +14,7 @@
 #include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
 #include "MrigeshKejriwalOrderPolicy.hpp"
-#include "PositionReport.hpp"
+#include "MrigeshKejriwalPositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;

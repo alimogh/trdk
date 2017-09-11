@@ -269,6 +269,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
     <ClCompile Include="Api.cpp" />
+    <ClCompile Include="MrigeshKejriwalPositionReport.cpp" />
     <ClCompile Include="MrigeshKejriwalStrategy.cpp" />
     <ClCompile Include="MrigeshKejriwalStrategyUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -285,7 +286,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="MrigeshKejriwalOrderPolicy.cpp" />
-    <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -303,9 +303,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
+    <ClInclude Include="MrigeshKejriwalPositionReport.hpp" />
     <ClInclude Include="MrigeshKejriwalStrategy.hpp" />
     <ClInclude Include="MrigeshKejriwalOrderPolicy.hpp" />
-    <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
