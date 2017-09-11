@@ -1443,30 +1443,44 @@ pt::ptime ParseHistoryPointTime(const std::string &source,
                                 MarketDataSource::Log &log,
                                 bool isFinished) {
   boost::smatch match;
-  const boost::regex regex(
+  boost::regex regex(
       !isFinished ? "(\\d{4})(\\d{2})(\\d{2}) +(\\d{2}):(\\d{2}):(\\d{2})"
                   : "finished-\\d{4}\\d{2}\\d{2} +\\d{2}:\\d{2}:\\d{2}"
                     "-(\\d{4})(\\d{2})(\\d{2}) +(\\d{2}):(\\d{2}):(\\d{2})");
-  if (!boost::regex_match(source, match, regex)) {
-    log.Error("Failed to extract history point date time from \"%1%\".",
-              source);
-    throw Exception("Failed to extract history point date time");
+  if (boost::regex_match(source, match, regex)) {
+    try {
+      return pt::ptime(pt::ptime::date_type(
+                           boost::lexical_cast<unsigned short>(match.str(1)),
+                           boost::lexical_cast<unsigned short>(match.str(2)),
+                           boost::lexical_cast<unsigned short>(match.str(3))),
+                       pt::ptime::time_duration_type(
+                           boost::lexical_cast<unsigned short>(match.str(4)),
+                           boost::lexical_cast<unsigned short>(match.str(5)),
+                           boost::lexical_cast<unsigned short>(match.str(6))));
+    } catch (const boost::bad_lexical_cast &) {
+      log.Error("Failed to extract history point date time from \"%1%\".",
+                source);
+      throw Exception("Failed to extract history point date time");
+    }
   }
-
-  try {
-    return pt::ptime(
-        pt::ptime::date_type(boost::lexical_cast<unsigned short>(match.str(1)),
-                             boost::lexical_cast<unsigned short>(match.str(2)),
-                             boost::lexical_cast<unsigned short>(match.str(3))),
-        pt::ptime::time_duration_type(
-            boost::lexical_cast<unsigned short>(match.str(4)),
-            boost::lexical_cast<unsigned short>(match.str(5)),
-            boost::lexical_cast<unsigned short>(match.str(6))));
-  } catch (const boost::bad_lexical_cast &) {
-    log.Error("Failed to extract history point date time from \"%1%\".",
-              source);
-    throw Exception("Failed to extract history point date time");
+  regex = boost::regex(
+      !isFinished ? "(\\d{4})(\\d{2})(\\d{2})"
+                  : "finished-\\d{4}\\d{2}\\d{2}-(\\d{4})(\\d{2})(\\d{2})");
+  if (boost::regex_match(source, match, regex)) {
+    try {
+      return pt::ptime(pt::ptime::date_type(
+                           boost::lexical_cast<unsigned short>(match.str(1)),
+                           boost::lexical_cast<unsigned short>(match.str(2)),
+                           boost::lexical_cast<unsigned short>(match.str(3))),
+                       pt::ptime::time_duration_type(0, 0, 0));
+    } catch (const boost::bad_lexical_cast &) {
+      log.Error("Failed to extract history point date time from \"%1%\".",
+                source);
+      throw Exception("Failed to extract history point date time");
+    }
   }
+  log.Error("Failed to extract history point date time from \"%1%\".", source);
+  throw Exception("Failed to extract history point date time");
 }
 }
 
