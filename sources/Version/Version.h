@@ -3,7 +3,7 @@
 
 #define TRDK_VERSION_RELEASE	1
 #define TRDK_VERSION_BUILD	0
-#define TRDK_VERSION_STATUS	24
+#define TRDK_VERSION_STATUS	25
 
 #define TRDK_VERSION_BRANCH		"MrigeshKejriwal"
 #define TRDK_VERSION_BRANCH_W	L"MrigeshKejriwal"
