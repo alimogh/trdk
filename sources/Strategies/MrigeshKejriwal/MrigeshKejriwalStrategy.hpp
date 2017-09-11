@@ -71,6 +71,9 @@ class PositionController : public TradingLib::PositionController {
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const Position &position) const override;
 
+  virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
+      const override;
+
  private:
   const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
   const Trend &m_trend;

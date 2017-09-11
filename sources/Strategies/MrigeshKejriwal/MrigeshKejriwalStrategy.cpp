@@ -13,6 +13,7 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
+#include "PositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
@@ -70,6 +71,10 @@ const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
 }
 const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
   return *m_orderPolicy;
+}
+
+std::unique_ptr<tl::PositionReport> PositionController::OpenReport() const {
+  return boost::make_unique<PositionReport>(GetStrategy());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
