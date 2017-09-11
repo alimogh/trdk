@@ -13,6 +13,8 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
+#include "MrigeshKejriwalOrderPolicy.hpp"
+#include "MrigeshKejriwalPositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
@@ -40,7 +42,8 @@ PositionController::PositionController(trdk::Strategy &strategy,
                                        const Trend &trend,
                                        const mk::Settings &settings)
     : Base(strategy),
-      m_orderPolicy(boost::make_shared<tl::LimitIocOrderPolicy>()),
+      m_orderPolicy(
+          boost::make_shared<OrderPolicy>(settings.signalPriceCorrection)),
       m_trend(trend),
       m_settings(settings) {}
 
@@ -72,6 +75,10 @@ const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
   return *m_orderPolicy;
 }
 
+std::unique_ptr<tl::PositionReport> PositionController::OpenReport() const {
+  return boost::make_unique<PositionReport>(GetStrategy());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 mk::Settings::Settings(const IniSectionRef &conf)
@@ -79,7 +86,9 @@ mk::Settings::Settings(const IniSectionRef &conf)
       minQty(conf.ReadTypedKey<Qty>("qty_min")),
       numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")),
       costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
-      maxLossShare(conf.ReadTypedKey<double>("max_loss_share")) {}
+      maxLossShare(conf.ReadTypedKey<double>("max_loss_share")),
+      signalPriceCorrection(
+          conf.ReadTypedKey<Price>("signal_price_correction")) {}
 
 void mk::Settings::Validate() const {
   if (qty < 1) {
@@ -93,12 +102,14 @@ void mk::Settings::Validate() const {
 void mk::Settings::Log(Module::Log &log) const {
   boost::format info(
       "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
-      "Cost of funds: %4%. Max. share of loss: %5%.");
-  info % qty                  // 1
-      % minQty                // 2
-      % numberOfHistoryHours  // 3
-      % costOfFunds           // 4
-      % maxLossShare;         // 5
+      "Cost of funds: %4%. Max. share of loss: %5%. Signal price correction: "
+      "%6%.");
+  info % qty                    // 1
+      % minQty                  // 2
+      % numberOfHistoryHours    // 3
+      % costOfFunds             // 4
+      % maxLossShare            // 5
+      % signalPriceCorrection;  // 6
   log.Info(info.str().c_str());
 }
 

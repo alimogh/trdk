@@ -29,6 +29,7 @@ struct Settings {
   uint16_t numberOfHistoryHours;
   double costOfFunds;
   double maxLossShare;
+  Price signalPriceCorrection;
 
   explicit Settings(const Lib::IniSectionRef &);
 
@@ -70,6 +71,9 @@ class PositionController : public TradingLib::PositionController {
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const Position &position) const override;
+
+  virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
+      const override;
 
  private:
   const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;

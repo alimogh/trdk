@@ -38,6 +38,10 @@ class LimitIocOrderPolicy : public trdk::TradingLib::OrderPolicy {
  public:
   virtual void Open(trdk::Position &) const override;
   virtual void Close(trdk::Position &) const override;
+
+ protected:
+  virtual trdk::ScaledPrice GetOpenOrderPrice(trdk::Position &) const;
+  virtual trdk::ScaledPrice GetCloseOrderPrice(trdk::Position &) const;
 };
 }
 }
