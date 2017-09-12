@@ -270,6 +270,7 @@
     <ClCompile Include="..\..\Common\Assert.cpp" />
     <ClCompile Include="Api.cpp" />
     <ClCompile Include="DocFeelsBbTrend.cpp" />
+    <ClCompile Include="DocFeelsCtsTrend.cpp" />
     <ClCompile Include="DocFeelsCumulativeReturnFilterService.cpp" />
     <ClCompile Include="DocFeelsCumulativeReturnService.cpp" />
     <ClCompile Include="DocFeelsCumulativeReturnServiceUTest.cpp">
@@ -286,6 +287,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="DocFeelsPositionReport.cpp" />
     <ClCompile Include="DocFeelsSmaTrend.cpp" />
     <ClCompile Include="DocFeelsSmaUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -335,9 +337,11 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="DocFeelsBbTrend.hpp" />
+    <ClInclude Include="DocFeelsCtsTrend.hpp" />
     <ClInclude Include="DocFeelsCumulativeReturnFilterService.hpp" />
     <ClInclude Include="DocFeelsCumulativeReturnService.hpp" />
     <ClInclude Include="DocFeelsPositionController.hpp" />
+    <ClInclude Include="DocFeelsPositionReport.hpp" />
     <ClInclude Include="DocFeelsStrategy.hpp" />
     <ClInclude Include="DocFeelsTrendMock.hpp" />
     <ClInclude Include="Fwd.hpp" />

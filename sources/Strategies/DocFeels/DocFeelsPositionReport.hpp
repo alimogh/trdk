@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 19:21:31
+ *   Created: 2017/09/12 10:48:57
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,26 +9,23 @@
  ******************************************************************************/
 
 #pragma once
+#include "TradingLib/PositionReport.hpp"
 
 namespace trdk {
-namespace TradingLib {
+namespace Strategies {
+namespace DocFeels {
 
-class PositionReport : private boost::noncopyable {
+class PositionReport : public TradingLib::PositionReport {
+ public:
+  typedef TradingLib::PositionReport Base;
+
  public:
   explicit PositionReport(const trdk::Strategy &);
-  virtual ~PositionReport() = default;
+  virtual ~PositionReport() override = default;
 
  public:
-  virtual void Append(const trdk::Position &);
-
- private:
-  virtual void Open(std::ofstream &);
-  virtual void PrintHead(std::ostream &);
-  virtual void PrintReport(const trdk::Position &, std::ostream &);
-
- protected:
-  const Strategy &m_strategy;
-  std::ofstream m_file;
+  trdk::Lib::Double GetPnlRatio() const;
 };
+}
 }
 }

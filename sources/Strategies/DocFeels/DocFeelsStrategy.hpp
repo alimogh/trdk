@@ -10,12 +10,12 @@
 
 #pragma once
 
-#include "TradingLib/SourcesSynchronizer.hpp"
 #include "Core/Strategy.hpp"
 #include "Services/BarService.hpp"
 #include "Api.h"
+#include "DocFeelsCtsTrend.hpp"
+#include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "DocFeelsPositionController.hpp"
-#include "DocFeelsTrend.hpp"
 
 namespace trdk {
 namespace Strategies {
@@ -26,10 +26,11 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
   typedef trdk::Strategy Base;
 
  public:
-  explicit Strategy(trdk::Context &,
-                    const std::string &instanceName,
-                    const trdk::Lib::IniSectionRef &,
-                    const boost::shared_ptr<Trend> &);
+  explicit Strategy(
+      trdk::Context &,
+      const std::string &instanceName,
+      const trdk::Lib::IniSectionRef &,
+      const boost::shared_ptr<CtsTrend> & = boost::shared_ptr<CtsTrend>());
   virtual ~Strategy() override = default;
 
  protected:
@@ -46,11 +47,13 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
   void CheckSignal(const Lib::TimeMeasurement::Milestones &);
 
  private:
-  const boost::shared_ptr<Trend> m_trend;
+  const boost::shared_ptr<CtsTrend> m_trend;
   PositionController m_positionController;
   Security *m_security;
-  TradingLib::SourcesSynchronizer m_sourcesSync;
   const Services::BarService *m_barService;
+
+  std::vector<std::unique_ptr<CumulativeReturnFilterService>> m_cts1;
+  std::vector<std::vector<size_t>> m_groups;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

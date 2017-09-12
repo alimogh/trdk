@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 19:21:31
+ *   Created: 2017/09/12 00:50:38
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,25 +10,19 @@
 
 #pragma once
 
+#include "TradingLib/Trend.hpp"
+
 namespace trdk {
-namespace TradingLib {
+namespace Strategies {
+namespace DocFeels {
 
-class PositionReport : private boost::noncopyable {
+class CtsTrend : public TradingLib::Trend {
  public:
-  explicit PositionReport(const trdk::Strategy &);
-  virtual ~PositionReport() = default;
+  explicit CtsTrend(const Lib::IniSectionRef &);
 
  public:
-  virtual void Append(const trdk::Position &);
-
- private:
-  virtual void Open(std::ofstream &);
-  virtual void PrintHead(std::ostream &);
-  virtual void PrintReport(const trdk::Position &, std::ostream &);
-
- protected:
-  const Strategy &m_strategy;
-  std::ofstream m_file;
+  bool Update(intmax_t confluence);
 };
+}
 }
 }

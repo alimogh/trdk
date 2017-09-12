@@ -1,6 +1,5 @@
 EXPORTS
-	CreateSmaStrategy
-	CreateBbStrategy
+	CreateTestStrategy
 	CreateCumulativeReturnService
 	CreateCumulativeReturnFilterService
 	GetTrdkModuleVersionInfoV1

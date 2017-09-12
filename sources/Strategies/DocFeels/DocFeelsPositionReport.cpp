@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 22:38:10
+ *   Created: 2017/09/12 10:52:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,10 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-namespace trdk {
-namespace Strategies {
-namespace DocFeels {
+#include "Prec.hpp"
+#include "DocFeelsPositionReport.hpp"
 
-class Trend;
-class PositionReport;
-}
-}
-}
+using namespace trdk;
+using namespace trdk::Strategies::DocFeels;
+
+PositionReport::PositionReport(const Strategy &strategy) : Base(strategy) {}

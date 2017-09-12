@@ -52,7 +52,7 @@ class CumulativeReturnFilterService::Implementation
                           conf.ReadTypedKey<size_t>("cr_period")),
         m_crAccumTNew(accs::tag::rolling_window::window_size =
                           conf.ReadTypedKey<size_t>("cr_period")) {
-    const bool isLogEnabled = conf.ReadBoolKey("cts1_log");
+    const bool isLogEnabled = conf.ReadBoolKey("cts1_nprtf_log");
     m_self.GetLog().Info("Log: %1%.", isLogEnabled ? "yes" : "no");
     if (isLogEnabled) {
       OpenPointsLog();

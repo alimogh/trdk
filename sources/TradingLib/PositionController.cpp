@@ -60,6 +60,10 @@ std::unique_ptr<PositionReport> PositionController::OpenReport() const {
   return std::make_unique<PositionReport>(GetStrategy());
 }
 
+const PositionReport &PositionController::GetReport() const {
+  return m_pimpl->GetReport();
+}
+
 ids::uuid PositionController::GenerateNewOperationId() const {
   return m_pimpl->m_generateUuid();
 }

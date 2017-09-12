@@ -10,6 +10,7 @@
 
 #pragma once
 #include "TradingLib/PositionController.hpp"
+#include "TradingLib/Fwd.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {
@@ -21,16 +22,16 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &, const Trend &);
+  explicit PositionController(Strategy &, const TradingLib::Trend &);
   virtual ~PositionController() override = default;
 
  public:
+  virtual void OnPositionUpdate(trdk::Position &) override;
+
+ public:
+  using Base::OpenPosition;
   virtual trdk::Position &OpenPosition(
       trdk::Security &,
-      const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual trdk::Position &OpenPosition(
-      trdk::Security &,
-      bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
 
  protected:
@@ -38,10 +39,13 @@ class PositionController : public TradingLib::PositionController {
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const trdk::Position &) const override;
+  virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
+      const override;
+  const PositionReport &GetReport() const;
 
  private:
   const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
-  const Trend &m_trend;
+  const TradingLib::Trend &m_trend;
 };
 }
 }
