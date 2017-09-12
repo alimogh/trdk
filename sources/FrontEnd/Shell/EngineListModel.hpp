@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 namespace trdk {
-namespace Frontend {
+namespace FrontEnd {
 namespace Shell {
 
 class EngineListModel : public QAbstractItemModel {

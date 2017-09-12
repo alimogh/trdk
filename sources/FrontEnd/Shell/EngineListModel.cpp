@@ -13,7 +13,7 @@
 #include "EngineWindow.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::Frontend::Shell;
+using namespace trdk::FrontEnd::Shell;
 
 namespace fs = boost::filesystem;
 

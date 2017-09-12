@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/09/24 13:14:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,10 +12,8 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class EngineListModel;
+namespace WilliamCarry {
+class SecurityWindow;
 }
 }
 }

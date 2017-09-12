@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/10 00:41:14
+ *   Created: 2017/09/24 12:47:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,34 +9,27 @@
  ******************************************************************************/
 
 #pragma once
+#include "ui_EngineWidget.h"
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
+namespace WilliamCarry {
 
-class Engine : public QObject {
+class EngineWidget : public QWidget {
   Q_OBJECT
 
  public:
-  explicit Engine(const boost::filesystem::path &configFilePath,
-                  QWidget *parent);
-  ~Engine();
-
- public:
-  const boost::filesystem::path &GetConfigFilePath() const;
-
- signals:
-  void StateChanged(bool isStarted);
-  void Message(const QString &, bool isWarning);
-  void LogRecord(const QString &);
-
- public:
-  void Start();
-  void Stop();
+  explicit EngineWidget(QWidget *parent);
+  virtual ~EngineWidget() override = default;
 
  private:
-  class Implementation;
-  std::unique_ptr<Implementation> m_pimpl;
+  void InsertSecurity(const QString &symbol);
+  void ShowSecurityWindow(const QString &symbol);
+  void CloseSecurityWindow(const QString &symbol);
+
+ private:
+  Ui::EngineWidget m_ui;
+  boost::unordered_map<QString, std::unique_ptr<SecurityWindow>> m_securities;
 };
 }
 }

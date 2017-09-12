@@ -9,10 +9,10 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Api.h"
 #include "Common/VersionInfo.hpp"
 
-extern "C" TRDK_STRATEGY_TEST_API void GetTrdkModuleVersionInfoV1(
-    trdk::Lib::VersionInfoV1 *result) {
-  *result = trdk::Lib::VersionInfoV1(TRDK_STRATEGY_TEST_FILE_NAME);
+using namespace trdk::Lib;
+
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_STRATEGY_TEST_FILE_NAME);
 }

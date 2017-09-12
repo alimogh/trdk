@@ -257,10 +257,14 @@ class IniSectionRef {
   friend std::ostream &operator<<(std::ostream &,
                                   const trdk::Lib::IniSectionRef &);
 
+  operator bool() const { return IsExist(); }
+
  public:
   const std::string &GetName() const { return m_name; }
 
   const trdk::Lib::Ini &GetBase() const { return *m_base; }
+
+  bool IsExist() const;
 
   bool IsKeyExist(const std::string &key) const;
 

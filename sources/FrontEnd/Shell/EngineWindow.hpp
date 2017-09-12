@@ -14,7 +14,7 @@
 #include "ui_EngineWindow.h"
 
 namespace trdk {
-namespace Frontend {
+namespace FrontEnd {
 namespace Shell {
 
 class EngineWindow : public QMainWindow {
@@ -45,9 +45,14 @@ class EngineWindow : public QMainWindow {
   void LogRecord(const QString &);
 
  private:
+  void LoadModule();
+
+ private:
   Engine m_engine;
   const QString m_name;
   Ui::EngineWindow m_ui;
+  std::unique_ptr<Lib::Dll> m_moduleDll;
+  std::unique_ptr<QWidget> m_module;
 };
 }
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/09/12 20:12:06
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,12 +10,12 @@
 
 #pragma once
 
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
+#include "Common/Common.hpp"
+#include <boost/unordered_map.hpp>
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include <QtWidgets>
+#pragma warning(pop)
 
-class EngineWindow;
-class EngineListModel;
-}
-}
-}
+#include "FrontEnd/Lib/Std.hpp"
+#include "Fwd.hpp"

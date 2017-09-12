@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "MainWindow.hpp"
 
-using namespace trdk::Frontend::Shell;
+using namespace trdk::FrontEnd::Shell;
 
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);

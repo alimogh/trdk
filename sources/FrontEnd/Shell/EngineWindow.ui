@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>EngineWindow</class>
  <widget class="QMainWindow" name="EngineWindow">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>450</width>
-    <height>150</height>
+    <height>151</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -16,30 +19,26 @@
     <height>150</height>
    </size>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <layout class="QVBoxLayout" name="centralLayout">
-      <item>
-       <widget class="QPlainTextEdit" name="log">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>50</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <family>Courier New</family>
-          <pointsize>9</pointsize>
-         </font>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
+  <widget class="QWidget" name="widget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QPlainTextEdit" name="log">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Courier New</family>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -53,13 +52,13 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionPinToTop"/>
+   <addaction name="pinToTop"/>
    <addaction name="separator"/>
-   <addaction name="actionStartEngine"/>
-   <addaction name="actionStopEngine"/>
+   <addaction name="startEngine"/>
+   <addaction name="stopEngine"/>
    <addaction name="separator"/>
   </widget>
-  <action name="actionStartEngine">
+  <action name="startEngine">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -70,7 +69,7 @@
     <string>F5</string>
    </property>
   </action>
-  <action name="actionStopEngine">
+  <action name="stopEngine">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -87,7 +86,7 @@
     <string>Shift+F5</string>
    </property>
   </action>
-  <action name="actionPinToTop">
+  <action name="pinToTop">
    <property name="checkable">
     <bool>true</bool>
    </property>

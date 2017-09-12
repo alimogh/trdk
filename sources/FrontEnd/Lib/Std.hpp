@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/09/24 13:39:18
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,12 +10,6 @@
 
 #pragma once
 
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class EngineListModel;
-}
-}
+inline std::size_t hash_value(const QString& value) {
+  return qHash(value);
 }

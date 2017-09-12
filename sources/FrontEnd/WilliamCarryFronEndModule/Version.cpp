@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/09/17 16:09:29
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,14 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
+using namespace trdk::Lib;
 
-class EngineWindow;
-class EngineListModel;
-}
-}
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_FRONTEND_MODULE_WILLIAMCARRY_FILE_NAME);
 }

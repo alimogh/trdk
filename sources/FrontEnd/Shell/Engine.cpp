@@ -14,9 +14,9 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Frontend::Shell;
+using namespace trdk::FrontEnd::Shell;
 
-namespace sh = trdk::Frontend::Shell;
+namespace sh = trdk::FrontEnd::Shell;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;

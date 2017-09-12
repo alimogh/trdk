@@ -14,7 +14,7 @@
 #include "EngineWindow.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::Frontend::Shell;
+using namespace trdk::FrontEnd::Shell;
 
 MainWindow::MainWindow(QWidget *parent)
     : Base(parent),
@@ -24,12 +24,11 @@ MainWindow::MainWindow(QWidget *parent)
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
 
-  connect(m_ui.actionAbout, &QAction::triggered, this,
+  connect(m_ui.showAbout, &QAction::triggered, this,
           &MainWindow::ShowAboutInfo);
-  connect(m_ui.engineListView, &QListView::clicked, this,
-          &MainWindow::ShowEngine);
+  connect(m_ui.engineList, &QListView::clicked, this, &MainWindow::ShowEngine);
 
-  m_ui.engineListView->setModel(&*m_engineListModel);
+  m_ui.engineList->setModel(&*m_engineListModel);
 }
 
 MainWindow::~MainWindow() {}

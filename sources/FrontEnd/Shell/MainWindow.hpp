@@ -13,7 +13,7 @@
 #include "ui_MainWindow.h"
 
 namespace trdk {
-namespace Frontend {
+namespace FrontEnd {
 namespace Shell {
 
 class MainWindow : public QMainWindow {
