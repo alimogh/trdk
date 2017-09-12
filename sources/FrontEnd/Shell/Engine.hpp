@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:25:07
+ *   Created: 2017/09/10 00:41:14
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,33 +10,28 @@
 
 #pragma once
 
-#include "ui_MainWindow.h"
-
 namespace trdk {
 namespace Frontend {
 namespace Shell {
 
-class MainWindow : public QMainWindow {
+class Engine : private QObject {
   Q_OBJECT
 
  public:
-  typedef QMainWindow Base;
+  explicit Engine(const boost::filesystem::path &configFilePath,
+                  QWidget *parent);
+  ~Engine();
 
  public:
-  explicit MainWindow(QWidget *parent);
-  virtual ~MainWindow() override;
+  const boost::filesystem::path &GetConfigFilePath() const;
 
- protected:
-  virtual void closeEvent(QCloseEvent *) override;
-
- private slots:
-  void ShowAboutInfo();
-  void ShowEngine(const QModelIndex &);
+ public:
+  void Start();
+  void Stop();
 
  private:
-  Ui::MainWindow ui;
-
-  std::unique_ptr<EngineListModel> m_engineListModel;
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 }
 }

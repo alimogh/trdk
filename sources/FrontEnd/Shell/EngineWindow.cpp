@@ -34,10 +34,45 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
                            const boost::filesystem::path &configFileSubPath,
                            QWidget *parent)
     : QMainWindow(parent),
-      m_path(configsBase / configFileSubPath),
+      m_engine(configsBase / configFileSubPath, parent),
       m_name(BuildEngineName(configFileSubPath)) {
-  // Just a smoke-check that config is an engine config:
-  IniFile(m_path).ReadBoolKey("General", "is_replay_mode");
   ui.setupUi(this);
   setWindowTitle(m_name + " - " + QCoreApplication::applicationName());
+
+  connect(ui.actionPinToTop, &QAction::triggered, this,
+          &EngineWindow::PinToTop);
+
+  connect(ui.actionStartEngine, &QAction::triggered, this,
+          &EngineWindow::Start);
+  connect(ui.actionStopEngine, &QAction::triggered, this, &EngineWindow::Stop);
+}
+
+void EngineWindow::PinToTop() {}
+
+void EngineWindow::Start() {
+  for (;;) {
+    try {
+      m_engine.Start();
+    } catch (const std::exception &ex) {
+      if (QMessageBox::critical(
+              this, tr("Failed to start engine"), QString("%1.").arg(ex.what()),
+              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+        break;
+      }
+    }
+  }
+}
+
+void EngineWindow::Stop() {
+  for (;;) {
+    try {
+      m_engine.Stop();
+    } catch (const std::exception &ex) {
+      if (QMessageBox::critical(
+              this, tr("Failed to stop engine"), QString("%1.").arg(ex.what()),
+              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+        break;
+      }
+    }
+  }
 }

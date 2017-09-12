@@ -311,7 +311,6 @@
     <Link />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="QueueService.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -332,7 +331,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DropCopyRecord.hpp" />
-    <ClInclude Include="Engine.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Pack.hpp" />

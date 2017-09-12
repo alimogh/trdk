@@ -317,6 +317,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="VerifyModules.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accumulators.hpp" />
@@ -345,6 +346,7 @@
     <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />
+    <ClInclude Include="VerifyModules.hpp" />
     <ClInclude Include="VersionInfo.hpp" />
   </ItemGroup>
   <ItemGroup>

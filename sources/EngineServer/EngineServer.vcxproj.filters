@@ -5,7 +5,6 @@
     <ClCompile Include="Prec.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="QueueService.cpp" />
-    <ClCompile Include="Engine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
@@ -14,7 +13,6 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="QueueService.hpp" />
     <ClInclude Include="DropCopyRecord.hpp" />
-    <ClInclude Include="Engine.hpp" />
     <ClInclude Include="Pack.hpp" />
   </ItemGroup>
   <ItemGroup>

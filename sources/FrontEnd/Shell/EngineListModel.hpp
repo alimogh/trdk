@@ -17,7 +17,7 @@ class EngineListModel : public QAbstractItemModel {
 
  public:
   explicit EngineListModel(const boost::filesystem::path &configPathFolderPath,
-                           QWidget *parent = Q_NULLPTR);
+                           QWidget *parent);
   virtual ~EngineListModel() override = default;
 
  public:

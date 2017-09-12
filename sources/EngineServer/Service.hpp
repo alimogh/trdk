@@ -10,8 +10,11 @@
 
 #pragma once
 
+#include "Core/Context.hpp"
+#include "Core/DropCopy.hpp"
+#include "Core/EventsLog.hpp"
+#include "Engine/Engine.hpp"
 #include "DropCopyRecord.hpp"
-#include "Engine.hpp"
 #include "Exception.hpp"
 #include "QueueService.hpp"
 
@@ -426,7 +429,7 @@ class Service : private boost::noncopyable {
   mutable EngineMutex m_engineMutex;
   boost::atomic<EngineState> m_engineState;
   boost::signals2::scoped_connection m_engineLogSubscription;
-  boost::shared_ptr<Engine> m_engine;
+  boost::shared_ptr<Engine::Engine> m_engine;
   Task m_engineTask;
 
   const Topics m_topics;

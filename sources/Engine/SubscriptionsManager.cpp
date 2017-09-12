@@ -36,7 +36,7 @@ void Report(const Module &module,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-SubscriptionsManager::SubscriptionsManager(Engine::Context &context)
+SubscriptionsManager::SubscriptionsManager(trdk::Engine::Context &context)
     : m_dispatcher(context) {}
 
 SubscriptionsManager::~SubscriptionsManager() {

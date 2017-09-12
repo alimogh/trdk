@@ -19,7 +19,7 @@ using namespace trdk::Frontend::Shell;
 MainWindow::MainWindow(QWidget *parent)
     : Base(parent),
       m_engineListModel(boost::make_unique<EngineListModel>(
-          GetExeFilePath().branch_path() / "etc")) {
+          GetExeFilePath().branch_path() / "etc", this)) {
   ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
@@ -31,6 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   ui.engineListView->setModel(&*m_engineListModel);
 }
+
+MainWindow::~MainWindow() {}
 
 void MainWindow::closeEvent(QCloseEvent *closeEvent) {
   Base::closeEvent(closeEvent);

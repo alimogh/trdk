@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  MainWindow mainWindow;
+  MainWindow mainWindow(Q_NULLPTR);
   mainWindow.show();
 
   return application.exec();

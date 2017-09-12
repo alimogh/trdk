@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Engine.hpp"
 #include "ui_EngineWindow.h"
 
 namespace trdk {
@@ -22,21 +23,25 @@ class EngineWindow : public QMainWindow {
  public:
   explicit EngineWindow(const boost::filesystem::path &configsBase,
                         const boost::filesystem::path &configFileSubPath,
-                        QWidget *parent = Q_NULLPTR);
+                        QWidget *parent);
   virtual ~EngineWindow() override = default;
 
  public:
   const QString &GetName() const { return m_name; }
 
  public:
-  const boost::filesystem::path &GetConfigurationFilePath() const {
-    return m_path;
+  const boost::filesystem::path &GetConfigFilePath() const {
+    return m_engine.GetConfigFilePath();
   }
 
  private slots:
+  void PinToTop();
+
+  void Start();
+  void Stop();
 
  private:
-  const boost::filesystem::path m_path;
+  Engine m_engine;
   const QString m_name;
   Ui::EngineWindow ui;
 };

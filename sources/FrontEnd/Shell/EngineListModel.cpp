@@ -60,7 +60,7 @@ QVariant EngineListModel::data(const QModelIndex &index, int role) const {
       return GetEngine(index).GetName();
     case Qt::ToolTipRole:
       return QString::fromStdString(
-          GetEngine(index).GetConfigurationFilePath().string());
+          GetEngine(index).GetConfigFilePath().string());
   }
 
   return QVariant();

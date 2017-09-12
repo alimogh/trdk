@@ -804,7 +804,7 @@ void EngineServer::Service::StartEngine() {
     GetLog().Debug("Started engine start task.");
     try {
       boost::signals2::scoped_connection engineLogSubscription;
-      auto engine = boost::make_shared<Engine>(
+      auto engine = boost::make_shared<Engine::Engine>(
           m_config.path,
           [this](const Context::State &state,
                  const std::string *updateMessage) {
