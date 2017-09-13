@@ -300,6 +300,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="PositionReport.hpp" />

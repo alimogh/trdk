@@ -57,8 +57,10 @@ Position &PositionController::OpenPosition(Security &security,
                                            bool isLong,
                                            const Milestones &delayMeasurement) {
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  result.AttachAlgo(std::make_unique<tl::StopLossShare>(m_settings.maxLossShare,
-                                                        result, m_orderPolicy));
+  if (m_settings.maxLossShare != 0) {
+    result.AttachAlgo(std::make_unique<tl::StopLossShare>(
+        m_settings.maxLossShare, result, m_orderPolicy));
+  }
   return result;
 }
 
@@ -201,13 +203,15 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
     throw Exception("Broker position for wrong security");
   }
   auto posQty = qty;
+  auto posVolume = volume;
   if (posQty != 0 && abs(posQty) < m_settings.minQty) {
     posQty = m_settings.minQty;
+    posVolume = (posVolume / abs(qty)) * posQty;
     if (qty < 0) {
       posQty *= -1;
     }
   }
-  m_positionController.OnBrokerPositionUpdate(security, posQty, volume,
+  m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
                                               isInitial);
 }
 

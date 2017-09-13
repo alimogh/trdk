@@ -27,7 +27,7 @@ class PositionController : private boost::noncopyable {
  public:
   void OnSignal(trdk::Security &,
                 const trdk::Lib::TimeMeasurement::Milestones &);
-  void OnPositionUpdate(trdk::Position &);
+  virtual void OnPositionUpdate(trdk::Position &);
   void OnPostionsCloseRequest();
   void OnBrokerPositionUpdate(trdk::Security &,
                               const trdk::Qty &,
@@ -64,6 +64,7 @@ class PositionController : private boost::noncopyable {
   }
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
+  const PositionReport &GetReport() const;
 
  protected:
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy() const = 0;
