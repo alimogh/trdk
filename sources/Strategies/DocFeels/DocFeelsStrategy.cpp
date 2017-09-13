@@ -59,7 +59,8 @@ df::Strategy::Strategy(Context &context,
            instanceName,
            conf),
       m_trend(trend ? trend : boost::make_shared<CtsTrend>(conf)),
-      m_positionController(*this, *m_trend),
+      m_positionController(
+          *this, *m_trend, conf.ReadTypedKey<double>("start_qty")),
       m_security(nullptr),
       m_barService(nullptr),
       m_groupReportPeriod(pt::hours(

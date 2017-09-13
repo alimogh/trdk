@@ -22,7 +22,9 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &, const TradingLib::Trend &);
+  explicit PositionController(Strategy &,
+                              const TradingLib::Trend &,
+                              const Qty &startQty);
   virtual ~PositionController() override = default;
 
  public:
@@ -46,6 +48,7 @@ class PositionController : public TradingLib::PositionController {
  private:
   const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
   const TradingLib::Trend &m_trend;
+  Qty m_qty;
 };
 }
 }
