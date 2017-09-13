@@ -61,7 +61,9 @@ df::Strategy::Strategy(Context &context,
       m_trend(trend ? trend : boost::make_shared<CtsTrend>(conf)),
       m_positionController(*this, *m_trend),
       m_security(nullptr),
-      m_barService(nullptr) {
+      m_barService(nullptr),
+      m_groupReportPeriod(pt::hours(
+          conf.ReadTypedKey<long>("groups_report_period_days") * 24)) {
   const auto numberOfCts1 = conf.ReadTypedKey<size_t>("number_of_cts1");
   const auto numberOfRtfsPerGroup =
       conf.ReadTypedKey<size_t>("number_of_rtfs_per_group");
@@ -74,16 +76,33 @@ df::Strategy::Strategy(Context &context,
         context, ctsInstanceName.str(), conf));
   }
   if (!m_cts1.empty()) {
+    m_groupsReport = OpenDataLog("csv", "_GROUPS");
+    m_groupsReport << "Date"           // 1
+                   << ",Losses.Total"  // 2
+                   << ",Wins.Total"    // 3
+                   << ",% Win.Total";  // 4
     const Generator generator(0, m_cts1.size() - 1);
     for (size_t groupIndex = 0; groupIndex < numberOfRtfGroups; ++groupIndex) {
+      m_groupsReport << ",Losses." << (groupIndex + 1)  // 5
+                     << ",Wins." << (groupIndex + 1)    // 6
+                     << ",% Win." << (groupIndex + 1);  // 7
       std::vector<size_t> group;
       group.reserve(numberOfRtfsPerGroup);
       for (size_t rtfInGroupIndex = 0; rtfInGroupIndex < numberOfRtfsPerGroup;
            ++rtfInGroupIndex) {
         group.emplace_back(generator.Generate());
       }
-      m_groups.emplace_back(std::move(group));
+      m_groups.emplace_back(Group{std::move(group)});
     }
+    m_groupsReport << std::endl;
+  }
+}
+
+df::Strategy::~Strategy() {
+  try {
+    FlushGroupReport(true);
+  } catch (...) {
+    AssertFailNoException();
   }
 }
 
@@ -145,15 +164,18 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
 
   intmax_t confluence = 0;
   if (numberOfResults) {
-    for (const auto &group : m_groups) {
+    for (auto &group : m_groups) {
       intmax_t groupConfluence = 0;
-      for (const auto rtfIndex : group) {
-        const auto &rtf = m_cts1[rtfIndex]->GetLastPoint().bestTNewValues.nprtf;
+      for (const auto &index : group.rtfs) {
+        const auto &rtf = m_cts1[index]->GetLastPoint().bestTNewValues.nprtf;
         groupConfluence += rtf;
       }
+      ++(groupConfluence <= 0 ? group.numberOfLosses : group.numberOfWins);
       confluence += groupConfluence;
     }
   }
+  m_lastGroupTime = m_barService->GetLastBar().time;
+  FlushGroupReport(false);
 
   const bool isTrendChanged = m_trend->Update(confluence);
   GetTradingLog().Write(
@@ -167,4 +189,47 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   if (isTrendChanged) {
     m_positionController.OnSignal(*m_security, delayMeasurement);
   }
+}
+
+void df::Strategy::FlushGroupReport(bool isForced) {
+  if (m_lastGroupTime.is_not_a_date_time()) {
+    return;
+  }
+  if (!isForced) {
+    if (m_nextGroupReportTime.is_not_a_date_time()) {
+      m_nextGroupReportTime = m_lastGroupTime + m_groupReportPeriod;
+      return;
+    }
+    if (m_lastGroupTime < m_nextGroupReportTime) {
+      return;
+    }
+    AssertEq(m_nextGroupReportTime, m_lastGroupTime);
+  }
+
+  std::vector<std::pair<size_t, size_t>> data;
+  data.reserve(m_groups.size());
+  auto total = std::make_pair<size_t, size_t>(0, 0);
+  for (auto &group : m_groups) {
+    total.first += group.numberOfLosses;
+    total.second += group.numberOfWins;
+    data.emplace_back(group.numberOfLosses, group.numberOfWins);
+    group.ResetStat();
+  }
+  m_nextGroupReportTime = m_lastGroupTime + m_groupReportPeriod;
+
+  m_groupsReport << m_lastGroupTime.date()  // 1
+                 << ',' << total.first      // 2
+                 << ',' << total.second     // 3
+                 << ',' << static_cast<int>((static_cast<double>(total.second) /
+                                             (total.second + total.first)) *
+                                            100);  // 4
+  for (const auto &group : data) {
+    m_groupsReport << ',' << group.first   // 5
+                   << ',' << group.second  // 6
+                   << ','
+                   << static_cast<int>((static_cast<double>(group.second) /
+                                        (group.second + group.first)) *
+                                       100);  // 7
+  }
+  m_groupsReport << std::endl;
 }

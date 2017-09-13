@@ -25,13 +25,22 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
 
+ private:
+  struct Group {
+    std::vector<size_t> rtfs;
+    size_t numberOfLosses;
+    size_t numberOfWins;
+
+    void ResetStat() { numberOfLosses = numberOfWins = 0; }
+  };
+
  public:
   explicit Strategy(
       trdk::Context &,
       const std::string &instanceName,
       const trdk::Lib::IniSectionRef &,
       const boost::shared_ptr<CtsTrend> & = boost::shared_ptr<CtsTrend>());
-  virtual ~Strategy() override = default;
+  virtual ~Strategy() override;
 
  protected:
   virtual void OnSecurityStart(trdk::Security &,
@@ -46,6 +55,8 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
  private:
   void CheckSignal(const Lib::TimeMeasurement::Milestones &);
 
+  void FlushGroupReport(bool);
+
  private:
   const boost::shared_ptr<CtsTrend> m_trend;
   PositionController m_positionController;
@@ -53,7 +64,12 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
   const Services::BarService *m_barService;
 
   std::vector<std::unique_ptr<CumulativeReturnFilterService>> m_cts1;
-  std::vector<std::vector<size_t>> m_groups;
+  std::vector<Group> m_groups;
+
+  const boost::posix_time::time_duration m_groupReportPeriod;
+  std::ofstream m_groupsReport;
+  boost::posix_time::ptime m_lastGroupTime;
+  boost::posix_time::ptime m_nextGroupReportTime;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

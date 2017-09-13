@@ -23,8 +23,16 @@ class PositionReport : public TradingLib::PositionReport {
   explicit PositionReport(const trdk::Strategy &);
   virtual ~PositionReport() override = default;
 
+ protected:
+  virtual void PrintHead(std::ostream &) override;
+  virtual void PrintReport(const trdk::Position &, std::ostream &) override;
+
  public:
   trdk::Lib::Double GetPnlRatio() const;
+
+ private:
+  size_t m_lineNo;
+  Lib::Double m_pnl;
 };
 }
 }
