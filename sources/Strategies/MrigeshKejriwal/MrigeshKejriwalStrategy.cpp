@@ -203,13 +203,15 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
     throw Exception("Broker position for wrong security");
   }
   auto posQty = qty;
+  auto posVolume = volume;
   if (posQty != 0 && abs(posQty) < m_settings.minQty) {
     posQty = m_settings.minQty;
+    posVolume = (posVolume / abs(qty)) * posQty;
     if (qty < 0) {
       posQty *= -1;
     }
   }
-  m_positionController.OnBrokerPositionUpdate(security, posQty, volume,
+  m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
                                               isInitial);
 }
 
