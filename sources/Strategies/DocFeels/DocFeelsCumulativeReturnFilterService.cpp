@@ -17,6 +17,7 @@ using namespace trdk::Lib;
 using namespace trdk::Strategies::DocFeels;
 
 namespace pt = boost::posix_time;
+namespace accs = boost::accumulators;
 
 class CumulativeReturnFilterService::Implementation
     : private boost::noncopyable {
@@ -30,8 +31,6 @@ class CumulativeReturnFilterService::Implementation
  public:
   CumulativeReturnFilterService &m_self;
 
-  const size_t m_size;
-
   std::ofstream m_tOldLog;
   std::ofstream m_tNewLog;
 
@@ -39,16 +38,22 @@ class CumulativeReturnFilterService::Implementation
 
   CumulativeReturnService m_source;
 
+  accs::accumulator_set<Double, accs::stats<accs::tag::rolling_mean>>
+      m_crAccumTOld;
+  accs::accumulator_set<Double, accs::stats<accs::tag::rolling_mean>>
+      m_crAccumTNew;
+
  public:
   explicit Implementation(CumulativeReturnFilterService &self,
                           const IniSectionRef &conf)
       : m_self(self),
-        m_size(conf.ReadTypedKey<size_t>("size")),
-        m_source(m_self.GetContext(), "CumulativeReturn", conf) {
-    const bool isLogEnabled = conf.ReadBoolKey("log");
-    m_self.GetLog().Info("Size: %1%. Log: %2%.",
-                         m_size,                        // 1
-                         isLogEnabled ? "yes" : "no");  // 2
+        m_source(m_self.GetContext(), "CumulativeReturn", conf),
+        m_crAccumTOld(accs::tag::rolling_window::window_size =
+                          conf.ReadTypedKey<size_t>("cr_period")),
+        m_crAccumTNew(accs::tag::rolling_window::window_size =
+                          conf.ReadTypedKey<size_t>("cr_period")) {
+    const bool isLogEnabled = conf.ReadBoolKey("cts1_nprtf_log");
+    m_self.GetLog().Info("Log: %1%.", isLogEnabled ? "yes" : "no");
     if (isLogEnabled) {
       OpenPointsLog();
     }
@@ -67,15 +72,19 @@ class CumulativeReturnFilterService::Implementation
 
   void PreparePointsLog(std::ostream &log) {
     auto tOldLog = m_self.OpenDataLog("csv", "_tOld");
-    log << "Date"      // 1
-        << ",Time"     // 2
-        << ",Close"    // 3
-        << ",%Change"  // 4
-        << ",t";       // 5
-    for (size_t i = 1; i <= m_size; ++i) {
-      log << ',' << i << ".RT," << i << ".CR," << i << ".#";
-    }
-    log << std::endl;
+    log << "Date"        // 1
+        << ",Time"       // 2
+        << ",Close"      // 3
+        << ",%Change"    // 4
+        << ",t"          // 5
+        << ",#"          // 6
+        << ",R"          // 7
+        << ",CR"         // 8
+        << ",SMA(CR)"    // 9
+        << ",CR Period"  // 10
+        << ",Signal"     // 11
+        << ",NPRTF"      // 12
+        << std::endl;
     log << std::setfill('0');
   }
 
@@ -88,36 +97,45 @@ class CumulativeReturnFilterService::Implementation
   }
 
   void LogTPoint(const Point &point,
-                 const std::vector<Point::Value> &values,
+                 const Point::Value &values,
                  bool isNew,
                  std::ostream &log) {
     log << point.time.date()                                // 1
         << ',' << ExcelTextField(point.time.time_of_day())  // 2
         << ',' << point.source                              // 3
         << ',' << point.change                              // 4
-        << ',' << (!isNew ? point.tOld : point.tNew);       // 5
-    for (const auto &val : values) {
-      log << ',' << val.rt << ',' << val.crPeriod << ',' << val.number;
-    }
-    log << std::endl;
+        << ',' << (!isNew ? point.tOld : point.tNew)        // 5
+        << ',' << values.number                             // 6
+        << ',' << values.r                                  // 7
+        << ',' << values.cr                                 // 8
+        << ',' << values.crSma                              // 9
+        << ',' << values.crPeriod                           // 10
+        << ',' << values.signal                             // 11
+        << ',' << values.nprtf                              // 12
+        << std::endl;
   }
 
   void Update(const CumulativeReturnService::Point &source) {
-    std::vector<Index> sortTOld;
-    sortTOld.reserve(source.branches.size());
-    std::vector<Index> sortTNew;
-    sortTNew.reserve(source.branches.size());
-    {
-      size_t index = 0;
-      for (const auto &branch : source.branches) {
-        sortTOld.emplace_back(Index{branch.tOld.crPeriod, index});
-        sortTNew.emplace_back(Index{branch.tNew.crPeriod, index});
-        ++index;
+    size_t bestTOldIndex = 0;
+    size_t bestTNewIndex = 0;
+    for (size_t i = 1; i < source.branches.size(); ++i) {
+      const auto &branch = source.branches[i];
+      {
+        const auto &bestBranch = source.branches[bestTOldIndex].tOld;
+        if (bestBranch.crPeriod < branch.tOld.crPeriod) {
+          bestTOldIndex = i;
+        }
+      }
+      {
+        const auto &bestBranch = source.branches[bestTNewIndex].tOld;
+        if (bestBranch.crPeriod < branch.tNew.crPeriod) {
+          bestTNewIndex = i;
+        }
       }
     }
 
-    SetDate(sortTOld, source, false, m_data.bestTOldValues);
-    SetDate(sortTNew, source, true, m_data.bestTNewValues);
+    SetDate(source, bestTOldIndex, false, m_crAccumTOld, m_data.bestTOldValues);
+    SetDate(source, bestTNewIndex, true, m_crAccumTOld, m_data.bestTNewValues);
 
     m_data.time = source.time;
     m_data.source = source.source;
@@ -128,24 +146,25 @@ class CumulativeReturnFilterService::Implementation
     LogPoint(m_data);
   }
 
-  void SetDate(std::vector<Index> &sort,
-               const CumulativeReturnService::Point &source,
-               bool isNew,
-               std::vector<Point::Value> &result) {
-    std::sort(sort.begin(), sort.end(), std::greater<Index>());
-
-    const auto size = std::min(source.branches.size(), m_size);
-    result.clear();
-    result.reserve(size);
-
-    for (size_t i = 0; i < size; ++i) {
-      const auto &index = sort[i].index;
-      const auto &point = source.branches[index];
-      const auto &tPoint = isNew ? point.tNew : point.tOld;
-      AssertEq(sort[i].crPeriod, tPoint.crPeriod);
-      result.emplace_back(Point::Value{index + 1, point.r, tPoint.rt, tPoint.cr,
-                                       tPoint.crPeriod});
-    }
+  void SetDate(
+      const CumulativeReturnService::Point &source,
+      size_t index,
+      bool isNew,
+      accs::accumulator_set<Double, accs::stats<accs::tag::rolling_mean>>
+          &crAcc,
+      Point::Value &result) {
+    const auto &branch = source.branches[index];
+    const auto &sourcePoint = isNew ? branch.tNew : branch.tOld;
+    const auto &crSma = accs::rolling_mean(crAcc);
+    const R &signal = sourcePoint.crPeriod > crSma ? 1 : -1;
+    result = Point::Value{index + 1,
+                          branch.r,
+                          sourcePoint.cr,
+                          std::move(crSma),
+                          sourcePoint.crPeriod,
+                          signal,
+                          signal * branch.r};
+    crAcc(result.cr);
   }
 };
 

@@ -25,14 +25,16 @@ namespace {
 class RandomRGenerator : public CumulativeReturnService::RGenerator {
  public:
   RandomRGenerator()
-      :
+      : m_seed(
 #ifndef DEV_VER
-        m_seed(static_cast<uint32_t>(pt::microsec_clock::universal_time()
-                                         .time_of_day()
-                                         .total_nanoseconds())),
+            static_cast<uint32_t>(pt::microsec_clock::universal_time()
+                                      .time_of_day()
+                                      .total_nanoseconds())
 #else
-        m_seed(boost::mt19937::default_seed),
+            boost::mt19937::default_seed
 #endif
+            +
+            ++m_seedCorrection),
         m_random(m_seed),
         m_range(0, 1),
         m_generate(m_random, m_range) {
@@ -48,11 +50,13 @@ class RandomRGenerator : public CumulativeReturnService::RGenerator {
 
  private:
   const uint32_t m_seed;
+  static uint32_t m_seedCorrection;
   boost::mt19937 m_random;
   boost::uniform_int<uint8_t> m_range;
   mutable boost::variate_generator<boost::mt19937, boost::uniform_int<uint8_t>>
       m_generate;
 };
+uint32_t RandomRGenerator::m_seedCorrection = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +104,7 @@ class CumulativeReturnService::Implementation : private boost::noncopyable {
         m_rGenerator(rGenerator ? rGenerator
                                 : boost::make_shared<RandomRGenerator>()) {
     const auto &sizeOfRtSet = conf.ReadTypedKey<size_t>("size_of_rt_set");
-    const bool isLogEnabled = conf.ReadBoolKey("log");
+    const bool isLogEnabled = conf.ReadBoolKey("cts1_source_log");
     m_self.GetLog().Info(
         "Size of RT set: %1%. Number of CR periods: %2%. Log: %3%. R-generator "
         "param: %4%.",

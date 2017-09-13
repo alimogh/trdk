@@ -178,7 +178,8 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   ////////////////////////////////////////////////////////////////////////////////
 
   typedef void(ContractSwitchingSlotSignature)(const boost::posix_time::ptime &,
-                                               const trdk::Security::Request &);
+                                               const trdk::Security::Request &,
+                                               bool &isSwitched);
   typedef boost::function<ContractSwitchingSlotSignature> ContractSwitchingSlot;
   typedef boost::signals2::connection ContractSwitchingSlotConnection;
 
@@ -481,6 +482,9 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     */
   bool SetExpiration(const boost::posix_time::ptime &time,
                      const trdk::Lib::ContractExpiration &expiration);
+  //! Continue contract switching which started by signal "contract switching
+  //! signal".
+  void ContinueContractSwitchingToNextExpiration();
 
  private:
   class Implementation;

@@ -14,6 +14,7 @@
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "OrderPolicy.hpp"
 #include "PositionReport.hpp"
 
 using namespace trdk;
@@ -26,8 +27,9 @@ namespace ids = boost::uuids;
 class PositionController::Implementation : private boost::noncopyable {
  public:
   PositionController &m_self;
-  Strategy &m_strategy;
   ids::random_generator m_generateUuid;
+
+  Strategy &m_strategy;
 
   std::unique_ptr<PositionReport> m_report;
 
@@ -58,6 +60,10 @@ std::unique_ptr<PositionReport> PositionController::OpenReport() const {
   return std::make_unique<PositionReport>(GetStrategy());
 }
 
+const PositionReport &PositionController::GetReport() const {
+  return m_pimpl->GetReport();
+}
+
 ids::uuid PositionController::GenerateNewOperationId() const {
   return m_pimpl->m_generateUuid();
 }
@@ -67,7 +73,14 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 
 trdk::Position &PositionController::OpenPosition(
     Security &security, bool isLong, const Milestones &delayMeasurement) {
-  const auto &qty = GetNewPositionQty();
+  return OpenPosition(security, isLong, GetNewPositionQty(), delayMeasurement);
+}
+
+trdk::Position &PositionController::OpenPosition(
+    Security &security,
+    bool isLong,
+    const Qty &qty,
+    const Milestones &delayMeasurement) {
   auto position =
       isLong
           ? CreatePosition<LongPosition>(
@@ -76,6 +89,18 @@ trdk::Position &PositionController::OpenPosition(
                 security, qty, security.GetBidPriceScaled(), delayMeasurement);
   ContinuePosition(*position);
   return *position;
+}
+
+void PositionController::ContinuePosition(Position &position) {
+  Assert(!position.HasActiveOrders());
+  GetOpenOrderPolicy().Open(position);
+}
+
+void PositionController::ClosePosition(Position &position,
+                                       const CloseReason &reason) {
+  Assert(!position.HasActiveOrders());
+  position.SetCloseReason(reason);
+  GetCloseOrderPolicy().Close(position);
 }
 
 void PositionController::OnSignal(Security &security,

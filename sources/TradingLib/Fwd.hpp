@@ -13,6 +13,8 @@
 namespace trdk {
 namespace TradingLib {
 
+class OrderPolicy;
 class PositionReport;
+class Trend;
 }
 }

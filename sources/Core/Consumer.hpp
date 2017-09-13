@@ -34,7 +34,8 @@ class TRDK_CORE_API Consumer : public trdk::Module {
   virtual void RaiseSecurityContractSwitchedEvent(
       const boost::posix_time::ptime &,
       trdk::Security &,
-      trdk::Security::Request &) = 0;
+      trdk::Security::Request &,
+      bool &isSwitched) = 0;
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
                                               const trdk::Qty &,
@@ -56,7 +57,8 @@ class TRDK_CORE_API Consumer : public trdk::Module {
     */
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           trdk::Security &,
-                                          trdk::Security::Request &);
+                                          trdk::Security::Request &,
+                                          bool &isSwitched);
 
   virtual void OnLevel1Tick(trdk::Security &,
                             const boost::posix_time::ptime &,

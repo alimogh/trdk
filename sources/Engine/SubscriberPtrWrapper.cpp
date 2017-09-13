@@ -390,31 +390,42 @@ void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
 }
 
 void SubscriberPtrWrapper::RaiseSecurityContractSwitchedEvent(
-    const pt::ptime &time, Security &security, Security::Request &request) {
+    const pt::ptime &time,
+    Security &security,
+    Security::Request &request,
+    bool &isSwitched) {
   const class Visitor : public boost::static_visitor<void>,
                         private boost::noncopyable {
    public:
     explicit Visitor(const pt::ptime &time,
                      Security &security,
-                     Security::Request &request)
-        : m_time(time), m_source(security), m_request(request) {}
+                     Security::Request &request,
+                     bool &isSwitched)
+        : m_time(time),
+          m_source(security),
+          m_request(request),
+          m_isSwitched(isSwitched) {}
 
    public:
     void operator()(Strategy &strategy) const {
-      strategy.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request);
+      strategy.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
+                                                  m_isSwitched);
     }
     void operator()(Service &service) const {
-      service.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request);
+      service.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
+                                                 m_isSwitched);
     }
     void operator()(Observer &observer) const {
-      observer.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request);
+      observer.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
+                                                  m_isSwitched);
     }
 
    private:
     const pt::ptime &m_time;
     Security &m_source;
     Security::Request &m_request;
-  } visitor(time, security, request);
+    bool &m_isSwitched;
+  } visitor(time, security, request, isSwitched);
 
   boost::apply_visitor(visitor, m_subscriber);
 }

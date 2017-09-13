@@ -27,7 +27,7 @@ class TRDK_CORE_API Service : public trdk::Module {
                    const std::string &implementationName,
                    const std::string &instanceName,
                    const trdk::Lib::IniSectionRef &);
-  virtual ~Service();
+  virtual ~Service() override;
 
  public:
   const boost::uuids::uuid &GetTypeId() const;
@@ -47,7 +47,8 @@ class TRDK_CORE_API Service : public trdk::Module {
  public:
   void RaiseSecurityContractSwitchedEvent(const boost::posix_time::ptime &,
                                           const Security &,
-                                          Security::Request &);
+                                          Security::Request &,
+                                          bool &isSwitched);
   bool RaiseLevel1UpdateEvent(const trdk::Security &);
   bool RaiseLevel1TickEvent(const trdk::Security &,
                             const boost::posix_time::ptime &,
@@ -80,7 +81,8 @@ class TRDK_CORE_API Service : public trdk::Module {
     */
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           const trdk::Security &,
-                                          trdk::Security::Request &);
+                                          trdk::Security::Request &,
+                                          bool &isSwitched);
 
   virtual bool OnLevel1Update(const trdk::Security &);
 

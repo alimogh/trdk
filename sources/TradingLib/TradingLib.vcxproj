@@ -248,6 +248,7 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -299,6 +300,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 22:38:10
+ *   Created: 2017/09/12 00:51:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,20 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-namespace trdk {
-namespace Strategies {
-namespace DocFeels {
+#include "Prec.hpp"
+#include "DocFeelsCtsTrend.hpp"
 
-class Trend;
-class PositionReport;
-}
-}
+using namespace trdk;
+using namespace trdk::Strategies::DocFeels;
+
+CtsTrend::CtsTrend(const Lib::IniSectionRef &) {}
+
+bool CtsTrend::Update(intmax_t confluence) {
+  if (confluence > 0) {
+    return SetIsRising(true);
+  } else if (confluence < 0) {
+    return SetIsRising(false);
+  } else {
+    return false;
+  }
 }

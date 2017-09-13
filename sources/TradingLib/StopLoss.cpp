@@ -18,7 +18,9 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StopLossOrder::StopLossOrder(Position &position) : StopOrder(position) {}
+StopLossOrder::StopLossOrder(
+    Position &position, const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopOrder(position, orderPolicy) {}
 
 void StopLossOrder::Run() {
   if (!GetPosition().IsOpened()) {
@@ -51,8 +53,9 @@ StopPrice::Params::Params(const Price &price) : m_price(price) {}
 const Price &StopPrice::Params::GetPrice() const { return m_price; }
 
 StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
-                     Position &position)
-    : StopLossOrder(position), m_params(params) {}
+                     Position &position,
+                     const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopLossOrder(position, orderPolicy), m_params(params) {}
 
 const char *StopPrice::GetName() const { return "stop price"; }
 
@@ -91,8 +94,9 @@ const Volume &StopLoss::Params::GetMaxLossPerLot() const {
 }
 
 StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
-                   Position &position)
-    : StopLossOrder(position), m_params(params) {}
+                   Position &position,
+                   const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopLossOrder(position, orderPolicy), m_params(params) {}
 
 const char *StopLoss::GetName() const { return "stop loss"; }
 
@@ -132,12 +136,17 @@ const Volume &StopLossShare::Params::GetMaxLossShare() const {
   return m_maxLossShare;
 }
 
-StopLossShare::StopLossShare(const boost::shared_ptr<const Params> &params,
-                             Position &position)
-    : StopLossOrder(position), m_params(params) {}
+StopLossShare::StopLossShare(
+    const boost::shared_ptr<const Params> &params,
+    Position &position,
+    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopLossOrder(position, orderPolicy), m_params(params) {}
 
-StopLossShare::StopLossShare(const Double &maxLossShare, Position &position)
-    : StopLossOrder(position),
+StopLossShare::StopLossShare(
+    const Double &maxLossShare,
+    Position &position,
+    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopLossOrder(position, orderPolicy),
       m_params(boost::make_shared<Params>(maxLossShare)) {}
 
 const char *StopLossShare::GetName() const { return "stop loss share"; }

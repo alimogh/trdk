@@ -32,8 +32,10 @@ class TrailingStop : public trdk::TradingLib::StopOrder {
   };
 
  public:
-  explicit TrailingStop(const boost::shared_ptr<const Params> &,
-                        trdk::Position &);
+  explicit TrailingStop(
+      const boost::shared_ptr<const Params> &,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~TrailingStop();
 
  public:

@@ -57,7 +57,8 @@ class SubscriberPtrWrapper {
  public:
   void RaiseSecurityContractSwitchedEvent(const boost::posix_time::ptime &,
                                           Security &,
-                                          Security::Request &);
+                                          Security::Request &,
+                                          bool &isSwitched);
   void RaiseLevel1UpdateEvent(Security &,
                               const Lib::TimeMeasurement::Milestones &) const;
   void RaiseLevel1TickEvent(const Level1Tick &,

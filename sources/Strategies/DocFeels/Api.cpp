@@ -9,10 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "DocFeelsBbTrend.hpp"
 #include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "DocFeelsCumulativeReturnService.hpp"
-#include "DocFeelsSmaTrend.hpp"
 #include "DocFeelsStrategy.hpp"
 #include "Common/VersionInfo.hpp"
 
@@ -22,17 +20,10 @@ using namespace trdk::Strategies;
 
 namespace df = trdk::Strategies::DocFeels;
 
-boost::shared_ptr<Strategy> CreateSmaStrategy(Context &context,
-                                              const std::string &instanceName,
-                                              const IniSectionRef &conf) {
-  return boost::make_shared<df::Strategy>(
-      context, instanceName, conf, boost::make_shared<df::SmaTrend>(conf));
-}
-boost::shared_ptr<Strategy> CreateBbStrategy(Context &context,
-                                             const std::string &instanceName,
-                                             const IniSectionRef &conf) {
-  return boost::make_shared<df::Strategy>(
-      context, instanceName, conf, boost::make_shared<df::BbTrend>(conf));
+boost::shared_ptr<Strategy> CreateTestStrategy(Context &context,
+                                               const std::string &instanceName,
+                                               const IniSectionRef &conf) {
+  return boost::make_shared<df::Strategy>(context, instanceName, conf);
 }
 
 boost::shared_ptr<Service> CreateCumulativeReturnService(

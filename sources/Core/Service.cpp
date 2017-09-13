@@ -143,7 +143,8 @@ void Service::OnSecurityStart(const Security &, Security::Request &) {}
 
 void Service::OnSecurityContractSwitched(const pt::ptime &,
                                          const Security &security,
-                                         Security::Request &) {
+                                         Security::Request &,
+                                         bool &) {
   GetLog().Error(
       "Subscribed to %1% contract switch event, but can't work with it"
       " (doesn't have OnSecurityContractSwitched method implementation).",
@@ -154,9 +155,10 @@ void Service::OnSecurityContractSwitched(const pt::ptime &,
 
 void Service::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
                                                  const Security &security,
-                                                 Security::Request &request) {
+                                                 Security::Request &request,
+                                                 bool &isSwitched) {
   const auto lock = LockForOtherThreads();
-  OnSecurityContractSwitched(time, security, request);
+  OnSecurityContractSwitched(time, security, request, isSwitched);
 }
 
 bool Service::RaiseLevel1UpdateEvent(const Security &security) {

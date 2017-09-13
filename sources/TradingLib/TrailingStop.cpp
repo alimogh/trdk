@@ -40,9 +40,13 @@ const Volume &TrailingStop::Params::GetMinProfitPerLotToClose() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TrailingStop::TrailingStop(const boost::shared_ptr<const Params> &params,
-                           Position &position)
-    : StopOrder(position), m_params(params), m_isActivated(false) {}
+TrailingStop::TrailingStop(
+    const boost::shared_ptr<const Params> &params,
+    Position &position,
+    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopOrder(position, orderPolicy),
+      m_params(params),
+      m_isActivated(false) {}
 
 TrailingStop::~TrailingStop() {}
 

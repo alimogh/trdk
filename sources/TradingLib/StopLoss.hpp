@@ -19,7 +19,9 @@ namespace TradingLib {
 
 class StopLossOrder : public trdk::TradingLib::StopOrder {
  public:
-  explicit StopLossOrder(trdk::Position &);
+  explicit StopLossOrder(
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopLossOrder() override = default;
 
  public:
@@ -45,7 +47,10 @@ class StopPrice : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopPrice(const boost::shared_ptr<const Params> &, trdk::Position &);
+  explicit StopPrice(
+      const boost::shared_ptr<const Params> &,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopPrice() override = default;
 
  protected:
@@ -73,7 +78,10 @@ class StopLoss : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopLoss(const boost::shared_ptr<const Params> &, trdk::Position &);
+  explicit StopLoss(
+      const boost::shared_ptr<const Params> &,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopLoss() override = default;
 
  protected:
@@ -105,10 +113,14 @@ class StopLossShare : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopLossShare(const boost::shared_ptr<const Params> &,
-                         trdk::Position &);
-  explicit StopLossShare(const trdk::Lib::Double &maxLossShare,
-                         trdk::Position &);
+  explicit StopLossShare(
+      const boost::shared_ptr<const Params> &,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLossShare(
+      const trdk::Lib::Double &maxLossShare,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
 
  protected:
   virtual const char *GetName() const override;

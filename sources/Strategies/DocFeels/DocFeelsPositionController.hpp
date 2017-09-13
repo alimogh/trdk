@@ -10,6 +10,7 @@
 
 #pragma once
 #include "TradingLib/PositionController.hpp"
+#include "TradingLib/Fwd.hpp"
 #include "Fwd.hpp"
 
 namespace trdk {
@@ -21,27 +22,33 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &, const Trend &);
+  explicit PositionController(Strategy &,
+                              const TradingLib::Trend &,
+                              const Qty &startQty);
   virtual ~PositionController() override = default;
 
  public:
+  virtual void OnPositionUpdate(trdk::Position &) override;
+
+ public:
+  using Base::OpenPosition;
   virtual trdk::Position &OpenPosition(
       trdk::Security &,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual trdk::Position &OpenPosition(
-      trdk::Security &,
-      bool isLong,
-      const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual void ContinuePosition(trdk::Position &) override;
-  virtual void ClosePosition(trdk::Position &,
-                             const trdk::CloseReason &) override;
 
  protected:
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const trdk::Position &) const override;
+  virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
+      const override;
+  const PositionReport &GetReport() const;
 
  private:
-  const Trend &m_trend;
+  const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
+  const TradingLib::Trend &m_trend;
+  Qty m_qty;
 };
 }
 }
