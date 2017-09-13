@@ -27,8 +27,8 @@ struct Settings {
   Qty qty;
   Qty minQty;
   uint16_t numberOfHistoryHours;
-  double costOfFunds;
-  double maxLossShare;
+  Lib::Double costOfFunds;
+  Lib::Double maxLossShare;
   Price signalPriceCorrection;
 
   explicit Settings(const Lib::IniSectionRef &);

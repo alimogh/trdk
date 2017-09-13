@@ -57,8 +57,10 @@ Position &PositionController::OpenPosition(Security &security,
                                            bool isLong,
                                            const Milestones &delayMeasurement) {
   auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  result.AttachAlgo(std::make_unique<tl::StopLossShare>(m_settings.maxLossShare,
-                                                        result, m_orderPolicy));
+  if (m_settings.maxLossShare != 0) {
+    result.AttachAlgo(std::make_unique<tl::StopLossShare>(
+        m_settings.maxLossShare, result, m_orderPolicy));
+  }
   return result;
 }
 
