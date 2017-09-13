@@ -116,7 +116,7 @@ class Position::Implementation : private boost::noncopyable {
 
     pt::ptime time;
 
-    ScaledPrice volume;
+    Volume volume;
     Qty qty;
     size_t numberOfTrades;
     ScaledPrice lastTradePrice;
@@ -137,13 +137,13 @@ class Position::Implementation : private boost::noncopyable {
       return HasActiveOrders() && orders.back().isCanceled;
     }
 
-    void OnNewTrade(const TradingSystem::TradeInfo &trade) {
+    void OnNewTrade(const TradingSystem::TradeInfo &trade, const Price &price) {
       AssertLt(0, trade.price);
       AssertLt(0, trade.qty);
       Assert(!orders.empty());
       auto &order = orders.back();
       order.executedQty += trade.qty;
-      volume += ScaledPrice(trade.price * trade.qty);
+      volume += price * trade.qty;
       qty += trade.qty;
       ++numberOfTrades;
       lastTradePrice = trade.price;
@@ -262,7 +262,7 @@ class Position::Implementation : private boost::noncopyable {
           throw Exception("Filled order has no trade information");
         }
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
-        m_open.OnNewTrade(*trade);
+        m_open.OnNewTrade(*trade, m_security.DescalePrice(trade->price));
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
         CopyTrade(trade->id, m_security.DescalePrice(trade->price), trade->qty,
                   true);
@@ -350,7 +350,7 @@ class Position::Implementation : private boost::noncopyable {
           throw Exception("Filled order has no trade information");
         }
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
-        m_close.OnNewTrade(*trade);
+        m_close.OnNewTrade(*trade, m_security.DescalePrice(trade->price));
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
         CopyTrade(trade->id, m_security.DescalePrice(trade->price), trade->qty,
                   false);
@@ -618,8 +618,10 @@ class Position::Implementation : private boost::noncopyable {
       order.isActive = false;
 
       m_open.time = order.time;
-      m_open.OnNewTrade(TradingSystem::TradeInfo{
-          "", order.qty, m_security.ScalePrice(openPrice)});
+      m_open.OnNewTrade(
+          TradingSystem::TradeInfo{"", order.qty,
+                                   m_security.ScalePrice(openPrice)},
+          openPrice);
 
       m_isRegistered = true;  // supporting prev. logic
                               // (when was m_strategy = nullptr),
@@ -1072,9 +1074,7 @@ const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
 }
 
-Volume Position::GetClosedVolume() const {
-  return m_pimpl->m_security.DescalePrice(m_pimpl->m_close.volume);
-}
+Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
 
 const pt::ptime &Position::GetCloseTime() const {
   return m_pimpl->m_close.time;
@@ -1210,7 +1210,7 @@ ScaledPrice Position::GetOpenAvgPrice() const {
   if (!m_pimpl->m_open.qty) {
     throw Exception("Position has no open price");
   }
-  return ScaledPrice(m_pimpl->m_open.volume / m_pimpl->m_open.qty);
+  return GetSecurity().ScalePrice(m_pimpl->m_open.volume / m_pimpl->m_open.qty);
 }
 
 const ScaledPrice &Position::GetActiveOpenOrderPrice() const {
@@ -1246,9 +1246,7 @@ const ScaledPrice &Position::GetLastOpenTradePrice() const {
   return m_pimpl->m_open.lastTradePrice;
 }
 
-Volume Position::GetOpenedVolume() const {
-  return m_pimpl->m_security.DescalePrice(m_pimpl->m_open.volume);
-}
+Volume Position::GetOpenedVolume() const { return m_pimpl->m_open.volume; }
 
 const ScaledPrice &Position::GetCloseStartPrice() const {
   return m_pimpl->m_close.startPrice;
@@ -1269,7 +1267,8 @@ ScaledPrice Position::GetCloseAvgPrice() const {
   if (!m_pimpl->m_close.qty) {
     throw Exception("Position has no close price");
   }
-  return ScaledPrice(m_pimpl->m_close.volume / m_pimpl->m_close.qty);
+  return GetSecurity().ScalePrice(m_pimpl->m_close.volume /
+                                  m_pimpl->m_close.qty);
 }
 
 const ScaledPrice &Position::GetActiveCloseOrderPrice() const {
