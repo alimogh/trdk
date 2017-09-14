@@ -21,7 +21,7 @@ class PositionReport : private boost::noncopyable {
  public:
   virtual void Append(const trdk::Position &);
 
- private:
+ protected:
   virtual void Open(std::ofstream &);
   virtual void PrintHead(std::ostream &);
   virtual void PrintReport(const trdk::Position &, std::ostream &);
