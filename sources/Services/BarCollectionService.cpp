@@ -726,7 +726,9 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     AssertNe(UNITS_TICKS, m_units);
     Assert(!m_current.end.is_not_a_date_time());
     AssertEq(0, m_countedBarSize);
-    return isBefore ? m_current.end < time : m_current.end == time;
+    // Custom branch code modification (was m_current.end < time). Workaround to
+    // work with prices from bars.
+    return isBefore ? m_current.end <= time : m_current.end == time;
   }
   bool IsNewTickCountedBar(const pt::ptime &time, bool) const {
     AssertEq(UNITS_TICKS, m_units);
