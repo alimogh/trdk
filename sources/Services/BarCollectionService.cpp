@@ -336,14 +336,14 @@ class BarCollectionService::Implementation : private boost::noncopyable {
         break;
       case UNITS_DAYS:
         endTime = pt::ptime(tradeTime.date()) +
-                  (pt::hours(((time.hours() / m_barSizeUnits) + 1) * 24) *
-                   m_barSizeUnits);
+                  pt::hours((((time.hours() * 24) / m_barSizeUnits) + 1) *
+                            m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_WEEKS:
         endTime = pt::ptime(tradeTime.date()) +
-                  ((pt::hours(((time.hours() / m_barSizeUnits) + 1) * 24) * 7) *
-                   m_barSizeUnits);
+                  pt::hours(((((time.hours() * 24) * 7) / m_barSizeUnits) + 1) *
+                            m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_TICKS:

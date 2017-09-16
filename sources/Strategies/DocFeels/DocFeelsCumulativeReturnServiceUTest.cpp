@@ -185,7 +185,7 @@ const lib::Double onlineDataSource[][16] = {
 };
 }
 
-TEST(DocFeels_CumulativeReturnService, OnlineData) {
+TEST(DocFeels_CumulativeReturnService, DISABLED_OnlineData) {
   std::string settingsString(
       "[Section]\n"
       "id = {00000000-0000-0000-0000-000000000000}\n"

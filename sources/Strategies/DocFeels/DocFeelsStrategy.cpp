@@ -62,9 +62,7 @@ df::Strategy::Strategy(Context &context,
       m_positionController(
           *this, *m_trend, conf.ReadTypedKey<double>("start_qty")),
       m_security(nullptr),
-      m_barService(nullptr),
-      m_groupReportPeriod(pt::hours(
-          conf.ReadTypedKey<long>("groups_report_period_days") * 24)) {
+      m_barService(nullptr) {
   const auto numberOfCts1 = conf.ReadTypedKey<size_t>("number_of_cts1");
   const auto numberOfRtfsPerGroup =
       conf.ReadTypedKey<size_t>("number_of_rtfs_per_group");
@@ -77,31 +75,22 @@ df::Strategy::Strategy(Context &context,
         context, ctsInstanceName.str(), conf));
   }
   if (!m_cts1.empty()) {
-    m_groupsReport = OpenDataLog("csv", "_GROUPS");
-    m_groupsReport << "Date"           // 1
-                   << ",Losses.Total"  // 2
-                   << ",Wins.Total"    // 3
-                   << ",% Win.Total";  // 4
     const Generator generator(0, m_cts1.size() - 1);
     for (size_t groupIndex = 0; groupIndex < numberOfRtfGroups; ++groupIndex) {
-      m_groupsReport << ",Losses." << (groupIndex + 1)  // 5
-                     << ",Wins." << (groupIndex + 1)    // 6
-                     << ",% Win." << (groupIndex + 1);  // 7
-      std::vector<size_t> group;
+      std::vector<Group::Rtf> group;
       group.reserve(numberOfRtfsPerGroup);
       for (size_t rtfInGroupIndex = 0; rtfInGroupIndex < numberOfRtfsPerGroup;
            ++rtfInGroupIndex) {
-        group.emplace_back(generator.Generate());
+        group.emplace_back(Group::Rtf{generator.Generate()});
       }
       m_groups.emplace_back(Group{std::move(group)});
     }
-    m_groupsReport << std::endl;
   }
 }
 
 df::Strategy::~Strategy() {
   try {
-    FlushGroupReport(true);
+    PrintStat();
   } catch (...) {
     AssertFailNoException();
   }
@@ -140,6 +129,8 @@ void df::Strategy::OnServiceDataUpdate(const Service &service,
 }
 
 void df::Strategy::OnPositionUpdate(Position &position) {
+  if (position.IsCompleted() && position.GetOpenedQty() > 0) {
+  }
   m_positionController.OnPositionUpdate(position);
 }
 
@@ -151,6 +142,11 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   Assert(m_security);
   Assert(m_barService);
   Assert(!m_barService->IsEmpty());
+
+  m_lastDataTime = m_barService->GetLastDataTime();
+  if (m_firstDataTime.is_not_a_date_time()) {
+    m_firstDataTime = m_lastDataTime;
+  }
 
   size_t numberOfResults = 0;
   for (auto &cts1 : m_cts1) {
@@ -167,16 +163,17 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   if (numberOfResults) {
     for (auto &group : m_groups) {
       intmax_t groupConfluence = 0;
-      for (const auto &index : group.rtfs) {
-        const auto &rtf = m_cts1[index]->GetLastPoint().bestTNewValues.nprtf;
-        groupConfluence += rtf;
+      for (auto &rtf : group.rtfs) {
+        const auto &rtfValue =
+            m_cts1[rtf.index]->GetLastPoint().bestTNewValues.nprtf;
+        ++(rtfValue <= 0 ? rtf.numberOfLosses : rtf.numberOfWins);
+        groupConfluence += rtfValue;
       }
-      ++(groupConfluence <= 0 ? group.numberOfLosses : group.numberOfWins);
+      ++(groupConfluence <= 0 ? group.numberOfTotalLosses
+                              : group.numberOfTotalWins);
       confluence += groupConfluence;
     }
   }
-  m_lastGroupTime = m_barService->GetLastBar().time;
-  FlushGroupReport(false);
 
   const bool isTrendChanged = m_trend->Update(confluence);
   GetTradingLog().Write(
@@ -192,45 +189,55 @@ void df::Strategy::CheckSignal(const Milestones &delayMeasurement) {
   }
 }
 
-void df::Strategy::FlushGroupReport(bool isForced) {
-  if (m_lastGroupTime.is_not_a_date_time()) {
-    return;
-  }
-  if (!isForced) {
-    if (m_nextGroupReportTime.is_not_a_date_time()) {
-      m_nextGroupReportTime = m_lastGroupTime + m_groupReportPeriod;
-      return;
-    }
-    if (m_lastGroupTime < m_nextGroupReportTime) {
-      return;
-    }
-    AssertEq(m_nextGroupReportTime, m_lastGroupTime);
-  }
+namespace {
+void PrintStatHeadTime(std::ostream &os, const pt::ptime &time) {
+  const auto &date = time.date();
+  os << date.day() << '-' << date.month() << '-' << (date.year() - 2000);
+}
+void PrintStatHead(std::ostream &os,
+                   const pt::ptime &startTime,
+                   const pt::ptime &endTime,
+                   const char *name) {
+  os << "Period: ";
+  PrintStatHeadTime(os, startTime);
+  os << " to ";
+  PrintStatHeadTime(os, endTime);
+  os << std::endl;
+  os << ',' << name << std::endl;
+}
+}
 
-  std::vector<std::pair<size_t, size_t>> data;
-  data.reserve(m_groups.size());
-  auto total = std::make_pair<size_t, size_t>(0, 0);
-  for (auto &group : m_groups) {
-    total.first += group.numberOfLosses;
-    total.second += group.numberOfWins;
-    data.emplace_back(group.numberOfLosses, group.numberOfWins);
-    group.ResetStat();
+void df::Strategy::PrintStat() const {
+  {
+    std::ofstream groupsReport = OpenDataLog("csv", "_GROUP");
+    std::ofstream rtfsReport = OpenDataLog("csv", "_RTFS");
+    PrintStatHead(groupsReport, m_firstDataTime, m_lastDataTime, "Avg. %win");
+    PrintStatHead(rtfsReport, m_firstDataTime, m_lastDataTime, "Avg. %win");
+    size_t groupIndex = 1;
+    for (auto &group : m_groups) {
+      groupsReport << "Group.#" << groupIndex++ << ','
+                   << static_cast<intmax_t>(
+                          ((static_cast<double>(group.numberOfTotalWins) /
+                            (group.numberOfTotalWins +
+                             group.numberOfTotalLosses))) *
+                          100)
+                   << std::endl;
+      size_t rtfIndex = 1;
+      for (auto &rtf : group.rtfs) {
+        rtfsReport << "RTF.Group" << groupIndex << ".#" << rtfIndex++ << ','
+                   << static_cast<intmax_t>(
+                          (static_cast<double>(rtf.numberOfWins) /
+                           (rtf.numberOfWins + rtf.numberOfLosses)) *
+                          100)
+                   << std::endl;
+      }
+    }
   }
-  m_nextGroupReportTime = m_lastGroupTime + m_groupReportPeriod;
-
-  m_groupsReport << m_lastGroupTime.date()  // 1
-                 << ',' << total.first      // 2
-                 << ',' << total.second     // 3
-                 << ',' << static_cast<int>((static_cast<double>(total.second) /
-                                             (total.second + total.first)) *
-                                            100);  // 4
-  for (const auto &group : data) {
-    m_groupsReport << ',' << group.first   // 5
-                   << ',' << group.second  // 6
-                   << ','
-                   << static_cast<int>((static_cast<double>(group.second) /
-                                        (group.second + group.first)) *
-                                       100);  // 7
+  {
+    std::ofstream cts2Report = OpenDataLog("csv", "_CTS_II");
+    PrintStatHead(cts2Report, m_firstDataTime, m_lastDataTime,
+                  "Avg. (%return per trade),Avg. (%return per week),Avg. loss "
+                  "trade,Avg. win trade,Avg. (No. of trades/wk),Avg. (No. of "
+                  "trades/wk),Avg. %win");
   }
-  m_groupsReport << std::endl;
 }
