@@ -27,11 +27,32 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
 
  private:
   struct Group {
-    std::vector<size_t> rtfs;
-    size_t numberOfLosses;
-    size_t numberOfWins;
+    struct Rtf {
+      size_t index;
+      size_t numberOfLosses;
+      size_t numberOfWins;
+    };
+    struct Period {
+      boost::posix_time::ptime endTime;
+      size_t numberOfLosses;
+      size_t numberOfWins;
+    };
+    struct SubPeriod {
+      boost::posix_time::ptime startTime;
+      size_t numberOfLosses;
+      size_t numberOfWins;
+    };
+    std::vector<Rtf> rtfs;
+    size_t numberOfTotalLosses;
+    size_t numberOfTotalWins;
+  };
 
-    void ResetStat() { numberOfLosses = numberOfWins = 0; }
+  struct Cts2Stat {
+    size_t numberOfPositions;
+    trdk::Volume pnlsSum;
+
+    size_t numberOfPeriods;
+    trdk::Volume periodsPnlSum;
   };
 
  public:
@@ -55,7 +76,7 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
  private:
   void CheckSignal(const Lib::TimeMeasurement::Milestones &);
 
-  void FlushGroupReport(bool);
+  void PrintStat() const;
 
  private:
   const boost::shared_ptr<CtsTrend> m_trend;
@@ -66,10 +87,8 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
   std::vector<std::unique_ptr<CumulativeReturnFilterService>> m_cts1;
   std::vector<Group> m_groups;
 
-  const boost::posix_time::time_duration m_groupReportPeriod;
-  std::ofstream m_groupsReport;
-  boost::posix_time::ptime m_lastGroupTime;
-  boost::posix_time::ptime m_nextGroupReportTime;
+  boost::posix_time::ptime m_firstDataTime;
+  boost::posix_time::ptime m_lastDataTime;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
