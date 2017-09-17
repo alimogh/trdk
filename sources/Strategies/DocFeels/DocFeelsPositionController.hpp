@@ -35,6 +35,10 @@ class PositionController : public TradingLib::PositionController {
   virtual trdk::Position &OpenPosition(
       trdk::Security &,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
+  virtual trdk::Position &OpenPosition(
+      trdk::Security &,
+      bool isLong,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
 
  protected:
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
