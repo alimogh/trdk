@@ -25,18 +25,6 @@
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DocFeelsStrategy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DocFeelsStrategyUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Api.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DocFeelsSmaUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DocFeelsPositionController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -55,6 +43,24 @@
     <ClCompile Include="DocFeelsPositionReport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DocFeelsCtsStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocFeelsBbTrend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocFeelsPureStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocFeelsStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocFeelsMaTrend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DocFeels.rc">
@@ -65,13 +71,7 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DocFeelsStrategy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Api.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DocFeelsSmaTrend.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DocFeelsTrend.hpp">
@@ -96,6 +96,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DocFeelsPositionReport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsCtsStrategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsBbTrend.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsStrategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsPureStrategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocFeelsMaTrend.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

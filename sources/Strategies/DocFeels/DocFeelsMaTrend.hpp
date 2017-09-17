@@ -15,10 +15,9 @@ namespace trdk {
 namespace Strategies {
 namespace DocFeels {
 
-class SmaTrend : public Trend {
+class MaTrend : public Trend {
  public:
-  explicit SmaTrend(const Lib::IniSectionRef &);
-  virtual ~SmaTrend() override = default;
+  virtual ~MaTrend() override = default;
 
  public:
   virtual bool OnServiceStart(const trdk::Service &) override;

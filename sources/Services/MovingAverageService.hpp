@@ -57,6 +57,8 @@ class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
   virtual ~MovingAverageService();
 
  public:
+  bool Update(const boost::posix_time::ptime &, const trdk::Lib::Double &);
+
   virtual boost::posix_time::ptime GetLastDataTime() const override;
 
   virtual bool IsEmpty() const;

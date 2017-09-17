@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/20 14:15:46
+ *   Created: 2017/09/17 20:31:43
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,9 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
 #include "Core/Strategy.hpp"
 #include "Services/BarService.hpp"
 #include "Api.h"
-#include "DocFeelsCtsTrend.hpp"
-#include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "DocFeelsPositionController.hpp"
 
 namespace trdk {
@@ -25,43 +21,14 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
 
- private:
-  struct Group {
-    struct Rtf {
-      size_t index;
-      size_t numberOfLosses;
-      size_t numberOfWins;
-    };
-    struct Period {
-      boost::posix_time::ptime endTime;
-      size_t numberOfLosses;
-      size_t numberOfWins;
-    };
-    struct SubPeriod {
-      boost::posix_time::ptime startTime;
-      size_t numberOfLosses;
-      size_t numberOfWins;
-    };
-    std::vector<Rtf> rtfs;
-    size_t numberOfTotalLosses;
-    size_t numberOfTotalWins;
-  };
-
-  struct Cts2Stat {
-    size_t numberOfPositions;
-    trdk::Volume pnlsSum;
-
-    size_t numberOfPeriods;
-    trdk::Volume periodsPnlSum;
-  };
-
  public:
-  explicit Strategy(
-      trdk::Context &,
-      const std::string &instanceName,
-      const trdk::Lib::IniSectionRef &,
-      const boost::shared_ptr<CtsTrend> & = boost::shared_ptr<CtsTrend>());
-  virtual ~Strategy() override;
+  explicit Strategy(Context &,
+                    const std::string &typeUuid,
+                    const std::string &implementationName,
+                    const std::string &instanceName,
+                    const Lib::IniSectionRef &,
+                    const boost::shared_ptr<TradingLib::Trend> &);
+  virtual ~Strategy() override = default;
 
  protected:
   virtual void OnSecurityStart(trdk::Security &,
@@ -73,25 +40,38 @@ class TRDK_STRATEGY_DOCFEELS_API Strategy : public trdk::Strategy {
   virtual void OnPositionUpdate(trdk::Position &) override;
   virtual void OnPostionsCloseRequest() override;
 
- private:
-  void CheckSignal(const Lib::TimeMeasurement::Milestones &);
+ protected:
+  const Security &GetSecurity() const {
+    Assert(m_security);
+    return *m_security;
+  }
 
-  void PrintStat() const;
+  const Services::BarService &GetBarService() const {
+    Assert(m_barService);
+    Assert(!m_barService->IsEmpty());
+    return *m_barService;
+  }
+
+  template <typename Trend>
+  Trend &GetTypedTrend() {
+    return *boost::polymorphic_downcast<Trend *>(&*m_trend);
+  }
+  template <typename Trend>
+  const Trend &GetTypedTrend() const {
+    return const_cast<Strategy *>(this)->GetTypedTrend<Trend>();
+  }
+
+ protected:
+  virtual void CheckSignal(const Lib::TimeMeasurement::Milestones &) = 0;
+
+  void OnSignal(const trdk::Lib::TimeMeasurement::Milestones &);
 
  private:
-  const boost::shared_ptr<CtsTrend> m_trend;
+  const boost::shared_ptr<TradingLib::Trend> m_trend;
   PositionController m_positionController;
   Security *m_security;
   const Services::BarService *m_barService;
-
-  std::vector<std::unique_ptr<CumulativeReturnFilterService>> m_cts1;
-  std::vector<Group> m_groups;
-
-  boost::posix_time::ptime m_firstDataTime;
-  boost::posix_time::ptime m_lastDataTime;
 };
-
-////////////////////////////////////////////////////////////////////////////////
 }
 }
 }

@@ -10,8 +10,6 @@
 
 #pragma once
 #include "TradingLib/PositionController.hpp"
-#include "TradingLib/Fwd.hpp"
-#include "Fwd.hpp"
 
 namespace trdk {
 namespace Strategies {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/20 14:22:12
+ *   Created: 2017/08/30 10:02:14
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,12 +9,21 @@
  ******************************************************************************/
 
 #pragma once
+#include "DocFeelsTrend.hpp"
 
-#include "Common/Common.hpp"
-#include "TradingLib/Fwd.hpp"
-#include "Fwd.hpp"
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics.hpp>
-#include <boost/accumulators/statistics/rolling_mean.hpp>
-#include <boost/accumulators/statistics/rolling_sum.hpp>
-#include <boost/random.hpp>
+namespace trdk {
+namespace Strategies {
+namespace DocFeels {
+
+class BbTrend : public Trend {
+ public:
+  virtual ~BbTrend() override = default;
+
+ public:
+  virtual bool OnServiceStart(const trdk::Service &) override;
+  virtual Price GetUpperControlValue() const override;
+  virtual Price GetLowerControlValue() const override;
+};
+}
+}
+}

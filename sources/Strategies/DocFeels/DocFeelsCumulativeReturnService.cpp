@@ -306,3 +306,15 @@ bool CumulativeReturnService::OnServiceDataUpdate(
       bar.time, barService->GetSecurity().DescalePrice(bar.closeTradePrice));
   return !IsEmpty();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+boost::shared_ptr<Service> CreateCumulativeReturnService(
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<CumulativeReturnService>(context, instanceName,
+                                                     configuration);
+}
+
+////////////////////////////////////////////////////////////////////////////////

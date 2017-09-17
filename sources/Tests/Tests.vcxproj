@@ -382,7 +382,6 @@
     <ClCompile Include="..\Services\RsiIndicatorUTest.cpp" />
     <ClCompile Include="..\Services\StochasticIndicatorUTest.cpp" />
     <ClCompile Include="..\Strategies\DocFeels\DocFeelsCumulativeReturnServiceUTest.cpp" />
-    <ClCompile Include="..\Strategies\DocFeels\DocFeelsStrategyUTest.cpp" />
     <ClCompile Include="..\Strategies\MrigeshKejriwal\MrigeshKejriwalStrategyUTest.cpp" />
     <ClCompile Include="..\TradingLib\SourcesSynchronizerUTest.cpp" />
     <ClCompile Include="..\Common\ExpirationCalendarUTest.cpp" />
