@@ -215,7 +215,7 @@ void df::Strategy::PrintStat() const {
     PrintStatHead(rtfsReport, m_firstDataTime, m_lastDataTime, "Avg. %win");
     size_t groupIndex = 1;
     for (auto &group : m_groups) {
-      groupsReport << "Group.#" << groupIndex++ << ','
+      groupsReport << "Group.#" << groupIndex << ','
                    << static_cast<intmax_t>(
                           ((static_cast<double>(group.numberOfTotalWins) /
                             (group.numberOfTotalWins +
@@ -224,13 +224,15 @@ void df::Strategy::PrintStat() const {
                    << std::endl;
       size_t rtfIndex = 1;
       for (auto &rtf : group.rtfs) {
-        rtfsReport << "RTF.Group" << groupIndex << ".#" << rtfIndex++ << ','
+        rtfsReport << "RTF.Group" << groupIndex << ".#" << rtfIndex << ','
                    << static_cast<intmax_t>(
                           (static_cast<double>(rtf.numberOfWins) /
                            (rtf.numberOfWins + rtf.numberOfLosses)) *
                           100)
                    << std::endl;
+        ++rtfIndex;
       }
+      ++groupIndex;
     }
   }
   {
