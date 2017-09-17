@@ -240,7 +240,7 @@ class BollingerBandsService::Implementation : private boost::noncopyable {
                 << ',' << point.high << std::endl;
   }
 
-  bool OnUpdate(const pt::ptime &time, const Double &source) {
+  bool Update(const pt::ptime &time, const Double &source) {
     m_stat(source);
 
     if (accs::rolling_count(m_stat) < m_period) {
@@ -295,21 +295,26 @@ const uuids::uuid &BollingerBandsService::GetHighValuesId() const {
   return m_pimpl->m_highValuesId;
 }
 
+bool BollingerBandsService::Update(const pt::ptime &time,
+                                   const Double &source) {
+  return m_pimpl->Update(time, source);
+}
+
 bool BollingerBandsService::OnServiceDataUpdate(
     const Service &service, const TimeMeasurement::Milestones &) {
   {
     const auto *const bars = dynamic_cast<const BarService *>(&service);
     if (bars) {
       const auto &point = bars->GetLastBar();
-      return m_pimpl->OnUpdate(
-          point.time, bars->GetSecurity().DescalePrice(point.closeTradePrice));
+      Update(point.time,
+             bars->GetSecurity().DescalePrice(point.closeTradePrice));
     }
   }
   {
     const auto *const rsi = dynamic_cast<const Rsi *>(&service);
     if (rsi) {
       const auto &point = rsi->GetLastPoint();
-      return m_pimpl->OnUpdate(point.time, point.value);
+      return Update(point.time, point.value);
     }
   }
 
