@@ -29,8 +29,8 @@ class TRDK_STRATEGY_DOCFEELS_API CumulativeReturnFilterService
       CumulativeReturnService::Point::R r;
       //! Select CR(RT.X) which was the highest 30-CR(RT.X).
       trdk::Lib::Double cr;
-      //! SMA(CR(RT.X)).
-      trdk::Lib::Double crSma;
+      //! SMA(CR(RT.X)) or BB(CR(RT.X))
+      trdk::Lib::Double crIndicator;
       //! Select highest 30-CR(RT.X).
       trdk::Lib::Double crPeriod;
       R signal;

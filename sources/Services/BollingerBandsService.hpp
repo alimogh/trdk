@@ -102,6 +102,8 @@ class TRDK_SERVICES_API BollingerBandsService : public trdk::Service {
       const trdk::DropCopyDataSourceInstanceId &lowValueId,
       const trdk::DropCopyDataSourceInstanceId &highValueId) const;
 
+  bool Update(const boost::posix_time::ptime &, const trdk::Lib::Double &);
+
  protected:
   virtual bool OnServiceDataUpdate(
       const trdk::Service &,
