@@ -235,7 +235,7 @@ TEST(Services_ContinuousContractBarService, DISABLED_History) {
     }
 
     const auto &bar = service.GetBar(barI++);
-    EXPECT_EQ(tick.time, bar.time);
+    EXPECT_EQ(tick.time, bar.endTime);
     EXPECT_EQ(trdk::ScaledPrice(tick.adjOpen * 100), bar.openTradePrice)
         << i << " / " << barI;
     EXPECT_EQ(trdk::ScaledPrice(tick.adjLow * 100), bar.lowTradePrice)
@@ -380,7 +380,7 @@ TEST(Services_ContinuousContractBarService, Online) {
       const auto c = trdk::ScaledPrice(tick.close * 100);
       {
         const auto &bar = service.GetLastBar();
-        EXPECT_EQ(tick.time, bar.time);
+        EXPECT_EQ(tick.time, bar.endTime);
         EXPECT_EQ(o, bar.openTradePrice);
         EXPECT_EQ(h, bar.highTradePrice);
         EXPECT_EQ(l, bar.lowTradePrice);
@@ -388,7 +388,7 @@ TEST(Services_ContinuousContractBarService, Online) {
       }
       {
         const auto &bar = service.GetBarByReversedIndex(0);
-        EXPECT_EQ(tick.time, bar.time);
+        EXPECT_EQ(tick.time, bar.endTime);
         EXPECT_EQ(o, bar.openTradePrice);
         EXPECT_EQ(h, bar.highTradePrice);
         EXPECT_EQ(l, bar.lowTradePrice);
@@ -396,7 +396,7 @@ TEST(Services_ContinuousContractBarService, Online) {
       }
       {
         const auto &bar = service.GetBar(tick.size);
-        EXPECT_EQ(tick.time, bar.time);
+        EXPECT_EQ(tick.time, bar.endTime);
         EXPECT_EQ(o, bar.openTradePrice);
         EXPECT_EQ(h, bar.highTradePrice);
         EXPECT_EQ(l, bar.lowTradePrice);
@@ -424,7 +424,7 @@ TEST(Services_ContinuousContractBarService, Online) {
       }
       {
         const auto &bar = service.GetBar(k);
-        EXPECT_EQ(source[j].time, bar.time);
+        EXPECT_EQ(source[j].time, bar.endTime);
         EXPECT_EQ(o, bar.openTradePrice);
         EXPECT_EQ(h, bar.highTradePrice);
         EXPECT_EQ(l, bar.lowTradePrice);
@@ -433,7 +433,7 @@ TEST(Services_ContinuousContractBarService, Online) {
       {
         const auto &bar =
             service.GetBarByReversedIndex(service.GetSize() - k - 1);
-        EXPECT_EQ(source[j].time, bar.time);
+        EXPECT_EQ(source[j].time, bar.endTime);
         EXPECT_EQ(o, bar.openTradePrice);
         EXPECT_EQ(h, bar.highTradePrice);
         EXPECT_EQ(l, bar.lowTradePrice);
@@ -452,7 +452,7 @@ TEST(Services_ContinuousContractBarService, Online) {
     }
 
     const auto &bar = service.GetBar(barI++);
-    EXPECT_EQ(tick.time, bar.time);
+    EXPECT_EQ(tick.time, bar.endTime);
     EXPECT_EQ(trdk::ScaledPrice(tick.adjOpen * 100), bar.openTradePrice)
         << i << " / " << barI;
     EXPECT_EQ(trdk::ScaledPrice(tick.adjLow * 100), bar.lowTradePrice)

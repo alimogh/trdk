@@ -114,7 +114,7 @@ TEST(Services_BarCollectionService, ByNumberOfTicks) {
       ASSERT_EQ(0, service.GetLastBar().maxAskPrice);
 
       // For "counted bar" time of bar is time of last tick.
-      ASSERT_EQ(tick.time, service.GetLastBar().time) << i;
+      ASSERT_EQ(tick.time, service.GetLastBar().endTime) << i;
       ASSERT_EQ(source[i + 1 - tradesCount].price,
                 service.GetLastBar().openTradePrice);
       ASSERT_EQ(tick.price, service.GetLastBar().closeTradePrice);
@@ -136,7 +136,7 @@ TEST(Services_BarCollectionService, ByNumberOfTicks) {
         const auto &prevTick = source[i - tradesCount];
 
         // For "counted bar" time of bar is time of last tick.
-        ASSERT_EQ(prevTick.time, service.GetLastBar().time);
+        ASSERT_EQ(prevTick.time, service.GetLastBar().endTime);
         ASSERT_EQ(source[i + 1 - tradesCount - 10].price,
                   service.GetLastBar().openTradePrice);
         ASSERT_EQ(prevTick.price, service.GetLastBar().closeTradePrice);

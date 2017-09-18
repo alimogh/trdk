@@ -95,7 +95,7 @@ class ContinuousContractBarService::Implementation
     if (!m_self.GetContext().GetSettings().IsReplayMode()) {
       path /= SymbolToFileName(
           (boost::format("ContinuousContract_%1%__%2%__%3%__%4%_%5%") %
-           m_self.GetSecurity() % ConvertToFileName(m_bars.back().time) %
+           m_self.GetSecurity() % ConvertToFileName(m_bars.back().endTime) %
            ConvertToFileName(m_self.GetContext().GetStartTime()) %
            m_self.GetId() % m_self.GetInstanceId())
               .str(),
@@ -103,7 +103,7 @@ class ContinuousContractBarService::Implementation
     } else {
       path /= SymbolToFileName(
           (boost::format("ContinuousContract_%1%__%2%__%3%_%4%") %
-           m_self.GetSecurity() % ConvertToFileName(m_bars.back().time) %
+           m_self.GetSecurity() % ConvertToFileName(m_bars.back().endTime) %
            m_self.GetId() % m_self.GetInstanceId())
               .str(),
           "csv");
@@ -148,12 +148,12 @@ class ContinuousContractBarService::Implementation
     Assert(m_log.is_open());
     Assert(m_isLogEnabled);
     {
-      const auto date = bar.time.date();
+      const auto date = bar.endTime.date();
       m_log << date.year() << '.' << std::setw(2) << date.month().as_number()
             << '.' << std::setw(2) << date.day();
     }
     {
-      const auto time = bar.time.time_of_day();
+      const auto time = bar.endTime.time_of_day();
       m_log << ',' << std::setw(2) << time.hours() << ':' << std::setw(2)
             << time.minutes() << ':' << std::setw(2) << time.seconds();
     }
@@ -215,7 +215,8 @@ class ContinuousContractBarService::Implementation
       }
 
       HistoryBar bar(meta.expiration);
-      bar.time = source.time;
+      bar.startTime = source.startTime;
+      bar.endTime = source.endTime;
       bar.openTradePrice =
           ScaledPrice(RoundByScale(source.openTradePrice * ratio, scale));
       bar.lowTradePrice =
@@ -291,7 +292,7 @@ ContinuousContractBarService::ContinuousContractBarService(
 ContinuousContractBarService::~ContinuousContractBarService() {}
 
 pt::ptime ContinuousContractBarService::GetLastDataTime() const {
-  return GetLastBar().time;
+  return GetLastBar().endTime;
 }
 
 size_t ContinuousContractBarService::GetSize() const {

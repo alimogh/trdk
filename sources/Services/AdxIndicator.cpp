@@ -178,7 +178,7 @@ class Adx::Implementation : private boost::noncopyable {
   bool OnNewValue(const BarService::Bar &bar, const Security &security) {
     {
       Point point = {{
-          bar.time, security.DescalePrice(bar.openTradePrice),
+          bar.endTime, security.DescalePrice(bar.openTradePrice),
           security.DescalePrice(bar.highTradePrice),
           security.DescalePrice(bar.lowTradePrice),
           security.DescalePrice(bar.closeTradePrice),

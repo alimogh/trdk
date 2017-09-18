@@ -169,7 +169,7 @@ TEST(Services_StochasticIndicator, General) {
     time += pt::seconds(123);
 
     Mocks::BarService::Bar bar;
-    bar.time = time;
+    bar.endTime = time;
     bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
     bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[1], 100));
     bar.lowTradePrice = trdk::ScaledPrice(lib::Scale(row[2], 100));

@@ -564,7 +564,7 @@ TEST(Services_AdxIndicator, General) {
     time += pt::seconds(123);
 
     Mocks::BarService::Bar bar;
-    bar.time = time;
+    bar.endTime = time;
     bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0] + 99.99, 10000));
     bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 10000));
     bar.lowTradePrice = trdk::ScaledPrice(lib::Scale(row[1], 10000));

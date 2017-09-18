@@ -118,7 +118,7 @@ class Stochastic::Implementation : private boost::noncopyable {
 
   bool OnNewValue(const BarService::Bar &bar, const Security &security) {
     m_lastValue.source = {
-        bar.time,
+        bar.endTime,
         security.DescalePrice(bar.openTradePrice),
         security.DescalePrice(bar.highTradePrice),
         security.DescalePrice(bar.lowTradePrice),
