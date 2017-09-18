@@ -12,6 +12,9 @@
 #include "DocFeelsCumulativeReturnFilterService.hpp"
 #include "Services/BarService.hpp"
 #include "Services/BollingerBandsService.hpp"
+#include "Services/MovingAverageService.hpp"
+#include "DocFeelsBbTrend.hpp"
+#include "DocFeelsMaTrend.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -31,63 +34,87 @@ class Indicator : private boost::noncopyable {
  public:
   virtual void Update(const pt::ptime &, const Double &) = 0;
   virtual Double GetState() const = 0;
-  virtual R GetSignal(const Double &crPeriod) const = 0;
+  virtual R Signal(const Double &crPeriod) = 0;
 };
-class SmaIndicator : public Indicator {
+class MaIndicator : public Indicator {
  public:
-  SmaIndicator(const IniSectionRef &conf)
-      : m_acc(accs::tag::rolling_window::window_size =
-                  conf.ReadTypedKey<size_t>("cr_period")) {}
-  virtual ~SmaIndicator() override = default;
+  MaIndicator(Context &context, const IniSectionRef &conf) {
+    {
+      boost::format maSettingsSource(
+          "[MovingAverage]\n"
+          "id = {00000000-0000-0000-0000-000000000000}\n"
+          "source = close price\n"
+          "type = %1%\n"    // 1
+          "period = %2%\n"  // 2
+          "history = no\n"
+          "log = none\n");
+      maSettingsSource % conf.ReadKey("ma_type")     // 1
+          % conf.ReadTypedKey<size_t>("cr_period");  // 2
+      const IniString maSettings(maSettingsSource.str());
+      m_ma = boost::make_unique<Services::MovingAverageService>(
+          context, "MaIndicator", IniSectionRef(maSettings, "MovingAverage"));
+    }
+    Verify(m_trend.OnServiceStart(*m_ma));
+  }
+
+  virtual ~MaIndicator() override = default;
 
  public:
-  virtual void Update(const pt::ptime &, const Double &value) override {
-    m_acc(value);
+  virtual void Update(const pt::ptime &time, const Double &value) override {
+    m_ma->Update(time, value);
   }
-  virtual Double GetState() const override { return accs::rolling_mean(m_acc); }
-  virtual R GetSignal(const Double &crPeriod) const override {
-    return crPeriod > accs::rolling_mean(m_acc) ? 1 : -1;
+  virtual Double GetState() const override {
+    return m_ma->IsEmpty() ? 0 : m_ma->GetLastPoint().value;
+  }
+  virtual R Signal(const Double &crPeriod) override {
+    return m_ma->IsEmpty() || !m_trend.Update(crPeriod)
+               ? 0
+               : m_trend.IsRising() ? 1 : -1;
   }
 
  private:
-  accs::accumulator_set<Double, accs::stats<accs::tag::rolling_mean>> m_acc;
+  std::unique_ptr<Services::MovingAverageService> m_ma;
+  MaTrend m_trend;
 };
 class BbIndicator : public Indicator {
  public:
   explicit BbIndicator(Context &context, const IniSectionRef &conf) {
-    boost::format bbSettingsSource(
-        "[Section]\n"
-        "id = {00000000-0000-0000-0000-000000000000}\n"
-        "id.low = {00000000-0000-0000-0000-000000000000}\n"
-        "id.high = {00000000-0000-0000-0000-000000000000}\n"
-        "period = %1%\n"
-        "deviation = 2.0\n"
-        "history = no\n"
-        "log = none\n");
-    bbSettingsSource % conf.ReadTypedKey<size_t>("cr_period");
-    const IniString bbSettings(bbSettingsSource.str());
-    m_acc = boost::make_unique<Services::BollingerBandsService>(
-        context, "BbIndicator", IniSectionRef(bbSettings, "Section"));
+    {
+      boost::format bbSettingsSource(
+          "[BollingerBands]\n"
+          "id = {00000000-0000-0000-0000-000000000000}\n"
+          "id.low = {00000000-0000-0000-0000-000000000000}\n"
+          "id.high = {00000000-0000-0000-0000-000000000000}\n"
+          "period = %1%\n"     // 1
+          "deviation = %2%\n"  // 2
+          "history = no\n"
+          "log = none\n");
+      bbSettingsSource % conf.ReadTypedKey<size_t>("cr_period")  // 1
+          % conf.ReadTypedKey<double>("bb_deviation");           // 2
+      const IniString bbSettings(bbSettingsSource.str());
+      m_bb = boost::make_unique<Services::BollingerBandsService>(
+          context, "BbIndicator", IniSectionRef(bbSettings, "BollingerBands"));
+    }
+    Verify(m_trend.OnServiceStart(*m_bb));
   }
   virtual ~BbIndicator() override = default;
 
  public:
   virtual void Update(const pt::ptime &time, const Double &value) override {
-    m_acc->Update(time, value);
+    m_bb->Update(time, value);
   }
   virtual Double GetState() const override {
-    return m_acc->IsEmpty() ? 0 : m_acc->GetLastPoint().middle;
+    return m_bb->IsEmpty() ? 0 : m_bb->GetLastPoint().middle;
   }
-  virtual R GetSignal(const Double &crPeriod) const override {
-    if (m_acc->IsEmpty()) {
-      return 0;
-    }
-    const auto &bb = m_acc->GetLastPoint();
-    return crPeriod > bb.high ? 1 : crPeriod < bb.low ? -1 : 0;
+  virtual R Signal(const Double &crPeriod) override {
+    return m_bb->IsEmpty() || !m_trend.Update(crPeriod)
+               ? 0
+               : m_trend.IsRising() ? 1 : -1;
   }
 
  private:
-  std::unique_ptr<Services::BollingerBandsService> m_acc;
+  std::unique_ptr<Services::BollingerBandsService> m_bb;
+  BbTrend m_trend;
 };
 }
 
@@ -119,9 +146,11 @@ class CumulativeReturnFilterService::Implementation
       : m_self(self), m_source(m_self.GetContext(), "CumulativeReturn", conf) {
     {
       const auto &indicator = conf.ReadKey("cts1_idicator");
-      if (boost::iequals(indicator, "sma")) {
-        m_indicatorTOld = boost::make_unique<SmaIndicator>(conf);
-        m_indicatorTNew = boost::make_unique<SmaIndicator>(conf);
+      if (boost::iequals(indicator, "ma")) {
+        m_indicatorTOld =
+            boost::make_unique<MaIndicator>(m_self.GetContext(), conf);
+        m_indicatorTNew =
+            boost::make_unique<MaIndicator>(m_self.GetContext(), conf);
       } else if (boost::iequals(indicator, "bb")) {
         m_indicatorTOld =
             boost::make_unique<BbIndicator>(m_self.GetContext(), conf);
@@ -239,7 +268,7 @@ class CumulativeReturnFilterService::Implementation
     const auto &branch = source.branches[index];
     const auto &sourcePoint = isNew ? branch.tNew : branch.tOld;
     const auto &crIdicator = indicator.GetState();
-    const R &signal = indicator.GetSignal(sourcePoint.crPeriod);
+    const R &signal = indicator.Signal(sourcePoint.crPeriod);
     result = Point::Value{index + 1,
                           branch.r,
                           sourcePoint.cr,
@@ -303,3 +332,15 @@ bool CumulativeReturnFilterService::OnServiceDataUpdate(
 void CumulativeReturnFilterService::OnServiceStart(const Service &service) {
   m_pimpl->m_source.OnServiceStart(service);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+boost::shared_ptr<Service> CreateCumulativeReturnFilterService(
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<CumulativeReturnFilterService>(
+      context, instanceName, configuration);
+}
+
+////////////////////////////////////////////////////////////////////////////////

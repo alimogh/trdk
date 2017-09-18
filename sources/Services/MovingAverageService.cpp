@@ -358,8 +358,8 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     }
   }
 
-  bool OnNewValue(const pt::ptime &valueTime, double newValue) {
-    if (IsZero(newValue)) {
+  bool OnNewValue(const pt::ptime &valueTime, const Double &newValue) {
+    if (newValue == 0) {
       if (m_lastZeroTime == pt::not_a_date_time ||
           valueTime - m_lastZeroTime >= pt::minutes(1)) {
         if (m_lastZeroTime != pt::not_a_date_time) {
@@ -445,7 +445,11 @@ bool MovingAverageService::OnNewBar(const Security &security,
   const ExtractBarValueVisitor visitor(bar);
   const auto &value = security.DescalePrice(
       boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
-  return m_pimpl->OnNewValue(bar.time, value);
+  return Update(bar.time, value);
+}
+
+bool MovingAverageService::Update(const pt::ptime &time, const Double &value) {
+  return m_pimpl->OnNewValue(time, value);
 }
 
 bool MovingAverageService::IsEmpty() const {

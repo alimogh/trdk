@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/20 14:23:56
+ *   Created: 2016/02/08 18:50:43
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,11 +9,10 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "DocFeelsStrategy.hpp"
+#include "Common/VersionInfo.hpp"
 
-using namespace testing;
+using namespace trdk::Lib;
 
-namespace df = trdk::Strategies::DocFeels;
-namespace tms = trdk::Lib::TimeMeasurement;
-namespace lib = trdk::Lib;
-namespace pt = boost::posix_time;
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_STRATEGY_DOCFEELS_FILE_NAME);
+}

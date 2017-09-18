@@ -14,7 +14,11 @@ namespace Strategies {
 namespace DocFeels {
 
 class Trend;
+class CtsTrend;
+
 class PositionReport;
+
+class CumulativeReturnFilterService;
 }
 }
 }

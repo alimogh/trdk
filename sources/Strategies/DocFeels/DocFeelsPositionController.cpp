@@ -82,6 +82,15 @@ Position &PositionController::OpenPosition(Security &security,
   return OpenPosition(security, m_trend.IsRising(), delayMeasurement);
 }
 
+Position &PositionController::OpenPosition(Security &security,
+                                           bool isLong,
+                                           const Milestones &delayMeasurement) {
+  auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
+  result.AttachAlgo(
+      std::make_unique<tl::StopLossShare>(0.2, result, m_orderPolicy));
+  return result;
+}
+
 const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
   return *m_orderPolicy;
 }
