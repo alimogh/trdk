@@ -34,7 +34,8 @@ void PositionReport::PrintHead(std::ostream &os) {
      << ",Spread"          // 12
      << ",Commission"      // 13
      << ",Bars"            // 14
-     << ",ID"              // 15
+     << ",Close reason"    // 15
+     << ",ID"              // 16
      << std::endl;
 }
 
@@ -61,6 +62,7 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   os << ",";              // 13
   os << ','
      << ((pos.GetCloseStartTime() - pos.GetOpenStartTime()).hours());  // 14
-  os << ',' << pos.GetId();                                            // 15
+  os << ',' << pos.GetCloseReason();                                   // 15
+  os << ',' << pos.GetId();                                            // 16
   os << std::endl;
 }
