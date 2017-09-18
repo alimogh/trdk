@@ -1129,12 +1129,12 @@ void Client::orderStatus(::OrderId id,
 
   const OrderStatusesMap::const_iterator statusPos =
       m_orderStatusesMap.find(statusText);
-  Assert(statusPos != m_orderStatusesMap.end());
-  if (statusPos == m_orderStatusesMap.end()) {
+  if (statusPos == m_orderStatusesMap.cend()) {
     m_ts.GetTsLog().Error(
         "Failed to decode status order"
         " (ID: %1%, status: \"%2%\", parent ID: %3%).",
         id, statusText, parentId);
+    Assert(statusPos != m_orderStatusesMap.cend());
     return;
   }
   Assert(m_seqNumber < 0 || m_seqNumber > id);
