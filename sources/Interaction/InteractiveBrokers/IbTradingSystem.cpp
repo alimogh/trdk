@@ -102,6 +102,23 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
         case ORDER_STATUS_CANCELLED:
         case ORDER_STATUS_INACTIVE:
         case ORDER_STATUS_ERROR:
+          if (filled > pos->filled) {
+            TradeInfo iocTradeData = {};
+            AssertGt(filled, pos->filled);
+            iocTradeData.price = pos->security->ScalePrice(lastFillPrice);
+            AssertLt(0, iocTradeData.price);
+            iocTradeData.qty = filled - pos->filled;
+            AssertLt(0, iocTradeData.qty);
+            pos->UpdateFilled(filled);
+            if (callBack) {
+              callBackList.emplace_back(
+                  [callBack, id, permOrderId, remaining, iocTradeData]() {
+                    callBack(id, boost::lexical_cast<std::string>(permOrderId),
+                             ORDER_STATUS_FILLED_PARTIALLY, remaining,
+                             &iocTradeData);
+                  });
+            }
+          }
           index.erase(pos);
           break;
       }
@@ -109,7 +126,7 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
     if (!callBack) {
       return;
     }
-    callBackList.push_back(
+    callBackList.emplace_back(
         [callBack, id, permOrderId, status, remaining, tradeData]() {
           const TradeInfo *const tradeDataPtr =
               tradeData.qty != 0 ? &tradeData : nullptr;
