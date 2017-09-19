@@ -244,14 +244,14 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
       AssertEq(fields.size(), values.size() + 2);*/
       Test::Security::Bar bar(time, Test::Security::Bar::TRADES);
       bar.openPrice = ParsePriceField(fields[1], lineNo);
-      bar.highPrice = ParsePriceField(fields[1], lineNo);
-      bar.lowPrice = ParsePriceField(fields[1], lineNo);
-      bar.closePrice = ParsePriceField(fields[1], lineNo);
+      bar.highPrice = ParsePriceField(fields[2], lineNo);
+      bar.lowPrice = ParsePriceField(fields[3], lineNo);
+      bar.closePrice = ParsePriceField(fields[4], lineNo);
 
       GetContext().SetCurrentTime(time, true);
       // @todo fixme m_security->SetLevel1(time, values, Milestones());
       const double lastPrice = m_security->DescalePrice(*bar.closePrice);
-      const double halfOfSpread = lastPrice * 0.01;
+      const double halfOfSpread = lastPrice * 0.005;
       m_security->AddLevel1Tick(
           time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
                     m_security->ScalePrice(lastPrice + halfOfSpread)),

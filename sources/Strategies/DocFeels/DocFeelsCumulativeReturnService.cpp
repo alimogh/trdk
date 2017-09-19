@@ -303,7 +303,7 @@ bool CumulativeReturnService::OnServiceDataUpdate(
   AssertLt(0, barService->GetSize());
   const auto &bar = barService->GetLastBar();
   m_pimpl->OnPriceUpdate(
-      bar.time, barService->GetSecurity().DescalePrice(bar.closeTradePrice));
+      bar.endTime, barService->GetSecurity().DescalePrice(bar.closeTradePrice));
   return !IsEmpty();
 }
 

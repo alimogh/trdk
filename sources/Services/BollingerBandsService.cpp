@@ -306,7 +306,7 @@ bool BollingerBandsService::OnServiceDataUpdate(
     const auto *const bars = dynamic_cast<const BarService *>(&service);
     if (bars) {
       const auto &point = bars->GetLastBar();
-      return Update(point.time,
+      return Update(point.endTime,
                     bars->GetSecurity().DescalePrice(point.closeTradePrice));
     }
   }

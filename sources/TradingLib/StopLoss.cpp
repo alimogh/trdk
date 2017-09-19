@@ -154,7 +154,7 @@ const char *StopLossShare::GetName() const { return "stop loss share"; }
 bool StopLossShare::Activate() {
   const auto &plannedPnl = GetPosition().GetPlannedPnl();
   const auto &openedVolume = GetPosition().GetOpenedVolume();
-  const auto &maxLoss = openedVolume * m_params->GetMaxLossShare();
+  const auto &maxLoss = openedVolume * -m_params->GetMaxLossShare();
   if (plannedPnl >= maxLoss) {
     return false;
   }

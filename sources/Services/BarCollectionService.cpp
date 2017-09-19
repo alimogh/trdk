@@ -285,13 +285,13 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     }
     *m_barsLog << m_session;
     {
-      const auto date = m_current.bar->time.date();
+      const auto date = m_current.bar->endTime.date();
       *m_barsLog << csvDelimeter << date.year() << '.' << std::setw(2)
                  << date.month().as_number() << '.' << std::setw(2)
                  << date.day();
     }
     *m_barsLog << csvDelimeter
-               << ExcelTextField(m_current.bar->time.time_of_day())
+               << ExcelTextField(m_current.bar->endTime.time_of_day())
                << csvDelimeter
                << m_security->DescalePrice(m_current.bar->openTradePrice)
                << csvDelimeter
@@ -373,7 +373,8 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     }
     m_bars.resize(m_bars.size() + 1);
     m_current = Current(m_bars.back());
-    GetBarTimePoints(time, m_current.bar->time, m_current.end);
+    GetBarTimePoints(time, m_current.bar->startTime, m_current.end);
+    m_current.bar->endTime = m_current.end;
     callback(*m_current.bar);
     return isSignificantBar;
   }
@@ -654,7 +655,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
       bar.closeTradePrice = price;
       bar.tradingVolume += qty;
       if (m_countedBarSize) {
-        bar.time = time;
+        bar.endTime = time;
         ++m_current.count;
       }
     });
@@ -714,7 +715,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     AssertEq(UNITS_TICKS, m_units);
     Assert(m_current.end.is_not_a_date_time());
     AssertLt(0, m_countedBarSize);
-    AssertLe(m_current.bar->time, time);
+    AssertLe(m_current.bar->endTime, time);
     UseUnused(time);
     return m_current.count >= m_countedBarSize;
   }
@@ -735,7 +736,7 @@ BarCollectionService::BarCollectionService(Context &context,
 BarCollectionService::~BarCollectionService() {}
 
 pt::ptime BarCollectionService::GetLastDataTime() const {
-  return GetLastBar().time;
+  return GetLastBar().endTime;
 }
 
 void BarCollectionService::OnSecurityStart(const Security &security,
@@ -879,7 +880,7 @@ void BarCollectionService::DropLastBarCopy(
   GetContext().InvokeDropCopy([this, &sourceId](DropCopy &dropCopy) {
     const Bar &bar = GetLastBar();
     const Security &security = GetSecurity();
-    dropCopy.CopyBar(sourceId, GetSize() - 1, bar.time,
+    dropCopy.CopyBar(sourceId, GetSize() - 1, bar.endTime,
                      security.DescalePrice(bar.openTradePrice),
                      security.DescalePrice(bar.highTradePrice),
                      security.DescalePrice(bar.lowTradePrice),
@@ -896,7 +897,7 @@ void BarCollectionService::DropUncompletedBarCopy(
   GetContext().InvokeDropCopy([this, &sourceId](DropCopy &dropCopy) {
     const Security &security = GetSecurity();
     dropCopy.CopyBar(
-        sourceId, m_pimpl->m_bars.size() - 1, m_pimpl->m_current.bar->time,
+        sourceId, m_pimpl->m_bars.size() - 1, m_pimpl->m_current.bar->endTime,
         security.DescalePrice(m_pimpl->m_current.bar->openTradePrice),
         security.DescalePrice(m_pimpl->m_current.bar->highTradePrice),
         security.DescalePrice(m_pimpl->m_current.bar->lowTradePrice),

@@ -172,7 +172,7 @@ class Services_BollingerBandsServiceTest : public testing::Test {
       time += pt::seconds(123);
 
       svc::BarService::Bar bar;
-      bar.time = time;
+      bar.endTime = time;
       bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
       EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 

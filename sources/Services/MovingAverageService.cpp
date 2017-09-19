@@ -46,6 +46,7 @@ namespace {
 enum MaSource {
   MA_SOURCE_CLOSE_PRICE,
   MA_SOURCE_LAST_PRICE,
+  MA_SOURCE_HIGH_LOW_AVG_PRICE,
   numberOfMaSources
 };
 
@@ -55,13 +56,14 @@ struct MaSourceToType {
 };
 
 typedef boost::variant<MaSourceToType<MA_SOURCE_CLOSE_PRICE>,
-                       MaSourceToType<MA_SOURCE_LAST_PRICE>>
+                       MaSourceToType<MA_SOURCE_LAST_PRICE>,
+                       MaSourceToType<MA_SOURCE_HIGH_LOW_AVG_PRICE>>
     MaSourceInfo;
 
 struct GetMaSourceVisitor : public boost::static_visitor<MaSource> {
   template <typename Info>
   MaSource operator()(const Info &) const {
-    return MaSource(Info::SOURCE);
+    return static_cast<MaSource>(Info::SOURCE);
   }
 };
 MaSource GetMaSource(const MaSourceInfo &info) {
@@ -69,7 +71,7 @@ MaSource GetMaSource(const MaSourceInfo &info) {
 }
 
 class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
-  static_assert(numberOfMaSources == 2, "MA Sources list changed.");
+  static_assert(numberOfMaSources == 3, "MA Sources list changed.");
 
  public:
   explicit ExtractBarValueVisitor(const BarService::Bar &barRef)
@@ -79,6 +81,10 @@ class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
   const ScaledPrice &operator()(
       const MaSourceToType<MA_SOURCE_CLOSE_PRICE> &) const {
     return m_bar->closeTradePrice;
+  }
+  ScaledPrice operator()(
+      const MaSourceToType<MA_SOURCE_HIGH_LOW_AVG_PRICE> &) const {
+    return (m_bar->highTradePrice + m_bar->lowTradePrice) / 2;
   }
   template <MaSource source>
   const ScaledPrice &operator()(const MaSourceToType<source> &) const {
@@ -90,7 +96,7 @@ class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
   const BarService::Bar *m_bar;
 };
 class CheckTickValueVisitor : public boost::static_visitor<bool> {
-  static_assert(numberOfMaSources == 2, "MA Sources list changed.");
+  static_assert(numberOfMaSources == 3, "MA Sources list changed.");
 
  public:
   explicit CheckTickValueVisitor(const Level1TickValue &tick) : m_tick(&tick) {}
@@ -111,9 +117,9 @@ class CheckTickValueVisitor : public boost::static_visitor<bool> {
 
 template <MaSource maSource, typename MaSourcesMap>
 void InsertMaSourceInfo(const char *keyVal, MaSourcesMap &maSourcesMap) {
-  Assert(maSourcesMap.find(maSource) == maSourcesMap.end());
+  AssertEq(0, maSourcesMap.count(maSource));
 #ifdef DEV_VER
-  foreach (const auto &i, maSourcesMap) {
+  for (const auto &i : maSourcesMap) {
     AssertNe(std::string(keyVal), i.second.first);
     AssertNe(maSource, GetMaSource(i.second.second));
   }
@@ -125,9 +131,11 @@ void InsertMaSourceInfo(const char *keyVal, MaSourcesMap &maSourcesMap) {
 boost::unordered_map<MaSource, std::pair<std::string, MaSourceInfo>>
 GetSources() {
   boost::unordered_map<MaSource, std::pair<std::string, MaSourceInfo>> result;
-  static_assert(numberOfMaSources == 2, "MA Sources list changed.");
+  static_assert(numberOfMaSources == 3, "MA Sources list changed.");
   InsertMaSourceInfo<MA_SOURCE_CLOSE_PRICE>("close price", result);
   InsertMaSourceInfo<MA_SOURCE_LAST_PRICE>("last price", result);
+  InsertMaSourceInfo<MA_SOURCE_HIGH_LOW_AVG_PRICE>("avg high-low price",
+                                                   result);
   AssertEq(numberOfMaSources, result.size());
   return result;
 }
@@ -240,7 +248,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     MaType type = numberOfMaTypes;
     {
       const auto &typeStr = configuration.ReadKey(Configuration::Keys::type);
-      foreach (const auto &i, types) {
+      for (const auto &i : types) {
         if (boost::iequals(i.second, typeStr)) {
           type = i.first;
           break;
@@ -279,7 +287,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
       const auto &sourceStr =
           configuration.ReadKey(Configuration::Keys::source);
       bool exists = false;
-      foreach (const auto &i, sources) {
+      for (const auto &i : sources) {
         if (boost::iequals(i.second.first, sourceStr)) {
           m_sourceInfo = i.second.second;
           exists = true;
@@ -330,12 +338,12 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     m_pointsLog = std::move(log);
   }
 
-  void LogEmptyPoint(const pt::ptime &time) {
+  void LogEmptyPoint(const pt::ptime &time, const Double &sourceValue) {
     if (!m_pointsLog.is_open()) {
       return;
     }
     m_pointsLog << time.date() << ',' << ExcelTextField(time.time_of_day())
-                << ",," << std::endl;
+                << ',' << sourceValue << ',' << std::endl;
   }
 
   void LogPoint(const Point &point) {
@@ -367,7 +375,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
         }
         m_lastZeroTime = valueTime;
       }
-      LogEmptyPoint(valueTime);
+      LogEmptyPoint(valueTime, newValue);
       return false;
     }
     m_lastZeroTime = pt::not_a_date_time;
@@ -375,7 +383,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     boost::apply_visitor(accumVisitor, *m_acc);
 
     if (boost::apply_visitor(GetAccSizeVisitor(), *m_acc) < m_period) {
-      LogEmptyPoint(valueTime);
+      LogEmptyPoint(valueTime, newValue);
       return false;
     }
 
@@ -445,7 +453,7 @@ bool MovingAverageService::OnNewBar(const Security &security,
   const ExtractBarValueVisitor visitor(bar);
   const auto &value = security.DescalePrice(
       boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
-  return Update(bar.time, value);
+  return Update(bar.endTime, value);
 }
 
 bool MovingAverageService::Update(const pt::ptime &time, const Double &value) {
