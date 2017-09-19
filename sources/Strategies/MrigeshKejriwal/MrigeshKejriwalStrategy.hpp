@@ -24,17 +24,30 @@ namespace MrigeshKejriwal {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct Settings {
+  class OrderPolicyFactory : private boost::noncopyable {
+   public:
+    virtual ~OrderPolicyFactory() = default;
+    virtual std::unique_ptr<TradingLib::OrderPolicy> CreateOrderPolicy()
+        const = 0;
+  };
+
   Qty qty;
   Qty minQty;
   uint16_t numberOfHistoryHours;
   Lib::Double costOfFunds;
   Lib::Double maxLossShare;
   Price signalPriceCorrection;
+  std::unique_ptr<OrderPolicyFactory> orderPolicyFactory;
 
   explicit Settings(const Lib::IniSectionRef &);
 
   void Validate() const;
   void Log(Module::Log &) const;
+
+ private:
+  class LimitGtcOrderPolicyFactory;
+  class LimitIocOrderPolicyFactory;
+  class MarketGtcOrderPolicyFactory;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,9 +89,9 @@ class PositionController : public TradingLib::PositionController {
       const override;
 
  private:
+  const Settings &m_settings;
   const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
   const Trend &m_trend;
-  const Settings &m_settings;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

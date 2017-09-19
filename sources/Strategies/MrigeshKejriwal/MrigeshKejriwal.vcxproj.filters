@@ -34,9 +34,6 @@
     <ClCompile Include="Api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MrigeshKejriwalOrderPolicy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MrigeshKejriwalPositionReport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
