@@ -339,7 +339,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithoutHistory) {
     time += pt::seconds(123);
 
     svc::BarService::Bar bar;
-    bar.time = time;
+    bar.endTime = time;
     bar.closeTradePrice = value;
     ASSERT_EQ(!lib::IsZero(source[i][Policy::GetColumn()]),
               serviceForBars.OnNewBar(security, bar))

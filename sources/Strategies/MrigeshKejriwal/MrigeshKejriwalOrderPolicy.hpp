@@ -11,22 +11,35 @@
 #pragma once
 
 #include "TradingLib/OrderPolicy.hpp"
+#include "Core/Position.hpp"
 
 namespace trdk {
 namespace Strategies {
 namespace MrigeshKejriwal {
 
-class OrderPolicy : public TradingLib::LimitIocOrderPolicy {
+template <typename OrderPolicyType>
+class LimitOrderPolicy : public OrderPolicyType {
  public:
-  typedef TradingLib::LimitIocOrderPolicy Base;
+  typedef OrderPolicyType Base;
 
  public:
-  explicit OrderPolicy(const Price &correction);
-  virtual ~OrderPolicy() override = default;
+  explicit LimitOrderPolicy(const Price &correction)
+      : m_correction(correction) {}
+  virtual ~LimitOrderPolicy() override = default;
 
  protected:
-  virtual trdk::ScaledPrice GetOpenOrderPrice(trdk::Position &) const override;
-  virtual trdk::ScaledPrice GetCloseOrderPrice(trdk::Position &) const override;
+  virtual trdk::ScaledPrice GetOpenOrderPrice(
+      trdk::Position &position) const override {
+    return Base::GetOpenOrderPrice(position) +
+           position.GetSecurity().ScalePrice(position.IsLong() ? m_correction
+                                                               : -m_correction);
+  }
+  virtual trdk::ScaledPrice GetCloseOrderPrice(
+      trdk::Position &position) const override {
+    return Base::GetCloseOrderPrice(position) +
+           position.GetSecurity().ScalePrice(position.IsLong() ? -m_correction
+                                                               : m_correction);
+  }
 
  private:
   const Price m_correction;

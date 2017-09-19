@@ -42,10 +42,9 @@ PositionController::PositionController(trdk::Strategy &strategy,
                                        const Trend &trend,
                                        const mk::Settings &settings)
     : Base(strategy),
-      m_orderPolicy(
-          boost::make_shared<OrderPolicy>(settings.signalPriceCorrection)),
-      m_trend(trend),
-      m_settings(settings) {}
+      m_settings(settings),
+      m_orderPolicy(m_settings.orderPolicyFactory->CreateOrderPolicy()),
+      m_trend(trend) {}
 
 Position &PositionController::OpenPosition(Security &security,
                                            const Milestones &delayMeasurement) {
@@ -83,6 +82,45 @@ std::unique_ptr<tl::PositionReport> PositionController::OpenReport() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class mk::Settings::LimitGtcOrderPolicyFactory
+    : public mk::Settings::OrderPolicyFactory {
+ public:
+  explicit LimitGtcOrderPolicyFactory(const Price &correction)
+      : m_correction(correction) {}
+  virtual ~LimitGtcOrderPolicyFactory() override = default;
+  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
+    return boost::make_unique<LimitOrderPolicy<tl::LimitGtcOrderPolicy>>(
+        m_correction);
+  }
+
+ private:
+  const Price m_correction;
+};
+
+class mk::Settings::LimitIocOrderPolicyFactory
+    : public mk::Settings::OrderPolicyFactory {
+ public:
+  explicit LimitIocOrderPolicyFactory(const Price &correction)
+      : m_correction(correction) {}
+  virtual ~LimitIocOrderPolicyFactory() override = default;
+  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
+    return boost::make_unique<LimitOrderPolicy<tl::LimitIocOrderPolicy>>(
+        m_correction);
+  }
+
+ private:
+  const Price m_correction;
+};
+
+class mk::Settings::MarketGtcOrderPolicyFactory
+    : public mk::Settings::OrderPolicyFactory {
+ public:
+  virtual ~MarketGtcOrderPolicyFactory() override = default;
+  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
+    return boost::make_unique<tl::MarketGtcOrderPolicy>();
+  }
+};
+
 mk::Settings::Settings(const IniSectionRef &conf)
     : qty(conf.ReadTypedKey<Qty>("qty")),
       minQty(conf.ReadTypedKey<Qty>("qty_min")),
@@ -90,7 +128,24 @@ mk::Settings::Settings(const IniSectionRef &conf)
       costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
       maxLossShare(conf.ReadTypedKey<double>("max_loss_share")),
       signalPriceCorrection(
-          conf.ReadTypedKey<Price>("signal_price_correction")) {}
+          conf.ReadTypedKey<Price>("signal_price_correction")) {
+  {
+    const auto &orderType = conf.ReadKey("order_type");
+    if (boost::iequals(orderType, "lmt_gtc")) {
+      orderPolicyFactory =
+          boost::make_unique<LimitGtcOrderPolicyFactory>(signalPriceCorrection);
+    } else if (boost::iequals(orderType, "lmt_ioc")) {
+      orderPolicyFactory =
+          boost::make_unique<LimitIocOrderPolicyFactory>(signalPriceCorrection);
+    } else if (boost::iequals(orderType, "mkt_gtc")) {
+      orderPolicyFactory = boost::make_unique<MarketGtcOrderPolicyFactory>();
+    } else {
+      throw Exception(
+          "Unknown order type is set (allowed \"lmt_gtc\", \"lmt_ioc\" or "
+          "\"mkt_gtc\")");
+    }
+  }
+}
 
 void mk::Settings::Validate() const {
   if (qty < 1) {
@@ -102,17 +157,25 @@ void mk::Settings::Validate() const {
 }
 
 void mk::Settings::Log(Module::Log &log) const {
-  boost::format info(
+  log.Info(
       "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
       "Cost of funds: %4%. Max. share of loss: %5%. Signal price correction: "
-      "%6%.");
-  info % qty                    // 1
-      % minQty                  // 2
-      % numberOfHistoryHours    // 3
-      % costOfFunds             // 4
-      % maxLossShare            // 5
-      % signalPriceCorrection;  // 6
-  log.Info(info.str().c_str());
+      "%6%. Order type: %7%.",
+      qty,                    // 1
+      minQty,                 // 2
+      numberOfHistoryHours,   // 3
+      costOfFunds,            // 4
+      maxLossShare,           // 5
+      signalPriceCorrection,  // 6
+      dynamic_cast<const LimitGtcOrderPolicyFactory *>(&*orderPolicyFactory)
+          ? "limit GTC"
+          : dynamic_cast<const LimitIocOrderPolicyFactory *>(
+                &*orderPolicyFactory)
+                ? "limit IOC"
+                : dynamic_cast<const MarketGtcOrderPolicyFactory *>(
+                      &*orderPolicyFactory)
+                      ? "market GTC"
+                      : "UNKNOWN!");  // 7
 }
 
 ////////////////////////////////////////////////////////////////////////////////

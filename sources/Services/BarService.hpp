@@ -35,7 +35,8 @@ class TRDK_SERVICES_API BarService : public trdk::Service {
 
   //! Bar data.
   struct TRDK_SERVICES_API Bar {
-    boost::posix_time::ptime time;
+    boost::posix_time::ptime startTime;
+    boost::posix_time::ptime endTime;
 
     trdk::ScaledPrice maxAskPrice;
     trdk::ScaledPrice openAskPrice;

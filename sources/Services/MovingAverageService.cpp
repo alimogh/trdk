@@ -330,12 +330,12 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     m_pointsLog = std::move(log);
   }
 
-  void LogEmptyPoint(const pt::ptime &time) {
+  void LogEmptyPoint(const pt::ptime &time, const Double &sourceValue) {
     if (!m_pointsLog.is_open()) {
       return;
     }
     m_pointsLog << time.date() << ',' << ExcelTextField(time.time_of_day())
-                << ",," << std::endl;
+                << ',' << sourceValue << ',' << std::endl;
   }
 
   void LogPoint(const Point &point) {
@@ -367,7 +367,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
         }
         m_lastZeroTime = valueTime;
       }
-      LogEmptyPoint(valueTime);
+      LogEmptyPoint(valueTime, newValue);
       return false;
     }
     m_lastZeroTime = pt::not_a_date_time;
@@ -375,7 +375,7 @@ class MovingAverageService::Implementation : private boost::noncopyable {
     boost::apply_visitor(accumVisitor, *m_acc);
 
     if (boost::apply_visitor(GetAccSizeVisitor(), *m_acc) < m_period) {
-      LogEmptyPoint(valueTime);
+      LogEmptyPoint(valueTime, newValue);
       return false;
     }
 
@@ -445,7 +445,7 @@ bool MovingAverageService::OnNewBar(const Security &security,
   const ExtractBarValueVisitor visitor(bar);
   const auto &value = security.DescalePrice(
       boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
-  return Update(bar.time, value);
+  return Update(bar.endTime, value);
 }
 
 bool MovingAverageService::Update(const pt::ptime &time, const Double &value) {
