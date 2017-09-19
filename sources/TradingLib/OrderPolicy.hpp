@@ -22,7 +22,16 @@ class OrderPolicy : private boost::noncopyable {
   virtual void Close(trdk::Position &) const = 0;
 };
 
-class LimitGtcOrderPolicy : public trdk::TradingLib::OrderPolicy {
+class LimitOrderPolicy : public trdk::TradingLib::OrderPolicy {
+ public:
+  virtual ~LimitOrderPolicy() override = default;
+
+ protected:
+  virtual trdk::ScaledPrice GetOpenOrderPrice(trdk::Position &) const;
+  virtual trdk::ScaledPrice GetCloseOrderPrice(trdk::Position &) const;
+};
+
+class LimitGtcOrderPolicy : public trdk::TradingLib::LimitOrderPolicy {
  public:
   virtual ~LimitGtcOrderPolicy() override = default;
 
@@ -31,17 +40,22 @@ class LimitGtcOrderPolicy : public trdk::TradingLib::OrderPolicy {
   virtual void Close(trdk::Position &) const override;
 };
 
-class LimitIocOrderPolicy : public trdk::TradingLib::OrderPolicy {
+class LimitIocOrderPolicy : public trdk::TradingLib::LimitOrderPolicy {
  public:
   virtual ~LimitIocOrderPolicy() override = default;
 
  public:
   virtual void Open(trdk::Position &) const override;
   virtual void Close(trdk::Position &) const override;
+};
 
- protected:
-  virtual trdk::ScaledPrice GetOpenOrderPrice(trdk::Position &) const;
-  virtual trdk::ScaledPrice GetCloseOrderPrice(trdk::Position &) const;
+class MarketGtcOrderPolicy : public trdk::TradingLib::OrderPolicy {
+ public:
+  virtual ~MarketGtcOrderPolicy() override = default;
+
+ public:
+  virtual void Open(trdk::Position &) const override;
+  virtual void Close(trdk::Position &) const override;
 };
 }
 }
