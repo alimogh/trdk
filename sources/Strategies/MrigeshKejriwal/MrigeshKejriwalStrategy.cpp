@@ -266,20 +266,19 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
     throw Exception("Broker position for wrong security");
   }
   auto posQty = qty;
-  auto posVolume = volume;
   if (posQty != 0 && abs(posQty) < m_settings.minQty) {
     posQty = m_settings.minQty;
     if (qty < 0) {
       posQty *= -1;
     }
   }
-  posQty =
-      (posQty / m_settings.minQty +
-       (static_cast<intmax_t>(posQty) % static_cast<intmax_t>(m_settings.minQty)
-            ? 1
-            : 0)) *
-      m_settings.minQty;
-  posVolume = (volume / abs(qty)) * posQty;
+  const auto numberOfParts =
+      static_cast<intmax_t>(posQty) / static_cast<intmax_t>(m_settings.minQty);
+  const auto restFromPart =
+      static_cast<intmax_t>(posQty) % static_cast<intmax_t>(m_settings.minQty);
+  posQty = static_cast<double>((numberOfParts + (restFromPart ? 1 : 0)) *
+                               static_cast<intmax_t>(m_settings.minQty));
+  const auto posVolume = (volume / abs(qty)) * posQty;
   m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
                                               isInitial);
 }
