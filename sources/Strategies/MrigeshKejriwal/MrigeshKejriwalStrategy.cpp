@@ -269,11 +269,17 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
   auto posVolume = volume;
   if (posQty != 0 && abs(posQty) < m_settings.minQty) {
     posQty = m_settings.minQty;
-    posVolume = (posVolume / abs(qty)) * posQty;
     if (qty < 0) {
       posQty *= -1;
     }
   }
+  posQty =
+      (posQty / m_settings.minQty +
+       (static_cast<intmax_t>(posQty) % static_cast<intmax_t>(m_settings.minQty)
+            ? 1
+            : 0)) *
+      m_settings.minQty;
+  posVolume = (volume / abs(qty)) * posQty;
   m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
                                               isInitial);
 }
