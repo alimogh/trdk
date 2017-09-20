@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2016/02/08 18:50:43
+ *   Created: 2017/09/19 19:24:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,10 +9,3 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Common/VersionInfo.hpp"
-
-using namespace trdk::Lib;
-
-extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
-  *result = VersionInfoV1(TRDK_INTERACTION_TEST_FILE_NAME);
-}
