@@ -38,14 +38,3 @@ trdk::Security &Dummies::MarketDataSource::CreateNewSecurityObject(
     const trdk::Lib::Symbol &) {
   throw std::logic_error("Not supported");
 }
-
-boost::optional<trdk::Lib::ContractExpiration>
-Dummies::MarketDataSource::FindContractExpiration(
-    const trdk::Lib::Symbol &, const boost::gregorian::date &) const {
-  throw std::logic_error("Not supported");
-}
-
-void Dummies::MarketDataSource::SwitchToContract(
-    trdk::Security &, const trdk::Lib::ContractExpiration &&) const {
-  throw std::logic_error("Not supported");
-}

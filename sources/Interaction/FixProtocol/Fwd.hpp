@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/09/20 19:54:26
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,8 +8,12 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+namespace trdk {
+namespace Interaction {
+namespace FixProtocol {
 
-#include "Common/Common.hpp"
-#include "Fwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+class MarketDataSource;
+class Client;
+}
+}
+}

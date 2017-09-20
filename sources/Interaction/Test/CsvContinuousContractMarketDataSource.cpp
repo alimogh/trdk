@@ -63,21 +63,6 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
     return *result;
   }
 
-  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
-      const trdk::Lib::Symbol &,
-      const boost::gregorian::date &) const override {
-    throw MethodDoesNotImplementedError(
-        "CsvContinuousContractMarketDataSource doesn't support contract "
-        "expiration");
-  }
-
-  virtual void SwitchToContract(
-      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override {
-    throw MethodDoesNotImplementedError(
-        "CsvContinuousContractMarketDataSource doesn't support contract "
-        "expiration");
-  }
-
   virtual void Run() override {
     size_t fileNo = 1;
     pt::ptime currentTime;

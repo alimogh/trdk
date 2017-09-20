@@ -312,6 +312,18 @@ void MarketDataSource::ForEachSecurity(
   m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, pred);
 }
 
+boost::optional<ContractExpiration> MarketDataSource::FindContractExpiration(
+    const Symbol &, const gr::date &) const {
+  throw MethodDoesNotImplementedError(
+      "Market data source doesn't support contract expiration");
+}
+
+void MarketDataSource::SwitchToContract(Security &,
+                                        const ContractExpiration &&) const {
+  throw MethodDoesNotImplementedError(
+      "Market data source doesn't support contract expiration");
+}
+
 void MarketDataSource::SwitchToNextContract(Security &security) const {
   const boost::mutex::scoped_lock lock(m_pimpl->m_asyncTasks.mutex);
   m_pimpl->m_asyncTasks.list.emplace_back(boost::async([this, &security]() {

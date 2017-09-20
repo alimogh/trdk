@@ -31,12 +31,6 @@ class MarketDataSource : public trdk::MarketDataSource {
  protected:
   virtual trdk::Security &CreateNewSecurityObject(
       const trdk::Lib::Symbol &) override;
-
-  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
-      const trdk::Lib::Symbol &, const boost::gregorian::date &) const override;
-
-  virtual void SwitchToContract(
-      trdk::Security &, const trdk::Lib::ContractExpiration &&) const override;
 };
 }
 }

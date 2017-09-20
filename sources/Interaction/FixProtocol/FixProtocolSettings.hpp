@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/09/20 18:11:57
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,6 +10,19 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "Fwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+#include "Core/Module.hpp"
+
+namespace trdk {
+namespace Interaction {
+namespace FixProtocol {
+struct Settings {
+  std::string host;
+  size_t port;
+
+  Settings(const Lib::IniSectionRef &);
+  void Log(Module::Log &) const;
+  void Validate() const;
+};
+}
+}
+}

@@ -303,6 +303,10 @@
     <TargetName>FixProtocol_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="FixProtocolMarketDataSource.cpp" />
+    <ClCompile Include="FixProtocolSecurity.cpp" />
+    <ClCompile Include="FixProtocolSettings.cpp" />
+    <ClCompile Include="FixProtocolClient.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -320,6 +324,11 @@
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FixProtocolMarketDataSource.hpp" />
+    <ClInclude Include="FixProtocolSecurity.hpp" />
+    <ClInclude Include="FixProtocolSettings.hpp" />
+    <ClInclude Include="FixProtocolClient.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

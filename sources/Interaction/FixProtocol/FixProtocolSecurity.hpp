@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/09/20 20:26:02
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,6 +10,22 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "Fwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+#include "Core/Security.hpp"
+
+namespace trdk {
+namespace Interaction {
+namespace FixProtocol {
+
+class Security : public trdk::Security {
+ public:
+  typedef trdk::Security Base;
+
+ public:
+  explicit Security(Context &,
+                    const Lib::Symbol &,
+                    FixProtocol::MarketDataSource &,
+                    const SupportedLevel1Types &);
+};
+}
+}
+}

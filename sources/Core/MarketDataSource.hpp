@@ -133,6 +133,8 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   void SwitchToNextContract(trdk::Security &security) const;
 
  protected:
+  trdk::Security &CreateSecurity(const trdk::Lib::Symbol &);
+
   //! Creates security object.
   /** Each object, that implements CreateNewSecurityObject should wait
     * for log flushing before destroying objects.
@@ -145,7 +147,7 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
     * yet.
     */
   virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
-      const trdk::Lib::Symbol &, const boost::gregorian::date &) const = 0;
+      const trdk::Lib::Symbol &, const boost::gregorian::date &) const;
 
   //! Switches security to the contract with specified expiration.
   /** @param[in,out] security   Security to switch. Should be not explicit.
@@ -153,10 +155,7 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
     */
   virtual void SwitchToContract(
       trdk::Security &security,
-      const trdk::Lib::ContractExpiration &&expiration) const = 0;
-
- protected:
-  trdk::Security &CreateSecurity(const trdk::Lib::Symbol &);
+      const trdk::Lib::ContractExpiration &&expiration) const;
 
  private:
   class Implementation;

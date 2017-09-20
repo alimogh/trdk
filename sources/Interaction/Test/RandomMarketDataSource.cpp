@@ -172,19 +172,6 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
   return *result;
 }
 
-boost::optional<ContractExpiration>
-RandomMarketDataSource::FindContractExpiration(const Symbol &,
-                                               const gr::date &) const {
-  throw MethodDoesNotImplementedError(
-      "RandomMarketDataSource doesn't support contract expiration");
-}
-
-void RandomMarketDataSource::SwitchToContract(
-    trdk::Security &, const ContractExpiration &&) const {
-  throw MethodDoesNotImplementedError(
-      "RandomMarketDataSource doesn't support contract expiration");
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_TEST_API
