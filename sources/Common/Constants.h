@@ -193,11 +193,11 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
         TRDK_INTERACTION_ITCH_FILE_NAME, TRDK_INTERACTION_DDFPLUS_FILE_NAME,   \
         TRDK_INTERACTION_TRADERNET_FILE_NAME,                                  \
         TRDK_INTERACTION_TRANSAQ_FILE_NAME, TRDK_INTERACTION_IQFEED_FILE_NAME, \
-        TRDK_STRATEGY_TEST_FILE_NAME, TRDK_STRATEGY_FXMB_FILE_NAME,            \
-        TRDK_STRATEGY_GADM_FILE_NAME, TRDK_STRATEGY_INTRADAYTREND_FILE_NAME,   \
+        TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME, TRDK_STRATEGY_TEST_FILE_NAME,  \
+        TRDK_STRATEGY_FXMB_FILE_NAME, TRDK_STRATEGY_GADM_FILE_NAME,            \
+        TRDK_STRATEGY_INTRADAYTREND_FILE_NAME,                                 \
         TRDK_STRATEGY_MRIGESHKEJRIWAL_FILE_NAME,                               \
         TRDK_STRATEGY_DOCFEELS_FILE_NAME,                                      \
-        TRDK_INTERACTION_FIXPROTOCOL_DLL_FILE_NAME,                            \
   }
 
 ////////////////////////////////////////////////////////////////////////////////
