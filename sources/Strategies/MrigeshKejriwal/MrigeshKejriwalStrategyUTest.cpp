@@ -51,7 +51,8 @@ TEST(MrigeshKejriwal_Strategy, Setup) {
       "history_hours=  129\n"
       "cost_of_funds = 0.12\n"
       "max_loss_share = 0.03\n"
-      "signal_price_correction = 0\n");
+      "signal_price_correction = 0\n"
+      "order_type = lmt_ioc\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
