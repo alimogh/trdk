@@ -34,8 +34,7 @@ class MainWindow : public QMainWindow {
   void ShowEngine(const QModelIndex &);
 
  private:
-  Ui::MainWindow ui;
-
+  Ui::MainWindow m_ui;
   std::unique_ptr<EngineListModel> m_engineListModel;
 };
 }

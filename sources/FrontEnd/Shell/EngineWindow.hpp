@@ -37,13 +37,17 @@ class EngineWindow : public QMainWindow {
  private slots:
   void PinToTop(bool pin);
 
-  void Start();
-  void Stop();
+  void Start(bool start);
+  void Stop(bool stop);
+
+  void StateChanged(bool isStarted);
+  void Message(const QString &, bool isWarning);
+  void LogRecord(const QString &);
 
  private:
   Engine m_engine;
   const QString m_name;
-  Ui::EngineWindow ui;
+  Ui::EngineWindow m_ui;
 };
 }
 }

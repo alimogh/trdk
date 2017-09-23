@@ -14,7 +14,7 @@ namespace trdk {
 namespace Frontend {
 namespace Shell {
 
-class Engine : private QObject {
+class Engine : public QObject {
   Q_OBJECT
 
  public:
@@ -24,6 +24,11 @@ class Engine : private QObject {
 
  public:
   const boost::filesystem::path &GetConfigFilePath() const;
+
+ signals:
+  void StateChanged(bool isStarted);
+  void Message(const QString &, bool isWarning);
+  void LogRecord(const QString &);
 
  public:
   void Start();

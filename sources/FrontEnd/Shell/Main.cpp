@@ -14,6 +14,8 @@
 using namespace trdk::Frontend::Shell;
 
 int main(int argc, char *argv[]) {
+  _CrtSetDbgFlag(0);
+
   QApplication application(argc, argv);
   application.setApplicationName(TRDK_NAME);
   {
