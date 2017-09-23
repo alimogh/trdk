@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/09/21 20:16:37
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "Api.h"
-#include "Fwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+#ifdef BOOST_WINDOWS
+#define TRDK_INTERACTION_FIXPROTOCOL_API
+#else
+#define TRDK_INTERACTION_FIXPROTOCOL_API extern "C"
+#endif

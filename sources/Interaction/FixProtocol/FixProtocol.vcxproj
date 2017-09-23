@@ -303,10 +303,13 @@
     <TargetName>FixProtocol_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="FixProtocolMarketDataSource.cpp" />
-    <ClCompile Include="FixProtocolSecurity.cpp" />
-    <ClCompile Include="FixProtocolSettings.cpp" />
-    <ClCompile Include="FixProtocolClient.cpp" />
+    <ClCompile Include="IncomingMessages.cpp" />
+    <ClCompile Include="MarketDataSource.cpp" />
+    <ClCompile Include="Message.cpp" />
+    <ClCompile Include="OutgoingMessages.cpp" />
+    <ClCompile Include="Security.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -324,11 +327,17 @@
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FixProtocolMarketDataSource.hpp" />
-    <ClInclude Include="FixProtocolSecurity.hpp" />
-    <ClInclude Include="FixProtocolSettings.hpp" />
-    <ClInclude Include="FixProtocolClient.hpp" />
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="MarketDataSource.hpp" />
+    <ClInclude Include="Message.hpp" />
+    <ClInclude Include="MessageHandler.hpp" />
+    <ClInclude Include="OutgoingMessages.hpp" />
+    <ClInclude Include="Policy.hpp" />
+    <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Settings.hpp" />
+    <ClInclude Include="Client.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="IncomingMessages.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

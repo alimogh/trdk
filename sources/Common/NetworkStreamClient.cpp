@@ -61,6 +61,110 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
         m_socket(m_service.GetIo().GetService()),
         m_numberOfReceivedBytes(0) {}
 
+  template <typename Message>
+  void SendSynchronously(const Message &message, const char *requestName) {
+    AssertLt(0, message.size());
+    Assert(requestName);
+    Assert(strlen(requestName));
+    // Available only before asynchronous mode start:
+    AssertEq(0, m_buffer.first.size());
+    AssertEq(0, m_buffer.second.size());
+
+    boost::system::error_code error;
+    const auto size = io::write(m_socket, io::buffer(message), error);
+
+    if (error || size != message.size()) {
+      {
+        boost::format logMessage(
+            "%1%Failed to send %2%: \"%3%\", (network error: \"%4%\")."
+            " Message size: %5% bytes, sent: %6% bytes.");
+        logMessage % m_self.GetService().GetLogTag() % requestName %
+            SysError(error.value()) % error % message.size() % size;
+        m_self.LogError(logMessage.str());
+      }
+      boost::format exceptionMessage("Failed to send %1%");
+      exceptionMessage % requestName;
+      throw Exception(exceptionMessage.str().c_str());
+    }
+  }
+
+  void Send(const std::vector<io::const_buffer> &&bufferSequnce,
+            const boost::function<void()> &&onOperaton—ompletion) {
+    Assert(!bufferSequnce.empty());
+    // Available only after asynchronous mode start:
+    AssertLt(0, m_buffer.first.size());
+    AssertLt(0, m_buffer.second.size());
+
+    const auto &self = m_self.shared_from_this();
+    const boost::function<void(const boost::system::error_code &)> &callback =
+        [ self, onOperaton—ompletion ](const boost::system::error_code &error) {
+      onOperaton—ompletion();
+      if (error) {
+        self->m_pimpl->OnConnectionError(error);
+      }
+    };
+
+    try {
+      io::async_write(m_socket, std::move(bufferSequnce),
+                      boost::bind(callback, io::placeholders::error));
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to write to socket: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
+    }
+  }
+
+  template <typename Message>
+  void Send(Message &&message) {
+    Assert(!message.empty());
+    // Available only after asynchronous mode start:
+    AssertLt(0, m_buffer.first.size());
+    AssertLt(0, m_buffer.second.size());
+
+    const auto &self = m_self.shared_from_this();
+    const auto &messageCopy = boost::make_shared<Message>(std::move(message));
+    const boost::function<void(const boost::system::error_code &)> &callback =
+        [self, messageCopy](const boost::system::error_code &error) {
+          if (error) {
+            self->m_pimpl->OnConnectionError(error);
+          }
+        };
+
+    try {
+      io::async_write(m_socket, io::buffer(*messageCopy),
+                      boost::bind(callback, io::placeholders::error));
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to write to socket: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
+    }
+  }
+
+  void Send(const char *persistentBuffer, size_t len) {
+    Assert(persistentBuffer);
+    AssertLt(0, len);
+    // Available only after asynchronous mode start:
+    AssertLt(0, m_buffer.first.size());
+    AssertLt(0, m_buffer.second.size());
+
+    const auto &self = m_self.shared_from_this();
+    const boost::function<void(const boost::system::error_code &)> &callback =
+        [self](const boost::system::error_code &error) {
+          if (error) {
+            self->m_pimpl->OnConnectionError(error);
+          }
+        };
+
+    try {
+      io::async_write(m_socket, io::buffer(persistentBuffer, len),
+                      boost::bind(callback, io::placeholders::error));
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to write to socket: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
+    }
+  }
+
   void StartRead(Buffer &activeBuffer,
                  size_t bufferStartOffset,
                  Buffer &nextBuffer) {
@@ -415,42 +519,26 @@ bool NetworkStreamClient::CheckResponceSynchronously(
 
   const size_t expectedResponseSize = strlen(expectedResponse);
 
-  std::vector<char> serverResponse(
+  const auto &serverResponse = ReceiveSynchronously(
+      actionName,
       errorResponse ? std::max(strlen(errorResponse), expectedResponseSize)
                     : expectedResponseSize);
-  boost::system::error_code error;
-  const auto &serverResponseSize =
-      io::read(m_pimpl->m_socket, io::buffer(serverResponse),
-               io::transfer_at_least(1), error);
-  AssertLe(serverResponseSize, serverResponse.size());
 
-  if (error) {
-    boost::format message(
-        "Failed to read %1% response: \"%2%\", (network error: \"%3%\")");
-    message % actionName % SysError(error.value()) % error;
-    throw Exception(message.str().c_str());
-  }
-
-  if (!serverResponseSize) {
-    boost::format message("Connection closed by server at %1%");
-    message % actionName;
-    throw Exception(message.str().c_str());
-  }
-
-  if (errorResponse && strlen(errorResponse) == serverResponseSize &&
-      !memcmp(&serverResponse[0], errorResponse, serverResponseSize)) {
+  if (errorResponse && strlen(errorResponse) == serverResponse.size() &&
+      !memcmp(&serverResponse[0], errorResponse, serverResponse.size())) {
     return false;
   }
 
-  if (serverResponseSize != expectedResponseSize ||
-      memcmp(&serverResponse[0], expectedResponse, serverResponseSize)) {
+  if (serverResponse.size() != expectedResponseSize ||
+      memcmp(&serverResponse[0], expectedResponse, serverResponse.size())) {
     {
-      serverResponse[serverResponseSize] = 0;
       boost::format logMessage(
           "%1%Unexpected %2% response from server (size: %3% bytes)"
           ": \"%4%\".");
-      logMessage % GetService().GetLogTag() % actionName % serverResponseSize %
-          &serverResponse[0];
+      logMessage % GetService().GetLogTag()                               // 1
+          % actionName                                                    // 2
+          % serverResponse.size()                                         // 3
+          % std::string(serverResponse.cbegin(), serverResponse.cend());  // 4
       LogError(logMessage.str());
     }
     boost::format logMessage("Unexpected %1% response from server");
@@ -461,34 +549,32 @@ bool NetworkStreamClient::CheckResponceSynchronously(
   return true;
 }
 
-void NetworkStreamClient::Send(std::string &&message) {
-  Assert(!message.empty());
-
-  // Available only after asynchronous mode start:
-  AssertLt(0, m_pimpl->m_buffer.first.size());
-  AssertLt(0, m_pimpl->m_buffer.second.size());
-
-  const auto &self = shared_from_this();
-  const auto &messageCopy = boost::make_shared<std::string>(std::move(message));
-  const boost::function<void(const boost::system::error_code &)> &callback =
-      [self, messageCopy](const boost::system::error_code &error) {
-        if (error) {
-          self->m_pimpl->OnConnectionError(error);
-        }
-      };
-
-  try {
-    io::async_write(m_pimpl->m_socket, io::buffer(*messageCopy),
-                    boost::bind(callback, io::placeholders::error));
-  } catch (const std::exception &ex) {
-    boost::format error("Failed to write to socket: \"%1%\"");
-    error % ex.what();
-    throw Exception(error.str().c_str());
-  }
+void NetworkStreamClient::Send(
+    const std::vector<io::const_buffer> &&bufferSequnce,
+    const boost::function<void()> &&onOperaton—ompletion) {
+  m_pimpl->Send(std::move(bufferSequnce), std::move(onOperaton—ompletion));
+}
+void NetworkStreamClient::Send(const std::vector<char> &&message) {
+  m_pimpl->Send(std::move(message));
+}
+void NetworkStreamClient::Send(const std::string &&message) {
+  m_pimpl->Send(std::move(message));
+}
+void NetworkStreamClient::Send(const char *persistentBuffer, size_t len) {
+  m_pimpl->Send(persistentBuffer, len);
 }
 
+void NetworkStreamClient::SendSynchronously(const std::vector<char> &message,
+                                            const char *requestName) {
+  m_pimpl->SendSynchronously(message, requestName);
+}
 void NetworkStreamClient::SendSynchronously(const std::string &message,
                                             const char *requestName) {
+  m_pimpl->SendSynchronously(message, requestName);
+}
+
+std::vector<char> NetworkStreamClient::ReceiveSynchronously(
+    const char *requestName, size_t size) {
   Assert(requestName);
   Assert(strlen(requestName));
 
@@ -496,22 +582,28 @@ void NetworkStreamClient::SendSynchronously(const std::string &message,
   AssertEq(0, m_pimpl->m_buffer.first.size());
   AssertEq(0, m_pimpl->m_buffer.second.size());
 
-  boost::system::error_code error;
-  const auto size = io::write(m_pimpl->m_socket, io::buffer(message), error);
+  std::vector<char> result(size);
 
-  if (error || size != message.size()) {
-    {
-      boost::format logMessage(
-          "%1%Failed to send %2%: \"%3%\", (network error: \"%4%\")."
-          " Message size: %5% bytes, sent: %6% bytes.");
-      logMessage % GetService().GetLogTag() % requestName %
-          SysError(error.value()) % error % message.size() % size;
-      LogError(logMessage.str());
-    }
-    boost::format exceptionMessage("Failed to send %1%");
-    exceptionMessage % requestName;
-    throw Exception(exceptionMessage.str().c_str());
+  boost::system::error_code error;
+  const auto &serverResponseSize = io::read(
+      m_pimpl->m_socket, io::buffer(result), io::transfer_at_least(1), error);
+  AssertLe(serverResponseSize, result.size());
+  result.resize(serverResponseSize);
+
+  if (error) {
+    boost::format message(
+        "Failed to read %1% response: \"%2%\", (network error: \"%3%\")");
+    message % requestName % SysError(error.value()) % error;
+    throw Exception(message.str().c_str());
   }
+
+  if (!serverResponseSize) {
+    boost::format message("Connection closed by server at %1%");
+    message % requestName;
+    throw Exception(message.str().c_str());
+  }
+
+  return result;
 }
 
 bool NetworkStreamClient::RequestSynchronously(const std::string &message,

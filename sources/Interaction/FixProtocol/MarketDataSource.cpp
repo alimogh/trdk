@@ -9,8 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FixProtocolMarketDataSource.hpp"
-#include "FixProtocolClient.hpp"
+#include "MarketDataSource.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -23,13 +22,36 @@ fix::MarketDataSource::MarketDataSource(size_t index,
                                         Context &context,
                                         const std::string &instanceName,
                                         const IniSectionRef &conf)
-    : Base(index, context, instanceName), m_settings(conf) {
+    : Base(index, context, instanceName),
+      m_settings(conf),
+      m_client("Prices", *this) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
 
-void fix::MarketDataSource::Connect(const IniSectionRef &) {}
+void fix::MarketDataSource::Connect(const IniSectionRef &) {
+  GetLog().Debug("Connecting to the stream...");
+  m_client.Connect();
+  GetLog().Info("Connected to the stream.");
+}
 
 void fix::MarketDataSource::SubscribeToSecurities() {}
 
 void fix::MarketDataSource::ResubscribeToSecurities() {}
+
+Security &fix::MarketDataSource::CreateNewSecurityObject(const Symbol &) {
+  throw Exception("Failed to create security object");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<fix::MarketDataSource>(index, context, instanceName,
+                                                   configuration);
+}
+
+////////////////////////////////////////////////////////////////////////////////

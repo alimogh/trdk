@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/20 19:54:26
+ *   Created: 2017/09/20 18:11:57
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,18 +8,28 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
+#pragma once
+
+#include "Core/Module.hpp"
+
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
+struct Settings {
+  std::string host;
+  size_t port;
+  std::string username;
+  std::string password;
+  std::string senderCompId;
+  std::string targetCompId;
+  std::string senderSubId;
+  std::unique_ptr<Policy> policy;
 
-class MarketDataSource;
-class Client;
-class Policy;
-class MessageHandler;
-
-namespace Incoming {
-class Logon;
-}
+  Settings(const Lib::IniSectionRef &);
+  ~Settings();
+  void Log(Module::Log &) const;
+  void Validate() const;
+};
 }
 }
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/20 18:11:57
+ *   Created: 2017/09/21 23:46:24
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,18 +10,14 @@
 
 #pragma once
 
-#include "Core/Module.hpp"
-
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
-struct Settings {
-  std::string host;
-  size_t port;
-
-  Settings(const Lib::IniSectionRef &);
-  void Log(Module::Log &) const;
-  void Validate() const;
+class Policy : private boost::noncopyable {
+  // Each policy is a module in cpp-file. At FixProtocol start each policy adds
+  // own name (for ex. "FIX4.4" or "cTrade") into the static map<name, fabric>.
+  // Settings object creates policy at start. Unused policies will be removed
+  // from custom branch.
 };
 }
 }

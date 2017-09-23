@@ -17,6 +17,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Strategies", "Strategies", "{5CA346C1-8234-4485-8B30-89ADE810555C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interaction", "Interaction", "{0472C2A4-F2BB-48CC-A6FE-32B792EE621D}"
+	ProjectSection(SolutionItems) = preProject
+		Interaction\FixProtocol\FixProtocol.def = Interaction\FixProtocol\FixProtocol.def
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine server", "EngineServer\EngineServer.vcxproj", "{333A992A-036E-4C3B-A116-C44E748CBF21}"
 EndProject
@@ -54,7 +57,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Doc Feels", "Strategies\Doc
 		{4F025D92-8F15-4A05-97B6-CA680CB090D9} = {4F025D92-8F15-4A05-97B6-CA680CB090D9}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FIX Protocol", "Interaction\FixProtocol\FixProtocol.vcxproj", "{5821D6C3-4305-4811-B754-AE13CCA75D30}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FIX protocol", "Interaction\FixProtocol\FixProtocol.vcxproj", "{5821D6C3-4305-4811-B754-AE13CCA75D30}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Front-end", "Front-end", "{88EE3328-50D8-4A68-89C4-CADC752CAABF}"
 EndProject

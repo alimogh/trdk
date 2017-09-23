@@ -11,7 +11,8 @@
 #pragma once
 
 #include "Core/MarketDataSource.hpp"
-#include "FixProtocolSettings.hpp"
+#include "Client.hpp"
+#include "Settings.hpp"
 
 namespace trdk {
 namespace Interaction {
@@ -36,9 +37,12 @@ class MarketDataSource : public trdk::MarketDataSource {
   virtual void SubscribeToSecurities() override;
   void ResubscribeToSecurities();
 
+ protected:
+  virtual Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+
  private:
   const Settings m_settings;
-  std::unique_ptr<Client> m_stream;
+  Client m_client;
 };
 }
 }

@@ -9,9 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FixProtocolClient.hpp"
-#include "FixProtocolMarketDataSource.hpp"
-#include "FixProtocolSecurity.hpp"
+#include "IncomingMessages.hpp"
+#include "MarketDataSource.hpp"
+#include "MessageHandler.hpp"
+#include "OutgoingMessages.hpp"
+#include "Security.hpp"
 #include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;
@@ -26,7 +28,7 @@ namespace fix = trdk::Interaction::FixProtocol;
 
 namespace {
 
-class Connection : public NetworkStreamClient {
+class Connection : public NetworkStreamClient, public MessageHandler {
  public:
   typedef NetworkStreamClient Base;
 
@@ -34,9 +36,20 @@ class Connection : public NetworkStreamClient {
   explicit Connection(Client &service)
       : Base(service,
              service.GetSource().GetSettings().host,
-             service.GetSource().GetSettings().port) {}
+             service.GetSource().GetSettings().port),
+        m_standardOutgoingHeader(service.GetSource()),
+        m_isAuthorized(false) {}
 
   virtual ~Connection() override = default;
+
+ public:
+  virtual void OnLogon(const Incoming::Logon &message) override {
+    if (m_isAuthorized) {
+      ProtocolError("Received unexpected Logon-message", &*message.GetBegin(),
+                    0);
+    }
+    m_isAuthorized = true;
+  }
 
  protected:
   const fix::MarketDataSource &GetSource() const {
@@ -72,7 +85,19 @@ class Connection : public NetworkStreamClient {
   }
 
  protected:
-  virtual void OnStart() override {}
+  virtual void OnStart() override {
+    Assert(!m_isAuthorized);
+    m_isAuthorized = false;
+    SendSynchronously(Outgoing::Logon(m_standardOutgoingHeader).Export(SOH),
+                      "Logon");
+    const auto &responceContent = ReceiveSynchronously("Logon", 256);
+    Incoming::Factory::Create(responceContent.cbegin(), responceContent.cend(),
+                              *GetSource().GetSettings().policy)
+        ->Handle(*this);
+    if (!m_isAuthorized) {
+      ConnectError("Failed to authorize");
+    }
+  }
 
   //! Find message end by reverse iterators.
   /** Called under lock.
@@ -96,6 +121,10 @@ class Connection : public NetworkStreamClient {
                                  const Buffer::const_iterator &,
                                  const Buffer::const_iterator &,
                                  const Milestones &) override {}
+
+ private:
+  Outgoing::StandardHeader m_standardOutgoingHeader;
+  bool m_isAuthorized;
 };
 }
 
