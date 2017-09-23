@@ -35,7 +35,7 @@ class EngineWindow : public QMainWindow {
   }
 
  private slots:
-  void PinToTop();
+  void PinToTop(bool pin);
 
   void Start();
   void Stop();

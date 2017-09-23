@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>EngineWindow</class>
  <widget class="QMainWindow" name="EngineWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>184</width>
+    <height>39</height>
+   </rect>
+  </property>
   <widget class="QWidget" name="centralwidget"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
@@ -13,9 +21,11 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionPinToTop"/>
+   <addaction name="separator"/>
    <addaction name="actionStartEngine"/>
    <addaction name="actionStopEngine"/>
-   <addaction name="actionPinToTop"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionStartEngine">
    <property name="text">

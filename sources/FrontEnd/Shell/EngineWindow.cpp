@@ -47,7 +47,12 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   connect(ui.actionStopEngine, &QAction::triggered, this, &EngineWindow::Stop);
 }
 
-void EngineWindow::PinToTop() {}
+void EngineWindow::PinToTop(bool pin) {
+  auto flags = windowFlags();
+  pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
+  setWindowFlags(flags);
+  show();
+}
 
 void EngineWindow::Start() {
   for (;;) {
