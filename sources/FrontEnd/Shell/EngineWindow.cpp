@@ -63,7 +63,7 @@ void EngineWindow::PinToTop(bool pin) {
 }
 
 void EngineWindow::Start(bool start) {
-  Q_ASSERT(start);
+  Assert(start);
   if (start) {
     for (;;) {
       try {
@@ -83,7 +83,7 @@ void EngineWindow::Start(bool start) {
 }
 
 void EngineWindow::Stop(bool stop) {
-  Q_ASSERT(stop);
+  Assert(stop);
   if (stop) {
     for (;;) {
       try {
