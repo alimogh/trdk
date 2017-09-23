@@ -73,6 +73,9 @@ class sh::Engine::Implementation : private boost::noncopyable {
                             const pt::ptime &time,
                             const std::string *module,
                             const char *message) {
+    if (!std::strcmp(tag, "Debug")) {
+      return;
+    }
     std::ostringstream oss;
     oss << '[' << tag << "]\t" << time;
     if (module) {
