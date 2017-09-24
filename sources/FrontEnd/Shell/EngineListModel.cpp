@@ -72,6 +72,7 @@ QModelIndex EngineListModel::index(int row,
   AssertEq(0, column);
   AssertLe(0, row);
   Assert(!parent.isValid());
+  UseUnused(parent);
 
   if (column != 0 || row < 0 || row >= m_engines.size()) {
     return QModelIndex();
