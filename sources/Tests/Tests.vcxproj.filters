@@ -126,9 +126,6 @@
     <ClCompile Include="..\TradingLib\TrendUTest.cpp">
       <Filter>Unit Tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\Strategies\DocFeels\DocFeelsCumulativeReturnServiceUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tests.rc" />

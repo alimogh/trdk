@@ -1,7 +1,0 @@
-EXPORTS
-	CreateCtsStrategy
-	CreatePureSmaStrategy
-	CreatePureBbStrategy
-	CreateCumulativeReturnService
-	CreateCumulativeReturnFilterService
-	GetTrdkModuleVersionInfoV1

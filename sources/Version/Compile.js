@@ -31,7 +31,6 @@ var requiredModules = [
 	, 'Services'
 	, 'TestStrategy'
 	, 'MrigeshKejriwal'
-	, 'DocFeels'
 	, 'WilliamCarryFrontEnd'
 ]
 
