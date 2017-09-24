@@ -1,12 +1,12 @@
 
 #pragma once
 
-#define TRDK_VERSION_RELEASE	2
-#define TRDK_VERSION_BUILD	5
-#define TRDK_VERSION_STATUS	3
+#define TRDK_VERSION_RELEASE	1
+#define TRDK_VERSION_BUILD	0
+#define TRDK_VERSION_STATUS	0
 
-#define TRDK_VERSION_BRANCH		"master"
-#define TRDK_VERSION_BRANCH_W	L"master"
+#define TRDK_VERSION_BRANCH		"WilliamCarry"
+#define TRDK_VERSION_BRANCH_W	L"WilliamCarry"
 
 #define TRDK_VENDOR		"Eugene V. Palchukovsky"
 #define TRDK_VENDOR_W	L"Eugene V. Palchukovsky"
@@ -30,5 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
-#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "TestTradingSystems", "InteractiveBrokers", "FixProtocol", "Services", "TestStrategy", "MrigeshKejriwal", "WilliamCarryFrontEnd", };
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "TestTradingSystems", "FixProtocol", "TestStrategy", "WilliamCarryFrontEnd", };
 
