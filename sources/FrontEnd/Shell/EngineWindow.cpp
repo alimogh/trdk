@@ -94,9 +94,6 @@ void EngineWindow::LoadModule() {
   }
   setMinimumHeight(minimumHeight() + m_module->minimumHeight());
 
-  setFixedSize(width() < m_module->width() ? m_module->width() : width(),
-               height() + m_module->height());
-
   adjustSize();
 }
 
