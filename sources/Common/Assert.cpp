@@ -40,7 +40,7 @@ void BreakDebug() noexcept {
   {
     const char *message =
         "An unexpected program failure occurred! Please send this"
-        " and other product log files at " TRDK_SUPPORT_EMAIL
+        " and other product log files to " TRDK_SUPPORT_EMAIL
         " with descriptions of actions that you have made during"
         " the occurrence of the failure.";
     EventsLog::BroadcastCriticalError(message);
