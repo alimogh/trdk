@@ -52,7 +52,6 @@
     <ClInclude Include="IbClient.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Api\CommissionReport.h">
       <Filter>API</Filter>
     </ClInclude>
@@ -114,6 +113,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IbTradingSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

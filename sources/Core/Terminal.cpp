@@ -170,13 +170,21 @@ class Terminal::Implementation : private boost::noncopyable {
                  const std::string &tradingSystemOrderId,
                  const OrderStatus &status,
                  const Qty &remaining,
+                 const boost::optional<Volume> &commission,
                  const TradingSystem::TradeInfo *trade) {
       m_tradingSystem.GetLog().Info(
           "Terminal: Order reply received:"
           " order ID = %1% / %7%, status = %6% (%2%)"
-          ", filled qty = %3%, remaining qty = %4%, avgPrice = %5%.",
-          orderId, status, trade ? trade->qty : Qty(0), remaining,
-          trade ? trade->price : 0, status, tradingSystemOrderId);
+          ", filled qty = %3%, remaining qty = %4%, avgPrice = %5%, commission "
+          "= %8%.",
+          orderId,                                // 1
+          status,                                 // 2
+          trade ? trade->qty : Qty(0),            // 3
+          remaining,                              // 4
+          trade ? trade->price : 0,               // 5
+          status,                                 // 6
+          tradingSystemOrderId,                   // 7
+          commission ? *commission : Volume(0));  // 8
     }
     Currency GetCurrency() const {
       return m_currency != numberOfCurrencies
@@ -224,13 +232,13 @@ class Terminal::Implementation : private boost::noncopyable {
           m_tradingSystem.SellAtMarketPrice(
               *m_security, GetCurrency(), m_qty, orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.SellAtMarketPriceImmediatelyOrCancel(
               *m_security, GetCurrency(), m_qty, orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         }
       } else {
@@ -239,14 +247,14 @@ class Terminal::Implementation : private boost::noncopyable {
               *m_security, GetCurrency(), m_qty,
               m_security->ScalePrice(m_price), orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.SellImmediatelyOrCancel(
               *m_security, GetCurrency(), m_qty,
               m_security->ScalePrice(m_price), orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         }
       }
@@ -269,13 +277,13 @@ class Terminal::Implementation : private boost::noncopyable {
           m_tradingSystem.BuyAtMarketPrice(
               *m_security, GetCurrency(), m_qty, orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.BuyAtMarketPriceImmediatelyOrCancel(
               *m_security, GetCurrency(), m_qty, orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         }
       } else {
@@ -284,14 +292,14 @@ class Terminal::Implementation : private boost::noncopyable {
               *m_security, GetCurrency(), m_qty,
               m_security->ScalePrice(m_price), orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.BuyImmediatelyOrCancel(
               *m_security, GetCurrency(), m_qty,
               m_security->ScalePrice(m_price), orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
-                          _4, _5),
+                          _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         }
       }

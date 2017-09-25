@@ -269,6 +269,8 @@ class TRDK_CORE_API Position
     */
   bool IsProfit() const;
 
+  trdk::Volume CalcCommission() const;
+
   virtual trdk::ScaledPrice GetMarketOpenPrice() const = 0;
   virtual trdk::ScaledPrice GetMarketClosePrice() const = 0;
   virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
@@ -381,11 +383,13 @@ class TRDK_CORE_API Position
                      const std::string &tradingSystemOrderId,
                      const trdk::OrderStatus &,
                      const trdk::Qty &remainingQty,
+                     const boost::optional<trdk::Volume> &commission,
                      const trdk::TradingSystem::TradeInfo *);
   void UpdateClosing(const trdk::OrderId &,
                      const std::string &tradingSystemOrderId,
                      const trdk::OrderStatus &,
                      const trdk::Qty &remainingQty,
+                     const boost::optional<trdk::Volume> &commission,
                      const trdk::TradingSystem::TradeInfo *);
 
  private:

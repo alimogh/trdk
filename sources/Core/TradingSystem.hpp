@@ -51,11 +51,13 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     trdk::ScaledPrice price;
   };
 
-  typedef boost::function<void(const trdk::OrderId &,
-                               const std::string &tradingSystemOrderId,
-                               const OrderStatus &,
-                               const trdk::Qty &remainingQty,
-                               const TradeInfo *tradeInfo)>
+  typedef boost::function<void(
+      const trdk::OrderId &,
+      const std::string &tradingSystemOrderId,
+      const OrderStatus &,
+      const trdk::Qty &remainingQty,
+      const boost::optional<trdk::Volume> &commission,
+      const TradeInfo *tradeInfo)>
       OrderStatusUpdateSlot;
 
   struct Account {

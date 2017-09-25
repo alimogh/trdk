@@ -192,8 +192,9 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
       const auto callback = order.callback;
       order.callback = [this, callback](
           const OrderId &id, const std::string &uuid, const OrderStatus &status,
-          const Qty &remainingQty, const TradeInfo *trade) {
-        callback(id, uuid, status, remainingQty, trade);
+          const Qty &remainingQty, const boost::optional<Volume> &commission,
+          const TradeInfo *trade) {
+        callback(id, uuid, status, remainingQty, commission, trade);
       };
     }
 
@@ -332,7 +333,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
         trade.qty = order.qty;
 
         order.callback(order.id, tradingSystemOrderId, ORDER_STATUS_FILLED, 0,
-                       &trade);
+                       boost::none, &trade);
 
         return true;
 
@@ -351,7 +352,8 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
           order.id);
     }
 
-    order.callback(order.id, tradingSystemOrderId, status, order.qty, nullptr);
+    order.callback(order.id, tradingSystemOrderId, status, order.qty,
+                   boost::none, nullptr);
 
     return true;
   }
