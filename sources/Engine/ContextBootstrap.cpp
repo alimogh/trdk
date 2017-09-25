@@ -340,7 +340,7 @@ class ContextBootstrapper : private boost::noncopyable {
     }
 
     if (m_tradingSystems.empty()) {
-      throw Exception("No one trading system found in configuration");
+      throw Exception("No one trading system found in the configuration");
     }
   }
 

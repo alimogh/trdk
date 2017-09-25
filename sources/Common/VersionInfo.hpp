@@ -40,7 +40,7 @@ class VersionInfoV1 {
     {
       const std::string moduleList[] = TRDK_GET_MODUE_FILE_NAME_LIST();
       bool isFound = false;
-      foreach (const auto &module, moduleList) {
+      for (const auto &module : moduleList) {
         if (m_moduleFileName == module) {
           isFound = true;
           break;

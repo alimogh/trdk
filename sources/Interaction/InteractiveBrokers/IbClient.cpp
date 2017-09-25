@@ -358,8 +358,12 @@ bool Client::ProcessMessages() {
   return true;
 }
 
-void Client::Subscribe(const OrderStatusSlot &orderStatusSlot) {
+void Client::Subscribe(const OrderStatusSlot &orderStatusSlot,
+                       const ExecutionSlot &executionSlot,
+                       const CommissionSlot &commissionSlot) {
   m_orderStatusSignal.connect(orderStatusSlot);
+  m_executionSignal.connect(executionSlot);
+  m_commissionSignal.connect(commissionSlot);
 }
 
 void Client::SubscribeToMarketData(ib::Security &security) {
@@ -1175,34 +1179,32 @@ bool Client::IsSubscribed(const SecurityRequestList &requested,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Client::commissionReport(const CommissionReport &) {}
+void Client::commissionReport(const CommissionReport &commissionReport) {
+  /* m_ts.GetMdsLog().Debug("Commission: %1% / %2%.", commissionReport.execId,
+                         commissionReport.commission); */
+  m_commissionSignal(commissionReport.execId, commissionReport.commission,
+                     m_callBackList);
+}
 
 void Client::orderStatus(::OrderId id,
                          const IBString &statusText,
                          int filled,
                          int remaining,
-                         double /*avgFillPrice*/,
+                         double,
                          int permId,
                          int parentId,
                          double lastFillPrice,
-                         int /*clientId*/,
-                         const IBString & /*whyHeld*/) {
-  /*
-          m_log.Debug(
-                  "Order status: "
-                          " ID: %1%"
-                          ", status: %2%"
-                          ", filled: %3%"
-                          ", remaining: %4%"
-                          ", lastFillPrice: %5%"
-                          ", whyHeld: \"%6%\".",
-                  id,
-                  statusText,
-                  filled,
-                  remaining,
-                  lastFillPrice,
-                  whyHeld);
-  */
+                         int,
+                         const IBString &whyHeld) {
+  m_ts.GetMdsLog().Debug(
+      "Order status: "
+      " ID: %1%"
+      ", status: %2%"
+      ", filled: %3%"
+      ", remaining: %4%"
+      ", lastFillPrice: %5%"
+      ", whyHeld: \"%6%\".",
+      id, statusText, filled, remaining, lastFillPrice, whyHeld);
 
   const OrderStatusesMap::const_iterator statusPos =
       m_orderStatusesMap.find(statusText);
@@ -1448,9 +1450,16 @@ void Client::contractDetailsEnd(int reqId) {
   m_contractRequests.condition.notify_all();
 }
 
-void Client::execDetails(int /*reqId*/,
-                         const Contract & /*contract*/,
-                         const Execution & /*execution*/) {}
+void Client::execDetails(int reqId,
+                         const Contract &,
+                         const Execution &execution) {
+  /* m_ts.GetMdsLog().Debug("Exec: %1% / %2%.", execution.orderId,
+                         execution.execId); */
+  AssertEq(-1, reqId);
+  UseUnused(reqId);
+  m_executionSignal(execution.orderId, execution.execId);
+  return;
+}
 
 void Client::execDetailsEnd(int /*reqId*/) {}
 
@@ -1975,7 +1984,7 @@ std::vector<ContractDetails> Client::MatchContractDetails(
       return std::vector<ContractDetails>();
     } else if (!requestResult->second.first) {
       m_ts.GetMdsLog().Error(
-          "Failed to match symbol \"%1%\", not request answer received.",
+          "Failed to match symbol \"%1%\", request answer is not received.",
           symbol);
       return std::vector<ContractDetails>();
     }

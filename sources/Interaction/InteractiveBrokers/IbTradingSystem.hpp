@@ -14,20 +14,12 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
 #include "IbSecurity.hpp"
-#include "Fwd.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace InteractiveBrokers {
 
-class Client;
-}
-}
-}
-
-namespace trdk {
-namespace Interaction {
-namespace InteractiveBrokers {
+typedef std::vector<boost::function<void()>> OrderCallbackList;
 
 class TradingSystem : public trdk::TradingSystem,
                       public trdk::MarketDataSource {
@@ -36,6 +28,7 @@ class TradingSystem : public trdk::TradingSystem,
  private:
   struct BySymbol {};
   struct ByOrder {};
+  struct ByExecution {};
 
   typedef Concurrency::reader_writer_lock OrdersMutex;
   typedef OrdersMutex::scoped_lock OrdersWriteLock;
@@ -56,10 +49,24 @@ class TradingSystem : public trdk::TradingSystem,
   };
 
   struct PlacedOrder {
+    struct CommissionRecord {
+      std::string execId;
+      boost::optional<trdk::Volume> commission;
+    };
+    struct FinalUpdate {
+      int permOrderId;
+      OrderStatus status;
+      Qty filled;
+      Qty remaining;
+      double lastFillPrice;
+    };
+
     OrderId id;
     trdk::Security *security;
     OrderStatusUpdateSlot callback;
     Qty filled;
+    std::vector<CommissionRecord> commissions;
+    boost::optional<FinalUpdate> finalUpdate;
 
     //! Updates field "filled".
     /** Should be "const" and PlacedOrder is a list item and filled
@@ -69,21 +76,58 @@ class TradingSystem : public trdk::TradingSystem,
       AssertLt(filled, newValue);
       const_cast<PlacedOrder *>(this)->filled = newValue;
     }
+
+    bool HasUnreceviedCommission() const {
+      for (const auto commission : commissions) {
+        if (!commission.commission) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    Volume CalcCommission() const {
+      Volume result = 0;
+      for (const auto commission : commissions) {
+        if (commission.commission) {
+          result += *commission.commission;
+        }
+      }
+      return result;
+    }
   };
 
   typedef boost::multi_index_container<
       PlacedOrder,
       boost::multi_index::indexed_by<
-          boost::multi_index::ordered_non_unique<
+          boost::multi_index::hashed_non_unique<
               boost::multi_index::tag<BySymbol>,
               boost::multi_index::member<PlacedOrder,
                                          trdk::Security *,
                                          &PlacedOrder::security>>,
-          boost::multi_index::ordered_unique<
+          boost::multi_index::hashed_unique<
               boost::multi_index::tag<ByOrder>,
               boost::multi_index::
                   member<PlacedOrder, OrderId, &PlacedOrder::id>>>>
       PlacedOrderSet;
+
+  struct Execution {
+    std::string execId;
+    trdk::OrderId orderId;
+  };
+
+  typedef boost::multi_index_container<
+      Execution,
+      boost::multi_index::indexed_by<
+          boost::multi_index::hashed_unique<
+              boost::multi_index::tag<ByExecution>,
+              boost::multi_index::
+                  member<Execution, std::string, &Execution::execId>>,
+          boost::multi_index::hashed_non_unique<
+              boost::multi_index::tag<ByOrder>,
+              boost::multi_index::
+                  member<Execution, trdk::OrderId, &Execution::orderId>>>>
+      ExecutionSet;
 
  public:
   explicit TradingSystem(const TradingMode &,
@@ -193,7 +237,19 @@ class TradingSystem : public trdk::TradingSystem,
   virtual void SendCancelOrder(const OrderId &) override;
 
  private:
-  void RegOrder(const PlacedOrder &);
+  trdk::OrderId RegOrder(PlacedOrder &&);
+
+  void OnOrderStatus(const trdk::OrderId &,
+                     int permOrderId,
+                     const OrderStatus &,
+                     const Qty &,
+                     const Qty &,
+                     double lastFillPrice,
+                     OrderCallbackList &);
+  void OnExecution(const OrderId &, const std::string &execId);
+  void OnCommissionReport(const std::string &execId,
+                          double commission,
+                          OrderCallbackList &);
 
  private:
   const bool m_isTestSource;
@@ -201,6 +257,7 @@ class TradingSystem : public trdk::TradingSystem,
   OrdersMutex m_ordersMutex;
   std::unique_ptr<Client> m_client;
   PlacedOrderSet m_placedOrders;
+  ExecutionSet m_executionSet;
 
   std::vector<boost::shared_ptr<Security>> m_securities;
   mutable std::deque<boost::shared_ptr<Security>> m_unsubscribedSecurities;

@@ -414,6 +414,10 @@ IniFile::~IniFile() {}
 IniSectionRef::IniSectionRef(const Ini &base, const std::string &name)
     : m_base(&base), m_name(name) {}
 
+bool IniSectionRef::IsExist() const {
+  return GetBase().IsSectionExist(GetName());
+}
+
 bool IniSectionRef::IsKeyExist(const std::string &key) const {
   return GetBase().IsKeyExist(GetName(), key);
 }

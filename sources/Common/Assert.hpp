@@ -28,8 +28,8 @@
 namespace trdk {
 namespace Debug {
 namespace Detail {
-void RegisterUnhandledException(const char *, const char *, long) throw();
-void ReportAssertFail(const char *, const char *, int) throw();
+void RegisterUnhandledException(const char *, const char *, long) noexcept;
+void ReportAssertFail(const char *, const char *, int) noexcept;
 }
 }
 }
@@ -148,7 +148,7 @@ std::string CastToString(const Source &source) {
 namespace trdk {
 namespace Debug {
 namespace Detail {
-void AssertFailNoExceptionImpl(const char *, const char *, long) throw();
+void AssertFailNoExceptionImpl(const char *, const char *, long) noexcept;
 }
 }
 }

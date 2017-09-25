@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Engine.hpp"
+#include "Engine/Engine.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
@@ -65,7 +65,7 @@ fs::path GetIniFilePath(const char *inputValue) {
 namespace {
 
 bool DebugStrategy(int argc, const char *argv[]) {
-  std::unique_ptr<Engine> engine;
+  std::unique_ptr<trdk::Engine::Engine> engine;
   bool result = true;
 
   boost::mutex stateMutex;
@@ -86,7 +86,7 @@ bool DebugStrategy(int argc, const char *argv[]) {
     }
 
     try {
-      engine = boost::make_unique<Engine>(
+      engine = boost::make_unique<trdk::Engine::Engine>(
           GetIniFilePath(argc >= 3 ? argv[2] : "etc"),
           [&](const trdk::Context::State &newState, const std::string *) {
             {

@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include "Core/TradingLog.hpp"
-#include "Engine/Context.hpp"
+#include "Api.h"
+#include "Context.hpp"
 
 namespace trdk {
-namespace EngineServer {
+namespace Engine {
 
-class Engine : private boost::noncopyable {
+class TRDK_ENGINE_API Engine : private boost::noncopyable {
  public:
   explicit Engine(
       const boost::filesystem::path &,
@@ -39,6 +39,9 @@ class Engine : private boost::noncopyable {
   void ClosePositions();
 
  private:
+  void VerifyModules() const;
+
+ private:
   void Run(
       const boost::filesystem::path &,
       const trdk::Context::StateUpdateSlot &,
@@ -46,16 +49,9 @@ class Engine : private boost::noncopyable {
       const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
       const boost::unordered_map<std::string, std::string> &params);
 
-  void VerifyModules() const;
-
  private:
-  std::ofstream m_eventsLogFile;
-  std::unique_ptr<trdk::Engine::Context::Log> m_eventsLog;
-
-  std::ofstream m_tradingLogFile;
-  std::unique_ptr<trdk::Engine::Context::TradingLog> m_tradingLog;
-
-  std::unique_ptr<trdk::Engine::Context> m_context;
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 }
 }

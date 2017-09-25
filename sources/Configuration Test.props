@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;_TEST;DEV_VER;PROFILE;BOOST_ENABLE_ASSERT_HANDLER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_TEST;DEV_VER;PROFILE;BOOST_ENABLE_ASSERT_HANDLER;QT_NO_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

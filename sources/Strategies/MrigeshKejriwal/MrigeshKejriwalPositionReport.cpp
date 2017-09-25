@@ -35,15 +35,16 @@ void PositionReport::PrintHead(std::ostream &os) {
   // execution price multiplied by the quantity.
   os << ",Open leakage";   // 13
   os << ",Close leakage";  // 14
-  os << ",Qty";            // 15
-  os << ",Open Price";     // 16
-  os << ",Open Orders";    // 17
-  os << ",Open Trades";    // 18
-  os << ",Close Reason";   // 19
-  os << ",Close Price";    // 20
-  os << ",Close Orders";   // 21
-  os << ",Close Trades";   // 22
-  os << ",ID";             // 23
+  os << ",Commission";     // 15
+  os << ",Qty";            // 16
+  os << ",Open Price";     // 17
+  os << ",Open Orders";    // 18
+  os << ",Open Trades";    // 19
+  os << ",Close Reason";   // 20
+  os << ",Close Price";    // 21
+  os << ",Close Orders";   // 22
+  os << ",Close Trades";   // 23
+  os << ",ID";             // 24
   os << std::endl;
 }
 
@@ -74,14 +75,15 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
                         ? pos.GetCloseAvgPrice() - pos.GetCloseStartPrice()
                         : pos.GetCloseStartPrice() - pos.GetCloseAvgPrice()) *
                 pos.GetOpenedQty());                           // 14
-  os << ',' << pos.GetOpenedQty();                             // 15
-  os << ',' << security.DescalePrice(pos.GetOpenAvgPrice());   // 16
-  os << ',' << pos.GetNumberOfOpenOrders();                    // 17
-  os << ',' << pos.GetNumberOfOpenTrades();                    // 18
-  os << ',' << pos.GetCloseReason();                           // 19
-  os << ',' << security.DescalePrice(pos.GetCloseAvgPrice());  // 20
-  os << ',' << pos.GetNumberOfCloseOrders();                   // 21
-  os << ',' << pos.GetNumberOfCloseTrades();                   // 22
-  os << ',' << pos.GetId();                                    // 23
+  os << ',' << pos.CalcCommission();                           // 15
+  os << ',' << pos.GetOpenedQty();                             // 16
+  os << ',' << security.DescalePrice(pos.GetOpenAvgPrice());   // 17
+  os << ',' << pos.GetNumberOfOpenOrders();                    // 28
+  os << ',' << pos.GetNumberOfOpenTrades();                    // 19
+  os << ',' << pos.GetCloseReason();                           // 20
+  os << ',' << security.DescalePrice(pos.GetCloseAvgPrice());  // 21
+  os << ',' << pos.GetNumberOfCloseOrders();                   // 22
+  os << ',' << pos.GetNumberOfCloseTrades();                   // 23
+  os << ',' << pos.GetId();                                    // 24
   os << std::endl;
 }

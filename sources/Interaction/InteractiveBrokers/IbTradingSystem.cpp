@@ -61,79 +61,11 @@ void ib::TradingSystem::CreateConnection(const IniSectionRef &settings) {
     client->SetAccount(settings.ReadKey("account", ""), *account);
   }
 
-  client->Subscribe([this](const OrderId &id, int permOrderId,
-                           const OrderStatus &status, const Qty &filled,
-                           const Qty &remaining, double lastFillPrice,
-                           Client::OrderCallbackList &callBackList) {
-    TradeInfo tradeData = {};
-    OrderStatusUpdateSlot callBack;
-    {
-      auto &index = m_placedOrders.get<ByOrder>();
-      const OrdersWriteLock lock(m_ordersMutex);
-      const auto pos = index.find(id);
-      if (pos == index.end()) {
-        /* GetTsLog().Debug(
-                "Failed to find order by ID \"%1%\""
-                        " (status %2%, filled %3%, remaining %4%"
-                        ", last price %5%). ",
-                id,
-                status,
-                filled,
-                remaining,
-                lastFillPrice); */
-        return;
-      }
-      callBack = pos->callback;
-      switch (status) {
-        default:
-          return;
-        case ORDER_STATUS_FILLED:
-          AssertLt(0, filled);
-          AssertGt(filled, pos->filled);
-          tradeData.price = pos->security->ScalePrice(lastFillPrice);
-          AssertLt(0, tradeData.price);
-          tradeData.qty = filled - pos->filled;
-          AssertLt(0, tradeData.qty);
-          pos->UpdateFilled(filled);
-          if (remaining == 0) {
-            index.erase(pos);
-          }
-          break;
-        case ORDER_STATUS_CANCELLED:
-        case ORDER_STATUS_INACTIVE:
-        case ORDER_STATUS_ERROR:
-          if (filled > pos->filled) {
-            TradeInfo iocTradeData = {};
-            AssertGt(filled, pos->filled);
-            iocTradeData.price = pos->security->ScalePrice(lastFillPrice);
-            AssertLt(0, iocTradeData.price);
-            iocTradeData.qty = filled - pos->filled;
-            AssertLt(0, iocTradeData.qty);
-            pos->UpdateFilled(filled);
-            if (callBack) {
-              callBackList.emplace_back(
-                  [callBack, id, permOrderId, remaining, iocTradeData]() {
-                    callBack(id, boost::lexical_cast<std::string>(permOrderId),
-                             ORDER_STATUS_FILLED_PARTIALLY, remaining,
-                             &iocTradeData);
-                  });
-            }
-          }
-          index.erase(pos);
-          break;
-      }
-    }
-    if (!callBack) {
-      return;
-    }
-    callBackList.emplace_back(
-        [callBack, id, permOrderId, status, remaining, tradeData]() {
-          const TradeInfo *const tradeDataPtr =
-              tradeData.qty != 0 ? &tradeData : nullptr;
-          callBack(id, boost::lexical_cast<std::string>(permOrderId), status,
-                   remaining, tradeDataPtr);
-        });
-  });
+  client->Subscribe(
+      boost::bind(&TradingSystem::OnOrderStatus, this, _1, _2, _3, _4, _5, _6,
+                  _7),
+      boost::bind(&TradingSystem::OnExecution, this, _1, _2),
+      boost::bind(&TradingSystem::OnCommissionReport, this, _1, _2, _3));
 
   client->Start();
 
@@ -211,8 +143,7 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPrice(
   order.id = m_client->PlaceSellOrder(security, qty, params);
   order.security = &security;
   order.callback = statusUpdateSlot;
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendSell(
@@ -229,8 +160,7 @@ trdk::OrderId ib::TradingSystem::SendSell(
   order.id = m_client->PlaceSellOrder(security, qty, rawPrice, params);
   order.security = &security;
   order.callback = std::move(statusUpdateSlot);
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceWithStopPrice(
@@ -248,8 +178,7 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceWithStopPrice(
                                                      rawStopPrice, params);
   order.security = &security;
   order.callback = statusUpdateSlot;
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
@@ -262,11 +191,9 @@ trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   const double rawPrice = security.DescalePrice(price);
-  const PlacedOrder order = {
-      m_client->PlaceSellIocOrder(security, qty, rawPrice, params), &security,
-      statusUpdateSlot};
-  RegOrder(order);
-  return order.id;
+  return RegOrder(
+      PlacedOrder{m_client->PlaceSellIocOrder(security, qty, rawPrice, params),
+                  &security, statusUpdateSlot});
 }
 
 trdk::OrderId ib::TradingSystem::SendBuyAtMarketPrice(
@@ -281,8 +208,7 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPrice(
   order.id = m_client->PlaceBuyOrder(security, qty, params);
   order.security = &security;
   order.callback = statusUpdateSlot;
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
@@ -308,8 +234,7 @@ trdk::OrderId ib::TradingSystem::SendBuy(
   order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, params);
   order.security = &security;
   order.callback = std::move(statusUpdateSlot);
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
@@ -327,8 +252,7 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
                                                     params);
   order.security = &security;
   order.callback = statusUpdateSlot;
-  RegOrder(order);
-  return order.id;
+  return RegOrder(std::move(order));
 }
 
 trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
@@ -341,11 +265,9 @@ trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   const double rawPrice = security.DescalePrice(price);
-  const PlacedOrder order = {
-      m_client->PlaceBuyIocOrder(security, qty, rawPrice, params), &security,
-      statusUpdateSlot};
-  RegOrder(order);
-  return order.id;
+  return RegOrder(
+      PlacedOrder{m_client->PlaceBuyIocOrder(security, qty, rawPrice, params),
+                  &security, statusUpdateSlot});
 }
 
 trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
@@ -357,9 +279,171 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
   throw MethodDoesNotImplementedError("Method is not implemented");
 }
 
-void ib::TradingSystem::RegOrder(const PlacedOrder &order) {
+trdk::OrderId ib::TradingSystem::RegOrder(PlacedOrder &&order) {
   const OrdersWriteLock lock(m_ordersMutex);
   Assert(m_placedOrders.get<ByOrder>().find(order.id) ==
-         m_placedOrders.get<ByOrder>().end());
-  m_placedOrders.insert(order);
+         m_placedOrders.get<ByOrder>().cend());
+  const auto id = order.id;
+  m_placedOrders.emplace(std::move(order));
+  return id;
+}
+
+void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
+                                      int permOrderId,
+                                      const OrderStatus &status,
+                                      const Qty &filled,
+                                      const Qty &remaining,
+                                      double lastFillPrice,
+                                      OrderCallbackList &callBackList) {
+  TradeInfo tradeData = {};
+  OrderStatusUpdateSlot callBack;
+  boost::optional<Volume> commission;
+  {
+    auto &index = m_placedOrders.get<ByOrder>();
+    const OrdersWriteLock lock(m_ordersMutex);
+    const auto pos = index.find(id);
+    if (pos == index.cend()) {
+      /*GetTsLog().Debug(
+          "Failed to find order by ID \"%1%\""
+          " (status %2%, filled %3%, remaining %4%"
+          ", last price %5%). ",
+          id, status, filled, remaining, lastFillPrice);*/
+      return;
+    }
+    callBack = pos->callback;
+    switch (status) {
+      default:
+        return;
+      case ORDER_STATUS_FILLED:
+        AssertLt(0, filled);
+        AssertGt(filled, pos->filled);
+        if (remaining == 0 && pos->HasUnreceviedCommission()) {
+          const_cast<PlacedOrder &>(*pos).finalUpdate =
+              PlacedOrder::FinalUpdate{permOrderId, status, filled, remaining,
+                                       lastFillPrice};
+          return;
+        }
+        tradeData.price = pos->security->ScalePrice(lastFillPrice);
+        AssertLt(0, tradeData.price);
+        tradeData.qty = filled - pos->filled;
+        AssertLt(0, tradeData.qty);
+        pos->UpdateFilled(filled);
+        if (callBack) {
+          commission = pos->CalcCommission();
+        }
+        if (remaining == 0) {
+          index.erase(pos);
+          m_executionSet.get<ByOrder>().erase(id);
+        }
+        break;
+      case ORDER_STATUS_CANCELLED:
+      case ORDER_STATUS_INACTIVE:
+      case ORDER_STATUS_ERROR:
+        if (pos->HasUnreceviedCommission()) {
+          const_cast<PlacedOrder &>(*pos).finalUpdate =
+              PlacedOrder::FinalUpdate{permOrderId, status, filled, remaining,
+                                       lastFillPrice};
+          return;
+        }
+        if (filled > pos->filled) {
+          TradeInfo iocTradeData = {};
+          AssertGt(filled, pos->filled);
+          iocTradeData.price = pos->security->ScalePrice(lastFillPrice);
+          AssertLt(0, iocTradeData.price);
+          iocTradeData.qty = filled - pos->filled;
+          AssertLt(0, iocTradeData.qty);
+          pos->UpdateFilled(filled);
+          if (callBack) {
+            callBackList.emplace_back(
+                [callBack, id, permOrderId, remaining, iocTradeData]() {
+                  callBack(id, boost::lexical_cast<std::string>(permOrderId),
+                           ORDER_STATUS_FILLED_PARTIALLY, remaining,
+                           boost::none, &iocTradeData);
+                });
+          }
+        }
+        if (callBack) {
+          commission = pos->CalcCommission();
+        }
+        index.erase(pos);
+        m_executionSet.get<ByOrder>().erase(id);
+        break;
+    }
+  }
+  if (!callBack) {
+    return;
+  }
+  callBackList.emplace_back(
+      [callBack, id, permOrderId, status, remaining, commission, tradeData]() {
+        const TradeInfo *const tradeDataPtr =
+            tradeData.qty != 0 ? &tradeData : nullptr;
+        callBack(id, boost::lexical_cast<std::string>(permOrderId), status,
+                 remaining, commission, tradeDataPtr);
+      });
+}
+
+void ib::TradingSystem::OnExecution(const trdk::OrderId &orderId,
+                                    const std::string &execId) {
+  auto &orderIndex = m_placedOrders.get<ByOrder>();
+  const OrdersWriteLock lock(m_ordersMutex);
+  auto orderIt = orderIndex.find(orderId);
+  if (orderIt == orderIndex.cend()) {
+    return;
+  }
+  Verify(m_executionSet.emplace(Execution{execId, orderId}).second);
+  for (auto &commission : const_cast<PlacedOrder &>(*orderIt).commissions) {
+    AssertNe(execId, commission.execId);
+    if (execId == commission.execId) {
+      Assert(!commission.commission);
+      commission.commission = boost::none;
+      return;
+    }
+  }
+  const_cast<PlacedOrder &>(*orderIt).commissions.emplace_back(
+      PlacedOrder::CommissionRecord{execId});
+}
+
+void ib::TradingSystem::OnCommissionReport(const std::string &execId,
+                                           double commissionValue,
+                                           OrderCallbackList &callBackList) {
+  trdk::OrderId orderId;
+  PlacedOrder::FinalUpdate finalUpdate;
+
+  {
+    auto &orderIndex = m_placedOrders.get<ByOrder>();
+    auto &execIndex = m_executionSet.get<ByExecution>();
+
+    const OrdersWriteLock lock(m_ordersMutex);
+
+    const auto &execIt = execIndex.find(execId);
+    if (execIt == execIndex.cend()) {
+      return;
+    }
+
+    auto orderIt = orderIndex.find(execIt->orderId);
+    Assert(orderIt != orderIndex.cend());
+    if (orderIt == orderIndex.cend()) {
+      return;
+    }
+
+    for (auto &commission : const_cast<PlacedOrder &>(*orderIt).commissions) {
+      if (execId == commission.execId) {
+        Assert(!commission.commission);
+        commission.commission = commissionValue;
+        break;
+      }
+    }
+
+    if (orderIt->HasUnreceviedCommission() || !orderIt->finalUpdate) {
+      return;
+    }
+
+    orderId = execIt->orderId;
+    finalUpdate = std::move(*orderIt->finalUpdate);
+    const_cast<PlacedOrder &>(*orderIt).finalUpdate = boost::none;
+  }
+
+  OnOrderStatus(orderId, finalUpdate.permOrderId, finalUpdate.status,
+                finalUpdate.filled, finalUpdate.remaining,
+                finalUpdate.lastFillPrice, callBackList);
 }

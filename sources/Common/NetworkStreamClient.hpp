@@ -13,6 +13,7 @@
 #include "Exception.hpp"
 #include "TimeMeasurement.hpp"
 #include "Fwd.hpp"
+#include <boost/asio/buffer.hpp>
 
 namespace trdk {
 namespace Lib {
@@ -111,13 +112,20 @@ class NetworkStreamClient
   virtual trdk::Lib::NetworkStreamClientService &GetService();
   virtual const trdk::Lib::NetworkStreamClientService &GetService() const;
 
-  void Send(std::string &&);
+  void Send(const std::vector<boost::asio::const_buffer> &&,
+            const boost::function<void()> &&onOperaton—ompletion);
+  void Send(const std::vector<char> &&);
+  void Send(const std::string &&);
+  void Send(const char *persistentBuffer, size_t len);
 
   bool CheckResponceSynchronously(const char *actionName,
                                   const char *expectedResponse,
                                   const char *errorResponse = nullptr);
 
+  void SendSynchronously(const std::vector<char> &message,
+                         const char *requestName);
   void SendSynchronously(const std::string &message, const char *requestName);
+  std::vector<char> ReceiveSynchronously(const char *requestName, size_t size);
 
   bool RequestSynchronously(const std::string &message,
                             const char *requestName,

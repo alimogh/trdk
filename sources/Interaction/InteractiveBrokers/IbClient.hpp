@@ -21,8 +21,6 @@ namespace InteractiveBrokers {
 
 class Client : protected EWrapper {
  public:
-  typedef std::list<boost::function<void()>> OrderCallbackList;
-
   typedef void(OrderStatusSlotSignature)(const trdk::OrderId &,
                                          int permanentOrderId,
                                          const trdk::OrderStatus &,
@@ -31,6 +29,15 @@ class Client : protected EWrapper {
                                          double lastFillPrice,
                                          OrderCallbackList &);
   typedef boost::function<OrderStatusSlotSignature> OrderStatusSlot;
+
+  typedef void(ExecutionSlotSignature)(const trdk::OrderId &,
+                                       const std::string &execId);
+  typedef boost::function<ExecutionSlotSignature> ExecutionSlot;
+
+  typedef void(CommissionSlotSignature)(const std::string &execId,
+                                        double value,
+                                        OrderCallbackList &);
+  typedef boost::function<CommissionSlotSignature> CommissionSlot;
 
  private:
   enum ConnectionState {
@@ -216,7 +223,9 @@ class Client : protected EWrapper {
   void CancelOrder(trdk::OrderId);
 
  public:
-  void Subscribe(const OrderStatusSlot &);
+  void Subscribe(const OrderStatusSlot &,
+                 const ExecutionSlot &,
+                 const CommissionSlot &);
 
   void SubscribeToMarketData(Security &);
   void SubscribeToMarketDepthLevel2(Security &);
@@ -414,6 +423,9 @@ class Client : protected EWrapper {
 
   mutable boost::signals2::signal<OrderStatusSlotSignature> m_orderStatusSignal;
   OrderCallbackList m_callBackList;
+
+  mutable boost::signals2::signal<ExecutionSlotSignature> m_executionSignal;
+  mutable boost::signals2::signal<CommissionSlotSignature> m_commissionSignal;
 
   const OrderStatusesMap m_orderStatusesMap;
 

@@ -88,6 +88,8 @@ class Position::Implementation : private boost::noncopyable {
 
     Qty executedQty;
 
+    Volume commission;
+
     explicit Order(const pt::ptime &&time,
                    boost::optional<ScaledPrice> &&price,
                    const Qty &qty,
@@ -99,7 +101,8 @@ class Position::Implementation : private boost::noncopyable {
           qty(qty),
           uuid(std::move(uuid)),
           id(0),
-          executedQty(0) {}
+          executedQty(0),
+          commission(0) {}
   };
 
   struct CloseOrder : public Order {
@@ -219,6 +222,7 @@ class Position::Implementation : private boost::noncopyable {
                      const std::string &tradingSystemOrderId,
                      const OrderStatus &orderStatus,
                      const Qty &remainingQty,
+                     const boost::optional<Volume> &commission,
                      const TradingSystem::TradeInfo *trade) {
     auto lock = m_strategy.LockForOtherThreads();
 
@@ -236,6 +240,10 @@ class Position::Implementation : private boost::noncopyable {
     Assert(order.isActive);
     if (order.id != orderId) {
       throw Exception("Unknown open order ID");
+    }
+
+    if (commission) {
+      order.commission = *commission;
     }
 
     static_assert(numberOfOrderStatuses == 9, "List changed.");
@@ -307,6 +315,7 @@ class Position::Implementation : private boost::noncopyable {
                      const std::string &tradingSystemOrderId,
                      const OrderStatus &orderStatus,
                      const Qty &remainingQty,
+                     const boost::optional<Volume> &commission,
                      const TradingSystem::TradeInfo *trade) {
     auto lock = m_strategy.LockForOtherThreads();
 
@@ -327,6 +336,10 @@ class Position::Implementation : private boost::noncopyable {
     Assert(order.isActive);
     if (order.id != orderId) {
       throw Exception("Unknown open order ID");
+    }
+
+    if (commission) {
+      order.commission = *commission;
     }
 
     static_assert(numberOfOrderStatuses == 9, "List changed.");
@@ -1035,18 +1048,20 @@ void Position::UpdateOpening(const OrderId &orderId,
                              const std::string &tradingSystemOrderId,
                              const OrderStatus &orderStatus,
                              const Qty &remainingQty,
+                             const boost::optional<Volume> &commission,
                              const TradingSystem::TradeInfo *trade) {
   m_pimpl->UpdateOpening(orderId, tradingSystemOrderId, orderStatus,
-                         remainingQty, trade);
+                         remainingQty, commission, trade);
 }
 
 void Position::UpdateClosing(const OrderId &orderId,
                              const std::string &tradingSystemOrderId,
                              const OrderStatus &orderStatus,
                              const Qty &remainingQty,
+                             const boost::optional<Volume> &commission,
                              const TradingSystem::TradeInfo *trade) {
   m_pimpl->UpdateClosing(orderId, tradingSystemOrderId, orderStatus,
-                         remainingQty, trade);
+                         remainingQty, commission, trade);
 }
 
 const pt::ptime &Position::GetOpenTime() const { return m_pimpl->m_open.time; }
@@ -1145,6 +1160,17 @@ Volume Position::GetPlannedPnl() const {
 bool Position::IsProfit() const {
   const auto ratio = GetRealizedPnlRatio();
   return ratio > 1.0 && !IsEqual(ratio, 1.0);
+}
+
+Volume Position::CalcCommission() const {
+  Volume result = 0;
+  for (const auto &order : m_pimpl->m_open.orders) {
+    result += order.commission;
+  }
+  for (const auto &order : m_pimpl->m_close.orders) {
+    result += order.commission;
+  }
+  return result;
 }
 
 size_t Position::GetNumberOfOpenOrders() const {
@@ -1586,7 +1612,7 @@ OrderId LongPosition::DoOpenAtMarketPrice(const Qty &qty,
   return GetTradingSystem().BuyAtMarketPrice(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1598,7 +1624,7 @@ OrderId LongPosition::DoOpen(const Qty &qty,
   return GetTradingSystem().Buy(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1609,7 +1635,7 @@ OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
   return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
       GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1621,7 +1647,7 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
   return GetTradingSystem().BuyImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1632,7 +1658,7 @@ OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
   return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1643,7 +1669,7 @@ OrderId LongPosition::DoCloseAtMarketPrice(const Qty &qty,
   return GetTradingSystem().SellAtMarketPrice(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1655,7 +1681,7 @@ OrderId LongPosition::DoClose(const Qty &qty,
   return GetTradingSystem().Sell(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1666,7 +1692,7 @@ OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
   return GetTradingSystem().SellAtMarketPriceWithStopPrice(
       GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1679,7 +1705,7 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
   return GetTradingSystem().SellImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1691,7 +1717,7 @@ OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
   return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1807,7 +1833,7 @@ OrderId ShortPosition::DoOpenAtMarketPrice(const Qty &qty,
   return GetTradingSystem().SellAtMarketPrice(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1819,7 +1845,7 @@ OrderId ShortPosition::DoOpen(const Qty &qty,
   return GetTradingSystem().Sell(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1830,7 +1856,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
   return GetTradingSystem().SellAtMarketPriceWithStopPrice(
       GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1842,7 +1868,7 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
   return GetTradingSystem().SellImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1853,7 +1879,7 @@ OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
   return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1864,7 +1890,7 @@ OrderId ShortPosition::DoCloseAtMarketPrice(const Qty &qty,
   return GetTradingSystem().BuyAtMarketPrice(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1874,7 +1900,7 @@ OrderId ShortPosition::DoClose(const Qty &qty,
   return GetTradingSystem().Buy(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1885,7 +1911,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
   return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
       GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1897,7 +1923,7 @@ OrderId ShortPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
   return GetTradingSystem().BuyImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
@@ -1908,7 +1934,7 @@ OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
   return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
       GetSecurity(), GetCurrency(), qty, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5),
+                  _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 

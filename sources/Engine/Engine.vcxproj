@@ -261,6 +261,7 @@
   <ItemGroup>
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="ContextBootstrap.cpp" />
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="SubscriptionsManager.cpp" />
     <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
@@ -285,6 +286,7 @@
     <ClInclude Include="Api.h" />
     <ClInclude Include="Context.hpp" />
     <ClInclude Include="ContextBootstrap.hpp" />
+    <ClInclude Include="Engine.hpp" />
     <ClInclude Include="Types.hpp" />
     <ClInclude Include="SubscriptionsManager.hpp" />
     <ClInclude Include="Fwd.hpp" />

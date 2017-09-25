@@ -263,15 +263,15 @@ OrderId TradingSystem::SellAtMarketPrice(
     return SendSellAtMarketPrice(
         security, currency, qty, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmSellOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Warn("Error while sending order, rollback trading check state...");
@@ -301,12 +301,12 @@ OrderId TradingSystem::Sell(
         [&, riskControlOperationId, currency, price, timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
-            const TradeInfo *trade) {
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                                     orderStatus, security, currency, price,
                                     remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Warn("Error while sending order, rollback trading check state...");
@@ -336,15 +336,15 @@ OrderId TradingSystem::SellAtMarketPriceWithStopPrice(
     return SendSellAtMarketPriceWithStopPrice(
         security, currency, qty, stopPrice, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmSellOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Warn("Error while sending order, rollback trading check state...");
@@ -374,12 +374,12 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
         [&, riskControlOperationId, currency, price, timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
-            const TradeInfo *trade) {
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                                     orderStatus, security, currency, price,
                                     remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Warn("Error while sending order, rollback trading check state...");
@@ -408,15 +408,15 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
     return SendSellAtMarketPriceImmediatelyOrCancel(
         security, currency, qty, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmSellOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Warn("Error while sending order, rollback trading check state...");
@@ -445,15 +445,15 @@ OrderId TradingSystem::BuyAtMarketPrice(
     return SendBuyAtMarketPrice(
         security, currency, qty, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmBuyOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Debug(
@@ -483,12 +483,12 @@ OrderId TradingSystem::Buy(Security &security,
         [&, riskControlOperationId, currency, price, timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
-            const TradeInfo *trade) {
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                                    orderStatus, security, currency, price,
                                    remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Debug(
@@ -519,15 +519,15 @@ OrderId TradingSystem::BuyAtMarketPriceWithStopPrice(
     return SendBuyAtMarketPriceWithStopPrice(
         security, currency, qty, stopPrice, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmBuyOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Debug(
@@ -558,12 +558,12 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
         [&, riskControlOperationId, currency, price, timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
-            const TradeInfo *trade) {
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                                    orderStatus, security, currency, price,
                                    remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Debug(
@@ -593,15 +593,15 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
     return SendBuyAtMarketPriceImmediatelyOrCancel(
         security, currency, qty, params,
         [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](const OrderId &orderId,
-                   const std::string &tradingSystemOrderId,
-                   const OrderStatus &orderStatus, const Qty &remainingQty,
-                   const TradeInfo *trade) {
+         callback](
+            const OrderId &orderId, const std::string &tradingSystemOrderId,
+            const OrderStatus &orderStatus, const Qty &remainingQty,
+            const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->ConfirmBuyOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   trade);
+                   commission, trade);
         });
   } catch (...) {
     GetLog().Debug(

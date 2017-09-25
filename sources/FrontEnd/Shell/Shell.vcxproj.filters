@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Debug Standalone">
+      <UniqueIdentifier>{1cd85ba2-d118-4c30-931d-aa097302b71a}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Test Standalone">
+      <UniqueIdentifier>{84baa5a8-56a9-45a5-9561-ecd010ecb0c0}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Release Standalone">
+      <UniqueIdentifier>{a1c460ef-58d0-4178-9a1a-b1971285b8e2}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Resource Files\qdarkstyle">
+      <UniqueIdentifier>{9e62654b-ae32-4b8e-95de-b1871633d225}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\qdarkstyle\rc">
+      <UniqueIdentifier>{64907111-ccb4-4076-9228-22da58d4e10d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Prec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_Shell.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_style.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MainWindow.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MainWindow.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MainWindow.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_EngineListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_EngineListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_EngineListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\Assert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_EngineWindow.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_EngineWindow.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_EngineWindow.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Prec.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_MainWindow.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_EngineWindow.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shell.qrc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MainWindow.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Resources\qdarkstyle\style.qrc">
+      <Filter>Resource Files\qdarkstyle</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MainWindow.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="EngineListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="EngineWindow.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="EngineWindow.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Engine.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\Shell.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\qdarkstyle\rc\branch_closed.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\branch_closed-on.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\branch_open.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\branch_open-on.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_focus.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_focus.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\close.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\close-hover.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\close-pressed.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\down_arrow.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\down_arrow_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\Hmovetoolbar.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\Hsepartoolbar.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\left_arrow.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\left_arrow_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_checked.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_focus.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_focus.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\right_arrow.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\right_arrow_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\sizegrip.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-end.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-more.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-vline.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\transparent.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\undock.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\up_arrow.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\up_arrow_disabled.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\Vmovetoolbar.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+    <Image Include="Resources\qdarkstyle\rc\Vsepartoolbar.png">
+      <Filter>Resource Files\qdarkstyle\rc</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\qdarkstyle\style.qss">
+      <Filter>Resource Files\qdarkstyle</Filter>
+    </None>
+  </ItemGroup>
+</Project>
