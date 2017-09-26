@@ -9,11 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "IncomingMessages.hpp"
-#include "MarketDataSource.hpp"
-#include "MessageHandler.hpp"
-#include "OutgoingMessages.hpp"
-#include "Security.hpp"
+#include "FixProtocolIncomingMessages.hpp"
+#include "FixProtocolMarketDataSource.hpp"
+#include "FixProtocolMessageHandler.hpp"
+#include "FixProtocolOutgoingMessages.hpp"
+#include "FixProtocolSecurity.hpp"
 #include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;

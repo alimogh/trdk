@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Core/MarketDataSource.hpp"
-#include "Client.hpp"
-#include "Settings.hpp"
+#include "FixProtocolClient.hpp"
+#include "FixProtocolSettings.hpp"
 
 namespace trdk {
 namespace Interaction {

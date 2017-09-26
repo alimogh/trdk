@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MarketDataSource.hpp"
-#include "Security.hpp"
+#include "FixProtocolMarketDataSource.hpp"
+#include "FixProtocolSecurity.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

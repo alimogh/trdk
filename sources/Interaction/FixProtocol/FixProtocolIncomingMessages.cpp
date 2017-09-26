@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "IncomingMessages.hpp"
-#include "MessageHandler.hpp"
+#include "FixProtocolIncomingMessages.hpp"
+#include "FixProtocolMessageHandler.hpp"
 #include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;

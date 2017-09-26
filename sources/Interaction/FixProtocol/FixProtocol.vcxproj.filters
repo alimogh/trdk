@@ -14,28 +14,28 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Version.cpp">
+    <ClCompile Include="FixProtocolClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Settings.cpp">
+    <ClCompile Include="FixProtocolIncomingMessages.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Client.cpp">
+    <ClCompile Include="FixProtocolMarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Security.cpp">
+    <ClCompile Include="FixProtocolMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OutgoingMessages.cpp">
+    <ClCompile Include="FixProtocolOutgoingMessages.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Message.cpp">
+    <ClCompile Include="FixProtocolSecurity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MarketDataSource.cpp">
+    <ClCompile Include="FixProtocolSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IncomingMessages.cpp">
+    <ClCompile Include="FixProtocolVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,37 +43,37 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketDataSource.hpp">
+    <ClInclude Include="FixProtocolClient.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Settings.hpp">
+    <ClInclude Include="FixProtocolIncomingMessages.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fwd.hpp">
+    <ClInclude Include="FixProtocolMarketDataSource.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Client.hpp">
+    <ClInclude Include="FixProtocolMessage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Security.hpp">
+    <ClInclude Include="FixProtocolMessageHandler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Api.h">
+    <ClInclude Include="FixProtocolOutgoingMessages.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Message.hpp">
+    <ClInclude Include="FixProtocolPolicy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OutgoingMessages.hpp">
+    <ClInclude Include="FixProtocolSecurity.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Policy.hpp">
+    <ClInclude Include="FixProtocolSettings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IncomingMessages.hpp">
+    <ClInclude Include="FixProtocolApi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MessageHandler.hpp">
+    <ClInclude Include="FixProtocolFwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

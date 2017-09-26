@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "OutgoingMessages.hpp"
-#include "MarketDataSource.hpp"
+#include "FixProtocolOutgoingMessages.hpp"
+#include "FixProtocolMarketDataSource.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

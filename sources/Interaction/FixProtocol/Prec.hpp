@@ -11,6 +11,6 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#include "Api.h"
-#include "Fwd.hpp"
+#include "FixProtocolApi.h"
+#include "FixProtocolFwd.hpp"
 #include <boost/thread/recursive_mutex.hpp>

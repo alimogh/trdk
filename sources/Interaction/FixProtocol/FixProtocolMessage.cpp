@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Message.hpp"
+#include "FixProtocolMessage.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
