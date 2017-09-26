@@ -43,6 +43,7 @@ class MarketDataSource : public trdk::MarketDataSource {
  private:
   const Settings m_settings;
   Client m_client;
+  std::vector<boost::shared_ptr<Security>> m_securities;
 };
 }
 }

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MarketDataSource.hpp"
+#include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -39,8 +40,14 @@ void fix::MarketDataSource::SubscribeToSecurities() {}
 
 void fix::MarketDataSource::ResubscribeToSecurities() {}
 
-Security &fix::MarketDataSource::CreateNewSecurityObject(const Symbol &) {
-  throw Exception("Failed to create security object");
+trdk::Security &fix::MarketDataSource::CreateNewSecurityObject(
+    const Symbol &symbol) {
+  m_securities.emplace_back(
+      boost::make_shared<fix::Security>(GetContext(), symbol, *this,
+                                        Security::SupportedLevel1Types()
+                                            .set(LEVEL1_TICK_BID_PRICE)
+                                            .set(LEVEL1_TICK_ASK_PRICE)));
+  return *m_securities.back();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
