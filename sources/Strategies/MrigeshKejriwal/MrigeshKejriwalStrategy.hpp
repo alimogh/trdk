@@ -167,6 +167,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
 
  private:
   const Settings m_settings;
+  bool m_skipNextSignal;
 
   trdk::Security *m_tradingSecurity;
   trdk::Security *m_underlyingSecurity;

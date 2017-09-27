@@ -190,6 +190,7 @@ mk::Strategy::Strategy(Context &context,
            instanceName,
            conf),
       m_settings(conf),
+      m_skipNextSignal(true),
       m_tradingSecurity(nullptr),
       m_underlyingSecurity(nullptr),
       m_ma(nullptr),
@@ -281,6 +282,11 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
   const auto posVolume = (volume / abs(qty)) * posQty;
   m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
                                               isInitial);
+
+  if (isInitial && !GetPositions().IsEmpty()) {
+    Assert(m_skipNextSignal);
+    m_skipNextSignal = false;
+  }
 }
 
 void mk::Strategy::OnServiceStart(const Service &service) {
@@ -355,6 +361,9 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
             % controlValue;                                         // 7
       });
   if (!isTrendChanged) {
+    return;
+  } else if (m_skipNextSignal) {
+    m_skipNextSignal = false;
     return;
   }
 
