@@ -23,3 +23,14 @@ fix::Security::Security(Context &context,
                         fix::MarketDataSource &source,
                         const SupportedLevel1Types &supportedLevel1Types)
     : Base(context, symbol, source, supportedLevel1Types) {}
+
+const std::string &fix::Security::GetFixSymbolId() const {
+  if (GetSymbol().GetSymbol() == "EURUSD") {
+    static std::string result("1");
+    return result;
+  } else {
+    boost::format error("Failed to find FIX Symbol ID for \"%1%\"");
+    error % GetSymbol().GetSymbol();
+    throw Exception(error.str().c_str());
+  }
+}

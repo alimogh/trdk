@@ -25,6 +25,9 @@ class Security : public trdk::Security {
                     const Lib::Symbol &,
                     FixProtocol::MarketDataSource &,
                     const SupportedLevel1Types &);
+
+ public:
+  const std::string &GetFixSymbolId() const;
 };
 }
 }

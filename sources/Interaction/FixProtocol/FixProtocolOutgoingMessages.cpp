@@ -10,13 +10,16 @@
 
 #include "Prec.hpp"
 #include "FixProtocolOutgoingMessages.hpp"
+#include "FixProtocolIncomingMessages.hpp"
 #include "FixProtocolMarketDataSource.hpp"
+#include "FixProtocolSecurity.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::FixProtocol;
 using namespace trdk::Interaction::FixProtocol::Outgoing;
 
+namespace fix = trdk::Interaction::FixProtocol;
 namespace out = trdk::Interaction::FixProtocol::Outgoing;
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -89,7 +92,7 @@ std::vector<char> StandardHeader::Export(const MessageType &messageType,
     result.emplace_back(soh);
   }
   {
-    const std::string sub("57=" + settings.senderSubId);
+    const std::string sub("50=" + settings.senderSubId);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -115,10 +118,9 @@ std::vector<char> Logon::Export(unsigned char soh) const {
   //   98=0|108=30|141=Y|553=|554=|
   // full message:
   //   98=0|108=30|141=Y|553=12345|554=passw0rd!|
-  const size_t messageLen =
-      28 + settings.username.size() + settings.password.size();
-
-  auto result = Export(MESSAGE_TYPE_LOGON, messageLen, soh);
+  auto result =
+      Export(MESSAGE_TYPE_LOGON,
+             28 + settings.username.size() + settings.password.size(), soh);
 
   {
     const std::string sub("98=0");
@@ -150,3 +152,114 @@ std::vector<char> Logon::Export(unsigned char soh) const {
 
   return result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+Heartbeat::Heartbeat(const Incoming::TestRequest &testRequest,
+                     StandardHeader &standardHeader)
+    : Base(standardHeader), m_testRequestId(testRequest.ReadTestRequestId()) {}
+
+std::vector<char> Heartbeat::Export(unsigned char soh) const {
+  auto result =
+      Export(MESSAGE_TYPE_HEARTBEAT,
+             m_testRequestId.empty() ? 0 : m_testRequestId.size() + 5, soh);
+  if (!m_testRequestId.empty()) {
+    const std::string sub("112=" + m_testRequestId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  WriteStandardTrailer(result, soh);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+boost::atomic_uintmax_t nextMarketDataRequestId(1);
+}
+MarketDataMessage::MarketDataMessage(const fix::Security &security,
+                                     StandardHeader &header)
+    : Base(security, header),
+      m_marketDataRequestId(
+          boost::lexical_cast<std::string>(nextMarketDataRequestId++)) {}
+
+std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
+  const auto &marketDataRequestId = GetMarketDataRequestId();
+  const auto &symbolId = GetSecurity().GetFixSymbolId();
+
+  // 62 bytes:
+  // without custom fields:
+  //  262=|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|146=1|55=|
+  // full message:
+  //  262=876316403|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|146=1|55=1|
+  auto result = Export(MESSAGE_TYPE_MARKET_DATA_REQUEST,
+                       62 + marketDataRequestId.size() + symbolId.size(), soh);
+
+  // MDReqID:
+  {
+    const std::string sub("262=" + marketDataRequestId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // SubscriptionRequestType:
+  {
+    // 1 = Snapshot plus updates (subscribe), 2 = Disable previous snapshot
+    // plus update request(unsubscribe).
+    const std::string sub("263=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // MarketDepth
+  {
+    // Full book will be provided, 0 = Depth subscription; 1 = Spot
+    // subscription.
+    const std::string sub("264=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // MDUpdateTy
+  {
+    // Only Incremental refresh is supported (1).
+    const std::string sub("265=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // NoMDEntryTypes
+  {
+    // Always set to 2 (both bid and ask will be sent)
+    const std::string sub("267=2");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // NoMDEntryTypes
+  {
+    // Bid
+    const std::string sub("269=0");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  {
+    // Offer
+    const std::string sub("269=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // NoRelatedSym
+  {
+    const std::string sub("146=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // Symbol
+  {
+    const std::string sub("55=" + symbolId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+
+  WriteStandardTrailer(result, soh);
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////

@@ -12,6 +12,7 @@ namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
 
+class Security;
 class MarketDataSource;
 class Client;
 class Policy;
@@ -19,6 +20,8 @@ class MessageHandler;
 
 namespace Incoming {
 class Logon;
+class Heartbeat;
+class TestRequest;
 }
 }
 }

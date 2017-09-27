@@ -38,12 +38,12 @@ class MarketDataSource : public trdk::MarketDataSource {
   void ResubscribeToSecurities();
 
  protected:
-  virtual Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   const Settings m_settings;
   Client m_client;
-  std::vector<boost::shared_ptr<Security>> m_securities;
+  std::vector<boost::shared_ptr<FixProtocol::Security>> m_securities;
 };
 }
 }

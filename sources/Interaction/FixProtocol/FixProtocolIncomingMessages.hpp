@@ -19,13 +19,18 @@ namespace Incoming {
 
 class Messages : public FixProtocol::Message {
  public:
-  Messages(const Iterator &begin, const Iterator &end)
-      : m_begin(begin), m_end(end) {}
+  explicit Messages(const Iterator &&begin,
+                    const Iterator &&end,
+                    const Iterator &&messageEnd)
+      : m_begin(std::move(begin)),
+        m_end(std::move(end)),
+        m_messageEnd(std::move(messageEnd)) {}
   virtual ~Messages() = default;
 
  public:
   const Iterator &GetBegin() const { return m_begin; }
   const Iterator &GetEnd() const { return m_end; }
+  const Iterator &GetMessageEnd() const { return m_messageEnd; }
 
  public:
   virtual void Handle(MessageHandler &) const = 0;
@@ -33,6 +38,7 @@ class Messages : public FixProtocol::Message {
  private:
   const Iterator m_begin;
   const Iterator m_end;
+  const Iterator m_messageEnd;
 };
 
 class Factory {
@@ -51,9 +57,47 @@ class Factory {
 
 class Logon : public Messages {
  public:
-  explicit Logon(const Iterator &begin, const Iterator &end)
-      : Messages(begin, end) {}
+  typedef Messages Base;
+
+ public:
+  explicit Logon(const Iterator &&begin,
+                 const Iterator &&end,
+                 const Iterator &&messageEnd)
+      : Base(std::move(begin), std::move(end), std::move(messageEnd)) {}
   virtual ~Logon() override = default;
+
+ public:
+  virtual void Handle(MessageHandler &) const override;
+};
+
+class Heartbeat : public Messages {
+ public:
+  typedef Messages Base;
+
+ public:
+  explicit Heartbeat(const Iterator &&begin,
+                     const Iterator &&end,
+                     const Iterator &&messageEnd)
+      : Base(std::move(begin), std::move(end), std::move(messageEnd)) {}
+  virtual ~Heartbeat() override = default;
+
+ public:
+  virtual void Handle(MessageHandler &) const override;
+};
+
+class TestRequest : public Messages {
+ public:
+  typedef Messages Base;
+
+ public:
+  explicit TestRequest(const Iterator &&begin,
+                       const Iterator &&end,
+                       const Iterator &&messageEnd)
+      : Base(std::move(begin), std::move(end), std::move(messageEnd)) {}
+  virtual ~TestRequest() override = default;
+
+ public:
+  std::string ReadTestRequestId() const;
 
  public:
   virtual void Handle(MessageHandler &) const override;

@@ -36,9 +36,31 @@ void fix::MarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Info("Connected to the stream.");
 }
 
-void fix::MarketDataSource::SubscribeToSecurities() {}
+void fix::MarketDataSource::SubscribeToSecurities() {
+  GetLog().Debug("Sending market data request for %1% securities...",
+                 m_securities.size());
 
-void fix::MarketDataSource::ResubscribeToSecurities() {}
+  try {
+    for (const auto &security : m_securities) {
+      if (!security->GetRequest()) {
+        //         security->SetOnline(security->GetLastMarketDataTime(), true);
+        //         security->SetTradingSessionState(security->GetLastMarketDataTime(),
+        //                                          true);
+      }
+      m_client.RequestMarketData(*security);
+    }
+  } catch (const Exception &ex) {
+    GetLog().Error("Failed to send market data request: \"%1%\".", ex);
+    throw Error("Failed to send market data request");
+  }
+
+  GetLog().Debug("Market data request sent.");
+}
+
+void fix::MarketDataSource::ResubscribeToSecurities() {
+  throw MethodDoesNotImplementedError(
+      "fix::MarketDataSource::ResubscribeToSecurities is not implemented");
+}
 
 trdk::Security &fix::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {

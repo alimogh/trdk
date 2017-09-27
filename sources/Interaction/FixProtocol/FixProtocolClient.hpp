@@ -28,6 +28,9 @@ class Client : public Lib::NetworkStreamClientService {
     return const_cast<Client *>(this)->GetSource();
   }
 
+ public:
+  void RequestMarketData(const FixProtocol::Security &);
+
  protected:
   virtual boost::posix_time::ptime GetCurrentTime() const override;
 

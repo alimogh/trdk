@@ -50,6 +50,23 @@ class Connection : public NetworkStreamClient, public MessageHandler {
     }
     m_isAuthorized = true;
   }
+  virtual void OnHeartbeat(const Incoming::Heartbeat &) {
+    Send(Outgoing::Heartbeat(m_standardOutgoingHeader).Export(SOH));
+  }
+  virtual void OnTestRequest(const Incoming::TestRequest &testRequest) {
+    Send(
+        Outgoing::Heartbeat(testRequest, m_standardOutgoingHeader).Export(SOH));
+  }
+
+ public:
+  void RequestMarketData(const fix::Security &security) {
+    GetLog().Info("%1%Sending Market Data Request for \"%2%\" (%3%)...",
+                  GetService().GetLogTag(),    // 1
+                  security,                    // 2
+                  security.GetFixSymbolId());  // 3
+    Outgoing::MarketDataRequest request(security, m_standardOutgoingHeader);
+    Send(request.Export(SOH));
+  }
 
  protected:
   const fix::MarketDataSource &GetSource() const {
@@ -108,19 +125,60 @@ class Connection : public NetworkStreamClient, public MessageHandler {
     *         doesn't include message end.
     */
   virtual Buffer::const_iterator FindLastMessageLastByte(
-      const Buffer::const_iterator &,
-      const Buffer::const_iterator &,
+      const Buffer::const_iterator &bufferBegin,
+      const Buffer::const_iterator &transferedBegin,
       const Buffer::const_iterator &bufferEnd) const override {
-    return bufferEnd;
+    const Buffer::const_reverse_iterator bufferREnd(bufferBegin);
+    const Buffer::const_reverse_iterator transferedREnd(transferedBegin);
+    Buffer::const_reverse_iterator rbegin(bufferEnd);
+    const Buffer::const_reverse_iterator rend(bufferBegin);
+
+    rbegin = std::find(rbegin, transferedREnd, SOH);
+    if (rbegin == transferedREnd) {
+      return bufferEnd;
+    }
+    ++rbegin;
+
+    for (;;) {
+      const auto checkSumFieldBegin = std::find(rbegin, bufferREnd, SOH);
+      if (checkSumFieldBegin == bufferREnd) {
+        return bufferEnd;
+      }
+
+      const auto &fieldLen = -std::distance(checkSumFieldBegin, rbegin);
+
+      // |10=
+      static const int32_t checkSumTagMatch = 1026568449;
+      if (fieldLen >= sizeof(checkSumTagMatch) - 1 &&
+          reinterpret_cast<decltype(checkSumTagMatch) &>(*checkSumFieldBegin) ==
+              checkSumTagMatch) {
+        return rbegin.base();
+      }
+
+      if (checkSumFieldBegin < transferedREnd) {
+        return bufferEnd;
+      }
+
+      rbegin = checkSumFieldBegin;
+    }
   }
 
   //! Handles messages in the buffer.
   /** Called under lock. This range has one or more messages.
     */
-  virtual void HandleNewMessages(const boost::posix_time::ptime &,
-                                 const Buffer::const_iterator &,
-                                 const Buffer::const_iterator &,
-                                 const Milestones &) override {}
+  virtual void HandleNewMessages(const pt::ptime &,
+                                 const Buffer::const_iterator &begin,
+                                 const Buffer::const_iterator &end,
+                                 const Milestones &) override {
+    const auto &bufferEnd = std::next(end);
+    for (auto messageBegin = begin; messageBegin < bufferEnd;) {
+      const auto &message = Incoming::Factory::Create(
+          messageBegin, bufferEnd, *GetSource().GetSettings().policy);
+      message->Handle(*this);
+      messageBegin = message->GetMessageEnd();
+      Assert(messageBegin <= bufferEnd);
+    }
+  }
 
  private:
   Outgoing::StandardHeader m_standardOutgoingHeader;
@@ -165,5 +223,10 @@ void Client::LogError(const std::string &message) const {
 void Client::OnConnectionRestored() { GetSource().ResubscribeToSecurities(); }
 
 void Client::OnStopByError(const std::string &) {}
+
+void Client::RequestMarketData(const fix::Security &security) {
+  InvokeClient<Connection>(
+      boost::bind(&Connection::RequestMarketData, _1, boost::cref(security)));
+}
 
 ////////////////////////////////////////////////////////////////////////////////

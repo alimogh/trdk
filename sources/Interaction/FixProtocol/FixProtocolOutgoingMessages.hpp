@@ -59,14 +59,94 @@ class Message : public FixProtocol::Message {
 
 class Logon : public Message {
  public:
-  explicit Logon(const StandardHeader &standardHeader)
-      : Message(standardHeader) {}
+  typedef Message Base;
+
+ public:
+  explicit Logon(const StandardHeader &standardHeader) : Base(standardHeader) {}
 
  public:
   std::vector<char> Export(unsigned char soh) const;
 
  protected:
   using Message::Export;
+};
+
+class Heartbeat : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit Heartbeat(StandardHeader &standardHeader) : Base(standardHeader) {}
+  explicit Heartbeat(const Incoming::TestRequest &,
+                     StandardHeader &standardHeader);
+
+ public:
+  std::vector<char> Export(unsigned char soh) const;
+
+ protected:
+  using Base::Export;
+
+ private:
+  const std::string m_testRequestId;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class SecurityMessage : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit SecurityMessage(const FixProtocol::Security &security,
+                           StandardHeader &standardHeader)
+      : Base(standardHeader), m_security(security) {}
+
+ public:
+  const FixProtocol::Security &GetSecurity() const { return m_security; }
+
+ public:
+  std::vector<char> Export(unsigned char soh) const;
+
+ protected:
+  using Base::Export;
+
+ protected:
+  const Security &m_security;
+};
+
+class MarketDataMessage : public SecurityMessage {
+ public:
+  typedef SecurityMessage Base;
+
+ public:
+  explicit MarketDataMessage(const FixProtocol::Security &, StandardHeader &);
+
+ public:
+  const std::string GetMarketDataRequestId() const {
+    return m_marketDataRequestId;
+  }
+
+ protected:
+  using Base::Export;
+
+ private:
+  const std::string m_marketDataRequestId;
+};
+
+class MarketDataRequest : public MarketDataMessage {
+ public:
+  typedef MarketDataMessage Base;
+
+ public:
+  explicit MarketDataRequest(const FixProtocol::Security &security,
+                             StandardHeader &standardHeader)
+      : Base(security, standardHeader) {}
+
+ public:
+  std::vector<char> Export(unsigned char soh) const;
+
+ protected:
+  using Base::Export;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
