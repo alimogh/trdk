@@ -52,8 +52,13 @@ class sh::Engine::Implementation : private boost::noncopyable {
         break;
 
       case Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY:
+        emit m_self.StateChanged(false);
+        break;
       case Context::STATE_DISPATCHER_TASK_STOPPED_ERROR:
         emit m_self.StateChanged(false);
+        // Customized logic for Mrigesh Kejriwal: if error is occurred it
+        // restarts engine.
+        emit m_self.RestartWanted();
         break;
 
       case Context::STATE_STRATEGY_BLOCKED:
@@ -96,6 +101,9 @@ sh::Engine::Engine(const fs::path &path, QWidget *parent)
       m_pimpl->m_engine.reset();
     }
   });
+  // Customized logic for Mrigesh Kejriwal: if error is occurred it
+  // restarts engine.
+  connect(this, &Engine::RestartWanted, [this]() {Start();});
 }
 
 sh::Engine::~Engine() {}

@@ -27,6 +27,7 @@ class Engine : public QObject {
 
  signals:
   void StateChanged(bool isStarted);
+  void RestartWanted();
   void Message(const QString &, bool isWarning);
   void LogRecord(const QString &);
 

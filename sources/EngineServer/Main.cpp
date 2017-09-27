@@ -72,43 +72,49 @@ bool DebugStrategy(int argc, const char *argv[]) {
   boost::condition_variable stateCondition;
   boost::optional<trdk::Context::State> state;
 
-  {
-    boost::unordered_map<std::string, std::string> params;
+  do {
+    {
+      boost::unordered_map<std::string, std::string> params;
 
-    std::vector<std::string> cmd;
-    for (auto i = 0; i < argc; ++i) {
-      cmd.emplace_back(argv[i]);
-      boost::smatch match;
-      if (boost::regex_match(cmd.back(), match,
-                             boost::regex("([^=]+)=([^=]+)"))) {
-        params.emplace(std::make_pair(match[1], match[2]));
+      std::vector<std::string> cmd;
+      for (auto i = 0; i < argc; ++i) {
+        cmd.emplace_back(argv[i]);
+        boost::smatch match;
+        if (boost::regex_match(cmd.back(), match,
+                               boost::regex("([^=]+)=([^=]+)"))) {
+          params.emplace(std::make_pair(match[1], match[2]));
+        }
+      }
+
+      try {
+        engine = boost::make_unique<trdk::Engine::Engine>(
+            GetIniFilePath(argc >= 3 ? argv[2] : "etc"),
+            [&](const trdk::Context::State &newState, const std::string *) {
+              {
+                const boost::mutex::scoped_lock lock(stateMutex);
+                state = newState;
+              }
+              stateCondition.notify_all();
+            },
+            [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); },
+            params);
+      } catch (const trdk::Lib::Exception &ex) {
+        std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;
+        result = false;
       }
     }
 
-    try {
-      engine = boost::make_unique<trdk::Engine::Engine>(
-          GetIniFilePath(argc >= 3 ? argv[2] : "etc"),
-          [&](const trdk::Context::State &newState, const std::string *) {
-            {
-              const boost::mutex::scoped_lock lock(stateMutex);
-              state = newState;
-            }
-            stateCondition.notify_all();
-          },
-          [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); }, params);
-    } catch (const trdk::Lib::Exception &ex) {
-      std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;
-      result = false;
+    if (result) {
+      boost::mutex::scoped_lock lock(stateMutex);
+      stateCondition.wait(lock, [&]() {
+        static_assert(trdk::Context::numberOfStates == 4, "List changed.");
+        return state && *state != trdk::Context::STATE_ENGINE_STARTED;
+      });
     }
-  }
 
-  if (result) {
-    boost::mutex::scoped_lock lock(stateMutex);
-    stateCondition.wait(lock, [&]() {
-      static_assert(trdk::Context::numberOfStates == 4, "List changed.");
-      return state && *state != trdk::Context::STATE_ENGINE_STARTED;
-    });
-  }
+    // Customized logic for Mrigesh Kejriwal: if error is occurred it restarts
+    // the engine.
+  } while (state != trdk::Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY);
 
   return result;
 }
