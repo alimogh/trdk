@@ -20,6 +20,7 @@ class MessageHandler;
 
 namespace Incoming {
 class Logon;
+class Logout;
 class Heartbeat;
 class TestRequest;
 }

@@ -22,7 +22,7 @@ namespace {
 typedef NetworkStreamClient::ProtocolError ProtocolError;
 
 template <typename It>
-std::pair<size_t, It> ExtractValueAsSizeT(It source) {
+std::pair<size_t, It> ReadSizeTValue(It source) {
   if (*source == SOH) {
     throw ProtocolError("Unsigned integer field is empty", &*source, SOH);
   }
@@ -31,6 +31,47 @@ std::pair<size_t, It> ExtractValueAsSizeT(It source) {
     result = result * 10 + (*source++ - '0');
   }
   return std::make_pair(result, source);
+}
+
+template <typename It, typename TagMatch>
+std::pair<std::string, It> ReadStringTagFromSoh(const TagMatch &tagMatch,
+                                                It source,
+                                                const It &messageEnd) {
+  Assert(source <= messageEnd);
+  const auto &len = messageEnd - source;
+  if (len < sizeof(tagMatch) + 0 + 1) {  // "empty content"  + SOH
+    throw ProtocolError("String tag buffer is too short", &*source, 0);
+  }
+
+  if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
+    throw ProtocolError("Unknown tag", &*source, 0);
+  }
+
+  std::string result;
+  for (source += sizeof(tagMatch);; ++source) {
+    if (source == messageEnd) {
+      throw ProtocolError("String buffer doesn't have end", &*std::prev(source),
+                          SOH);
+    }
+    const auto &ch = *source;
+    if (ch == SOH) {
+      break;
+    }
+    result.push_back(std::move(ch));
+  }
+
+  return std::make_pair(std::move(result), std::move(source));
+}
+
+template <typename It, typename TagMatch>
+std::pair<std::string, It> ReadStringTag(const TagMatch &tagMatch,
+                                         const It fieldBegin,
+                                         const It &messageEnd) {
+  if (*std::prev(fieldBegin) != SOH) {
+    throw ProtocolError("String buffer doesn't have begin",
+                        &*std::prev(fieldBegin), SOH);
+  }
+  return ReadStringTagFromSoh(tagMatch, fieldBegin, messageEnd);
 }
 }
 
@@ -63,7 +104,7 @@ std::unique_ptr<Messages> Factory::Create(const Iterator &begin,
   }
 
   size_t len;
-  boost::tie(len, contentBegin) = ExtractValueAsSizeT(contentBegin);
+  boost::tie(len, contentBegin) = ReadSizeTValue(contentBegin);
   AssertEq(SOH, *contentBegin);
   Assert(contentBegin <= end);
   {
@@ -85,8 +126,7 @@ std::unique_ptr<Messages> Factory::Create(const Iterator &begin,
       throw ProtocolError("Message doesn't have checksum field",
                           &*checkSumTagBegin, 0);
     }
-    const auto &checkSum =
-        ExtractValueAsSizeT(checkSumTagBegin + sizeof(tagMatch));
+    const auto &checkSum = ReadSizeTValue(checkSumTagBegin + sizeof(tagMatch));
     const auto &controlCheckSum = Detail::CalcCheckSum(begin, contentEnd);
     if (checkSum.first != controlCheckSum ||
         checkSum.second != std::prev(messageEnd)) {
@@ -157,6 +197,10 @@ std::unique_ptr<Messages> Factory::Create(const Iterator &begin,
       return boost::make_unique<Logon>(std::move(contentBegin),
                                        std::move(contentEnd),
                                        std::move(messageEnd));
+    case MESSAGE_TYPE_LOGOUT:
+      return boost::make_unique<Logout>(std::move(contentBegin),
+                                        std::move(contentEnd),
+                                        std::move(messageEnd));
     case MESSAGE_TYPE_HEARTBEAT:
       return boost::make_unique<Heartbeat>(std::move(contentBegin),
                                            std::move(contentEnd),
@@ -176,6 +220,27 @@ void Logon::Handle(MessageHandler &handler) const { handler.OnLogon(*this); }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::string Logout::ReadText() const {
+  // |58=
+  static const int32_t tagMatch = 1027093761;
+  try {
+    const auto &result =
+        ReadStringTagFromSoh(tagMatch, std::prev(GetBegin()), GetEnd());
+    Assert(std::next(result.second) == GetEnd());  // message has only 1 field
+    AssertEq(SOH, *result.second);
+    return std::move(result.first);
+  } catch (const ProtocolError &ex) {
+    boost::format error("Failed to read Text from Logout message: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  }
+}
+
+void Logout::Handle(MessageHandler &handler) const { handler.OnLogout(*this); }
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Heartbeat::Handle(MessageHandler &handler) const {
   handler.OnHeartbeat(*this);
 }
@@ -189,21 +254,18 @@ void TestRequest::Handle(MessageHandler &handler) const {
 std::string TestRequest::ReadTestRequestId() const {
   // 112=
   static const int32_t tagMatch = 1026699569;
-  const auto &len = GetEnd() - GetBegin();
-  if (len < sizeof(tagMatch) + 1) {
-    throw ProtocolError("Test Request message is too short", &*GetBegin(), 0);
+  try {
+    const auto &result = ReadStringTag(tagMatch, GetBegin(), GetEnd());
+    Assert(std::next(result.second) == GetEnd());  // message has only 1 field
+    AssertEq(SOH, *result.second);
+    return std::move(result.first);
+  } catch (const ProtocolError &ex) {
+    boost::format error(
+        "Failed to read Test Request ID from Test Request message: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
   }
-  const auto &end = std::prev(GetEnd());
-  if (*end != SOH) {
-    throw ProtocolError("Test Request message does not have end",
-                        &*std::prev(GetEnd()), SOH);
-  } else if (reinterpret_cast<const decltype(tagMatch) &>(*GetBegin()) !=
-                 tagMatch ||
-             *std::prev(GetBegin()) != SOH) {
-    throw ProtocolError("Test Request message has unknown tag", &*GetBegin(),
-                        '1');
-  }
-  return std::string((GetBegin() + sizeof(tagMatch)), end);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

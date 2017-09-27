@@ -70,6 +70,24 @@ class Logon : public Messages {
   virtual void Handle(MessageHandler &) const override;
 };
 
+class Logout : public Messages {
+ public:
+  typedef Messages Base;
+
+ public:
+  explicit Logout(const Iterator &&begin,
+                  const Iterator &&end,
+                  const Iterator &&messageEnd)
+      : Base(std::move(begin), std::move(end), std::move(messageEnd)) {}
+  virtual ~Logout() override = default;
+
+ public:
+  std::string ReadText() const;
+
+ public:
+  virtual void Handle(MessageHandler &) const override;
+};
+
 class Heartbeat : public Messages {
  public:
   typedef Messages Base;

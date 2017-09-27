@@ -26,9 +26,15 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::vector<char> StandardHeader::Export(const MessageType &messageType,
-                                         size_t messageLen,
-                                         unsigned char soh) const {
+std::string StandardHeader::TakeMessageSequenceNumber() {
+  return boost::lexical_cast<std::string>(m_nextMessageSequenceNumber++);
+}
+
+std::vector<char> StandardHeader::Export(
+    const MessageType &messageType,
+    const std::string &messageSequenceNumber,
+    size_t messageLen,
+    unsigned char soh) const {
   std::vector<char> result;
   {
     const std::string sub("8=FIX.4.4");
@@ -40,12 +46,13 @@ std::vector<char> StandardHeader::Export(const MessageType &messageType,
   const std::string targetSubId = "QUOTE";
   const auto &settings = GetSource().GetSettings();
   {
-    // 47 bytes:
+    // 46 bytes:
     // without custom fields:
-    //   35=A|49=|56=|34=1|52=20170117-08:03:04|57=|50=|
+    //   35=A|49=|56=|34=|52=20170117-08:03:04|57=|50=|
     // full
     // message:8=FIX.4.4|9=126|35=A|49=theBroker.12345|56=CSERVER|34=1|52=20170117-08:03:04|57=TRADE|50=any_string|
-    messageLen += 47;
+    messageLen += 46;
+    messageLen += messageSequenceNumber.size();  // 34
     messageLen += settings.senderCompId.size();  // 49
     messageLen += settings.targetCompId.size();  // 56
     messageLen += targetSubId.size();            // 57
@@ -73,7 +80,7 @@ std::vector<char> StandardHeader::Export(const MessageType &messageType,
     result.emplace_back(soh);
   }
   {
-    const std::string sub("34=1");
+    const std::string sub("34=" + messageSequenceNumber);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -102,10 +109,15 @@ std::vector<char> StandardHeader::Export(const MessageType &messageType,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+out::Message::Message(StandardHeader &standardHeader)
+    : m_standardHeader(standardHeader),
+      m_messageSequenceNumber(m_standardHeader.TakeMessageSequenceNumber()) {}
+
 std::vector<char> out::Message::Export(const MessageType &messageType,
                                        size_t messageLen,
                                        unsigned char soh) const {
-  return GetStandardHeader().Export(messageType, messageLen, soh);
+  return GetStandardHeader().Export(messageType, m_messageSequenceNumber,
+                                    messageLen, soh);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -22,26 +22,29 @@ namespace Outgoing {
 class StandardHeader : private boost::noncopyable {
  public:
   explicit StandardHeader(const FixProtocol::MarketDataSource &source)
-      : m_source(source) {}
+      : m_source(source), m_nextMessageSequenceNumber(1) {}
 
  public:
   const FixProtocol::MarketDataSource &GetSource() const { return m_source; }
 
  public:
   std::vector<char> Export(const MessageType &,
+                           const std::string &messageSequenceNumber,
                            size_t messageLen,
                            unsigned char soh) const;
 
+  std::string TakeMessageSequenceNumber();
+
  private:
   const FixProtocol::MarketDataSource &m_source;
+  size_t m_nextMessageSequenceNumber;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class Message : public FixProtocol::Message {
  public:
-  explicit Message(const StandardHeader &standardHeader)
-      : m_standardHeader(standardHeader) {}
+  explicit Message(StandardHeader &standardHeader);
 
  public:
   const StandardHeader &GetStandardHeader() const { return m_standardHeader; }
@@ -52,7 +55,8 @@ class Message : public FixProtocol::Message {
                            unsigned char soh) const;
 
  private:
-  const StandardHeader &m_standardHeader;
+  StandardHeader &m_standardHeader;
+  const std::string m_messageSequenceNumber;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +66,7 @@ class Logon : public Message {
   typedef Message Base;
 
  public:
-  explicit Logon(const StandardHeader &standardHeader) : Base(standardHeader) {}
+  explicit Logon(StandardHeader &standardHeader) : Base(standardHeader) {}
 
  public:
   std::vector<char> Export(unsigned char soh) const;

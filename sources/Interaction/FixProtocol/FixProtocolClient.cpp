@@ -43,12 +43,16 @@ class Connection : public NetworkStreamClient, public MessageHandler {
   virtual ~Connection() override = default;
 
  public:
-  virtual void OnLogon(const Incoming::Logon &message) override {
+  virtual void OnLogon(const Incoming::Logon &logon) override {
     if (m_isAuthorized) {
-      ProtocolError("Received unexpected Logon-message", &*message.GetBegin(),
-                    0);
+      ProtocolError("Received unexpected Logon-message", &*logon.GetBegin(), 0);
     }
     m_isAuthorized = true;
+  }
+  virtual void OnLogout(const Incoming::Logout &logout) override {
+    GetLog().Info("%1%Logout with the reason: \"%2%\".",
+                  GetService().GetLogTag(),  // 1
+                  logout.ReadText());        // 3
   }
   virtual void OnHeartbeat(const Incoming::Heartbeat &) {
     Send(Outgoing::Heartbeat(m_standardOutgoingHeader).Export(SOH));

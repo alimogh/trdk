@@ -19,6 +19,7 @@ class MessageHandler : private boost::noncopyable {
 
  public:
   virtual void OnLogon(const Incoming::Logon &) = 0;
+  virtual void OnLogout(const Incoming::Logout &) = 0;
 
   virtual void OnHeartbeat(const Incoming::Heartbeat &) = 0;
   virtual void OnTestRequest(const Incoming::TestRequest &) = 0;
