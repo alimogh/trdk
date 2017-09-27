@@ -90,7 +90,13 @@ class sh::Engine::Implementation : private boost::noncopyable {
 
 sh::Engine::Engine(const fs::path &path, QWidget *parent)
     : QObject(parent),
-      m_pimpl(boost::make_unique<Implementation>(*this, path)) {}
+      m_pimpl(boost::make_unique<Implementation>(*this, path)) {
+  connect(this, &Engine::StateChanged, [this](bool isStarted) {
+    if (!isStarted) {
+      m_pimpl->m_engine.reset();
+    }
+  });
+}
 
 sh::Engine::~Engine() {}
 
@@ -116,6 +122,5 @@ void sh::Engine::Stop() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
-  m_pimpl->m_engine->Stop(STOP_MODE_IMMEDIATELY);
   m_pimpl->m_engine.reset();
 }
