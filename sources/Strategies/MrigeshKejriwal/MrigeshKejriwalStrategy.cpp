@@ -309,7 +309,17 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
   if (ContinueRollOver()) {
     return;
   }
+
   m_positionController.OnPositionUpdate(position);
+
+  if (position.IsCompleted() &&
+      position.GetCloseReason() == CLOSE_REASON_STOP_LOSS &&
+      GetPositions().GetSize() == 1) {
+    Assert(!m_priceSignal);
+    m_priceSignal = PriceSignal{
+        position.IsLong(),
+        position.GetSecurity().DescalePrice(position.GetCloseAvgPrice())};
+  }
 }
 
 void mk::Strategy::OnLevel1Tick(Security &security,
@@ -345,7 +355,7 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
   const auto controlValue =
       lastPoint.value *
       (1 + m_settings.costOfFunds * numberOfDaysToExpiry / 365);
-  const bool isTrendChanged = m_trend->Update(tradePrice, controlValue);
+  bool isTrendChanged = m_trend->Update(tradePrice, controlValue);
   GetTradingLog().Write(
       "trend\t%1%\tdirection=%2%\tlast-price=%3%\tclose-price=%4%"
       "\tclose-price-ema=%5%\tdays-to-expiry=%6%\tcontol=%7%",
@@ -360,9 +370,17 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
             % numberOfDaysToExpiry                                  // 6
             % controlValue;                                         // 7
       });
+  if (!isTrendChanged && m_priceSignal) {
+    isTrendChanged = m_priceSignal->isLong ? m_priceSignal->price < tradePrice
+                                           : m_priceSignal->price > tradePrice;
+  }
   if (!isTrendChanged) {
     return;
-  } else if (m_skipNextSignal) {
+  }
+
+  m_priceSignal = boost::none;
+
+  if (m_skipNextSignal) {
     m_skipNextSignal = false;
     return;
   }

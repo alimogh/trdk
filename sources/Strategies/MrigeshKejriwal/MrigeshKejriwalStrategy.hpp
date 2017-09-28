@@ -108,6 +108,11 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
     bool isCompleted;
   };
 
+  struct PriceSignal {
+    bool isLong;
+    Price price;
+  };
+
  public:
   explicit Strategy(
       trdk::Context &,
@@ -177,6 +182,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   PositionController m_positionController;
 
   boost::optional<Rollover> m_rollover;
+
+  boost::optional<PriceSignal> m_priceSignal;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
