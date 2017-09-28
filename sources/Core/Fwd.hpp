@@ -48,8 +48,4 @@ class EventsLog;
 class ModuleEventsLog;
 class TradingLog;
 class ModuleTradingLog;
-
-namespace SettingsReport {
-typedef std::list<std::pair<std::string, std::string>> Report;
-}
 }

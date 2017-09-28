@@ -28,17 +28,17 @@ class LimitOrderPolicy : public OrderPolicyType {
   virtual ~LimitOrderPolicy() override = default;
 
  protected:
-  virtual trdk::ScaledPrice GetOpenOrderPrice(
+  virtual trdk::Price GetOpenOrderPrice(
       trdk::Position &position) const override {
-    return Base::GetOpenOrderPrice(position) +
-           position.GetSecurity().ScalePrice(position.IsLong() ? m_correction
-                                                               : -m_correction);
+    return Base::GetOpenOrderPrice(position) + position.IsLong()
+               ? m_correction
+               : -m_correction;
   }
-  virtual trdk::ScaledPrice GetCloseOrderPrice(
+  virtual trdk::Price GetCloseOrderPrice(
       trdk::Position &position) const override {
-    return Base::GetCloseOrderPrice(position) +
-           position.GetSecurity().ScalePrice(position.IsLong() ? -m_correction
-                                                               : m_correction);
+    return Base::GetCloseOrderPrice(position) + position.IsLong()
+               ? -m_correction
+               : m_correction;
   }
 
  private:

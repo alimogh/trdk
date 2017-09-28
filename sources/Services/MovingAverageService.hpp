@@ -40,13 +40,12 @@ class TRDK_SERVICES_API MovingAverageService : public trdk::Service {
   //! Value data point.
   struct Point {
     boost::posix_time::ptime time;
-    double source;
-    double value;
+    trdk::Price source;
+    trdk::Lib::Double value;
 
     bool operator==(const Point &rhs) const {
       using namespace trdk::Lib;
-      return time == rhs.time && IsEqual(source, rhs.source) &&
-             IsEqual(value, rhs.value);
+      return time == rhs.time && source == rhs.source && value == rhs.value;
     }
   };
 

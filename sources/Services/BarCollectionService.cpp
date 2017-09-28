@@ -292,15 +292,11 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     }
     *m_barsLog << csvDelimeter
                << ExcelTextField(m_current.bar->endTime.time_of_day())
-               << csvDelimeter
-               << m_security->DescalePrice(m_current.bar->openTradePrice)
-               << csvDelimeter
-               << m_security->DescalePrice(m_current.bar->highTradePrice)
-               << csvDelimeter
-               << m_security->DescalePrice(m_current.bar->lowTradePrice)
-               << csvDelimeter
-               << m_security->DescalePrice(m_current.bar->closeTradePrice)
-               << csvDelimeter << m_current.bar->tradingVolume;
+               << csvDelimeter << m_current.bar->openTradePrice << csvDelimeter
+               << m_current.bar->highTradePrice << csvDelimeter
+               << m_current.bar->lowTradePrice << csvDelimeter
+               << m_current.bar->closeTradePrice << csvDelimeter
+               << m_current.bar->tradingVolume;
     if (m_countedBarSize) {
       *m_barsLog << csvDelimeter << m_current.count;
     }
@@ -366,8 +362,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
 
   template <typename Callback>
   bool StartNewBar(const pt::ptime &time, const Callback &callback) {
-    const bool isSignificantBar =
-        m_current.bar && !IsZero(m_current.bar->lowTradePrice);
+    const bool isSignificantBar = m_current.bar && m_current.bar->lowTradePrice;
     if (isSignificantBar) {
       LogCurrentBar();
     }
@@ -380,7 +375,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
   }
 
   bool CompleteBar() {
-    if (!m_current.bar || IsZero(m_current.bar->lowTradePrice)) {
+    if (!m_current.bar || !m_current.bar->lowTradePrice) {
       return false;
     }
     LogCurrentBar();
@@ -425,24 +420,22 @@ class BarCollectionService::Implementation : private boost::noncopyable {
       throw MethodDoesNotSupportBySettings("Wrong source bar size");
     }
 
-    const auto &setOpen = [](const Security::Bar &sourceBar,
-                             ScaledPrice &stat) {
+    const auto &setOpen = [](const Security::Bar &sourceBar, Price &stat) {
       if (sourceBar.openPrice && !stat) {
         stat = *sourceBar.openPrice;
       }
     };
-    const auto &setClose = [](const Security::Bar &sourceBar,
-                              ScaledPrice &stat) {
+    const auto &setClose = [](const Security::Bar &sourceBar, Price &stat) {
       if (sourceBar.closePrice) {
         stat = *sourceBar.closePrice;
       }
     };
-    const auto &setMax = [](const Security::Bar &sourceBar, ScaledPrice &stat) {
+    const auto &setMax = [](const Security::Bar &sourceBar, Price &stat) {
       if (sourceBar.highPrice) {
         stat = std::max(stat, *sourceBar.highPrice);
       }
     };
-    const auto &setMin = [](const Security::Bar &sourceBar, ScaledPrice &stat) {
+    const auto &setMin = [](const Security::Bar &sourceBar, Price &stat) {
       if (sourceBar.lowPrice) {
         stat = stat ? std::min(stat, *sourceBar.lowPrice) : *sourceBar.lowPrice;
       }
@@ -542,7 +535,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
 
       switch (value.GetType()) {
         case LEVEL1_TICK_LAST_PRICE:
-          bar.closeTradePrice = ScaledPrice(value.GetValue());
+          bar.closeTradePrice = Price(value.GetValue());
           if (!bar.openTradePrice) {
             AssertEq(0, bar.highTradePrice);
             AssertEq(0, bar.lowTradePrice);
@@ -562,11 +555,11 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
-              [this]() { return m_security->GetBidPriceScaled(); });
+              [this]() { return m_security->GetBidPrice(); });
           RestoreBarFieldsFromPrevBar(
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
-              [this]() { return m_security->GetAskPriceScaled(); });
+              [this]() { return m_security->GetAskPrice(); });
           break;
 
         case LEVEL1_TICK_LAST_QTY:
@@ -575,15 +568,15 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
-              [this]() { return m_security->GetBidPriceScaled(); });
+              [this]() { return m_security->GetBidPrice(); });
           RestoreBarFieldsFromPrevBar(
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
-              [this]() { return m_security->GetAskPriceScaled(); });
+              [this]() { return m_security->GetAskPrice(); });
           break;
 
         case LEVEL1_TICK_BID_PRICE:
-          bar.closeBidPrice = ScaledPrice(value.GetValue());
+          bar.closeBidPrice = Price(value.GetValue());
           if (!bar.openBidPrice) {
             bar.openBidPrice = bar.closeBidPrice;
             AssertEq(0, bar.minBidPrice);
@@ -598,11 +591,11 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           RestoreBarFieldsFromPrevBar(
               bar.openAskPrice, bar.closeAskPrice, bar.maxAskPrice,
               [](const Bar &bar) { return bar.closeAskPrice; },
-              [this]() { return m_security->GetAskPriceScaled(); });
+              [this]() { return m_security->GetAskPrice(); });
           break;
 
         case LEVEL1_TICK_ASK_PRICE:
-          bar.closeAskPrice = ScaledPrice(value.GetValue());
+          bar.closeAskPrice = Price(value.GetValue());
           if (!bar.openAskPrice) {
             bar.openAskPrice = bar.closeAskPrice;
             AssertEq(0, bar.maxAskPrice);
@@ -617,7 +610,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
           RestoreBarFieldsFromPrevBar(
               bar.openBidPrice, bar.closeBidPrice, bar.minBidPrice,
               [](const Bar &bar) { return bar.closeBidPrice; },
-              [this]() { return m_security->GetBidPriceScaled(); });
+              [this]() { return m_security->GetBidPrice(); });
           break;
 
         default:
@@ -638,10 +631,10 @@ class BarCollectionService::Implementation : private boost::noncopyable {
 
   bool OnNewTrade(const Security &security,
                   const pt::ptime &time,
-                  const ScaledPrice &price,
+                  const Price &price,
                   const Qty &qty) {
     return AppendStat(security, time, [&](Bar &bar) {
-      if (IsZero(bar.openTradePrice)) {
+      if (!bar.openTradePrice) {
         AssertEq(0, bar.highTradePrice);
         AssertEq(0, bar.lowTradePrice);
         AssertEq(0, bar.closeTradePrice);
@@ -676,7 +669,7 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     if (m_bars.size() > 1) {
       bar.openTradePrice = (m_bars.rbegin() + 1)->closeTradePrice;
     } else {
-      bar.openTradePrice = m_security->GetLastPriceScaled();
+      bar.openTradePrice = m_security->GetLastPrice();
     }
     bar.highTradePrice = bar.lowTradePrice = bar.closeTradePrice =
         bar.openTradePrice;
@@ -684,9 +677,9 @@ class BarCollectionService::Implementation : private boost::noncopyable {
 
   template <typename GetBarClosePrice, typename GetCurrentPrice>
   void RestoreBarFieldsFromPrevBar(
-      ScaledPrice &openPriceField,
-      ScaledPrice &closePriceField,
-      ScaledPrice &minMaxPriceField,
+      Price &openPriceField,
+      Price &closePriceField,
+      Price &minMaxPriceField,
       const GetBarClosePrice &getBarClosePrice,
       const GetCurrentPrice &getCurrentPrice) const {
     if (openPriceField) {
@@ -770,7 +763,7 @@ bool BarCollectionService::OnLevel1Tick(const Security &security,
 
 bool BarCollectionService::OnNewTrade(const Security &security,
                                       const pt::ptime &time,
-                                      const ScaledPrice &price,
+                                      const Price &price,
                                       const Qty &qty) {
   return m_pimpl->OnNewTrade(security, time, price, qty);
 }
@@ -879,12 +872,9 @@ void BarCollectionService::DropLastBarCopy(
 
   GetContext().InvokeDropCopy([this, &sourceId](DropCopy &dropCopy) {
     const Bar &bar = GetLastBar();
-    const Security &security = GetSecurity();
-    dropCopy.CopyBar(sourceId, GetSize() - 1, bar.endTime,
-                     security.DescalePrice(bar.openTradePrice),
-                     security.DescalePrice(bar.highTradePrice),
-                     security.DescalePrice(bar.lowTradePrice),
-                     security.DescalePrice(bar.closeTradePrice));
+    dropCopy.CopyBar(sourceId, GetSize() - 1, bar.endTime, bar.openTradePrice,
+                     bar.highTradePrice, bar.lowTradePrice,
+                     bar.closeTradePrice);
   });
 }
 
@@ -895,13 +885,12 @@ void BarCollectionService::DropUncompletedBarCopy(
   }
 
   GetContext().InvokeDropCopy([this, &sourceId](DropCopy &dropCopy) {
-    const Security &security = GetSecurity();
-    dropCopy.CopyBar(
-        sourceId, m_pimpl->m_bars.size() - 1, m_pimpl->m_current.bar->endTime,
-        security.DescalePrice(m_pimpl->m_current.bar->openTradePrice),
-        security.DescalePrice(m_pimpl->m_current.bar->highTradePrice),
-        security.DescalePrice(m_pimpl->m_current.bar->lowTradePrice),
-        security.DescalePrice(m_pimpl->m_current.bar->closeTradePrice));
+    dropCopy.CopyBar(sourceId, m_pimpl->m_bars.size() - 1,
+                     m_pimpl->m_current.bar->endTime,
+                     m_pimpl->m_current.bar->openTradePrice,
+                     m_pimpl->m_current.bar->highTradePrice,
+                     m_pimpl->m_current.bar->lowTradePrice,
+                     m_pimpl->m_current.bar->closeTradePrice);
   });
 }
 

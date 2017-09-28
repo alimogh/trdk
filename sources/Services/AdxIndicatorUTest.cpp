@@ -24,7 +24,7 @@ namespace pt = boost::posix_time;
 
 namespace {
 
-const double source[][6] = {
+const lib::Double source[][6] = {
     //  High      Low    Close          +DI14          -DI14            ADX
     {30.1983, 29.4072, 29.8720, 0.00000000000, 0.00000000000, 0.00000000000},
     {30.2776, 29.3182, 30.2381, 0.00000000000, 0.00000000000, 0.00000000000},
@@ -565,16 +565,16 @@ TEST(Services_AdxIndicator, General) {
 
     Mocks::BarService::Bar bar;
     bar.endTime = time;
-    bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0] + 99.99, 10000));
-    bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 10000));
-    bar.lowTradePrice = trdk::ScaledPrice(lib::Scale(row[1], 10000));
-    bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[2], 10000));
+    bar.openTradePrice = row[0] + 99.99;
+    bar.highTradePrice = row[0];
+    bar.lowTradePrice = row[1];
+    bar.closeTradePrice = row[2];
     EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 
-    ASSERT_EQ(!lib::IsZero(row[5]),
+    ASSERT_EQ(row[5] != 0,
               indicator.OnServiceDataUpdate(
                   bars, lib::TimeMeasurement::Milestones()));
-    if (lib::IsZero(row[5])) {
+    if (!row[5]) {
       EXPECT_TRUE(indicator.IsEmpty());
       EXPECT_THROW(indicator.GetLastPoint(), Indicator::ValueDoesNotExistError);
       continue;
@@ -584,10 +584,10 @@ TEST(Services_AdxIndicator, General) {
     const auto &point = indicator.GetLastPoint();
 
     EXPECT_EQ(time, point.source.time);
-    EXPECT_DOUBLE_EQ(row[0] + 99.99, point.source.open);
-    EXPECT_DOUBLE_EQ(row[0], point.source.high);
-    EXPECT_DOUBLE_EQ(row[1], point.source.low);
-    EXPECT_DOUBLE_EQ(row[2], point.source.close);
+    EXPECT_EQ(row[0] + 99.99, point.source.open);
+    EXPECT_EQ(row[0], point.source.high);
+    EXPECT_EQ(row[1], point.source.low);
+    EXPECT_EQ(row[2], point.source.close);
 
     EXPECT_NEAR(row[3], point.pdi, 0.00000000001);
     EXPECT_NEAR(row[4], point.ndi, 0.00000000001);

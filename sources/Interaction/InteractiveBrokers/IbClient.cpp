@@ -1176,7 +1176,7 @@ void Client::tickPrice(TickerId tickerId,
   if (price < 0) {
     return;
   }
-  Level1TickValue (*valueCtor)(const ScaledPrice &);
+  Level1TickValue (*valueCtor)(const Price &);
   switch (field) {
     default:
       return;
@@ -1197,8 +1197,7 @@ void Client::tickPrice(TickerId tickerId,
   if (!security) {
     return;
   }
-  security->AddLevel1Tick(now, valueCtor(security->ScalePrice(price)),
-                          timeMeasurement);
+  security->AddLevel1Tick(now, valueCtor(price), timeMeasurement);
 }
 
 void Client::tickSize(TickerId tickerId, TickType field, int size) {
@@ -1544,10 +1543,10 @@ void Client::historicalData(TickerId tickerId,
 
     if (isRequiredTime && request->security->IsBarsRequired()) {
       ib::Security::Bar bar(time, ib::Security::Bar::TRADES);
-      bar.openPrice = request->security->ScalePrice(openPrice);
-      bar.highPrice = request->security->ScalePrice(highPrice);
-      bar.lowPrice = request->security->ScalePrice(lowPrice);
-      bar.closePrice = request->security->ScalePrice(closePrice);
+      bar.openPrice = openPrice;
+      bar.highPrice = highPrice;
+      bar.lowPrice = lowPrice;
+      bar.closePrice = closePrice;
       bar.volume = volume;
       //! See request for detail about frame size:
       bar.period = pt::seconds(request->security->IsLevel1Required() ? 1 : 5);
@@ -1611,16 +1610,13 @@ void FlushHistoryUpdate(const HistoryUpdate &raw,
       << adjusted.highPrice << ',' << raw.lowPrice << ',' << adjusted.lowPrice
       << std::endl;
 
-  security.AddLevel1Tick(raw.time,
-                         Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-                             security.ScalePrice(adjusted.openPrice)),
-                         Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-                             security.ScalePrice(adjusted.highPrice)),
-                         Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-                             security.ScalePrice(adjusted.lowPrice)),
-                         Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-                             security.ScalePrice(adjusted.closePrice)),
-                         context.StartStrategyTimeMeasurement());
+  security.AddLevel1Tick(
+      raw.time,
+      Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(adjusted.openPrice),
+      Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(adjusted.highPrice),
+      Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(adjusted.lowPrice),
+      Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(adjusted.closePrice),
+      context.StartStrategyTimeMeasurement());
 }
 }
 
@@ -1747,10 +1743,10 @@ void Client::realtimeBar(TickerId tickerId,
       pt::from_time_t(time) +
           m_ts.GetContext().GetSettings().GetTimeZone()->base_utc_offset(),
       ib::Security::Bar::TRADES);
-  bar.openPrice = security->ScalePrice(openPrice);
-  bar.highPrice = security->ScalePrice(highPrice);
-  bar.lowPrice = security->ScalePrice(lowPrice);
-  bar.closePrice = security->ScalePrice(closePrice);
+  bar.openPrice = openPrice;
+  bar.highPrice = highPrice;
+  bar.lowPrice = lowPrice;
+  bar.closePrice = closePrice;
   bar.volume = volume;
   // Currently only 5 second bars are supported, if any other value is used,
   // an exception will be thrown:

@@ -187,11 +187,10 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
 #if 1
       {
         if (m_security->IsOnline()) {
-          const auto price = m_security->ScalePrice(v4);
           m_security->SetLevel1(
-              time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(price - 1),
+              time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(v4 - 0.01),
               Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(1),
-              Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(price + 1),
+              Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(v4 + 0.01),
               Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(1),
               TimeMeasurement::Milestones());
         }
@@ -200,17 +199,13 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
 
 #if 1
       {
-        m_security->AddTrade(time, m_security->ScalePrice(v1), 1,
-                             TimeMeasurement::Milestones(),
+        m_security->AddTrade(time, v1, 1, TimeMeasurement::Milestones(),
                              m_security->IsOnline());
-        m_security->AddTrade(time, m_security->ScalePrice(v2), 1,
-                             TimeMeasurement::Milestones(),
+        m_security->AddTrade(time, v2, 1, TimeMeasurement::Milestones(),
                              m_security->IsOnline());
-        m_security->AddTrade(time, m_security->ScalePrice(v3), 1,
-                             TimeMeasurement::Milestones(),
+        m_security->AddTrade(time, v3, 1, TimeMeasurement::Milestones(),
                              m_security->IsOnline());
-        m_security->AddTrade(time, m_security->ScalePrice(v4), 1,
-                             TimeMeasurement::Milestones(),
+        m_security->AddTrade(time, v4, 1, TimeMeasurement::Milestones(),
                              m_security->IsOnline());
       }
 #endif

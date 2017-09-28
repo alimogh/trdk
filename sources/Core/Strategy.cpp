@@ -461,7 +461,7 @@ void Strategy::RaiseLevel1TickEvent(
 
 void Strategy::RaiseNewTradeEvent(Security &service,
                                   const boost::posix_time::ptime &time,
-                                  const ScaledPrice &price,
+                                  const Price &price,
                                   const Qty &qty) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),

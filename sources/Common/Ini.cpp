@@ -46,19 +46,6 @@ Ini::KeyFormatError::KeyFormatError(const char *what) throw() : Error(what) {}
 Ini::SectionNotUnique::SectionNotUnique() throw()
     : Error("Section is not unique") {}
 
-boost::int64_t Ini::AbsoluteOrPercentsPrice::Get(boost::int64_t fullVal) const {
-  return isAbsolute
-             ? value.absolute
-             : boost::int64_t(boost::math::round(fullVal * value.percents));
-}
-
-std::string Ini::AbsoluteOrPercentsPrice::GetStr(
-    unsigned long priceScale) const {
-  return isAbsolute ? boost::lexical_cast<std::string>(
-                          Descale(value.absolute, priceScale))
-                    : (boost::format("%1%%%") % (value.percents * 100)).str();
-}
-
 void Ini::Reset() {
   GetSource().clear();
   GetSource().seekg(0);
@@ -232,31 +219,6 @@ fs::path Ini::ReadFileSystemPath(const std::string &section,
                                  const std::string &key,
                                  const std::string &defaultValue) const {
   return Normalize(fs::path(ReadKey(section, key, defaultValue)));
-}
-
-Ini::AbsoluteOrPercentsPrice Ini::ReadAbsoluteOrPercentsPriceKey(
-    const std::string &section,
-    const std::string &key,
-    unsigned long priceScale) const {
-  AbsoluteOrPercentsPrice result = {};
-  std::string val = ReadKey(section, key);
-  result.isAbsolute = !boost::ends_with(val, "%");
-  if (!result.isAbsolute) {
-    val.pop_back();
-  }
-  try {
-    const auto dVal = boost::lexical_cast<double>(val);
-    if (!result.isAbsolute) {
-      result.value.percents = dVal / 100;
-    } else {
-      result.value.absolute = Scale(dVal, priceScale);
-    }
-    return result;
-  } catch (const boost::bad_lexical_cast &ex) {
-    boost::format message("Wrong INI-key (\"%1%:%2%\") format: \"%3%\"");
-    message % section % key % ex.what();
-    throw KeyFormatError(message.str().c_str());
-  }
 }
 
 namespace {
@@ -444,11 +406,6 @@ fs::path IniSectionRef::ReadFileSystemPath(const std::string &key) const {
 fs::path IniSectionRef::ReadFileSystemPath(
     const std::string &key, const std::string &defaultValue) const {
   return GetBase().ReadFileSystemPath(GetName(), key, defaultValue);
-}
-
-IniFile::AbsoluteOrPercentsPrice IniSectionRef::ReadAbsoluteOrPercentsPriceKey(
-    const std::string &key, unsigned long priceScale) const {
-  return GetBase().ReadAbsoluteOrPercentsPriceKey(GetName(), key, priceScale);
 }
 
 bool IniSectionRef::ReadBoolKey(const std::string &key) const {

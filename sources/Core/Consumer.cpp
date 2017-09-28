@@ -67,7 +67,7 @@ void Consumer::OnLevel1Tick(Security &security,
 
 void Consumer::OnNewTrade(Security &security,
                           const pt::ptime &,
-                          const ScaledPrice &,
+                          const Price &,
                           const Qty &) {
   GetLog().Error(
       "Subscribed to %1% new trades, but can't work with it"

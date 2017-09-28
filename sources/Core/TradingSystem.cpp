@@ -122,7 +122,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       Security &security,
       const Currency &currency,
       const Qty &qty,
-      const ScaledPrice &price,
+      const Price &price,
       const OrderParams &params,
       const TimeMeasurement::Milestones &timeMeasurement) {
     ValidateNewOrder(qty, params);
@@ -135,7 +135,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       Security &security,
       const Currency &currency,
       const Qty &qty,
-      const ScaledPrice &price,
+      const Price &price,
       const OrderParams &params,
       const TimeMeasurement::Milestones &timeMeasurement) {
     ValidateNewIocOrder(qty, params);
@@ -148,7 +148,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       Security &security,
       const Currency &currency,
       const Qty &qty,
-      const ScaledPrice &price,
+      const Price &price,
       const OrderParams &params,
       const TimeMeasurement::Milestones &timeMeasurement) {
     ValidateNewOrder(qty, params);
@@ -161,7 +161,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       Security &security,
       const Currency &currency,
       const Qty &qty,
-      const ScaledPrice &price,
+      const Price &price,
       const OrderParams &params,
       const TimeMeasurement::Milestones &timeMeasurement) {
     ValidateNewIocOrder(qty, params);
@@ -174,7 +174,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                        const OrderStatus &orderStatus,
                        Security &security,
                        const Currency &currency,
-                       const ScaledPrice &orderPrice,
+                       const Price &orderPrice,
                        const Qty &remainingQty,
                        const TradeInfo *trade,
                        const TimeMeasurement::Milestones &timeMeasurement) {
@@ -188,7 +188,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                         const OrderStatus &orderStatus,
                         Security &security,
                         const Currency &currency,
-                        const ScaledPrice &orderPrice,
+                        const Price &orderPrice,
                         const Qty &remainingQty,
                         const TradeInfo *trade,
                         const TimeMeasurement::Milestones &timeMeasurement) {
@@ -253,7 +253,7 @@ OrderId TradingSystem::SellAtMarketPrice(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetBidPriceScaled();
+  const auto &supposedPrice = security.GetBidPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
@@ -286,7 +286,7 @@ OrderId TradingSystem::Sell(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
@@ -321,12 +321,12 @@ OrderId TradingSystem::SellAtMarketPriceWithStopPrice(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &stopPrice,
+    const Price &stopPrice,
     const OrderParams &params,
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetBidPriceScaled();
+  const auto supposedPrice = security.GetBidPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
@@ -359,7 +359,7 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
@@ -398,7 +398,7 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetBidPriceScaled();
+  const auto &supposedPrice = security.GetBidPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellIocOrder(riskControlScope, security, currency, qty,
@@ -435,7 +435,7 @@ OrderId TradingSystem::BuyAtMarketPrice(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetAskPriceScaled();
+  const auto &supposedPrice = security.GetAskPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
@@ -468,7 +468,7 @@ OrderId TradingSystem::BuyAtMarketPrice(
 OrderId TradingSystem::Buy(Security &security,
                            const Currency &currency,
                            const Qty &qty,
-                           const ScaledPrice &price,
+                           const Price &price,
                            const OrderParams &params,
                            const OrderStatusUpdateSlot &callback,
                            RiskControlScope &riskControlScope,
@@ -504,12 +504,12 @@ OrderId TradingSystem::BuyAtMarketPriceWithStopPrice(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &stopPrice,
+    const Price &stopPrice,
     const OrderParams &params,
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetAskPriceScaled();
+  const auto &supposedPrice = security.GetAskPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
@@ -543,7 +543,7 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
@@ -583,7 +583,7 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetAskPriceScaled();
+  const auto &supposedPrice = security.GetAskPrice();
 
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyIocOrder(riskControlScope, security, currency, qty,

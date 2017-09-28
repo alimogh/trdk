@@ -71,7 +71,7 @@ class TRDK_SERVICES_API BarCollectionService : public BarService {
 
   virtual bool OnNewTrade(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &) override;
 
   virtual bool OnSecurityServiceEvent(

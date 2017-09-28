@@ -175,7 +175,7 @@ bool Service::RaiseLevel1TickEvent(const Security &security,
 
 bool Service::RaiseNewTradeEvent(const Security &security,
                                  const boost::posix_time::ptime &time,
-                                 const ScaledPrice &price,
+                                 const Price &price,
                                  const Qty &qty) {
   const auto lock = LockForOtherThreads();
   return OnNewTrade(security, time, price, qty);
@@ -241,7 +241,7 @@ bool Service::OnLevel1Tick(const Security &security,
 
 bool Service::OnNewTrade(const Security &security,
                          const boost::posix_time::ptime &,
-                         const ScaledPrice &,
+                         const Price &,
                          const Qty &) {
   GetLog().Error(
       "Subscribed to %1% new trades, but can't work with it"

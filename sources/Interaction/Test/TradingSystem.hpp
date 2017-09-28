@@ -41,21 +41,21 @@ class TradingSystem : public trdk::TradingSystem {
   virtual OrderId SendSell(trdk::Security &,
                            const trdk::Lib::Currency &,
                            const trdk::Qty &,
-                           const trdk::ScaledPrice &,
+                           const trdk::Price &,
                            const trdk::OrderParams &,
                            const OrderStatusUpdateSlot &&) override;
   virtual OrderId SendSellAtMarketPriceWithStopPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) override;
   virtual OrderId SendSellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) override;
   virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
@@ -73,21 +73,21 @@ class TradingSystem : public trdk::TradingSystem {
   virtual OrderId SendBuy(trdk::Security &,
                           const trdk::Lib::Currency &,
                           const trdk::Qty &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::OrderParams &,
                           const OrderStatusUpdateSlot &&) override;
   virtual OrderId SendBuyAtMarketPriceWithStopPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) override;
   virtual OrderId SendBuyImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) override;
   virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(

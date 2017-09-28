@@ -208,7 +208,7 @@ class Terminal::Implementation : private boost::noncopyable {
     OrderTime m_orderTime;
     Security *m_security;
     Qty m_qty;
-    double m_price;
+    Price m_price;
 
    private:
     Currency m_currency;
@@ -227,7 +227,7 @@ class Terminal::Implementation : private boost::noncopyable {
           m_tradingSystem.GetContext().StartStrategyTimeMeasurement();
       AssertEq(std::string(), Validate());
       const OrderParams &orderParams = GetOrderParams();
-      if (Lib::IsZero(m_price)) {
+      if (m_price == 0) {
         if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
           m_tradingSystem.SellAtMarketPrice(
               *m_security, GetCurrency(), m_qty, orderParams,
@@ -244,15 +244,13 @@ class Terminal::Implementation : private boost::noncopyable {
       } else {
         if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
           m_tradingSystem.Sell(
-              *m_security, GetCurrency(), m_qty,
-              m_security->ScalePrice(m_price), orderParams,
+              *m_security, GetCurrency(), m_qty, m_price, orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
                           _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.SellImmediatelyOrCancel(
-              *m_security, GetCurrency(), m_qty,
-              m_security->ScalePrice(m_price), orderParams,
+              *m_security, GetCurrency(), m_qty, m_price, orderParams,
               boost::bind(&SellCommand::OnReply, shared_from_this(), _1, _2, _3,
                           _4, _5, _6),
               m_riskControlScope, timeMeasurement);
@@ -272,7 +270,7 @@ class Terminal::Implementation : private boost::noncopyable {
           m_tradingSystem.GetContext().StartStrategyTimeMeasurement();
       AssertEq(std::string(), Validate());
       const OrderParams &orderParams = GetOrderParams();
-      if (Lib::IsZero(m_price)) {
+      if (m_price == 0) {
         if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
           m_tradingSystem.BuyAtMarketPrice(
               *m_security, GetCurrency(), m_qty, orderParams,
@@ -289,15 +287,13 @@ class Terminal::Implementation : private boost::noncopyable {
       } else {
         if (m_orderTime == OrderCommand::ORDER_TIME_DAY) {
           m_tradingSystem.Buy(
-              *m_security, GetCurrency(), m_qty,
-              m_security->ScalePrice(m_price), orderParams,
+              *m_security, GetCurrency(), m_qty, m_price, orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
                           _4, _5, _6),
               m_riskControlScope, timeMeasurement);
         } else if (m_orderTime == OrderCommand::ORDER_TIME_IOC) {
           m_tradingSystem.BuyImmediatelyOrCancel(
-              *m_security, GetCurrency(), m_qty,
-              m_security->ScalePrice(m_price), orderParams,
+              *m_security, GetCurrency(), m_qty, m_price, orderParams,
               boost::bind(&BuyCommand::OnReply, shared_from_this(), _1, _2, _3,
                           _4, _5, _6),
               m_riskControlScope, timeMeasurement);

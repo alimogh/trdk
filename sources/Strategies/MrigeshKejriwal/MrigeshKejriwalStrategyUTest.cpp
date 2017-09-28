@@ -192,7 +192,7 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
     EXPECT_CALL(*trend, IsRising()).Times(0);
     strategy.RaiseLevel1TickEvent(
         spotSecurity, pt::ptime(),
-        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9865),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(98.65),
         tms::Milestones());
   }
 
@@ -206,16 +206,15 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
         .WillOnce(Return(true));
     const boost::tribool isRising(true);
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
-    const trdk::ScaledPrice askPrice = 87654;
+    const trdk::Price askPrice = 876.54;
     // To remember close price.
-    EXPECT_CALL(tradingSecurity, GetBidPriceScaled())
-        .WillRepeatedly(Return(4567));
+    EXPECT_CALL(tradingSecurity, GetBidPrice()).WillRepeatedly(Return(45.67));
     // For open price.
-    EXPECT_CALL(tradingSecurity, GetAskPriceScaled())
+    EXPECT_CALL(tradingSecurity, GetAskPrice())
         .WillRepeatedly(Return(askPrice));
     strategy.RaiseLevel1TickEvent(
         spotSecurity, pt::ptime(),
-        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9161),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(91.61),
         tms::Milestones());
   }
 
@@ -223,17 +222,16 @@ TEST(MrigeshKejriwal_Strategy, DISABLED_Position) {
     EXPECT_CALL(*trend, Update(trdk::Price(92.62), point))
         .WillOnce(Return(true));
     const boost::tribool isRising(false);
-    const trdk::ScaledPrice bidPrice = 65478;
+    const trdk::Price bidPrice = 654.78;
     // For open price.
-    EXPECT_CALL(tradingSecurity, GetBidPriceScaled())
+    EXPECT_CALL(tradingSecurity, GetBidPrice())
         .WillRepeatedly(Return(bidPrice));
     // To remember close price.
-    EXPECT_CALL(tradingSecurity, GetAskPriceScaled())
-        .WillRepeatedly(Return(4567));
+    EXPECT_CALL(tradingSecurity, GetAskPrice()).WillRepeatedly(Return(45.67));
     EXPECT_CALL(*trend, IsRising()).WillRepeatedly(ReturnRef(isRising));
     strategy.RaiseLevel1TickEvent(
         spotSecurity, pt::ptime(),
-        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(9262),
+        trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(92.62),
         tms::Milestones());
   }
 }

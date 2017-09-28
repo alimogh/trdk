@@ -45,8 +45,8 @@ class Security : public trdk::Security {
   MOCK_CONST_METHOD0(IsTradingSessionOpened, bool());
   MOCK_CONST_METHOD0(GetExpiration, const trdk::Lib::ContractExpiration &());
   MOCK_CONST_METHOD0(GetLastPrice, trdk::Price());
-  MOCK_CONST_METHOD0(GetAskPriceScaled, trdk::ScaledPrice());
-  MOCK_CONST_METHOD0(GetBidPriceScaled, trdk::ScaledPrice());
+  MOCK_CONST_METHOD0(GetAskPrice, trdk::Price());
+  MOCK_CONST_METHOD0(GetBidPrice, trdk::Price());
 
  private:
   //! @todo Fix when Google Test will support noexcept.

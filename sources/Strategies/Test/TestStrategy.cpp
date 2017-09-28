@@ -111,7 +111,7 @@ class TestStrategy : public Strategy {
     }
 
     {
-      const auto &lastPrice = security.DescalePrice(tick.GetValue());
+      const auto &lastPrice = tick.GetValue();
       if (m_prevPrice < lastPrice) {
         if (m_direction < 0) {
           m_direction = 1;

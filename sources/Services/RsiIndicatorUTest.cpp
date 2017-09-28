@@ -25,7 +25,7 @@ namespace pt = boost::posix_time;
 
 namespace {
 
-const double source[][2] = {
+const lib::Double source[][2] = {
     //             Close                                RSI
     {1642.81000000000, 0.00000000000},  {1626.13000000000, 0.00000000000},
     {1612.52000000000, 0.00000000000},  {1636.36000000000, 0.00000000000},
@@ -117,13 +117,13 @@ TEST(Services_RsiIndicator, General) {
 
     svc::BarService::Bar bar;
     bar.endTime = time;
-    bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
+    bar.closeTradePrice = row[0];
     EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 
     ASSERT_EQ(
-        !lib::IsZero(row[1]),
+        row[1] != 0,
         service.OnServiceDataUpdate(bars, lib::TimeMeasurement::Milestones()));
-    if (lib::IsZero(row[1])) {
+    if (!row[1]) {
       EXPECT_TRUE(service.IsEmpty());
       EXPECT_THROW(service.GetLastPoint(), is::Rsi::ValueDoesNotExistError);
       continue;
@@ -131,7 +131,7 @@ TEST(Services_RsiIndicator, General) {
     ASSERT_FALSE(service.IsEmpty());
 
     EXPECT_EQ(time, service.GetLastPoint().time);
-    EXPECT_DOUBLE_EQ(row[0], service.GetLastPoint().source);
+    EXPECT_EQ(row[0], service.GetLastPoint().source);
     EXPECT_NEAR(row[1], service.GetLastPoint().value, 0.00000000001);
   }
 }

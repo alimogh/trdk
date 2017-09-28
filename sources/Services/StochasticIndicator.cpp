@@ -116,13 +116,10 @@ class Stochastic::Implementation : private boost::noncopyable {
                 << point.k << ',' << point.d << std::endl;
   }
 
-  bool OnNewValue(const BarService::Bar &bar, const Security &security) {
+  bool OnNewValue(const BarService::Bar &bar, const Security &) {
     m_lastValue.source = {
-        bar.endTime,
-        security.DescalePrice(bar.openTradePrice),
-        security.DescalePrice(bar.highTradePrice),
-        security.DescalePrice(bar.lowTradePrice),
-        security.DescalePrice(bar.closeTradePrice),
+        bar.endTime,       bar.openTradePrice,  bar.highTradePrice,
+        bar.lowTradePrice, bar.closeTradePrice,
     };
 
     AssertEq(m_highestPrices.size(), m_lowestPrices.size());

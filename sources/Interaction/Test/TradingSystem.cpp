@@ -32,7 +32,7 @@ struct Order {
   OrderId id;
   Test::TradingSystem::OrderStatusUpdateSlot callback;
   Qty qty;
-  ScaledPrice price;
+  Price price;
   OrderParams params;
   size_t isCanceled;
 };
@@ -320,15 +320,15 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
       TradeInfo trade = {};
 
       bool isMatched = order.isSell
-                           ? order.price <= order.security->GetBidPriceScaled()
-                           : order.price >= order.security->GetAskPriceScaled();
+                           ? order.price <= order.security->GetBidPrice()
+                           : order.price >= order.security->GetAskPrice();
       if (isMatched) {
         isMatched = m_execChanceGenerator.HasChance();
       }
 
       if (isMatched) {
-        trade.price = order.isSell ? order.security->GetBidPriceScaled()
-                                   : order.security->GetAskPriceScaled();
+        trade.price = order.isSell ? order.security->GetBidPrice()
+                                   : order.security->GetAskPrice();
         trade.id = tradingSystemOrderId;
         trade.qty = order.qty;
 
@@ -432,7 +432,7 @@ OrderId Test::TradingSystem::SendSell(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
@@ -447,7 +447,7 @@ OrderId Test::TradingSystem::SendSellAtMarketPriceWithStopPrice(
     Security &,
     const Currency &,
     const Qty &qty,
-    const ScaledPrice &,
+    const Price &,
     const OrderParams &,
     const OrderStatusUpdateSlot &) {
   AssertLt(0, qty);
@@ -463,7 +463,7 @@ OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertLt(0, price);
@@ -504,7 +504,7 @@ OrderId Test::TradingSystem::SendBuy(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
@@ -519,7 +519,7 @@ OrderId Test::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
     Security &,
     const Currency &,
     const Qty &qty,
-    const ScaledPrice & /*stopPrice*/,
+    const Price & /*stopPrice*/,
     const OrderParams &,
     const OrderStatusUpdateSlot &) {
   AssertLt(0, qty);
@@ -535,7 +535,7 @@ OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertLt(0, price);

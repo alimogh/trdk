@@ -158,11 +158,8 @@ class ContinuousContractBarService::Implementation
             << time.minutes() << ':' << std::setw(2) << time.seconds();
     }
     m_log << ',' << expiration.GetContract(true) << ',' << expiration.GetDate()
-          << ',' << m_self.GetSecurity().DescalePrice(bar.openTradePrice) << ','
-          << m_self.GetSecurity().DescalePrice(bar.highTradePrice) << ','
-          << m_self.GetSecurity().DescalePrice(bar.lowTradePrice) << ','
-          << m_self.GetSecurity().DescalePrice(bar.closeTradePrice)
-          << std::endl;
+          << ',' << bar.openTradePrice << ',' << bar.highTradePrice << ','
+          << bar.lowTradePrice << ',' << bar.closeTradePrice << std::endl;
   }
 
   void Build() {
@@ -177,7 +174,7 @@ class ContinuousContractBarService::Implementation
 
     AssertEq(m_self.GetSecurity().GetExpiration(), m_meta.back().expiration);
 
-    const auto &scale = m_self.GetSecurity().GetPriceScale();
+    const auto &precision = m_self.GetSecurity().GetPricePrecisionPower();
 
     size_t numberOfContracts = 0;
     size_t numberOfBarsForCurrentContracts = 0;
@@ -218,13 +215,13 @@ class ContinuousContractBarService::Implementation
       bar.startTime = source.startTime;
       bar.endTime = source.endTime;
       bar.openTradePrice =
-          ScaledPrice(RoundByScale(source.openTradePrice * ratio, scale));
+          Price(RoundByPrecision(source.openTradePrice * ratio, precision));
       bar.lowTradePrice =
-          ScaledPrice(RoundByScale(source.lowTradePrice * ratio, scale));
+          Price(RoundByPrecision(source.lowTradePrice * ratio, precision));
       bar.highTradePrice =
-          ScaledPrice(RoundByScale(source.highTradePrice * ratio, scale));
+          Price(RoundByPrecision(source.highTradePrice * ratio, precision));
       bar.closeTradePrice =
-          ScaledPrice(RoundByScale(source.closeTradePrice * ratio, scale));
+          Price(RoundByPrecision(source.closeTradePrice * ratio, precision));
       result.emplace_back(bar);
 
       return true;
@@ -307,7 +304,7 @@ const Security &ContinuousContractBarService::GetSecurity() const {
 
 bool ContinuousContractBarService::OnNewTrade(const Security &security,
                                               const pt::ptime &time,
-                                              const ScaledPrice &price,
+                                              const Price &price,
                                               const Qty &qty) {
   m_pimpl->CheckCurrentConstactStart(time);
   if (!m_pimpl->m_source.OnNewTrade(security, time, price, qty)) {

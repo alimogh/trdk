@@ -67,7 +67,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   typedef void(NewTradeSlotSignature)(
       const boost::posix_time::ptime &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
@@ -92,14 +92,14 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     Type type;
 
     //! The bar opening price.
-    boost::optional<trdk::ScaledPrice> openPrice;
+    boost::optional<trdk::Price> openPrice;
     //! The high price during the time covered by the bar.
-    boost::optional<trdk::ScaledPrice> highPrice;
+    boost::optional<trdk::Price> highPrice;
 
     //! The low price during the time covered by the bar.
-    boost::optional<trdk::ScaledPrice> lowPrice;
+    boost::optional<trdk::Price> lowPrice;
     //! The bar closing price.
-    boost::optional<trdk::ScaledPrice> closePrice;
+    boost::optional<trdk::Price> closePrice;
 
     //! The volume during the time covered by the bar.
     boost::optional<trdk::Qty> volume;
@@ -229,29 +229,22 @@ class TRDK_CORE_API Security : public trdk::Instrument {
  public:
   size_t GetQuoteSize() const;
 
-  uintmax_t GetPriceScale() const;
+  uintmax_t GetPricePrecisionPower() const;
   uint8_t GetPricePrecision() const throw();
-
-  trdk::ScaledPrice ScalePrice(double price) const;
-  trdk::Price DescalePrice(const trdk::ScaledPrice &price) const;
-  trdk::Price DescalePrice(double price) const;
 
  public:
   boost::posix_time::ptime GetLastMarketDataTime() const;
   size_t TakeNumberOfMarketDataUpdates() const;
 
  public:
-  trdk::ScaledPrice GetLastPriceScaled() const;
   virtual trdk::Price GetLastPrice() const;
   trdk::Qty GetLastQty() const;
 
-  virtual trdk::ScaledPrice GetAskPriceScaled() const;
   trdk::Price GetAskPrice() const;
   trdk::Price GetAskPriceValue() const;
   trdk::Qty GetAskQty() const;
   trdk::Qty GetAskQtyValue() const;
 
-  virtual trdk::ScaledPrice GetBidPriceScaled() const;
   trdk::Price GetBidPrice() const;
   trdk::Price GetBidPriceValue() const;
   trdk::Qty GetBidQty() const;
@@ -430,7 +423,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
                      const trdk::Lib::TimeMeasurement::Milestones &);
 
   void AddTrade(const boost::posix_time::ptime &,
-                const trdk::ScaledPrice &,
+                const trdk::Price &,
                 const trdk::Qty &,
                 const trdk::Lib::TimeMeasurement::Milestones &,
                 bool useAsLastTrade);

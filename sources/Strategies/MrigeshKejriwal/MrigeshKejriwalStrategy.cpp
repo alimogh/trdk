@@ -316,9 +316,7 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
       position.GetCloseReason() == CLOSE_REASON_STOP_LOSS &&
       GetPositions().GetSize() == 1) {
     Assert(!m_priceSignal);
-    m_priceSignal = PriceSignal{
-        position.IsLong(),
-        position.GetSecurity().DescalePrice(position.GetCloseAvgPrice())};
+    m_priceSignal = PriceSignal{position.IsLong(), position.GetCloseAvgPrice()};
   }
 }
 
@@ -335,8 +333,7 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   if (FinishRollOver() || ContinueRollOver()) {
     return;
   }
-  CheckSignal(GetTradingSecurity().DescalePrice(tick.GetValue()),
-              delayMeasurement);
+  CheckSignal(tick.GetValue(), delayMeasurement);
 }
 
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}

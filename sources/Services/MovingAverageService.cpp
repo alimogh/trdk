@@ -70,7 +70,7 @@ MaSource GetMaSource(const MaSourceInfo &info) {
   return boost::apply_visitor(GetMaSourceVisitor(), info);
 }
 
-class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
+class ExtractBarValueVisitor : public boost::static_visitor<Price> {
   static_assert(numberOfMaSources == 3, "MA Sources list changed.");
 
  public:
@@ -78,16 +78,14 @@ class ExtractBarValueVisitor : public boost::static_visitor<ScaledPrice> {
       : m_bar(&barRef) {}
 
  public:
-  const ScaledPrice &operator()(
-      const MaSourceToType<MA_SOURCE_CLOSE_PRICE> &) const {
+  const Price &operator()(const MaSourceToType<MA_SOURCE_CLOSE_PRICE> &) const {
     return m_bar->closeTradePrice;
   }
-  ScaledPrice operator()(
-      const MaSourceToType<MA_SOURCE_HIGH_LOW_AVG_PRICE> &) const {
+  Price operator()(const MaSourceToType<MA_SOURCE_HIGH_LOW_AVG_PRICE> &) const {
     return (m_bar->highTradePrice + m_bar->lowTradePrice) / 2;
   }
   template <MaSource source>
-  const ScaledPrice &operator()(const MaSourceToType<source> &) const {
+  const Price &operator()(const MaSourceToType<source> &) const {
     throw MovingAverageService::Error(
         "Service is not configured to work with bars");
   }
@@ -438,21 +436,20 @@ void MovingAverageService::OnSecurityContractSwitched(const pt::ptime &,
                                                       Security::Request &,
                                                       bool &) {}
 
-bool MovingAverageService::OnLevel1Tick(const Security &security,
+bool MovingAverageService::OnLevel1Tick(const Security &,
                                         const pt::ptime &time,
                                         const Level1TickValue &tick) {
   const CheckTickValueVisitor visitor(tick);
   if (!boost::apply_visitor(visitor, m_pimpl->m_sourceInfo)) {
     return false;
   }
-  return m_pimpl->OnNewValue(time, security.DescalePrice(tick.GetValue()));
+  return m_pimpl->OnNewValue(time, tick.GetValue());
 }
 
-bool MovingAverageService::OnNewBar(const Security &security,
+bool MovingAverageService::OnNewBar(const Security &,
                                     const BarService::Bar &bar) {
   const ExtractBarValueVisitor visitor(bar);
-  const auto &value = security.DescalePrice(
-      boost::apply_visitor(visitor, m_pimpl->m_sourceInfo));
+  const auto &value = boost::apply_visitor(visitor, m_pimpl->m_sourceInfo);
   return Update(bar.endTime, value);
 }
 

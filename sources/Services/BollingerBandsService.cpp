@@ -70,7 +70,7 @@ size_t LoadPeriodSetting(const IniSectionRef &configuration,
 double LoadDeviationSetting(const IniSectionRef &configuration,
                             BollingerBandsService &service) {
   const auto &result = configuration.ReadTypedKey<double>(Keys::deviation);
-  if (result < 0 || IsZero(result)) {
+  if (result < 0 || !result) {
     service.GetLog().Error(
         "Wrong deviation specified (%1%): must be greater than 0.", result);
     throw Exception("Wrong deviation specified for Bollinger Bands");
@@ -306,8 +306,7 @@ bool BollingerBandsService::OnServiceDataUpdate(
     const auto *const bars = dynamic_cast<const BarService *>(&service);
     if (bars) {
       const auto &point = bars->GetLastBar();
-      return Update(point.endTime,
-                    bars->GetSecurity().DescalePrice(point.closeTradePrice));
+      return Update(point.endTime, point.closeTradePrice);
     }
   }
   {

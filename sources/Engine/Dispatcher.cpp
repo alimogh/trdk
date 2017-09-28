@@ -205,7 +205,7 @@ void Dispatcher::SignalNewTrade(
     SubscriberPtrWrapper &subscriber,
     Security &security,
     const pt::ptime &time,
-    const ScaledPrice &price,
+    const Price &price,
     const Qty &qty,
     const TimeMeasurement::Milestones &delayMeasurement) {
   try {

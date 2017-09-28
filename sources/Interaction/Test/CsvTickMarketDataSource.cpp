@@ -237,13 +237,13 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
 
       GetContext().SetCurrentTime(time, true);
       // @todo fixme m_security->SetLevel1(time, values, Milestones());
-      const double lastPrice = m_security->DescalePrice(*bar.closePrice);
-      const double halfOfSpread = lastPrice * 0.005;
+      const auto &lastPrice = *bar.closePrice;
+      const auto halfOfSpread = lastPrice * 0.005;
       m_security->AddLevel1Tick(
-          time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                    m_security->ScalePrice(lastPrice + halfOfSpread)),
-          Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-              m_security->ScalePrice(lastPrice - halfOfSpread)),
+          time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(lastPrice +
+                                                               halfOfSpread),
+          Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lastPrice -
+                                                         halfOfSpread),
           Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(*bar.closePrice),
           Milestones());
       GetContext().SyncDispatching();
@@ -307,9 +307,9 @@ AssertEq(numberOfLevel1TickTypes,
   }
 
   template <typename Field>
-  ScaledPrice ParsePriceField(const Field &field, size_t lineNo) const {
+  Price ParsePriceField(const Field &field, size_t lineNo) const {
     try {
-      return m_security->ScalePrice(boost::lexical_cast<double>(field));
+      return boost::lexical_cast<double>(field);
     } catch (const boost::bad_lexical_cast &) {
       GetLog().Error("Wrong price field format \"%1%\" at line %2%.", field,
                      lineNo);

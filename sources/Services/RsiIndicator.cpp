@@ -193,8 +193,7 @@ bool Rsi::OnServiceDataUpdate(const Service &service,
   }
 
   const auto &bar = barService->GetLastBar();
-  return m_pimpl->OnNewValue(
-      bar.endTime, barService->GetSecurity().DescalePrice(bar.closeTradePrice));
+  return m_pimpl->OnNewValue(bar.endTime, bar.closeTradePrice);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

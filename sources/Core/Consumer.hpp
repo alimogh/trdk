@@ -67,7 +67,7 @@ class TRDK_CORE_API Consumer : public trdk::Module {
 
   virtual void OnNewTrade(trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
 
   virtual void OnServiceDataUpdate(

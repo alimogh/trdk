@@ -175,13 +175,11 @@ class Adx::Implementation : private boost::noncopyable {
                 << std::endl;
   }
 
-  bool OnNewValue(const BarService::Bar &bar, const Security &security) {
+  bool OnNewValue(const BarService::Bar &bar, const Security &) {
     {
       Point point = {{
-          bar.endTime, security.DescalePrice(bar.openTradePrice),
-          security.DescalePrice(bar.highTradePrice),
-          security.DescalePrice(bar.lowTradePrice),
-          security.DescalePrice(bar.closeTradePrice),
+          bar.endTime, bar.openTradePrice, bar.highTradePrice,
+          bar.lowTradePrice, bar.closeTradePrice,
       }};
 
       Assert(point.source.time != pt::not_a_date_time);

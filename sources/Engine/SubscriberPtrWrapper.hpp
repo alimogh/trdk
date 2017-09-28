@@ -28,7 +28,7 @@ class SubscriberPtrWrapper {
   struct Trade {
     trdk::Security *security;
     boost::posix_time::ptime time;
-    ScaledPrice price;
+    Price price;
     Qty qty;
   };
 

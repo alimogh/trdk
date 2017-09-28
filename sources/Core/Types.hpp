@@ -18,7 +18,6 @@ namespace trdk {
 
 typedef trdk::Lib::Double Qty;
 
-typedef boost::int32_t ScaledPrice;
 typedef trdk::Lib::Double Price;
 
 typedef trdk::Lib::Double Volume;
@@ -192,7 +191,7 @@ template <trdk::Level1TickType type>
 struct Level1TickTypeToValueType {};
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
@@ -200,7 +199,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_BID_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
@@ -208,7 +207,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
@@ -216,7 +215,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_TRADING_VOLUME> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 
 TRDK_CORE_API const char *ConvertToPch(const trdk::Level1TickType &);
@@ -305,7 +304,7 @@ enum OperationResult {
   numberOfOperationResults = 3
 };
 
-typedef std::vector<std::pair<trdk::Lib::Currency, double>> FinancialResult;
+typedef std::vector<std::pair<trdk::Lib::Currency, Volume>> FinancialResult;
 }
 
 //////////////////////////////////////////////////////////////////////////

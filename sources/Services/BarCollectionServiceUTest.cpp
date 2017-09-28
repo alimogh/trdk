@@ -28,11 +28,11 @@ namespace {
 
 struct Tick {
   pt::ptime time;
-  trdk::ScaledPrice price;
+  trdk::Price price;
   trdk::Qty qty;
 
   explicit Tick(const pt::ptime &time,
-                const trdk::ScaledPrice &price,
+                const trdk::Price &price,
                 const trdk::Qty &qty)
       : time(time), price(price), qty(qty) {}
 };
@@ -315,7 +315,7 @@ TEST(Services_BarCollectionService, DropCopy) {
   ////////////////////////////////////////////////////////////////////////////////
 
   const auto time1 = pt::microsec_clock::local_time();
-  service.OnNewTrade(security, time1, 110, 2);
+  service.OnNewTrade(security, time1, 1.10, 2);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(0);
@@ -325,12 +325,15 @@ TEST(Services_BarCollectionService, DropCopy) {
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(12, 0, time1, 1.1, 1.1, 1.1, 1.1)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(12, 0, time1, trdk::Price(1.1), trdk::Price(1.1),
+                        trdk::Price(1.1), trdk::Price(1.1)))
+        .Times(1);
     service.DropUncompletedBarCopy(12);
   }
 
   const auto time2 = time1 + pt::seconds(12);
-  service.OnNewTrade(security, time2, 330, 4);
+  service.OnNewTrade(security, time2, 3.30, 4);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(0);
@@ -340,16 +343,22 @@ TEST(Services_BarCollectionService, DropCopy) {
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(13, 0, time2, 1.1, 3.3, 1.1, 3.3)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(13, 0, time2, trdk::Price(1.1), trdk::Price(3.3),
+                        trdk::Price(1.1), trdk::Price(3.3)))
+        .Times(1);
     service.DropUncompletedBarCopy(13);
   }
 
   const auto time3 = time2 + pt::seconds(12);
-  service.OnNewTrade(security, time3, 550, 6);
+  service.OnNewTrade(security, time3, 5.50, 6);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(15, 0, time3, trdk::Price(1.1), trdk::Price(5.5),
+                        trdk::Price(1.1), trdk::Price(5.5)))
+        .Times(1);
     service.DropLastBarCopy(15);
   }
   {
@@ -361,41 +370,56 @@ TEST(Services_BarCollectionService, DropCopy) {
   ////////////////////////////////////////////////////////////////////////////////
 
   const auto time4 = time3 + pt::seconds(43);
-  service.OnNewTrade(security, time4, 110, 99);
+  service.OnNewTrade(security, time4, 1.10, 99);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(15, 0, time3, trdk::Price(1.1), trdk::Price(5.5),
+                        trdk::Price(1.1), trdk::Price(5.5)))
+        .Times(1);
     service.DropLastBarCopy(15);
   }
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(12, 1, time4, 1.1, 1.1, 1.1, 1.1)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(12, 1, time4, trdk::Price(1.1), trdk::Price(1.1),
+                        trdk::Price(1.1), trdk::Price(1.1)))
+        .Times(1);
     service.DropUncompletedBarCopy(12);
   }
 
   const auto time5 = time4 + pt::seconds(12);
-  service.OnNewTrade(security, time5, 330, 4);
+  service.OnNewTrade(security, time5, 3.30, 4);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(15, 0, time3, 1.1, 5.5, 1.1, 5.5)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(15, 0, time3, trdk::Price(1.1), trdk::Price(5.5),
+                        trdk::Price(1.1), trdk::Price(5.5)))
+        .Times(1);
     service.DropLastBarCopy(15);
   }
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(13, 1, time5, 1.1, 3.3, 1.1, 3.3)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(13, 1, time5, trdk::Price(1.1), trdk::Price(3.3),
+                        trdk::Price(1.1), trdk::Price(3.3)))
+        .Times(1);
     service.DropUncompletedBarCopy(13);
   }
 
   const auto time6 = time5 + pt::seconds(12);
-  service.OnNewTrade(security, time6, 550, 6);
+  service.OnNewTrade(security, time6, 5.50, 6);
   {
     InSequence s;
     EXPECT_CALL(context, GetDropCopy()).Times(1).WillOnce(Return(&dropCopy));
-    EXPECT_CALL(dropCopy, CopyBar(15, 1, time6, 1.1, 5.5, 1.1, 5.5)).Times(1);
+    EXPECT_CALL(dropCopy,
+                CopyBar(15, 1, time6, trdk::Price(1.1), trdk::Price(5.5),
+                        trdk::Price(1.1), trdk::Price(5.5)))
+        .Times(1);
     service.DropLastBarCopy(15);
   }
   {

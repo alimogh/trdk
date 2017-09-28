@@ -61,7 +61,7 @@ class TRDK_SERVICES_API ContinuousContractBarService : public BarService {
 
   virtual bool OnNewTrade(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &) override;
 
  private:

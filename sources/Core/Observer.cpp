@@ -63,7 +63,7 @@ void Observer::RaiseLevel1TickEvent(
 
 void Observer::RaiseNewTradeEvent(Security &security,
                                   const boost::posix_time::ptime &time,
-                                  const trdk::ScaledPrice &price,
+                                  const trdk::Price &price,
                                   const trdk::Qty &qty) {
   const auto lock = LockForOtherThreads();
   OnNewTrade(security, time, price, qty);

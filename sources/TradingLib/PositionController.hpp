@@ -55,7 +55,7 @@ class PositionController : private boost::noncopyable {
   boost::shared_ptr<Position> CreatePosition(
       trdk::Security &security,
       const trdk::Qty &qty,
-      const trdk::ScaledPrice &price,
+      const trdk::Price &price,
       const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
     return boost::make_shared<PositionType>(
         GetStrategy(), GenerateNewOperationId(), 1, GetTradingSystem(security),

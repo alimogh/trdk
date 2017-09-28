@@ -82,11 +82,10 @@ trdk::Position &PositionController::OpenPosition(
     const Qty &qty,
     const Milestones &delayMeasurement) {
   auto position =
-      isLong
-          ? CreatePosition<LongPosition>(
-                security, qty, security.GetAskPriceScaled(), delayMeasurement)
-          : CreatePosition<ShortPosition>(
-                security, qty, security.GetBidPriceScaled(), delayMeasurement);
+      isLong ? CreatePosition<LongPosition>(
+                   security, qty, security.GetAskPrice(), delayMeasurement)
+             : CreatePosition<ShortPosition>(
+                   security, qty, security.GetBidPrice(), delayMeasurement);
   ContinuePosition(*position);
   return *position;
 }
@@ -230,9 +229,8 @@ void PositionController::OnBrokerPositionUpdate(Security &security,
       security);  // 4
 
   auto position =
-      qty > 0 ? CreatePosition<LongPosition>(
-                    security, qty, security.ScalePrice(price), Milestones())
-              : CreatePosition<ShortPosition>(
-                    security, -qty, security.ScalePrice(price), Milestones());
+      qty > 0
+          ? CreatePosition<LongPosition>(security, qty, price, Milestones())
+          : CreatePosition<ShortPosition>(security, -qty, price, Milestones());
   position->RestoreOpenState(price);
 }

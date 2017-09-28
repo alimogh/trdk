@@ -170,16 +170,16 @@ TEST(Services_StochasticIndicator, General) {
 
     Mocks::BarService::Bar bar;
     bar.endTime = time;
-    bar.openTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
-    bar.highTradePrice = trdk::ScaledPrice(lib::Scale(row[1], 100));
-    bar.lowTradePrice = trdk::ScaledPrice(lib::Scale(row[2], 100));
-    bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[3], 100));
+    bar.openTradePrice = row[0];
+    bar.highTradePrice = row[1];
+    bar.lowTradePrice = row[2];
+    bar.closeTradePrice = row[3];
     EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 
-    ASSERT_EQ(!lib::IsZero(row[5]),
+    ASSERT_EQ(row[5] != 0,
               indicator.OnServiceDataUpdate(
                   bars, lib::TimeMeasurement::Milestones()));
-    if (lib::IsZero(row[5])) {
+    if (!row[5]) {
       EXPECT_TRUE(indicator.IsEmpty());
       EXPECT_THROW(indicator.GetLastPoint(), Indicator::ValueDoesNotExistError);
       continue;
@@ -189,10 +189,10 @@ TEST(Services_StochasticIndicator, General) {
     const auto &point = indicator.GetLastPoint();
 
     EXPECT_EQ(time, point.source.time);
-    EXPECT_DOUBLE_EQ(row[0], point.source.open);
-    EXPECT_DOUBLE_EQ(row[1], point.source.high);
-    EXPECT_DOUBLE_EQ(row[2], point.source.low);
-    EXPECT_DOUBLE_EQ(row[3], point.source.close);
+    EXPECT_EQ(row[0], point.source.open);
+    EXPECT_EQ(row[1], point.source.high);
+    EXPECT_EQ(row[2], point.source.low);
+    EXPECT_EQ(row[3], point.source.close);
 
     EXPECT_NEAR(row[4], point.k, 0.00000000001);
     EXPECT_NEAR(row[5], point.d, 0.00000000001);

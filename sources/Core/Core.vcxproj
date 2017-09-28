@@ -410,7 +410,6 @@
     <ClInclude Include="SecurityMock.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="ServiceMock.hpp" />
-    <ClInclude Include="SettingsReport.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />

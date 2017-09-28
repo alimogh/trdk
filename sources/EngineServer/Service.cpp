@@ -153,14 +153,14 @@ EngineServer::Service::OrderCache::OrderCache(
     const TradingSystem &tradingSystem,
     const OrderSide &side,
     const Qty &qty,
-    const double *price,
+    const Price *price,
     const TimeInForce *timeInForce,
     const Currency &currency,
     const Qty *minQty,
     const Qty &executedQty,
-    const double *bestBidPrice,
+    const Price *bestBidPrice,
     const Qty *bestBidQty,
-    const double *bestAskPrice,
+    const Price *bestAskPrice,
     const Qty *bestAskQty)
     : id(id),
       orderTime(orderTime),
@@ -284,14 +284,14 @@ void EngineServer::Service::DropCopy::CopyOrder(
     const TradingSystem &tradingSystem,
     const OrderSide &side,
     const Qty &qty,
-    const double *price,
+    const Price *price,
     const TimeInForce *timeInForce,
     const Currency &currency,
     const Qty *minQty,
     const Qty &executedQty,
-    const double *bestBidPrice,
+    const Price *bestBidPrice,
     const Qty *bestBidQty,
-    const double *bestAskPrice,
+    const Price *bestAskPrice,
     const Qty *bestAskQty) {
   const OrderCache order(id, tradingSystemId, orderTime, executionTime, status,
                          operationId, subOperationId, security, tradingSystem,
@@ -308,11 +308,11 @@ void EngineServer::Service::DropCopy::CopyTrade(
     const pt::ptime &time,
     const std::string &tradingSystemTradeId,
     const uuids::uuid &orderId,
-    double price,
+    const Price &price,
     const Qty &qty,
-    double bestBidPrice,
+    const Price &bestBidPrice,
     const Qty &bestBidQty,
-    double bestAskPrice,
+    const Price &bestAskPrice,
     const Qty &bestAskQty) {
   m_queue.Enqueue(
       [this, time, tradingSystemTradeId, orderId, price, qty, bestBidPrice,
@@ -338,7 +338,7 @@ void EngineServer::Service::DropCopy::ReportOperationEnd(
     const pt::ptime &time,
     const CloseReason &reason,
     const OperationResult &result,
-    double pnl,
+    const Volume &pnl,
     FinancialResult &&financialResult) {
   auto financialResultPtr =
       boost::make_shared<FinancialResult>(std::move(financialResult));
@@ -385,10 +385,10 @@ void EngineServer::Service::DropCopy::CopyBar(
     const DropCopyDataSourceInstanceId &sourceId,
     size_t index,
     const pt::ptime &time,
-    double open,
-    double high,
-    double low,
-    double close) {
+    const Price &open,
+    const Price &high,
+    const Price &low,
+    const Price &close) {
   m_queue.Enqueue([this, sourceId, index, time, open, high, low, close](
       size_t recordNumber, size_t attemptNo, bool dump) {
     return m_service.StoreBar(recordNumber, attemptNo, dump, sourceId, index,
@@ -400,7 +400,7 @@ void EngineServer::Service::DropCopy::CopyAbstractData(
     const DropCopyDataSourceInstanceId &source,
     size_t index,
     const pt::ptime &time,
-    double value) {
+    const Volume &value) {
   m_queue.Enqueue([this, source, index, time, value](
       size_t recordNumber, size_t attemptNo, bool dump) {
     return m_service.StoreAbstractData(recordNumber, attemptNo, dump, source,
@@ -1224,7 +1224,7 @@ bool EngineServer::Service::StoreAbstractData(
     const DropCopyDataSourceInstanceId &source,
     size_t index,
     const pt::ptime &time,
-    double value) {
+    const Volume &value) {
   DropCopyRecord record;
   record["data_source_instance_id"] = source;
   record["index"] = index;
@@ -1242,10 +1242,10 @@ bool EngineServer::Service::StoreBar(
     const DropCopyDataSourceInstanceId &sourceId,
     size_t index,
     const pt::ptime &time,
-    double open,
-    double high,
-    double low,
-    double close) {
+    const Price &open,
+    const Price &high,
+    const Price &low,
+    const Price &close) {
   DropCopyRecord record;
   record["data_source_instance_id"] = sourceId;
   record["index"] = index;

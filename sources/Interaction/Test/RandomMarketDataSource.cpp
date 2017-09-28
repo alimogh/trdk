@@ -87,13 +87,13 @@ void RandomMarketDataSource::NotificationThread() {
           PriceBook book(now);
 
           for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
-            book.GetAsk().Add(now, RoundByScale(ask, s->GetPriceScale()),
+            book.GetAsk().Add(now, RoundByPrecision(ask, s->GetPriceScale()),
                               i * ((generateTopRandom() + 1) * 10000));
             ask += (double(generateStepRandom()) / 100) + 0.01;
           }
 
           for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
-            book.GetBid().Add(now, RoundByScale(bid, s->GetPriceScale()),
+            book.GetBid().Add(now, RoundByPrecision(bid, s->GetPriceScale()),
                               i * ((generateTopRandom() + 1) * 20000));
             bid -= (double(generateStepRandom()) / 100) + 0.01;
           }
@@ -102,12 +102,10 @@ void RandomMarketDataSource::NotificationThread() {
         }
 #else
         {
-          s->SetLevel1(now, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                                s->ScalePrice(bid)),
+          s->SetLevel1(now, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(bid),
                        Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
                            (generateTopRandom() + 1) * 10),
-                       Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                           s->ScalePrice(ask)),
+                       Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(ask),
                        Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
                            (generateTopRandom() + 1) * 10),
                        timeMeasurement);
@@ -117,9 +115,9 @@ void RandomMarketDataSource::NotificationThread() {
 #if 1
         {
           const auto tradePrice = bid < ask ? bid + (ask - bid / 2) : ask;
-          s->AddTrade(
-              now, s->ScalePrice(RoundByScale(tradePrice, s->GetPriceScale())),
-              (generateTopRandom() + 1) * 10, timeMeasurement, true);
+          s->AddTrade(now,
+                      RoundByPrecision(tradePrice, s->GetPricePrecisionPower()),
+                      (generateTopRandom() + 1) * 10, timeMeasurement, true);
         }
 #endif
       }

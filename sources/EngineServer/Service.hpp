@@ -128,14 +128,14 @@ class Service : private boost::noncopyable {
     const TradingSystem *tradingSystem;
     OrderSide side;
     Qty qty;
-    boost::optional<double> price;
+    boost::optional<Price> price;
     boost::optional<TimeInForce> timeInForce;
     Lib::Currency currency;
     boost::optional<Qty> minQty;
     Qty executedQty;
-    boost::optional<double> bestBidPrice;
+    boost::optional<Price> bestBidPrice;
     boost::optional<Qty> bestBidQty;
-    boost::optional<double> bestAskPrice;
+    boost::optional<Price> bestAskPrice;
     boost::optional<Qty> bestAskQty;
 
     explicit OrderCache(const boost::uuids::uuid &id,
@@ -149,14 +149,14 @@ class Service : private boost::noncopyable {
                         const TradingSystem &tradingSystem,
                         const OrderSide &side,
                         const Qty &qty,
-                        const double *price,
+                        const Price *price,
                         const TimeInForce *timeInForce,
                         const Lib::Currency &currency,
                         const Qty *minQty,
                         const Qty &executedQty,
-                        const double *bestBidPrice,
+                        const Price *bestBidPrice,
                         const Qty *bestBidQty,
-                        const double *bestAskPrice,
+                        const Price *bestAskPrice,
                         const Qty *bestAskQty);
   };
 
@@ -199,23 +199,23 @@ class Service : private boost::noncopyable {
                            const trdk::TradingSystem &,
                            const trdk::OrderSide &,
                            const trdk::Qty &qty,
-                           const double *price,
+                           const trdk::Price *price,
                            const trdk::TimeInForce *,
                            const trdk::Lib::Currency &,
                            const trdk::Qty *minQty,
                            const trdk::Qty &executedQty,
-                           const double *bestBidPrice,
+                           const trdk::Price *bestBidPrice,
                            const trdk::Qty *bestBidQty,
-                           const double *bestAskPrice,
+                           const trdk::Price *bestAskPrice,
                            const trdk::Qty *bestAskQty) override;
     virtual void CopyTrade(const boost::posix_time::ptime &,
                            const std::string &tradingSystemTradeId,
                            const boost::uuids::uuid &orderId,
-                           double price,
+                           const trdk::Price &price,
                            const trdk::Qty &qty,
-                           double bestBidPrice,
+                           const trdk::Price &bestBidPrice,
                            const trdk::Qty &bestBidQty,
-                           double bestAskPrice,
+                           const trdk::Price &bestAskPrice,
                            const trdk::Qty &bestAskQty) override;
     virtual void ReportOperationStart(
         const trdk::Strategy &,
@@ -225,21 +225,21 @@ class Service : private boost::noncopyable {
                                     const boost::posix_time::ptime &,
                                     const trdk::CloseReason &,
                                     const trdk::OperationResult &,
-                                    double pnl,
+                                    const trdk::Volume &pnl,
                                     trdk::FinancialResult &&) override;
     virtual void CopyBook(const trdk::Security &,
                           const trdk::PriceBook &) override;
     virtual void CopyBar(const trdk::DropCopyDataSourceInstanceId &,
                          size_t index,
                          const boost::posix_time::ptime &,
-                         double open,
-                         double high,
-                         double low,
-                         double close) override;
+                         const trdk::Price &open,
+                         const trdk::Price &high,
+                         const trdk::Price &low,
+                         const trdk::Price &close) override;
     virtual void CopyAbstractData(const trdk::DropCopyDataSourceInstanceId &,
                                   size_t index,
                                   const boost::posix_time::ptime &,
-                                  double value) override;
+                                  const trdk::Volume &value) override;
 
    private:
     Service &m_service;
@@ -343,7 +343,7 @@ class Service : private boost::noncopyable {
                          const trdk::DropCopyDataSourceInstanceId &,
                          size_t index,
                          const boost::posix_time::ptime &,
-                         double value);
+                         const Volume &value);
 
   bool StoreBar(size_t recordNumber,
                 size_t storeAttemptNo,
@@ -351,10 +351,10 @@ class Service : private boost::noncopyable {
                 const DropCopyDataSourceInstanceId &,
                 size_t index,
                 const boost::posix_time::ptime &,
-                double open,
-                double high,
-                double low,
-                double close);
+                const Price &open,
+                const Price &high,
+                const Price &low,
+                const Price &close);
 
   bool StoreRecord(const std::string Topics::*topic,
                    size_t recordNumber,

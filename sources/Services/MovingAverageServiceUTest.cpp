@@ -25,7 +25,7 @@ using namespace testing;
 
 namespace {
 
-const double source[110][4] = {
+const lib::Double source[110][4] = {
     /*            Val            SMA            EMA          SMMA */
     {1642.81000000000, 0.00000000000, 0.00000000000, 0.00000000000},
     {1626.13000000000, 0.00000000000, 0.00000000000, 0.00000000000},
@@ -191,11 +191,11 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
       context, "Test", lib::IniSectionRef(settingsForLastPrice, "Section"));
 
   for (size_t i = 0; i < _countof(source); ++i) {
-    const auto value = trdk::ScaledPrice(lib::Scale(source[i][0], 100));
+    const auto value = source[i][0];
 
     svc::BarService::Bar bar;
     bar.closeTradePrice = value;
-    ASSERT_EQ(!lib::IsZero(source[i][Policy::GetColumn()]),
+    ASSERT_EQ(source[i][Policy::GetColumn()] != 0,
               serviceForBars.OnNewBar(security, bar))
         << "i = " << i << ";"
         << " bar.closeTradePrice = " << bar.closeTradePrice << ";";
@@ -205,7 +205,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
             trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(value)),
         svc::MovingAverageService::Error);
 
-    ASSERT_EQ(!lib::IsZero(source[i][Policy::GetColumn()]),
+    ASSERT_EQ(source[i][Policy::GetColumn()] != 0,
               serviceForLastPrice.OnLevel1Tick(
                   security, pt::not_a_date_time,
                   trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
@@ -216,11 +216,11 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
     ASSERT_THROW(serviceForLastPrice.OnNewBar(security, bar),
                  svc::MovingAverageService::Error);
 
-    if (lib::IsZero(source[i][Policy::GetColumn()])) {
+    if (!source[i][Policy::GetColumn()]) {
       continue;
     }
 
-    EXPECT_DOUBLE_EQ(source[i][0], serviceForBars.GetLastPoint().source)
+    EXPECT_EQ(source[i][0], serviceForBars.GetLastPoint().source)
         << "i = " << i << ";"
         << " bar.closeTradePrice = " << bar.closeTradePrice << ";"
         << " service.GetLastPoint().value = "
@@ -232,7 +232,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
         << " service.GetLastPoint().value = "
         << serviceForBars.GetLastPoint().value << ";";
 
-    EXPECT_DOUBLE_EQ(source[i][0], serviceForLastPrice.GetLastPoint().source);
+    EXPECT_EQ(source[i][0], serviceForLastPrice.GetLastPoint().source);
     EXPECT_NEAR(source[i][Policy::GetColumn()],
                 serviceForLastPrice.GetLastPoint().value, 0.00000000001);
   }
@@ -256,7 +256,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
   size_t offset = 9;
   for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
     auto pos = i + offset;
-    if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+    if (!source[pos][Policy::GetColumn()]) {
       ++offset;
       ++pos;
     }
@@ -268,7 +268,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
   offset = 0;
   for (size_t i = 0; i < serviceForBars.GetHistorySize(); ++i) {
     auto pos = _countof(source) - 1 - i - offset;
-    if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+    if (!source[pos][Policy::GetColumn()]) {
       ++offset;
       --pos;
     }
@@ -282,7 +282,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
   offset = 9;
   for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
     auto pos = i + offset;
-    if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+    if (!source[pos][Policy::GetColumn()]) {
       ++offset;
       ++pos;
     }
@@ -294,7 +294,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithHistory) {
   offset = 0;
   for (size_t i = 0; i < serviceForLastPrice.GetHistorySize(); ++i) {
     auto pos = _countof(source) - 1 - i - offset;
-    if (trdk::Lib::IsZero(source[pos][Policy::GetColumn()])) {
+    if (!source[pos][Policy::GetColumn()]) {
       ++offset;
       --pos;
     }
@@ -335,13 +335,13 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithoutHistory) {
 
   pt::ptime time = pt::microsec_clock::local_time();
   for (size_t i = 0; i < _countof(source); ++i) {
-    const auto &value = trdk::ScaledPrice(lib::Scale(source[i][0], 100));
+    const auto &value = source[i][0];
     time += pt::seconds(123);
 
     svc::BarService::Bar bar;
     bar.endTime = time;
     bar.closeTradePrice = value;
-    ASSERT_EQ(!lib::IsZero(source[i][Policy::GetColumn()]),
+    ASSERT_EQ(source[i][Policy::GetColumn()] != 0,
               serviceForBars.OnNewBar(security, bar))
         << "i = " << i << ";"
         << " bar.closeTradePrice = " << bar.closeTradePrice << ";";
@@ -350,7 +350,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithoutHistory) {
             security, time,
             trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(value)),
         svc::MovingAverageService::Error);
-    ASSERT_EQ(!lib::IsZero(source[i][Policy::GetColumn()]),
+    ASSERT_EQ(source[i][Policy::GetColumn()] != 0,
               serviceForLastPrice.OnLevel1Tick(
                   security, time,
                   trdk::Level1TickValue::Create<trdk::LEVEL1_TICK_LAST_PRICE>(
@@ -361,7 +361,7 @@ TYPED_TEST_P(MovingAverageServiceTyped, RealTimeWithoutHistory) {
     ASSERT_THROW(serviceForLastPrice.OnNewBar(security, bar),
                  svc::MovingAverageService::Error);
 
-    if (lib::IsZero(source[i][Policy::GetColumn()])) {
+    if (!source[i][Policy::GetColumn()]) {
       continue;
     }
 

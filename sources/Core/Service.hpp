@@ -55,7 +55,7 @@ class TRDK_CORE_API Service : public trdk::Module {
                             const trdk::Level1TickValue &);
   bool RaiseNewTradeEvent(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
   bool RaiseServiceDataUpdateEvent(
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
@@ -92,7 +92,7 @@ class TRDK_CORE_API Service : public trdk::Module {
 
   virtual bool OnNewTrade(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
 
   virtual bool OnServiceDataUpdate(

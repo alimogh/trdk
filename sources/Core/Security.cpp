@@ -33,7 +33,7 @@ using namespace trdk::Lib::TimeMeasurement;
 
 namespace {
 
-typedef double Level1Value;
+typedef Double Level1Value;
 
 typedef std::array<boost::atomic<Level1Value>, numberOfLevel1TickTypes> Level1;
 
@@ -250,12 +250,11 @@ class Log : private LogBase {
   }
 
   void WriteTrade(const pt::ptime &time,
-                  const ScaledPrice &price,
+                  const Price &price,
                   const Qty &qty,
                   bool useAsLastTrade) {
     FormatAndWrite([&](Record &record) {
-      record % record.GetTime() % time % "T" % m_security.DescalePrice(price) %
-          qty % useAsLastTrade;
+      record % record.GetTime() % time % "T" % price % qty % useAsLastTrade;
     });
   }
 
@@ -279,22 +278,22 @@ class Log : private LogBase {
           break;
       }
       if (bar.openPrice) {
-        record % m_security.DescalePrice(*bar.openPrice);
+        record % *bar.openPrice;
       } else {
         record % '-';
       }
       if (bar.highPrice) {
-        record % m_security.DescalePrice(*bar.highPrice);
+        record % *bar.highPrice;
       } else {
         record % '-';
       }
       if (bar.lowPrice) {
-        record % m_security.DescalePrice(*bar.lowPrice);
+        record % *bar.lowPrice;
       } else {
         record % '-';
       }
       if (bar.closePrice) {
-        record % m_security.DescalePrice(*bar.closePrice);
+        record % *bar.closePrice;
       } else {
         record % '-';
       }
@@ -327,19 +326,7 @@ class Log : private LogBase {
   void InsertFirstLevel1Update(const Record &) {}
 
   void WriteValue(Record &record, const Level1TickValue &tick) {
-    record % ConvertToPch(tick.GetType());
-
-    static_assert(numberOfLevel1TickTypes == 7, "List changed.");
-    switch (tick.GetType()) {
-      case LEVEL1_TICK_LAST_PRICE:
-      case LEVEL1_TICK_BID_PRICE:
-      case LEVEL1_TICK_ASK_PRICE:
-        record % m_security.DescalePrice(tick.GetValue());
-        break;
-      default:
-        record % tick.GetValue();
-        break;
-    }
+    record % ConvertToPch(tick.GetType()) % tick.GetValue();
   }
 
  private:
@@ -444,7 +431,7 @@ class Security::Implementation : private boost::noncopyable {
       m_riskControlContext;
 
   const uint8_t m_pricePrecision;
-  const uintmax_t m_priceScale;
+  const uintmax_t m_pricePrecisionPower;
   const size_t m_quoteSize;
 
   mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
@@ -484,7 +471,8 @@ class Security::Implementation : private boost::noncopyable {
         m_instanceId(m_nextInstanceId++),
         m_source(source),
         m_pricePrecision(GetPrecisionBySymbol(symbol)),
-        m_priceScale(size_t(std::pow(10, m_pricePrecision))),
+        m_pricePrecisionPower(static_cast<decltype(m_pricePrecisionPower)>(
+            std::pow(10, m_pricePrecision))),
         m_quoteSize(GetQuoteSizeBySymbol(symbol)),
         m_marketDataTime(0),
         m_numberOfMarketDataUpdates(0),
@@ -601,7 +589,7 @@ class Security::Implementation : private boost::noncopyable {
   }
 
   template <Level1TickType tick>
-  double GetLevel1Value(const Level1 &level1) const {
+  Double GetLevel1Value(const Level1 &level1) const {
     const Level1Value &value = level1[tick];
     if (!IsSet(value)) {
       Assert(IsSet(value));
@@ -678,21 +666,12 @@ const MarketDataSource &Security::GetSource() const {
 
 size_t Security::GetQuoteSize() const { return m_pimpl->m_quoteSize; }
 
-uintmax_t Security::GetPriceScale() const { return m_pimpl->m_priceScale; }
+uintmax_t Security::GetPricePrecisionPower() const {
+  return m_pimpl->m_pricePrecisionPower;
+}
 
 uint8_t Security::GetPricePrecision() const throw() {
   return m_pimpl->m_pricePrecision;
-}
-
-ScaledPrice Security::ScalePrice(double price) const {
-  return ScaledPrice(Scale(price, GetPriceScale()));
-}
-
-Price Security::DescalePrice(const ScaledPrice &price) const {
-  return Descale(int64_t(price), GetPriceScale());
-}
-Price Security::DescalePrice(double price) const {
-  return Descale(price, GetPriceScale());
 }
 
 pt::ptime Security::GetLastMarketDataTime() const {
@@ -789,12 +768,7 @@ const Security::Request &Security::GetRequest() const {
 }
 
 Price Security::GetLastPrice() const {
-  return DescalePrice(GetLastPriceScaled());
-}
-
-ScaledPrice Security::GetLastPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1));
+  return m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1);
 }
 
 Qty Security::GetLastQty() const {
@@ -806,12 +780,8 @@ Qty Security::GetTradedVolume() const {
       m_pimpl->GetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
 }
 
-ScaledPrice Security::GetAskPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
-}
 Price Security::GetAskPrice() const {
-  return DescalePrice(GetAskPriceScaled());
+  return m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1);
 }
 Price Security::GetAskPriceValue() const {
   try {
@@ -832,12 +802,8 @@ Qty Security::GetAskQtyValue() const {
   }
 }
 
-ScaledPrice Security::GetBidPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
-}
 Price Security::GetBidPrice() const {
-  return DescalePrice(GetBidPriceScaled());
+  return m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1);
 }
 Price Security::GetBidPriceValue() const {
   try {
@@ -1061,7 +1027,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
 }
 
 void Security::AddTrade(const pt::ptime &time,
-                        const ScaledPrice &price,
+                        const Price &price,
                         const Qty &qty,
                         const Milestones &delayMeasurement,
                         bool useAsLastTrade) {
@@ -1138,15 +1104,13 @@ void Security::SetBook(PriceBook &book, const Milestones &delayMeasurement) {
   }
 
   SetLevel1(
-      book.GetTime(), Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                          book.GetBid().IsEmpty()
-                              ? 0
-                              : ScalePrice(book.GetBid().GetTop().GetPrice())),
+      book.GetTime(),
+      Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+          book.GetBid().IsEmpty() ? 0 : book.GetBid().GetTop().GetPrice()),
       Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
           book.GetBid().IsEmpty() ? Qty(0) : book.GetBid().GetTop().GetQty()),
       Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-          book.GetAsk().IsEmpty() ? 0 : ScalePrice(
-                                            book.GetAsk().GetTop().GetPrice())),
+          book.GetAsk().IsEmpty() ? 0 : book.GetAsk().GetTop().GetPrice()),
       Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
           book.GetAsk().IsEmpty() ? Qty(0) : book.GetAsk().GetTop().GetQty()),
       delayMeasurement);
