@@ -18,19 +18,22 @@ using namespace trdk::Interaction::FixProtocol;
 
 namespace fix = trdk::Interaction::FixProtocol;
 
+namespace {
+size_t ResolveFixId(const std::string &symbol) {
+  if (symbol == "EURUSD") {
+    return 1;
+  } else {
+    boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
+    error % symbol;
+    throw Exception(error.str().c_str());
+  }
+}
+}
+
 fix::Security::Security(Context &context,
                         const Symbol &symbol,
                         fix::MarketDataSource &source,
                         const SupportedLevel1Types &supportedLevel1Types)
-    : Base(context, symbol, source, supportedLevel1Types) {}
-
-const std::string &fix::Security::GetFixSymbolId() const {
-  if (GetSymbol().GetSymbol() == "EURUSD") {
-    static std::string result("1");
-    return result;
-  } else {
-    boost::format error("Failed to find FIX Symbol ID for \"%1%\"");
-    error % GetSymbol().GetSymbol();
-    throw Exception(error.str().c_str());
-  }
-}
+    : Base(context, symbol, source, supportedLevel1Types),
+      m_fixId(ResolveFixId(GetSymbol().GetSymbol())),
+      m_fixIdCode(boost::lexical_cast<std::string>(m_fixId)) {}

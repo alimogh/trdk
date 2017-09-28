@@ -23,6 +23,8 @@ class Logon;
 class Logout;
 class Heartbeat;
 class TestRequest;
+class MarketDataSnapshotFullRefresh;
+class MarketDataIncrementalRefresh;
 }
 }
 }

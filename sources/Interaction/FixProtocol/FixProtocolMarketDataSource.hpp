@@ -32,6 +32,9 @@ class MarketDataSource : public trdk::MarketDataSource {
  public:
   const Settings &GetSettings() const { return m_settings; }
 
+  const FixProtocol::Security &GetSecurityByFixId(size_t) const;
+  FixProtocol::Security &GetSecurityByFixId(size_t);
+
  public:
   virtual void Connect(const trdk::Lib::IniSectionRef &) override;
   virtual void SubscribeToSecurities() override;
@@ -43,7 +46,8 @@ class MarketDataSource : public trdk::MarketDataSource {
  private:
   const Settings m_settings;
   Client m_client;
-  std::vector<boost::shared_ptr<FixProtocol::Security>> m_securities;
+  boost::unordered_map<size_t, boost::shared_ptr<FixProtocol::Security>>
+      m_securities;
 };
 }
 }

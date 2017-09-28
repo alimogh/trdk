@@ -16,14 +16,6 @@ namespace FixProtocol {
 
 enum { SOH = 0x1 };
 
-enum MessageType {
-  MESSAGE_TYPE_LOGON = 'A',
-  MESSAGE_TYPE_LOGOUT = '5',
-  MESSAGE_TYPE_HEARTBEAT = '0',
-  MESSAGE_TYPE_TEST_REQUEST = '1',
-  MESSAGE_TYPE_MARKET_DATA_REQUEST = 'V',
-};
-
 class Message : private boost::noncopyable {
  public:
   typedef std::vector<char>::const_iterator Iterator;
@@ -33,6 +25,17 @@ class Message : private boost::noncopyable {
 };
 
 namespace Detail {
+
+enum MessageType {
+  MESSAGE_TYPE_LOGON = 'A',
+  MESSAGE_TYPE_LOGOUT = '5',
+  MESSAGE_TYPE_HEARTBEAT = '0',
+  MESSAGE_TYPE_TEST_REQUEST = '1',
+  MESSAGE_TYPE_MARKET_DATA_REQUEST = 'V',
+  MESSAGE_TYPE_MARKET_DATA_SNAPSHOT_FULL_REFRESH = 'W',
+  MESSAGE_TYPE_MARKET_DATA_INCREMENTAL_REFRESH = 'X',
+};
+
 template <typename It>
 uint32_t CalcCheckSum(It begin, const It &end) {
   Assert(begin < end);

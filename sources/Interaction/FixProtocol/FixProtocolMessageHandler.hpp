@@ -23,6 +23,13 @@ class MessageHandler : private boost::noncopyable {
 
   virtual void OnHeartbeat(const Incoming::Heartbeat &) = 0;
   virtual void OnTestRequest(const Incoming::TestRequest &) = 0;
+
+  virtual void OnMarketDataSnapshotFullRefresh(
+      const Incoming::MarketDataSnapshotFullRefresh &,
+      const Lib::TimeMeasurement::Milestones &) = 0;
+  virtual void OnMarketDataIncrementalRefresh(
+      const Incoming::MarketDataIncrementalRefresh &,
+      const Lib::TimeMeasurement::Milestones &) = 0;
 };
 }
 }

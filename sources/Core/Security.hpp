@@ -325,6 +325,17 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   void SetLevel1(const boost::posix_time::ptime &,
                  const trdk::Level1TickValue &,
                  const trdk::Lib::TimeMeasurement::Milestones &);
+  //! Sets one Level I parameter.
+  /** Subscribers will be notified about Level I Update only if parameter
+    * will bee changed.
+    * @return Returns true value was changed, false if set the same value as
+    *         was.
+    */
+  bool SetLevel1(const boost::posix_time::ptime &,
+                 const trdk::Level1TickValue &,
+                 bool flush,
+                 bool isPreviouslyChanged,
+                 const trdk::Lib::TimeMeasurement::Milestones &);
   //! Sets two Level I parameters and one operation.
   /** More optimal than call "set one parameter" two times. Subscribers
     * will be notified about Level I Update only if parameter will be

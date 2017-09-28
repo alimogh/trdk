@@ -27,7 +27,15 @@ class Security : public trdk::Security {
                     const SupportedLevel1Types &);
 
  public:
-  const std::string &GetFixSymbolId() const;
+  const size_t GetFixId() const { return m_fixId; }
+  const std::string &GetFixIdCode() const { return m_fixIdCode; }
+
+ public:
+  using Base::SetLevel1;
+
+ protected:
+  const size_t m_fixId;
+  const std::string m_fixIdCode;
 };
 }
 }

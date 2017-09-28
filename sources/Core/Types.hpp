@@ -239,17 +239,17 @@ class Level1TickValue {
       case LEVEL1_TICK_LAST_PRICE:
         return Create<LEVEL1_TICK_LAST_PRICE>(value);
       case LEVEL1_TICK_LAST_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_LAST_QTY>(value);
       case LEVEL1_TICK_BID_PRICE:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_BID_PRICE>(value);
       case LEVEL1_TICK_BID_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_BID_QTY>(value);
       case LEVEL1_TICK_ASK_PRICE:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_ASK_PRICE>(value);
       case LEVEL1_TICK_ASK_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_ASK_QTY>(value);
       case LEVEL1_TICK_TRADING_VOLUME:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_TRADING_VOLUME>(value);
     }
     AssertEq(LEVEL1_TICK_LAST_PRICE, type);
     throw Exception("Unknown Level 1 Tick Value Type");

@@ -28,7 +28,7 @@ class StandardHeader : private boost::noncopyable {
   const FixProtocol::MarketDataSource &GetSource() const { return m_source; }
 
  public:
-  std::vector<char> Export(const MessageType &,
+  std::vector<char> Export(const Detail::MessageType &,
                            const std::string &messageSequenceNumber,
                            size_t messageLen,
                            unsigned char soh) const;
@@ -50,7 +50,7 @@ class Message : public FixProtocol::Message {
   const StandardHeader &GetStandardHeader() const { return m_standardHeader; }
 
  protected:
-  std::vector<char> Export(const MessageType &,
+  std::vector<char> Export(const Detail::MessageType &,
                            size_t messageLen,
                            unsigned char soh) const;
 

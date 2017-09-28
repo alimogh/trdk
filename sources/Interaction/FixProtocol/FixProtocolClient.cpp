@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/Settings.hpp"
 #include "FixProtocolIncomingMessages.hpp"
 #include "FixProtocolMarketDataSource.hpp"
 #include "FixProtocolMessageHandler.hpp"
@@ -38,14 +39,20 @@ class Connection : public NetworkStreamClient, public MessageHandler {
              service.GetSource().GetSettings().host,
              service.GetSource().GetSettings().port),
         m_standardOutgoingHeader(service.GetSource()),
-        m_isAuthorized(false) {}
+        m_isAuthorized(false),
+        m_utcDiff(service.GetSource()
+                      .GetContext()
+                      .GetSettings()
+                      .GetTimeZone()
+                      ->base_utc_offset()) {}
 
   virtual ~Connection() override = default;
 
  public:
   virtual void OnLogon(const Incoming::Logon &logon) override {
     if (m_isAuthorized) {
-      ProtocolError("Received unexpected Logon-message", &*logon.GetBegin(), 0);
+      ProtocolError("Received unexpected Logon-message",
+                    &*logon.GetMessageBegin(), 0);
     }
     m_isAuthorized = true;
   }
@@ -62,21 +69,43 @@ class Connection : public NetworkStreamClient, public MessageHandler {
         Outgoing::Heartbeat(testRequest, m_standardOutgoingHeader).Export(SOH));
   }
 
+  virtual void OnMarketDataSnapshotFullRefresh(
+      const Incoming::MarketDataSnapshotFullRefresh &snapshot,
+      const Milestones &delayMeasurement) override {
+    const auto &time = snapshot.GetTime() + m_utcDiff;
+    auto &security = snapshot.ReadSymbol(GetSource());
+    bool hasChanges = false;
+    snapshot.ReadEachMarketDataEntity(
+        [&time, &security, &hasChanges, &delayMeasurement](
+            Level1TickValue &&tick, bool isLast) {
+          hasChanges = security.SetLevel1(time, std::move(tick), isLast,
+                                          hasChanges, delayMeasurement);
+        });
+  }
+  virtual void OnMarketDataIncrementalRefresh(
+      const Incoming::MarketDataIncrementalRefresh &,
+      const Milestones &) override {
+    throw MethodDoesNotImplementedError(
+        "Incoming::MarketDataIncrementalRefresh");
+  }
+
  public:
   void RequestMarketData(const fix::Security &security) {
     GetLog().Info("%1%Sending Market Data Request for \"%2%\" (%3%)...",
-                  GetService().GetLogTag(),    // 1
-                  security,                    // 2
-                  security.GetFixSymbolId());  // 3
+                  GetService().GetLogTag(),  // 1
+                  security,                  // 2
+                  security.GetFixId());      // 3
     Outgoing::MarketDataRequest request(security, m_standardOutgoingHeader);
     Send(request.Export(SOH));
   }
 
  protected:
+  fix::MarketDataSource &GetSource() { return GetService().GetSource(); }
   const fix::MarketDataSource &GetSource() const {
-    return GetService().GetSource();
+    return const_cast<Connection *>(this)->GetSource();
   }
   const Context &GetContext() const { return GetSource().GetContext(); }
+  Context &GetContext() { return GetSource().GetContext(); }
   fix::MarketDataSource::Log &GetLog() const { return GetSource().GetLog(); }
 
  protected:
@@ -114,7 +143,7 @@ class Connection : public NetworkStreamClient, public MessageHandler {
     const auto &responceContent = ReceiveSynchronously("Logon", 256);
     Incoming::Factory::Create(responceContent.cbegin(), responceContent.cend(),
                               *GetSource().GetSettings().policy)
-        ->Handle(*this);
+        ->Handle(*this, Milestones());
     if (!m_isAuthorized) {
       ConnectError("Failed to authorize");
     }
@@ -173,12 +202,12 @@ class Connection : public NetworkStreamClient, public MessageHandler {
   virtual void HandleNewMessages(const pt::ptime &,
                                  const Buffer::const_iterator &begin,
                                  const Buffer::const_iterator &end,
-                                 const Milestones &) override {
+                                 const Milestones &delayMeasurement) override {
     const auto &bufferEnd = std::next(end);
     for (auto messageBegin = begin; messageBegin < bufferEnd;) {
       const auto &message = Incoming::Factory::Create(
           messageBegin, bufferEnd, *GetSource().GetSettings().policy);
-      message->Handle(*this);
+      message->Handle(*this, delayMeasurement);
       messageBegin = message->GetMessageEnd();
       Assert(messageBegin <= bufferEnd);
     }
@@ -187,6 +216,7 @@ class Connection : public NetworkStreamClient, public MessageHandler {
  private:
   Outgoing::StandardHeader m_standardOutgoingHeader;
   bool m_isAuthorized;
+  const pt::time_duration m_utcDiff;
 };
 }
 

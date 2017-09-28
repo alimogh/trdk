@@ -17,6 +17,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::FixProtocol;
+using namespace trdk::Interaction::FixProtocol::Detail;
 using namespace trdk::Interaction::FixProtocol::Outgoing;
 
 namespace fix = trdk::Interaction::FixProtocol;
@@ -197,15 +198,16 @@ MarketDataMessage::MarketDataMessage(const fix::Security &security,
 
 std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   const auto &marketDataRequestId = GetMarketDataRequestId();
-  const auto &symbolId = GetSecurity().GetFixSymbolId();
+  const auto &symbolId = GetSecurity().GetFixIdCode();
 
-  // 62 bytes:
+  // 51 bytes:
   // without custom fields:
-  //  262=|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|146=1|55=|
+  //  262=|263=1|264=1|265=1|146=1|55=|267=2|269=0|269=1|
   // full message:
-  //  262=876316403|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|146=1|55=1|
+  //  262=876316403|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|
+
   auto result = Export(MESSAGE_TYPE_MARKET_DATA_REQUEST,
-                       62 + marketDataRequestId.size() + symbolId.size(), soh);
+                       51 + marketDataRequestId.size() + symbolId.size(), soh);
 
   // MDReqID:
   {
@@ -236,6 +238,18 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
+  // NoRelatedSym
+  {
+    const std::string sub("146=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // Symbol
+  {
+    const std::string sub("55=" + symbolId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
   // NoMDEntryTypes
   {
     // Always set to 2 (both bid and ask will be sent)
@@ -253,18 +267,6 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   {
     // Offer
     const std::string sub("269=1");
-    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
-    result.emplace_back(soh);
-  }
-  // NoRelatedSym
-  {
-    const std::string sub("146=1");
-    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
-    result.emplace_back(soh);
-  }
-  // Symbol
-  {
-    const std::string sub("55=" + symbolId);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }

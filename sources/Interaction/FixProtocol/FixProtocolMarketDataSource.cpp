@@ -42,12 +42,12 @@ void fix::MarketDataSource::SubscribeToSecurities() {
 
   try {
     for (const auto &security : m_securities) {
-      if (!security->GetRequest()) {
+      if (!security.second->GetRequest()) {
         //         security->SetOnline(security->GetLastMarketDataTime(), true);
         //         security->SetTradingSessionState(security->GetLastMarketDataTime(),
         //                                          true);
       }
-      m_client.RequestMarketData(*security);
+      m_client.RequestMarketData(*security.second);
     }
   } catch (const Exception &ex) {
     GetLog().Error("Failed to send market data request: \"%1%\".", ex);
@@ -64,12 +64,28 @@ void fix::MarketDataSource::ResubscribeToSecurities() {
 
 trdk::Security &fix::MarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  m_securities.emplace_back(
+  const auto &result =
       boost::make_shared<fix::Security>(GetContext(), symbol, *this,
                                         Security::SupportedLevel1Types()
                                             .set(LEVEL1_TICK_BID_PRICE)
-                                            .set(LEVEL1_TICK_ASK_PRICE)));
-  return *m_securities.back();
+                                            .set(LEVEL1_TICK_ASK_PRICE));
+  Verify(m_securities.emplace(result->GetFixId(), result).second);
+  return *result;
+}
+
+const fix::Security &fix::MarketDataSource::GetSecurityByFixId(
+    size_t id) const {
+  return const_cast<MarketDataSource *>(this)->GetSecurityByFixId(id);
+}
+
+fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
+  const auto &result = m_securities.find(id);
+  if (result == m_securities.cend()) {
+    boost::format error("Failed to resolve security with FIX Symbol ID %1%");
+    error % id;
+    throw Error(error.str().c_str());
+  }
+  return *result->second;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
