@@ -90,12 +90,11 @@ class Security : public trdk::Security {
             lastQty = m_firstTradeTick->GetValue();
           }
         }
-        AddTrade(time, ScaledPrice(tick.GetValue()), lastQty, timeMeasurement,
-                 false);
+        AddTrade(time, Price(tick.GetValue()), lastQty, timeMeasurement, false);
       } break;
       case LEVEL1_TICK_LAST_QTY: {
-        auto lastPrice = GetLastPriceScaled();
-        if (Lib::IsZero(lastPrice)) {
+        auto lastPrice = GetLastPrice();
+        if (!lastPrice) {
           if (!m_firstTradeTick) {
             m_firstTradeTick = tick;
             break;
@@ -103,7 +102,7 @@ class Security : public trdk::Security {
             break;
           } else {
             AssertEq(LEVEL1_TICK_LAST_PRICE, m_firstTradeTick->GetType());
-            lastPrice = ScaledPrice(m_firstTradeTick->GetValue());
+            lastPrice = Price(m_firstTradeTick->GetValue());
           }
         }
         AddTrade(time, lastPrice, tick.GetValue(), timeMeasurement, false);

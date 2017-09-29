@@ -72,7 +72,7 @@ class TRDK_CORE_API Position
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &startPrice,
+      const trdk::Price &startPrice,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
  protected:
@@ -155,7 +155,7 @@ class TRDK_CORE_API Position
 
  public:
   const trdk::Qty &GetPlanedQty() const;
-  const trdk::ScaledPrice &GetOpenStartPrice() const;
+  const trdk::Price &GetOpenStartPrice() const;
   //! Returns time of first order.
   /** Throws an exception if there is no open-order at this moment.
     * @sa GetCloseStartTime()
@@ -165,14 +165,14 @@ class TRDK_CORE_API Position
 
   void SetOpenedQty(const trdk::Qty &) const noexcept;
   const trdk::Qty &GetOpenedQty() const noexcept;
-  trdk::ScaledPrice GetOpenAvgPrice() const;
+  trdk::Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
   /** Throws an exception if there is no active open-order at this moment
     * or if active open-order has no price (like market order).
     * @sa GetActiveOrderPrice
     * @sa GetActiveCloseOrderPrice
     */
-  const trdk::ScaledPrice &GetActiveOpenOrderPrice() const;
+  const trdk::Price &GetActiveOpenOrderPrice() const;
   //! Returns time of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
     * @sa GetActiveOrderTime
@@ -185,7 +185,7 @@ class TRDK_CORE_API Position
     * @sa GetLastTradePrice
     * @sa GetLastCloseTradePrice
     */
-  const trdk::ScaledPrice &GetLastOpenTradePrice() const;
+  const trdk::Price &GetLastOpenTradePrice() const;
   trdk::Volume GetOpenedVolume() const;
   //! Time of first trade.
   const boost::posix_time::ptime &GetOpenTime() const;
@@ -193,22 +193,22 @@ class TRDK_CORE_API Position
   trdk::Qty GetActiveQty() const noexcept;
   trdk::Volume GetActiveVolume() const;
 
-  void SetCloseStartPrice(const trdk::ScaledPrice &);
-  const trdk::ScaledPrice &GetCloseStartPrice() const;
+  void SetCloseStartPrice(const trdk::Price &);
+  const trdk::Price &GetCloseStartPrice() const;
   //! Returns time of first close-order.
   /** Throws an exception if there is no close-order at this moment.
     * @sa GetOpenStartTime()
     * @sa GetActiveCloseTime()
     */
   const boost::posix_time::ptime &GetCloseStartTime() const;
-  trdk::ScaledPrice GetCloseAvgPrice() const;
+  trdk::Price GetCloseAvgPrice() const;
   //! Returns price of active close-order.
   /** Throws an exception if there is no active close-order at this moment
     * or if active close-order has no price (like market order).
     * @sa GetActiveOrderPrice
     * @sa GetActiveOpenOrderPrice
     */
-  const trdk::ScaledPrice &GetActiveCloseOrderPrice() const;
+  const trdk::Price &GetActiveCloseOrderPrice() const;
   //! Returns time of active close-order.
   /** Throws an exception if there is no active close-order at this
     * moment.
@@ -222,7 +222,7 @@ class TRDK_CORE_API Position
     * @sa GetLastTradePrice
     * @sa GetLastOpenTradePrice
     */
-  const trdk::ScaledPrice &GetLastCloseTradePrice() const;
+  const trdk::Price &GetLastCloseTradePrice() const;
   const trdk::Qty &GetClosedQty() const noexcept;
   trdk::Volume GetClosedVolume() const;
   //! Time of last trade.
@@ -234,7 +234,7 @@ class TRDK_CORE_API Position
     * @sa GetActiveOpenOrderPrice
     * @sa GetActiveOpenClosePrice
     */
-  const trdk::ScaledPrice &GetActiveOrderPrice() const;
+  const trdk::Price &GetActiveOrderPrice() const;
   //! Returns time of active order.
   /** Throws an exception if there is no active order at this moment.
     * @sa GetActiveOpenOrderTime
@@ -246,7 +246,7 @@ class TRDK_CORE_API Position
     * @sa GetLastOpenTradePrice
     * @sa GetLastCloseTradePrice
     */
-  const trdk::ScaledPrice &GetLastTradePrice() const;
+  const trdk::Price &GetLastTradePrice() const;
 
   virtual trdk::Volume GetRealizedPnl() const = 0;
   trdk::Volume GetRealizedPnlVolume() const;
@@ -271,10 +271,10 @@ class TRDK_CORE_API Position
 
   trdk::Volume CalcCommission() const;
 
-  virtual trdk::ScaledPrice GetMarketOpenPrice() const = 0;
-  virtual trdk::ScaledPrice GetMarketClosePrice() const = 0;
-  virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const = 0;
-  virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const = 0;
+  virtual trdk::Price GetMarketOpenPrice() const = 0;
+  virtual trdk::Price GetMarketClosePrice() const = 0;
+  virtual trdk::Price GetMarketOpenOppositePrice() const = 0;
+  virtual trdk::Price GetMarketCloseOppositePrice() const = 0;
 
   size_t GetNumberOfOpenOrders() const;
   size_t GetNumberOfOpenTrades() const;
@@ -293,14 +293,13 @@ class TRDK_CORE_API Position
  public:
   trdk::OrderId OpenAtMarketPrice();
   trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
-  trdk::OrderId Open(const trdk::ScaledPrice &);
-  trdk::OrderId Open(const trdk::ScaledPrice &, const trdk::OrderParams &);
-  trdk::OrderId OpenAtMarketPriceWithStopPrice(
-      const trdk::ScaledPrice &stopPrice);
-  trdk::OrderId OpenAtMarketPriceWithStopPrice(
-      const trdk::ScaledPrice &stopPrice, const trdk::OrderParams &);
-  trdk::OrderId OpenImmediatelyOrCancel(const trdk::ScaledPrice &);
-  trdk::OrderId OpenImmediatelyOrCancel(const trdk::ScaledPrice &,
+  trdk::OrderId Open(const trdk::Price &);
+  trdk::OrderId Open(const trdk::Price &, const trdk::OrderParams &);
+  trdk::OrderId OpenAtMarketPriceWithStopPrice(const trdk::Price &stopPrice);
+  trdk::OrderId OpenAtMarketPriceWithStopPrice(const trdk::Price &stopPrice,
+                                               const trdk::OrderParams &);
+  trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &);
+  trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &,
                                         const trdk::OrderParams &);
   trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel();
   trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(const trdk::OrderParams &);
@@ -308,18 +307,17 @@ class TRDK_CORE_API Position
  public:
   trdk::OrderId CloseAtMarketPrice();
   trdk::OrderId CloseAtMarketPrice(const trdk::OrderParams &);
-  trdk::OrderId Close(const trdk::ScaledPrice &);
-  trdk::OrderId Close(const trdk::ScaledPrice &, const trdk::Qty &maxQty);
-  trdk::OrderId Close(const trdk::ScaledPrice &, const trdk::OrderParams &);
-  trdk::OrderId Close(const trdk::ScaledPrice &,
+  trdk::OrderId Close(const trdk::Price &);
+  trdk::OrderId Close(const trdk::Price &, const trdk::Qty &maxQty);
+  trdk::OrderId Close(const trdk::Price &, const trdk::OrderParams &);
+  trdk::OrderId Close(const trdk::Price &,
                       const trdk::Qty &maxQty,
                       const trdk::OrderParams &);
-  trdk::OrderId CloseAtMarketPriceWithStopPrice(
-      const trdk::ScaledPrice &stopPrice);
-  trdk::OrderId CloseAtMarketPriceWithStopPrice(
-      const trdk::ScaledPrice &stopPrice, const trdk::OrderParams &);
-  trdk::OrderId CloseImmediatelyOrCancel(const trdk::ScaledPrice &);
-  trdk::OrderId CloseImmediatelyOrCancel(const trdk::ScaledPrice &,
+  trdk::OrderId CloseAtMarketPriceWithStopPrice(const trdk::Price &stopPrice);
+  trdk::OrderId CloseAtMarketPriceWithStopPrice(const trdk::Price &stopPrice,
+                                                const trdk::OrderParams &);
+  trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &);
+  trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &,
                                          const trdk::OrderParams &);
   trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel();
   trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
@@ -349,32 +347,28 @@ class TRDK_CORE_API Position
   virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
                                             const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::ScaledPrice &,
+                               const trdk::Price &,
                                const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
       const trdk::Qty &qty,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::ScaledPrice &,
-      const trdk::OrderParams &) = 0;
+      const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) = 0;
 
   virtual trdk::OrderId DoCloseAtMarketPrice(const trdk::Qty &qty,
                                              const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::ScaledPrice &,
+                                const trdk::Price &,
                                 const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::ScaledPrice &,
-      const trdk::OrderParams &) = 0;
+      const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) = 0;
 
@@ -414,7 +408,7 @@ class TRDK_CORE_API LongPosition : virtual public Position {
                         trdk::Security &,
                         const trdk::Lib::Currency &,
                         const trdk::Qty &,
-                        const trdk::ScaledPrice &startPrice,
+                        const trdk::Price &startPrice,
                         const trdk::Lib::TimeMeasurement::Milestones &);
 
  protected:
@@ -432,24 +426,24 @@ class TRDK_CORE_API LongPosition : virtual public Position {
   virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
   virtual trdk::Volume GetUnrealizedPnl() const override;
 
-  virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
-  virtual trdk::ScaledPrice GetMarketClosePrice() const override;
-  virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
-  virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
+  virtual trdk::Price GetMarketOpenPrice() const override;
+  virtual trdk::Price GetMarketClosePrice() const override;
+  virtual trdk::Price GetMarketOpenOppositePrice() const override;
+  virtual trdk::Price GetMarketCloseOppositePrice() const override;
 
  protected:
   virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
                                             const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::ScaledPrice &,
+                               const trdk::Price &,
                                const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
       const trdk::Qty &qty,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenImmediatelyOrCancel(
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) override;
@@ -457,15 +451,15 @@ class TRDK_CORE_API LongPosition : virtual public Position {
   virtual trdk::OrderId DoCloseAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
   virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::ScaledPrice &,
+                                const trdk::Price &,
                                 const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseImmediatelyOrCancel(
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) override;
@@ -482,7 +476,7 @@ class TRDK_CORE_API ShortPosition : virtual public Position {
                          trdk::Security &,
                          const trdk::Lib::Currency &,
                          const trdk::Qty &,
-                         const trdk::ScaledPrice &startPrice,
+                         const trdk::Price &startPrice,
                          const trdk::Lib::TimeMeasurement::Milestones &);
 
  protected:
@@ -500,24 +494,24 @@ class TRDK_CORE_API ShortPosition : virtual public Position {
   virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
   virtual trdk::Volume GetUnrealizedPnl() const override;
 
-  virtual trdk::ScaledPrice GetMarketOpenPrice() const override;
-  virtual trdk::ScaledPrice GetMarketClosePrice() const override;
-  virtual trdk::ScaledPrice GetMarketOpenOppositePrice() const override;
-  virtual trdk::ScaledPrice GetMarketCloseOppositePrice() const override;
+  virtual trdk::Price GetMarketOpenPrice() const override;
+  virtual trdk::Price GetMarketClosePrice() const override;
+  virtual trdk::Price GetMarketOpenOppositePrice() const override;
+  virtual trdk::Price GetMarketCloseOppositePrice() const override;
 
  protected:
   virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
                                             const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::ScaledPrice &,
+                               const trdk::Price &,
                                const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenAtMarketPriceWithStopPrice(
       const trdk::Qty &qty,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenImmediatelyOrCancel(
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) override;
@@ -525,15 +519,15 @@ class TRDK_CORE_API ShortPosition : virtual public Position {
   virtual trdk::OrderId DoCloseAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
   virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::ScaledPrice &,
+                                const trdk::Price &,
                                 const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseAtMarketPriceWithStopPrice(
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseImmediatelyOrCancel(
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &) override;
   virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
       const trdk::Qty &, const trdk::OrderParams &) override;

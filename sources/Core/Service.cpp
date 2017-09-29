@@ -175,7 +175,7 @@ bool Service::RaiseLevel1TickEvent(const Security &security,
 
 bool Service::RaiseNewTradeEvent(const Security &security,
                                  const boost::posix_time::ptime &time,
-                                 const ScaledPrice &price,
+                                 const Price &price,
                                  const Qty &qty) {
   const auto lock = LockForOtherThreads();
   return OnNewTrade(security, time, price, qty);
@@ -189,11 +189,12 @@ bool Service::RaiseServiceDataUpdateEvent(
 }
 
 bool Service::RaiseBrokerPositionUpdateEvent(const Security &security,
+                                             bool isLong,
                                              const Qty &qty,
                                              const Volume &volume,
                                              bool isInitial) {
   const auto lock = LockForOtherThreads();
-  return OnBrokerPositionUpdate(security, qty, volume, isInitial);
+  return OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
 }
 
 bool Service::RaiseNewBarEvent(const Security &security,
@@ -241,7 +242,7 @@ bool Service::OnLevel1Tick(const Security &security,
 
 bool Service::OnNewTrade(const Security &security,
                          const boost::posix_time::ptime &,
-                         const ScaledPrice &,
+                         const Price &,
                          const Qty &) {
   GetLog().Error(
       "Subscribed to %1% new trades, but can't work with it"
@@ -261,10 +262,8 @@ bool Service::OnServiceDataUpdate(const Service &service,
       "Service subscribed to service, but can't work with it");
 }
 
-bool Service::OnBrokerPositionUpdate(const Security &security,
-                                     const Qty &,
-                                     const Volume &,
-                                     bool) {
+bool Service::OnBrokerPositionUpdate(
+    const Security &security, bool, const Qty &, const Volume &, bool) {
   GetLog().Error(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",

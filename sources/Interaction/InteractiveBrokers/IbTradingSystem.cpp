@@ -150,14 +150,13 @@ trdk::OrderId ib::TradingSystem::SendSell(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const auto rawPrice = security.DescalePrice(price);
   PlacedOrder order = {};
-  order.id = m_client->PlaceSellOrder(security, qty, rawPrice, params);
+  order.id = m_client->PlaceSellOrder(security, qty, price, params);
   order.security = &security;
   order.callback = std::move(statusUpdateSlot);
   return RegOrder(std::move(order));
@@ -167,15 +166,14 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceWithStopPrice(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &stopPrice,
+    const Price &stopPrice,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const auto rawStopPrice = security.DescalePrice(stopPrice);
   PlacedOrder order = {};
-  order.id = m_client->PlaceSellOrderWithMarketPrice(security, qty,
-                                                     rawStopPrice, params);
+  order.id =
+      m_client->PlaceSellOrderWithMarketPrice(security, qty, stopPrice, params);
   order.security = &security;
   order.callback = statusUpdateSlot;
   return RegOrder(std::move(order));
@@ -185,14 +183,13 @@ trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const double rawPrice = security.DescalePrice(price);
   return RegOrder(
-      PlacedOrder{m_client->PlaceSellIocOrder(security, qty, rawPrice, params),
+      PlacedOrder{m_client->PlaceSellIocOrder(security, qty, price, params),
                   &security, statusUpdateSlot});
 }
 
@@ -224,14 +221,13 @@ trdk::OrderId ib::TradingSystem::SendBuy(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const auto rawPrice = security.DescalePrice(price);
   PlacedOrder order = {};
-  order.id = m_client->PlaceBuyOrder(security, qty, rawPrice, params);
+  order.id = m_client->PlaceBuyOrder(security, qty, price, params);
   order.security = &security;
   order.callback = std::move(statusUpdateSlot);
   return RegOrder(std::move(order));
@@ -241,15 +237,14 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &stopPrice,
+    const Price &stopPrice,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const auto rawStopPrice = security.DescalePrice(stopPrice);
   PlacedOrder order = {};
-  order.id = m_client->PlaceBuyOrderWithMarketPrice(security, qty, rawStopPrice,
-                                                    params);
+  order.id =
+      m_client->PlaceBuyOrderWithMarketPrice(security, qty, stopPrice, params);
   order.security = &security;
   order.callback = statusUpdateSlot;
   return RegOrder(std::move(order));
@@ -259,14 +254,13 @@ trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
-  const double rawPrice = security.DescalePrice(price);
   return RegOrder(
-      PlacedOrder{m_client->PlaceBuyIocOrder(security, qty, rawPrice, params),
+      PlacedOrder{m_client->PlaceBuyIocOrder(security, qty, price, params),
                   &security, statusUpdateSlot});
 }
 
@@ -323,7 +317,7 @@ void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
                                        lastFillPrice};
           return;
         }
-        tradeData.price = pos->security->ScalePrice(lastFillPrice);
+        tradeData.price = lastFillPrice;
         AssertLt(0, tradeData.price);
         tradeData.qty = filled - pos->filled;
         AssertLt(0, tradeData.qty);
@@ -348,7 +342,7 @@ void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
         if (filled > pos->filled) {
           TradeInfo iocTradeData = {};
           AssertGt(filled, pos->filled);
-          iocTradeData.price = pos->security->ScalePrice(lastFillPrice);
+          iocTradeData.price = lastFillPrice;
           AssertLt(0, iocTradeData.price);
           iocTradeData.qty = filled - pos->filled;
           AssertLt(0, iocTradeData.qty);

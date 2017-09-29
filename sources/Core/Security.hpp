@@ -67,7 +67,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   typedef void(NewTradeSlotSignature)(
       const boost::posix_time::ptime &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   typedef boost::function<NewTradeSlotSignature> NewTradeSlot;
@@ -76,7 +76,8 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   //! Security broker position info.
   /** Information from broker, not relevant to trdk::Position.
     */
-  typedef void(BrokerPositionUpdateSlotSignature)(const trdk::Qty &,
+  typedef void(BrokerPositionUpdateSlotSignature)(bool isLong,
+                                                  const trdk::Qty &,
                                                   const trdk::Volume &,
                                                   bool isInitial);
   typedef boost::function<BrokerPositionUpdateSlotSignature>
@@ -92,14 +93,14 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     Type type;
 
     //! The bar opening price.
-    boost::optional<trdk::ScaledPrice> openPrice;
+    boost::optional<trdk::Price> openPrice;
     //! The high price during the time covered by the bar.
-    boost::optional<trdk::ScaledPrice> highPrice;
+    boost::optional<trdk::Price> highPrice;
 
     //! The low price during the time covered by the bar.
-    boost::optional<trdk::ScaledPrice> lowPrice;
+    boost::optional<trdk::Price> lowPrice;
     //! The bar closing price.
-    boost::optional<trdk::ScaledPrice> closePrice;
+    boost::optional<trdk::Price> closePrice;
 
     //! The volume during the time covered by the bar.
     boost::optional<trdk::Qty> volume;
@@ -229,29 +230,22 @@ class TRDK_CORE_API Security : public trdk::Instrument {
  public:
   size_t GetQuoteSize() const;
 
-  uintmax_t GetPriceScale() const;
+  uintmax_t GetPricePrecisionPower() const;
   uint8_t GetPricePrecision() const throw();
-
-  trdk::ScaledPrice ScalePrice(double price) const;
-  trdk::Price DescalePrice(const trdk::ScaledPrice &price) const;
-  trdk::Price DescalePrice(double price) const;
 
  public:
   boost::posix_time::ptime GetLastMarketDataTime() const;
   size_t TakeNumberOfMarketDataUpdates() const;
 
  public:
-  trdk::ScaledPrice GetLastPriceScaled() const;
   virtual trdk::Price GetLastPrice() const;
   trdk::Qty GetLastQty() const;
 
-  virtual trdk::ScaledPrice GetAskPriceScaled() const;
   trdk::Price GetAskPrice() const;
   trdk::Price GetAskPriceValue() const;
   trdk::Qty GetAskQty() const;
   trdk::Qty GetAskQtyValue() const;
 
-  virtual trdk::ScaledPrice GetBidPriceScaled() const;
   trdk::Price GetBidPrice() const;
   trdk::Price GetBidPriceValue() const;
   trdk::Qty GetBidQty() const;
@@ -324,6 +318,17 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     */
   void SetLevel1(const boost::posix_time::ptime &,
                  const trdk::Level1TickValue &,
+                 const trdk::Lib::TimeMeasurement::Milestones &);
+  //! Sets one Level I parameter.
+  /** Subscribers will be notified about Level I Update only if parameter
+    * will bee changed.
+    * @return Returns true value was changed, false if set the same value as
+    *         was.
+    */
+  bool SetLevel1(const boost::posix_time::ptime &,
+                 const trdk::Level1TickValue &,
+                 bool flush,
+                 bool isPreviouslyChanged,
                  const trdk::Lib::TimeMeasurement::Milestones &);
   //! Sets two Level I parameters and one operation.
   /** More optimal than call "set one parameter" two times. Subscribers
@@ -419,7 +424,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
                      const trdk::Lib::TimeMeasurement::Milestones &);
 
   void AddTrade(const boost::posix_time::ptime &,
-                const trdk::ScaledPrice &,
+                const trdk::Price &,
                 const trdk::Qty &,
                 const trdk::Lib::TimeMeasurement::Milestones &,
                 bool useAsLastTrade);
@@ -428,11 +433,14 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   //! Sets security broker position info.
   /** Subscribers will be notified only if parameter will be changed.
+    * @param[in] isLong     If true - position has type "long", "short"
+    *                       otherwise.
     * @param[in] qty        Position size.
     * @param[in] volume     Position volume.
     * @param[in] isInitial  true if it initial data at start.
     */
-  void SetBrokerPosition(const trdk::Qty &qty,
+  void SetBrokerPosition(bool isLong,
+                         const trdk::Qty &qty,
                          const Volume &volume,
                          bool isInitial);
 

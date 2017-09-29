@@ -38,19 +38,19 @@ class TRDK_SERVICES_API BarService : public trdk::Service {
     boost::posix_time::ptime startTime;
     boost::posix_time::ptime endTime;
 
-    trdk::ScaledPrice maxAskPrice;
-    trdk::ScaledPrice openAskPrice;
-    trdk::ScaledPrice closeAskPrice;
+    trdk::Price maxAskPrice;
+    trdk::Price openAskPrice;
+    trdk::Price closeAskPrice;
 
-    trdk::ScaledPrice minBidPrice;
-    trdk::ScaledPrice openBidPrice;
-    trdk::ScaledPrice closeBidPrice;
+    trdk::Price minBidPrice;
+    trdk::Price openBidPrice;
+    trdk::Price closeBidPrice;
 
-    trdk::ScaledPrice openTradePrice;
-    trdk::ScaledPrice closeTradePrice;
+    trdk::Price openTradePrice;
+    trdk::Price closeTradePrice;
 
-    trdk::ScaledPrice highTradePrice;
-    trdk::ScaledPrice lowTradePrice;
+    trdk::Price highTradePrice;
+    trdk::Price lowTradePrice;
 
     trdk::Qty tradingVolume;
 

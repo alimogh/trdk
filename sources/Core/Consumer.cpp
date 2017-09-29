@@ -67,7 +67,7 @@ void Consumer::OnLevel1Tick(Security &security,
 
 void Consumer::OnNewTrade(Security &security,
                           const pt::ptime &,
-                          const ScaledPrice &,
+                          const Price &,
                           const Qty &) {
   GetLog().Error(
       "Subscribed to %1% new trades, but can't work with it"
@@ -87,10 +87,8 @@ void Consumer::OnServiceDataUpdate(const Service &service,
       "Module subscribed to service, but can't work with it");
 }
 
-void Consumer::OnBrokerPositionUpdate(Security &security,
-                                      const Qty &,
-                                      const Volume &,
-                                      bool) {
+void Consumer::OnBrokerPositionUpdate(
+    Security &security, bool, const Qty &, const Volume &, bool) {
   GetLog().Error(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",

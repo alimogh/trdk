@@ -49,7 +49,6 @@ void PositionReport::PrintHead(std::ostream &os) {
 }
 
 void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
-  const auto &security = pos.GetSecurity();
   os << pos.GetOpenStartTime().date();                                      // 1
   os << ',' << ExcelTextField(pos.GetOpenStartTime().time_of_day());        // 2
   os << ',' << ExcelTextField(pos.GetOpenTime().time_of_day());             // 3
@@ -66,24 +65,22 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   // Leakage is the difference between the signal price and the actual order
   // execution price multiplied by the quantity.
   os << ','
-     << (security.DescalePrice(
-             pos.IsLong() ? pos.GetOpenAvgPrice() - pos.GetOpenStartPrice()
-                          : pos.GetOpenStartPrice() - pos.GetOpenAvgPrice()) *
+     << ((pos.IsLong() ? pos.GetOpenAvgPrice() - pos.GetOpenStartPrice()
+                       : pos.GetOpenStartPrice() - pos.GetOpenAvgPrice()) *
          pos.GetOpenedQty());  // 13
-  os << ',' << (security.DescalePrice(
-                    !pos.IsLong()
-                        ? pos.GetCloseAvgPrice() - pos.GetCloseStartPrice()
+  os << ','
+     << ((!pos.IsLong() ? pos.GetCloseAvgPrice() - pos.GetCloseStartPrice()
                         : pos.GetCloseStartPrice() - pos.GetCloseAvgPrice()) *
-                pos.GetOpenedQty());                           // 14
-  os << ',' << pos.CalcCommission();                           // 15
-  os << ',' << pos.GetOpenedQty();                             // 16
-  os << ',' << security.DescalePrice(pos.GetOpenAvgPrice());   // 17
-  os << ',' << pos.GetNumberOfOpenOrders();                    // 28
-  os << ',' << pos.GetNumberOfOpenTrades();                    // 19
-  os << ',' << pos.GetCloseReason();                           // 20
-  os << ',' << security.DescalePrice(pos.GetCloseAvgPrice());  // 21
-  os << ',' << pos.GetNumberOfCloseOrders();                   // 22
-  os << ',' << pos.GetNumberOfCloseTrades();                   // 23
-  os << ',' << pos.GetId();                                    // 24
+         pos.GetOpenedQty());                 // 14
+  os << ',' << pos.CalcCommission();          // 15
+  os << ',' << pos.GetOpenedQty();            // 16
+  os << ',' << pos.GetOpenAvgPrice();         // 17
+  os << ',' << pos.GetNumberOfOpenOrders();   // 28
+  os << ',' << pos.GetNumberOfOpenTrades();   // 19
+  os << ',' << pos.GetCloseReason();          // 20
+  os << ',' << pos.GetCloseAvgPrice();        // 21
+  os << ',' << pos.GetNumberOfCloseOrders();  // 22
+  os << ',' << pos.GetNumberOfCloseTrades();  // 23
+  os << ',' << pos.GetId();                   // 24
   os << std::endl;
 }

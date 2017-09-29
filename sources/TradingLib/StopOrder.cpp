@@ -54,9 +54,7 @@ void StopOrder::OnHit() {
         [&](TradingRecord &record) {
           record % GetName() % (isBadOrder ? "canceling bad close-order"
                                            : "close order is good") %
-              GetPosition().GetCloseOrderSide() %
-              GetPosition().GetSecurity().DescalePrice(orderPrice) %
-              GetPosition().GetSecurity().DescalePrice(currentPrice) %
+              GetPosition().GetCloseOrderSide() % orderPrice % currentPrice %
               GetPosition().GetId();
         });
     if (isBadOrder) {

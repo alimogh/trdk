@@ -35,11 +35,12 @@ void Observer::OnLevel1Update(Security &security) {
 }
 
 void Observer::RaiseBrokerPositionUpdateEvent(Security &security,
+                                              bool isLong,
                                               const Qty &qty,
                                               const Volume &volume,
                                               bool isInitial) {
   const auto lock = LockForOtherThreads();
-  OnBrokerPositionUpdate(security, qty, volume, isInitial);
+  OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
 }
 
 void Observer::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
@@ -63,7 +64,7 @@ void Observer::RaiseLevel1TickEvent(
 
 void Observer::RaiseNewTradeEvent(Security &security,
                                   const boost::posix_time::ptime &time,
-                                  const trdk::ScaledPrice &price,
+                                  const trdk::Price &price,
                                   const trdk::Qty &qty) {
   const auto lock = LockForOtherThreads();
   OnNewTrade(security, time, price, qty);

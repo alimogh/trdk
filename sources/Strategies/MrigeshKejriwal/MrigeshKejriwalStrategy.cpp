@@ -46,21 +46,15 @@ PositionController::PositionController(trdk::Strategy &strategy,
       m_orderPolicy(m_settings.orderPolicyFactory->CreateOrderPolicy()),
       m_trend(trend) {}
 
-Position &PositionController::OpenPosition(Security &security,
-                                           const Milestones &delayMeasurement) {
-  Assert(m_trend.IsExistent());
-  return OpenPosition(security, m_trend.IsRising(), delayMeasurement);
+void PositionController::SetupPosition(Position &position) const {
+  if (m_settings.maxLossShare != 0) {
+    position.AttachAlgo(std::make_unique<tl::StopLossShare>(
+        m_settings.maxLossShare, position, m_orderPolicy));
+  }
 }
 
-Position &PositionController::OpenPosition(Security &security,
-                                           bool isLong,
-                                           const Milestones &delayMeasurement) {
-  auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  if (m_settings.maxLossShare != 0) {
-    result.AttachAlgo(std::make_unique<tl::StopLossShare>(
-        m_settings.maxLossShare, result, m_orderPolicy));
-  }
-  return result;
+bool PositionController::IsNewPositionIsLong() const {
+  return m_trend.IsRising();
 }
 
 Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
@@ -253,25 +247,25 @@ void mk::Strategy::OnSecurityContractSwitched(const pt::ptime &,
 }
 
 void mk::Strategy::OnBrokerPositionUpdate(Security &security,
+                                          bool isLong,
                                           const Qty &qty,
                                           const Volume &volume,
                                           bool isInitial) {
   Assert(&security == &GetTradingSecurity());
   if (&security != &GetTradingSecurity()) {
     GetLog().Error(
-        "Wrong wrong broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
-        qty,                                // 1
-        volume,                             // 2
-        security,                           // 3
-        isInitial ? "initial" : "online");  // 4
+        "Wrong wrong broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
+        "(%4%).",
+        qty,                               // 1
+        volume,                            // 2
+        security,                          // 3
+        isInitial ? "initial" : "online",  // 4
+        isLong ? "long" : "short");        // 5
     throw Exception("Broker position for wrong security");
   }
   auto posQty = qty;
-  if (posQty != 0 && abs(posQty) < m_settings.minQty) {
+  if (posQty != 0 && posQty < m_settings.minQty) {
     posQty = m_settings.minQty;
-    if (qty < 0) {
-      posQty *= -1;
-    }
   }
   const auto numberOfParts =
       static_cast<intmax_t>(posQty) / static_cast<intmax_t>(m_settings.minQty);
@@ -279,9 +273,9 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
       static_cast<intmax_t>(posQty) % static_cast<intmax_t>(m_settings.minQty);
   posQty = static_cast<double>((numberOfParts + (restFromPart ? 1 : 0)) *
                                static_cast<intmax_t>(m_settings.minQty));
-  const auto posVolume = (volume / abs(qty)) * posQty;
-  m_positionController.OnBrokerPositionUpdate(security, posQty, posVolume,
-                                              isInitial);
+  const auto posVolume = (volume / qty) * posQty;
+  m_positionController.OnBrokerPositionUpdate(security, isLong, posQty,
+                                              posVolume, isInitial);
 
   if (isInitial && !GetPositions().IsEmpty()) {
     Assert(m_skipNextSignal);
@@ -316,9 +310,7 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
       position.GetCloseReason() == CLOSE_REASON_STOP_LOSS &&
       GetPositions().GetSize() == 1) {
     Assert(!m_priceSignal);
-    m_priceSignal = PriceSignal{
-        position.IsLong(),
-        position.GetSecurity().DescalePrice(position.GetCloseAvgPrice())};
+    m_priceSignal = PriceSignal{position.IsLong(), position.GetCloseAvgPrice()};
   }
 }
 
@@ -335,8 +327,7 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   if (FinishRollOver() || ContinueRollOver()) {
     return;
   }
-  CheckSignal(GetTradingSecurity().DescalePrice(tick.GetValue()),
-              delayMeasurement);
+  CheckSignal(tick.GetValue(), delayMeasurement);
 }
 
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}

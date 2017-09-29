@@ -48,16 +48,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   struct TradeInfo {
     std::string id;
     trdk::Qty qty;
-    trdk::ScaledPrice price;
+    trdk::Price price;
   };
 
-  typedef boost::function<void(
-      const trdk::OrderId &,
-      const std::string &tradingSystemOrderId,
-      const OrderStatus &,
-      const trdk::Qty &remainingQty,
-      const boost::optional<trdk::Volume> &commission,
-      const TradeInfo *tradeInfo)>
+  typedef boost::function<void(const trdk::OrderId &,
+                               const std::string &tradingSystemOrderId,
+                               const OrderStatus &,
+                               const trdk::Qty &remainingQty,
+                               const boost::optional<trdk::Volume> &commission,
+                               const TradeInfo *tradeInfo)>
       OrderStatusUpdateSlot;
 
   struct Account {
@@ -184,7 +183,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -193,7 +192,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -202,7 +201,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -228,7 +227,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -237,7 +236,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -246,7 +245,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -279,21 +278,21 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual OrderId SendSell(trdk::Security &,
                            const trdk::Lib::Currency &,
                            const trdk::Qty &,
-                           const trdk::ScaledPrice &,
+                           const trdk::Price &,
                            const trdk::OrderParams &,
                            const OrderStatusUpdateSlot &&) = 0;
   virtual OrderId SendSellAtMarketPriceWithStopPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendSellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
@@ -311,20 +310,20 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual OrderId SendBuy(trdk::Security &,
                           const trdk::Lib::Currency &,
                           const trdk::Qty &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::OrderParams &,
                           const OrderStatusUpdateSlot &&) = 0;
   virtual OrderId SendBuyAtMarketPriceWithStopPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &stopPrice,
+      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
                                              const trdk::Lib::Currency &,
                                              const trdk::Qty &,
-                                             const trdk::ScaledPrice &,
+                                             const trdk::Price &,
                                              const trdk::OrderParams &,
                                              const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(

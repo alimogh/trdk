@@ -25,7 +25,7 @@ using namespace trdk::Tests;
 
 namespace {
 
-const double source[][4] = {
+const lib::Double source[][4] = {
     /* Close            SMA           High            Low */
     {1642.81, 0.00000000000, 0.00000000000, 0.00000000000},
     {1626.13, 0.00000000000, 0.00000000000, 0.00000000000},
@@ -173,13 +173,13 @@ class Services_BollingerBandsServiceTest : public testing::Test {
 
       svc::BarService::Bar bar;
       bar.endTime = time;
-      bar.closeTradePrice = trdk::ScaledPrice(lib::Scale(row[0], 100));
+      bar.closeTradePrice = row[0];
       EXPECT_CALL(bars, GetLastBar()).Times(1).WillOnce(Return(bar));
 
-      ASSERT_EQ(!lib::IsZero(row[1]),
+      ASSERT_EQ(row[1] != 0,
                 m_service->OnServiceDataUpdate(
                     bars, lib::TimeMeasurement::Milestones()));
-      if (lib::IsZero(row[1])) {
+      if (!row[1]) {
         EXPECT_TRUE(m_service->IsEmpty());
         EXPECT_THROW(m_service->GetLastPoint(),
                      svc::BollingerBandsService::ValueDoesNotExistError);
@@ -228,8 +228,8 @@ TEST_F(Services_BollingerBandsServiceTest, RealTimeWithHistory) {
   size_t offset = 19;
   for (size_t i = 0; i < m_service->GetHistorySize(); ++i) {
     auto pos = i + offset;
-    ASSERT_EQ(lib::IsZero(source[pos][2]), lib::IsZero(source[pos][3]));
-    if (lib::IsZero(source[pos][2])) {
+    ASSERT_EQ(!source[pos][2], !source[pos][3]);
+    if (!source[pos][2]) {
       ++offset;
       ++pos;
     }
@@ -266,8 +266,8 @@ TEST_F(Services_BollingerBandsServiceTest, RealTimeWithHistory) {
   offset = 0;
   for (size_t i = 0; i < m_service->GetHistorySize(); ++i) {
     auto pos = _countof(source) - 1 - i - offset;
-    ASSERT_EQ(lib::IsZero(source[pos][2]), lib::IsZero(source[pos][3]));
-    if (lib::IsZero(source[pos][2])) {
+    ASSERT_EQ(!source[pos][2], !source[pos][3]);
+    if (!source[pos][2]) {
       ++offset;
       --pos;
     }
