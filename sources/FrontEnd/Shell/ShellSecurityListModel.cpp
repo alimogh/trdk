@@ -12,8 +12,8 @@
 #include "ShellSecurityListModel.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "Engine.hpp"
 #include "ShellDropCopy.hpp"
+#include "ShellEngine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

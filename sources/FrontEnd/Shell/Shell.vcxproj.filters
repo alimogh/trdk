@@ -54,9 +54,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,56 +63,8 @@
     <ClCompile Include="GeneratedFiles\qrc_style.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="MainWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MainWindow.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MainWindow.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MainWindow.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_EngineListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_EngineListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_EngineListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_EngineWindow.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_EngineWindow.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_EngineWindow.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
       <Filter>Generated Files\Debug Standalone</Filter>
@@ -141,54 +90,105 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="ShellEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellEngineListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellEngineWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellMainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngineListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngineListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngineListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngineWindow.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngineWindow.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngineWindow.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellMainWindow.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellMainWindow.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellMainWindow.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_MainWindow.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fwd.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_EngineWindow.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\Lib\Std.hpp">
       <Filter>Header Files\Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellFwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_ShellEngineWindow.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_ShellMainWindow.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Shell.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="MainWindow.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="Resources\qdarkstyle\style.qrc">
       <Filter>Resource Files\qdarkstyle</Filter>
-    </CustomBuild>
-    <CustomBuild Include="MainWindow.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="EngineListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="EngineWindow.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="EngineWindow.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="Engine.hpp">
-      <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="ShellSecurityListModel.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="ShellDropCopy.hpp">
       <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellEngine.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellEngineListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellEngineWindow.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellMainWindow.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellEngineWindow.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellMainWindow.ui">
+      <Filter>Form Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

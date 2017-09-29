@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Engine.hpp"
-#include "ui_EngineWindow.h"
+#include "ShellEngine.hpp"
+#include "ui_ShellEngineWindow.h"
 
 namespace trdk {
 namespace FrontEnd {

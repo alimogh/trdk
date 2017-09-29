@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MainWindow.hpp"
-#include "EngineListModel.hpp"
-#include "EngineWindow.hpp"
+#include "ShellMainWindow.hpp"
+#include "ShellEngineListModel.hpp"
+#include "ShellEngineWindow.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Shell;

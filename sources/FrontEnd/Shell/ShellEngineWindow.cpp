@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "EngineWindow.hpp"
+#include "ShellEngineWindow.hpp"
 #include "ShellSecurityListModel.hpp"
 
 using namespace trdk::Lib;
