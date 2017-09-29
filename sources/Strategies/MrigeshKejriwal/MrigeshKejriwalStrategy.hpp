@@ -70,18 +70,11 @@ class PositionController : public TradingLib::PositionController {
   explicit PositionController(Strategy &, const Trend &, const Settings &);
   virtual ~PositionController() override = default;
 
- public:
-  using Base::OpenPosition;
-  virtual Position &OpenPosition(
-      Security &, const Lib::TimeMeasurement::Milestones &) override;
-  virtual Position &OpenPosition(
-      Security &,
-      bool isLong,
-      const Lib::TimeMeasurement::Milestones &) override;
-
  protected:
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
+  virtual void SetupPosition(trdk::Position &) const override;
+  virtual bool IsNewPositionIsLong() const override;
   virtual trdk::Qty GetNewPositionQty() const override;
   virtual bool IsPositionCorrect(const Position &position) const override;
 

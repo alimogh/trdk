@@ -72,6 +72,11 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 }
 
 trdk::Position &PositionController::OpenPosition(
+    Security &security, const Milestones &delayMeasurement) {
+  return OpenPosition(security, IsNewPositionIsLong(), delayMeasurement);
+}
+
+trdk::Position &PositionController::OpenPosition(
     Security &security, bool isLong, const Milestones &delayMeasurement) {
   return OpenPosition(security, isLong, GetNewPositionQty(), delayMeasurement);
 }

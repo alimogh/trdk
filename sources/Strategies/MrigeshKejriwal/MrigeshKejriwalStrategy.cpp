@@ -46,21 +46,15 @@ PositionController::PositionController(trdk::Strategy &strategy,
       m_orderPolicy(m_settings.orderPolicyFactory->CreateOrderPolicy()),
       m_trend(trend) {}
 
-Position &PositionController::OpenPosition(Security &security,
-                                           const Milestones &delayMeasurement) {
-  Assert(m_trend.IsExistent());
-  return OpenPosition(security, m_trend.IsRising(), delayMeasurement);
+void PositionController::SetupPosition(Position &position) const {
+  if (m_settings.maxLossShare != 0) {
+    position.AttachAlgo(std::make_unique<tl::StopLossShare>(
+        m_settings.maxLossShare, position, m_orderPolicy));
+  }
 }
 
-Position &PositionController::OpenPosition(Security &security,
-                                           bool isLong,
-                                           const Milestones &delayMeasurement) {
-  auto &result = Base::OpenPosition(security, isLong, delayMeasurement);
-  if (m_settings.maxLossShare != 0) {
-    result.AttachAlgo(std::make_unique<tl::StopLossShare>(
-        m_settings.maxLossShare, result, m_orderPolicy));
-  }
-  return result;
+bool PositionController::IsNewPositionIsLong() const {
+  return m_trend.IsRising();
 }
 
 Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }

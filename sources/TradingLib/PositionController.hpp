@@ -36,7 +36,7 @@ class PositionController : private boost::noncopyable {
 
  public:
   virtual trdk::Position &OpenPosition(
-      trdk::Security &, const trdk::Lib::TimeMeasurement::Milestones &) = 0;
+      trdk::Security &, const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &OpenPosition(
       trdk::Security &,
       bool isLong,
@@ -57,10 +57,12 @@ class PositionController : private boost::noncopyable {
       const trdk::Qty &qty,
       const trdk::Price &price,
       const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
-    return boost::make_shared<PositionType>(
+    const auto &result = boost::make_shared<PositionType>(
         GetStrategy(), GenerateNewOperationId(), 1, GetTradingSystem(security),
         security, security.GetSymbol().GetCurrency(), qty, price,
         delayMeasurement);
+    SetupPosition(*result);
+    return result;
   }
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
@@ -69,6 +71,8 @@ class PositionController : private boost::noncopyable {
  protected:
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy() const = 0;
   virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy() const = 0;
+  virtual void SetupPosition(trdk::Position &) const = 0;
+  virtual bool IsNewPositionIsLong() const = 0;
   virtual trdk::Qty GetNewPositionQty() const = 0;
   virtual bool IsPositionCorrect(const trdk::Position &) const = 0;
 
