@@ -18,7 +18,6 @@ struct TradingSystemHolder {
   // Deinitialization order is important!
   trdk::Lib::DllObjectPtr<trdk::TradingSystem> tradingSystem;
   std::string section;
-  boost::shared_ptr<Terminal> terminal;
 };
 struct TradingSystemModesHolder {
   std::string instanceName;

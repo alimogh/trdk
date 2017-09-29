@@ -42,8 +42,6 @@ class PositionReporter;
 
 class Settings;
 
-class Terminal;
-
 class EventsLog;
 class ModuleEventsLog;
 class TradingLog;

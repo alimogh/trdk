@@ -16,7 +16,6 @@
 #include "Core/Service.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/Terminal.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "ContextBootstrap.hpp"
@@ -245,12 +244,6 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
         GetLog().Error("Failed to make trading system connection: \"%1%\".",
                        ex);
         throw Exception("Failed to make trading system connection");
-      }
-
-      const char *const terminalCmdFileKey = "terminal_cmd_file";
-      if (confSection.IsKeyExist(terminalCmdFileKey)) {
-        tradingSystemRef.terminal.reset(new Terminal(
-            confSection.ReadFileSystemPath(terminalCmdFileKey), tradingSystem));
       }
     }
   }
