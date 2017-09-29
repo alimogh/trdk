@@ -14,6 +14,8 @@ namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
+class DropCopy;
+class Engine;
 class EngineWindow;
 class EngineListModel;
 }

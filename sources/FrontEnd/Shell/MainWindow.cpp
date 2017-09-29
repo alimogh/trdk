@@ -21,14 +21,13 @@ MainWindow::MainWindow(QWidget *parent)
       m_engineListModel(boost::make_unique<EngineListModel>(
           GetExeFilePath().branch_path() / "etc", this)) {
   m_ui.setupUi(this);
+  m_ui.engineList->setModel(&*m_engineListModel);
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
 
   connect(m_ui.showAbout, &QAction::triggered, this,
           &MainWindow::ShowAboutInfo);
   connect(m_ui.engineList, &QListView::clicked, this, &MainWindow::ShowEngine);
-
-  m_ui.engineList->setModel(&*m_engineListModel);
 }
 
 MainWindow::~MainWindow() {}

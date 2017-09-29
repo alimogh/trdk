@@ -105,6 +105,33 @@ class DropCopy : public trdk::DropCopy {
                     size_t index,
                     const boost::posix_time::ptime &,
                     const trdk::Lib::Double &value));
+
+  MOCK_METHOD3(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD4(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD5(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD6(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD3(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const std::vector<trdk::Level1TickValue> &));
 };
 }
 }

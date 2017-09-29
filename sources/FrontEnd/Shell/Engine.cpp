@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Engine.hpp"
 #include "Engine/Engine.hpp"
+#include "ShellDropCopy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -27,13 +28,15 @@ class sh::Engine::Implementation : private boost::noncopyable {
 
   const fs::path m_configFilePath;
 
+  sh::DropCopy m_dropCopy;
+
   std::unique_ptr<trdk::Engine::Engine> m_engine;
 
   sig::scoped_connection m_engineLogSubscription;
 
  public:
   explicit Implementation(sh::Engine &self, const fs::path &path)
-      : m_self(self), m_configFilePath(path) {
+      : m_self(self), m_configFilePath(path), m_dropCopy(m_self.parent()) {
     // Just a smoke-check that config is an engine config:
     IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
   }
@@ -111,6 +114,7 @@ void sh::Engine::Start() {
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
       GetConfigFilePath(),
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
+      m_pimpl->m_dropCopy,
       [this](trdk::Engine::Context::Log &log) {
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
@@ -123,4 +127,15 @@ void sh::Engine::Stop() {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine.reset();
+}
+
+Context &sh::Engine::GetContext() {
+  if (!m_pimpl->m_engine) {
+    throw Exception(tr("Engine is not started").toLocal8Bit().constData());
+  }
+  return m_pimpl->m_engine->GetContext();
+}
+
+const sh::DropCopy &sh::Engine::GetDropCopy() const {
+  return m_pimpl->m_dropCopy;
 }

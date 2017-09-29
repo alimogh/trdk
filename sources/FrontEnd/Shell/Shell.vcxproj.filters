@@ -49,6 +49,9 @@
     <Filter Include="Resource Files\qdarkstyle\rc">
       <UniqueIdentifier>{64907111-ccb4-4076-9228-22da58d4e10d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Lib">
+      <UniqueIdentifier>{1744cfb7-f1f4-4b59-8643-9225b463488b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -114,6 +117,30 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellSecurityListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellDropCopy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -127,6 +154,9 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_EngineWindow.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\Std.hpp">
+      <Filter>Header Files\Lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -152,6 +182,12 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="Engine.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellSecurityListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellDropCopy.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

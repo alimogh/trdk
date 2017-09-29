@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "EngineWindow.hpp"
+#include "ShellSecurityListModel.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Shell;
@@ -37,6 +38,11 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
       m_engine(configsBase / configFileSubPath, parent),
       m_name(BuildEngineName(configFileSubPath)) {
   m_ui.setupUi(this);
+
+  m_ui.securityList->setModel(new SecurityListModel(m_engine, this));
+  m_ui.securityList->verticalHeader()->setSectionResizeMode(
+      QHeaderView::ResizeToContents);
+
   setWindowTitle(m_name + " - " + QCoreApplication::applicationName());
 
   LoadModule();
@@ -88,7 +94,8 @@ void EngineWindow::LoadModule() {
   }
   Assert(m_module);
 
-  m_ui.verticalLayout->insertWidget(0, &*m_module);
+  m_ui.content->insertTab(0, &*m_module, tr("Trading"));
+  m_ui.content->setCurrentIndex(0);
   if (minimumWidth() < m_module->minimumWidth()) {
     setMinimumWidth(m_module->minimumWidth());
   }
@@ -149,6 +156,7 @@ void EngineWindow::StateChanged(bool isStarted) {
   m_ui.startEngine->setChecked(isStarted);
   m_ui.stopEngine->setEnabled(isStarted);
   m_ui.stopEngine->setChecked(!isStarted);
+  m_ui.securityList->setEnabled(isStarted);
 }
 
 void EngineWindow::Message(const QString &message, bool isWarning) {

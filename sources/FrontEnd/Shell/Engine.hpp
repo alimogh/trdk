@@ -25,6 +25,9 @@ class Engine : public QObject {
  public:
   const boost::filesystem::path &GetConfigFilePath() const;
 
+  Context &GetContext();
+  const Shell::DropCopy &GetDropCopy() const;
+
  signals:
   void StateChanged(bool isStarted);
   void Message(const QString &, bool isWarning);

@@ -22,6 +22,12 @@ namespace {
 size_t ResolveFixId(const std::string &symbol) {
   if (symbol == "EURUSD") {
     return 1;
+  } else if (symbol == "GBPUSD") {
+    return 2;
+  } else if (symbol == "JPYEUR") {
+    return 3;
+  } else if (symbol == "USDJPY") {
+    return 4;
   } else {
     boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
     error % symbol;
