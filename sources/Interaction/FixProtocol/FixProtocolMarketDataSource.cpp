@@ -14,10 +14,12 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction::FixProtocol;
 
 namespace fix = trdk::Interaction::FixProtocol;
 namespace gr = boost::gregorian;
+namespace pt = boost::posix_time;
 
 fix::MarketDataSource::MarketDataSource(size_t index,
                                         Context &context,
@@ -86,6 +88,17 @@ fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
     throw Error(error.str().c_str());
   }
   return *result->second;
+}
+
+bool fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
+    Security &security,
+    const pt::ptime &time,
+    Level1TickValue &&value,
+    bool flush,
+    bool isPreviouslyChanged,
+    const Milestones &delayMeasurement) {
+  return security.AddLevel1Tick(time, std::move(value), flush,
+                                isPreviouslyChanged, delayMeasurement);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -72,14 +72,16 @@ class Connection : public NetworkStreamClient, public MessageHandler {
   virtual void OnMarketDataSnapshotFullRefresh(
       const Incoming::MarketDataSnapshotFullRefresh &snapshot,
       const Milestones &delayMeasurement) override {
+    auto &source = GetSource();
     const auto &time = snapshot.GetTime() + m_utcDiff;
     auto &security = snapshot.ReadSymbol(GetSource());
     bool hasChanges = false;
     snapshot.ReadEachMarketDataEntity(
-        [&time, &security, &hasChanges, &delayMeasurement](
+        [&source, &time, &security, &hasChanges, &delayMeasurement](
             Level1TickValue &&tick, bool isLast) {
-          hasChanges = security.SetLevel1(time, std::move(tick), isLast,
-                                          hasChanges, delayMeasurement);
+          hasChanges = source.OnMarketDataSnapshotFullRefresh(
+              security, time, std::move(tick), isLast, hasChanges,
+              delayMeasurement);
         });
   }
   virtual void OnMarketDataIncrementalRefresh(

@@ -31,7 +31,7 @@ class Security : public trdk::Security {
   const std::string &GetFixIdCode() const { return m_fixIdCode; }
 
  public:
-  using Base::SetLevel1;
+  using Base::AddLevel1Tick;
 
  protected:
   const size_t m_fixId;

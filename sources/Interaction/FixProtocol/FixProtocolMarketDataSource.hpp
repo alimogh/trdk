@@ -40,6 +40,15 @@ class MarketDataSource : public trdk::MarketDataSource {
   virtual void SubscribeToSecurities() override;
   void ResubscribeToSecurities();
 
+ public:
+  bool OnMarketDataSnapshotFullRefresh(
+      FixProtocol::Security &security,
+      const boost::posix_time::ptime &,
+      Level1TickValue &&,
+      bool flush,
+      bool isPreviouslyChanged,
+      const Lib::TimeMeasurement::Milestones &);
+
  protected:
   virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
