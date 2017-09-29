@@ -320,6 +320,13 @@ class Strategy::Implementation : private boost::noncopyable {
       AssertFailNoException();
     }
   }
+
+  void RunAllAlgos() {
+    const auto &end = m_positions.GetEnd();
+    for (auto it = m_positions.GetBegin(); it != end; ++it) {
+      it->RunAlgos();
+    }
+  }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -426,13 +433,7 @@ void Strategy::RaiseLevel1UpdateEvent(
   }
   delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
-    {
-      auto &positions = GetPositions();
-      const auto &end = positions.GetEnd();
-      for (auto it = positions.GetBegin(); it != end; ++it) {
-        it->RunAlgos();
-      }
-    }
+    m_pimpl->RunAllAlgos();
     OnLevel1Update(security, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
@@ -453,6 +454,7 @@ void Strategy::RaiseLevel1TickEvent(
   }
   delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
+    m_pimpl->RunAllAlgos();
     OnLevel1Tick(security, time, value, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
