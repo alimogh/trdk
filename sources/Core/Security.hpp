@@ -76,7 +76,8 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   //! Security broker position info.
   /** Information from broker, not relevant to trdk::Position.
     */
-  typedef void(BrokerPositionUpdateSlotSignature)(const trdk::Qty &,
+  typedef void(BrokerPositionUpdateSlotSignature)(bool isLong,
+                                                  const trdk::Qty &,
                                                   const trdk::Volume &,
                                                   bool isInitial);
   typedef boost::function<BrokerPositionUpdateSlotSignature>
@@ -432,11 +433,14 @@ class TRDK_CORE_API Security : public trdk::Instrument {
 
   //! Sets security broker position info.
   /** Subscribers will be notified only if parameter will be changed.
+    * @param[in] isLong     If true - position has type "long", "short"
+    *                       otherwise.
     * @param[in] qty        Position size.
     * @param[in] volume     Position volume.
     * @param[in] isInitial  true if it initial data at start.
     */
-  void SetBrokerPosition(const trdk::Qty &qty,
+  void SetBrokerPosition(bool isLong,
+                         const trdk::Qty &qty,
                          const Volume &volume,
                          bool isInitial);
 

@@ -211,31 +211,35 @@ void PositionController::OnPostionsCloseRequest() {
 }
 
 void PositionController::OnBrokerPositionUpdate(Security &security,
+                                                bool isLong,
                                                 const Qty &qty,
                                                 const Volume &volume,
                                                 bool isInitial) {
   if (!isInitial || qty == 0) {
     GetStrategy().GetLog().Debug(
-        "Skipped broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
-        qty,                                // 1
-        volume,                             // 2
-        security,                           // 3
-        isInitial ? "initial" : "online");  // 4
+        "Skipped broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
+        "(%4%).",
+        qty,                               // 1
+        volume,                            // 2
+        security,                          // 3
+        isInitial ? "initial" : "online",  // 4
+        isLong ? "long" : "short");        // 5
     return;
   }
 
   const auto price = abs(volume / qty);
   GetStrategy().GetLog().Info(
-      "Accepting broker position %1% (volume %2$.8f, start price %3$.8f) for "
+      "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
+      "%3$.8f) for "
       "\"%4%\"...",
-      qty,        // 1
-      volume,     // 2
-      price,      // 3
-      security);  // 4
-
+      qty,                         // 1
+      volume,                      // 2
+      price,                       // 3
+      security,                    // 4
+      isLong ? "long" : "short");  // 5
   auto position =
-      qty > 0
+      isLong
           ? CreatePosition<LongPosition>(security, qty, price, Milestones())
-          : CreatePosition<ShortPosition>(security, -qty, price, Milestones());
+          : CreatePosition<ShortPosition>(security, qty, price, Milestones());
   position->RestoreOpenState(price);
 }

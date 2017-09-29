@@ -125,6 +125,7 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
                                           trdk::Security::Request &,
                                           bool &isSwitched) override;
   virtual void OnBrokerPositionUpdate(trdk::Security &,
+                                      bool isLong,
                                       const trdk::Qty &,
                                       const trdk::Volume &,
                                       bool isInitial) override;

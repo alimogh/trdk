@@ -326,6 +326,7 @@ class Dispatcher : private boost::noncopyable {
   void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
   void SignalBrokerPositionUpdate(SubscriberPtrWrapper &,
                                   Security &,
+                                  bool isLong,
                                   const Qty &,
                                   const Volume &,
                                   bool isInitial);

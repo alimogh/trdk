@@ -140,6 +140,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       bool &isSwitched) override;
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+                                              bool isLong,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
                                               bool isInitial) override;

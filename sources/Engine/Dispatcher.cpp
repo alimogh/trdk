@@ -240,15 +240,17 @@ void Dispatcher::SignalPositionUpdate(SubscriberPtrWrapper &subscriber,
 
 void Dispatcher::SignalBrokerPositionUpdate(SubscriberPtrWrapper &subscriber,
                                             Security &security,
+                                            bool isLong,
                                             const Qty &qty,
                                             const Volume &volume,
                                             bool isInitial) {
   try {
-    m_brokerPositionsUpdates.Queue(boost::make_tuple(
-                                       SubscriberPtrWrapper::BrokerPosition{
-                                           &security, qty, volume, isInitial},
-                                       subscriber),
-                                   true);
+    m_brokerPositionsUpdates.Queue(
+        boost::make_tuple(
+            SubscriberPtrWrapper::BrokerPosition{&security, isLong, qty, volume,
+                                                 isInitial},
+            subscriber),
+        true);
   } catch (...) {
     AssertFailNoException();
     //! Blocking as irreversible error, data loss.

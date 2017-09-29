@@ -35,11 +35,12 @@ void Observer::OnLevel1Update(Security &security) {
 }
 
 void Observer::RaiseBrokerPositionUpdateEvent(Security &security,
+                                              bool isLong,
                                               const Qty &qty,
                                               const Volume &volume,
                                               bool isInitial) {
   const auto lock = LockForOtherThreads();
-  OnBrokerPositionUpdate(security, qty, volume, isInitial);
+  OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
 }
 
 void Observer::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {

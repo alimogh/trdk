@@ -585,6 +585,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
 }
 
 void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
+                                              bool isLong,
                                               const Qty &qty,
                                               const Volume &volume,
                                               bool isInitial) {
@@ -596,7 +597,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
     return;
   }
   try {
-    OnBrokerPositionUpdate(security, qty, volume, isInitial);
+    OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
   }

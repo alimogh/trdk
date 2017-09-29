@@ -25,6 +25,7 @@ class TRDK_CORE_API Observer : public trdk::Consumer {
 
  public:
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+                                              bool isLong,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
                                               bool isInitial) override;

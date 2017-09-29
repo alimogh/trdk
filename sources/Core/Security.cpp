@@ -1055,10 +1055,11 @@ void Security::AddBar(Bar &&bar) {
   m_pimpl->m_marketDataLog.WriteBar(bar);
 }
 
-void Security::SetBrokerPosition(const Qty &qty,
+void Security::SetBrokerPosition(bool isLong,
+                                 const Qty &qty,
                                  const Volume &volume,
                                  bool isInitial) {
-  m_pimpl->m_brokerPositionUpdateSignal(qty, volume, isInitial);
+  m_pimpl->m_brokerPositionUpdateSignal(isLong, qty, volume, isInitial);
 }
 
 void Security::SetBook(PriceBook &book, const Milestones &delayMeasurement) {

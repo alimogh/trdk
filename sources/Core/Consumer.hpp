@@ -38,6 +38,7 @@ class TRDK_CORE_API Consumer : public trdk::Module {
       bool &isSwitched) = 0;
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+                                              bool isLong,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
                                               bool isInitial) = 0;
@@ -75,12 +76,14 @@ class TRDK_CORE_API Consumer : public trdk::Module {
 
   //! Notifies about broker position update.
   /** @param[in, out] security  Security.
-    * @param[in]      qty       Position size. Negative value means "short
-    *                           position", positive - "long position".
+    *  @param[in]     isLong    If true - position has type "long", "short"
+    *                           otherwise.
+    * @param[in]      qty       Position size.
     * @param[in]      volume    Position volume.
     * @param[in]      isInitial true if it initial data at start.
     */
   virtual void OnBrokerPositionUpdate(trdk::Security &security,
+                                      bool isLong,
                                       const trdk::Qty &qty,
                                       const trdk::Volume &volume,
                                       bool isInitial);

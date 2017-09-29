@@ -1791,6 +1791,9 @@ void Client::position(const IBString &account,
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
     size_t numberOfSecurities = 0;
 #endif
+    const bool isLong = size >= 0;
+    size = abs(size);
+
     for (auto &security : m_ts.m_securities) {
       //! @todo compares only symbols and security type, not exchanges
       if (security->GetSymbol().GetSecurityType() == securityType &&
@@ -1798,9 +1801,9 @@ void Client::position(const IBString &account,
           ((!expiryDate && !security->HasExpiration()) ||
            (expiryDate && security->HasExpiration() &&
             expiryDate == security->GetExpiration().GetDate()))) {
-        security->SetBrokerPosition(
-            size, (avgCost / security->GetQuoteSize()) * abs(size),
-            !m_isInitialBrokerPositionLoaded);
+        security->SetBrokerPosition(isLong, size,
+                                    (avgCost / security->GetQuoteSize()) * size,
+                                    !m_isInitialBrokerPositionLoaded);
         AssertEq(1, ++numberOfSecurities);
 #ifndef BOOST_ENABLE_ASSERT_HANDLER
         break;

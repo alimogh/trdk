@@ -30,6 +30,7 @@ class PositionController : private boost::noncopyable {
   virtual void OnPositionUpdate(trdk::Position &);
   void OnPostionsCloseRequest();
   void OnBrokerPositionUpdate(trdk::Security &,
+                              bool isLong,
                               const trdk::Qty &,
                               const trdk::Volume &,
                               bool isInitial);
