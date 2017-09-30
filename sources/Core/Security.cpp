@@ -550,8 +550,8 @@ class Security::Implementation : private boost::noncopyable {
                  bool isPreviouslyChanged) {
     AssertLe(0, tick.GetValue());
     const bool isChanged =
-        isPreviouslyChanged ||
-        m_level1[tick.GetType()].exchange(tick.GetValue()) != tick.GetValue();
+        m_level1[tick.GetType()].exchange(tick.GetValue()) != tick.GetValue() ||
+        isPreviouslyChanged;
     if (flush) {
       FlushLevel1Update(time, delayMeasurement, isChanged);
     }
