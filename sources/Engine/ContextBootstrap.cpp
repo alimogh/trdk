@@ -838,21 +838,19 @@ class ContextStateBootstrapper : private boost::noncopyable {
       std::vector<std::string> securities;
       for (const auto &symbol : symbols) {
         Assert(symbol);
-        m_context.ForEachMarketDataSource(
-            [&](MarketDataSource &source) -> bool {
-              auto &security = source.GetSecurity(symbol);
-              try {
-                instance->RegisterSource(security);
-              } catch (...) {
-                trdk::EventsLog::BroadcastUnhandledException(
-                    __FUNCTION__, __FILE__, __LINE__);
-                throw Exception("Failed to attach security");
-              }
-              boost::format securityStr("%1% from %2%");
-              securityStr % security % security.GetSource().GetInstanceName();
-              securities.push_back(securityStr.str());
-              return true;
-            });
+        m_context.ForEachMarketDataSource([&](MarketDataSource &source) {
+          auto &security = source.GetSecurity(symbol);
+          try {
+            instance->RegisterSource(security);
+          } catch (...) {
+            trdk::EventsLog::BroadcastUnhandledException(__FUNCTION__, __FILE__,
+                                                         __LINE__);
+            throw Exception("Failed to attach security");
+          }
+          boost::format securityStr("%1% from %2%");
+          securityStr % security % security.GetSource().GetInstanceName();
+          securities.emplace_back(securityStr.str());
+        });
       }
       Assert(module.symbolInstances.find(symbols) ==
              module.symbolInstances.end());

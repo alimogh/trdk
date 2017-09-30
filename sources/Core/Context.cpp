@@ -33,6 +33,9 @@ Context::DispatchingLock::~DispatchingLock() {}
 Context::Exception::Exception(const char *what) throw()
     : Lib::Exception(what) {}
 
+Context::TrtadingModeIsNotLoad::TrtadingModeIsNotLoad(const char *what) throw()
+    : Exception(what) {}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -203,9 +206,7 @@ class StatReport : private boost::noncopyable {
             if (DumpSecurity(security, m_securititesStatStream)) {
               securitiesHaveData = true;
             }
-            return true;
           });
-      return true;
     });
 
     if (securitiesHaveData) {

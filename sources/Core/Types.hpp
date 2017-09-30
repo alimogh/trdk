@@ -269,10 +269,10 @@ class Level1TickValue {
 namespace trdk {
 
 enum TradingMode {
-  TRADING_MODE_LIVE = 1,
-  TRADING_MODE_PAPER = 2,
-  TRADING_MODE_BACKTESTING = 3,
-  numberOfTradingModes = 3
+  TRADING_MODE_LIVE,
+  TRADING_MODE_PAPER,
+  TRADING_MODE_BACKTESTING,
+  numberOfTradingModes
 };
 TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
     const std::string &);

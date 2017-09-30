@@ -26,6 +26,7 @@ class SecurityListModel : public QAbstractItemModel {
     COLUMN_SOURCE,
     COLUMN_BID_PRICE,
     COLUMN_ASK_PRICE,
+    COLUMN_LAST_TIME,
     COLUMN_TYPE,
     COLUMN_CURRENCY,
     COLUMN_SYMBOL_FULL,
@@ -36,6 +37,11 @@ class SecurityListModel : public QAbstractItemModel {
  public:
   explicit SecurityListModel(Engine &, QWidget *parent);
   virtual ~SecurityListModel() override = default;
+
+ public:
+  const Security &GetSecurity(const QModelIndex &) const;
+  Security &GetSecurity(const QModelIndex &);
+  int GetSecurityIndex(const Security &) const;
 
  public:
   virtual QVariant headerData(int section,
@@ -49,26 +55,19 @@ class SecurityListModel : public QAbstractItemModel {
   virtual int rowCount(const QModelIndex &parent) const override;
   virtual int columnCount(const QModelIndex &parent) const override;
 
- protected:
-  const Security &GetSecurity(const QModelIndex &) const;
-  int GetSecurityIndex(const Security &) const;
-
  private slots:
-  void StateChanged(bool isStarted);
-  void BidPriceUpdate(const Security &, const Price &);
-  void AskPriceUpdate(const Security &, const Price &);
+  void OnStateChanged(bool isStarted);
+  void UpdatePrice(const Security &);
 
  private:
   void Load();
   void Clear();
 
-  void UpdateValue(const Security &, const Column &);
-
   QString ConvertFullToQString(const Lib::SecurityType &) const;
 
  private:
   Engine &m_engine;
-  std::vector<const Security *> m_securities;
+  std::vector<Security *> m_securities;
 };
 }
 }

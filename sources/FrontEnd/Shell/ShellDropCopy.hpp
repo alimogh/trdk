@@ -24,8 +24,7 @@ class DropCopy : public QObject, public trdk::DropCopy {
   virtual ~DropCopy() override = default;
 
  signals:
-  void BidPriceUpdate(const Security &, const Price &);
-  void AskPriceUpdate(const Security &, const Price &);
+  void PriceUpdate(const Security &);
 
  public:
   //! Tries to flush buffered Drop Copy data.

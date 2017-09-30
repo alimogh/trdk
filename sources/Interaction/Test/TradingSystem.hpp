@@ -44,13 +44,6 @@ class TradingSystem : public trdk::TradingSystem {
                            const trdk::Price &,
                            const trdk::OrderParams &,
                            const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendSellAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
   virtual OrderId SendSellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
@@ -76,13 +69,6 @@ class TradingSystem : public trdk::TradingSystem {
                           const trdk::Price &,
                           const trdk::OrderParams &,
                           const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendBuyAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
   virtual OrderId SendBuyImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,

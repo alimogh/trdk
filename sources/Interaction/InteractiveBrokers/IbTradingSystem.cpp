@@ -161,23 +161,6 @@ trdk::OrderId ib::TradingSystem::SendSell(
   return RegOrder(std::move(order));
 }
 
-trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceWithStopPrice(
-    trdk::Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &stopPrice,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
-  AssertEq(security.GetSymbol().GetCurrency(), currency);
-  UseUnused(currency);
-  PlacedOrder order = {};
-  order.id =
-      m_client->PlaceSellOrderWithMarketPrice(security, qty, stopPrice, params);
-  order.security = &security;
-  order.callback = statusUpdateSlot;
-  return RegOrder(std::move(order));
-}
-
 trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
     trdk::Security &security,
     const Currency &currency,
@@ -229,23 +212,6 @@ trdk::OrderId ib::TradingSystem::SendBuy(
   order.id = m_client->PlaceBuyOrder(security, qty, price, params);
   order.security = &security;
   order.callback = std::move(statusUpdateSlot);
-  return RegOrder(std::move(order));
-}
-
-trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
-    trdk::Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &stopPrice,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
-  AssertEq(security.GetSymbol().GetCurrency(), currency);
-  UseUnused(currency);
-  PlacedOrder order = {};
-  order.id =
-      m_client->PlaceBuyOrderWithMarketPrice(security, qty, stopPrice, params);
-  order.security = &security;
-  order.callback = statusUpdateSlot;
   return RegOrder(std::move(order));
 }
 

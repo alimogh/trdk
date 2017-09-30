@@ -443,22 +443,6 @@ OrderId Test::TradingSystem::SendSell(
   return id;
 }
 
-OrderId Test::TradingSystem::SendSellAtMarketPriceWithStopPrice(
-    Security &,
-    const Currency &,
-    const Qty &qty,
-    const Price &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
-  AssertLt(0, qty);
-  AssertFail("Is not implemented.");
-  UseUnused(qty);
-  throw MethodDoesNotImplementedError(
-      "Has no implementation for"
-      " trdk::Interaction::Test"
-      "::TradingSystem::SendSellAtMarketPriceWithStopPrice");
-}
-
 OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
@@ -513,22 +497,6 @@ OrderId Test::TradingSystem::SendBuy(
   m_pimpl->SendOrder(Order{false, &security, currency, false, id,
                            std::move(statusUpdateSlot), qty, price, params});
   return id;
-}
-
-OrderId Test::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
-    Security &,
-    const Currency &,
-    const Qty &qty,
-    const Price & /*stopPrice*/,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
-  AssertLt(0, qty);
-  AssertFail("Is not implemented.");
-  UseUnused(qty);
-  throw MethodDoesNotImplementedError(
-      "Has no implementation for"
-      " trdk::Interaction::Test"
-      "::TradingSystem::SendBuyAtMarketPriceWithStopPrice");
 }
 
 OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(

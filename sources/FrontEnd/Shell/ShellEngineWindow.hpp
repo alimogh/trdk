@@ -34,15 +34,19 @@ class EngineWindow : public QMainWindow {
     return m_engine.GetConfigFilePath();
   }
 
+ public slots:
+  void ShowOrderWindow(Security &);
+  void CloseOrderWindow(const Security &);
+
  private slots:
   void PinToTop(bool pin);
 
   void Start(bool start);
   void Stop(bool stop);
 
-  void StateChanged(bool isStarted);
-  void Message(const QString &, bool isWarning);
-  void LogRecord(const QString &);
+  void OnStateChanged(bool isStarted);
+  void OnMessage(const QString &, bool isWarning);
+  void OnLogRecord(const QString &);
 
  private:
   void LoadModule();
@@ -53,6 +57,8 @@ class EngineWindow : public QMainWindow {
   Ui::EngineWindow m_ui;
   std::unique_ptr<Lib::Dll> m_moduleDll;
   std::unique_ptr<QWidget> m_module;
+  boost::unordered_map<const Security *, std::unique_ptr<OrderWindow>>
+      m_orderWindows;
 };
 }
 }

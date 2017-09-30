@@ -20,6 +20,7 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Shell;
 
 namespace sh = trdk::FrontEnd::Shell;
+namespace pt = boost::posix_time;
 
 namespace {
 QVariant CheckSecurityFieldValue(double value) {
@@ -33,48 +34,28 @@ QVariant CheckSecurityFieldValue(double value) {
 SecurityListModel::SecurityListModel(sh::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
   connect(&m_engine, &Engine::StateChanged, this,
-          &SecurityListModel::StateChanged, Qt::QueuedConnection);
-
-  connect(&m_engine.GetDropCopy(), &DropCopy::BidPriceUpdate, this,
-          &SecurityListModel::BidPriceUpdate, Qt::QueuedConnection);
-  connect(&m_engine.GetDropCopy(), &DropCopy::AskPriceUpdate, this,
-          &SecurityListModel::AskPriceUpdate, Qt::QueuedConnection);
+          &SecurityListModel::OnStateChanged, Qt::QueuedConnection);
+  connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+          &SecurityListModel::UpdatePrice, Qt::QueuedConnection);
 }
 
-void SecurityListModel::StateChanged(bool isStarted) {
+void SecurityListModel::OnStateChanged(bool isStarted) {
   isStarted ? Load() : Clear();
 }
 
-void SecurityListModel::BidPriceUpdate(const Security &security,
-                                       const Price &) {
-  UpdateValue(security, COLUMN_BID_PRICE);
-}
-void SecurityListModel::AskPriceUpdate(const Security &security,
-                                       const Price &) {
-  UpdateValue(security, COLUMN_ASK_PRICE);
-}
-
-void SecurityListModel::UpdateValue(const Security &security,
-                                    const Column &column) {
-  const auto &index = createIndex(GetSecurityIndex(security), column);
-  dataChanged(index, index, {Qt::DisplayRole});
+void SecurityListModel::UpdatePrice(const Security &security) {
+  const auto &index = GetSecurityIndex(security);
+  dataChanged(createIndex(index, COLUMN_BID_PRICE),
+              createIndex(index, COLUMN_LAST_TIME), {Qt::DisplayRole});
 }
 
 void SecurityListModel::Load() {
-  std::vector<const Security *> securities;
-
-  const auto &context = m_engine.GetContext();
-  const auto &numberOfSource = context.GetNumberOfMarketDataSources();
-
-  const auto &insertSecurity = [&securities](const Security &security) -> bool {
-    securities.emplace_back(&security);
-    return true;
-  };
-  for (size_t i = 0; i < numberOfSource; ++i) {
-    auto &source = context.GetMarketDataSource(i);
-    source.ForEachSecurity(insertSecurity);
+  std::vector<Security *> securities;
+  for (size_t i = 0; i < m_engine.GetContext().GetNumberOfMarketDataSources();
+       ++i) {
+    m_engine.GetContext().GetMarketDataSource(i).ForEachSecurity([&securities](
+        Security &security) { securities.emplace_back(&security); });
   }
-
   {
     beginResetModel();
     securities.swap(m_securities);
@@ -88,7 +69,7 @@ void SecurityListModel::Clear() {
   endResetModel();
 }
 
-const Security &SecurityListModel::GetSecurity(const QModelIndex &index) const {
+Security &SecurityListModel::GetSecurity(const QModelIndex &index) {
   Assert(index.isValid());
   AssertLe(0, index.row());
   AssertGt(m_securities.size(), index.row());
@@ -96,6 +77,10 @@ const Security &SecurityListModel::GetSecurity(const QModelIndex &index) const {
     throw LogicError("Security index is not valid");
   }
   return *m_securities[index.row()];
+}
+
+const Security &SecurityListModel::GetSecurity(const QModelIndex &index) const {
+  return const_cast<SecurityListModel *>(this)->GetSecurity(index);
 }
 
 int SecurityListModel::GetSecurityIndex(const Security &security) const {
@@ -113,7 +98,7 @@ QVariant SecurityListModel::headerData(int section,
   if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfColumns == 8, "List changed.");
+  static_assert(numberOfColumns == 9, "List changed.");
   switch (section) {
     default:
       return Base::headerData(section, orientation, role);
@@ -125,6 +110,8 @@ QVariant SecurityListModel::headerData(int section,
       return tr("Bid");
     case COLUMN_ASK_PRICE:
       return tr("Ask");
+    case COLUMN_LAST_TIME:
+      return tr("Last time");
     case COLUMN_TYPE:
       return tr("Type");
     case COLUMN_CURRENCY:
@@ -145,7 +132,7 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
 
   switch (role) {
     case Qt::DisplayRole:
-      static_assert(numberOfColumns == 8, "List changed.");
+      static_assert(numberOfColumns == 9, "List changed.");
       switch (index.column()) {
         case COLUMN_SYMBOL:
           return QString::fromStdString(security.GetSymbol().GetSymbol());
@@ -155,6 +142,17 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
           return CheckSecurityFieldValue(security.GetBidPriceValue());
         case COLUMN_ASK_PRICE:
           return CheckSecurityFieldValue(security.GetAskPriceValue());
+        case COLUMN_LAST_TIME: {
+          const auto &dateTime = security.GetLastMarketDataTime();
+          if (dateTime == pt::not_a_date_time) {
+            return "--:--:--";
+          }
+          const auto &time = dateTime.time_of_day();
+          QString result;
+          result.sprintf("%02d:%02d:%02d", time.hours(), time.minutes(),
+                         time.seconds());
+          return result;
+        }
         case COLUMN_TYPE:
           return QString::fromStdString(
               ConvertToString(security.GetSymbol().GetSecurityType()));

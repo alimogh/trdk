@@ -188,15 +188,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId SellAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
-      trdk::RiskControlScope &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
   OrderId SellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
@@ -228,15 +219,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
-      trdk::RiskControlScope &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId BuyAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
@@ -281,13 +263,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                            const trdk::Price &,
                            const trdk::OrderParams &,
                            const OrderStatusUpdateSlot &&) = 0;
-  virtual OrderId SendSellAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendSellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
@@ -313,13 +288,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                           const trdk::Price &,
                           const trdk::OrderParams &,
                           const OrderStatusUpdateSlot &&) = 0;
-  virtual OrderId SendBuyAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
   virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
                                              const trdk::Lib::Currency &,
                                              const trdk::Qty &,

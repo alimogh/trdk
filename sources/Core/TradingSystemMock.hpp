@@ -54,15 +54,6 @@ class TradingSystem : public trdk::TradingSystem {
                        const OrderStatusUpdateSlot &,
                        trdk::RiskControlScope &,
                        const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(SellAtMarketPriceWithStopPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
   MOCK_METHOD8(SellImmediatelyOrCancel,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
@@ -90,15 +81,6 @@ class TradingSystem : public trdk::TradingSystem {
                        trdk::RiskControlScope &,
                        const trdk::Lib::TimeMeasurement::Milestones &));
   MOCK_METHOD8(Buy,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(BuyAtMarketPriceWithStopPrice,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
@@ -155,13 +137,6 @@ class TradingSystem : public trdk::TradingSystem {
     //! semantics.
     return SendSell(arg1, arg2, arg3, arg4, arg5, arg6);
   }
-  MOCK_METHOD6(SendSellAtMarketPriceWithStopPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
   MOCK_METHOD6(SendSellImmediatelyOrCancel,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
@@ -199,13 +174,6 @@ class TradingSystem : public trdk::TradingSystem {
     //! semantics.
     return SendBuy(arg1, arg2, arg3, arg4, arg5, arg6);
   }
-  MOCK_METHOD6(SendBuyAtMarketPriceWithStopPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
   MOCK_METHOD6(SendBuyImmediatelyOrCancel,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,

@@ -140,18 +140,16 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
     {
       std::vector<std::string> markedDataSourcesStat;
       size_t commonSecuritiesCount = 0;
-      context.ForEachMarketDataSource(
-          [&](const MarketDataSource &source) -> bool {
-            std::ostringstream oss;
-            oss << markedDataSourcesStat.size() + 1;
-            if (!source.GetInstanceName().empty()) {
-              oss << " (" << source.GetInstanceName() << ")";
-            }
-            oss << ": " << source.GetActiveSecurityCount();
-            markedDataSourcesStat.push_back(oss.str());
-            commonSecuritiesCount += source.GetActiveSecurityCount();
-            return true;
-          });
+      context.ForEachMarketDataSource([&](const MarketDataSource &source) {
+        std::ostringstream oss;
+        oss << markedDataSourcesStat.size() + 1;
+        if (!source.GetInstanceName().empty()) {
+          oss << " (" << source.GetInstanceName() << ")";
+        }
+        oss << ": " << source.GetActiveSecurityCount();
+        markedDataSourcesStat.push_back(oss.str());
+        commonSecuritiesCount += source.GetActiveSecurityCount();
+      });
       context.GetLog().Info(
           "Loaded %1% market data sources with %2% securities: %3%.",
           markedDataSourcesStat.size(), commonSecuritiesCount,
@@ -342,7 +340,7 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
   m_pimpl->m_state->subscriptionsManager.Activate();
 
-  ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
+  ForEachMarketDataSource([&](MarketDataSource &source) {
     try {
       source.SubscribeToSecurities();
     } catch (const Lib::Exception &ex) {
@@ -350,7 +348,6 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
                             ex);
       throw Exception("Failed to make market data subscription");
     }
-    return true;
   });
 }
 
@@ -461,28 +458,24 @@ MarketDataSource &Engine::Context::GetMarketDataSource(size_t index) {
 }
 
 void Engine::Context::ForEachMarketDataSource(
-    const boost::function<bool(const MarketDataSource &)> &pred) const {
+    const boost::function<void(const MarketDataSource &)> &callback) const {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   size_t i = 0;
 #endif
   for (const auto &source : m_pimpl->m_marketDataSources) {
     AssertEq(i++, source.marketDataSource->GetIndex());
-    if (!pred(*source.marketDataSource)) {
-      return;
-    }
+    callback(*source.marketDataSource);
   }
 }
 
 void Engine::Context::ForEachMarketDataSource(
-    const boost::function<bool(MarketDataSource &)> &pred) {
+    const boost::function<void(MarketDataSource &)> &callback) {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   size_t i = 0;
 #endif
   for (auto &source : m_pimpl->m_marketDataSources) {
     AssertEq(i++, source.marketDataSource->GetIndex());
-    if (!pred(*source.marketDataSource)) {
-      return;
-    }
+    callback(*source.marketDataSource);
   }
 }
 
@@ -495,12 +488,14 @@ TradingSystem &Engine::Context::GetTradingSystem(size_t index,
   if (index >= m_pimpl->m_tradingSystems.size()) {
     throw Exception("Trading System index is out of range");
   }
-  AssertLt(0, mode);
-  AssertGe(m_pimpl->m_tradingSystems[index].holders.size(),
-           static_cast<size_t>(mode));
-  auto &holder = m_pimpl->m_tradingSystems[index].holders[mode - 1];
+  if (mode >= m_pimpl->m_tradingSystems[index].holders.size()) {
+    throw TrtadingModeIsNotLoad(
+        "Trading System with such trading mode is not implemented");
+  }
+  auto &holder = m_pimpl->m_tradingSystems[index].holders[mode];
   if (!holder.tradingSystem) {
-    throw Exception("Trading System with such trading mode is not loaded");
+    throw TrtadingModeIsNotLoad(
+        "Trading System with such trading mode is not loaded");
   }
   return *holder.tradingSystem;
 }

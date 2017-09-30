@@ -1064,8 +1064,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
     const std::string &name, const IniSectionRef &conf) const {
   if (!m_pimpl->m_globalScope) {
-    return std::unique_ptr<RiskControlScope>(
-        new EmptyRiskControlScope(GetTradingMode(), name));
+    return boost::make_unique<EmptyRiskControlScope>(GetTradingMode(), name);
   }
 
   auto additionalScopesInfo(m_pimpl->m_additionalScopesInfo);
@@ -1075,12 +1074,12 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
   AssertLt(0, scopeIndex);  // zero - always Global scope
 
   Implementation::PositionsCache cache;
-  foreach (auto &symbolContex, m_pimpl->m_symbols) {
+  for (auto &symbolContex : m_pimpl->m_symbols) {
     m_pimpl->AddScope(scopeIndex, additionalScopesInfo.back(), *symbolContex);
   }
 
-  std::unique_ptr<RiskControlScope> result(new LocalRiskControlScope(
-      m_pimpl->m_context, conf, name, scopeIndex, GetTradingMode()));
+  auto result = boost::make_unique<LocalRiskControlScope>(
+      m_pimpl->m_context, conf, name, scopeIndex, GetTradingMode());
 
   additionalScopesInfo.swap(m_pimpl->m_additionalScopesInfo);
 

@@ -21,18 +21,6 @@ namespace ids = boost::uuids;
 
 sh::DropCopy::DropCopy(QObject *parent) : QObject(parent) {}
 
-void sh::DropCopy::EmitLevel1Tick(const Security &security,
-                                  const Level1TickValue &tick) {
-  switch (tick.GetType()) {
-    case LEVEL1_TICK_BID_PRICE:
-      emit BidPriceUpdate(security, tick.GetValue());
-      break;
-    case LEVEL1_TICK_ASK_PRICE:
-      emit AskPriceUpdate(security, tick.GetValue());
-      break;
-  }
-}
-
 void sh::DropCopy::Flush() {}
 
 void sh::DropCopy::Dump() {}
@@ -111,40 +99,32 @@ void sh::DropCopy::CopyAbstractData(const DropCopyDataSourceInstanceId &,
 
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
-                                  const trdk::Level1TickValue &tick) {
-  EmitLevel1Tick(security, tick);
+                                  const trdk::Level1TickValue &) {
+  emit PriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
-                                  const Level1TickValue &tick1,
-                                  const Level1TickValue &tick2) {
-  EmitLevel1Tick(security, tick1);
-  EmitLevel1Tick(security, tick2);
+                                  const Level1TickValue &,
+                                  const Level1TickValue &) {
+  emit PriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
-                                  const Level1TickValue &tick1,
-                                  const Level1TickValue &tick2,
-                                  const Level1TickValue &tick3) {
-  EmitLevel1Tick(security, tick1);
-  EmitLevel1Tick(security, tick2);
-  EmitLevel1Tick(security, tick3);
+                                  const Level1TickValue &,
+                                  const Level1TickValue &,
+                                  const Level1TickValue &) {
+  emit PriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
-                                  const Level1TickValue &tick1,
-                                  const Level1TickValue &tick2,
-                                  const Level1TickValue &tick3,
-                                  const Level1TickValue &tick4) {
-  EmitLevel1Tick(security, tick1);
-  EmitLevel1Tick(security, tick2);
-  EmitLevel1Tick(security, tick3);
-  EmitLevel1Tick(security, tick4);
+                                  const Level1TickValue &,
+                                  const Level1TickValue &,
+                                  const Level1TickValue &,
+                                  const Level1TickValue &) {
+  emit PriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
-                                  const std::vector<Level1TickValue> &ticks) {
-  for (const auto &tick : ticks) {
-    EmitLevel1Tick(security, tick);
-  }
+                                  const std::vector<Level1TickValue> &) {
+  emit PriceUpdate(security);
 }

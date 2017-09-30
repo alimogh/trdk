@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Core/TradingSystem.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
@@ -25,8 +27,14 @@ class Engine : public QObject {
  public:
   const boost::filesystem::path &GetConfigFilePath() const;
 
+  bool IsStarted() const;
+
   Context &GetContext();
   const Shell::DropCopy &GetDropCopy() const;
+
+  const TradingSystem::OrderStatusUpdateSlot &GetOrderTradingSystemSlot();
+
+  RiskControlScope &GetRiskControl(const TradingMode &);
 
  signals:
   void StateChanged(bool isStarted);

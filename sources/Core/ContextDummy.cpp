@@ -75,12 +75,12 @@ MarketDataSource &Dummies::Context::GetMarketDataSource(size_t) {
 }
 
 void Dummies::Context::ForEachMarketDataSource(
-    const boost::function<bool(const MarketDataSource &)> &) const {
+    const boost::function<void(const MarketDataSource &)> &) const {
   throw std::logic_error("Not supported");
 }
 
 void Dummies::Context::ForEachMarketDataSource(
-    const boost::function<bool(MarketDataSource &)> &) {
+    const boost::function<void(MarketDataSource &)> &) {
   throw std::logic_error("Not supported");
 }
 

@@ -1353,19 +1353,6 @@ OrderId Position::Open(const Price &price, const OrderParams &params) {
       TIME_IN_FORCE_GTC, params, price);
 }
 
-OrderId Position::OpenAtMarketPriceWithStopPrice(const Price &stopPrice) {
-  return OpenAtMarketPriceWithStopPrice(stopPrice, defaultOrderParams);
-}
-
-OrderId Position::OpenAtMarketPriceWithStopPrice(const Price &stopPrice,
-                                                 const OrderParams &params) {
-  return m_pimpl->Open(
-      [this, stopPrice](const Qty &qty, const OrderParams &params) {
-        return DoOpenAtMarketPriceWithStopPrice(qty, stopPrice, params);
-      },
-      TIME_IN_FORCE_GTC, params, boost::none);
-}
-
 OrderId Position::OpenImmediatelyOrCancel(const Price &price) {
   return OpenImmediatelyOrCancel(price, defaultOrderParams);
 }
@@ -1424,19 +1411,6 @@ OrderId Position::Close(const Price &price,
         return DoClose(qty, price, params);
       },
       TIME_IN_FORCE_GTC, price, maxQty, params);
-}
-
-OrderId Position::CloseAtMarketPriceWithStopPrice(const Price &stopPrice) {
-  return CloseAtMarketPriceWithStopPrice(stopPrice, defaultOrderParams);
-}
-
-OrderId Position::CloseAtMarketPriceWithStopPrice(const Price &stopPrice,
-                                                  const OrderParams &params) {
-  return m_pimpl->Close(
-      [this, stopPrice](const Qty &qty, const OrderParams &params) {
-        return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
-      },
-      TIME_IN_FORCE_GTC, boost::none, GetActiveQty(), params);
 }
 
 OrderId Position::CloseImmediatelyOrCancel(const Price &price) {
@@ -1620,17 +1594,6 @@ OrderId LongPosition::DoOpen(const Qty &qty,
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
-      boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
 OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                 const Price &price,
                                                 const OrderParams &params) {
@@ -1672,17 +1635,6 @@ OrderId LongPosition::DoClose(const Qty &qty,
   Assert(!IsClosed());
   return GetTradingSystem().Sell(
       GetSecurity(), GetCurrency(), qty, price, params,
-      boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
@@ -1841,17 +1793,6 @@ OrderId ShortPosition::DoOpen(const Qty &qty,
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
-      boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
 OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                  const Price &price,
                                                  const OrderParams &params) {
@@ -1891,17 +1832,6 @@ OrderId ShortPosition::DoClose(const Qty &qty,
                                const OrderParams &params) {
   return GetTradingSystem().Buy(
       GetSecurity(), GetCurrency(), qty, price, params,
-      boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());

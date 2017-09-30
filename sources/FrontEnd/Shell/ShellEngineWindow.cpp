@@ -10,8 +10,10 @@
 
 #include "Prec.hpp"
 #include "ShellEngineWindow.hpp"
+#include "ShellOrderWindow.hpp"
 #include "ShellSecurityListModel.hpp"
 
+using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Shell;
 
@@ -52,12 +54,19 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   connect(m_ui.startEngine, &QAction::triggered, this, &EngineWindow::Start);
   connect(m_ui.stopEngine, &QAction::triggered, this, &EngineWindow::Stop);
 
-  connect(&m_engine, &Engine::StateChanged, this, &EngineWindow::StateChanged,
+  connect(&m_engine, &Engine::StateChanged, this, &EngineWindow::OnStateChanged,
           Qt::QueuedConnection);
-  connect(&m_engine, &Engine::Message, this, &EngineWindow::Message,
+  connect(&m_engine, &Engine::Message, this, &EngineWindow::OnMessage,
           Qt::QueuedConnection);
-  connect(&m_engine, &Engine::LogRecord, this, &EngineWindow::LogRecord,
+  connect(&m_engine, &Engine::LogRecord, this, &EngineWindow::OnLogRecord,
           Qt::QueuedConnection);
+
+  connect(m_ui.securityList, &QTableView::clicked,
+          [this](const QModelIndex &index) {
+            ShowOrderWindow(boost::polymorphic_downcast<SecurityListModel *>(
+                                m_ui.securityList->model())
+                                ->GetSecurity(index));
+          });
 }
 
 void EngineWindow::LoadModule() {
@@ -123,7 +132,7 @@ void EngineWindow::Start(bool start) {
                                   QString("%1.").arg(ex.what()),
                                   QMessageBox::Abort | QMessageBox::Retry) !=
             QMessageBox::Retry) {
-          StateChanged(false);
+          OnStateChanged(false);
           break;
         }
       }
@@ -143,7 +152,7 @@ void EngineWindow::Stop(bool stop) {
                                   QString("%1.").arg(ex.what()),
                                   QMessageBox::Abort | QMessageBox::Retry) !=
             QMessageBox::Retry) {
-          StateChanged(true);
+          OnStateChanged(true);
           break;
         }
       }
@@ -151,7 +160,7 @@ void EngineWindow::Stop(bool stop) {
   }
 }
 
-void EngineWindow::StateChanged(bool isStarted) {
+void EngineWindow::OnStateChanged(bool isStarted) {
   m_ui.startEngine->setEnabled(!isStarted);
   m_ui.startEngine->setChecked(isStarted);
   m_ui.stopEngine->setEnabled(isStarted);
@@ -159,7 +168,7 @@ void EngineWindow::StateChanged(bool isStarted) {
   m_ui.securityList->setEnabled(isStarted);
 }
 
-void EngineWindow::Message(const QString &message, bool isWarning) {
+void EngineWindow::OnMessage(const QString &message, bool isWarning) {
   if (isWarning) {
     QMessageBox::warning(this, tr("Engine warning"), message, QMessageBox::Ok);
   } else {
@@ -168,8 +177,33 @@ void EngineWindow::Message(const QString &message, bool isWarning) {
   }
 }
 
-void EngineWindow::LogRecord(const QString &message) {
+void EngineWindow::OnLogRecord(const QString &message) {
   m_ui.log->moveCursor(QTextCursor::End);
   m_ui.log->insertPlainText(message + "\n");
   m_ui.log->moveCursor(QTextCursor::End);
+}
+
+void EngineWindow::ShowOrderWindow(Security &security) {
+  {
+    const auto &it = m_orderWindows.find(&security);
+    if (it != m_orderWindows.cend()) {
+      it->second->activateWindow();
+      it->second->showNormal();
+      return;
+    }
+  }
+  {
+    auto &window = *m_orderWindows
+                        .emplace(&security, boost::make_unique<OrderWindow>(
+                                                m_engine, security, this))
+                        .first->second;
+    connect(&window, &OrderWindow::Closed,
+            [this, &security]() { CloseOrderWindow(security); });
+    window.show();
+  }
+}
+
+void EngineWindow::CloseOrderWindow(const Security &security) {
+  Assert(m_orderWindows.find(&security) != m_orderWindows.cend());
+  m_orderWindows.erase(&security);
 }

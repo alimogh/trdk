@@ -18,6 +18,7 @@ class DropCopy;
 class Engine;
 class EngineWindow;
 class EngineListModel;
+class OrderWindow;
 }
 }
 }

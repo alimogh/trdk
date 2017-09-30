@@ -23,6 +23,10 @@ class TRDK_CORE_API Context : private boost::noncopyable {
    public:
     explicit Exception(const char *what) throw();
   };
+  class TRDK_CORE_API TrtadingModeIsNotLoad : public trdk::Context::Exception {
+   public:
+    explicit TrtadingModeIsNotLoad(const char *what) throw();
+  };
 
   typedef trdk::EventsLog Log;
   typedef trdk::TradingLog TradingLog;
@@ -172,14 +176,12 @@ class TRDK_CORE_API Context : private boost::noncopyable {
     * @throw trdk::Lib::Exception
     */
   virtual trdk::MarketDataSource &GetMarketDataSource(size_t index) = 0;
-  //! Applies the given predicate to the each market data source and
-  //! stops if predicate returns false.
+  //! Applies the given predicate to the each market data source.
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(const trdk::MarketDataSource &)> &) const = 0;
-  //! Applies the given predicate to the each market data source and
-  //! stops if predicate returns false.
+      const boost::function<void(const trdk::MarketDataSource &)> &) const = 0;
+  //! Applies the given callback to the each market data source.
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(trdk::MarketDataSource &)> &) = 0;
+      const boost::function<void(trdk::MarketDataSource &)> &) = 0;
 
   //! Trading Systems count.
   /** @sa GetTradingSystem

@@ -66,8 +66,6 @@ std::string FormatStringId(const std::string &instanceName,
 
 class TradingSystem::Implementation : private boost::noncopyable {
  public:
-  TradingSystem *m_self;
-
   const TradingMode m_mode;
 
   const size_t m_index;
@@ -80,6 +78,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
   TradingSystem::Log m_log;
   TradingSystem::TradingLog m_tradingLog;
 
+  boost::atomic_size_t m_lastOperationId;
+
   explicit Implementation(const TradingMode &mode,
                           size_t index,
                           Context &context,
@@ -90,7 +90,57 @@ class TradingSystem::Implementation : private boost::noncopyable {
         m_instanceName(instanceName),
         m_stringId(FormatStringId(m_instanceName, m_mode)),
         m_log(m_stringId, m_context.GetLog()),
-        m_tradingLog(instanceName, m_context.GetTradingLog()) {}
+        m_tradingLog(instanceName, m_context.GetTradingLog()),
+        m_lastOperationId(0) {}
+
+  void LogNewOrder(const char *orderType,
+                   size_t operationId,
+                   Security &security,
+                   const Currency &currency,
+                   const Qty &qty,
+                   const Price &price) {
+    m_tradingLog.Write("%1%\t%2%\t%3%\t%4%\tprice=%5%\tqty=%6%",
+                       [&](TradingRecord &record) {
+                         record % orderType  // 1
+                             % operationId   // 2
+                             % security      // 3
+                             % currency      // 4
+                             % price         // 6
+                             % qty;          // 5
+                       });
+  }
+  void LogOrderUpdate(size_t operationId,
+                      const OrderId &orderId,
+                      const std::string &tradingSystemOrderId,
+                      const OrderStatus &orderStatus,
+                      const Qty &remainingQty,
+                      const boost::optional<Volume> &commission,
+                      const TradeInfo *trade) {
+    m_tradingLog.Write(
+        "ORDER STATUS\t%1%\t%2%\tid=%3%/%4%\tremaining=%5%"
+        "\tcomm=%6%\ttrade-id=%7%\ttrade-price=%8%\ttrade-qty=%9%",
+        [&](TradingRecord &record) {
+          record % operationId        // 1
+              % orderStatus           // 2
+              % orderId               // 3
+              % tradingSystemOrderId  // 4
+              % remainingQty;         // 5
+          if (commission) {
+            record % *commission;  // 6
+          } else {
+            record % '-';  // 6
+          }
+          if (trade) {
+            record % trade->id  // 7
+                % trade->price  // 8
+                % trade->qty;   // 9
+          } else {
+            record % '-'  // 7
+                % '-'     // 8
+                % '-';    // 9
+          }
+        });
+  }
 
   void ValidateNewOrder(const Qty &qty, const OrderParams &params) {
     if (params.displaySize && *params.displaySize > qty) {
@@ -202,9 +252,7 @@ TradingSystem::TradingSystem(const TradingMode &mode,
                              size_t index,
                              Context &context,
                              const std::string &instanceName)
-    : m_pimpl(new Implementation(mode, index, context, instanceName)) {
-  m_pimpl->m_self = this;
-}
+    : m_pimpl(new Implementation(mode, index, context, instanceName)) {}
 
 TradingSystem::~TradingSystem() { delete m_pimpl; }
 
@@ -255,6 +303,10 @@ OrderId TradingSystem::SellAtMarketPrice(
     const TimeMeasurement::Milestones &timeMeasurement) {
   const auto &supposedPrice = security.GetBidPrice();
 
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("SELL MKT GTC", operationId, security, currency, qty,
+                       supposedPrice);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
                                  supposedPrice, params, timeMeasurement);
@@ -262,11 +314,13 @@ OrderId TradingSystem::SellAtMarketPrice(
   try {
     return SendSellAtMarketPrice(
         security, currency, qty, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
+        [&, operationId, riskControlOperationId, currency, supposedPrice,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmSellOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
@@ -291,6 +345,10 @@ OrderId TradingSystem::Sell(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("SELL LMT GTC", operationId, security, currency, qty,
+                       price);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
                                  price, params, timeMeasurement);
@@ -298,10 +356,13 @@ OrderId TradingSystem::Sell(
   try {
     return SendSell(
         security, currency, qty, price, params,
-        [&, riskControlOperationId, currency, price, timeMeasurement, callback](
+        [&, operationId, riskControlOperationId, currency, price,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                                     orderStatus, security, currency, price,
                                     remainingQty, trade, timeMeasurement);
@@ -317,44 +378,6 @@ OrderId TradingSystem::Sell(
   }
 }
 
-OrderId TradingSystem::SellAtMarketPriceWithStopPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &stopPrice,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto supposedPrice = security.GetBidPrice();
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
-                                 supposedPrice, params, timeMeasurement);
-
-  try {
-    return SendSellAtMarketPriceWithStopPrice(
-        security, currency, qty, stopPrice, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->ConfirmSellOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    GetLog().Warn("Error while sending order, rollback trading check state...");
-    m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
-                              ORDER_STATUS_ERROR, security, currency,
-                              supposedPrice, qty, nullptr, timeMeasurement);
-    throw;
-  }
-}
-
 OrderId TradingSystem::SellImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
@@ -364,6 +387,10 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("SELL LMT IOC", operationId, security, currency, qty,
+                       price);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellIocOrder(riskControlScope, security, currency, qty,
                                     price, params, timeMeasurement);
@@ -371,10 +398,13 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
   try {
     return SendSellImmediatelyOrCancel(
         security, currency, qty, price, params,
-        [&, riskControlOperationId, currency, price, timeMeasurement, callback](
+        [&, operationId, riskControlOperationId, currency, price,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                                     orderStatus, security, currency, price,
                                     remainingQty, trade, timeMeasurement);
@@ -400,6 +430,10 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
     const TimeMeasurement::Milestones &timeMeasurement) {
   const auto &supposedPrice = security.GetBidPrice();
 
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("SELL MKT IOC", operationId, security, currency, qty,
+                       supposedPrice);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewSellIocOrder(riskControlScope, security, currency, qty,
                                     supposedPrice, params, timeMeasurement);
@@ -407,11 +441,13 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
   try {
     return SendSellAtMarketPriceImmediatelyOrCancel(
         security, currency, qty, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
+        [&, operationId, riskControlOperationId, currency, supposedPrice,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmSellOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
@@ -437,6 +473,10 @@ OrderId TradingSystem::BuyAtMarketPrice(
     const TimeMeasurement::Milestones &timeMeasurement) {
   const auto &supposedPrice = security.GetAskPrice();
 
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("BUY MKT GTC", operationId, security, currency, qty,
+                       supposedPrice);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
                                 supposedPrice, params, timeMeasurement);
@@ -444,11 +484,13 @@ OrderId TradingSystem::BuyAtMarketPrice(
   try {
     return SendBuyAtMarketPrice(
         security, currency, qty, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
+        [&, operationId, riskControlOperationId, currency, supposedPrice,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmBuyOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
@@ -473,6 +515,10 @@ OrderId TradingSystem::Buy(Security &security,
                            const OrderStatusUpdateSlot &callback,
                            RiskControlScope &riskControlScope,
                            const TimeMeasurement::Milestones &timeMeasurement) {
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("BUY LMT GTC", operationId, security, currency, qty,
+                       price);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
                                 price, params, timeMeasurement);
@@ -480,10 +526,13 @@ OrderId TradingSystem::Buy(Security &security,
   try {
     return SendBuy(
         security, currency, qty, price, params,
-        [&, riskControlOperationId, currency, price, timeMeasurement, callback](
+        [&, operationId, riskControlOperationId, currency, price,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                                    orderStatus, security, currency, price,
                                    remainingQty, trade, timeMeasurement);
@@ -500,45 +549,6 @@ OrderId TradingSystem::Buy(Security &security,
   }
 }
 
-OrderId TradingSystem::BuyAtMarketPriceWithStopPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &stopPrice,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto &supposedPrice = security.GetAskPrice();
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
-                                supposedPrice, params, timeMeasurement);
-
-  try {
-    return SendBuyAtMarketPriceWithStopPrice(
-        security, currency, qty, stopPrice, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->ConfirmBuyOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    GetLog().Debug(
-        "Error while sending order, rollback trading check state...");
-    m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                             ORDER_STATUS_ERROR, security, currency,
-                             supposedPrice, qty, nullptr, timeMeasurement);
-    throw;
-  }
-}
-
 OrderId TradingSystem::BuyImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
@@ -548,6 +558,10 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
     const OrderStatusUpdateSlot &callback,
     RiskControlScope &riskControlScope,
     const TimeMeasurement::Milestones &timeMeasurement) {
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("BUY LMT IOC", operationId, security, currency, qty,
+                       price);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyIocOrder(riskControlScope, security, currency, qty,
                                    price, params, timeMeasurement);
@@ -555,10 +569,13 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
   try {
     return SendBuyImmediatelyOrCancel(
         security, currency, qty, price, params,
-        [&, riskControlOperationId, currency, price, timeMeasurement, callback](
+        [&, operationId, riskControlOperationId, currency, price,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                                    orderStatus, security, currency, price,
                                    remainingQty, trade, timeMeasurement);
@@ -585,6 +602,10 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
     const TimeMeasurement::Milestones &timeMeasurement) {
   const auto &supposedPrice = security.GetAskPrice();
 
+  const auto operationId = ++m_pimpl->m_lastOperationId;
+  m_pimpl->LogNewOrder("BUY MKT IOC", operationId, security, currency, qty,
+                       supposedPrice);
+
   const auto riskControlOperationId =
       m_pimpl->CheckNewBuyIocOrder(riskControlScope, security, currency, qty,
                                    supposedPrice, params, timeMeasurement);
@@ -592,11 +613,13 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
   try {
     return SendBuyAtMarketPriceImmediatelyOrCancel(
         security, currency, qty, params,
-        [&, riskControlOperationId, currency, supposedPrice, timeMeasurement,
-         callback](
+        [&, operationId, riskControlOperationId, currency, supposedPrice,
+         timeMeasurement, callback](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
+          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
+                                  orderStatus, remainingQty, commission, trade);
           m_pimpl->ConfirmBuyOrder(
               riskControlOperationId, riskControlScope, orderStatus, security,
               currency, supposedPrice, remainingQty, trade, timeMeasurement);
@@ -614,6 +637,8 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
 }
 
 void TradingSystem::CancelOrder(const OrderId &order) {
+  GetTradingLog().Write("CANCEL ORDER\t%1%",
+                        [&](TradingRecord &record) { record % order; });
   SendCancelOrder(order);
 }
 
