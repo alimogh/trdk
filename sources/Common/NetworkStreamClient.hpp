@@ -60,8 +60,17 @@ class NetworkStreamClient
   virtual ~NetworkStreamClient();
 
  public:
+  const std::string &GetLogTag() const;
+
+ public:
   void Start();
   void Stop();
+
+  void Send(const std::vector<boost::asio::const_buffer> &&,
+            const boost::function<void()> &&onOperaton—ompletion);
+  void Send(const std::vector<char> &&);
+  void Send(const std::string &&);
+  void Send(const char *persistentBuffer, size_t len);
 
  protected:
   virtual trdk::Lib::TimeMeasurement::Milestones StartMessageMeasurement()
@@ -111,12 +120,6 @@ class NetworkStreamClient
 
   virtual trdk::Lib::NetworkStreamClientService &GetService();
   virtual const trdk::Lib::NetworkStreamClientService &GetService() const;
-
-  void Send(const std::vector<boost::asio::const_buffer> &&,
-            const boost::function<void()> &&onOperaton—ompletion);
-  void Send(const std::vector<char> &&);
-  void Send(const std::string &&);
-  void Send(const char *persistentBuffer, size_t len);
 
   bool CheckResponceSynchronously(const char *actionName,
                                   const char *expectedResponse,

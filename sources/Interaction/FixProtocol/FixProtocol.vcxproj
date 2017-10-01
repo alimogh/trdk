@@ -304,12 +304,15 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="FixProtocolClient.cpp" />
+    <ClCompile Include="FixProtocolHandler.cpp" />
     <ClCompile Include="FixProtocolIncomingMessages.cpp" />
     <ClCompile Include="FixProtocolMarketDataSource.cpp" />
     <ClCompile Include="FixProtocolMessage.cpp" />
     <ClCompile Include="FixProtocolOutgoingMessages.cpp" />
+    <ClCompile Include="FixProtocolPolicy.cpp" />
     <ClCompile Include="FixProtocolSecurity.cpp" />
     <ClCompile Include="FixProtocolSettings.cpp" />
+    <ClCompile Include="FixProtocolTradingSystem.cpp" />
     <ClCompile Include="FixProtocolVersion.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -330,14 +333,16 @@
     <ClInclude Include="FixProtocolApi.h" />
     <ClInclude Include="FixProtocolClient.hpp" />
     <ClInclude Include="FixProtocolFwd.hpp" />
+    <ClInclude Include="FixProtocolHandler.hpp" />
     <ClInclude Include="FixProtocolIncomingMessages.hpp" />
+    <ClInclude Include="FixProtocolIncomingMessagesFabric.hpp" />
     <ClInclude Include="FixProtocolMarketDataSource.hpp" />
     <ClInclude Include="FixProtocolMessage.hpp" />
-    <ClInclude Include="FixProtocolMessageHandler.hpp" />
     <ClInclude Include="FixProtocolOutgoingMessages.hpp" />
     <ClInclude Include="FixProtocolPolicy.hpp" />
     <ClInclude Include="FixProtocolSecurity.hpp" />
     <ClInclude Include="FixProtocolSettings.hpp" />
+    <ClInclude Include="FixProtocolTradingSystem.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

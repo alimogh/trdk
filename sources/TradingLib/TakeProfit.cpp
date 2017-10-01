@@ -41,7 +41,7 @@ TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
   Assert(m_params);
 }
 
-TakeProfit::~TakeProfit() {}
+TakeProfit::~TakeProfit() = default;
 
 const char *TakeProfit::GetName() const { return "take profit"; }
 

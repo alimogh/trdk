@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/20 19:54:26
+ *   Created: 2017/10/01 06:02:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -7,31 +7,28 @@
  *       URL: http://robotdk.com
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
+#pragma once
+
+#include "FixProtocolMessage.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
-
-struct Settings;
-class Security;
-class MarketDataSource;
-class TradingSystem;
-class Client;
-class Policy;
-class Handler;
-
 namespace Incoming {
-class Logon;
-class Logout;
-class Heartbeat;
-class TestRequest;
-class MarketDataSnapshotFullRefresh;
-class MarketDataIncrementalRefresh;
-}
 
-namespace Outgoing {
-class StandardHeader;
-class Message;
+class Factory {
+ public:
+  typedef Message::Iterator Iterator;
+
+ private:
+  Factory();
+  ~Factory();
+
+ public:
+  static std::unique_ptr<Message> Create(const Iterator &begin,
+                                         const Iterator &end,
+                                         const Policy &);
+};
 }
 }
 }

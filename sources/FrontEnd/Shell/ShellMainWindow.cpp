@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(m_ui.engineList, &QListView::clicked, this, &MainWindow::ShowEngine);
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() = default;
 
 void MainWindow::closeEvent(QCloseEvent *closeEvent) {
   Base::closeEvent(closeEvent);

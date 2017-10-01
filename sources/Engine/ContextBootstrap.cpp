@@ -319,22 +319,18 @@ class ContextBootstrapper : private boost::noncopyable {
         if (holderByMode.instanceName != instanceName) {
           continue;
         }
-        AssertLt(0, mode);
-        AssertGe(holderByMode.holders.size(), static_cast<size_t>(mode));
-        AssertEq(std::string(), holderByMode.holders[mode - 1].section);
-        Assert(!holderByMode.holders[mode - 1].tradingSystem);
-        holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
-        holderByMode.holders[mode - 1].section = section;
+        AssertEq(std::string(), holderByMode.holders[mode].section);
+        Assert(!holderByMode.holders[mode].tradingSystem);
+        holderByMode.holders[mode].tradingSystem = tradingSystem;
+        holderByMode.holders[mode].section = section;
         isFound = true;
         break;
       }
       if (!isFound) {
         TradingSystemModesHolder holderByMode;
         holderByMode.instanceName = instanceName;
-        AssertLt(0, mode);
-        AssertGe(holderByMode.holders.size(), static_cast<size_t>(mode));
-        holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
-        holderByMode.holders[mode - 1].section = section;
+        holderByMode.holders[mode].tradingSystem = tradingSystem;
+        holderByMode.holders[mode].section = section;
         m_tradingSystems.emplace_back(holderByMode);
       }
     }

@@ -11,8 +11,9 @@
 #include "Prec.hpp"
 #include "FixProtocolOutgoingMessages.hpp"
 #include "FixProtocolIncomingMessages.hpp"
-#include "FixProtocolMarketDataSource.hpp"
+#include "FixProtocolPolicy.hpp"
 #include "FixProtocolSecurity.hpp"
+#include "FixProtocolSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -43,9 +44,7 @@ std::vector<char> StandardHeader::Export(
     result.emplace_back(soh);
   }
 
-  // Additional session qualifier. Possible values are : "QUOTE", "TRADE".
-  const std::string targetSubId = "QUOTE";
-  const auto &settings = GetSource().GetSettings();
+  const auto &settings = GetSettings();
   {
     // 46 bytes:
     // without custom fields:
@@ -56,7 +55,7 @@ std::vector<char> StandardHeader::Export(
     messageLen += messageSequenceNumber.size();  // 34
     messageLen += settings.senderCompId.size();  // 49
     messageLen += settings.targetCompId.size();  // 56
-    messageLen += targetSubId.size();            // 57
+    messageLen += settings.targetSubId.size();   // 57
     messageLen += settings.senderSubId.size();   // 50
     result.reserve(messageLen + 20);
     const std::string sub("9=" + boost::lexical_cast<std::string>(messageLen));
@@ -86,7 +85,7 @@ std::vector<char> StandardHeader::Export(
     result.emplace_back(soh);
   }
   {
-    const auto &now = pt::second_clock::universal_time();
+    const auto &now = GetSettings().policy->GetCurrentTime();
     // "20170117 - 08:03:04":
     const std::string sub("52=" + gr::to_iso_string(now.date()) + "-" +
                           pt::to_simple_string(now.time_of_day()));
@@ -95,7 +94,7 @@ std::vector<char> StandardHeader::Export(
     result.emplace_back(soh);
   }
   {
-    const std::string sub("57=" + targetSubId);
+    const std::string sub("57=" + settings.targetSubId);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -124,7 +123,7 @@ std::vector<char> out::Message::Export(const MessageType &messageType,
 ////////////////////////////////////////////////////////////////////////////////
 
 std::vector<char> Logon::Export(unsigned char soh) const {
-  const auto &settings = GetStandardHeader().GetSource().GetSettings();
+  const auto &settings = GetStandardHeader().GetSettings();
 
   // 28 bytes:
   // without custom fields:

@@ -9,13 +9,12 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/Settings.hpp"
-#include "FixProtocolIncomingMessages.hpp"
-#include "FixProtocolMarketDataSource.hpp"
-#include "FixProtocolMessageHandler.hpp"
+#include "FixProtocolClient.hpp"
+#include "FixProtocolHandler.hpp"
+#include "FixProtocolIncomingMessagesFabric.hpp"
+#include "FixProtocolMessage.hpp"
 #include "FixProtocolOutgoingMessages.hpp"
-#include "FixProtocolSecurity.hpp"
-#include "Common/NetworkStreamClient.hpp"
+#include "FixProtocolSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -29,93 +28,32 @@ namespace fix = trdk::Interaction::FixProtocol;
 
 namespace {
 
-class Connection : public NetworkStreamClient, public MessageHandler {
+class Connection : public NetworkStreamClient {
  public:
   typedef NetworkStreamClient Base;
 
  public:
   explicit Connection(Client &service)
       : Base(service,
-             service.GetSource().GetSettings().host,
-             service.GetSource().GetSettings().port),
-        m_standardOutgoingHeader(service.GetSource()),
-        m_isAuthorized(false),
-        m_utcDiff(service.GetSource()
-                      .GetContext()
-                      .GetSettings()
-                      .GetTimeZone()
-                      ->base_utc_offset()) {}
+             service.GetHandler().GetSettings().host,
+             service.GetHandler().GetSettings().port) {}
 
   virtual ~Connection() override = default;
 
- public:
-  virtual void OnLogon(const Incoming::Logon &logon) override {
-    if (m_isAuthorized) {
-      ProtocolError("Received unexpected Logon-message",
-                    &*logon.GetMessageBegin(), 0);
-    }
-    m_isAuthorized = true;
-  }
-  virtual void OnLogout(const Incoming::Logout &logout) override {
-    GetLog().Info("%1%Logout with the reason: \"%2%\".",
-                  GetService().GetLogTag(),  // 1
-                  logout.ReadText());        // 3
-  }
-  virtual void OnHeartbeat(const Incoming::Heartbeat &) {
-    Send(Outgoing::Heartbeat(m_standardOutgoingHeader).Export(SOH));
-  }
-  virtual void OnTestRequest(const Incoming::TestRequest &testRequest) {
-    Send(
-        Outgoing::Heartbeat(testRequest, m_standardOutgoingHeader).Export(SOH));
-  }
-
-  virtual void OnMarketDataSnapshotFullRefresh(
-      const Incoming::MarketDataSnapshotFullRefresh &snapshot,
-      const Milestones &delayMeasurement) override {
-    auto &source = GetSource();
-    const auto &time = snapshot.GetTime() + m_utcDiff;
-    auto &security = snapshot.ReadSymbol(GetSource());
-    bool hasChanges = false;
-    snapshot.ReadEachMarketDataEntity(
-        [&source, &time, &security, &hasChanges, &delayMeasurement](
-            Level1TickValue &&tick, bool isLast) {
-          hasChanges = source.OnMarketDataSnapshotFullRefresh(
-              security, time, std::move(tick), isLast, hasChanges,
-              delayMeasurement);
-        });
-  }
-  virtual void OnMarketDataIncrementalRefresh(
-      const Incoming::MarketDataIncrementalRefresh &,
-      const Milestones &) override {
-    throw MethodDoesNotImplementedError(
-        "Incoming::MarketDataIncrementalRefresh");
-  }
-
- public:
-  void RequestMarketData(const fix::Security &security) {
-    GetLog().Info("%1%Sending Market Data Request for \"%2%\" (%3%)...",
-                  GetService().GetLogTag(),  // 1
-                  security,                  // 2
-                  security.GetFixId());      // 3
-    Outgoing::MarketDataRequest request(security, m_standardOutgoingHeader);
-    Send(request.Export(SOH));
-  }
-
  protected:
-  fix::MarketDataSource &GetSource() { return GetService().GetSource(); }
-  const fix::MarketDataSource &GetSource() const {
-    return const_cast<Connection *>(this)->GetSource();
-  }
-  const Context &GetContext() const { return GetSource().GetContext(); }
-  Context &GetContext() { return GetSource().GetContext(); }
-  fix::MarketDataSource::Log &GetLog() const { return GetSource().GetLog(); }
+  Handler &GetHandler() { return GetService().GetHandler(); }
+  const Handler &GetHandler() const { return GetService().GetHandler(); }
+  const Context &GetContext() const { return GetHandler().GetContext(); }
+  Context &GetContext() { return GetHandler().GetContext(); }
+  const fix::Settings &GetSettings() { return GetHandler().GetSettings(); }
+  ModuleEventsLog &GetLog() const { return GetHandler().GetLog(); }
 
  protected:
   virtual Milestones StartMessageMeasurement() const override {
     return GetContext().StartStrategyTimeMeasurement();
   }
   virtual pt::ptime GetCurrentTime() const override {
-    return GetSource().GetContext().GetCurrentTime();
+    return GetContext().GetCurrentTime();
   }
   virtual void LogDebug(const std::string &message) const override {
     GetLog().Debug(message.c_str());
@@ -138,15 +76,15 @@ class Connection : public NetworkStreamClient, public MessageHandler {
 
  protected:
   virtual void OnStart() override {
-    Assert(!m_isAuthorized);
-    m_isAuthorized = false;
-    SendSynchronously(Outgoing::Logon(m_standardOutgoingHeader).Export(SOH),
-                      "Logon");
+    Assert(!GetHandler().IsAuthorized());
+    SendSynchronously(
+        Outgoing::Logon(GetHandler().GetStandardOutgoingHeader()).Export(SOH),
+        "Logon");
     const auto &responceContent = ReceiveSynchronously("Logon", 256);
     Incoming::Factory::Create(responceContent.cbegin(), responceContent.cend(),
-                              *GetSource().GetSettings().policy)
-        ->Handle(*this, Milestones());
-    if (!m_isAuthorized) {
+                              *GetSettings().policy)
+        ->Handle(GetHandler(), *this, Milestones());
+    if (!GetHandler().IsAuthorized()) {
       ConnectError("Failed to authorize");
     }
   }
@@ -207,25 +145,17 @@ class Connection : public NetworkStreamClient, public MessageHandler {
                                  const Milestones &delayMeasurement) override {
     const auto &bufferEnd = std::next(end);
     for (auto messageBegin = begin; messageBegin < bufferEnd;) {
-      const auto &message = Incoming::Factory::Create(
-          messageBegin, bufferEnd, *GetSource().GetSettings().policy);
-      message->Handle(*this, delayMeasurement);
+      const auto &message = Incoming::Factory::Create(messageBegin, bufferEnd,
+                                                      *GetSettings().policy);
+      message->Handle(GetHandler(), *this, delayMeasurement);
       messageBegin = message->GetMessageEnd();
       Assert(messageBegin <= bufferEnd);
     }
   }
-
- private:
-  Outgoing::StandardHeader m_standardOutgoingHeader;
-  bool m_isAuthorized;
-  const pt::time_duration m_utcDiff;
 };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-Client::Client(const std::string &name, fix::MarketDataSource &source)
-    : Base(name), m_source(source) {}
 
 Client::~Client() noexcept {
   try {
@@ -237,7 +167,7 @@ Client::~Client() noexcept {
 }
 
 pt::ptime Client::GetCurrentTime() const {
-  return GetSource().GetContext().GetCurrentTime();
+  return GetHandler().GetContext().GetCurrentTime();
 }
 
 std::unique_ptr<NetworkStreamClient> Client::CreateClient() {
@@ -245,24 +175,25 @@ std::unique_ptr<NetworkStreamClient> Client::CreateClient() {
 }
 
 void Client::LogDebug(const char *message) const {
-  GetSource().GetLog().Debug(message);
+  GetHandler().GetLog().Debug(message);
 }
 
 void Client::LogInfo(const std::string &message) const {
-  GetSource().GetLog().Info(message.c_str());
+  GetHandler().GetLog().Info(message.c_str());
 }
 
 void Client::LogError(const std::string &message) const {
-  GetSource().GetLog().Error(message.c_str());
+  GetHandler().GetLog().Error(message.c_str());
 }
 
-void Client::OnConnectionRestored() { GetSource().ResubscribeToSecurities(); }
+void Client::OnConnectionRestored() { m_handler.OnConnectionRestored(); }
 
 void Client::OnStopByError(const std::string &) {}
 
-void Client::RequestMarketData(const fix::Security &security) {
-  InvokeClient<Connection>(
-      boost::bind(&Connection::RequestMarketData, _1, boost::cref(security)));
+void Client::Send(const Outgoing::Message &message) {
+  InvokeClient<Connection>([&message](Connection &connection) {
+    connection.Send(message.Export(SOH));
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////

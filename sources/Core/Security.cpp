@@ -426,8 +426,8 @@ class Security::Implementation : private boost::noncopyable {
 
   MarketDataSource &m_source;
 
-  static_assert(numberOfTradingModes == 3, "List changed.");
-  boost::array<boost::shared_ptr<RiskControlSymbolContext>, 2>
+  boost::array<boost::shared_ptr<RiskControlSymbolContext>,
+               numberOfTradingModes>
       m_riskControlContext;
 
   const uint8_t m_pricePrecision;
@@ -486,7 +486,7 @@ class Security::Implementation : private boost::noncopyable {
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
       m_riskControlContext[i] = m_source.GetContext()
-                                    .GetRiskControl(TradingMode(i + 1))
+                                    .GetRiskControl(static_cast<TradingMode>(i))
                                     .CreateSymbolContext(symbol);
     }
 

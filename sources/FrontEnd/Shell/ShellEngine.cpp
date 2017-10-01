@@ -127,7 +127,7 @@ sh::Engine::Engine(const fs::path &path, QWidget *parent)
   });
 }
 
-sh::Engine::~Engine() {}
+sh::Engine::~Engine() = default;
 
 const fs::path &sh::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;

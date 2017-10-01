@@ -78,7 +78,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
         boost::format logMessage(
             "%1%Failed to send %2%: \"%3%\", (network error: \"%4%\")."
             " Message size: %5% bytes, sent: %6% bytes.");
-        logMessage % m_self.GetService().GetLogTag() % requestName %
+        logMessage % m_self.GetLogTag() % requestName %
             SysError(error.value()) % error % message.size() % size;
         m_self.LogError(logMessage.str());
       }
@@ -215,7 +215,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
         boost::format message(
             "%1%Connection was gratefully closed."
             " Received %2$.02f %3%.");
-        message % m_service.GetLogTag();
+        message % m_self.GetLogTag();
         const auto &stat = m_self.GetReceivedVerbouseStat();
         message % stat.first % stat.second;
         m_self.LogInfo(message.str().c_str());
@@ -273,9 +273,9 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
                 " To optimize reading buffer 0x%3% will"
                 " be increased: %4$.02f -> %5$.02f kilobytes."
                 " Total received volume: %6$.02f %7%.");
-            message % m_service.GetLogTag() %
-                (double(unreceivedMessageLen) / 1024) % &activeBuffer %
-                (double(activeBuffer.size()) / 1024) % (double(newSize) / 1024);
+            message % GetLogTag() % (double(unreceivedMessageLen) / 1024) %
+                &activeBuffer % (double(activeBuffer.size()) / 1024) %
+                (double(newSize) / 1024);
             const auto &stat = m_self.GetReceivedVerbouseStat();
             message % stat.first % stat.second;
             m_self.LogWarn(message.str());
@@ -305,7 +305,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
               "%1%Increasing buffer 0x%2% size:"
               " %3$.02f -> %4$.02f kilobytes."
               " Total received volume: %5$.02f %6%.");
-          message % m_service.GetLogTag() % &nextBuffer %
+          message % GetLogTag() % &nextBuffer %
               (double(activeBuffer.size()) / 1024) % (double(newSize) / 1024);
           const auto &stat = m_self.GetReceivedVerbouseStat();
           message % stat.first % stat.second;
@@ -321,7 +321,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
             "%1%Restoring buffer content in %2$.02f kilobytes"
             " to continue to receive message..."
             " Total received volume: %3$.02f %4%.");
-        message % m_service.GetLogTag() % (double(unreceivedMessageLen) / 1024);
+        message % GetLogTag() % (double(unreceivedMessageLen) / 1024);
         const auto &stat = m_self.GetReceivedVerbouseStat();
         message % stat.first % stat.second;
         m_self.LogDebug(message.str());
@@ -358,7 +358,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
           "%1%Connection to server closed by error:"
           " \"%2%\", (network error: \"%3%\")."
           " Received %4$.02f %5%.");
-      message % m_service.GetLogTag() % SysError(error.value()) % error;
+      message % m_self.GetLogTag() % SysError(error.value()) % error;
       const auto &stat = m_self.GetReceivedVerbouseStat();
       message % stat.first % stat.second;
       m_self.LogError(message.str());
@@ -370,7 +370,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
             const Buffer::const_iterator &begin,
             const Buffer::const_iterator &end) const {
     std::ostringstream ss;
-    ss << m_service.GetLogTag() << "Protocol error: \"" << ex << "\".";
+    ss << m_self.GetLogTag() << "Protocol error: \"" << ex << "\".";
 
     ss << " Active buffer: [ ";
     Assert(&*begin < ex.GetBufferAddress());
@@ -431,6 +431,10 @@ NetworkStreamClient::~NetworkStreamClient() {
   }
 }
 
+const std::string &NetworkStreamClient::GetLogTag() const {
+  return GetService().GetLogTag();
+}
+
 size_t NetworkStreamClient::GetNumberOfReceivedBytes() const {
   return m_pimpl->m_numberOfReceivedBytes;
 }
@@ -458,7 +462,7 @@ void NetworkStreamClient::Start() {
                    reinterpret_cast<const char *>(&timeout), sizeof(timeout));
     if (setsockoptResult) {
       boost::format message("%1%Failed to set SO_RCVTIMEO: \"%2%\".");
-      message % GetService().GetLogTag() % setsockoptResult;
+      message % GetLogTag() % setsockoptResult;
       LogError(message.str());
     }
     setsockoptResult =
@@ -466,7 +470,7 @@ void NetworkStreamClient::Start() {
                    reinterpret_cast<const char *>(&timeout), sizeof(timeout));
     if (setsockoptResult) {
       boost::format message("%1%Failed to set SO_SNDTIMEO: \"%2%\".");
-      message % GetService().GetLogTag() % setsockoptResult;
+      message % GetLogTag() % setsockoptResult;
       LogError(message.str());
     }
   }
@@ -496,7 +500,7 @@ void NetworkStreamClient::Stop() {
   }
   {
     boost::format message("%1%Closing connection...");
-    message % GetService().GetLogTag();
+    message % GetLogTag();
     LogInfo(message.str().c_str());
   }
   m_pimpl->m_socket.shutdown(io::ip::tcp::socket::shutdown_both);
@@ -535,7 +539,7 @@ bool NetworkStreamClient::CheckResponceSynchronously(
       boost::format logMessage(
           "%1%Unexpected %2% response from server (size: %3% bytes)"
           ": \"%4%\".");
-      logMessage % GetService().GetLogTag()                               // 1
+      logMessage % GetLogTag()                                            // 1
           % actionName                                                    // 2
           % serverResponse.size()                                         // 3
           % std::string(serverResponse.cbegin(), serverResponse.cend());  // 4

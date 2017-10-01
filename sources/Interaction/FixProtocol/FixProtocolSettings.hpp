@@ -23,9 +23,11 @@ struct Settings {
   std::string senderCompId;
   std::string targetCompId;
   std::string senderSubId;
+  std::string targetSubId;
   std::unique_ptr<Policy> policy;
 
-  Settings(const Lib::IniSectionRef &);
+  Settings(const Lib::IniSectionRef &, const trdk::Settings &);
+  Settings(Settings &&);
   ~Settings();
   void Log(Module::Log &) const;
   void Validate() const;

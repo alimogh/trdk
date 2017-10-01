@@ -8,8 +8,6 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Common/NetworkStreamClientService.hpp"
-
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
@@ -19,17 +17,18 @@ class Client : public Lib::NetworkStreamClientService {
   typedef Lib::NetworkStreamClientService Base;
 
  public:
-  explicit Client(const std::string &name, MarketDataSource &);
+  explicit Client(const std::string &name, Handler &handler)
+      : Base(name), m_handler(handler) {}
   virtual ~Client() noexcept override;
 
  public:
-  MarketDataSource &GetSource() { return m_source; }
-  const MarketDataSource &GetSource() const {
-    return const_cast<Client *>(this)->GetSource();
+  const Handler &GetHandler() const {
+    return const_cast<Client *>(this)->GetHandler();
   }
+  Handler &GetHandler() { return m_handler; }
 
  public:
-  void RequestMarketData(const FixProtocol::Security &);
+  void Send(const Outgoing::Message &);
 
  protected:
   virtual boost::posix_time::ptime GetCurrentTime() const override;
@@ -45,7 +44,7 @@ class Client : public Lib::NetworkStreamClientService {
   virtual void OnStopByError(const std::string &) override;
 
  private:
-  MarketDataSource &m_source;
+  Handler &m_handler;
 };
 }
 }

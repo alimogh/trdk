@@ -10,8 +10,9 @@
 
 #include "Prec.hpp"
 #include "FixProtocolIncomingMessages.hpp"
+#include "FixProtocolIncomingMessagesFabric.hpp"
 #include "FixProtocolMarketDataSource.hpp"
-#include "FixProtocolMessageHandler.hpp"
+#include "FixProtocolPolicy.hpp"
 #include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;
@@ -250,7 +251,7 @@ std::pair<Result, It> SecurityMessage::FindAndReadCharTag(
 
 std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
                                                    const Iterator &end,
-                                                   const Policy &) {
+                                                   const Policy &policy) {
   if (end - begin < 11) {
     throw ProtocolError("Message is very short", &*begin, 0);
   } else if (*(end - 1) != SOH) {
@@ -350,9 +351,9 @@ std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
               throw ProtocolError("Wrong format of milliseconds", &*fieldStart,
                                   0);
             }
-            params.time = pt::ptime(
+            params.time = policy.ConvertFromRemoteTime(pt::ptime(
                 ConvertToDate(date),
-                pt::time_duration(hours, minutes, seconds, mili * 1000));
+                pt::time_duration(hours, minutes, seconds, mili * 1000)));
           } catch (const ProtocolError &ex) {
             boost::format error("Failed to parse message time: \"%1%\"");
             error % ex.what();
@@ -430,8 +431,10 @@ void Incoming::Message::SetUnreadBegin(const Iterator &value) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Logon::Handle(MessageHandler &handler, const Milestones &) const {
-  handler.OnLogon(*this);
+void Logon::Handle(Handler &handler,
+                   NetworkStreamClient &client,
+                   const Milestones &) const {
+  handler.OnLogon(*this, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,20 +456,26 @@ std::string Logout::ReadText() const {
   }
 }
 
-void Logout::Handle(MessageHandler &handler, const Milestones &) const {
-  handler.OnLogout(*this);
+void Logout::Handle(Handler &handler,
+                    NetworkStreamClient &client,
+                    const Milestones &) const {
+  handler.OnLogout(*this, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Heartbeat::Handle(MessageHandler &handler, const Milestones &) const {
-  handler.OnHeartbeat(*this);
+void Heartbeat::Handle(Handler &handler,
+                       NetworkStreamClient &client,
+                       const Milestones &) const {
+  handler.OnHeartbeat(*this, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void TestRequest::Handle(MessageHandler &handler, const Milestones &) const {
-  handler.OnTestRequest(*this);
+void TestRequest::Handle(Handler &handler,
+                         NetworkStreamClient &client,
+                         const Milestones &) const {
+  handler.OnTestRequest(*this, client);
 }
 
 std::string TestRequest::ReadTestRequestId() const {
@@ -562,13 +571,17 @@ void MarketDataSnapshotFullRefresh::ReadEachMarketDataEntity(
 }
 
 void MarketDataSnapshotFullRefresh::Handle(
-    MessageHandler &handler, const Milestones &delayMeasurement) const {
-  handler.OnMarketDataSnapshotFullRefresh(*this, delayMeasurement);
+    Handler &handler,
+    NetworkStreamClient &client,
+    const Milestones &delayMeasurement) const {
+  handler.OnMarketDataSnapshotFullRefresh(*this, client, delayMeasurement);
 }
 
 void MarketDataIncrementalRefresh::Handle(
-    MessageHandler &handler, const Milestones &delayMeasurement) const {
-  handler.OnMarketDataIncrementalRefresh(*this, delayMeasurement);
+    Handler &handler,
+    NetworkStreamClient &client,
+    const Milestones &delayMeasurement) const {
+  handler.OnMarketDataIncrementalRefresh(*this, client, delayMeasurement);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

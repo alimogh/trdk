@@ -38,6 +38,15 @@
     <ClCompile Include="FixProtocolVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FixProtocolTradingSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixProtocolHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixProtocolPolicy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -53,9 +62,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FixProtocolMessage.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FixProtocolMessageHandler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FixProtocolOutgoingMessages.hpp">
@@ -74,6 +80,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FixProtocolFwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixProtocolTradingSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixProtocolIncomingMessagesFabric.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixProtocolHandler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

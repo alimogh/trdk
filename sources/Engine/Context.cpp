@@ -55,7 +55,8 @@ class Engine::Context::Implementation : private boost::noncopyable {
   Engine::Context &m_context;
 
   static_assert(numberOfTradingModes == 3, "List changed.");
-  boost::array<std::unique_ptr<RiskControl>, 2> m_riskControl;
+  boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>
+      m_riskControl;
 
   const fs::path m_fileLogsDir;
 
@@ -74,8 +75,8 @@ class Engine::Context::Implementation : private boost::noncopyable {
       : m_context(context), m_isStopped(false) {
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControl.size(); ++i) {
-      m_riskControl[i].reset(
-          new RiskControl(m_context, conf, TradingMode(i + 1)));
+      m_riskControl[i] = boost::make_unique<RiskControl>(
+          m_context, conf, static_cast<TradingMode>(i));
     }
 
     if (conf.IsSectionExist("Expiration")) {
@@ -103,10 +104,7 @@ class Engine::Context::Implementation : private boost::noncopyable {
   ~Implementation() { m_context.GetTradingLog().WaitForFlush(); }
 
   RiskControl &GetRiskControl(const TradingMode &mode) {
-    static_assert(numberOfTradingModes == 3, "List changed.");
-    AssertLt(0, mode);
-    AssertGe(m_riskControl.size(), static_cast<size_t>(mode));
-    return *m_riskControl[mode - 1];
+    return *m_riskControl[mode];
   }
 };
 
@@ -373,7 +371,7 @@ void Engine::Context::Update(const Lib::Ini &conf) {
   GetLog().Info("Updating setting...");
 
   static_assert(numberOfTradingModes == 3, "List changed.");
-  for (size_t i = 1; i <= numberOfTradingModes; ++i) {
+  for (size_t i = 0; i < numberOfTradingModes; ++i) {
     if (i == TRADING_MODE_BACKTESTING) {
       continue;
     }
@@ -419,10 +417,7 @@ DropCopy *Engine::Context::GetDropCopy() const {
 }
 
 RiskControl &Engine::Context::GetRiskControl(const TradingMode &mode) {
-  static_assert(numberOfTradingModes == 3, "List changed.");
-  AssertLt(0, mode);
-  AssertGe(m_pimpl->m_riskControl.size(), static_cast<size_t>(mode));
-  return *m_pimpl->m_riskControl[mode - 1];
+  return *m_pimpl->m_riskControl[mode];
 }
 
 const RiskControl &Engine::Context::GetRiskControl(

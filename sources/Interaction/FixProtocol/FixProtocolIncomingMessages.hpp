@@ -17,56 +17,6 @@ namespace Interaction {
 namespace FixProtocol {
 namespace Incoming {
 
-namespace Detail {
-struct MessagesParams {
-  FixProtocol::Message::Iterator begin;
-  FixProtocol::Message::Iterator end;
-  FixProtocol::Message::Iterator messageEnd;
-  boost::posix_time::ptime time;
-};
-}
-
-class Message : public FixProtocol::Message {
- public:
-  explicit Message(const Detail::MessagesParams &&);
-  virtual ~Message() = default;
-
- public:
-  const boost::posix_time::ptime &GetTime() const { return m_params.time; }
-
- public:
-  const Iterator &GetMessageBegin() const { return m_params.begin; }
-  const Iterator &GetUnreadBegin() const { return m_unreadBegin; }
-  const Iterator &GetEnd() const { return m_params.end; }
-  const Iterator &GetMessageEnd() const { return m_params.messageEnd; }
-
- public:
-  virtual void Handle(MessageHandler &,
-                      const Lib::TimeMeasurement::Milestones &) const = 0;
-
- protected:
-  Iterator &GetUnreadBeginRef() const { return m_unreadBegin; }
-  void SetUnreadBegin(const Iterator &) const;
-
- private:
-  const Detail::MessagesParams m_params;
-  mutable Iterator m_unreadBegin;
-};
-
-class Factory {
- public:
-  typedef Message::Iterator Iterator;
-
- private:
-  Factory();
-  ~Factory();
-
- public:
-  static std::unique_ptr<Message> Create(const Iterator &begin,
-                                         const Iterator &end,
-                                         const Policy &);
-};
-
 class Logon : public Message {
  public:
   typedef Message Base;
@@ -77,7 +27,8 @@ class Logon : public Message {
   virtual ~Logon() override = default;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
@@ -94,7 +45,8 @@ class Logout : public Message {
   std::string ReadText() const;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
@@ -108,7 +60,8 @@ class Heartbeat : public Message {
   virtual ~Heartbeat() override = default;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
@@ -125,7 +78,8 @@ class TestRequest : public Message {
   std::string ReadTestRequestId() const;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
@@ -155,7 +109,8 @@ class MarketDataSnapshotFullRefresh : public SecurityMessage {
       const boost::function<void(Level1TickValue &&, bool isLast)> &) const;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
@@ -169,7 +124,8 @@ class MarketDataIncrementalRefresh : public SecurityMessage {
   virtual ~MarketDataIncrementalRefresh() override = default;
 
  public:
-  virtual void Handle(MessageHandler &,
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 }

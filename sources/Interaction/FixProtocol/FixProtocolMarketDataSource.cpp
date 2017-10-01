@@ -10,6 +10,8 @@
 
 #include "Prec.hpp"
 #include "FixProtocolMarketDataSource.hpp"
+#include "FixProtocolIncomingMessages.hpp"
+#include "FixProtocolOutgoingMessages.hpp"
 #include "FixProtocolSecurity.hpp"
 
 using namespace trdk;
@@ -18,6 +20,8 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction::FixProtocol;
 
 namespace fix = trdk::Interaction::FixProtocol;
+namespace in = fix::Incoming;
+namespace out = fix::Outgoing;
 namespace gr = boost::gregorian;
 namespace pt = boost::posix_time;
 
@@ -25,17 +29,25 @@ fix::MarketDataSource::MarketDataSource(size_t index,
                                         Context &context,
                                         const std::string &instanceName,
                                         const IniSectionRef &conf)
-    : Base(index, context, instanceName),
-      m_settings(conf),
-      m_client("Prices", *this) {
-  m_settings.Log(GetLog());
-  m_settings.Validate();
+    : trdk::MarketDataSource(index, context, instanceName),
+      Handler(context, conf, trdk::MarketDataSource::GetLog()),
+      m_client("Prices", *this) {}
+
+Context &fix::MarketDataSource::GetContext() {
+  return trdk::MarketDataSource::GetContext();
+}
+const Context &fix::MarketDataSource::GetContext() const {
+  return trdk::MarketDataSource::GetContext();
+}
+
+ModuleEventsLog &fix::MarketDataSource::GetLog() const {
+  return trdk::MarketDataSource::GetLog();
 }
 
 void fix::MarketDataSource::Connect(const IniSectionRef &) {
-  GetLog().Debug("Connecting to the stream...");
+  GetLog().Debug("Connecting...");
   m_client.Connect();
-  GetLog().Info("Connected to the stream.");
+  GetLog().Info("Connected.");
 }
 
 void fix::MarketDataSource::SubscribeToSecurities() {
@@ -49,7 +61,11 @@ void fix::MarketDataSource::SubscribeToSecurities() {
         //         security->SetTradingSessionState(security->GetLastMarketDataTime(),
         //                                          true);
       }
-      m_client.RequestMarketData(*security.second);
+      GetLog().Info("Sending Market Data Request for \"%1%\" (%2%)...",
+                    *security.second,              // 1
+                    security.second->GetFixId());  // 2
+      m_client.Send(out::MarketDataRequest(*security.second,
+                                           GetStandardOutgoingHeader()));
     }
   } catch (const Exception &ex) {
     GetLog().Error("Failed to send market data request: \"%1%\".", ex);
@@ -57,11 +73,6 @@ void fix::MarketDataSource::SubscribeToSecurities() {
   }
 
   GetLog().Debug("Market data request sent.");
-}
-
-void fix::MarketDataSource::ResubscribeToSecurities() {
-  throw MethodDoesNotImplementedError(
-      "fix::MarketDataSource::ResubscribeToSecurities is not implemented");
 }
 
 trdk::Security &fix::MarketDataSource::CreateNewSecurityObject(
@@ -90,15 +101,21 @@ fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
   return *result->second;
 }
 
-bool fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
-    Security &security,
-    const pt::ptime &time,
-    Level1TickValue &&value,
-    bool flush,
-    bool isPreviouslyChanged,
+void fix::MarketDataSource::OnConnectionRestored() {
+  throw MethodDoesNotImplementedError(
+      "fix::MarketDataSource::OnConnectionRestored is not implemented");
+}
+
+void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
+    const in::MarketDataSnapshotFullRefresh &snapshot,
+    NetworkStreamClient &,
     const Milestones &delayMeasurement) {
-  return security.AddLevel1Tick(time, std::move(value), flush,
-                                isPreviouslyChanged, delayMeasurement);
+  auto &security = snapshot.ReadSymbol(*this);
+  bool isPreviouslyChanged = false;
+  snapshot.ReadEachMarketDataEntity([&](Level1TickValue &&value, bool isLast) {
+    return security.AddLevel1Tick(snapshot.GetTime(), std::move(value), isLast,
+                                  isPreviouslyChanged, delayMeasurement);
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////

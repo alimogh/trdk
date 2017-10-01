@@ -12,16 +12,13 @@
 
 #include "Core/MarketDataSource.hpp"
 #include "FixProtocolClient.hpp"
-#include "FixProtocolSettings.hpp"
+#include "FixProtocolHandler.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
 
-class MarketDataSource : public trdk::MarketDataSource {
- public:
-  typedef trdk::MarketDataSource Base;
-
+class MarketDataSource : public trdk::MarketDataSource, public Handler {
  public:
   explicit MarketDataSource(size_t index,
                             Context &,
@@ -30,7 +27,10 @@ class MarketDataSource : public trdk::MarketDataSource {
   virtual ~MarketDataSource() override = default;
 
  public:
-  const Settings &GetSettings() const { return m_settings; }
+  Context &GetContext() override;
+  const Context &GetContext() const override;
+
+  virtual ModuleEventsLog &GetLog() const override;
 
   const FixProtocol::Security &GetSecurityByFixId(size_t) const;
   FixProtocol::Security &GetSecurityByFixId(size_t);
@@ -41,19 +41,17 @@ class MarketDataSource : public trdk::MarketDataSource {
   void ResubscribeToSecurities();
 
  public:
-  bool OnMarketDataSnapshotFullRefresh(
-      FixProtocol::Security &security,
-      const boost::posix_time::ptime &,
-      Level1TickValue &&,
-      bool flush,
-      bool isPreviouslyChanged,
-      const Lib::TimeMeasurement::Milestones &);
+  virtual void OnConnectionRestored() override;
+
+  virtual void OnMarketDataSnapshotFullRefresh(
+      const Incoming::MarketDataSnapshotFullRefresh &,
+      Lib::NetworkStreamClient &,
+      const Lib::TimeMeasurement::Milestones &) override;
 
  protected:
   virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  const Settings m_settings;
   Client m_client;
   boost::unordered_map<size_t, boost::shared_ptr<FixProtocol::Security>>
       m_securities;

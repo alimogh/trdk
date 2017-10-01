@@ -21,11 +21,11 @@ namespace Outgoing {
 
 class StandardHeader : private boost::noncopyable {
  public:
-  explicit StandardHeader(const FixProtocol::MarketDataSource &source)
-      : m_source(source), m_nextMessageSequenceNumber(1) {}
+  explicit StandardHeader(const Settings &settings)
+      : m_settings(settings), m_nextMessageSequenceNumber(1) {}
 
  public:
-  const FixProtocol::MarketDataSource &GetSource() const { return m_source; }
+  const FixProtocol::Settings &GetSettings() const { return m_settings; }
 
  public:
   std::vector<char> Export(const Detail::MessageType &,
@@ -36,27 +36,8 @@ class StandardHeader : private boost::noncopyable {
   std::string TakeMessageSequenceNumber();
 
  private:
-  const FixProtocol::MarketDataSource &m_source;
+  const Settings &m_settings;
   size_t m_nextMessageSequenceNumber;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class Message : public FixProtocol::Message {
- public:
-  explicit Message(StandardHeader &standardHeader);
-
- public:
-  const StandardHeader &GetStandardHeader() const { return m_standardHeader; }
-
- protected:
-  std::vector<char> Export(const Detail::MessageType &,
-                           size_t messageLen,
-                           unsigned char soh) const;
-
- private:
-  StandardHeader &m_standardHeader;
-  const std::string m_messageSequenceNumber;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,9 +48,10 @@ class Logon : public Message {
 
  public:
   explicit Logon(StandardHeader &standardHeader) : Base(standardHeader) {}
+  virtual ~Logon() override = default;
 
  public:
-  std::vector<char> Export(unsigned char soh) const;
+  virtual std::vector<char> Export(unsigned char soh) const override;
 
  protected:
   using Message::Export;
@@ -83,9 +65,10 @@ class Heartbeat : public Message {
   explicit Heartbeat(StandardHeader &standardHeader) : Base(standardHeader) {}
   explicit Heartbeat(const Incoming::TestRequest &,
                      StandardHeader &standardHeader);
+  virtual ~Heartbeat() override = default;
 
  public:
-  std::vector<char> Export(unsigned char soh) const;
+  virtual std::vector<char> Export(unsigned char soh) const override;
 
  protected:
   using Base::Export;
@@ -107,9 +90,6 @@ class SecurityMessage : public Message {
 
  public:
   const FixProtocol::Security &GetSecurity() const { return m_security; }
-
- public:
-  std::vector<char> Export(unsigned char soh) const;
 
  protected:
   using Base::Export;
@@ -145,9 +125,10 @@ class MarketDataRequest : public MarketDataMessage {
   explicit MarketDataRequest(const FixProtocol::Security &security,
                              StandardHeader &standardHeader)
       : Base(security, standardHeader) {}
+  virtual ~MarketDataRequest() override = default;
 
  public:
-  std::vector<char> Export(unsigned char soh) const;
+  virtual std::vector<char> Export(unsigned char soh) const override;
 
  protected:
   using Base::Export;

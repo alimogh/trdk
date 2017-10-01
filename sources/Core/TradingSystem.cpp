@@ -328,7 +328,13 @@ OrderId TradingSystem::SellAtMarketPrice(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Warn("Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
                               supposedPrice, qty, nullptr, timeMeasurement);
@@ -370,7 +376,13 @@ OrderId TradingSystem::Sell(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Warn("Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency, price,
                               qty, nullptr, timeMeasurement);
@@ -412,7 +424,13 @@ OrderId TradingSystem::SellImmediatelyOrCancel(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Warn("Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency, price,
                               qty, nullptr, timeMeasurement);
@@ -455,7 +473,13 @@ OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Warn("Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
                               supposedPrice, qty, nullptr, timeMeasurement);
@@ -498,8 +522,13 @@ OrderId TradingSystem::BuyAtMarketPrice(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Debug(
-        "Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                              ORDER_STATUS_ERROR, security, currency,
                              supposedPrice, qty, nullptr, timeMeasurement);
@@ -540,8 +569,13 @@ OrderId TradingSystem::Buy(Security &security,
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Debug(
-        "Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                              ORDER_STATUS_ERROR, security, currency, price, qty,
                              nullptr, timeMeasurement);
@@ -583,8 +617,13 @@ OrderId TradingSystem::BuyImmediatelyOrCancel(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Debug(
-        "Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                              ORDER_STATUS_ERROR, security, currency, price, qty,
                              nullptr, timeMeasurement);
@@ -627,8 +666,13 @@ OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
                    commission, trade);
         });
   } catch (...) {
-    GetLog().Debug(
-        "Error while sending order, rollback trading check state...");
+    try {
+      throw;
+    } catch (const std::exception &ex) {
+      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
+    } catch (...) {
+      GetLog().Error("Unknown error while sending order.");
+    }
     m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
                              ORDER_STATUS_ERROR, security, currency,
                              supposedPrice, qty, nullptr, timeMeasurement);

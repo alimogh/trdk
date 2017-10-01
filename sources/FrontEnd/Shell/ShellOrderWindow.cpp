@@ -149,16 +149,40 @@ void OrderWindow::closeEvent(QCloseEvent *closeEvent) {
 void OrderWindow::SendBuyOrder() {
   static const OrderParams params;
   auto &tradingSystemMode = GetSelectedTradingSystem();
-  tradingSystemMode.Buy(
-      m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
-      m_security.GetAskPrice(), params, m_engine.GetOrderTradingSystemSlot(),
-      m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+  for (;;) {
+    try {
+      tradingSystemMode.Buy(
+          m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
+          m_security.GetAskPrice(), params,
+          m_engine.GetOrderTradingSystemSlot(),
+          m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+      break;
+    } catch (const std::exception &ex) {
+      if (QMessageBox::critical(
+              this, tr("Failed to send order"), QString("%1.").arg(ex.what()),
+              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+        break;
+      }
+    }
+  }
 }
 void OrderWindow::SendSellOrder() {
   static const OrderParams params;
   auto &tradingSystemMode = GetSelectedTradingSystem();
-  tradingSystemMode.Sell(
-      m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
-      m_security.GetBidPrice(), params, m_engine.GetOrderTradingSystemSlot(),
-      m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+  for (;;) {
+    try {
+      tradingSystemMode.Sell(
+          m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
+          m_security.GetBidPrice(), params,
+          m_engine.GetOrderTradingSystemSlot(),
+          m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+      break;
+    } catch (const std::exception &ex) {
+      if (QMessageBox::critical(
+              this, tr("Failed to send order"), QString("%1.").arg(ex.what()),
+              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+        break;
+      }
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/10/01 06:47:22
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,13 +8,12 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "FixProtocolPolicy.hpp"
 
-#include "Common/Common.hpp"
-#include "Core/Settings.hpp"
-#include "FixProtocolApi.h"
-#include "FixProtocolFwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+using namespace trdk;
+using namespace trdk::Lib;
+using namespace trdk::Interaction::FixProtocol;
 
-#include "Common/NetworkStreamClient.hpp"
-#include "Common/NetworkStreamClientService.hpp"
+Policy::Policy(const trdk::Settings &settings)
+    : m_utcDiff(settings.GetTimeZone()->base_utc_offset()) {}
