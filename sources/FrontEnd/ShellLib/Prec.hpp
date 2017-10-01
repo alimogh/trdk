@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/10/01 19:17:58
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,8 @@
 
 #pragma once
 
-#include "ShellLib/ShellFwd.hpp"
-
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class OrderWindow;
-}
-}
-}
+#include "Common/Common.hpp"
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include <QtWidgets>
+#pragma warning(pop)

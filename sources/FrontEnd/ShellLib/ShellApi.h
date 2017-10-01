@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/10/01 19:18:48
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,12 @@
 
 #pragma once
 
-#include "ShellLib/ShellFwd.hpp"
-
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class OrderWindow;
-}
-}
-}
+#ifdef BOOST_WINDOWS
+#ifdef TRDK_FRONTEND_SHELL_LIB
+#define TRDK_FRONTEND_SHELL_LIB_API Q_DECL_EXPORT
+#else
+#define TRDK_FRONTEND_SHELL_LIB_API Q_DECL_IMPORT
+#endif
+#else
+#define TRDK_FRONTEND_SHELL_LIB_API
+#endif

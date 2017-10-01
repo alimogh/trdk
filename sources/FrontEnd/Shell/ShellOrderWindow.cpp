@@ -12,8 +12,8 @@
 #include "ShellOrderWindow.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "ShellDropCopy.hpp"
-#include "ShellEngine.hpp"
+#include "ShellLib/ShellDropCopy.hpp"
+#include "ShellLib/ShellEngine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

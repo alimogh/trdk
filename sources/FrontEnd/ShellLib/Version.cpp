@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/10/01 19:17:21
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,16 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-#include "ShellLib/ShellFwd.hpp"
+using namespace trdk::Lib;
 
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class OrderWindow;
-}
-}
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_FRONTEND_SHELL_LIB_FILE_NAME);
 }

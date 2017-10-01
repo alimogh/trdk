@@ -10,11 +10,15 @@
 
 #pragma once
 
+#include "ShellApi.h"
+#include "ShellFwd.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
-class SecurityListModel : public QAbstractItemModel {
+class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
+    : public QAbstractItemModel {
   Q_OBJECT
 
  public:

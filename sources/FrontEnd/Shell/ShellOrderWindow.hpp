@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "ShellFwd.hpp"
 #include "ui_ShellOrderWindow.h"
 
 namespace trdk {

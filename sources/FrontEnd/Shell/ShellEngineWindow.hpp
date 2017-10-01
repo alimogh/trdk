@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "ShellEngine.hpp"
+#include "ShellLib/ShellEngine.hpp"
 #include "ui_ShellEngineWindow.h"
 
 namespace trdk {

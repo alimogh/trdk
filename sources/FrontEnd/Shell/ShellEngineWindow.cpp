@@ -10,8 +10,8 @@
 
 #include "Prec.hpp"
 #include "ShellEngineWindow.hpp"
+#include "ShellLib/ShellSecurityListModel.hpp"
 #include "ShellOrderWindow.hpp"
-#include "ShellSecurityListModel.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

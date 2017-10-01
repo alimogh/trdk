@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/09 01:43:03
+ *   Created: 2017/10/01 19:17:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,16 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
-#include "ShellLib/ShellFwd.hpp"
-
-namespace trdk {
-namespace FrontEnd {
-namespace Shell {
-
-class EngineWindow;
-class OrderWindow;
-}
-}
-}
+#include "Prec.hpp"

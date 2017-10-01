@@ -11,12 +11,14 @@
 #pragma once
 
 #include "Core/DropCopy.hpp"
+#include "ShellApi.h"
 
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
-class DropCopy : public QObject, public trdk::DropCopy {
+class TRDK_FRONTEND_SHELL_LIB_API DropCopy : public QObject,
+                                             public trdk::DropCopy {
   Q_OBJECT
 
  public:

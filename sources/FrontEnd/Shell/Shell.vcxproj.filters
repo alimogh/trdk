@@ -66,33 +66,6 @@
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellSecurityListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellDropCopy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellDropCopy.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellDropCopy.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ShellEngineListModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -104,15 +77,6 @@
     </ClCompile>
     <ClCompile Include="ShellMainWindow.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngineListModel.cpp">
       <Filter>Generated Files\Debug Standalone</Filter>
@@ -180,15 +144,6 @@
     </CustomBuild>
     <CustomBuild Include="Resources\qdarkstyle\style.qrc">
       <Filter>Resource Files\qdarkstyle</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ShellSecurityListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ShellDropCopy.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ShellEngine.hpp">
-      <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="ShellEngineListModel.hpp">
       <Filter>Header Files</Filter>

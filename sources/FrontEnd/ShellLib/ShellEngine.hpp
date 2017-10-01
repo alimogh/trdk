@@ -11,12 +11,14 @@
 #pragma once
 
 #include "Core/TradingSystem.hpp"
+#include "ShellApi.h"
+#include "ShellFwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
-class Engine : public QObject {
+class TRDK_FRONTEND_SHELL_LIB_API Engine : public QObject {
   Q_OBJECT
 
  public:
