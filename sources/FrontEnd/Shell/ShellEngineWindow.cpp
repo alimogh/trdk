@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "ShellEngineWindow.hpp"
+#include "Core/Security.hpp"
 #include "ShellLib/ShellSecurityListModel.hpp"
 #include "ShellOrderWindow.hpp"
 
@@ -184,26 +185,29 @@ void EngineWindow::OnLogRecord(const QString &message) {
 }
 
 void EngineWindow::ShowOrderWindow(Security &security) {
+  const auto &key = security.GetSymbol();
   {
-    const auto &it = m_orderWindows.find(&security);
+    const auto &it = m_orderWindows.find(key);
     if (it != m_orderWindows.cend()) {
       it->second->activateWindow();
       it->second->showNormal();
+      it->second->SetSecurity(security);
       return;
     }
   }
   {
-    auto &window = *m_orderWindows
-                        .emplace(&security, boost::make_unique<OrderWindow>(
-                                                m_engine, security, this))
-                        .first->second;
+    auto &window =
+        *m_orderWindows
+             .emplace(key, boost::make_unique<OrderWindow>(m_engine, this))
+             .first->second;
     connect(&window, &OrderWindow::Closed,
-            [this, &security]() { CloseOrderWindow(security); });
+            [this, key]() { CloseOrderWindow(key); });
     window.show();
+    window.SetSecurity(security);
   }
 }
 
-void EngineWindow::CloseOrderWindow(const Security &security) {
-  Assert(m_orderWindows.find(&security) != m_orderWindows.cend());
-  m_orderWindows.erase(&security);
+void EngineWindow::CloseOrderWindow(const Symbol &symbol) {
+  Assert(m_orderWindows.find(symbol) != m_orderWindows.cend());
+  m_orderWindows.erase(symbol);
 }

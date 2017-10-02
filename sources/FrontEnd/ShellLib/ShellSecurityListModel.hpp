@@ -61,7 +61,7 @@ class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
 
  private slots:
   void OnStateChanged(bool isStarted);
-  void UpdatePrice(const Security &);
+  void UpdatePrice(const Security *);
 
  private:
   void Load();

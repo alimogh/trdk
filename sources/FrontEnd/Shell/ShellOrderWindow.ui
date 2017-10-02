@@ -213,10 +213,7 @@ color: rgb(251, 253, 254);</string>
        </layout>
       </item>
       <item row="3" column="1" colspan="3">
-       <layout class="QHBoxLayout" name="sourceLayout" stretch="1,0">
-        <item>
-         <widget class="QComboBox" name="target"/>
-        </item>
+       <layout class="QHBoxLayout" name="sourceLayout" stretch="0,1">
         <item>
          <widget class="QComboBox" name="mode">
           <property name="sizePolicy">
@@ -226,6 +223,9 @@ color: rgb(251, 253, 254);</string>
            </sizepolicy>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="target"/>
         </item>
        </layout>
       </item>

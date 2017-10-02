@@ -23,21 +23,10 @@ using namespace trdk::FrontEnd::Shell;
 namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
-OrderWindow::OrderWindow(sh::Engine &engine,
-                         Security &security,
-                         QWidget *parent)
-    : Base(parent), m_engine(engine), m_security(security) {
+OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
+    : Base(parent), m_engine(engine), m_security(nullptr) {
   m_ui.setupUi(this);
-
-  const auto &symbol = QString::fromStdString(security.GetSymbol().GetSymbol());
-  setWindowTitle(symbol + " - " + QCoreApplication::applicationName());
-  m_ui.symbol->setText(symbol);
-  m_ui.source->setText(
-      QString::fromStdString(security.GetSource().GetInstanceName()));
-  m_ui.fullSymbol->setText(
-      QString::fromStdString(security.GetSymbol().GetAsString()));
-
-  m_ui.qty->setDecimals(m_security.GetPricePrecision());
+  setEnabled(false);
 
   if (m_engine.GetContext().GetNumberOfTradingSystems() > 0) {
     boost::optional<int> selectedByDefault;
@@ -72,32 +61,80 @@ OrderWindow::OrderWindow(sh::Engine &engine,
       m_ui.mode->setCurrentIndex(*selectedByDefault);
     }
     LoadTradingSystemList(m_ui.mode->currentIndex());
-    connect(m_ui.mode, static_cast<void (QComboBox::*)(int)>(
-                           &QComboBox::currentIndexChanged),
-            this, &OrderWindow::LoadTradingSystemList);
+    Verify(connect(m_ui.mode, static_cast<void (QComboBox::*)(int)>(
+                                  &QComboBox::currentIndexChanged),
+                   this, &OrderWindow::LoadTradingSystemList));
   }
 
+  Verify(connect(m_ui.mode, static_cast<void (QComboBox::*)(int)>(
+                                &QComboBox::currentIndexChanged),
+                 this, &OrderWindow::LoadTradingSystemList));
+
+  Verify(connect(&m_engine, &Engine::StateChanged, this,
+                 &OrderWindow::OnStateChanged, Qt::QueuedConnection));
+
+  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+                 &OrderWindow::UpdatePrices, Qt::QueuedConnection));
+
+  Verify(connect(m_ui.buy, &QPushButton::clicked, this,
+                 &OrderWindow::SendBuyOrder));
+  Verify(connect(m_ui.sell, &QPushButton::clicked, this,
+                 &OrderWindow::SendSellOrder));
+}
+
+void OrderWindow::SetSecurity(Security &security) {
+  if (m_security == &security) {
+    Assert(isEnabled());
+    return;
+  }
+  m_security = &security;
+  m_ui.qty->setDecimals(m_security->GetPricePrecision());
+  const auto &symbol =
+      QString::fromStdString(m_security->GetSymbol().GetSymbol());
+  setWindowTitle(symbol + " - " + QCoreApplication::applicationName());
+  m_ui.symbol->setText(symbol);
+  m_ui.source->setText(
+      QString::fromStdString(m_security->GetSource().GetInstanceName()));
+  m_ui.fullSymbol->setText(
+      QString::fromStdString(m_security->GetSymbol().GetAsString()));
+  SelectTradingSystem();
   UpdatePrices(m_security);
+  setEnabled(true);
+}
 
-  connect(&m_engine, &Engine::StateChanged, this, &OrderWindow::OnStateChanged,
-          Qt::QueuedConnection);
-
-  connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
-          &OrderWindow::UpdatePrices, Qt::QueuedConnection);
-
-  connect(m_ui.buy, &QPushButton::clicked, this, &OrderWindow::SendBuyOrder);
-  connect(m_ui.sell, &QPushButton::clicked, this, &OrderWindow::SendSellOrder);
+void OrderWindow::SelectTradingSystem() {
+  Assert(m_security);
+  const auto &mode = GetSelectedTradingMode();
+  const auto &preferedTradingSystemName =
+      m_security->GetSource().GetInstanceName();
+  for (int i = 0; i < m_ui.target->count(); ++i) {
+    const auto &tradingSystem = m_engine.GetContext().GetTradingSystem(
+        m_ui.target->itemData(i).toUInt(), mode);
+    if (tradingSystem.GetInstanceName() == preferedTradingSystemName) {
+      m_ui.target->setCurrentIndex(i);
+      return;
+    }
+  }
+  m_ui.target->setCurrentIndex(-1);
+  QMessageBox::warning(
+      this, tr("Could not find related trading system"),
+      tr("Security \"%1\" from source \"%2\" does not have related trading "
+         "system. Please choose a trading system as a target for orders before "
+         "sending an order.")
+          .arg(QString::fromStdString(m_security->GetSymbol().GetSymbol()),
+               QString::fromStdString(preferedTradingSystemName)),
+      QMessageBox::Ok);
 }
 
 void OrderWindow::OnStateChanged(bool isStarted) { setEnabled(isStarted); }
 
-void OrderWindow::UpdatePrices(const Security &security) {
-  if (&security != &m_security) {
+void OrderWindow::UpdatePrices(const Security *security) {
+  Assert(security);
+  if (security != m_security) {
     return;
   }
-
   {
-    const auto &lastTime = security.GetLastMarketDataTime();
+    const auto &lastTime = security->GetLastMarketDataTime();
     if (lastTime != pt::not_a_date_time) {
       const auto &time = lastTime.time_of_day();
       QString text;
@@ -108,11 +145,10 @@ void OrderWindow::UpdatePrices(const Security &security) {
       m_ui.lastTime->setText("--:--:--");
     }
   }
-
   {
-    const auto &precision = m_security.GetPricePrecision();
-    const auto &bid = m_security.GetBidPriceValue();
-    const auto &ask = m_security.GetAskPriceValue();
+    const auto &precision = security->GetPricePrecision();
+    const auto &bid = security->GetBidPriceValue();
+    const auto &ask = security->GetAskPriceValue();
     m_ui.bidPrice->setText(
         QString::number(!isnan(bid) ? bid : 0, 'f', precision));
     m_ui.askPrice->setText(
@@ -134,11 +170,19 @@ void OrderWindow::LoadTradingSystemList(int index) {
   }
 }
 
-TradingSystem &OrderWindow::GetSelectedTradingSystem() {
-  return m_engine.GetContext().GetTradingSystem(
-      m_ui.target->itemData(m_ui.target->currentIndex()).toUInt(),
-      static_cast<TradingMode>(
-          m_ui.mode->itemData(m_ui.mode->currentIndex()).toInt()));
+TradingSystem *OrderWindow::GetSelectedTradingSystem() {
+  const auto &index = m_ui.target->currentIndex();
+  if (index < 0) {
+    return nullptr;
+  }
+  return &m_engine.GetContext().GetTradingSystem(
+      m_ui.target->itemData(index).toUInt(), GetSelectedTradingMode());
+}
+
+TradingMode OrderWindow::GetSelectedTradingMode() const {
+  AssertLe(0, m_ui.mode->currentIndex());
+  AssertGt(numberOfTradingModes, m_ui.mode->currentIndex());
+  return static_cast<TradingMode>(m_ui.mode->currentIndex());
 }
 
 void OrderWindow::closeEvent(QCloseEvent *closeEvent) {
@@ -147,15 +191,24 @@ void OrderWindow::closeEvent(QCloseEvent *closeEvent) {
 }
 
 void OrderWindow::SendBuyOrder() {
+  Assert(m_security);
   static const OrderParams params;
-  auto &tradingSystemMode = GetSelectedTradingSystem();
+  auto *const tradingSystemMode = GetSelectedTradingSystem();
+  if (!tradingSystemMode) {
+    QMessageBox::warning(this, tr("Could not send order to buy"),
+                         "There is no selected trading system as an order "
+                         "target. Please choose a trading mode and a trading "
+                         "system and try again.",
+                         QMessageBox::Ok);
+    return;
+  }
   for (;;) {
     try {
-      tradingSystemMode.Buy(
-          m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security.GetAskPrice(), params,
+      tradingSystemMode->Buy(
+          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
+          m_security->GetAskPrice(), params,
           m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -167,15 +220,24 @@ void OrderWindow::SendBuyOrder() {
   }
 }
 void OrderWindow::SendSellOrder() {
+  Assert(m_security);
   static const OrderParams params;
-  auto &tradingSystemMode = GetSelectedTradingSystem();
+  auto *const tradingSystemMode = GetSelectedTradingSystem();
+  if (!tradingSystemMode) {
+    QMessageBox::warning(this, tr("Could not send order to sell"),
+                         "There is no selected trading system as an order "
+                         "target. Please choose a trading mode and a trading "
+                         "system and try again.",
+                         QMessageBox::Ok);
+    return;
+  }
   for (;;) {
     try {
-      tradingSystemMode.Sell(
-          m_security, m_security.GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security.GetBidPrice(), params,
+      tradingSystemMode->Sell(
+          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
+          m_security->GetBidPrice(), params,
           m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode.GetMode()), Milestones());
+          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(

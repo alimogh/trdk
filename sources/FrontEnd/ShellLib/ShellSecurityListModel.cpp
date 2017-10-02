@@ -23,28 +23,28 @@ namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
 namespace {
-QVariant CheckSecurityFieldValue(double value) {
+QVariant CheckSecurityFieldValue(double value, const Security &security) {
   if (isnan(value)) {
     return "-";
   }
-  return value;
+  return QString::number(value, 'f', security.GetPricePrecision());
 }
 }
 
 SecurityListModel::SecurityListModel(sh::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
-  connect(&m_engine, &Engine::StateChanged, this,
-          &SecurityListModel::OnStateChanged, Qt::QueuedConnection);
-  connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
-          &SecurityListModel::UpdatePrice, Qt::QueuedConnection);
+  Verify(connect(&m_engine, &Engine::StateChanged, this,
+                 &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
+  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+                 &SecurityListModel::UpdatePrice, Qt::QueuedConnection));
 }
 
 void SecurityListModel::OnStateChanged(bool isStarted) {
   isStarted ? Load() : Clear();
 }
 
-void SecurityListModel::UpdatePrice(const Security &security) {
-  const auto &index = GetSecurityIndex(security);
+void SecurityListModel::UpdatePrice(const Security *security) {
+  const auto &index = GetSecurityIndex(*security);
   dataChanged(createIndex(index, COLUMN_BID_PRICE),
               createIndex(index, COLUMN_LAST_TIME), {Qt::DisplayRole});
 }
@@ -139,9 +139,9 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_SOURCE:
           return QString::fromStdString(security.GetSource().GetInstanceName());
         case COLUMN_BID_PRICE:
-          return CheckSecurityFieldValue(security.GetBidPriceValue());
+          return CheckSecurityFieldValue(security.GetBidPriceValue(), security);
         case COLUMN_ASK_PRICE:
-          return CheckSecurityFieldValue(security.GetAskPriceValue());
+          return CheckSecurityFieldValue(security.GetAskPriceValue(), security);
         case COLUMN_LAST_TIME: {
           const auto &dateTime = security.GetLastMarketDataTime();
           if (dateTime == pt::not_a_date_time) {

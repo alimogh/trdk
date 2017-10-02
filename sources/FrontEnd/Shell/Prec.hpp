@@ -17,7 +17,6 @@
 #pragma warning(disable : 4127)
 #include <QtWidgets>
 #pragma warning(pop)
-
 #include <boost/algorithm/string.hpp>
 #include <boost/cast.hpp>
 #include <boost/filesystem/path.hpp>

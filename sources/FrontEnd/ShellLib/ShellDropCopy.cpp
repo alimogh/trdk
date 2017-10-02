@@ -19,7 +19,11 @@ namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 
-sh::DropCopy::DropCopy(QObject *parent) : QObject(parent) {}
+sh::DropCopy::DropCopy(QObject *parent)
+    : QObject(parent),
+      m_pollingInterval(pt::milliseconds(500)),
+      m_lastSignalTime(pt::microsec_clock::universal_time() -
+                       m_pollingInterval) {}
 
 void sh::DropCopy::Flush() {}
 
@@ -100,20 +104,20 @@ void sh::DropCopy::CopyAbstractData(const DropCopyDataSourceInstanceId &,
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
                                   const trdk::Level1TickValue &) {
-  emit PriceUpdate(security);
+  SignalPriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
                                   const Level1TickValue &,
                                   const Level1TickValue &) {
-  emit PriceUpdate(security);
+  SignalPriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
                                   const Level1TickValue &,
                                   const Level1TickValue &,
                                   const Level1TickValue &) {
-  emit PriceUpdate(security);
+  SignalPriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
@@ -121,10 +125,19 @@ void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const Level1TickValue &,
                                   const Level1TickValue &,
                                   const Level1TickValue &) {
-  emit PriceUpdate(security);
+  SignalPriceUpdate(security);
 }
 void sh::DropCopy::CopyLevel1Tick(const Security &security,
                                   const pt::ptime &,
                                   const std::vector<Level1TickValue> &) {
-  emit PriceUpdate(security);
+  SignalPriceUpdate(security);
+}
+
+void sh::DropCopy::SignalPriceUpdate(const Security &security) {
+  const auto &now = pt::microsec_clock::universal_time();
+  if (m_lastSignalTime + m_pollingInterval > now) {
+    return;
+  }
+  emit PriceUpdate(&security);
+  m_lastSignalTime = std::move(now);
 }

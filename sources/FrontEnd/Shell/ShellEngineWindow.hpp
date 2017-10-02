@@ -36,7 +36,7 @@ class EngineWindow : public QMainWindow {
 
  public slots:
   void ShowOrderWindow(Security &);
-  void CloseOrderWindow(const Security &);
+  void CloseOrderWindow(const Lib::Symbol &);
 
  private slots:
   void PinToTop(bool pin);
@@ -57,7 +57,7 @@ class EngineWindow : public QMainWindow {
   Ui::EngineWindow m_ui;
   std::unique_ptr<Lib::Dll> m_moduleDll;
   std::unique_ptr<QWidget> m_module;
-  boost::unordered_map<const Security *, std::unique_ptr<OrderWindow>>
+  boost::unordered_map<Lib::Symbol, std::unique_ptr<OrderWindow>>
       m_orderWindows;
 };
 }

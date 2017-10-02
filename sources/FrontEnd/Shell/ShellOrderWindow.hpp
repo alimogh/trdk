@@ -24,11 +24,13 @@ class OrderWindow : public QMainWindow {
   typedef QMainWindow Base;
 
  public:
-  explicit OrderWindow(Engine &, Security &, QWidget *parent);
+  explicit OrderWindow(Engine &, QWidget *parent);
   virtual ~OrderWindow() override = default;
 
  public:
-  TradingSystem &GetSelectedTradingSystem();
+  void SetSecurity(Security &);
+  TradingSystem *GetSelectedTradingSystem();
+  TradingMode GetSelectedTradingMode() const;
 
  signals:
   void Closed();
@@ -39,15 +41,17 @@ class OrderWindow : public QMainWindow {
  private slots:
   void LoadTradingSystemList(int index);
   void OnStateChanged(bool isStarted);
-  void UpdatePrices(const Security &);
+  void UpdatePrices(const Security *);
 
   void SendBuyOrder();
   void SendSellOrder();
 
+  void SelectTradingSystem();
+
  private:
   Ui::OrderWindow m_ui;
   Engine &m_engine;
-  Security &m_security;
+  Security *m_security;
 };
 }
 }

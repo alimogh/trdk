@@ -26,7 +26,7 @@ class TRDK_FRONTEND_SHELL_LIB_API DropCopy : public QObject,
   virtual ~DropCopy() override = default;
 
  signals:
-  void PriceUpdate(const Security &);
+  void PriceUpdate(const Security *);
 
  public:
   //! Tries to flush buffered Drop Copy data.
@@ -130,7 +130,11 @@ class TRDK_FRONTEND_SHELL_LIB_API DropCopy : public QObject,
       const std::vector<trdk::Level1TickValue> &) override;
 
  private:
-  void EmitLevel1Tick(const Security &, const Level1TickValue &);
+  void SignalPriceUpdate(const Security &);
+
+ private:
+  const boost::posix_time::time_duration m_pollingInterval;
+  boost::posix_time::ptime m_lastSignalTime;
 };
 }
 }
