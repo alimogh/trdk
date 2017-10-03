@@ -48,57 +48,50 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
   virtual OrderId SendSellAtMarketPrice(trdk::Security &,
                                         const trdk::Lib::Currency &,
                                         const trdk::Qty &,
-                                        const trdk::OrderParams &,
-                                        const OrderStatusUpdateSlot &) override;
+                                        const trdk::OrderParams &) override;
   virtual OrderId SendSell(trdk::Security &,
                            const trdk::Lib::Currency &,
                            const trdk::Qty &,
                            const trdk::Price &,
-                           const trdk::OrderParams &,
-                           const OrderStatusUpdateSlot &&) override;
+                           const trdk::OrderParams &) override;
   virtual OrderId SendSellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
+      const trdk::OrderParams &) override;
   virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
+      const trdk::OrderParams &) override;
 
   virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
                                        const trdk::Lib::Currency &,
                                        const trdk::Qty &,
-                                       const trdk::OrderParams &,
-                                       const OrderStatusUpdateSlot &) override;
+                                       const trdk::OrderParams &) override;
   virtual OrderId SendBuy(trdk::Security &,
                           const trdk::Lib::Currency &,
                           const trdk::Qty &,
                           const trdk::Price &,
-                          const trdk::OrderParams &,
-                          const OrderStatusUpdateSlot &&) override;
+                          const trdk::OrderParams &) override;
   virtual OrderId SendBuyImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
+      const trdk::OrderParams &) override;
   virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) override;
+      const trdk::OrderParams &) override;
 
   virtual void SendCancelOrder(const OrderId &) override;
 
  private:
   Client m_client;
+  OrderId m_lastUsedOrderId;
 };
 }
 }

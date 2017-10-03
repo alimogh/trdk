@@ -83,6 +83,39 @@ class TestRequest : public Message {
                       const Lib::TimeMeasurement::Milestones &) const override;
 };
 
+class ResendRequest : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit ResendRequest(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~ResendRequest() override = default;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) const override;
+};
+
+class Reject : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit Reject(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~Reject() override = default;
+
+ public:
+  std::string ReadText() const;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) const override;
+};
+
 class SecurityMessage : public Message {
  public:
   typedef Message Base;

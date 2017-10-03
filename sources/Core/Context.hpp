@@ -23,9 +23,9 @@ class TRDK_CORE_API Context : private boost::noncopyable {
    public:
     explicit Exception(const char *what) throw();
   };
-  class TRDK_CORE_API TrtadingModeIsNotLoad : public trdk::Context::Exception {
+  class TRDK_CORE_API TradingModeIsNotLoaded : public trdk::Context::Exception {
    public:
-    explicit TrtadingModeIsNotLoad(const char *what) throw();
+    explicit TradingModeIsNotLoaded(const char *what) throw();
   };
 
   typedef trdk::EventsLog Log;

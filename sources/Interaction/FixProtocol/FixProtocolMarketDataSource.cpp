@@ -61,11 +61,12 @@ void fix::MarketDataSource::SubscribeToSecurities() {
         //         security->SetTradingSessionState(security->GetLastMarketDataTime(),
         //                                          true);
       }
+      const out::MarketDataRequest message(*security.second,
+                                           GetStandardOutgoingHeader());
       GetLog().Info("Sending Market Data Request for \"%1%\" (%2%)...",
-                    *security.second,              // 1
-                    security.second->GetFixId());  // 2
-      m_client.Send(out::MarketDataRequest(*security.second,
-                                           GetStandardOutgoingHeader()));
+                    *security.second,        // 1
+                    message.GetSymbolId());  // 2
+      m_client.Send(std::move(message));
     }
   } catch (const Exception &ex) {
     GetLog().Error("Failed to send market data request: \"%1%\".", ex);

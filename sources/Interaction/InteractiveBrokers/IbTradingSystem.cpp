@@ -27,7 +27,7 @@ ib::TradingSystem::TradingSystem(const TradingMode &mode,
                                  Context &context,
                                  const std::string &instanceName,
                                  const Lib::IniSectionRef &conf)
-    : trdk::TradingSystem(mode, tradingSystemIndex, context, instanceName),
+    : LegacyTradingSystem(mode, tradingSystemIndex, context, instanceName),
       trdk::MarketDataSource(marketDataSourceIndex, context, instanceName),
       m_isTestSource(conf.ReadBoolKey("test_source", false)) {}
 
@@ -135,13 +135,13 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   PlacedOrder order = {};
   order.id = m_client->PlaceSellOrder(security, qty, params);
   order.security = &security;
-  order.callback = statusUpdateSlot;
+  order.callback = std::move(statusUpdateSlot);
   return RegOrder(std::move(order));
 }
 
@@ -167,7 +167,7 @@ trdk::OrderId ib::TradingSystem::SendSellImmediatelyOrCancel(
     const Qty &qty,
     const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   return RegOrder(
@@ -180,13 +180,13 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   PlacedOrder order = {};
   order.id = m_client->PlaceBuyOrder(security, qty, params);
   order.security = &security;
-  order.callback = statusUpdateSlot;
+  order.callback = std::move(statusUpdateSlot);
   return RegOrder(std::move(order));
 }
 
@@ -195,7 +195,7 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     const trdk::Lib::Currency &,
     const trdk::Qty &,
     const trdk::OrderParams &,
-    const OrderStatusUpdateSlot &) {
+    const OrderStatusUpdateSlot &&) {
   throw MethodDoesNotImplementedError("Method is not implemented");
 }
 
@@ -221,7 +221,7 @@ trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
     const Qty &qty,
     const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertEq(security.GetSymbol().GetCurrency(), currency);
   UseUnused(currency);
   return RegOrder(
@@ -234,7 +234,7 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     const trdk::Lib::Currency &,
     const trdk::Qty &,
     const trdk::OrderParams &,
-    const OrderStatusUpdateSlot &) {
+    const OrderStatusUpdateSlot &&) {
   throw MethodDoesNotImplementedError("Method is not implemented");
 }
 
@@ -296,7 +296,6 @@ void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
         }
         break;
       case ORDER_STATUS_CANCELLED:
-      case ORDER_STATUS_INACTIVE:
       case ORDER_STATUS_ERROR:
         if (pos->HasUnreceviedCommission()) {
           const_cast<PlacedOrder &>(*pos).finalUpdate =

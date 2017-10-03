@@ -484,12 +484,12 @@ TradingSystem &Engine::Context::GetTradingSystem(size_t index,
     throw Exception("Trading System index is out of range");
   }
   if (mode >= m_pimpl->m_tradingSystems[index].holders.size()) {
-    throw TrtadingModeIsNotLoad(
+    throw TradingModeIsNotLoaded(
         "Trading System with such trading mode is not implemented");
   }
   auto &holder = m_pimpl->m_tradingSystems[index].holders[mode];
   if (!holder.tradingSystem) {
-    throw TrtadingModeIsNotLoad(
+    throw TradingModeIsNotLoaded(
         "Trading System with such trading mode is not loaded");
   }
   return *holder.tradingSystem;

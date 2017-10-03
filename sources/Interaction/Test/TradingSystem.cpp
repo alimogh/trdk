@@ -407,7 +407,7 @@ Test::TradingSystem::TradingSystem(const TradingMode &mode,
   m_pimpl->m_delayGenerator.Report(GetLog());
 }
 
-Test::TradingSystem::~TradingSystem() {}
+Test::TradingSystem::~TradingSystem() = default;
 
 bool Test::TradingSystem::IsConnected() const { return m_pimpl->IsStarted(); }
 
@@ -420,11 +420,11 @@ OrderId Test::TradingSystem::SendSellAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{false, &security, currency, true, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -449,12 +449,12 @@ OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
     const Qty &qty,
     const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           statusUpdateSlot, qty, price, params});
+                           std::move(statusUpdateSlot), qty, price, params});
   return id;
 }
 
@@ -463,11 +463,11 @@ OrderId Test::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -476,11 +476,11 @@ OrderId Test::TradingSystem::SendBuyAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{false, &security, currency, false, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -505,12 +505,12 @@ OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
     const Qty &qty,
     const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, false, id,
-                           statusUpdateSlot, qty, price, params});
+                           std::move(statusUpdateSlot), qty, price, params});
   return id;
 }
 
@@ -519,7 +519,7 @@ OrderId Test::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, false,

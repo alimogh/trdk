@@ -94,6 +94,17 @@ void Handler::OnTestRequest(const in::TestRequest &testRequest,
                   .Export(SOH));
 }
 
+void Handler::OnResendRequest(const in::ResendRequest &,
+                              Lib::NetworkStreamClient &client) {
+  GetLog().Error("%1%Resend Request received.", client.GetLogTag());  // 1
+}
+
+void Handler::OnReject(const in::Reject &reject, NetworkStreamClient &client) {
+  GetLog().Error("%1%Reject received: \"%2%\".",
+                 client.GetLogTag(),  // 1
+                 reject.ReadText());  // 2
+}
+
 void Handler::OnMarketDataSnapshotFullRefresh(
     const in::MarketDataSnapshotFullRefresh &message,
     NetworkStreamClient &,

@@ -114,79 +114,50 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_METHOD1(OnSettingsUpdate, void(const trdk::Lib::IniSectionRef &));
   MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
 
-  MOCK_METHOD5(SendSellAtMarketPrice,
+  MOCK_METHOD4(SendSellAtMarketPrice,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  MOCK_METHOD6(SendSell,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  virtual OrderId SendSell(trdk::Security &arg1,
-                           const trdk::Lib::Currency &arg2,
-                           const trdk::Qty &arg3,
-                           const trdk::Price &arg4,
-                           const trdk::OrderParams &arg5,
-                           const OrderStatusUpdateSlot &&arg6) override {
-    //! @todo Remove this method when Google Test will support movement
-    //! semantics.
-    return SendSell(arg1, arg2, arg3, arg4, arg5, arg6);
-  }
-  MOCK_METHOD6(SendSellImmediatelyOrCancel,
+                       const trdk::OrderParams &));
+  MOCK_METHOD5(SendSell,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
                        const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  MOCK_METHOD5(SendSellAtMarketPriceImmediatelyOrCancel,
+                       const trdk::OrderParams &));
+  MOCK_METHOD5(SendSellImmediatelyOrCancel,
+               trdk::OrderId(trdk::Security &,
+                             const trdk::Lib::Currency &,
+                             const trdk::Qty &,
+                             const trdk::Price &,
+                             const trdk::OrderParams &));
+  MOCK_METHOD4(SendSellAtMarketPriceImmediatelyOrCancel,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-
-  MOCK_METHOD5(SendBuyAtMarketPrice,
+                       const trdk::OrderParams &));
+  MOCK_METHOD4(SendBuyAtMarketPrice,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  MOCK_METHOD6(SendBuy,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  virtual OrderId SendBuy(trdk::Security &arg1,
-                          const trdk::Lib::Currency &arg2,
-                          const trdk::Qty &arg3,
-                          const trdk::Price &arg4,
-                          const trdk::OrderParams &arg5,
-                          const OrderStatusUpdateSlot &&arg6) override {
-    //! @todo Remove this method when Google Test will support movement
-    //! semantics.
-    return SendBuy(arg1, arg2, arg3, arg4, arg5, arg6);
-  }
-  MOCK_METHOD6(SendBuyImmediatelyOrCancel,
+                       const trdk::OrderParams &));
+  MOCK_METHOD5(SendBuy,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
                        const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
-  MOCK_METHOD5(SendBuyAtMarketPriceImmediatelyOrCancel,
+                       const trdk::OrderParams &));
+  MOCK_METHOD5(SendBuyImmediatelyOrCancel,
                OrderId(trdk::Security &,
                        const trdk::Lib::Currency &,
                        const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &));
+                       const trdk::Price &,
+                       const trdk::OrderParams &));
+  MOCK_METHOD4(SendBuyAtMarketPriceImmediatelyOrCancel,
+               OrderId(trdk::Security &,
+                       const trdk::Lib::Currency &,
+                       const trdk::Qty &,
+                       const trdk::OrderParams &));
 
   MOCK_METHOD1(SendCancelOrder, void(const OrderId &));
 };

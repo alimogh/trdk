@@ -194,9 +194,7 @@ std::string ReadStringTag(const TagMatch &tagMatch,
 }
 
 template <typename Result, typename It, typename TagMatch>
-Result SecurityMessage::FindAndReadIntTag(const TagMatch &tagMatch,
-                                          It &source,
-                                          const It &end) {
+Result FindAndReadIntTag(const TagMatch &tagMatch, It &source, const It &end) {
   const auto begin = source;
   for (; source + sizeof(tagMatch) < end;) {
     if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
@@ -213,9 +211,9 @@ Result SecurityMessage::FindAndReadIntTag(const TagMatch &tagMatch,
   throw ProtocolError("Message doesn't have required tag", &*begin, 0);
 }
 template <typename Result, typename It, typename TagMatch>
-Result SecurityMessage::FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
-                                                 It &source,
-                                                 const It &end) {
+Result FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
+                                It &source,
+                                const It &end) {
   const auto begin = source;
   for (; source + sizeof(tagMatch) < end;
        source = std::find(source + sizeof(tagMatch), end, SOH)) {
@@ -232,8 +230,9 @@ Result SecurityMessage::FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
 }
 
 template <typename Result, typename It, typename TagMatch>
-std::pair<Result, It> SecurityMessage::FindAndReadCharTag(
-    const TagMatch &tagMatch, const It &begin, const It &end) {
+std::pair<Result, It> FindAndReadCharTag(const TagMatch &tagMatch,
+                                         const It &begin,
+                                         const It &end) {
   for (auto it = begin; it + sizeof(tagMatch) < end;) {
     if (reinterpret_cast<const decltype(tagMatch) &>(*it) == tagMatch) {
       return ReadIntValue<Result>(it + sizeof(tagMatch));
@@ -241,6 +240,34 @@ std::pair<Result, It> SecurityMessage::FindAndReadCharTag(
     it = std::find(it + sizeof(tagMatch), end, SOH);
     if (it != end) {
       ++it;
+    }
+  }
+  throw ProtocolError("Message doesn't have required tag", &*begin, 0);
+}
+
+template <typename It, typename TagMatch>
+std::string FindAndReadStringTagFromSoh(const TagMatch &tagMatch,
+                                        It &source,
+                                        const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) < end;
+       source = std::find(source + sizeof(tagMatch), end, SOH)) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
+      source += sizeof(tagMatch);
+      std::string result;
+      for (;; ++source) {
+        if (source == end) {
+          throw ProtocolError("String buffer doesn't have end",
+                              &*std::prev(source), SOH);
+        }
+        const auto &ch = *source;
+        if (ch == SOH) {
+          ++source;
+          break;
+        }
+        result.push_back(std::move(ch));
+      }
+      return result;
     }
   }
   throw ProtocolError("Message doesn't have required tag", &*begin, 0);
@@ -406,8 +433,15 @@ std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
     case MESSAGE_TYPE_MARKET_DATA_INCREMENTAL_REFRESH:
       return boost::make_unique<MarketDataIncrementalRefresh>(
           std::move(params));
-    default:
-      throw ProtocolError("Message has unknown type", &*(params.begin - 1), 0);
+    case MESSAGE_TYPE_RESEND_REQUEST:
+      return boost::make_unique<ResendRequest>(std::move(params));
+    case MESSAGE_TYPE_REJECT:
+      return boost::make_unique<Reject>(std::move(params));
+    default: {
+      boost::format message("Message has unknown type '%1%'");
+      message % type;
+      throw ProtocolError(message.str().c_str(), &*(params.begin - 1), 0);
+    }
   }
 }
 
@@ -486,6 +520,38 @@ std::string TestRequest::ReadTestRequestId() const {
   } catch (const ProtocolError &ex) {
     boost::format error(
         "Failed to read Test Request ID from Test Request message: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ResendRequest::Handle(Handler &handler,
+                           NetworkStreamClient &client,
+                           const Milestones &) const {
+  handler.OnResendRequest(*this, client);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Reject::Handle(Handler &handler,
+                    NetworkStreamClient &client,
+                    const Milestones &) const {
+  handler.OnReject(*this, client);
+}
+
+std::string Reject::ReadText() const {
+  // 58=
+  static const int32_t tagMatch = 1027093761;
+  try {
+    auto it = std::prev(GetUnreadBegin());
+    const auto &result = FindAndReadStringTagFromSoh(tagMatch, it, GetEnd());
+    SetUnreadBegin(it);
+    return result;
+  } catch (const ProtocolError &ex) {
+    boost::format error("Failed to read Reject message text: \"%1%\"");
     error % ex.what();
     throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
                         ex.GetExpectedByte());

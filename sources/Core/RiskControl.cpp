@@ -503,7 +503,7 @@ class StandardRiskControlScope : public RiskControlScope {
                         const Qty &remainingQty,
                         const TradingSystem::TradeInfo *trade,
                         const RiskControlSymbolContext::Side &side) {
-    static_assert(numberOfOrderStatuses == 9, "Status list changed.");
+    static_assert(numberOfOrderStatuses == 8, "Status list changed.");
     switch (status) {
       default:
         AssertEq(ORDER_STATUS_ERROR, status);
@@ -523,7 +523,6 @@ class StandardRiskControlScope : public RiskControlScope {
         break;
       case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
-      case ORDER_STATUS_INACTIVE:
       case ORDER_STATUS_ERROR:
         Assert(!trade);
         UnblockFunds(operationId, security, currency, orderPrice, remainingQty,

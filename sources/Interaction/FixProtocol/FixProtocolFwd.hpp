@@ -25,6 +25,8 @@ class Logon;
 class Logout;
 class Heartbeat;
 class TestRequest;
+class ResendRequest;
+class Reject;
 class MarketDataSnapshotFullRefresh;
 class MarketDataIncrementalRefresh;
 }

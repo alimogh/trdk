@@ -246,7 +246,7 @@ class Position::Implementation : private boost::noncopyable {
       order.commission = *commission;
     }
 
-    static_assert(numberOfOrderStatuses == 9, "List changed.");
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (orderStatus) {
       default:
         AssertFail("Unknown open order status");
@@ -274,11 +274,6 @@ class Position::Implementation : private boost::noncopyable {
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
         CopyTrade(trade->id, trade->price, trade->qty, true);
         order.isActive = remainingQty > 0;
-        break;
-      case ORDER_STATUS_INACTIVE:
-        order.isActive = false;
-        ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
-        m_isInactive = true;
         break;
       case ORDER_STATUS_ERROR:
         order.isActive = false;
@@ -341,7 +336,7 @@ class Position::Implementation : private boost::noncopyable {
       order.commission = *commission;
     }
 
-    static_assert(numberOfOrderStatuses == 9, "List changed.");
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (orderStatus) {
       default:
         AssertFail("Unknown order status.");
@@ -369,10 +364,6 @@ class Position::Implementation : private boost::noncopyable {
           CopyOrder(&tradingSystemOrderId, false, orderStatus);
           return;
         }
-        break;
-      case ORDER_STATUS_INACTIVE:
-        ReportClosingUpdate(tradingSystemOrderId, orderStatus);
-        m_isInactive = true;
         break;
       case ORDER_STATUS_ERROR:
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
@@ -852,13 +843,12 @@ class Position::Implementation : private boost::noncopyable {
         askPrice = m_security.GetAskPriceValue();
         askQty = m_security.GetAskQtyValue();
       }
-      static_assert(numberOfOrderStatuses == 9, "List changed");
+      static_assert(numberOfOrderStatuses == 8, "List changed");
       switch (status) {
         case ORDER_STATUS_CANCELLED:
         case ORDER_STATUS_FILLED:
         case ORDER_STATUS_FILLED_PARTIALLY:
         case ORDER_STATUS_REJECTED:
-        case ORDER_STATUS_INACTIVE:
         case ORDER_STATUS_ERROR:
           execTime = m_strategy.GetContext().GetCurrentTime();
           break;

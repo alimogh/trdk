@@ -33,7 +33,7 @@ OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
     for (int i = 0; i < numberOfTradingModes; ++i) {
       try {
         m_engine.GetContext().GetTradingSystem(0, static_cast<TradingMode>(i));
-      } catch (const Context::TrtadingModeIsNotLoad &) {
+      } catch (const Context::TradingModeIsNotLoaded &) {
         continue;
       }
       QString mode;

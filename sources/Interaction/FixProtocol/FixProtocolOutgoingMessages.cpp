@@ -28,6 +28,17 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+std::string ConvertToTagValue(const pt::ptime &source) {
+  // 20170117 - 08:03:04:
+  return gr::to_iso_string(source.date()) + "-" +
+         pt::to_simple_string(source.time_of_day());
+}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 std::string StandardHeader::TakeMessageSequenceNumber() {
   return boost::lexical_cast<std::string>(m_nextMessageSequenceNumber++);
 }
@@ -85,10 +96,9 @@ std::vector<char> StandardHeader::Export(
     result.emplace_back(soh);
   }
   {
-    const auto &now = GetSettings().policy->GetCurrentTime();
     // "20170117 - 08:03:04":
-    const std::string sub("52=" + gr::to_iso_string(now.date()) + "-" +
-                          pt::to_simple_string(now.time_of_day()));
+    const std::string sub(
+        "52=" + ConvertToTagValue(GetSettings().policy->GetCurrentTime()));
     AssertEq(20, sub.size());
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
@@ -187,6 +197,27 @@ std::vector<char> Heartbeat::Export(unsigned char soh) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+std::string ResolveSecurityFixId(const trdk::Security &security) {
+  const auto *const fixSecurity =
+      dynamic_cast<const fix::Security *>(&security);
+  if (!fixSecurity) {
+    throw MethodDoesNotImplementedError(
+        "Work with non FIX protocol security is not implemented yet in the "
+        "module FIX protocol");
+  }
+  return fixSecurity->GetFixIdCode();
+}
+}
+
+SecurityMessage::SecurityMessage(const trdk::Security &security,
+                                 StandardHeader &standardHeader)
+    : Base(standardHeader),
+      m_security(security),
+      m_symbolId(ResolveSecurityFixId(m_security)) {}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
 boost::atomic_uintmax_t nextMarketDataRequestId(1);
 }
 MarketDataMessage::MarketDataMessage(const fix::Security &security,
@@ -197,7 +228,6 @@ MarketDataMessage::MarketDataMessage(const fix::Security &security,
 
 std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   const auto &marketDataRequestId = GetMarketDataRequestId();
-  const auto &symbolId = GetSecurity().GetFixIdCode();
 
   // 51 bytes:
   // without custom fields:
@@ -205,8 +235,9 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   // full message:
   //  262=876316403|263=1|264=1|265=1|146=1|55=1|267=2|269=0|269=1|
 
-  auto result = Export(MESSAGE_TYPE_MARKET_DATA_REQUEST,
-                       51 + marketDataRequestId.size() + symbolId.size(), soh);
+  auto result =
+      Export(MESSAGE_TYPE_MARKET_DATA_REQUEST,
+             51 + marketDataRequestId.size() + GetSymbolId().size(), soh);
 
   // MDReqID:
   {
@@ -245,7 +276,7 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   }
   // Symbol
   {
-    const std::string sub("55=" + symbolId);
+    const std::string sub("55=" + GetSymbolId());
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -266,6 +297,83 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
   {
     // Offer
     const std::string sub("269=1");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+
+  WriteStandardTrailer(result, soh);
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+NewOrderSingle::NewOrderSingle(const OrderId &orderId,
+                               const trdk::Security &security,
+                               const OrderSide &side,
+                               const Qty &qty,
+                               const Price &price,
+                               StandardHeader &standardHeader)
+    : Base(security, standardHeader),
+      m_orderId(boost::lexical_cast<std::string>(orderId)),
+      m_side(side == ORDER_SIDE_BUY ? '1' : '2'),
+      m_qty(boost::lexical_cast<std::string>(qty)),
+      m_price(boost::lexical_cast<std::string>(price)),
+      m_transactTime(ConvertToTagValue(
+          GetStandardHeader().GetSettings().policy->GetCurrentTime())),
+      m_customContentSize(m_orderId.size() + GetSymbolId().size() + 1 +
+                          m_qty.size() + m_price.size() +
+                          m_transactTime.size()) {}
+
+std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
+  // 25 bytes:
+  // without custom fields:
+  //  11=|55=|54=|60=|40=2|38=|44=|
+  // full message:
+  //  11=876316397|55=1|54=1|60=20170117-10:02:14|40=1|38=10000|55=123|
+
+  auto result =
+      Export(MESSAGE_TYPE_NEW_ORDER_SINGLE, 29 + m_customContentSize, soh);
+  // ClOrdID:
+  {
+    const std::string sub("11=" + m_orderId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // Symbol
+  {
+    const std::string sub("55=" + GetSymbolId());
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // Side:
+  {
+    const std::string sub("54=");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(m_side);
+    result.emplace_back(soh);
+  }
+  // TransactTime:
+  {
+    const std::string sub("60=" + m_transactTime);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // OrdType:
+  {
+    const std::string sub("40=2");
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // OrderQty:
+  {
+    const std::string sub("38=" + m_qty);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // Price:
+  {
+    const std::string sub("44=" + m_price);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }

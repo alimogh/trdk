@@ -33,7 +33,8 @@ Context::DispatchingLock::~DispatchingLock() {}
 Context::Exception::Exception(const char *what) throw()
     : Lib::Exception(what) {}
 
-Context::TrtadingModeIsNotLoad::TrtadingModeIsNotLoad(const char *what) throw()
+Context::TradingModeIsNotLoaded::TradingModeIsNotLoaded(
+    const char *what) throw()
     : Exception(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////

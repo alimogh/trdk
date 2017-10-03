@@ -84,19 +84,20 @@ class SecurityMessage : public Message {
   typedef Message Base;
 
  public:
-  explicit SecurityMessage(const FixProtocol::Security &security,
-                           StandardHeader &standardHeader)
-      : Base(standardHeader), m_security(security) {}
+  explicit SecurityMessage(const trdk::Security &, StandardHeader &);
 
  public:
-  const FixProtocol::Security &GetSecurity() const { return m_security; }
+  const trdk::Security &GetSecurity() const { return m_security; }
+  const std::string &GetSymbolId() const { return m_symbolId; }
 
  protected:
-  using Base::Export;
+  const trdk::Security &m_security;
 
- protected:
-  const Security &m_security;
+ private:
+  const std::string m_symbolId;
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 class MarketDataMessage : public SecurityMessage {
  public:
@@ -132,6 +133,36 @@ class MarketDataRequest : public MarketDataMessage {
 
  protected:
   using Base::Export;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class NewOrderSingle : public SecurityMessage {
+ public:
+  typedef SecurityMessage Base;
+
+ public:
+  explicit NewOrderSingle(const OrderId &,
+                          const trdk::Security &,
+                          const OrderSide &,
+                          const Qty &,
+                          const Price &,
+                          StandardHeader &);
+  virtual ~NewOrderSingle() override = default;
+
+ public:
+  virtual std::vector<char> Export(unsigned char soh) const override;
+
+ protected:
+  using Base::Export;
+
+ private:
+  const std::string m_orderId;
+  const char m_side;
+  const std::string m_qty;
+  const std::string m_price;
+  const std::string m_transactTime;
+  const size_t m_customContentSize;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

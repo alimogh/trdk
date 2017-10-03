@@ -80,6 +80,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   boost::atomic_size_t m_lastOperationId;
 
+  boost::unordered_map<OrderId, OrderStatusUpdateSlot> m_callbacks;
+
   explicit Implementation(const TradingMode &mode,
                           size_t index,
                           Context &context,
@@ -92,6 +94,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
         m_log(m_stringId, m_context.GetLog()),
         m_tradingLog(instanceName, m_context.GetTradingLog()),
         m_lastOperationId(0) {}
+
+  ~Implementation() {
+    try {
+      if (!m_callbacks.empty()) {
+        m_log.Warn("Final statuses for %1% orders is not received.",
+                   m_callbacks.size());
+      }
+    } catch (...) {
+      AssertFailNoException();
+    }
+  }
 
   void LogNewOrder(const char *orderType,
                    size_t operationId,
@@ -246,15 +259,56 @@ class TradingSystem::Implementation : private boost::noncopyable {
         operationId, riskControlScope, orderStatus, security, currency,
         orderPrice, remainingQty, trade, timeMeasurement);
   }
+
+  void RegisterCallback(const OrderId &orderId,
+                        const OrderStatusUpdateSlot &&callback) {
+    if (!m_callbacks.emplace(orderId, std::move(callback)).second) {
+      m_log.Error("Order ID %1% is not unique.", orderId);
+      throw Error("Order ID %1% is not unique");
+    }
+  }
+
+  void OnOrderStatusUpdate(const OrderId &orderId,
+                           const std::string &tradingSystemOrderId,
+                           const OrderStatus &status,
+                           const Qty &remainingQty,
+                           const boost::optional<Volume> &commission,
+                           const TradeInfo *tradeInfo) {
+    const auto &it = m_callbacks.find(orderId);
+    if (it == m_callbacks.cend()) {
+      m_log.Warn(
+          "Failed to handle status update for order %1% as order is unknown.",
+          orderId);
+      return;
+    }
+
+    // Maybe in the future new thread will be required here to avoid deadlocks
+    // from callback (when some one will need to call the same trading system
+    // from this callback).
+    it->second(orderId, tradingSystemOrderId, status, remainingQty, commission,
+               tradeInfo);
+
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
+    switch (status) {
+      case ORDER_STATUS_CANCELLED:
+      case ORDER_STATUS_FILLED:
+      case ORDER_STATUS_REJECTED:
+      case ORDER_STATUS_ERROR:
+        AssertEq(0, remainingQty);
+        m_callbacks.erase(it);
+        break;
+    }
+  }
 };
 
 TradingSystem::TradingSystem(const TradingMode &mode,
                              size_t index,
                              Context &context,
                              const std::string &instanceName)
-    : m_pimpl(new Implementation(mode, index, context, instanceName)) {}
+    : m_pimpl(boost::make_unique<Implementation>(
+          mode, index, context, instanceName)) {}
 
-TradingSystem::~TradingSystem() { delete m_pimpl; }
+TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }
 
@@ -692,6 +746,232 @@ void TradingSystem::Test() {
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
+
+OrderId TradingSystem::SendSellAtMarketPrice(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId = SendSellAtMarketPrice(security, currency, qty, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendSell(Security &security,
+                                const Currency &currency,
+                                const Qty &qty,
+                                const Price &price,
+                                const OrderParams &params,
+                                const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId = SendSell(security, currency, qty, price, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendSellImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId =
+      SendSellImmediatelyOrCancel(security, currency, qty, price, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId =
+      SendSellAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendBuyAtMarketPrice(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId = SendBuyAtMarketPrice(security, currency, qty, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendBuy(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params,
+    const TradingSystem::OrderStatusUpdateSlot &&callback) {
+  const auto &orderId = SendBuy(security, currency, qty, price, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendBuyImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId =
+      SendBuyImmediatelyOrCancel(security, currency, qty, price, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+OrderId TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const OrderParams &params,
+    const OrderStatusUpdateSlot &&callback) {
+  const auto &orderId =
+      SendBuyAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
+  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  return orderId;
+}
+
+void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+                                        const std::string &tradingSystemOrderId,
+                                        const OrderStatus &status,
+                                        const Qty &remainingQty,
+                                        const Volume &commission,
+                                        const TradeInfo &trade) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                               remainingQty, commission, &trade);
+}
+void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+                                        const std::string &tradingSystemOrderId,
+                                        const OrderStatus &status,
+                                        const Qty &remainingQty) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                               remainingQty, boost::none, nullptr);
+}
+void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+                                        const std::string &tradingSystemOrderId,
+                                        const OrderStatus &status,
+                                        const Qty &remainingQty,
+                                        const Volume &commission) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                               remainingQty, commission, nullptr);
+}
+void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+                                        const std::string &tradingSystemOrderId,
+                                        const OrderStatus &status,
+                                        const Qty &remainingQty,
+                                        const TradeInfo &trade) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                               remainingQty, boost::none, &trade);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+LegacyTradingSystem::LegacyTradingSystem(const TradingMode &tradingMode,
+                                         size_t index,
+                                         Context &context,
+                                         const std::string &instanceName)
+    : TradingSystem(tradingMode, index, context, instanceName) {}
+
+LegacyTradingSystem::~LegacyTradingSystem() = default;
+
+OrderId LegacyTradingSystem::SendSellAtMarketPrice(Security &,
+                                                   const Currency &,
+                                                   const Qty &,
+                                                   const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendSell(Security &,
+                                      const Currency &,
+                                      const Qty &,
+                                      const Price &,
+                                      const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendSellImmediatelyOrCancel(Security &,
+                                                         const Currency &,
+                                                         const Qty &,
+                                                         const Price &,
+                                                         const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
+    Security &, const Currency &, const Qty &, const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendBuyAtMarketPrice(Security &,
+                                                  const Currency &,
+                                                  const Qty &,
+                                                  const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendBuy(Security &,
+                                     const Currency &,
+                                     const Qty &,
+                                     const Price &,
+                                     const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendBuyImmediatelyOrCancel(Security &,
+                                                        const Currency &,
+                                                        const Qty &,
+                                                        const Price &,
+                                                        const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
+
+OrderId LegacyTradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
+    Security &, const Currency &, const Qty &, const OrderParams &) {
+  AssertFail(
+      "Internal error of legacy trading system implementation: this method "
+      "never should be called, as legacy trading system use own methods with "
+      "callback argument.");
+  throw Error("Internal error of legacy trading system implementation");
+}
 
 //////////////////////////////////////////////////////////////////////////
 

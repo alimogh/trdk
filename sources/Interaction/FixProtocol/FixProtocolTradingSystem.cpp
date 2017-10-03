@@ -10,14 +10,16 @@
 
 #include "Prec.hpp"
 #include "FixProtocolTradingSystem.hpp"
+#include "Core/Security.hpp"
 #include "FixProtocolIncomingMessages.hpp"
 #include "FixProtocolOutgoingMessages.hpp"
 
 using namespace trdk;
 using namespace Lib;
-using namespace Interaction::FixProtocol;
+using namespace trdk::Interaction::FixProtocol;
 
-namespace fix = Interaction::FixProtocol;
+namespace fix = trdk::Interaction::FixProtocol;
+namespace out = fix::Outgoing;
 
 fix::TradingSystem::TradingSystem(const TradingMode &mode,
                                   size_t index,
@@ -26,7 +28,8 @@ fix::TradingSystem::TradingSystem(const TradingMode &mode,
                                   const IniSectionRef &conf)
     : trdk::TradingSystem(mode, index, context, instanceName),
       Handler(context, conf, trdk::TradingSystem::GetLog()),
-      m_client("Trade", *this) {}
+      m_client("Trade", *this),
+      m_lastUsedOrderId(0) {}
 
 Context &fix::TradingSystem::GetContext() {
   return trdk::TradingSystem::GetContext();
@@ -47,77 +50,71 @@ void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
   GetLog().Info("Connected.");
 }
 
-OrderId fix::TradingSystem::SendSellAtMarketPrice(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+OrderId fix::TradingSystem::SendSellAtMarketPrice(trdk::Security &,
+                                                  const Currency &,
+                                                  const Qty &,
+                                                  const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
-OrderId fix::TradingSystem::SendSell(trdk::Security &,
-                                     const Currency &,
-                                     const Qty &,
-                                     const Price &,
-                                     const OrderParams &,
-                                     const OrderStatusUpdateSlot &&) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+OrderId fix::TradingSystem::SendSell(trdk::Security &security,
+                                     const Currency &currency,
+                                     const Qty &qty,
+                                     const Price &price,
+                                     const OrderParams &) {
+  if (currency != security.GetSymbol().GetCurrency()) {
+    throw Error("Trading system supports only security quote currency");
+  }
+  const auto orderId = ++m_lastUsedOrderId;
+  m_client.Send(out::NewOrderSingle(orderId, security, ORDER_SIDE_SELL, qty,
+                                    price, GetStandardOutgoingHeader()));
+  return orderId;
 }
 
-OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const Price &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(trdk::Security &,
+                                                        const Currency &,
+                                                        const Qty &,
+                                                        const Price &,
+                                                        const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+    trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
-OrderId fix::TradingSystem::SendBuyAtMarketPrice(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+OrderId fix::TradingSystem::SendBuyAtMarketPrice(trdk::Security &,
+                                                 const Currency &,
+                                                 const Qty &,
+                                                 const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
-OrderId fix::TradingSystem::SendBuy(trdk::Security &,
-                                    const Currency &,
-                                    const Qty &,
-                                    const Price &,
-                                    const OrderParams &,
-                                    const OrderStatusUpdateSlot &&) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
+                                    const Currency &currency,
+                                    const Qty &qty,
+                                    const Price &price,
+                                    const OrderParams &) {
+  if (currency != security.GetSymbol().GetCurrency()) {
+    throw Error("Trading system supports only security quote currency");
+  }
+  const auto orderId = ++m_lastUsedOrderId;
+  m_client.Send(out::NewOrderSingle(orderId, security, ORDER_SIDE_BUY, qty,
+                                    price, GetStandardOutgoingHeader()));
+  return orderId;
 }
 
-OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const Price &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &,
+                                                       const Currency &,
+                                                       const Qty &,
+                                                       const Price &,
+                                                       const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &,
-    const Currency &,
-    const Qty &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
+    trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
   throw MethodDoesNotImplementedError("Methods is not supported");
 }
 
