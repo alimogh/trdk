@@ -62,7 +62,7 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   connect(&m_engine, &Engine::LogRecord, this, &EngineWindow::OnLogRecord,
           Qt::QueuedConnection);
 
-  connect(m_ui.securityList, &QTableView::clicked,
+  connect(m_ui.securityList, &QTableView::doubleClicked,
           [this](const QModelIndex &index) {
             ShowOrderWindow(boost::polymorphic_downcast<SecurityListModel *>(
                                 m_ui.securityList->model())
