@@ -33,17 +33,16 @@ using namespace trdk::Lib::TimeMeasurement;
 
 namespace {
 
-typedef Double Level1Value;
+//! Level 1 data.
+/** Should be native double to use NaN value as marker.
+  */
+typedef std::array<boost::atomic<double>, numberOfLevel1TickTypes> Level1;
 
-typedef std::array<boost::atomic<Level1Value>, numberOfLevel1TickTypes> Level1;
+bool IsSet(double value) { return !isnan(value); }
+bool IsSet(const boost::atomic<double> &value) { return IsSet(value.load()); }
 
-bool IsSet(const Level1Value &value) { return !isnan(value); }
-bool IsSet(const boost::atomic<Level1Value> &value) {
-  return IsSet(value.load());
-}
-
-void Unset(boost::atomic<Level1Value> &val) noexcept {
-  val = std::numeric_limits<Level1Value>::quiet_NaN();
+void Unset(boost::atomic<double> &val) noexcept {
+  val = std::numeric_limits<double>::quiet_NaN();
 }
 
 std::string GetFutureSymbol(const Symbol &symbol) {
@@ -590,7 +589,7 @@ class Security::Implementation : private boost::noncopyable {
 
   template <Level1TickType tick>
   Double GetLevel1Value(const Level1 &level1) const {
-    const Level1Value &value = level1[tick];
+    const double value = level1[tick];
     if (!IsSet(value)) {
       Assert(IsSet(value));
       boost::format message(
