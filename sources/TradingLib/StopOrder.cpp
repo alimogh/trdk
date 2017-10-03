@@ -46,16 +46,24 @@ void StopOrder::OnHit() {
     const auto &orderPrice = GetPosition().GetActiveCloseOrderPrice();
     const auto &currentPrice = GetPosition().GetMarketClosePrice();
 
-    const bool isBadOrder = !GetPosition().IsLong() ? orderPrice < currentPrice
-                                                    : orderPrice > currentPrice;
+    const bool isBadOrder =
+        orderPrice && (!GetPosition().IsLong() ? *orderPrice < currentPrice
+                                               : *orderPrice > currentPrice);
     GetTradingLog().Write(
         "%1%\t%2%\t%3%"
         "\torder-price=%4$.8f\tcurrent-price=%5$.8f\tpos=%6%",
         [&](TradingRecord &record) {
-          record % GetName() % (isBadOrder ? "canceling bad close-order"
-                                           : "close order is good") %
-              GetPosition().GetCloseOrderSide() % orderPrice % currentPrice %
-              GetPosition().GetId();
+          record % GetName()  // 1
+              % (isBadOrder ? "canceling bad close-order"
+                            : "close order is good")  // 2
+              % GetPosition().GetCloseOrderSide();    // 3
+          if (orderPrice) {
+            record % *orderPrice;  // 4
+          } else {
+            record % "market";  // 4
+          }
+          record % currentPrice         // 5
+              % GetPosition().GetId();  // 6
         });
     if (isBadOrder) {
       try {

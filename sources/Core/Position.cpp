@@ -1081,24 +1081,14 @@ const pt::ptime &Position::GetCloseTime() const {
   return m_pimpl->m_close.time;
 }
 
-const Price &Position::GetActiveOrderPrice() const {
+const boost::optional<Price> &Position::GetActiveOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (m_pimpl->m_close.HasActiveOrders()) {
     Assert(!m_pimpl->m_open.HasActiveOrders());
-    const auto &price = m_pimpl->m_close.orders.back().price;
-    if (!price) {
-      throw Exception(
-          "Position current active close-order is order without price");
-    }
-    return *price;
+    return m_pimpl->m_close.orders.back().price;
   } else if (m_pimpl->m_open.HasActiveOrders()) {
-    const auto &price = m_pimpl->m_open.orders.back().price;
-    if (!price) {
-      throw Exception(
-          "Position current active open-order is order without price");
-    }
-    return *price;
+    return m_pimpl->m_open.orders.back().price;
   } else {
     throw Exception("Position has no active order");
   }
@@ -1225,20 +1215,14 @@ Price Position::GetOpenAvgPrice() const {
   return m_pimpl->m_open.volume / m_pimpl->m_open.qty;
 }
 
-const Price &Position::GetActiveOpenOrderPrice() const {
+const boost::optional<Price> &Position::GetActiveOpenOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (!m_pimpl->m_open.HasActiveOrders()) {
     throw Exception("Position has no active open-order");
   }
   Assert(!m_pimpl->m_close.HasActiveOrders());
-  const auto &price = m_pimpl->m_open.orders.back().price;
-  if (!price) {
-    throw Exception(
-        "Position current active open-order is order without price");
-  }
-  AssertEq(*price, GetActiveOrderPrice());
-  return *price;
+  return m_pimpl->m_open.orders.back().price;
 }
 
 const pt::ptime &Position::GetActiveOpenOrderTime() const {
@@ -1282,20 +1266,14 @@ Price Position::GetCloseAvgPrice() const {
   return m_pimpl->m_close.volume / m_pimpl->m_close.qty;
 }
 
-const Price &Position::GetActiveCloseOrderPrice() const {
+const boost::optional<trdk::Price> &Position::GetActiveCloseOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (!m_pimpl->m_close.HasActiveOrders()) {
     throw Exception("Position has no active close-order");
   }
   Assert(!m_pimpl->m_open.HasActiveOrders());
-  const auto &price = m_pimpl->m_close.orders.back().price;
-  if (!price) {
-    throw Exception(
-        "Position current active close-order is order without price");
-  }
-  AssertEq(*price, GetActiveOrderPrice());
-  return *price;
+  return m_pimpl->m_close.orders.back().price;
 }
 
 const pt::ptime &Position::GetActiveCloseOrderTime() const {

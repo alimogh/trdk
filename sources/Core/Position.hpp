@@ -167,12 +167,14 @@ class TRDK_CORE_API Position
   const trdk::Qty &GetOpenedQty() const noexcept;
   trdk::Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
-  /** Throws an exception if there is no active open-order at this moment
-    * or if active open-order has no price (like market order).
+  /** Throws an exception if there is no active open-order at this moment.
     * @sa GetActiveOrderPrice
     * @sa GetActiveCloseOrderPrice
+    * @sa GetActiveOpenOrderTime
+    * @return Active order price or boost::none if the order is an order by
+    *         market price.
     */
-  const trdk::Price &GetActiveOpenOrderPrice() const;
+  const boost::optional<trdk::Price> &GetActiveOpenOrderPrice() const;
   //! Returns time of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
     * @sa GetActiveOrderTime
@@ -203,12 +205,14 @@ class TRDK_CORE_API Position
   const boost::posix_time::ptime &GetCloseStartTime() const;
   trdk::Price GetCloseAvgPrice() const;
   //! Returns price of active close-order.
-  /** Throws an exception if there is no active close-order at this moment
-    * or if active close-order has no price (like market order).
+  /** Throws an exception if there is no active close-order at this moment.
     * @sa GetActiveOrderPrice
     * @sa GetActiveOpenOrderPrice
+    * @sa GetActiveCloseOrderTime
+    * @return Active order price or boost::none if the order is an order by
+    *         market price.
     */
-  const trdk::Price &GetActiveCloseOrderPrice() const;
+  const boost::optional<trdk::Price> &GetActiveCloseOrderPrice() const;
   //! Returns time of active close-order.
   /** Throws an exception if there is no active close-order at this
     * moment.
@@ -229,12 +233,13 @@ class TRDK_CORE_API Position
   const boost::posix_time::ptime &GetCloseTime() const;
 
   //! Returns price of active order.
-  /** Throws an exception if there is no active order at this moment or
-    * if active order has no price (like market order).
+  /** Throws an exception if there is no active order at this moment.
     * @sa GetActiveOpenOrderPrice
     * @sa GetActiveOpenClosePrice
+    * @return Active order price or boost::none if the order is an order by
+    *         market price.
     */
-  const trdk::Price &GetActiveOrderPrice() const;
+  const boost::optional<trdk::Price> &GetActiveOrderPrice() const;
   //! Returns time of active order.
   /** Throws an exception if there is no active order at this moment.
     * @sa GetActiveOpenOrderTime

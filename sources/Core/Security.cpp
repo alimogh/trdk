@@ -641,10 +641,9 @@ Security::Security(Context &context,
                    const SupportedLevel1Types &supportedLevel1Types)
     : Base(context, symbol),
       m_pimpl(new Implementation(*this, source, symbol, supportedLevel1Types)) {
-
 }
 
-Security::~Security() {}
+Security::~Security() = default;
 
 const Security::InstanceId &Security::GetInstanceId() const {
   return m_pimpl->m_instanceId;
