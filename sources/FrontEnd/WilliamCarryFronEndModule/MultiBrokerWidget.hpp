@@ -39,6 +39,7 @@ class MultiBrokerWidget : public QWidget {
   void LockSecurity(bool lock);
   void OnStateChanged(bool isStarted);
   void UpdatePrices(const Security *);
+  void ShowTimersSetupDialog();
 
  private:
   void Reload();

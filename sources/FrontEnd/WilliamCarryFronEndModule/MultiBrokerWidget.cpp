@@ -16,6 +16,7 @@
 #include "ShellLib/ShellDropCopy.hpp"
 #include "ShellLib/ShellEngine.hpp"
 #include "ShellLib/ShellModule.hpp"
+#include "TimersDialog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -49,6 +50,9 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   connect(m_ui.sell4, &QPushButton::clicked, [this]() { SendSellOrder(3); });
   connect(m_ui.closeAll, &QPushButton::clicked,
           [this]() { CloseAllPositions(); });
+
+  connect(m_ui.showTimers, &QPushButton::clicked, this,
+          &MultiBrokerWidget::ShowTimersSetupDialog);
 
   connect(m_ui.targetList, &QListWidget::currentRowChanged, [this](int index) {
     if (index < 0) {
@@ -318,6 +322,14 @@ void MultiBrokerWidget::SetPrices(const pt::ptime &time,
     } else {
       askControl.setText(QString());
     }
+  }
+}
+
+void MultiBrokerWidget::ShowTimersSetupDialog() {
+  TimersDialog dialog(this);
+
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
   }
 }
 
