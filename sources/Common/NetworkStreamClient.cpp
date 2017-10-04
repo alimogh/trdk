@@ -273,9 +273,9 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
                 " To optimize reading buffer 0x%3% will"
                 " be increased: %4$.02f -> %5$.02f kilobytes."
                 " Total received volume: %6$.02f %7%.");
-            message % GetLogTag() % (double(unreceivedMessageLen) / 1024) %
-                &activeBuffer % (double(activeBuffer.size()) / 1024) %
-                (double(newSize) / 1024);
+            message % m_self.GetLogTag() %
+                (double(unreceivedMessageLen) / 1024) % &activeBuffer %
+                (double(activeBuffer.size()) / 1024) % (double(newSize) / 1024);
             const auto &stat = m_self.GetReceivedVerbouseStat();
             message % stat.first % stat.second;
             m_self.LogWarn(message.str());
@@ -305,7 +305,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
               "%1%Increasing buffer 0x%2% size:"
               " %3$.02f -> %4$.02f kilobytes."
               " Total received volume: %5$.02f %6%.");
-          message % GetLogTag() % &nextBuffer %
+          message % m_self.GetLogTag() % &nextBuffer %
               (double(activeBuffer.size()) / 1024) % (double(newSize) / 1024);
           const auto &stat = m_self.GetReceivedVerbouseStat();
           message % stat.first % stat.second;
@@ -321,7 +321,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
             "%1%Restoring buffer content in %2$.02f kilobytes"
             " to continue to receive message..."
             " Total received volume: %3$.02f %4%.");
-        message % GetLogTag() % (double(unreceivedMessageLen) / 1024);
+        message % m_self.GetLogTag() % (double(unreceivedMessageLen) / 1024);
         const auto &stat = m_self.GetReceivedVerbouseStat();
         message % stat.first % stat.second;
         m_self.LogDebug(message.str());
