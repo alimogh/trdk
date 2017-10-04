@@ -11,11 +11,9 @@
 #pragma once
 
 #include "Common/Common.hpp"
+#include "ShellLib/ShellFwd.hpp"
 #include <boost/unordered_map.hpp>
 #pragma warning(push)
 #pragma warning(disable : 4127)
 #include <QtWidgets>
 #pragma warning(pop)
-
-#include "FrontEnd/Lib/Std.hpp"
-#include "Fwd.hpp"

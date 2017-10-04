@@ -33,6 +33,10 @@ Context::DispatchingLock::~DispatchingLock() {}
 Context::Exception::Exception(const char *what) throw()
     : Lib::Exception(what) {}
 
+Context::TradingModeIsNotLoaded::TradingModeIsNotLoaded(
+    const char *what) throw()
+    : Exception(what) {}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -203,9 +207,7 @@ class StatReport : private boost::noncopyable {
             if (DumpSecurity(security, m_securititesStatStream)) {
               securitiesHaveData = true;
             }
-            return true;
           });
-      return true;
     });
 
     if (securitiesHaveData) {
@@ -251,14 +253,14 @@ class StatReport : private boost::noncopyable {
   bool DumpSecurity(const Security &security, std::ostream &destination) const {
     const auto &numberOfMarketDataUpdates =
         security.TakeNumberOfMarketDataUpdates();
-    if (!m_isSecurititesStatStopped || !IsZero(numberOfMarketDataUpdates)) {
+    if (!m_isSecurititesStatStopped || numberOfMarketDataUpdates != 0) {
       destination << '\t' << m_context.GetLog().GetTime() << '\t'
                   << security.GetSource().GetInstanceName() << '\t'
                   << security.GetSymbol().GetSymbol() << '\t'
                   << numberOfMarketDataUpdates << '\t'
                   << security.GetLastMarketDataTime() << std::endl;
     }
-    return !IsZero(numberOfMarketDataUpdates);
+    return numberOfMarketDataUpdates != 0;
   }
 
  private:

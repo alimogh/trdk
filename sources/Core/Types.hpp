@@ -18,7 +18,6 @@ namespace trdk {
 
 typedef trdk::Lib::Double Qty;
 
-typedef boost::int32_t ScaledPrice;
 typedef trdk::Lib::Double Price;
 
 typedef trdk::Lib::Double Volume;
@@ -116,16 +115,15 @@ struct OrderParams {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum OrderStatus {
-  ORDER_STATUS_SENT = 100,
-  ORDER_STATUS_REQUESTED_CANCEL = 200,
-  ORDER_STATUS_SUBMITTED = 300,
-  ORDER_STATUS_CANCELLED = 400,
-  ORDER_STATUS_FILLED = 500,
-  ORDER_STATUS_FILLED_PARTIALLY = 600,
-  ORDER_STATUS_REJECTED = 700,
-  ORDER_STATUS_INACTIVE = 800,
-  ORDER_STATUS_ERROR = 900,
-  numberOfOrderStatuses = 9
+  ORDER_STATUS_SENT,
+  ORDER_STATUS_REQUESTED_CANCEL,
+  ORDER_STATUS_SUBMITTED,
+  ORDER_STATUS_CANCELLED,
+  ORDER_STATUS_FILLED,
+  ORDER_STATUS_FILLED_PARTIALLY,
+  ORDER_STATUS_REJECTED,
+  ORDER_STATUS_ERROR,
+  numberOfOrderStatuses
 };
 
 TRDK_CORE_API const char *ConvertToPch(const trdk::OrderStatus &);
@@ -192,7 +190,7 @@ template <trdk::Level1TickType type>
 struct Level1TickTypeToValueType {};
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
@@ -200,7 +198,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_BID_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
@@ -208,7 +206,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_PRICE> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
@@ -216,7 +214,7 @@ struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
 };
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_TRADING_VOLUME> {
-  typedef trdk::ScaledPrice Type;
+  typedef trdk::Price Type;
 };
 
 TRDK_CORE_API const char *ConvertToPch(const trdk::Level1TickType &);
@@ -239,17 +237,17 @@ class Level1TickValue {
       case LEVEL1_TICK_LAST_PRICE:
         return Create<LEVEL1_TICK_LAST_PRICE>(value);
       case LEVEL1_TICK_LAST_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_LAST_QTY>(value);
       case LEVEL1_TICK_BID_PRICE:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_BID_PRICE>(value);
       case LEVEL1_TICK_BID_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_BID_QTY>(value);
       case LEVEL1_TICK_ASK_PRICE:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_ASK_PRICE>(value);
       case LEVEL1_TICK_ASK_QTY:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_ASK_QTY>(value);
       case LEVEL1_TICK_TRADING_VOLUME:
-        return Create<LEVEL1_TICK_LAST_PRICE>(value);
+        return Create<LEVEL1_TICK_TRADING_VOLUME>(value);
     }
     AssertEq(LEVEL1_TICK_LAST_PRICE, type);
     throw Exception("Unknown Level 1 Tick Value Type");
@@ -270,10 +268,10 @@ class Level1TickValue {
 namespace trdk {
 
 enum TradingMode {
-  TRADING_MODE_LIVE = 1,
-  TRADING_MODE_PAPER = 2,
-  TRADING_MODE_BACKTESTING = 3,
-  numberOfTradingModes = 3
+  TRADING_MODE_LIVE,
+  TRADING_MODE_PAPER,
+  TRADING_MODE_BACKTESTING,
+  numberOfTradingModes
 };
 TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
     const std::string &);
@@ -305,7 +303,7 @@ enum OperationResult {
   numberOfOperationResults = 3
 };
 
-typedef std::vector<std::pair<trdk::Lib::Currency, double>> FinancialResult;
+typedef std::vector<std::pair<trdk::Lib::Currency, Volume>> FinancialResult;
 }
 
 //////////////////////////////////////////////////////////////////////////

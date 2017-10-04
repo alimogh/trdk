@@ -42,15 +42,6 @@ class PositionController : public TradingLib::PositionController {
 
   virtual ~PositionController() override = default;
 
- public:
-  virtual Position &OpenPosition(Security &security,
-                                 const Milestones &delayMeasurement) override {
-    Assert(GetIsRising());
-    return OpenPosition(security, *GetIsRising(), delayMeasurement);
-  }
-
-  using Base::OpenPosition;
-
  protected:
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override {
     return *m_orderPolicy;
@@ -59,11 +50,15 @@ class PositionController : public TradingLib::PositionController {
     return *m_orderPolicy;
   }
 
+  virtual void SetupPosition(trdk::Position &) const override{};
+
+  virtual bool IsNewPositionIsLong() const override { return *GetIsRising(); }
+
   virtual Qty GetNewPositionQty() const override { return 10; }
 
   virtual bool IsPositionCorrect(const Position &position) const override {
     const auto &isRising = GetIsRising();
-    return !isRising || *isRising == position.IsLong();
+    return !isRising || IsNewPositionIsLong() == position.IsLong();
   }
 
  private:
@@ -111,7 +106,7 @@ class TestStrategy : public Strategy {
     }
 
     {
-      const auto &lastPrice = security.DescalePrice(tick.GetValue());
+      const auto &lastPrice = tick.GetValue();
       if (m_prevPrice < lastPrice) {
         if (m_direction < 0) {
           m_direction = 1;

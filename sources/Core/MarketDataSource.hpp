@@ -124,7 +124,8 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   size_t GetActiveSecurityCount() const;
 
   void ForEachSecurity(
-      const boost::function<bool(const trdk::Security &)> &) const;
+      const boost::function<void(const trdk::Security &)> &) const;
+  void ForEachSecurity(const boost::function<void(trdk::Security &)> &);
 
   //! Starts the asynchronous operation of switching security to the contract
   //! with the next expiry date.

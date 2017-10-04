@@ -28,12 +28,13 @@ class SubscriberPtrWrapper {
   struct Trade {
     trdk::Security *security;
     boost::posix_time::ptime time;
-    ScaledPrice price;
+    Price price;
     Qty qty;
   };
 
   struct BrokerPosition {
     trdk::Security *security;
+    bool isLong;
     Qty qty;
     Volume volume;
     bool isInitial;

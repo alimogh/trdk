@@ -49,7 +49,7 @@ class PositionController::Implementation : private boost::noncopyable {
 PositionController::PositionController(Strategy &strategy)
     : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
 
-PositionController::~PositionController() {}
+PositionController::~PositionController() = default;
 
 Strategy &PositionController::GetStrategy() { return m_pimpl->m_strategy; }
 const Strategy &PositionController::GetStrategy() const {
@@ -72,6 +72,11 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 }
 
 trdk::Position &PositionController::OpenPosition(
+    Security &security, const Milestones &delayMeasurement) {
+  return OpenPosition(security, IsNewPositionIsLong(), delayMeasurement);
+}
+
+trdk::Position &PositionController::OpenPosition(
     Security &security, bool isLong, const Milestones &delayMeasurement) {
   return OpenPosition(security, isLong, GetNewPositionQty(), delayMeasurement);
 }
@@ -82,11 +87,10 @@ trdk::Position &PositionController::OpenPosition(
     const Qty &qty,
     const Milestones &delayMeasurement) {
   auto position =
-      isLong
-          ? CreatePosition<LongPosition>(
-                security, qty, security.GetAskPriceScaled(), delayMeasurement)
-          : CreatePosition<ShortPosition>(
-                security, qty, security.GetBidPriceScaled(), delayMeasurement);
+      isLong ? CreatePosition<LongPosition>(
+                   security, qty, security.GetAskPrice(), delayMeasurement)
+             : CreatePosition<ShortPosition>(
+                   security, qty, security.GetBidPrice(), delayMeasurement);
   ContinuePosition(*position);
   return *position;
 }
@@ -207,32 +211,35 @@ void PositionController::OnPostionsCloseRequest() {
 }
 
 void PositionController::OnBrokerPositionUpdate(Security &security,
+                                                bool isLong,
                                                 const Qty &qty,
                                                 const Volume &volume,
                                                 bool isInitial) {
   if (!isInitial || qty == 0) {
     GetStrategy().GetLog().Debug(
-        "Skipped broker position %1% (volume %2$.8f) for \"%3%\" (%4%).",
-        qty,                                // 1
-        volume,                             // 2
-        security,                           // 3
-        isInitial ? "initial" : "online");  // 4
+        "Skipped broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
+        "(%4%).",
+        qty,                               // 1
+        volume,                            // 2
+        security,                          // 3
+        isInitial ? "initial" : "online",  // 4
+        isLong ? "long" : "short");        // 5
     return;
   }
 
   const auto price = abs(volume / qty);
   GetStrategy().GetLog().Info(
-      "Accepting broker position %1% (volume %2$.8f, start price %3$.8f) for "
+      "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
+      "%3$.8f) for "
       "\"%4%\"...",
-      qty,        // 1
-      volume,     // 2
-      price,      // 3
-      security);  // 4
-
+      qty,                         // 1
+      volume,                      // 2
+      price,                       // 3
+      security,                    // 4
+      isLong ? "long" : "short");  // 5
   auto position =
-      qty > 0 ? CreatePosition<LongPosition>(
-                    security, qty, security.ScalePrice(price), Milestones())
-              : CreatePosition<ShortPosition>(
-                    security, -qty, security.ScalePrice(price), Milestones());
+      isLong
+          ? CreatePosition<LongPosition>(security, qty, price, Milestones())
+          : CreatePosition<ShortPosition>(security, qty, price, Milestones());
   position->RestoreOpenState(price);
 }

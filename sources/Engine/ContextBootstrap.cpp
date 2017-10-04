@@ -319,22 +319,18 @@ class ContextBootstrapper : private boost::noncopyable {
         if (holderByMode.instanceName != instanceName) {
           continue;
         }
-        AssertLt(0, mode);
-        AssertGe(holderByMode.holders.size(), static_cast<size_t>(mode));
-        AssertEq(std::string(), holderByMode.holders[mode - 1].section);
-        Assert(!holderByMode.holders[mode - 1].tradingSystem);
-        holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
-        holderByMode.holders[mode - 1].section = section;
+        AssertEq(std::string(), holderByMode.holders[mode].section);
+        Assert(!holderByMode.holders[mode].tradingSystem);
+        holderByMode.holders[mode].tradingSystem = tradingSystem;
+        holderByMode.holders[mode].section = section;
         isFound = true;
         break;
       }
       if (!isFound) {
         TradingSystemModesHolder holderByMode;
         holderByMode.instanceName = instanceName;
-        AssertLt(0, mode);
-        AssertGe(holderByMode.holders.size(), static_cast<size_t>(mode));
-        holderByMode.holders[mode - 1].tradingSystem = tradingSystem;
-        holderByMode.holders[mode - 1].section = section;
+        holderByMode.holders[mode].tradingSystem = tradingSystem;
+        holderByMode.holders[mode].section = section;
         m_tradingSystems.emplace_back(holderByMode);
       }
     }
@@ -838,21 +834,19 @@ class ContextStateBootstrapper : private boost::noncopyable {
       std::vector<std::string> securities;
       for (const auto &symbol : symbols) {
         Assert(symbol);
-        m_context.ForEachMarketDataSource(
-            [&](MarketDataSource &source) -> bool {
-              auto &security = source.GetSecurity(symbol);
-              try {
-                instance->RegisterSource(security);
-              } catch (...) {
-                trdk::EventsLog::BroadcastUnhandledException(
-                    __FUNCTION__, __FILE__, __LINE__);
-                throw Exception("Failed to attach security");
-              }
-              boost::format securityStr("%1% from %2%");
-              securityStr % security % security.GetSource().GetInstanceName();
-              securities.push_back(securityStr.str());
-              return true;
-            });
+        m_context.ForEachMarketDataSource([&](MarketDataSource &source) {
+          auto &security = source.GetSecurity(symbol);
+          try {
+            instance->RegisterSource(security);
+          } catch (...) {
+            trdk::EventsLog::BroadcastUnhandledException(__FUNCTION__, __FILE__,
+                                                         __LINE__);
+            throw Exception("Failed to attach security");
+          }
+          boost::format securityStr("%1% from %2%");
+          securityStr % security % security.GetSource().GetInstanceName();
+          securities.emplace_back(securityStr.str());
+        });
       }
       Assert(module.symbolInstances.find(symbols) ==
              module.symbolInstances.end());

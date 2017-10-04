@@ -48,7 +48,7 @@ TrailingStop::TrailingStop(
       m_params(params),
       m_isActivated(false) {}
 
-TrailingStop::~TrailingStop() {}
+TrailingStop::~TrailingStop() = default;
 
 const char *TrailingStop::GetName() const { return "trailing stop"; }
 
@@ -85,9 +85,9 @@ bool TrailingStop::CheckSignal() {
     return false;
   }
 
-  const auto &profitToClose = RoundByScale(
+  const auto &profitToClose = RoundByPrecision(
       m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPriceScale());
+      GetPosition().GetSecurity().GetPricePrecisionPower());
 
   if (m_minProfit && plannedPnl >= *m_minProfit) {
     return false;
@@ -131,9 +131,9 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
     return true;
   }
 
-  const Double &profitToActivate = RoundByScale(
+  const Double &profitToActivate = RoundByPrecision(
       m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPriceScale());
+      GetPosition().GetSecurity().GetPricePrecisionPower());
 
   m_isActivated = plannedPnl >= profitToActivate;
 

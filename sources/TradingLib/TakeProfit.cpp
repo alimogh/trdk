@@ -41,7 +41,7 @@ TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
   Assert(m_params);
 }
 
-TakeProfit::~TakeProfit() {}
+TakeProfit::~TakeProfit() = default;
 
 const char *TakeProfit::GetName() const { return "take profit"; }
 
@@ -76,9 +76,9 @@ bool TakeProfit::CheckSignal() {
   Assert(m_maxProfit);
 
   auto profitToClose = *m_maxProfit;
-  profitToClose -= RoundByScale(
+  profitToClose -= RoundByPrecision(
       m_params->GetMaxPriceOffsetPerLotToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPriceScale());
+      GetPosition().GetSecurity().GetPricePrecisionPower());
 
   if (m_minProfit && plannedPnl >= *m_minProfit) {
     return false;
@@ -119,9 +119,9 @@ bool TakeProfit::CheckSignal() {
 }
 
 bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
-  const Double &profitToActivate = RoundByScale(
+  const Double &profitToActivate = RoundByPrecision(
       m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPriceScale());
+      GetPosition().GetSecurity().GetPricePrecisionPower());
 
   bool isSignal = false;
   if (!m_isActivated) {

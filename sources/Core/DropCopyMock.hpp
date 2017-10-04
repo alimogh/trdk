@@ -46,14 +46,14 @@ class DropCopy : public trdk::DropCopy {
                          const trdk::TradingSystem &,
                          const trdk::OrderSide &,
                          const trdk::Qty &,
-                         const double *,
+                         const trdk::Price *,
                          const trdk::TimeInForce *,
                          const trdk::Lib::Currency &,
                          const trdk::Qty *,
                          const trdk::Qty &,
-                         const double *,
+                         const trdk::Price *,
                          const trdk::Qty *,
-                         const double *,
+                         const trdk::Price *,
                          const trdk::Qty *) {
     //! @todo Make wrapper to struct to test this method.
     throw std::exception("Method is not mocked");
@@ -63,11 +63,11 @@ class DropCopy : public trdk::DropCopy {
                void(const boost::posix_time::ptime &,
                     const std::string &tradingSystemTradeId,
                     const boost::uuids::uuid &orderId,
-                    double price,
+                    const trdk::Price &price,
                     const trdk::Qty &qty,
-                    double bestBidPrice,
+                    const trdk::Price &bestBidPrice,
                     const trdk::Qty &bestBidQty,
-                    double bestAskPrice,
+                    const trdk::Price &bestAskPrice,
                     const trdk::Qty &bestAskQty));
 
   MOCK_METHOD3(ReportOperationStart,
@@ -78,7 +78,7 @@ class DropCopy : public trdk::DropCopy {
                           const boost::posix_time::ptime &time,
                           const trdk::CloseReason &reason,
                           const trdk::OperationResult &result,
-                          double pnl,
+                          const trdk::Volume &pnl,
                           trdk::FinancialResult &&financialResult) {
     ReportOperationEnd(id, time, reason, result, pnl, financialResult);
   }
@@ -87,7 +87,7 @@ class DropCopy : public trdk::DropCopy {
                     const boost::posix_time::ptime &,
                     const trdk::CloseReason &,
                     const trdk::OperationResult &,
-                    double pnl,
+                    const trdk::Volume &pnl,
                     const trdk::FinancialResult &));
 
   MOCK_METHOD2(CopyBook, void(const trdk::Security &, const trdk::PriceBook &));
@@ -96,15 +96,42 @@ class DropCopy : public trdk::DropCopy {
                void(const trdk::DropCopyDataSourceInstanceId &,
                     size_t index,
                     const boost::posix_time::ptime &,
-                    double,
-                    double,
-                    double,
-                    double));
+                    const trdk::Price &,
+                    const trdk::Price &,
+                    const trdk::Price &,
+                    const trdk::Price &));
   MOCK_METHOD4(CopyAbstractData,
                void(const trdk::DropCopyDataSourceInstanceId &,
                     size_t index,
                     const boost::posix_time::ptime &,
-                    double value));
+                    const trdk::Lib::Double &value));
+
+  MOCK_METHOD3(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD4(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD5(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD6(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &,
+                    const trdk::Level1TickValue &));
+  MOCK_METHOD3(CopyLevel1Tick,
+               void(const trdk::Security &,
+                    const boost::posix_time::ptime &,
+                    const std::vector<trdk::Level1TickValue> &));
 };
 }
 }

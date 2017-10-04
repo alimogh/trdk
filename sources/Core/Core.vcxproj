@@ -370,7 +370,6 @@
     </ClCompile>
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
-    <ClCompile Include="Terminal.cpp" />
     <ClCompile Include="RiskControl.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="TradingSystemMock.cpp">
@@ -410,7 +409,6 @@
     <ClInclude Include="SecurityMock.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="ServiceMock.hpp" />
-    <ClInclude Include="SettingsReport.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />
@@ -423,7 +421,6 @@
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Settings.hpp" />
-    <ClInclude Include="Terminal.hpp" />
     <ClInclude Include="RiskControl.hpp" />
     <ClInclude Include="TradingLog.hpp" />
     <ClInclude Include="TradingSystem.hpp" />

@@ -45,15 +45,15 @@ class RiskControlSymbolContext::Position : private boost::noncopyable {
  public:
   const Lib::Currency currency;
 
-  const double shortLimit;
-  const double longLimit;
+  const Volume shortLimit;
+  const Volume longLimit;
 
-  double position;
+  Volume position;
 
  public:
   explicit Position(const Lib::Currency &currency,
-                    double shortLimit,
-                    double longLimit)
+                    const Volume &shortLimit,
+                    const Volume &longLimit)
       : currency(currency),
         shortLimit(shortLimit),
         longLimit(longLimit),
@@ -100,29 +100,28 @@ void EmptyRiskControlScope::CheckNewBuyOrder(const RiskControlOperationId &,
                                              Security &,
                                              const Currency &,
                                              const Qty &,
-                                             const ScaledPrice &) {}
+                                             const Price &) {}
 void EmptyRiskControlScope::CheckNewSellOrder(const RiskControlOperationId &,
                                               Security &,
                                               const Currency &,
                                               const Qty &,
-                                              const ScaledPrice &) {}
+                                              const Price &) {}
 void EmptyRiskControlScope::ConfirmBuyOrder(const RiskControlOperationId &,
                                             const OrderStatus &,
                                             Security &,
                                             const Currency &,
-                                            const ScaledPrice & /*orderPrice*/,
+                                            const Price & /*orderPrice*/,
                                             const Qty & /*remainingQty*/,
                                             const TradingSystem::TradeInfo *) {}
 void EmptyRiskControlScope::ConfirmSellOrder(const RiskControlOperationId &,
                                              const OrderStatus &,
                                              Security &,
                                              const Currency &,
-                                             const ScaledPrice & /*orderPrice*/,
+                                             const Price & /*orderPrice*/,
                                              const Qty & /*remainingQty*/,
                                              const TradingSystem::TradeInfo *) {
-
 }
-void EmptyRiskControlScope::CheckTotalPnl(double /*pnl*/) const {}
+void EmptyRiskControlScope::CheckTotalPnl(const Volume &) const {}
 void EmptyRiskControlScope::CheckTotalWinRatio(
     size_t /*totalWinRatio*/, size_t /*operationsCount*/) const {}
 void EmptyRiskControlScope::ResetStatistics() {
@@ -160,15 +159,15 @@ class StandardRiskControlScope : public RiskControlScope {
   struct Settings {
    public:
     pt::time_duration ordersFloodControlPeriod;
-    std::pair<double, double> pnl;
+    std::pair<Volume, Volume> pnl;
 
     size_t winRatioFirstOperationsToSkip;
     uint16_t winRatioMinValue;
 
    public:
     explicit Settings(const pt::time_duration &ordersFloodControlPeriod,
-                      double minPnl,
-                      double maxPnl,
+                      const Volume &minPnl,
+                      const Volume &maxPnl,
                       size_t winRatioFirstOperationsToSkip,
                       uint16_t winRatioMinValue)
         : ordersFloodControlPeriod(ordersFloodControlPeriod),
@@ -218,7 +217,7 @@ class StandardRiskControlScope : public RiskControlScope {
       throw WrongSettingsException("Wrong Order Flood Control settings");
     }
 
-    if (IsZero(m_settings.pnl.first) || IsZero(m_settings.pnl.second) ||
+    if (m_settings.pnl.first == 0 || m_settings.pnl.second == 0 ||
         m_settings.pnl.first > .1 || m_settings.pnl.second > .1) {
       throw WrongSettingsException("Wrong PnL available range set");
     }
@@ -238,7 +237,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                 Security &security,
                                 const Currency &currency,
                                 const Qty &qty,
-                                const ScaledPrice &price) {
+                                const Price &price) {
     CheckNewOrder(operationId, security, currency, qty, price,
                   security.GetRiskControlContext(GetTradingMode())
                       .GetScope(m_index)
@@ -249,7 +248,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                  Security &security,
                                  const Currency &currency,
                                  const Qty &qty,
-                                 const ScaledPrice &price) {
+                                 const Price &price) {
     CheckNewOrder(operationId, security, currency, qty, price,
                   security.GetRiskControlContext(GetTradingMode())
                       .GetScope(m_index)
@@ -260,7 +259,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                const OrderStatus &status,
                                Security &security,
                                const Lib::Currency &currency,
-                               const ScaledPrice &orderPrice,
+                               const Price &orderPrice,
                                const Qty &remainingQty,
                                const TradingSystem::TradeInfo *trade) {
     ConfirmOrder(operationId, status, security, currency, orderPrice,
@@ -274,7 +273,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                 const OrderStatus &status,
                                 Security &security,
                                 const Currency &currency,
-                                const ScaledPrice &orderPrice,
+                                const Price &orderPrice,
                                 const Qty &remainingQty,
                                 const TradingSystem::TradeInfo *trade) {
     ConfirmOrder(operationId, status, security, currency, orderPrice,
@@ -285,7 +284,7 @@ class StandardRiskControlScope : public RiskControlScope {
   }
 
  public:
-  virtual void CheckTotalPnl(double pnl) const {
+  virtual void CheckTotalPnl(const Volume &pnl) const {
     if (pnl < 0) {
       if (pnl < m_settings.pnl.first) {
         m_tradingLog.Write(
@@ -342,7 +341,7 @@ class StandardRiskControlScope : public RiskControlScope {
                      Security &security,
                      const Currency &currency,
                      const Qty &qty,
-                     const ScaledPrice &price,
+                     const Price &price,
                      RiskControlSymbolContext::Side &side) {
     CheckOrdersFloodLevel();
     BlockFunds(operationId, security, currency, qty, price, side);
@@ -352,7 +351,7 @@ class StandardRiskControlScope : public RiskControlScope {
                     const OrderStatus &status,
                     Security &security,
                     const Currency &currency,
-                    const ScaledPrice &orderPrice,
+                    const Price &orderPrice,
                     const Qty &remainingQty,
                     const TradingSystem::TradeInfo *trade,
                     RiskControlSymbolContext::Side &side) {
@@ -409,11 +408,11 @@ class StandardRiskControlScope : public RiskControlScope {
   /** @return First value - order subject (base currency, security and so on),
     *         second value - money or quote currency.
     */
-  static std::pair<double, double> CalcOrderVolumes(
+  static std::pair<Volume, Volume> CalcOrderVolumes(
       const Security &security,
       const Currency &currency,
       const Qty &qty,
-      const ScaledPrice &orderPrice,
+      const Price &orderPrice,
       const RiskControlSymbolContext::Side &side) {
     const Symbol &symbol = security.GetSymbol();
 
@@ -422,7 +421,6 @@ class StandardRiskControlScope : public RiskControlScope {
     Assert(symbol.GetFotBaseCurrency() == currency ||
            symbol.GetFotQuoteCurrency() == currency);
 
-    const auto realPrice = security.DescalePrice(orderPrice);
     const auto quoteCurrencyDirection = side.direction * -1;
 
     //! @sa See TRDK-107, TRDK-176 and TRDK-110 for order side details. But we
@@ -431,15 +429,16 @@ class StandardRiskControlScope : public RiskControlScope {
     //!     "native order side".
     if (symbol.GetFotBaseCurrency() == currency) {
       return std::make_pair(qty * side.direction,
-                            (qty * realPrice) * quoteCurrencyDirection);
+                            (qty * orderPrice) * quoteCurrencyDirection);
     } else {
-      return std::make_pair((qty / realPrice) * side.direction,
+      return std::make_pair((qty / orderPrice) * side.direction,
                             qty * quoteCurrencyDirection);
     }
   }
 
-  static double CalcFundsRest(
-      double position, const RiskControlSymbolContext::Position &limits) {
+  static Volume CalcFundsRest(
+      const Volume &position,
+      const RiskControlSymbolContext::Position &limits) {
     return position < 0 ? limits.shortLimit + position
                         : limits.longLimit - position;
   }
@@ -448,7 +447,7 @@ class StandardRiskControlScope : public RiskControlScope {
                   Security &security,
                   const Currency &currency,
                   const Qty &qty,
-                  const ScaledPrice &orderPrice,
+                  const Price &orderPrice,
                   const RiskControlSymbolContext::Side &side) const {
     const Symbol &symbol = security.GetSymbol();
     if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
@@ -462,12 +461,12 @@ class StandardRiskControlScope : public RiskControlScope {
     RiskControlSymbolContext::Position &quoteCurrency =
         *context.quoteCurrencyPosition;
 
-    const std::pair<double, double> blocked =
+    const auto &blocked =
         CalcOrderVolumes(security, currency, qty, orderPrice, side);
-    const std::pair<double, double> newPosition =
+    const auto &newPosition =
         std::make_pair(baseCurrency.position + blocked.first,
                        quoteCurrency.position + blocked.second);
-    const std::pair<double, double> rest =
+    const auto &rest =
         std::make_pair(CalcFundsRest(newPosition.first, baseCurrency),
                        CalcFundsRest(newPosition.second, quoteCurrency));
 
@@ -500,11 +499,11 @@ class StandardRiskControlScope : public RiskControlScope {
                         const OrderStatus &status,
                         Security &security,
                         const Currency &currency,
-                        const ScaledPrice &orderPrice,
+                        const Price &orderPrice,
                         const Qty &remainingQty,
                         const TradingSystem::TradeInfo *trade,
                         const RiskControlSymbolContext::Side &side) {
-    static_assert(numberOfOrderStatuses == 9, "Status list changed.");
+    static_assert(numberOfOrderStatuses == 8, "Status list changed.");
     switch (status) {
       default:
         AssertEq(ORDER_STATUS_ERROR, status);
@@ -524,7 +523,6 @@ class StandardRiskControlScope : public RiskControlScope {
         break;
       case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
-      case ORDER_STATUS_INACTIVE:
       case ORDER_STATUS_ERROR:
         Assert(!trade);
         UnblockFunds(operationId, security, currency, orderPrice, remainingQty,
@@ -536,7 +534,7 @@ class StandardRiskControlScope : public RiskControlScope {
   void ConfirmBlockedFunds(const RiskControlOperationId &operationId,
                            Security &security,
                            const Currency &currency,
-                           const ScaledPrice &orderPrice,
+                           const Price &orderPrice,
                            const TradingSystem::TradeInfo &trade,
                            const RiskControlSymbolContext::Side &side) {
     const Symbol &symbol = security.GetSymbol();
@@ -551,12 +549,12 @@ class StandardRiskControlScope : public RiskControlScope {
     RiskControlSymbolContext::Position &quoteCurrency =
         *context.quoteCurrencyPosition;
 
-    const std::pair<double, double> blocked =
+    const auto &blocked =
         CalcOrderVolumes(security, currency, trade.qty, orderPrice, side);
-    const std::pair<double, double> used =
+    const auto &used =
         CalcOrderVolumes(security, currency, trade.qty, trade.price, side);
 
-    const std::pair<double, double> newPosition =
+    const std::pair<Volume, Volume> &newPosition =
         std::make_pair(baseCurrency.position - blocked.first + used.first,
                        quoteCurrency.position - blocked.second + used.second);
 
@@ -584,7 +582,7 @@ class StandardRiskControlScope : public RiskControlScope {
   void UnblockFunds(const RiskControlOperationId &operationId,
                     Security &security,
                     const Currency &currency,
-                    const ScaledPrice &orderPrice,
+                    const Price &orderPrice,
                     const Qty &remainingQty,
                     const RiskControlSymbolContext::Side &side) {
     const Symbol &symbol = security.GetSymbol();
@@ -599,9 +597,9 @@ class StandardRiskControlScope : public RiskControlScope {
     RiskControlSymbolContext::Position &quoteCurrency =
         *context.quoteCurrencyPosition;
 
-    const std::pair<double, double> blocked =
+    const auto &blocked =
         CalcOrderVolumes(security, currency, remainingQty, orderPrice, side);
-    const std::pair<double, double> newPosition =
+    const auto &newPosition =
         std::make_pair(baseCurrency.position - blocked.first,
                        quoteCurrency.position - blocked.second);
 
@@ -628,9 +626,9 @@ class StandardRiskControlScope : public RiskControlScope {
 
  private:
   virtual void SetPositions(
-      double newbaseCurrencyValue,
+      const Volume &newBaseCurrencyValue,
       RiskControlSymbolContext::Position &baseCurrencyState,
-      double newQuoteCurrencyValue,
+      const Volume &newQuoteCurrencyValue,
       RiskControlSymbolContext::Position &quoteCurrencyState) const = 0;
 
  private:
@@ -713,11 +711,11 @@ class GlobalRiskControlScope : public StandardRiskControlScope {
 
  private:
   virtual void SetPositions(
-      double newbaseCurrencyValue,
+      const Volume &newBaseCurrencyValue,
       RiskControlSymbolContext::Position &baseCurrencyState,
-      double newQuoteCurrencyValue,
+      const Volume &newQuoteCurrencyValue,
       RiskControlSymbolContext::Position &quoteCurrencyState) const {
-    baseCurrencyState.position = newbaseCurrencyValue;
+    baseCurrencyState.position = newBaseCurrencyValue;
     quoteCurrencyState.position = newQuoteCurrencyValue;
   }
 };
@@ -761,7 +759,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
   virtual void ResetStatistics() {
     const Lock lock(m_statMutex);
-    foreach (auto &i, m_stat) { i = 0; }
+    std::fill(m_stat.begin(), m_stat.end(), 0);
   }
 
   virtual FinancialResult GetStatistics() const {
@@ -772,7 +770,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
       for (size_t i = 0; i < m_stat.size(); ++i) {
         AssertGt(numberOfCurrencies, i);
         const auto &position = m_stat[i];
-        if (IsZero(position)) {
+        if (position == 0) {
           continue;
         }
         result.emplace_back(Currency(i), position);
@@ -789,7 +787,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
       for (size_t i = 0; i < m_stat.size(); ++i) {
         AssertGt(numberOfCurrencies, i);
         auto &position = m_stat[i];
-        if (IsZero(position)) {
+        if (position == 0) {
           continue;
         }
         result.emplace_back(Currency(i), position);
@@ -801,9 +799,9 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
  private:
   virtual void SetPositions(
-      double newbaseCurrencyValue,
+      const Volume &newbaseCurrencyValue,
       RiskControlSymbolContext::Position &baseCurrencyState,
-      double newQuoteCurrencyValue,
+      const Volume &newQuoteCurrencyValue,
       RiskControlSymbolContext::Position &quoteCurrencyState) const {
     const Lock lock(m_statMutex);
     {
@@ -823,7 +821,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
       numberOfCurrencies == 8,
       "List changes. Each new currency adds new item into static array here!"
       "See Ctor.");
-  mutable std::vector<double> m_stat;
+  mutable std::vector<Double> m_stat;
   mutable Mutex m_statMutex;
 };
 
@@ -977,8 +975,8 @@ class RiskControl::Implementation : private boost::noncopyable {
       const std::string &scopeName,
       PositionsCache &cache,
       const Currency &currency,
-      double shortLimit,
-      double longLimit) const {
+      const Volume &shortLimit,
+      const Volume &longLimit) const {
     {
       const auto &cacheIt = cache.find(currency);
       if (cacheIt != cache.cend()) {
@@ -1065,8 +1063,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
 std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
     const std::string &name, const IniSectionRef &conf) const {
   if (!m_pimpl->m_globalScope) {
-    return std::unique_ptr<RiskControlScope>(
-        new EmptyRiskControlScope(GetTradingMode(), name));
+    return boost::make_unique<EmptyRiskControlScope>(GetTradingMode(), name);
   }
 
   auto additionalScopesInfo(m_pimpl->m_additionalScopesInfo);
@@ -1076,12 +1073,12 @@ std::unique_ptr<RiskControlScope> RiskControl::CreateScope(
   AssertLt(0, scopeIndex);  // zero - always Global scope
 
   Implementation::PositionsCache cache;
-  foreach (auto &symbolContex, m_pimpl->m_symbols) {
+  for (auto &symbolContex : m_pimpl->m_symbols) {
     m_pimpl->AddScope(scopeIndex, additionalScopesInfo.back(), *symbolContex);
   }
 
-  std::unique_ptr<RiskControlScope> result(new LocalRiskControlScope(
-      m_pimpl->m_context, conf, name, scopeIndex, GetTradingMode()));
+  auto result = boost::make_unique<LocalRiskControlScope>(
+      m_pimpl->m_context, conf, name, scopeIndex, GetTradingMode());
 
   additionalScopesInfo.swap(m_pimpl->m_additionalScopesInfo);
 
@@ -1093,7 +1090,7 @@ RiskControlOperationId RiskControl::CheckNewBuyOrder(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const TimeMeasurement::Milestones &timeMeasurement) {
   if (!m_pimpl->m_globalScope) {
     return 0;
@@ -1112,7 +1109,7 @@ RiskControlOperationId RiskControl::CheckNewSellOrder(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const TimeMeasurement::Milestones &timeMeasurement) {
   if (!m_pimpl->m_globalScope) {
     return 0;
@@ -1132,7 +1129,7 @@ void RiskControl::ConfirmBuyOrder(
     const OrderStatus &orderStatus,
     Security &security,
     const Currency &currency,
-    const ScaledPrice &orderPrice,
+    const Price &orderPrice,
     const Qty &remainingQty,
     const TradingSystem::TradeInfo *trade,
     const TimeMeasurement::Milestones &timeMeasurement) {
@@ -1155,7 +1152,7 @@ void RiskControl::ConfirmSellOrder(
     const OrderStatus &orderStatus,
     Security &security,
     const Currency &currency,
-    const ScaledPrice &orderPrice,
+    const Price &orderPrice,
     const Qty &remainingQty,
     const TradingSystem::TradeInfo *trade,
     const TimeMeasurement::Milestones &timeMeasurement) {
@@ -1173,7 +1170,7 @@ void RiskControl::ConfirmSellOrder(
 }
 
 void RiskControl::CheckTotalPnl(const RiskControlScope &scope,
-                                double pnl) const {
+                                const Volume &pnl) const {
   scope.CheckTotalPnl(pnl);
   m_pimpl->m_globalScope->CheckTotalPnl(pnl);
 }

@@ -32,7 +32,7 @@ struct Order {
   OrderId id;
   Test::TradingSystem::OrderStatusUpdateSlot callback;
   Qty qty;
-  ScaledPrice price;
+  Price price;
   OrderParams params;
   size_t isCanceled;
 };
@@ -192,8 +192,9 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
       const auto callback = order.callback;
       order.callback = [this, callback](
           const OrderId &id, const std::string &uuid, const OrderStatus &status,
-          const Qty &remainingQty, const TradeInfo *trade) {
-        callback(id, uuid, status, remainingQty, trade);
+          const Qty &remainingQty, const boost::optional<Volume> &commission,
+          const TradeInfo *trade) {
+        callback(id, uuid, status, remainingQty, commission, trade);
       };
     }
 
@@ -319,20 +320,20 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
       TradeInfo trade = {};
 
       bool isMatched = order.isSell
-                           ? order.price <= order.security->GetBidPriceScaled()
-                           : order.price >= order.security->GetAskPriceScaled();
+                           ? order.price <= order.security->GetBidPrice()
+                           : order.price >= order.security->GetAskPrice();
       if (isMatched) {
         isMatched = m_execChanceGenerator.HasChance();
       }
 
       if (isMatched) {
-        trade.price = order.isSell ? order.security->GetBidPriceScaled()
-                                   : order.security->GetAskPriceScaled();
+        trade.price = order.isSell ? order.security->GetBidPrice()
+                                   : order.security->GetAskPrice();
         trade.id = tradingSystemOrderId;
         trade.qty = order.qty;
 
         order.callback(order.id, tradingSystemOrderId, ORDER_STATUS_FILLED, 0,
-                       &trade);
+                       boost::none, &trade);
 
         return true;
 
@@ -351,7 +352,8 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
           order.id);
     }
 
-    order.callback(order.id, tradingSystemOrderId, status, order.qty, nullptr);
+    order.callback(order.id, tradingSystemOrderId, status, order.qty,
+                   boost::none, nullptr);
 
     return true;
   }
@@ -405,7 +407,7 @@ Test::TradingSystem::TradingSystem(const TradingMode &mode,
   m_pimpl->m_delayGenerator.Report(GetLog());
 }
 
-Test::TradingSystem::~TradingSystem() {}
+Test::TradingSystem::~TradingSystem() = default;
 
 bool Test::TradingSystem::IsConnected() const { return m_pimpl->IsStarted(); }
 
@@ -418,11 +420,11 @@ OrderId Test::TradingSystem::SendSellAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{false, &security, currency, true, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -430,7 +432,7 @@ OrderId Test::TradingSystem::SendSell(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
@@ -441,34 +443,18 @@ OrderId Test::TradingSystem::SendSell(
   return id;
 }
 
-OrderId Test::TradingSystem::SendSellAtMarketPriceWithStopPrice(
-    Security &,
-    const Currency &,
-    const Qty &qty,
-    const ScaledPrice &,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
-  AssertLt(0, qty);
-  AssertFail("Is not implemented.");
-  UseUnused(qty);
-  throw MethodDoesNotImplementedError(
-      "Has no implementation for"
-      " trdk::Interaction::Test"
-      "::TradingSystem::SendSellAtMarketPriceWithStopPrice");
-}
-
 OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           statusUpdateSlot, qty, price, params});
+                           std::move(statusUpdateSlot), qty, price, params});
   return id;
 }
 
@@ -477,11 +463,11 @@ OrderId Test::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -490,11 +476,11 @@ OrderId Test::TradingSystem::SendBuyAtMarketPrice(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{false, &security, currency, false, id,
-                           statusUpdateSlot, qty, 0, params});
+                           std::move(statusUpdateSlot), qty, 0, params});
   return id;
 }
 
@@ -502,7 +488,7 @@ OrderId Test::TradingSystem::SendBuy(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
     const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
@@ -513,34 +499,18 @@ OrderId Test::TradingSystem::SendBuy(
   return id;
 }
 
-OrderId Test::TradingSystem::SendBuyAtMarketPriceWithStopPrice(
-    Security &,
-    const Currency &,
-    const Qty &qty,
-    const ScaledPrice & /*stopPrice*/,
-    const OrderParams &,
-    const OrderStatusUpdateSlot &) {
-  AssertLt(0, qty);
-  AssertFail("Is not implemented.");
-  UseUnused(qty);
-  throw MethodDoesNotImplementedError(
-      "Has no implementation for"
-      " trdk::Interaction::Test"
-      "::TradingSystem::SendBuyAtMarketPriceWithStopPrice");
-}
-
 OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const ScaledPrice &price,
+    const Price &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, price);
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, false, id,
-                           statusUpdateSlot, qty, price, params});
+                           std::move(statusUpdateSlot), qty, price, params});
   return id;
 }
 
@@ -549,7 +519,7 @@ OrderId Test::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     const Currency &currency,
     const Qty &qty,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &statusUpdateSlot) {
+    const OrderStatusUpdateSlot &&statusUpdateSlot) {
   AssertLt(0, qty);
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, false,

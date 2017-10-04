@@ -145,10 +145,10 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
     if (fields.size() != 7 && fields.size() != 6) {
       throw Exception("Tick record has wrong number of fields");
     }
-    m_security->AddTrade(
-        time, m_security->ScalePrice(boost::lexical_cast<double>(fields[3])),
-        boost::lexical_cast<double>(fields[4]), TimeMeasurement::Milestones(),
-        boost::lexical_cast<bool>(fields[5]));
+    m_security->AddTrade(time, boost::lexical_cast<double>(fields[3]),
+                         boost::lexical_cast<double>(fields[4]),
+                         TimeMeasurement::Milestones(),
+                         boost::lexical_cast<bool>(fields[5]));
   }
 
   void OnLevel1Update(const pt::ptime &time,
@@ -160,17 +160,8 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
     std::vector<Level1TickValue> update;
     for (auto it = fields.cbegin() + 3; it != fields.cend();
          std::advance(it, 2)) {
-      const auto &type = ConvertToLevel1TickType(*it);
-      auto value = boost::lexical_cast<double>(*std::next(it));
-      static_assert(numberOfLevel1TickTypes == 7, "List changed.");
-      switch (type) {
-        case LEVEL1_TICK_LAST_PRICE:
-        case LEVEL1_TICK_BID_PRICE:
-        case LEVEL1_TICK_ASK_PRICE:
-          value = m_security->ScalePrice(value);
-          break;
-      }
-      update.emplace_back(std::move(type), std::move(value));
+      update.emplace_back(ConvertToLevel1TickType(*it),
+                          boost::lexical_cast<double>(*std::next(it)));
     }
 
     m_security->SetLevel1(time, update, TimeMeasurement::Milestones());

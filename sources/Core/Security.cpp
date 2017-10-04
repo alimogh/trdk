@@ -27,22 +27,22 @@ namespace sig = boost::signals2;
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-typedef double Level1Value;
+//! Level 1 data.
+/** Should be native double to use NaN value as marker.
+  */
+typedef std::array<boost::atomic<double>, numberOfLevel1TickTypes> Level1;
 
-typedef std::array<boost::atomic<Level1Value>, numberOfLevel1TickTypes> Level1;
+bool IsSet(double value) { return !isnan(value); }
+bool IsSet(const boost::atomic<double> &value) { return IsSet(value.load()); }
 
-bool IsSet(const Level1Value &value) { return !isnan(value); }
-bool IsSet(const boost::atomic<Level1Value> &value) {
-  return IsSet(value.load());
-}
-
-void Unset(boost::atomic<Level1Value> &val) noexcept {
-  val = std::numeric_limits<Level1Value>::quiet_NaN();
+void Unset(boost::atomic<double> &val) noexcept {
+  val = std::numeric_limits<double>::quiet_NaN();
 }
 
 std::string GetFutureSymbol(const Symbol &symbol) {
@@ -249,12 +249,11 @@ class Log : private LogBase {
   }
 
   void WriteTrade(const pt::ptime &time,
-                  const ScaledPrice &price,
+                  const Price &price,
                   const Qty &qty,
                   bool useAsLastTrade) {
     FormatAndWrite([&](Record &record) {
-      record % record.GetTime() % time % "T" % m_security.DescalePrice(price) %
-          qty % useAsLastTrade;
+      record % record.GetTime() % time % "T" % price % qty % useAsLastTrade;
     });
   }
 
@@ -278,22 +277,22 @@ class Log : private LogBase {
           break;
       }
       if (bar.openPrice) {
-        record % m_security.DescalePrice(*bar.openPrice);
+        record % *bar.openPrice;
       } else {
         record % '-';
       }
       if (bar.highPrice) {
-        record % m_security.DescalePrice(*bar.highPrice);
+        record % *bar.highPrice;
       } else {
         record % '-';
       }
       if (bar.lowPrice) {
-        record % m_security.DescalePrice(*bar.lowPrice);
+        record % *bar.lowPrice;
       } else {
         record % '-';
       }
       if (bar.closePrice) {
-        record % m_security.DescalePrice(*bar.closePrice);
+        record % *bar.closePrice;
       } else {
         record % '-';
       }
@@ -326,19 +325,7 @@ class Log : private LogBase {
   void InsertFirstLevel1Update(const Record &) {}
 
   void WriteValue(Record &record, const Level1TickValue &tick) {
-    record % ConvertToPch(tick.GetType());
-
-    static_assert(numberOfLevel1TickTypes == 7, "List changed.");
-    switch (tick.GetType()) {
-      case LEVEL1_TICK_LAST_PRICE:
-      case LEVEL1_TICK_BID_PRICE:
-      case LEVEL1_TICK_ASK_PRICE:
-        record % m_security.DescalePrice(tick.GetValue());
-        break;
-      default:
-        record % tick.GetValue();
-        break;
-    }
+    record % ConvertToPch(tick.GetType()) % tick.GetValue();
   }
 
  private:
@@ -438,12 +425,12 @@ class Security::Implementation : private boost::noncopyable {
 
   MarketDataSource &m_source;
 
-  static_assert(numberOfTradingModes == 3, "List changed.");
-  boost::array<boost::shared_ptr<RiskControlSymbolContext>, 2>
+  boost::array<boost::shared_ptr<RiskControlSymbolContext>,
+               numberOfTradingModes>
       m_riskControlContext;
 
   const uint8_t m_pricePrecision;
-  const uintmax_t m_priceScale;
+  const uintmax_t m_pricePrecisionPower;
   const size_t m_quoteSize;
 
   mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
@@ -483,7 +470,8 @@ class Security::Implementation : private boost::noncopyable {
         m_instanceId(m_nextInstanceId++),
         m_source(source),
         m_pricePrecision(GetPrecisionBySymbol(symbol)),
-        m_priceScale(size_t(std::pow(10, m_pricePrecision))),
+        m_pricePrecisionPower(static_cast<decltype(m_pricePrecisionPower)>(
+            std::pow(10, m_pricePrecision))),
         m_quoteSize(GetQuoteSizeBySymbol(symbol)),
         m_marketDataTime(0),
         m_numberOfMarketDataUpdates(0),
@@ -497,7 +485,7 @@ class Security::Implementation : private boost::noncopyable {
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControlContext.size(); ++i) {
       m_riskControlContext[i] = m_source.GetContext()
-                                    .GetRiskControl(TradingMode(i + 1))
+                                    .GetRiskControl(static_cast<TradingMode>(i))
                                     .CreateSymbolContext(symbol);
     }
 
@@ -542,67 +530,40 @@ class Security::Implementation : private boost::noncopyable {
 
   bool AddLevel1Tick(const pt::ptime &time,
                      const Level1TickValue &tick,
-                     const TimeMeasurement::Milestones &timeMeasurement,
+                     const Milestones &delayMeasurement,
                      bool flush,
                      bool isPreviouslyChanged) {
     const bool isChanged =
-        SetLevel1(time, tick, timeMeasurement, flush, isPreviouslyChanged);
+        SetLevel1(time, tick, delayMeasurement, flush, isPreviouslyChanged);
     CheckMarketDataUpdate(time);
     if (CheckLevel1Start()) {
-      m_level1TickSignal(time, tick, timeMeasurement, flush);
+      m_level1TickSignal(time, tick, delayMeasurement, flush);
     }
     return isChanged;
   }
 
   bool SetLevel1(const pt::ptime &time,
                  const Level1TickValue &tick,
-                 const TimeMeasurement::Milestones &timeMeasurement,
+                 const Milestones &delayMeasurement,
                  bool flush,
                  bool isPreviouslyChanged) {
     AssertLe(0, tick.GetValue());
-    const bool isChanged = !IsEqual(
-        m_level1[tick.GetType()].exchange(tick.GetValue()), tick.GetValue());
-    FlushLevel1Update(time, timeMeasurement, flush, isChanged,
-                      isPreviouslyChanged);
+    const bool isChanged =
+        m_level1[tick.GetType()].exchange(tick.GetValue()) != tick.GetValue() ||
+        isPreviouslyChanged;
+    if (flush) {
+      FlushLevel1Update(time, delayMeasurement, isChanged);
+    }
     return isChanged;
   }
 
-  bool CompareAndSetLevel1(const pt::ptime &time,
-                           const Level1TickValue &tick,
-                           Level1Value prevValue,
-                           const TimeMeasurement::Milestones &timeMeasurement,
-                           bool flush,
-                           bool isPreviouslyChanged) {
-    Assert(!IsEqual(tick.GetValue(), prevValue));
-    if (IsEqual(tick.GetValue(), prevValue)) {
-      return true;
-    }
-    auto &storage = m_level1[tick.GetType()];
-    if (!storage.compare_exchange_weak(prevValue, tick.GetValue())) {
-      return false;
-    }
-    FlushLevel1Update(time, timeMeasurement, flush, true, isPreviouslyChanged);
-    return true;
-  }
-
   void FlushLevel1Update(const pt::ptime &time,
-                         const TimeMeasurement::Milestones &timeMeasurement,
-                         bool flush,
-                         bool isChanged,
-                         bool isPreviouslyChanged) {
-    timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
-
-    if (!flush) {
-      return;
-    } else if (!(isChanged || isPreviouslyChanged)) {
-      CheckMarketDataUpdate(time);
-      return;
-    }
-
+                         const Milestones &delayMeasurement,
+                         bool isChanged) {
+    delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
     CheckMarketDataUpdate(time);
-
-    if (CheckLevel1Start()) {
-      m_level1UpdateSignal(timeMeasurement);
+    if (isChanged && CheckLevel1Start()) {
+      m_level1UpdateSignal(delayMeasurement);
     }
   }
 
@@ -627,8 +588,22 @@ class Security::Implementation : private boost::noncopyable {
   }
 
   template <Level1TickType tick>
-  double GetLevel1Value(const Level1 &level1) const {
-    const Level1Value &value = level1[tick];
+  Double CheckAndGetLevel1Value(const Level1 &level1) const {
+    const double value = level1[tick];
+    if (!IsSet(value)) {
+      Assert(IsSet(value));
+      boost::format message(
+          "Market data value \"%1%\" does not exist for \"%2%\"");
+      message % ConvertToPch(tick) % m_self;
+      throw MarketDataValueDoesNotExist(message.str().c_str());
+    }
+    AssertLe(0, value);
+    return value;
+  }
+
+  template <Level1TickType tick>
+  Double GetLevel1Value(const Level1 &level1) const {
+    const double value = level1[tick];
     if (!IsSet(value)) {
       Assert(IsSet(value));
       boost::format message(
@@ -679,10 +654,9 @@ Security::Security(Context &context,
                    const SupportedLevel1Types &supportedLevel1Types)
     : Base(context, symbol),
       m_pimpl(new Implementation(*this, source, symbol, supportedLevel1Types)) {
-
 }
 
-Security::~Security() {}
+Security::~Security() = default;
 
 const Security::InstanceId &Security::GetInstanceId() const {
   return m_pimpl->m_instanceId;
@@ -704,21 +678,12 @@ const MarketDataSource &Security::GetSource() const {
 
 size_t Security::GetQuoteSize() const { return m_pimpl->m_quoteSize; }
 
-uintmax_t Security::GetPriceScale() const { return m_pimpl->m_priceScale; }
+uintmax_t Security::GetPricePrecisionPower() const {
+  return m_pimpl->m_pricePrecisionPower;
+}
 
 uint8_t Security::GetPricePrecision() const throw() {
   return m_pimpl->m_pricePrecision;
-}
-
-ScaledPrice Security::ScalePrice(double price) const {
-  return ScaledPrice(Scale(price, GetPriceScale()));
-}
-
-Price Security::DescalePrice(const ScaledPrice &price) const {
-  return Descale(int64_t(price), GetPriceScale());
-}
-Price Security::DescalePrice(double price) const {
-  return Descale(price, GetPriceScale());
 }
 
 pt::ptime Security::GetLastMarketDataTime() const {
@@ -815,40 +780,31 @@ const Security::Request &Security::GetRequest() const {
 }
 
 Price Security::GetLastPrice() const {
-  return DescalePrice(GetLastPriceScaled());
-}
-
-ScaledPrice Security::GetLastPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1));
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_LAST_PRICE>(
+      m_pimpl->m_level1);
 }
 
 Qty Security::GetLastQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetTradedVolume() const {
-  return Qty(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
+  return Qty(m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(
+      m_pimpl->m_level1));
 }
 
-ScaledPrice Security::GetAskPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1));
-}
 Price Security::GetAskPrice() const {
-  return DescalePrice(GetAskPriceScaled());
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_ASK_PRICE>(
+      m_pimpl->m_level1);
 }
 Price Security::GetAskPriceValue() const {
-  try {
-    return GetAskPrice();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_ASK_PRICE];
 }
 
 Qty Security::GetAskQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetAskQtyValue() const {
   try {
@@ -858,23 +814,16 @@ Qty Security::GetAskQtyValue() const {
   }
 }
 
-ScaledPrice Security::GetBidPriceScaled() const {
-  return ScaledPrice(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1));
-}
 Price Security::GetBidPrice() const {
-  return DescalePrice(GetBidPriceScaled());
+  return m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1);
 }
 Price Security::GetBidPriceValue() const {
-  try {
-    return GetBidPrice();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_BID_PRICE];
 }
 
 Qty Security::GetBidQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetBidQtyValue() const {
   try {
@@ -949,19 +898,29 @@ bool Security::IsBarsRequired() const { return !m_pimpl->m_barSignal.empty(); }
 
 void Security::SetLevel1(const pt::ptime &time,
                          const Level1TickValue &tick,
-                         const TimeMeasurement::Milestones &timeMeasurement) {
-  m_pimpl->SetLevel1(time, tick, timeMeasurement, true, false);
+                         const Milestones &delayMeasurement) {
+  SetLevel1(time, tick, true, false, delayMeasurement);
+}
+
+bool Security::SetLevel1(const pt::ptime &time,
+                         const Level1TickValue &tick,
+                         bool flush,
+                         bool isPreviouslyChanged,
+                         const Milestones &delayMeasurement) {
+  const bool result = m_pimpl->SetLevel1(time, tick, delayMeasurement, flush,
+                                         isPreviouslyChanged);
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick);
+  return result;
 }
 
 void Security::SetLevel1(const pt::ptime &time,
                          const Level1TickValue &tick1,
                          const Level1TickValue &tick2,
-                         const TimeMeasurement::Milestones &timeMeasurement) {
+                         const Milestones &delayMeasurement) {
   AssertNe(tick1.GetType(), tick2.GetType());
   m_pimpl->SetLevel1(
-      time, tick2, timeMeasurement, true,
-      m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false));
+      time, tick2, delayMeasurement, true,
+      m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false));
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2);
 }
 
@@ -969,15 +928,15 @@ void Security::SetLevel1(const pt::ptime &time,
                          const Level1TickValue &tick1,
                          const Level1TickValue &tick2,
                          const Level1TickValue &tick3,
-                         const TimeMeasurement::Milestones &timeMeasurement) {
+                         const Milestones &delayMeasurement) {
   AssertNe(tick1.GetType(), tick2.GetType());
   AssertNe(tick1.GetType(), tick3.GetType());
   AssertNe(tick2.GetType(), tick3.GetType());
   m_pimpl->SetLevel1(
-      time, tick3, timeMeasurement, true,
+      time, tick3, delayMeasurement, true,
       m_pimpl->SetLevel1(
-          time, tick2, timeMeasurement, false,
-          m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false)));
+          time, tick2, delayMeasurement, false,
+          m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false)));
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2, tick3);
 }
 
@@ -986,7 +945,7 @@ void Security::SetLevel1(const pt::ptime &time,
                          const Level1TickValue &tick2,
                          const Level1TickValue &tick3,
                          const Level1TickValue &tick4,
-                         const TimeMeasurement::Milestones &timeMeasurement) {
+                         const Milestones &delayMeasurement) {
   AssertNe(tick1.GetType(), tick2.GetType());
   AssertNe(tick1.GetType(), tick3.GetType());
   AssertNe(tick1.GetType(), tick4.GetType());
@@ -994,18 +953,18 @@ void Security::SetLevel1(const pt::ptime &time,
   AssertNe(tick3.GetType(), tick2.GetType());
   AssertNe(tick3.GetType(), tick4.GetType());
   m_pimpl->SetLevel1(
-      time, tick4, timeMeasurement, true,
+      time, tick4, delayMeasurement, true,
       m_pimpl->SetLevel1(
-          time, tick3, timeMeasurement, false,
-          m_pimpl->SetLevel1(
-              time, tick2, timeMeasurement, false,
-              m_pimpl->SetLevel1(time, tick1, timeMeasurement, false, false))));
+          time, tick3, delayMeasurement, false,
+          m_pimpl->SetLevel1(time, tick2, delayMeasurement, false,
+                             m_pimpl->SetLevel1(time, tick1, delayMeasurement,
+                                                false, false))));
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2, tick3, tick4);
 }
 
 void Security::SetLevel1(const pt::ptime &time,
                          const std::vector<Level1TickValue> &ticks,
-                         const TimeMeasurement::Milestones &delayMeasurement) {
+                         const Milestones &delayMeasurement) {
   size_t counter = 0;
   bool isPreviousChanged = false;
   for (const auto &tick : ticks) {
@@ -1016,75 +975,97 @@ void Security::SetLevel1(const pt::ptime &time,
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, ticks);
 }
 
-void Security::AddLevel1Tick(
-    const pt::ptime &time,
-    const Level1TickValue &tick,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  m_pimpl->AddLevel1Tick(time, tick, timeMeasurement, true, false);
+bool Security::AddLevel1Tick(const pt::ptime &time,
+                             const Level1TickValue &tick,
+                             bool flush,
+                             bool isPreviouslyChanged,
+                             const Milestones &delayMeasurement) {
+  const bool result = m_pimpl->AddLevel1Tick(time, tick, delayMeasurement,
+                                             flush, isPreviouslyChanged);
+  GetContext().InvokeDropCopy([this, &time, &tick](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1Tick(*this, time, tick);
+  });
+  m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick);
+  return result;
+}
+
+void Security::AddLevel1Tick(const pt::ptime &time,
+                             const Level1TickValue &tick,
+                             const Milestones &delayMeasurement) {
+  m_pimpl->AddLevel1Tick(time, tick, delayMeasurement, true, false);
+  GetContext().InvokeDropCopy(
+      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1Tick(*this, time, tick); });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick);
 }
 
-void Security::AddLevel1Tick(
-    const pt::ptime &time,
-    const Level1TickValue &tick1,
-    const Level1TickValue &tick2,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+void Security::AddLevel1Tick(const pt::ptime &time,
+                             const Level1TickValue &tick1,
+                             const Level1TickValue &tick2,
+                             const Milestones &delayMeasurement) {
   m_pimpl->AddLevel1Tick(
-      time, tick2, timeMeasurement, true,
-      m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false, false));
+      time, tick2, delayMeasurement, true,
+      m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false, false));
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2);
+  });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2);
 }
 
-void Security::AddLevel1Tick(
-    const pt::ptime &time,
-    const Level1TickValue &tick1,
-    const Level1TickValue &tick2,
-    const Level1TickValue &tick3,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+void Security::AddLevel1Tick(const pt::ptime &time,
+                             const Level1TickValue &tick1,
+                             const Level1TickValue &tick2,
+                             const Level1TickValue &tick3,
+                             const Milestones &delayMeasurement) {
   m_pimpl->AddLevel1Tick(
-      time, tick3, timeMeasurement, true,
+      time, tick3, delayMeasurement, true,
       m_pimpl->AddLevel1Tick(
-          time, tick2, timeMeasurement, false,
-          m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false, false)));
+          time, tick2, delayMeasurement, false,
+          m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false, false)));
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2, tick3);
+  });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick3);
 }
 
-void Security::AddLevel1Tick(
-    const pt::ptime &time,
-    const Level1TickValue &tick1,
-    const Level1TickValue &tick2,
-    const Level1TickValue &tick3,
-    const Level1TickValue &tick4,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+void Security::AddLevel1Tick(const pt::ptime &time,
+                             const Level1TickValue &tick1,
+                             const Level1TickValue &tick2,
+                             const Level1TickValue &tick3,
+                             const Level1TickValue &tick4,
+                             const Milestones &delayMeasurement) {
   m_pimpl->AddLevel1Tick(
-      time, tick4, timeMeasurement, true,
+      time, tick4, delayMeasurement, true,
       m_pimpl->AddLevel1Tick(
-          time, tick3, timeMeasurement, false,
+          time, tick3, delayMeasurement, false,
           m_pimpl->AddLevel1Tick(
-              time, tick2, timeMeasurement, false,
-              m_pimpl->AddLevel1Tick(time, tick1, timeMeasurement, false,
+              time, tick2, delayMeasurement, false,
+              m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false,
                                      false))));
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2, tick3, tick4);
+  });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick4);
 }
 
-void Security::AddLevel1Tick(
-    const pt::ptime &time,
-    const std::vector<trdk::Level1TickValue> &ticks,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+void Security::AddLevel1Tick(const pt::ptime &time,
+                             const std::vector<trdk::Level1TickValue> &ticks,
+                             const Milestones &delayMeasurement) {
   size_t counter = 0;
   bool isPreviousChanged = false;
   for (const auto &tick : ticks) {
     isPreviousChanged =
-        m_pimpl->AddLevel1Tick(time, tick, timeMeasurement,
+        m_pimpl->AddLevel1Tick(time, tick, delayMeasurement,
                                ++counter >= ticks.size(), isPreviousChanged);
   }
+  GetContext().InvokeDropCopy(
+      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1Tick(*this, time, ticks); });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, ticks);
 }
 
 void Security::AddTrade(const pt::ptime &time,
-                        const ScaledPrice &price,
+                        const Price &price,
                         const Qty &qty,
-                        const TimeMeasurement::Milestones &delayMeasurement,
+                        const Milestones &delayMeasurement,
                         bool useAsLastTrade) {
   AssertLt(0, price);
   AssertLt(0, qty);
@@ -1110,21 +1091,21 @@ void Security::AddBar(Bar &&bar) {
   m_pimpl->m_marketDataLog.WriteBar(bar);
 }
 
-void Security::SetBrokerPosition(const Qty &qty,
+void Security::SetBrokerPosition(bool isLong,
+                                 const Qty &qty,
                                  const Volume &volume,
                                  bool isInitial) {
-  m_pimpl->m_brokerPositionUpdateSignal(qty, volume, isInitial);
+  m_pimpl->m_brokerPositionUpdateSignal(isLong, qty, volume, isInitial);
 }
 
-void Security::SetBook(PriceBook &book,
-                       const TimeMeasurement::Milestones &timeMeasurement) {
+void Security::SetBook(PriceBook &book, const Milestones &delayMeasurement) {
   AssertNe(pt::not_a_date_time, book.GetTime());
 
 #if defined(BOOST_ENABLE_ASSERT_HANDLER)
   {
     for (size_t i = 0; i < book.GetBid().GetSize(); ++i) {
-      Assert(!IsZero(book.GetBid().GetLevel(i).GetPrice()));
-      AssertNe(0, book.GetBid().GetLevel(i).GetQty());
+      Assert(book.GetBid().GetLevel(i).GetPrice() != 0);
+      Assert(book.GetBid().GetLevel(i).GetQty() != 0);
       AssertNe(pt::not_a_date_time, book.GetBid().GetLevel(i).GetTime());
       if (i > 0) {
         AssertGt(book.GetBid().GetLevel(i - 1).GetPrice(),
@@ -1132,7 +1113,7 @@ void Security::SetBook(PriceBook &book,
       }
     }
     for (size_t i = 0; i < book.GetAsk().GetSize(); ++i) {
-      Assert(!IsZero(book.GetAsk().GetLevel(i).GetPrice()));
+      Assert(book.GetAsk().GetLevel(i).GetPrice() != 0);
       AssertNe(0, book.GetAsk().GetLevel(i).GetQty());
       AssertNe(pt::not_a_date_time, book.GetAsk().GetLevel(i).GetTime());
       if (i > 0) {
@@ -1160,21 +1141,19 @@ void Security::SetBook(PriceBook &book,
   }
 
   SetLevel1(
-      book.GetTime(), Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                          book.GetBid().IsEmpty()
-                              ? 0
-                              : ScalePrice(book.GetBid().GetTop().GetPrice())),
+      book.GetTime(),
+      Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+          book.GetBid().IsEmpty() ? 0 : book.GetBid().GetTop().GetPrice()),
       Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
           book.GetBid().IsEmpty() ? Qty(0) : book.GetBid().GetTop().GetQty()),
       Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-          book.GetAsk().IsEmpty() ? 0 : ScalePrice(
-                                            book.GetAsk().GetTop().GetPrice())),
+          book.GetAsk().IsEmpty() ? 0 : book.GetAsk().GetTop().GetPrice()),
       Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
           book.GetAsk().IsEmpty() ? Qty(0) : book.GetAsk().GetTop().GetQty()),
-      timeMeasurement);
+      delayMeasurement);
   m_pimpl->CheckMarketDataUpdate(book.GetTime());
 
-  m_pimpl->m_bookUpdateTickSignal(book, timeMeasurement);
+  m_pimpl->m_bookUpdateTickSignal(book, delayMeasurement);
 }
 
 const ContractExpiration &Security::GetExpiration() const {

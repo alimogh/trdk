@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{4f51d48b-2afc-48dd-a2ea-70f869c420d8}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+    <Filter Include="Generated Files\Debug Standalone">
+      <UniqueIdentifier>{c28505a1-1c2e-4021-811d-1c9f7bf591c4}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Test Standalone">
+      <UniqueIdentifier>{9602e872-8142-42f7-b4bf-3304dd036f86}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Release Standalone">
+      <UniqueIdentifier>{74a1479a-ac5c-4eff-a7e1-d95d02f9b436}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Prec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngine.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellSecurityListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellDropCopy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShellSecurityListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Prec.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellApi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellFwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellModule.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ShellLib.def">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\ShellLib.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="ShellDropCopy.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellEngine.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ShellSecurityListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

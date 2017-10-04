@@ -260,20 +260,20 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
    public:
     void operator()(Strategy &strategy) const {
       return strategy.RaiseBrokerPositionUpdateEvent(
-          *m_position.security, m_position.qty, m_position.volume,
-          m_position.isInitial);
+          *m_position.security, m_position.isLong, m_position.qty,
+          m_position.volume, m_position.isInitial);
     }
     void operator()(Service &service) const {
       if (service.RaiseBrokerPositionUpdateEvent(
-              *m_position.security, m_position.qty, m_position.volume,
-              m_position.isInitial)) {
+              *m_position.security, m_position.isLong, m_position.qty,
+              m_position.volume, m_position.isInitial)) {
         RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
       }
     }
     void operator()(Observer &observer) const {
       return observer.RaiseBrokerPositionUpdateEvent(
-          *m_position.security, m_position.qty, m_position.volume,
-          m_position.isInitial);
+          *m_position.security, m_position.isLong, m_position.qty,
+          m_position.volume, m_position.isInitial);
     }
 
    private:

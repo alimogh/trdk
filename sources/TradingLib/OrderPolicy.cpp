@@ -18,10 +18,10 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ScaledPrice LimitOrderPolicy::GetOpenOrderPrice(Position &position) const {
+Price LimitOrderPolicy::GetOpenOrderPrice(Position &position) const {
   return position.GetMarketOpenPrice();
 }
-ScaledPrice LimitOrderPolicy::GetCloseOrderPrice(Position &position) const {
+Price LimitOrderPolicy::GetCloseOrderPrice(Position &position) const {
   return position.GetMarketClosePrice();
 }
 

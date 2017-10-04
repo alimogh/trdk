@@ -106,15 +106,12 @@ class MarketDataSource::Implementation : private boost::noncopyable {
         m_log(m_stringId, m_context.GetLog()),
         m_tradingLog(m_instanceName, m_context.GetTradingLog()) {}
 
-  template <typename Securities>
-  static void ForEachSecurity(
-      const Securities &securities,
-      const boost::function<bool(const Security &)> &pred) {
+  template <typename Securities, typename Callback>
+  static void ForEachSecurity(const Securities &securities,
+                              const Callback &callback) {
     const SecuritiesWriteLock lock(securities.mutex);
     for (const auto &security : securities.list) {
-      if (!pred(*security.second)) {
-        break;
-      }
+      callback(*security.second);
     }
   }
 
@@ -307,9 +304,14 @@ size_t MarketDataSource::GetActiveSecurityCount() const {
 }
 
 void MarketDataSource::ForEachSecurity(
-    const boost::function<bool(const Security &)> &pred) const {
-  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithoutExpiration, pred);
-  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, pred);
+    const boost::function<void(Security &)> &callback) {
+  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithoutExpiration, callback);
+  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, callback);
+}
+void MarketDataSource::ForEachSecurity(
+    const boost::function<void(const Security &)> &callback) const {
+  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithoutExpiration, callback);
+  m_pimpl->ForEachSecurity(m_pimpl->m_securitiesWithExpiration, callback);
 }
 
 boost::optional<ContractExpiration> MarketDataSource::FindContractExpiration(

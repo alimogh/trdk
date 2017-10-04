@@ -184,6 +184,10 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_FRONTEND_SHELL_EXE_FILE_NAME \
   TRDK_FRONTEND_SHELL_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
 
+#define TRDK_FRONTEND_SHELL_LIB_FILE_NAME "Shell"
+#define TRDK_FRONTEND_SHELL_LIB_DLL_FILE_NAME \
+  TRDK_FRONTEND_SHELL_LIB_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
+
 #define TRDK_FRONTEND_MODULE_WILLIAMCARRY_FILE_NAME "WilliamCarryFrontEnd"
 #define TRDK_FRONTEND_MODULE_WILLIAMCARRY_DLL_FILE_NAME \
   TRDK_FRONTEND_MODULE_WILLIAMCARRY_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
@@ -207,6 +211,7 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
         TRDK_STRATEGY_MRIGESHKEJRIWAL_FILE_NAME,                               \
         TRDK_STRATEGY_DOCFEELS_FILE_NAME,                                      \
         TRDK_FRONTEND_MODULE_WILLIAMCARRY_FILE_NAME,                           \
+        TRDK_FRONTEND_SHELL_LIB_FILE_NAME,                                     \
   }
 
 ////////////////////////////////////////////////////////////////////////////////

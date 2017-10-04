@@ -320,12 +320,13 @@ class Dispatcher : private boost::noncopyable {
   void SignalNewTrade(SubscriberPtrWrapper &,
                       Security &,
                       const boost::posix_time::ptime &,
-                      const ScaledPrice &,
+                      const Price &,
                       const Qty &,
                       const trdk::Lib::TimeMeasurement::Milestones &);
   void SignalPositionUpdate(SubscriberPtrWrapper &, Position &);
   void SignalBrokerPositionUpdate(SubscriberPtrWrapper &,
                                   Security &,
+                                  bool isLong,
                                   const Qty &,
                                   const Volume &,
                                   bool isInitial);

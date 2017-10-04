@@ -140,6 +140,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       bool &isSwitched) override;
 
   virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+                                              bool isLong,
                                               const trdk::Qty &,
                                               const trdk::Volume &,
                                               bool isInitial) override;
@@ -159,7 +160,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
                             const trdk::Lib::TimeMeasurement::Milestones &);
   void RaiseNewTradeEvent(trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
   void RaiseServiceDataUpdateEvent(
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);

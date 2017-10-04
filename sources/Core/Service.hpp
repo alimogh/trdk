@@ -55,11 +55,12 @@ class TRDK_CORE_API Service : public trdk::Module {
                             const trdk::Level1TickValue &);
   bool RaiseNewTradeEvent(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
   bool RaiseServiceDataUpdateEvent(
       const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
   bool RaiseBrokerPositionUpdateEvent(const trdk::Security &,
+                                      bool isLong,
                                       const trdk::Qty &,
                                       const trdk::Volume &,
                                       bool isInitial);
@@ -92,7 +93,7 @@ class TRDK_CORE_API Service : public trdk::Module {
 
   virtual bool OnNewTrade(const trdk::Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::ScaledPrice &,
+                          const trdk::Price &,
                           const trdk::Qty &);
 
   virtual bool OnServiceDataUpdate(
@@ -100,12 +101,14 @@ class TRDK_CORE_API Service : public trdk::Module {
 
   //! Notifies about broker position update.
   /** @param[in, out] security  Security.
-    * @param[in]      qty       Position size. Negative value means "short
-    *                           position", positive - "long position".
+    *  @param[in]     isLong    If true - position has type "long", "short"
+    *                           otherwise.
+    * @param[in]      qty       Position size.
     * @param[in]      volume    Position volume.
     * @param[in]      isInitial true if it initial data at start.
     */
   virtual bool OnBrokerPositionUpdate(const trdk::Security &security,
+                                      bool isLong,
                                       const trdk::Qty &qty,
                                       const trdk::Volume &volume,
                                       bool isInitial);

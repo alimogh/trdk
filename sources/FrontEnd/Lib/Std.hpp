@@ -10,6 +10,4 @@
 
 #pragma once
 
-inline std::size_t hash_value(const QString& value) {
-  return qHash(value);
-}
+inline std::size_t hash_value(const QString& value) { return qHash(value); }

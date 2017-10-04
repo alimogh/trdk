@@ -56,9 +56,6 @@
     <ClCompile Include="Interactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Terminal.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EventsLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -145,9 +142,6 @@
     <ClInclude Include="Service.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SettingsReport.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -167,9 +161,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Interactor.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Terminal.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AsyncLog.hpp">

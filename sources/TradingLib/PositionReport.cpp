@@ -61,7 +61,6 @@ void PositionReport::PrintHead(std::ostream &os) {
 }
 
 void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
-  const auto &security = pos.GetSecurity();
   os << pos.GetOpenStartTime().date();                                      // 1
   os << ',' << ExcelTextField(pos.GetOpenStartTime().time_of_day());        // 2
   os << ',' << ExcelTextField(pos.GetOpenTime().time_of_day());             // 3
@@ -74,15 +73,15 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   os << ',' << pos.GetType();                                           // 9
   os << ',' << pos.GetRealizedPnlVolume();                              // 10
   os << ',' << pos.GetRealizedPnlRatio()                                // 11
-     << (pos.IsProfit() ? ",1,0" : ",0,1");                    // 12, 13
-  os << ',' << pos.GetOpenedQty();                             // 14
-  os << ',' << security.DescalePrice(pos.GetOpenAvgPrice());   // 15
-  os << ',' << pos.GetNumberOfOpenOrders();                    // 16
-  os << ',' << pos.GetNumberOfOpenTrades();                    // 17
-  os << ',' << pos.GetCloseReason();                           // 18
-  os << ',' << security.DescalePrice(pos.GetCloseAvgPrice());  // 19
-  os << ',' << pos.GetNumberOfCloseOrders();                   // 20
-  os << ',' << pos.GetNumberOfCloseTrades();                   // 21
-  os << ',' << pos.GetId();                                    // 22
+     << (pos.IsProfit() ? ",1,0" : ",0,1");   // 12, 13
+  os << ',' << pos.GetOpenedQty();            // 14
+  os << ',' << pos.GetOpenAvgPrice();         // 15
+  os << ',' << pos.GetNumberOfOpenOrders();   // 16
+  os << ',' << pos.GetNumberOfOpenTrades();   // 17
+  os << ',' << pos.GetCloseReason();          // 18
+  os << ',' << pos.GetCloseAvgPrice();        // 19
+  os << ',' << pos.GetNumberOfCloseOrders();  // 20
+  os << ',' << pos.GetNumberOfCloseTrades();  // 21
+  os << ',' << pos.GetId();                   // 22
   os << std::endl;
 }

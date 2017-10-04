@@ -37,11 +37,6 @@ inline bool IsEqual(const uint32_t v1, const uint32_t v2) { return v1 == v2; }
 inline bool IsEqual(const int64_t v1, const int64_t v2) { return v1 == v2; }
 inline bool IsEqual(const uint64_t v1, const uint64_t v2) { return v1 == v2; }
 
-template <typename T>
-inline bool IsZero(const T &v) {
-  return IsEqual(v, T(0));
-}
-
 inline bool IsEmpty(const char *const str) {
   Assert(str);
   return !str[0];
@@ -52,28 +47,8 @@ inline bool IsEmpty(const std::wstring &str) { return str.empty(); }
 
 //////////////////////////////////////////////////////////////////////////
 
-inline boost::int64_t Scale(double value, uintmax_t scale) {
-  return boost::int64_t(boost::math::round(value * double(scale)));
-}
-
-inline double Descale(boost::int32_t value, uintmax_t scale) {
-  const auto result = value / double(scale);
-  return result;
-}
-
-inline double Descale(boost::int64_t value, uintmax_t scale) {
-  const auto result = value / double(scale);
-  return result;
-}
-
-inline double Descale(double value, uintmax_t scale) {
-  value = boost::math::round(value);
-  value /= double(scale);
-  return value;
-}
-
-inline double RoundByScale(double value, uintmax_t scale) {
-  return boost::math::round(value * scale) / scale;
+inline double RoundByPrecision(double value, uintmax_t precisionPower) {
+  return boost::math::round(value * precisionPower) / precisionPower;
 }
 
 //////////////////////////////////////////////////////////////////////////

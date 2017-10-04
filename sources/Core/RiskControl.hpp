@@ -63,7 +63,7 @@ class RiskControlSymbolContext {
 
 //////////////////////////////////////////////////////////////////////////
 
-class RiskControlScope : private boost::noncopyable {
+class TRDK_CORE_API RiskControlScope : private boost::noncopyable {
  public:
   explicit RiskControlScope(const trdk::TradingMode &);
   virtual ~RiskControlScope();
@@ -78,18 +78,18 @@ class RiskControlScope : private boost::noncopyable {
                                 trdk::Security &,
                                 const trdk::Lib::Currency &,
                                 const trdk::Qty &,
-                                const trdk::ScaledPrice &) = 0;
+                                const trdk::Price &) = 0;
   virtual void CheckNewSellOrder(const trdk::RiskControlOperationId &,
                                  trdk::Security &,
                                  const trdk::Lib::Currency &,
                                  const trdk::Qty &,
-                                 const trdk::ScaledPrice &) = 0;
+                                 const trdk::Price &) = 0;
 
   virtual void ConfirmBuyOrder(const trdk::RiskControlOperationId &,
                                const trdk::OrderStatus &,
                                trdk::Security &,
                                const trdk::Lib::Currency &,
-                               const trdk::ScaledPrice &orderPrice,
+                               const trdk::Price &orderPrice,
                                const trdk::Qty &remainingQty,
                                const trdk::TradingSystem::TradeInfo *) = 0;
 
@@ -97,12 +97,12 @@ class RiskControlScope : private boost::noncopyable {
                                 const trdk::OrderStatus &,
                                 trdk::Security &,
                                 const trdk::Lib::Currency &,
-                                const trdk::ScaledPrice &orderPrice,
+                                const trdk::Price &orderPrice,
                                 const trdk::Qty &remainingQty,
                                 const trdk::TradingSystem::TradeInfo *) = 0;
 
  public:
-  virtual void CheckTotalPnl(double pnl) const = 0;
+  virtual void CheckTotalPnl(const trdk::Volume &pnl) const = 0;
 
   virtual void CheckTotalWinRatio(size_t totalWinRatio,
                                   size_t operationsCount) const = 0;
@@ -119,7 +119,7 @@ class RiskControlScope : private boost::noncopyable {
   const trdk::TradingMode m_tradingMode;
 };
 
-class EmptyRiskControlScope : public trdk::RiskControlScope {
+class TRDK_CORE_API EmptyRiskControlScope : public trdk::RiskControlScope {
  public:
   explicit EmptyRiskControlScope(const TradingMode &, const std::string &name);
   virtual ~EmptyRiskControlScope();
@@ -132,18 +132,18 @@ class EmptyRiskControlScope : public trdk::RiskControlScope {
                                 trdk::Security &,
                                 const trdk::Lib::Currency &,
                                 const trdk::Qty &,
-                                const trdk::ScaledPrice &);
+                                const trdk::Price &);
   virtual void CheckNewSellOrder(const trdk::RiskControlOperationId &,
                                  trdk::Security &,
                                  const trdk::Lib::Currency &,
                                  const trdk::Qty &,
-                                 const trdk::ScaledPrice &);
+                                 const trdk::Price &);
 
   virtual void ConfirmBuyOrder(const trdk::RiskControlOperationId &,
                                const trdk::OrderStatus &,
                                trdk::Security &,
                                const trdk::Lib::Currency &,
-                               const trdk::ScaledPrice &orderPrice,
+                               const trdk::Price &orderPrice,
                                const trdk::Qty &remainingQty,
                                const trdk::TradingSystem::TradeInfo *);
 
@@ -151,12 +151,12 @@ class EmptyRiskControlScope : public trdk::RiskControlScope {
                                 const trdk::OrderStatus &,
                                 trdk::Security &,
                                 const trdk::Lib::Currency &,
-                                const trdk::ScaledPrice &orderPrice,
+                                const trdk::Price &orderPrice,
                                 const trdk::Qty &remainingQty,
                                 const trdk::TradingSystem::TradeInfo *);
 
  public:
-  virtual void CheckTotalPnl(double pnl) const;
+  virtual void CheckTotalPnl(const trdk::Volume &) const;
 
   virtual void CheckTotalWinRatio(size_t totalWinRatio,
                                   size_t operationsCount) const;
@@ -241,14 +241,14 @@ class TRDK_CORE_API RiskControl : private boost::noncopyable {
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   trdk::RiskControlOperationId CheckNewSellOrder(
       trdk::RiskControlScope &,
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::ScaledPrice &,
+      const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
 
   void ConfirmBuyOrder(const trdk::RiskControlOperationId &,
@@ -256,7 +256,7 @@ class TRDK_CORE_API RiskControl : private boost::noncopyable {
                        const trdk::OrderStatus &,
                        trdk::Security &,
                        const trdk::Lib::Currency &,
-                       const trdk::ScaledPrice &orderPrice,
+                       const trdk::Price &orderPrice,
                        const trdk::Qty &remainingQty,
                        const trdk::TradingSystem::TradeInfo *,
                        const trdk::Lib::TimeMeasurement::Milestones &);
@@ -265,13 +265,14 @@ class TRDK_CORE_API RiskControl : private boost::noncopyable {
                         const trdk::OrderStatus &,
                         trdk::Security &,
                         const trdk::Lib::Currency &,
-                        const trdk::ScaledPrice &orderPrice,
+                        const trdk::Price &orderPrice,
                         const trdk::Qty &remainingQty,
                         const trdk::TradingSystem::TradeInfo *,
                         const trdk::Lib::TimeMeasurement::Milestones &);
 
  public:
-  void CheckTotalPnl(const trdk::RiskControlScope &, double pnl) const;
+  void CheckTotalPnl(const trdk::RiskControlScope &,
+                     const trdk::Volume &pnl) const;
   void CheckTotalWinRatio(const trdk::RiskControlScope &,
                           size_t totalWinRatio,
                           size_t operationsCount) const;

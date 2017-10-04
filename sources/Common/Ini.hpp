@@ -56,19 +56,6 @@ class Ini : private boost::noncopyable {
     SectionNotUnique() throw();
   };
 
-  struct AbsoluteOrPercentsPrice {
-    bool isAbsolute;
-
-    union {
-      boost::int64_t absolute;
-      double percents;
-    } value;
-
-    boost::int64_t Get(boost::int64_t fullVal) const;
-
-    std::string GetStr(unsigned long priceScale) const;
-  };
-
   typedef std::vector<std::string> SectionList;
 
  protected:
@@ -129,11 +116,6 @@ class Ini : private boost::noncopyable {
       const std::string &section,
       const std::string &key,
       const std::string &defaultValue) const;
-
-  AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
-      const std::string &section,
-      const std::string &key,
-      unsigned long priceScale) const;
 
   static bool ConvertToBoolean(const std::string &);
   static std::string GetBooleanTrue();
@@ -289,9 +271,6 @@ class IniSectionRef {
   boost::filesystem::path ReadFileSystemPath(const std::string &key) const;
   boost::filesystem::path ReadFileSystemPath(
       const std::string &key, const std::string &defaultValue) const;
-
-  trdk::Lib::IniFile::AbsoluteOrPercentsPrice ReadAbsoluteOrPercentsPriceKey(
-      const std::string &key, unsigned long priceScale) const;
 
   bool ReadBoolKey(const std::string &key) const;
   bool ReadBoolKey(const std::string &key, bool defaultValue) const;

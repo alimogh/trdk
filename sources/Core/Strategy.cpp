@@ -320,6 +320,13 @@ class Strategy::Implementation : private boost::noncopyable {
       AssertFailNoException();
     }
   }
+
+  void RunAllAlgos() {
+    const auto &end = m_positions.GetEnd();
+    for (auto it = m_positions.GetBegin(); it != end; ++it) {
+      it->RunAlgos();
+    }
+  }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -426,13 +433,7 @@ void Strategy::RaiseLevel1UpdateEvent(
   }
   delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
-    {
-      auto &positions = GetPositions();
-      const auto &end = positions.GetEnd();
-      for (auto it = positions.GetBegin(); it != end; ++it) {
-        it->RunAlgos();
-      }
-    }
+    m_pimpl->RunAllAlgos();
     OnLevel1Update(security, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
@@ -453,6 +454,7 @@ void Strategy::RaiseLevel1TickEvent(
   }
   delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
+    m_pimpl->RunAllAlgos();
     OnLevel1Tick(security, time, value, delayMeasurement);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
@@ -461,7 +463,7 @@ void Strategy::RaiseLevel1TickEvent(
 
 void Strategy::RaiseNewTradeEvent(Security &service,
                                   const boost::posix_time::ptime &time,
-                                  const ScaledPrice &price,
+                                  const Price &price,
                                   const Qty &qty) {
   const auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking),
@@ -585,6 +587,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
 }
 
 void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
+                                              bool isLong,
                                               const Qty &qty,
                                               const Volume &volume,
                                               bool isInitial) {
@@ -596,7 +599,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
     return;
   }
   try {
-    OnBrokerPositionUpdate(security, qty, volume, isInitial);
+    OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
   }
