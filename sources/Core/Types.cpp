@@ -20,7 +20,8 @@ const char *trdk::ConvertToPch(const OrderSide &side) {
   static_assert(numberOfOrderSides == 2, "List changed.");
   switch (side) {
     default:
-      AssertEq(ORDER_SIDE_BUY, side);
+      AssertEq(int(ORDER_SIDE_BUY),
+               int(side));  // "to int" - to avoid recursion
       return "unknown";
     case ORDER_SIDE_BUY:
       return "buy";
@@ -63,7 +64,8 @@ const char *trdk::ConvertToPch(const Level1TickType &tickType) {
   static_assert(numberOfLevel1TickTypes == 7, "List changed.");
   switch (tickType) {
     default:
-      AssertEq(LEVEL1_TICK_LAST_PRICE, tickType);
+      AssertEq(int(LEVEL1_TICK_LAST_PRICE),
+               int(tickType));  // "to int" - to avoid recursion
       return "UNKNOWN";
     case LEVEL1_TICK_LAST_PRICE:
       return "last price";
@@ -134,7 +136,8 @@ const char *ConvertToPch(const TradingMode &mode) {
     case TRADING_MODE_BACKTESTING:
       return "backtesting";
     default:
-      AssertEq(TRADING_MODE_LIVE, mode);
+      AssertEq(int(TRADING_MODE_LIVE),
+               int(mode));  // "to int" - to avoid recursion
       return "UNKNOWN";
   }
 }
@@ -156,7 +159,8 @@ const std::string &trdk::ConvertToString(const TradingMode &mode) {
     case TRADING_MODE_BACKTESTING:
       return tradingModeBacktesting;
     default:
-      AssertEq(TRADING_MODE_LIVE, mode);
+      AssertEq(int(TRADING_MODE_LIVE),
+               int(mode));  // "to int" - to avoid recursion
       return tradingModeUnknown;
   }
 }
@@ -164,10 +168,11 @@ const std::string &trdk::ConvertToString(const TradingMode &mode) {
 //////////////////////////////////////////////////////////////////////////
 
 const char *trdk::ConvertToPch(const OrderStatus &status) {
-  static_assert(numberOfOrderStatuses == 9, "List changed.");
+  static_assert(numberOfOrderStatuses == 8, "List changed.");
   switch (status) {
     default:
-      AssertEq(ORDER_STATUS_SENT, status);
+      AssertEq(int(ORDER_STATUS_SENT),
+               int(status));  // "to int" - to avoid recursion
       return "unknown";
     case ORDER_STATUS_SENT:
       return "sent";
@@ -183,8 +188,6 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
       return "filled part.";
     case ORDER_STATUS_REJECTED:
       return "rejected";
-    case ORDER_STATUS_INACTIVE:
-      return "inactive";
     case ORDER_STATUS_ERROR:
       return "error";
   }
@@ -196,7 +199,8 @@ const char *trdk::ConvertToPch(const CloseReason &closeReason) {
   static_assert(numberOfCloseReasons == 12, "List changed.");
   switch (closeReason) {
     default:
-      AssertEq(CLOSE_REASON_NONE, closeReason);
+      AssertEq(int(CLOSE_REASON_NONE),
+               int(closeReason));  // "to int" - to avoid recursion
       return "unknown";
     case CLOSE_REASON_NONE:
       return "none";

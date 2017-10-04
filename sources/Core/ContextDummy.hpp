@@ -40,10 +40,10 @@ class Context : public trdk::Context {
   virtual trdk::MarketDataSource &GetMarketDataSource(size_t) override;
 
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(const trdk::MarketDataSource &)> &)
+      const boost::function<void(const trdk::MarketDataSource &)> &)
       const override;
   virtual void ForEachMarketDataSource(
-      const boost::function<bool(trdk::MarketDataSource &)> &) override;
+      const boost::function<void(trdk::MarketDataSource &)> &) override;
 
   virtual size_t GetNumberOfTradingSystems() const override;
   virtual const trdk::TradingSystem &GetTradingSystem(

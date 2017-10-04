@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MainWindow.hpp"
-#include "EngineListModel.hpp"
-#include "EngineWindow.hpp"
+#include "ShellMainWindow.hpp"
+#include "ShellEngineListModel.hpp"
+#include "ShellEngineWindow.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Shell;
@@ -21,17 +21,16 @@ MainWindow::MainWindow(QWidget *parent)
       m_engineListModel(boost::make_unique<EngineListModel>(
           GetExeFilePath().branch_path() / "etc", this)) {
   m_ui.setupUi(this);
+  m_ui.engineList->setModel(&*m_engineListModel);
   setWindowTitle(QCoreApplication::applicationName() + " " +
                  TRDK_BUILD_IDENTITY);
 
   connect(m_ui.showAbout, &QAction::triggered, this,
           &MainWindow::ShowAboutInfo);
   connect(m_ui.engineList, &QListView::clicked, this, &MainWindow::ShowEngine);
-
-  m_ui.engineList->setModel(&*m_engineListModel);
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() = default;
 
 void MainWindow::closeEvent(QCloseEvent *closeEvent) {
   Base::closeEvent(closeEvent);

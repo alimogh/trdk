@@ -246,7 +246,7 @@ class Position::Implementation : private boost::noncopyable {
       order.commission = *commission;
     }
 
-    static_assert(numberOfOrderStatuses == 9, "List changed.");
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (orderStatus) {
       default:
         AssertFail("Unknown open order status");
@@ -274,11 +274,6 @@ class Position::Implementation : private boost::noncopyable {
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
         CopyTrade(trade->id, trade->price, trade->qty, true);
         order.isActive = remainingQty > 0;
-        break;
-      case ORDER_STATUS_INACTIVE:
-        order.isActive = false;
-        ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
-        m_isInactive = true;
         break;
       case ORDER_STATUS_ERROR:
         order.isActive = false;
@@ -341,7 +336,7 @@ class Position::Implementation : private boost::noncopyable {
       order.commission = *commission;
     }
 
-    static_assert(numberOfOrderStatuses == 9, "List changed.");
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (orderStatus) {
       default:
         AssertFail("Unknown order status.");
@@ -369,10 +364,6 @@ class Position::Implementation : private boost::noncopyable {
           CopyOrder(&tradingSystemOrderId, false, orderStatus);
           return;
         }
-        break;
-      case ORDER_STATUS_INACTIVE:
-        ReportClosingUpdate(tradingSystemOrderId, orderStatus);
-        m_isInactive = true;
         break;
       case ORDER_STATUS_ERROR:
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
@@ -852,13 +843,12 @@ class Position::Implementation : private boost::noncopyable {
         askPrice = m_security.GetAskPriceValue();
         askQty = m_security.GetAskQtyValue();
       }
-      static_assert(numberOfOrderStatuses == 9, "List changed");
+      static_assert(numberOfOrderStatuses == 8, "List changed");
       switch (status) {
         case ORDER_STATUS_CANCELLED:
         case ORDER_STATUS_FILLED:
         case ORDER_STATUS_FILLED_PARTIALLY:
         case ORDER_STATUS_REJECTED:
-        case ORDER_STATUS_INACTIVE:
         case ORDER_STATUS_ERROR:
           execTime = m_strategy.GetContext().GetCurrentTime();
           break;
@@ -1091,24 +1081,14 @@ const pt::ptime &Position::GetCloseTime() const {
   return m_pimpl->m_close.time;
 }
 
-const Price &Position::GetActiveOrderPrice() const {
+const boost::optional<Price> &Position::GetActiveOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (m_pimpl->m_close.HasActiveOrders()) {
     Assert(!m_pimpl->m_open.HasActiveOrders());
-    const auto &price = m_pimpl->m_close.orders.back().price;
-    if (!price) {
-      throw Exception(
-          "Position current active close-order is order without price");
-    }
-    return *price;
+    return m_pimpl->m_close.orders.back().price;
   } else if (m_pimpl->m_open.HasActiveOrders()) {
-    const auto &price = m_pimpl->m_open.orders.back().price;
-    if (!price) {
-      throw Exception(
-          "Position current active open-order is order without price");
-    }
-    return *price;
+    return m_pimpl->m_open.orders.back().price;
   } else {
     throw Exception("Position has no active order");
   }
@@ -1235,20 +1215,14 @@ Price Position::GetOpenAvgPrice() const {
   return m_pimpl->m_open.volume / m_pimpl->m_open.qty;
 }
 
-const Price &Position::GetActiveOpenOrderPrice() const {
+const boost::optional<Price> &Position::GetActiveOpenOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (!m_pimpl->m_open.HasActiveOrders()) {
     throw Exception("Position has no active open-order");
   }
   Assert(!m_pimpl->m_close.HasActiveOrders());
-  const auto &price = m_pimpl->m_open.orders.back().price;
-  if (!price) {
-    throw Exception(
-        "Position current active open-order is order without price");
-  }
-  AssertEq(*price, GetActiveOrderPrice());
-  return *price;
+  return m_pimpl->m_open.orders.back().price;
 }
 
 const pt::ptime &Position::GetActiveOpenOrderTime() const {
@@ -1292,20 +1266,14 @@ Price Position::GetCloseAvgPrice() const {
   return m_pimpl->m_close.volume / m_pimpl->m_close.qty;
 }
 
-const Price &Position::GetActiveCloseOrderPrice() const {
+const boost::optional<trdk::Price> &Position::GetActiveCloseOrderPrice() const {
   Assert(!m_pimpl->m_open.HasActiveOrders() ||
          !m_pimpl->m_close.HasActiveOrders());
   if (!m_pimpl->m_close.HasActiveOrders()) {
     throw Exception("Position has no active close-order");
   }
   Assert(!m_pimpl->m_open.HasActiveOrders());
-  const auto &price = m_pimpl->m_close.orders.back().price;
-  if (!price) {
-    throw Exception(
-        "Position current active close-order is order without price");
-  }
-  AssertEq(*price, GetActiveOrderPrice());
-  return *price;
+  return m_pimpl->m_close.orders.back().price;
 }
 
 const pt::ptime &Position::GetActiveCloseOrderTime() const {
@@ -1351,19 +1319,6 @@ OrderId Position::Open(const Price &price, const OrderParams &params) {
         return DoOpen(qty, price, params);
       },
       TIME_IN_FORCE_GTC, params, price);
-}
-
-OrderId Position::OpenAtMarketPriceWithStopPrice(const Price &stopPrice) {
-  return OpenAtMarketPriceWithStopPrice(stopPrice, defaultOrderParams);
-}
-
-OrderId Position::OpenAtMarketPriceWithStopPrice(const Price &stopPrice,
-                                                 const OrderParams &params) {
-  return m_pimpl->Open(
-      [this, stopPrice](const Qty &qty, const OrderParams &params) {
-        return DoOpenAtMarketPriceWithStopPrice(qty, stopPrice, params);
-      },
-      TIME_IN_FORCE_GTC, params, boost::none);
 }
 
 OrderId Position::OpenImmediatelyOrCancel(const Price &price) {
@@ -1424,19 +1379,6 @@ OrderId Position::Close(const Price &price,
         return DoClose(qty, price, params);
       },
       TIME_IN_FORCE_GTC, price, maxQty, params);
-}
-
-OrderId Position::CloseAtMarketPriceWithStopPrice(const Price &stopPrice) {
-  return CloseAtMarketPriceWithStopPrice(stopPrice, defaultOrderParams);
-}
-
-OrderId Position::CloseAtMarketPriceWithStopPrice(const Price &stopPrice,
-                                                  const OrderParams &params) {
-  return m_pimpl->Close(
-      [this, stopPrice](const Qty &qty, const OrderParams &params) {
-        return DoCloseAtMarketPriceWithStopPrice(qty, stopPrice, params);
-      },
-      TIME_IN_FORCE_GTC, boost::none, GetActiveQty(), params);
 }
 
 OrderId Position::CloseImmediatelyOrCancel(const Price &price) {
@@ -1620,17 +1562,6 @@ OrderId LongPosition::DoOpen(const Qty &qty,
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoOpenAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
-      boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
 OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                 const Price &price,
                                                 const OrderParams &params) {
@@ -1672,17 +1603,6 @@ OrderId LongPosition::DoClose(const Qty &qty,
   Assert(!IsClosed());
   return GetTradingSystem().Sell(
       GetSecurity(), GetCurrency(), qty, price, params,
-      boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId LongPosition::DoCloseAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
@@ -1841,17 +1761,6 @@ OrderId ShortPosition::DoOpen(const Qty &qty,
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoOpenAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
-      boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
 OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                  const Price &price,
                                                  const OrderParams &params) {
@@ -1891,17 +1800,6 @@ OrderId ShortPosition::DoClose(const Qty &qty,
                                const OrderParams &params) {
   return GetTradingSystem().Buy(
       GetSecurity(), GetCurrency(), qty, price, params,
-      boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId ShortPosition::DoCloseAtMarketPriceWithStopPrice(
-    const Qty &qty, const Price &stopPrice, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceWithStopPrice(
-      GetSecurity(), GetCurrency(), qty, stopPrice, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
       GetStrategy().GetRiskControlScope(), GetTimeMeasurement());

@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MainWindow.hpp"
+#include "ShellMainWindow.hpp"
 
 using namespace trdk::FrontEnd::Shell;
 

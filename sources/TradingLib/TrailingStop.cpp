@@ -48,7 +48,7 @@ TrailingStop::TrailingStop(
       m_params(params),
       m_isActivated(false) {}
 
-TrailingStop::~TrailingStop() {}
+TrailingStop::~TrailingStop() = default;
 
 const char *TrailingStop::GetName() const { return "trailing stop"; }
 

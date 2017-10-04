@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:25:07
+ *   Created: 2017/09/09 01:43:03
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,33 +10,14 @@
 
 #pragma once
 
-#include "ui_MainWindow.h"
+#include "ShellLib/ShellFwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
-class MainWindow : public QMainWindow {
-  Q_OBJECT
-
- public:
-  typedef QMainWindow Base;
-
- public:
-  explicit MainWindow(QWidget *parent);
-  virtual ~MainWindow() override;
-
- protected:
-  virtual void closeEvent(QCloseEvent *) override;
-
- private slots:
-  void ShowAboutInfo();
-  void ShowEngine(const QModelIndex &);
-
- private:
-  Ui::MainWindow m_ui;
-  std::unique_ptr<EngineListModel> m_engineListModel;
-};
+class EngineWindow;
+class OrderWindow;
 }
 }
 }

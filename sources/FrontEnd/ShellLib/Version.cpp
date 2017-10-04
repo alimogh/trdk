@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/24 13:39:18
+ *   Created: 2017/10/01 19:17:21
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,6 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-inline std::size_t hash_value(const QString& value) { return qHash(value); }
+using namespace trdk::Lib;
+
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_FRONTEND_SHELL_LIB_FILE_NAME);
+}

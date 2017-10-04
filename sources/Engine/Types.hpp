@@ -18,12 +18,11 @@ struct TradingSystemHolder {
   // Deinitialization order is important!
   trdk::Lib::DllObjectPtr<trdk::TradingSystem> tradingSystem;
   std::string section;
-  boost::shared_ptr<Terminal> terminal;
 };
 struct TradingSystemModesHolder {
   std::string instanceName;
   static_assert(numberOfTradingModes == 3, "List changed.");
-  boost::array<TradingSystemHolder, 2> holders;
+  boost::array<TradingSystemHolder, numberOfTradingModes> holders;
 };
 typedef std::vector<TradingSystemModesHolder> TradingSystems;
 

@@ -115,16 +115,15 @@ struct OrderParams {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum OrderStatus {
-  ORDER_STATUS_SENT = 100,
-  ORDER_STATUS_REQUESTED_CANCEL = 200,
-  ORDER_STATUS_SUBMITTED = 300,
-  ORDER_STATUS_CANCELLED = 400,
-  ORDER_STATUS_FILLED = 500,
-  ORDER_STATUS_FILLED_PARTIALLY = 600,
-  ORDER_STATUS_REJECTED = 700,
-  ORDER_STATUS_INACTIVE = 800,
-  ORDER_STATUS_ERROR = 900,
-  numberOfOrderStatuses = 9
+  ORDER_STATUS_SENT,
+  ORDER_STATUS_REQUESTED_CANCEL,
+  ORDER_STATUS_SUBMITTED,
+  ORDER_STATUS_CANCELLED,
+  ORDER_STATUS_FILLED,
+  ORDER_STATUS_FILLED_PARTIALLY,
+  ORDER_STATUS_REJECTED,
+  ORDER_STATUS_ERROR,
+  numberOfOrderStatuses
 };
 
 TRDK_CORE_API const char *ConvertToPch(const trdk::OrderStatus &);
@@ -269,10 +268,10 @@ class Level1TickValue {
 namespace trdk {
 
 enum TradingMode {
-  TRADING_MODE_LIVE = 1,
-  TRADING_MODE_PAPER = 2,
-  TRADING_MODE_BACKTESTING = 3,
-  numberOfTradingModes = 3
+  TRADING_MODE_LIVE,
+  TRADING_MODE_PAPER,
+  TRADING_MODE_BACKTESTING,
+  numberOfTradingModes
 };
 TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
     const std::string &);

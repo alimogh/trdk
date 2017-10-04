@@ -43,9 +43,9 @@ class Context : public trdk::Context {
   MOCK_METHOD1(GetMarketDataSource, trdk::MarketDataSource &(size_t index));
   MOCK_CONST_METHOD1(
       ForEachMarketDataSource,
-      void(const boost::function<bool(const trdk::MarketDataSource &)> &));
+      void(const boost::function<void(const trdk::MarketDataSource &)> &));
   MOCK_METHOD1(ForEachMarketDataSource,
-               void(const boost::function<bool(trdk::MarketDataSource &)> &));
+               void(const boost::function<void(trdk::MarketDataSource &)> &));
 
   MOCK_CONST_METHOD0(GetNumberOfTradingSystems, size_t());
   MOCK_CONST_METHOD2(GetTradingSystem,

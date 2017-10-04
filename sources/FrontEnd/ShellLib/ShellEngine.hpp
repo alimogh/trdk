@@ -10,11 +10,15 @@
 
 #pragma once
 
+#include "Core/TradingSystem.hpp"
+#include "ShellApi.h"
+#include "ShellFwd.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {
 
-class Engine : public QObject {
+class TRDK_FRONTEND_SHELL_LIB_API Engine : public QObject {
   Q_OBJECT
 
  public:
@@ -24,6 +28,15 @@ class Engine : public QObject {
 
  public:
   const boost::filesystem::path &GetConfigFilePath() const;
+
+  bool IsStarted() const;
+
+  Context &GetContext();
+  const Shell::DropCopy &GetDropCopy() const;
+
+  const TradingSystem::OrderStatusUpdateSlot &GetOrderTradingSystemSlot();
+
+  RiskControlScope &GetRiskControl(const TradingMode &);
 
  signals:
   void StateChanged(bool isStarted);

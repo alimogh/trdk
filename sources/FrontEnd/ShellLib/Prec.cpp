@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/24 13:39:18
+ *   Created: 2017/10/01 19:17:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,6 +8,4 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
-inline std::size_t hash_value(const QString& value) { return qHash(value); }
+#include "Prec.hpp"

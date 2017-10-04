@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/24 13:39:18
+ *   Created: 2017/10/01 19:17:58
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,4 +10,8 @@
 
 #pragma once
 
-inline std::size_t hash_value(const QString& value) { return qHash(value); }
+#include "Common/Common.hpp"
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include <QtWidgets>
+#pragma warning(pop)

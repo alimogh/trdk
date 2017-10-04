@@ -373,6 +373,16 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   /** Subscribers will be notified about Level I Update only if parameter
     * will bee changed. Level I Tick event will be generated in any case.
     */
+  bool AddLevel1Tick(const boost::posix_time::ptime &,
+                     const trdk::Level1TickValue &,
+                     bool flush,
+                     bool isPreviouslyChanged,
+                     const trdk::Lib::TimeMeasurement::Milestones &);
+
+  //! Adds one Level I parameter tick.
+  /** Subscribers will be notified about Level I Update only if parameter
+    * will bee changed. Level I Tick event will be generated in any case.
+    */
   void AddLevel1Tick(const boost::posix_time::ptime &,
                      const trdk::Level1TickValue &,
                      const trdk::Lib::TimeMeasurement::Milestones &);

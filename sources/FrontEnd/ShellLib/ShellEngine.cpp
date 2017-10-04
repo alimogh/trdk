@@ -9,8 +9,10 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Engine.hpp"
+#include "ShellEngine.hpp"
+#include "Core/RiskControl.hpp"
 #include "Engine/Engine.hpp"
+#include "ShellDropCopy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -24,18 +26,28 @@ namespace sig = boost::signals2;
 class sh::Engine::Implementation : private boost::noncopyable {
  public:
   sh::Engine &m_self;
-
   const fs::path m_configFilePath;
-
+  sh::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
-
   sig::scoped_connection m_engineLogSubscription;
+  TradingSystem::OrderStatusUpdateSlot m_orderTradingSystemSlot;
+  boost::array<std::unique_ptr<RiskControlScope>, numberOfTradingModes>
+      m_riskControls;
 
  public:
   explicit Implementation(sh::Engine &self, const fs::path &path)
-      : m_self(self), m_configFilePath(path) {
+      : m_self(self),
+        m_configFilePath(path),
+        m_dropCopy(m_self.parent()),
+        m_orderTradingSystemSlot(boost::bind(
+            &Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5, _6)) {
     // Just a smoke-check that config is an engine config:
     IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
+
+    for (int i = 0; i < numberOfTradingModes; ++i) {
+      m_riskControls[i] = boost::make_unique<EmptyRiskControlScope>(
+          static_cast<TradingMode>(i), "Front-end");
+    }
   }
 
   void OnContextStateChanged(const Context::State &newState,
@@ -91,6 +103,23 @@ class sh::Engine::Implementation : private boost::noncopyable {
     oss << message;
     emit m_self.LogRecord(QString::fromStdString(oss.str()));
   }
+
+  void OnOrderUpdate(const OrderId &id,
+                     const std::string &tradingSystemOrderId,
+                     const OrderStatus &status,
+                     const Qty &remainingQty,
+                     const boost::optional<Volume> &,
+                     const TradingSystem::TradeInfo *tradeInfo) {
+    std::ostringstream os;
+    os << "Order " << id << " (" << tradingSystemOrderId << "): " << status
+       << " (remaining " << remainingQty << ").";
+    if (tradeInfo) {
+      os << " Trade " << tradeInfo->id << " " << tradeInfo->qty << " for "
+         << tradeInfo->price << ".";
+    }
+    QMessageBox::information(nullptr, "Order",
+                             QString::fromStdString(os.str()));
+  }
 };
 
 sh::Engine::Engine(const fs::path &path, QWidget *parent)
@@ -106,11 +135,13 @@ sh::Engine::Engine(const fs::path &path, QWidget *parent)
   connect(this, &Engine::RestartWanted, [this]() {Start();});
 }
 
-sh::Engine::~Engine() {}
+sh::Engine::~Engine() = default;
 
 const fs::path &sh::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;
 }
+
+bool sh::Engine::IsStarted() const { return m_pimpl->m_engine ? true : false; }
 
 void sh::Engine::Start() {
   if (m_pimpl->m_engine) {
@@ -119,6 +150,7 @@ void sh::Engine::Start() {
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
       GetConfigFilePath(),
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
+      m_pimpl->m_dropCopy,
       [this](trdk::Engine::Context::Log &log) {
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
@@ -131,4 +163,23 @@ void sh::Engine::Stop() {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine.reset();
+}
+
+Context &sh::Engine::GetContext() {
+  if (!m_pimpl->m_engine) {
+    throw Exception(tr("Engine is not started").toLocal8Bit().constData());
+  }
+  return m_pimpl->m_engine->GetContext();
+}
+
+const sh::DropCopy &sh::Engine::GetDropCopy() const {
+  return m_pimpl->m_dropCopy;
+}
+
+const TradingSystem::OrderStatusUpdateSlot &
+sh::Engine::GetOrderTradingSystemSlot() {
+  return m_pimpl->m_orderTradingSystemSlot;
+}
+RiskControlScope &sh::Engine::GetRiskControl(const TradingMode &mode) {
+  return *m_pimpl->m_riskControls[mode];
 }

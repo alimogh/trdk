@@ -16,7 +16,6 @@
 #include "Core/Service.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
-#include "Core/Terminal.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "ContextBootstrap.hpp"
@@ -56,7 +55,8 @@ class Engine::Context::Implementation : private boost::noncopyable {
   Engine::Context &m_context;
 
   static_assert(numberOfTradingModes == 3, "List changed.");
-  boost::array<std::unique_ptr<RiskControl>, 2> m_riskControl;
+  boost::array<std::unique_ptr<RiskControl>, numberOfTradingModes>
+      m_riskControl;
 
   const fs::path m_fileLogsDir;
 
@@ -75,8 +75,8 @@ class Engine::Context::Implementation : private boost::noncopyable {
       : m_context(context), m_isStopped(false) {
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControl.size(); ++i) {
-      m_riskControl[i].reset(
-          new RiskControl(m_context, conf, TradingMode(i + 1)));
+      m_riskControl[i] = boost::make_unique<RiskControl>(
+          m_context, conf, static_cast<TradingMode>(i));
     }
 
     if (conf.IsSectionExist("Expiration")) {
@@ -104,10 +104,7 @@ class Engine::Context::Implementation : private boost::noncopyable {
   ~Implementation() { m_context.GetTradingLog().WaitForFlush(); }
 
   RiskControl &GetRiskControl(const TradingMode &mode) {
-    static_assert(numberOfTradingModes == 3, "List changed.");
-    AssertLt(0, mode);
-    AssertGe(m_riskControl.size(), static_cast<size_t>(mode));
-    return *m_riskControl[mode - 1];
+    return *m_riskControl[mode];
   }
 };
 
@@ -141,18 +138,16 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
     {
       std::vector<std::string> markedDataSourcesStat;
       size_t commonSecuritiesCount = 0;
-      context.ForEachMarketDataSource(
-          [&](const MarketDataSource &source) -> bool {
-            std::ostringstream oss;
-            oss << markedDataSourcesStat.size() + 1;
-            if (!source.GetInstanceName().empty()) {
-              oss << " (" << source.GetInstanceName() << ")";
-            }
-            oss << ": " << source.GetActiveSecurityCount();
-            markedDataSourcesStat.push_back(oss.str());
-            commonSecuritiesCount += source.GetActiveSecurityCount();
-            return true;
-          });
+      context.ForEachMarketDataSource([&](const MarketDataSource &source) {
+        std::ostringstream oss;
+        oss << markedDataSourcesStat.size() + 1;
+        if (!source.GetInstanceName().empty()) {
+          oss << " (" << source.GetInstanceName() << ")";
+        }
+        oss << ": " << source.GetActiveSecurityCount();
+        markedDataSourcesStat.push_back(oss.str());
+        commonSecuritiesCount += source.GetActiveSecurityCount();
+      });
       context.GetLog().Info(
           "Loaded %1% market data sources with %2% securities: %3%.",
           markedDataSourcesStat.size(), commonSecuritiesCount,
@@ -245,12 +240,6 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
         GetLog().Error("Failed to make trading system connection: \"%1%\".",
                        ex);
         throw Exception("Failed to make trading system connection");
-      }
-
-      const char *const terminalCmdFileKey = "terminal_cmd_file";
-      if (confSection.IsKeyExist(terminalCmdFileKey)) {
-        tradingSystemRef.terminal.reset(new Terminal(
-            confSection.ReadFileSystemPath(terminalCmdFileKey), tradingSystem));
       }
     }
   }
@@ -349,7 +338,7 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 
   m_pimpl->m_state->subscriptionsManager.Activate();
 
-  ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
+  ForEachMarketDataSource([&](MarketDataSource &source) {
     try {
       source.SubscribeToSecurities();
     } catch (const Lib::Exception &ex) {
@@ -357,7 +346,6 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
                             ex);
       throw Exception("Failed to make market data subscription");
     }
-    return true;
   });
 }
 
@@ -383,7 +371,7 @@ void Engine::Context::Update(const Lib::Ini &conf) {
   GetLog().Info("Updating setting...");
 
   static_assert(numberOfTradingModes == 3, "List changed.");
-  for (size_t i = 1; i <= numberOfTradingModes; ++i) {
+  for (size_t i = 0; i < numberOfTradingModes; ++i) {
     if (i == TRADING_MODE_BACKTESTING) {
       continue;
     }
@@ -429,10 +417,7 @@ DropCopy *Engine::Context::GetDropCopy() const {
 }
 
 RiskControl &Engine::Context::GetRiskControl(const TradingMode &mode) {
-  static_assert(numberOfTradingModes == 3, "List changed.");
-  AssertLt(0, mode);
-  AssertGe(m_pimpl->m_riskControl.size(), static_cast<size_t>(mode));
-  return *m_pimpl->m_riskControl[mode - 1];
+  return *m_pimpl->m_riskControl[mode];
 }
 
 const RiskControl &Engine::Context::GetRiskControl(
@@ -468,28 +453,24 @@ MarketDataSource &Engine::Context::GetMarketDataSource(size_t index) {
 }
 
 void Engine::Context::ForEachMarketDataSource(
-    const boost::function<bool(const MarketDataSource &)> &pred) const {
+    const boost::function<void(const MarketDataSource &)> &callback) const {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   size_t i = 0;
 #endif
   for (const auto &source : m_pimpl->m_marketDataSources) {
     AssertEq(i++, source.marketDataSource->GetIndex());
-    if (!pred(*source.marketDataSource)) {
-      return;
-    }
+    callback(*source.marketDataSource);
   }
 }
 
 void Engine::Context::ForEachMarketDataSource(
-    const boost::function<bool(MarketDataSource &)> &pred) {
+    const boost::function<void(MarketDataSource &)> &callback) {
 #ifdef BOOST_ENABLE_ASSERT_HANDLER
   size_t i = 0;
 #endif
   for (auto &source : m_pimpl->m_marketDataSources) {
     AssertEq(i++, source.marketDataSource->GetIndex());
-    if (!pred(*source.marketDataSource)) {
-      return;
-    }
+    callback(*source.marketDataSource);
   }
 }
 
@@ -502,12 +483,14 @@ TradingSystem &Engine::Context::GetTradingSystem(size_t index,
   if (index >= m_pimpl->m_tradingSystems.size()) {
     throw Exception("Trading System index is out of range");
   }
-  AssertLt(0, mode);
-  AssertGe(m_pimpl->m_tradingSystems[index].holders.size(),
-           static_cast<size_t>(mode));
-  auto &holder = m_pimpl->m_tradingSystems[index].holders[mode - 1];
+  if (mode >= m_pimpl->m_tradingSystems[index].holders.size()) {
+    throw TradingModeIsNotLoaded(
+        "Trading System with such trading mode is not implemented");
+  }
+  auto &holder = m_pimpl->m_tradingSystems[index].holders[mode];
   if (!holder.tradingSystem) {
-    throw Exception("Trading System with such trading mode is not loaded");
+    throw TradingModeIsNotLoaded(
+        "Trading System with such trading mode is not loaded");
   }
   return *holder.tradingSystem;
 }

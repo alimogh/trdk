@@ -53,10 +53,10 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   typedef boost::function<void(const trdk::OrderId &,
                                const std::string &tradingSystemOrderId,
-                               const OrderStatus &,
+                               const trdk::OrderStatus &,
                                const trdk::Qty &remainingQty,
                                const boost::optional<trdk::Volume> &commission,
-                               const TradeInfo *tradeInfo)>
+                               const trdk::TradingSystem::TradeInfo *tradeInfo)>
       OrderStatusUpdateSlot;
 
   struct Account {
@@ -91,41 +91,43 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     explicit Error(const char *what) noexcept;
   };
 
-  class TRDK_CORE_API OrderParamsError : public Error {
+  class TRDK_CORE_API OrderParamsError : public trdk::TradingSystem::Error {
    public:
     explicit OrderParamsError(const char *what,
                               const trdk::Qty &,
                               const trdk::OrderParams &) noexcept;
   };
 
-  class TRDK_CORE_API SendingError : public Error {
+  class TRDK_CORE_API SendingError : public trdk::TradingSystem::Error {
    public:
     SendingError(const char *what) noexcept;
   };
 
-  class TRDK_CORE_API OrderIsUnknown : public Error {
+  class TRDK_CORE_API OrderIsUnknown : public trdk::TradingSystem::Error {
    public:
     explicit OrderIsUnknown(const char *what) noexcept;
   };
 
-  class TRDK_CORE_API UnknownOrderCancelError : public OrderIsUnknown {
+  class TRDK_CORE_API UnknownOrderCancelError
+      : public trdk::TradingSystem::OrderIsUnknown {
    public:
     explicit UnknownOrderCancelError(const char *what) noexcept;
   };
 
-  class TRDK_CORE_API ConnectionDoesntExistError : public Error {
+  class TRDK_CORE_API ConnectionDoesntExistError
+      : public trdk::TradingSystem::Error {
    public:
     explicit ConnectionDoesntExistError(const char *what) noexcept;
   };
 
   //! Account is unknown or default account requested but hasn't been set.
-  class TRDK_CORE_API UnknownAccountError : public Error {
+  class TRDK_CORE_API UnknownAccountError : public trdk::TradingSystem::Error {
    public:
     explicit UnknownAccountError(const char *what) noexcept;
   };
 
   //! Broker position error.
-  class TRDK_CORE_API PositionError : public Error {
+  class TRDK_CORE_API PositionError : public trdk::TradingSystem::Error {
    public:
     explicit PositionError(const char *what) noexcept;
   };
@@ -135,7 +137,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                          size_t index,
                          trdk::Context &,
                          const std::string &instanceName);
-  virtual ~TradingSystem();
+  virtual ~TradingSystem() override;
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
                                                 const trdk::TradingSystem &);
@@ -171,95 +173,77 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
  public:
-  OrderId SellAtMarketPrice(
+  trdk::OrderId SellAtMarketPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId Sell(
+  trdk::OrderId Sell(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId SellAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
-      trdk::RiskControlScope &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId SellImmediatelyOrCancel(
+  trdk::OrderId SellImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId SellAtMarketPriceImmediatelyOrCancel(
+  trdk::OrderId SellAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
-  OrderId BuyAtMarketPrice(
+  trdk::OrderId BuyAtMarketPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId Buy(
+  trdk::OrderId Buy(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId BuyAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &stopPrice,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
-      trdk::RiskControlScope &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId BuyImmediatelyOrCancel(
+  trdk::OrderId BuyImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-  OrderId BuyAtMarketPriceImmediatelyOrCancel(
+  trdk::OrderId BuyAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &,
       trdk::RiskControlScope &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
-  void CancelOrder(const OrderId &);
+  void CancelOrder(const trdk::OrderId &);
 
   virtual void Test();
 
@@ -270,74 +254,187 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
 
  protected:
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const trdk::Lib::Currency &,
-                                        const trdk::Qty &,
-                                        const trdk::OrderParams &,
-                                        const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendSell(trdk::Security &,
-                           const trdk::Lib::Currency &,
-                           const trdk::Qty &,
-                           const trdk::Price &,
-                           const trdk::OrderParams &,
-                           const OrderStatusUpdateSlot &&) = 0;
-  virtual OrderId SendSellAtMarketPriceWithStopPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendSellImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
+  virtual trdk::OrderId SendSellAtMarketPrice(trdk::Security &,
+                                              const trdk::Lib::Currency &,
+                                              const trdk::Qty &,
+                                              const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendSellAtMarketPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
 
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const trdk::Lib::Currency &,
-                                       const trdk::Qty &,
-                                       const trdk::OrderParams &,
-                                       const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendBuy(trdk::Security &,
-                          const trdk::Lib::Currency &,
-                          const trdk::Qty &,
-                          const trdk::Price &,
-                          const trdk::OrderParams &,
-                          const OrderStatusUpdateSlot &&) = 0;
-  virtual OrderId SendBuyAtMarketPriceWithStopPrice(
+  virtual trdk::OrderId SendSell(trdk::Security &,
+                                 const trdk::Lib::Currency &,
+                                 const trdk::Qty &,
+                                 const trdk::Price &,
+                                 const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendSell(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
-      const trdk::Price &stopPrice,
+      const trdk::Price &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual trdk::OrderId SendSellImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendSellImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual trdk::OrderId SendSellAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendSellAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual trdk::OrderId SendBuyAtMarketPrice(trdk::Security &,
                                              const trdk::Lib::Currency &,
                                              const trdk::Qty &,
-                                             const trdk::Price &,
-                                             const trdk::OrderParams &,
-                                             const OrderStatusUpdateSlot &) = 0;
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
+                                             const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendBuyAtMarketPrice(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &) = 0;
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
 
-  virtual void SendCancelOrder(const OrderId &) = 0;
+  virtual trdk::OrderId SendBuy(trdk::Security &,
+                                const trdk::Lib::Currency &,
+                                const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendBuy(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual trdk::OrderId SendBuyImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendBuyImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual trdk::OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) = 0;
+  virtual trdk::OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &,
+      const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+
+  virtual void SendCancelOrder(const trdk::OrderId &) = 0;
+
+  void OnOrderStatusUpdate(const trdk::OrderId &,
+                           const std::string &tradingSystemOrderId,
+                           const trdk::OrderStatus &,
+                           const trdk::Qty &remainingQty,
+                           const trdk::Volume &commission,
+                           const trdk::TradingSystem::TradeInfo &);
+  void OnOrderStatusUpdate(const trdk::OrderId &,
+                           const std::string &tradingSystemOrderId,
+                           const trdk::OrderStatus &,
+                           const trdk::Qty &remainingQty);
+  void OnOrderStatusUpdate(const trdk::OrderId &,
+                           const std::string &tradingSystemOrderId,
+                           const trdk::OrderStatus &,
+                           const trdk::Qty &remainingQty,
+                           const trdk::Volume &commission);
+  void OnOrderStatusUpdate(const trdk::OrderId &,
+                           const std::string &tradingSystemOrderId,
+                           const trdk::OrderStatus &,
+                           const trdk::Qty &remainingQty,
+                           const trdk::TradingSystem::TradeInfo &);
 
  private:
   class Implementation;
-  Implementation *m_pimpl;
+  std::unique_ptr<Implementation> m_pimpl;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class TRDK_CORE_API LegacyTradingSystem : public trdk::TradingSystem {
+ public:
+  explicit LegacyTradingSystem(const trdk::TradingMode &,
+                               size_t index,
+                               trdk::Context &,
+                               const std::string &instanceName);
+  virtual ~LegacyTradingSystem() override;
+
+ public:
+  virtual trdk::OrderId SendSellAtMarketPrice(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendSell(trdk::Security &,
+                                 const trdk::Lib::Currency &,
+                                 const trdk::Qty &,
+                                 const trdk::Price &,
+                                 const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendSellImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendSellAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendBuyAtMarketPrice(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendBuy(trdk::Security &,
+                                const trdk::Lib::Currency &,
+                                const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendBuyImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &) override;
+  virtual trdk::OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::OrderParams &) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -63,7 +63,7 @@ class RiskControlSymbolContext {
 
 //////////////////////////////////////////////////////////////////////////
 
-class RiskControlScope : private boost::noncopyable {
+class TRDK_CORE_API RiskControlScope : private boost::noncopyable {
  public:
   explicit RiskControlScope(const trdk::TradingMode &);
   virtual ~RiskControlScope();
@@ -119,7 +119,7 @@ class RiskControlScope : private boost::noncopyable {
   const trdk::TradingMode m_tradingMode;
 };
 
-class EmptyRiskControlScope : public trdk::RiskControlScope {
+class TRDK_CORE_API EmptyRiskControlScope : public trdk::RiskControlScope {
  public:
   explicit EmptyRiskControlScope(const TradingMode &, const std::string &name);
   virtual ~EmptyRiskControlScope();

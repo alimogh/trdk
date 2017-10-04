@@ -49,7 +49,7 @@ class PositionController::Implementation : private boost::noncopyable {
 PositionController::PositionController(Strategy &strategy)
     : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
 
-PositionController::~PositionController() {}
+PositionController::~PositionController() = default;
 
 Strategy &PositionController::GetStrategy() { return m_pimpl->m_strategy; }
 const Strategy &PositionController::GetStrategy() const {

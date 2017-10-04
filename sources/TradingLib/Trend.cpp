@@ -21,7 +21,7 @@ class Trend::Implementation : public boost::noncopyable {
 
 Trend::Trend() : m_pimpl(std::make_unique<Implementation>()) {}
 
-Trend::~Trend() {}
+Trend::~Trend() = default;
 
 bool Trend::IsExistent() const { return m_pimpl->m_isRising ? true : false; }
 
