@@ -94,15 +94,19 @@ void Handler::OnTestRequest(const in::TestRequest &testRequest,
                   .Export(SOH));
 }
 
-void Handler::OnResendRequest(const in::ResendRequest &,
+void Handler::OnResendRequest(const in::ResendRequest &message,
                               Lib::NetworkStreamClient &client) {
-  GetLog().Error("%1%Resend Request received.", client.GetLogTag());  // 1
+  GetLog().Error("%1%Resend Request received.", client.GetLogTag());
+  throw ProtocolError("Resend request received", &*message.GetMessageBegin(),
+                      0);
 }
 
 void Handler::OnReject(const in::Reject &reject, NetworkStreamClient &client) {
-  GetLog().Error("%1%Reject received: \"%2%\".",
-                 client.GetLogTag(),  // 1
-                 reject.ReadText());  // 2
+  GetLog().Error("%1%Reject received for message %2%: \"%3%\".",
+                 client.GetLogTag(),      // 1
+                 reject.ReadRefSeqNum(),  // 2
+                 reject.ReadText());      // 3
+  throw ProtocolError("Reject received", &*reject.GetMessageBegin(), 0);
 }
 
 void Handler::OnMarketDataSnapshotFullRefresh(
@@ -110,8 +114,7 @@ void Handler::OnMarketDataSnapshotFullRefresh(
     NetworkStreamClient &,
     const Milestones &) {
   ProtocolError(
-      "Current stream does not support Market Data Snapshot Full Refresh "
-      "messages",
+      "Received unsupported message Market Data Snapshot Full Refresh",
       &*message.GetMessageBegin(), 0);
 }
 
@@ -119,8 +122,13 @@ void Handler::OnMarketDataIncrementalRefresh(
     const in::MarketDataIncrementalRefresh &message,
     NetworkStreamClient &,
     const Milestones &) {
-  ProtocolError(
-      "Current stream does not support Market Data Incremental Refresh "
-      "messages",
-      &*message.GetMessageBegin(), 0);
+  ProtocolError("Received unsupported message Market Data Incremental Refresh",
+                &*message.GetMessageBegin(), 0);
+}
+
+void Handler::OnBusinessMessageReject(const in::BusinessMessageReject &message,
+                                      Lib::NetworkStreamClient &,
+                                      const Milestones &) {
+  ProtocolError("Received unsupported message Business Message Reject",
+                &*message.GetMessageBegin(), 0);
 }

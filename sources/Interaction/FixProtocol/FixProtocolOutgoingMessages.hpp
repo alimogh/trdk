@@ -33,11 +33,11 @@ class StandardHeader : private boost::noncopyable {
                            size_t messageLen,
                            unsigned char soh) const;
 
-  std::string TakeMessageSequenceNumber();
+  MessageSequenceNumber TakeMessageSequenceNumber();
 
  private:
   const Settings &m_settings;
-  size_t m_nextMessageSequenceNumber;
+  MessageSequenceNumber m_nextMessageSequenceNumber;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -142,8 +142,7 @@ class NewOrderSingle : public SecurityMessage {
   typedef SecurityMessage Base;
 
  public:
-  explicit NewOrderSingle(const OrderId &,
-                          const trdk::Security &,
+  explicit NewOrderSingle(const trdk::Security &,
                           const OrderSide &,
                           const Qty &,
                           const Price &,
@@ -157,7 +156,6 @@ class NewOrderSingle : public SecurityMessage {
   using Base::Export;
 
  private:
-  const std::string m_orderId;
   const char m_side;
   const std::string m_qty;
   const std::string m_price;

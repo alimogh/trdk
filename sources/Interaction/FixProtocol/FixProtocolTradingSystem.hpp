@@ -42,6 +42,13 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  public:
   virtual void OnConnectionRestored() override;
 
+  virtual void OnReject(const Incoming::Reject &,
+                        Lib::NetworkStreamClient &) override;
+  virtual void OnBusinessMessageReject(
+      const Incoming::BusinessMessageReject &,
+      Lib::NetworkStreamClient &,
+      const Lib::TimeMeasurement::Milestones &) override;
+
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
@@ -91,7 +98,6 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
 
  private:
   Client m_client;
-  OrderId m_lastUsedOrderId;
 };
 }
 }

@@ -39,9 +39,9 @@ class Handler : private boost::noncopyable {
   void OnHeartbeat(const Incoming::Heartbeat &, Lib::NetworkStreamClient &);
   void OnTestRequest(const Incoming::TestRequest &, Lib::NetworkStreamClient &);
 
-  void OnResendRequest(const Incoming::ResendRequest &,
-                       Lib::NetworkStreamClient &);
-  void OnReject(const Incoming::Reject &, Lib::NetworkStreamClient &);
+  virtual void OnResendRequest(const Incoming::ResendRequest &,
+                               Lib::NetworkStreamClient &);
+  virtual void OnReject(const Incoming::Reject &, Lib::NetworkStreamClient &);
 
   virtual void OnMarketDataSnapshotFullRefresh(
       const Incoming::MarketDataSnapshotFullRefresh &,
@@ -49,6 +49,11 @@ class Handler : private boost::noncopyable {
       const Lib::TimeMeasurement::Milestones &);
   virtual void OnMarketDataIncrementalRefresh(
       const Incoming::MarketDataIncrementalRefresh &,
+      Lib::NetworkStreamClient &,
+      const Lib::TimeMeasurement::Milestones &);
+
+  virtual void OnBusinessMessageReject(
+      const Incoming::BusinessMessageReject &,
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &);
 

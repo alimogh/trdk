@@ -15,11 +15,13 @@
 #include "FixProtocolOutgoingMessages.hpp"
 
 using namespace trdk;
-using namespace Lib;
+using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction::FixProtocol;
 
 namespace fix = trdk::Interaction::FixProtocol;
 namespace out = fix::Outgoing;
+namespace in = fix::Incoming;
 
 fix::TradingSystem::TradingSystem(const TradingMode &mode,
                                   size_t index,
@@ -28,8 +30,7 @@ fix::TradingSystem::TradingSystem(const TradingMode &mode,
                                   const IniSectionRef &conf)
     : trdk::TradingSystem(mode, index, context, instanceName),
       Handler(context, conf, trdk::TradingSystem::GetLog()),
-      m_client("Trade", *this),
-      m_lastUsedOrderId(0) {}
+      m_client("Trade", *this) {}
 
 Context &fix::TradingSystem::GetContext() {
   return trdk::TradingSystem::GetContext();
@@ -65,10 +66,10 @@ OrderId fix::TradingSystem::SendSell(trdk::Security &security,
   if (currency != security.GetSymbol().GetCurrency()) {
     throw Error("Trading system supports only security quote currency");
   }
-  const auto orderId = ++m_lastUsedOrderId;
-  m_client.Send(out::NewOrderSingle(orderId, security, ORDER_SIDE_SELL, qty,
-                                    price, GetStandardOutgoingHeader()));
-  return orderId;
+  const out::NewOrderSingle message(security, ORDER_SIDE_SELL, qty, price,
+                                    GetStandardOutgoingHeader());
+  m_client.Send(message);
+  return message.GetSequenceNumber();
 }
 
 OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(trdk::Security &,
@@ -99,10 +100,10 @@ OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
   if (currency != security.GetSymbol().GetCurrency()) {
     throw Error("Trading system supports only security quote currency");
   }
-  const auto orderId = ++m_lastUsedOrderId;
-  m_client.Send(out::NewOrderSingle(orderId, security, ORDER_SIDE_BUY, qty,
-                                    price, GetStandardOutgoingHeader()));
-  return orderId;
+  const out::NewOrderSingle message(security, ORDER_SIDE_BUY, qty, price,
+                                    GetStandardOutgoingHeader());
+  m_client.Send(message);
+  return message.GetSequenceNumber();
 }
 
 OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &,
@@ -125,6 +126,35 @@ void fix::TradingSystem::SendCancelOrder(const OrderId &) {
 void fix::TradingSystem::OnConnectionRestored() {
   throw MethodDoesNotImplementedError(
       "fix::TradingSystem::OnConnectionRestored is not implemented");
+}
+
+void fix::TradingSystem::OnReject(const in::Reject &message,
+                                  Lib::NetworkStreamClient &client) {
+  const auto &orderId = message.ReadRefSeqNum();
+  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
+                 message.ReadText());
+  try {
+    OnOrderReject(orderId, std::string());
+  } catch (const OrderIsUnknown &) {
+    message.ResetReadingState();
+    Handler::OnReject(message, client);
+  }
+}
+
+void fix::TradingSystem::OnBusinessMessageReject(
+    const in::BusinessMessageReject &message,
+    NetworkStreamClient &client,
+    const Milestones &delayMeasurement) {
+  const auto &reason = message.ReadText();
+  const auto &orderId = message.ReadBusinessRejectRefId();
+  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
+                 reason);
+  try {
+    OnOrderReject(orderId, std::string());
+  } catch (const OrderIsUnknown &) {
+    message.ResetReadingState();
+    Handler::OnBusinessMessageReject(message, client, delayMeasurement);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

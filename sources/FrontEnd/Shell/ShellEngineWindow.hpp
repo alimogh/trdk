@@ -48,6 +48,18 @@ class EngineWindow : public QMainWindow {
   void OnMessage(const QString &, bool isWarning);
   void OnLogRecord(const QString &);
 
+  void OnOrder(unsigned int id,
+               QString tradingSystemOrderId,
+               int,
+               double remainingQty);
+  void OnTrade(unsigned int orderId,
+               QString tradingSystemOrderId,
+               int,
+               double remainingQty,
+               QString tradeId,
+               double tradeQty,
+               double tradePrice);
+
  private:
   void LoadModule();
 

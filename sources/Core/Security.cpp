@@ -588,6 +588,20 @@ class Security::Implementation : private boost::noncopyable {
   }
 
   template <Level1TickType tick>
+  Double CheckAndGetLevel1Value(const Level1 &level1) const {
+    const double value = level1[tick];
+    if (!IsSet(value)) {
+      Assert(IsSet(value));
+      boost::format message(
+          "Market data value \"%1%\" does not exist for \"%2%\"");
+      message % ConvertToPch(tick) % m_self;
+      throw MarketDataValueDoesNotExist(message.str().c_str());
+    }
+    AssertLe(0, value);
+    return value;
+  }
+
+  template <Level1TickType tick>
   Double GetLevel1Value(const Level1 &level1) const {
     const double value = level1[tick];
     if (!IsSet(value)) {
@@ -766,31 +780,31 @@ const Security::Request &Security::GetRequest() const {
 }
 
 Price Security::GetLastPrice() const {
-  return m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_PRICE>(m_pimpl->m_level1);
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_LAST_PRICE>(
+      m_pimpl->m_level1);
 }
 
 Qty Security::GetLastQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_LAST_QTY>(m_pimpl->m_level1));
 }
 
 Qty Security::GetTradedVolume() const {
-  return Qty(
-      m_pimpl->GetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(m_pimpl->m_level1));
+  return Qty(m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_TRADING_VOLUME>(
+      m_pimpl->m_level1));
 }
 
 Price Security::GetAskPrice() const {
-  return m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_PRICE>(m_pimpl->m_level1);
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_ASK_PRICE>(
+      m_pimpl->m_level1);
 }
 Price Security::GetAskPriceValue() const {
-  try {
-    return GetAskPrice();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_ASK_PRICE];
 }
 
 Qty Security::GetAskQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetAskQtyValue() const {
   try {
@@ -804,15 +818,12 @@ Price Security::GetBidPrice() const {
   return m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1);
 }
 Price Security::GetBidPriceValue() const {
-  try {
-    return GetBidPrice();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_BID_PRICE];
 }
 
 Qty Security::GetBidQty() const {
-  return Qty(m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
+  return Qty(
+      m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetBidQtyValue() const {
   try {

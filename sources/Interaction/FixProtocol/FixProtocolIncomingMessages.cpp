@@ -100,10 +100,10 @@ Result ReadIntTag(const TagMatch &tagMatch, It &source, const It &messageEnd) {
   Assert(source <= messageEnd);
   const auto &len = messageEnd - source;
   if (len < sizeof(tagMatch) + 1 + 1) {  // "1 digit"  + SOH
-    throw ProtocolError("Integer tag buffer is too short", &*source, 0);
+    throw ProtocolError("Integer value tag buffer is too short", &*source, 0);
   }
   if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
-    throw ProtocolError("Unknown tag", &*source, 0);
+    throw ProtocolError("Unknown integer value tag", &*source, 0);
   }
   source += sizeof(tagMatch);
   const auto &result = ReadIntValue<Result>(source);
@@ -118,10 +118,10 @@ Result ReadDoubleTag(const TagMatch &tagMatch,
   Assert(source <= messageEnd);
   const auto &len = messageEnd - source;
   if (len < sizeof(tagMatch) + 1 + 1) {  // "1 digit" + SOH
-    throw ProtocolError("Double tag buffer is too short", &*source, 0);
+    throw ProtocolError("Double value tag buffer is too short", &*source, 0);
   }
   if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
-    throw ProtocolError("Unknown tag", &*source, 0);
+    throw ProtocolError("Unknown double value tag", &*source, 0);
   }
   source += sizeof(tagMatch);
   const auto &result = ReadDoubleValue<Result>(source);
@@ -138,15 +138,15 @@ char ReadCharTag(const TagMatch &tagMatch, It &source, const It &messageEnd) {
   Assert(source <= messageEnd);
   const auto &len = messageEnd - source;
   if (len < sizeof(tagMatch) + 1 + 1) {  // char  + SOH
-    throw ProtocolError("Char tag buffer has wrong length", &*source, 0);
+    throw ProtocolError("Char value tag buffer has wrong length", &*source, 0);
   }
   if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
-    throw ProtocolError("Unknown tag", &*source, 0);
+    throw ProtocolError("Unknown char value tag", &*source, 0);
   }
   source += sizeof(tagMatch) + 2;
   if (*std::prev(source) != SOH) {
-    throw ProtocolError("Char tag buffer has wrong length", &*std::prev(source),
-                        SOH);
+    throw ProtocolError("Char value tag buffer has wrong length",
+                        &*std::prev(source), SOH);
   }
   return *(source - 2);
 }
@@ -158,18 +158,18 @@ std::string ReadStringTagFromSoh(const TagMatch &tagMatch,
   Assert(source <= messageEnd);
   const auto &len = messageEnd - source;
   if (len < sizeof(tagMatch) + 0 + 1) {  // "empty content"  + SOH
-    throw ProtocolError("String tag buffer is too short", &*source, 0);
+    throw ProtocolError("String value tag buffer is too short", &*source, 0);
   }
 
   if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
-    throw ProtocolError("Unknown tag", &*source, 0);
+    throw ProtocolError("Unknown string value tag", &*source, 0);
   }
 
   std::string result;
   for (source += sizeof(tagMatch);; ++source) {
     if (source == messageEnd) {
-      throw ProtocolError("String buffer doesn't have end", &*std::prev(source),
-                          SOH);
+      throw ProtocolError("String value buffer doesn't have end",
+                          &*std::prev(source), SOH);
     }
     const auto &ch = *source;
     if (ch == SOH) {
@@ -187,8 +187,8 @@ std::string ReadStringTag(const TagMatch &tagMatch,
                           It &source,
                           const It &messageEnd) {
   if (*std::prev(source) != SOH) {
-    throw ProtocolError("String buffer doesn't have begin", &*std::prev(source),
-                        SOH);
+    throw ProtocolError("String value buffer doesn't have begin",
+                        &*std::prev(source), SOH);
   }
   return ReadStringTagFromSoh(tagMatch, source, messageEnd);
 }
@@ -208,7 +208,8 @@ Result FindAndReadIntTag(const TagMatch &tagMatch, It &source, const It &end) {
       ++source;
     }
   }
-  throw ProtocolError("Message doesn't have required tag", &*begin, 0);
+  throw ProtocolError("Message doesn't have required tag with integer value",
+                      &*begin, 0);
 }
 template <typename Result, typename It, typename TagMatch>
 Result FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
@@ -226,7 +227,8 @@ Result FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
       return result;
     }
   }
-  throw ProtocolError("Message doesn't have required tag", &*begin, 0);
+  throw ProtocolError("Message doesn't have required tag with integer value",
+                      &*begin, 0);
 }
 
 template <typename Result, typename It, typename TagMatch>
@@ -242,7 +244,8 @@ std::pair<Result, It> FindAndReadCharTag(const TagMatch &tagMatch,
       ++it;
     }
   }
-  throw ProtocolError("Message doesn't have required tag", &*begin, 0);
+  throw ProtocolError("Message doesn't have required tag with char value",
+                      &*begin, 0);
 }
 
 template <typename It, typename TagMatch>
@@ -257,7 +260,7 @@ std::string FindAndReadStringTagFromSoh(const TagMatch &tagMatch,
       std::string result;
       for (;; ++source) {
         if (source == end) {
-          throw ProtocolError("String buffer doesn't have end",
+          throw ProtocolError("String value buffer doesn't have end",
                               &*std::prev(source), SOH);
         }
         const auto &ch = *source;
@@ -270,7 +273,8 @@ std::string FindAndReadStringTagFromSoh(const TagMatch &tagMatch,
       return result;
     }
   }
-  throw ProtocolError("Message doesn't have required tag", &*begin, 0);
+  throw ProtocolError("Message doesn't have required tag with string value",
+                      &*begin, 0);
 }
 }
 
@@ -437,6 +441,8 @@ std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
       return boost::make_unique<ResendRequest>(std::move(params));
     case MESSAGE_TYPE_REJECT:
       return boost::make_unique<Reject>(std::move(params));
+    case MESSAGE_TYPE_BUSINESS_MESSAGE_REJECT:
+      return boost::make_unique<BusinessMessageReject>(std::move(params));
     default: {
       boost::format message("Message has unknown type '%1%'");
       message % type;
@@ -457,42 +463,113 @@ Incoming::Message::Message(const Detail::MessagesParams &&params)
   AssertNe(boost::posix_time::not_a_date_time, GetTime());
 }
 
+void Incoming::Message::ResetReadingState() const {
+  m_unreadBegin = m_params.begin;
+}
+
 void Incoming::Message::SetUnreadBegin(const Iterator &value) const {
   Assert(m_unreadBegin < value);
   AssertEq(SOH, *std::prev(value));
   m_unreadBegin = value;
 }
 
+std::string Incoming::Message::FindAndReadStringFromSoh(
+    int32_t tagMatch) const {
+  try {
+    auto it = std::prev(GetUnreadBegin());
+    const auto &result = FindAndReadStringTagFromSoh(tagMatch, it, GetEnd());
+    SetUnreadBegin(it);
+    return result;
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read a string value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read a string value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
+template <typename Result>
+Result Incoming::Message::FindAndReadInt(int32_t tagMatch) const {
+  try {
+    return FindAndReadIntTag<Result>(tagMatch, GetUnreadBeginRef(), GetEnd());
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an integer value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an integer value string from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
+template <typename Result>
+Result Incoming::Message::FindAndReadIntFromSoh(int32_t tagMatch) const {
+  try {
+    auto it = std::prev(GetUnreadBegin());
+    const auto &result =
+        FindAndReadIntTagFromSoh<Result>(tagMatch, it, GetEnd());
+    SetUnreadBegin(it);
+    return result;
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an integer value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an integer value string from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
+MessageSequenceNumber Incoming::Message::ReadRefSeqNum() const {
+  // |45=
+  return FindAndReadIntFromSoh<MessageSequenceNumber>(
+      static_cast<int32_t>(1026896897));
+}
+
+MessageSequenceNumber Incoming::Message::ReadBusinessRejectRefId() const {
+  // 379=
+  return FindAndReadInt<MessageSequenceNumber>(
+      static_cast<int32_t>(1027159859));
+}
+
+std::string Incoming::Message::ReadText() const {
+  // |58=
+  return FindAndReadStringFromSoh(static_cast<int32_t>(1027093761));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void Logon::Handle(Handler &handler,
                    NetworkStreamClient &client,
-                   const Milestones &) const {
+                   const Milestones &) {
   handler.OnLogon(*this, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string Logout::ReadText() const {
-  // |58=
-  static const int32_t tagMatch = 1027093761;
-  try {
-    auto it = std::prev(GetUnreadBegin());
-    const auto &result = ReadStringTagFromSoh(tagMatch, it, GetEnd());
-    Assert(it == GetEnd());  // message has only 1 field
-    SetUnreadBegin(it);
-    return result;
-  } catch (const ProtocolError &ex) {
-    boost::format error("Failed to read Text from Logout message: \"%1%\"");
-    error % ex.what();
-    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
-                        ex.GetExpectedByte());
-  }
-}
-
 void Logout::Handle(Handler &handler,
                     NetworkStreamClient &client,
-                    const Milestones &) const {
+                    const Milestones &) {
   handler.OnLogout(*this, client);
 }
 
@@ -500,7 +577,7 @@ void Logout::Handle(Handler &handler,
 
 void Heartbeat::Handle(Handler &handler,
                        NetworkStreamClient &client,
-                       const Milestones &) const {
+                       const Milestones &) {
   handler.OnHeartbeat(*this, client);
 }
 
@@ -508,11 +585,11 @@ void Heartbeat::Handle(Handler &handler,
 
 void TestRequest::Handle(Handler &handler,
                          NetworkStreamClient &client,
-                         const Milestones &) const {
+                         const Milestones &) {
   handler.OnTestRequest(*this, client);
 }
 
-std::string TestRequest::ReadTestRequestId() const {
+std::string TestRequest::ReadTestReqId() const {
   // 112=
   static const int32_t tagMatch = 1026699569;
   try {
@@ -530,7 +607,7 @@ std::string TestRequest::ReadTestRequestId() const {
 
 void ResendRequest::Handle(Handler &handler,
                            NetworkStreamClient &client,
-                           const Milestones &) const {
+                           const Milestones &) {
   handler.OnResendRequest(*this, client);
 }
 
@@ -538,38 +615,18 @@ void ResendRequest::Handle(Handler &handler,
 
 void Reject::Handle(Handler &handler,
                     NetworkStreamClient &client,
-                    const Milestones &) const {
+                    const Milestones &) {
   handler.OnReject(*this, client);
-}
-
-std::string Reject::ReadText() const {
-  // 58=
-  static const int32_t tagMatch = 1027093761;
-  try {
-    auto it = std::prev(GetUnreadBegin());
-    const auto &result = FindAndReadStringTagFromSoh(tagMatch, it, GetEnd());
-    SetUnreadBegin(it);
-    return result;
-  } catch (const ProtocolError &ex) {
-    boost::format error("Failed to read Reject message text: \"%1%\"");
-    error % ex.what();
-    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
-                        ex.GetExpectedByte());
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 fix::Security &SecurityMessage::ReadSymbol(
     fix::MarketDataSource &source) const {
-  // |55=
-  static const int32_t tagMatch = 1026897153;
   try {
-    auto it = std::prev(GetUnreadBegin());
-    const auto &symbolId =
-        FindAndReadIntTagFromSoh<size_t>(tagMatch, it, GetEnd());
-    SetUnreadBegin(it);
-    return source.GetSecurityByFixId(symbolId);
+    // |55=
+    return source.GetSecurityByFixId(
+        FindAndReadIntFromSoh<size_t>(static_cast<int32_t>(1026897153)));
   } catch (const ProtocolError &ex) {
     boost::format error("Failed to read message symbol: \"%1%\"");
     error % ex.what();
@@ -584,24 +641,24 @@ fix::Security &SecurityMessage::ReadSymbol(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void MarketDataSnapshotFullRefresh::ReadEachMarketDataEntity(
+void MarketDataSnapshotFullRefresh::ReadEachMdEntry(
     const boost::function<void(Level1TickValue &&, bool isLast)> &callback)
     const {
   try {
-    static const auto numberOfEntitiesTag =
-        reinterpret_cast<const int32_t &>("268=");
-    auto numberOfEntities = FindAndReadIntTag<size_t>(
-        numberOfEntitiesTag, GetUnreadBeginRef(), GetEnd());
-    if (numberOfEntities <= 0) {
-      throw ProtocolError("Entity list is empty", &*GetUnreadBegin(), 0);
+    auto numberOfEntries =
+        FindAndReadIntTag<size_t>(reinterpret_cast<const int32_t &>("268="),
+                                  GetUnreadBeginRef(), GetEnd());
+    if (numberOfEntries <= 0) {
+      throw ProtocolError("Market Data Entry list is empty", &*GetUnreadBegin(),
+                          0);
     }
 
     do {
       Level1TickType tickType;
       {
-        static const auto entityTypeTag =
+        static const auto entryTypeTag =
             reinterpret_cast<const int32_t &>("269=");
-        switch (ReadCharTag(entityTypeTag, GetUnreadBeginRef(), GetEnd())) {
+        switch (ReadCharTag(entryTypeTag, GetUnreadBeginRef(), GetEnd())) {
           case '0':
             tickType = LEVEL1_TICK_BID_PRICE;
             break;
@@ -609,45 +666,50 @@ void MarketDataSnapshotFullRefresh::ReadEachMarketDataEntity(
             tickType = LEVEL1_TICK_ASK_PRICE;
             break;
           default:
-            throw ProtocolError("Unknown entity type",
+            throw ProtocolError("Unknown Market Data Entry type",
                                 &*(GetUnreadBeginRef() - 2), '0');
         }
       }
 
-      static const auto entityPriceTag =
-          reinterpret_cast<const int32_t &>("270=");
       const auto &price =
-          ReadPriceTag(entityPriceTag, GetUnreadBeginRef(), GetEnd());
+          ReadPriceTag(reinterpret_cast<const int32_t &>("270="),
+                       GetUnreadBeginRef(), GetEnd());
 
       callback(Level1TickValue::Create(std::move(tickType), std::move(price)),
-               numberOfEntities == 1);
+               numberOfEntries == 1);
 
-    } while (--numberOfEntities);
+    } while (--numberOfEntries);
 
   } catch (const ProtocolError &ex) {
-    boost::format error("Failed to read Market Data entities: \"%1%\"");
+    boost::format error("Failed to read Market Data Entries: \"%1%\"");
     error % ex.what();
     throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
                         ex.GetExpectedByte());
   } catch (const std::exception &ex) {
-    boost::format error("Failed to read Market Data entities: \"%1%\"");
+    boost::format error("Failed to read Market Data Entries: \"%1%\"");
     error % ex.what();
     throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
   }
 }
 
-void MarketDataSnapshotFullRefresh::Handle(
-    Handler &handler,
-    NetworkStreamClient &client,
-    const Milestones &delayMeasurement) const {
+void MarketDataSnapshotFullRefresh::Handle(Handler &handler,
+                                           NetworkStreamClient &client,
+                                           const Milestones &delayMeasurement) {
   handler.OnMarketDataSnapshotFullRefresh(*this, client, delayMeasurement);
 }
 
-void MarketDataIncrementalRefresh::Handle(
-    Handler &handler,
-    NetworkStreamClient &client,
-    const Milestones &delayMeasurement) const {
+void MarketDataIncrementalRefresh::Handle(Handler &handler,
+                                          NetworkStreamClient &client,
+                                          const Milestones &delayMeasurement) {
   handler.OnMarketDataIncrementalRefresh(*this, client, delayMeasurement);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void BusinessMessageReject::Handle(Handler &handler,
+                                   NetworkStreamClient &client,
+                                   const Milestones &delayMeasurement) {
+  handler.OnBusinessMessageReject(*this, client, delayMeasurement);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

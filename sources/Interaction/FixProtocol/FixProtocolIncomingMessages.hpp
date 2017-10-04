@@ -29,7 +29,7 @@ class Logon : public Message {
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class Logout : public Message {
@@ -42,12 +42,12 @@ class Logout : public Message {
   virtual ~Logout() override = default;
 
  public:
-  std::string ReadText() const;
+  using Base::ReadText;
 
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class Heartbeat : public Message {
@@ -62,7 +62,7 @@ class Heartbeat : public Message {
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class TestRequest : public Message {
@@ -75,12 +75,12 @@ class TestRequest : public Message {
   virtual ~TestRequest() override = default;
 
  public:
-  std::string ReadTestRequestId() const;
+  std::string ReadTestReqId() const;
 
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class ResendRequest : public Message {
@@ -95,7 +95,7 @@ class ResendRequest : public Message {
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class Reject : public Message {
@@ -108,12 +108,13 @@ class Reject : public Message {
   virtual ~Reject() override = default;
 
  public:
-  std::string ReadText() const;
+  using Base::ReadRefSeqNum;
+  using Base::ReadText;
 
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class SecurityMessage : public Message {
@@ -138,13 +139,13 @@ class MarketDataSnapshotFullRefresh : public SecurityMessage {
   virtual ~MarketDataSnapshotFullRefresh() override = default;
 
  public:
-  void ReadEachMarketDataEntity(
+  void ReadEachMdEntry(
       const boost::function<void(Level1TickValue &&, bool isLast)> &) const;
 
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 
 class MarketDataIncrementalRefresh : public SecurityMessage {
@@ -159,7 +160,26 @@ class MarketDataIncrementalRefresh : public SecurityMessage {
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const override;
+                      const Lib::TimeMeasurement::Milestones &) override;
+};
+
+class BusinessMessageReject : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit BusinessMessageReject(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~BusinessMessageReject() override = default;
+
+ public:
+  using Base::ReadBusinessRejectRefId;
+  using Base::ReadText;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) override;
 };
 }
 }

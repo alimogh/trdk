@@ -61,6 +61,10 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
           Qt::QueuedConnection);
   connect(&m_engine, &Engine::LogRecord, this, &EngineWindow::OnLogRecord,
           Qt::QueuedConnection);
+  connect(&m_engine, &Engine::Order, this, &EngineWindow::OnOrder,
+          Qt::QueuedConnection);
+  connect(&m_engine, &Engine::Trade, this, &EngineWindow::OnTrade,
+          Qt::QueuedConnection);
 
   connect(m_ui.securityList, &QTableView::doubleClicked,
           [this](const QModelIndex &index) {
@@ -210,4 +214,35 @@ void EngineWindow::ShowOrderWindow(Security &security) {
 void EngineWindow::CloseOrderWindow(const Symbol &symbol) {
   Assert(m_orderWindows.find(symbol) != m_orderWindows.cend());
   m_orderWindows.erase(symbol);
+}
+
+void EngineWindow::OnOrder(unsigned int id,
+                           QString tradingSystemOrderId,
+                           int status,
+                           double remainingQty) {
+  std::ostringstream os;
+  os << "Order " << id;
+  if (!tradingSystemOrderId.isEmpty()) {
+    os << " (" << tradingSystemOrderId.toStdString() << ")";
+  }
+  os << ": " << OrderStatus(status) << " (remaining " << remainingQty << ").";
+  QMessageBox::information(nullptr, "Order", QString::fromStdString(os.str()));
+}
+
+void EngineWindow::OnTrade(unsigned int orderId,
+                           QString tradingSystemOrderId,
+                           int status,
+                           double remainingQty,
+                           QString tradeId,
+                           double tradeQty,
+                           double tradePrice) {
+  std::ostringstream os;
+  os << "Order " << orderId;
+  if (tradingSystemOrderId.isEmpty()) {
+    os << " (" << tradingSystemOrderId.toStdString() << ")";
+  }
+  os << ": " << OrderStatus(status) << " (remaining " << remainingQty << ").";
+  os << " Trade " << tradeId.toStdString() << " " << tradeQty << " for "
+     << tradePrice << ".";
+  QMessageBox::information(nullptr, "Trade", QString::fromStdString(os.str()));
 }

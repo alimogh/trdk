@@ -113,7 +113,7 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
     const Milestones &delayMeasurement) {
   auto &security = snapshot.ReadSymbol(*this);
   bool isPreviouslyChanged = false;
-  snapshot.ReadEachMarketDataEntity([&](Level1TickValue &&value, bool isLast) {
+  snapshot.ReadEachMdEntry([&](Level1TickValue &&value, bool isLast) {
     return security.AddLevel1Tick(snapshot.GetTime(), std::move(value), isLast,
                                   isPreviouslyChanged, delayMeasurement);
   });

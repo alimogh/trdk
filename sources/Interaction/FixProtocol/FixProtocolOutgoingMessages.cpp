@@ -39,8 +39,8 @@ std::string ConvertToTagValue(const pt::ptime &source) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string StandardHeader::TakeMessageSequenceNumber() {
-  return boost::lexical_cast<std::string>(m_nextMessageSequenceNumber++);
+MessageSequenceNumber StandardHeader::TakeMessageSequenceNumber() {
+  return m_nextMessageSequenceNumber++;
 }
 
 std::vector<char> StandardHeader::Export(
@@ -121,12 +121,14 @@ std::vector<char> StandardHeader::Export(
 
 out::Message::Message(StandardHeader &standardHeader)
     : m_standardHeader(standardHeader),
-      m_messageSequenceNumber(m_standardHeader.TakeMessageSequenceNumber()) {}
+      m_sequenceNumber(m_standardHeader.TakeMessageSequenceNumber()),
+      m_sequenceNumberCode(boost::lexical_cast<std::string>(m_sequenceNumber)) {
+}
 
 std::vector<char> out::Message::Export(const MessageType &messageType,
                                        size_t messageLen,
                                        unsigned char soh) const {
-  return GetStandardHeader().Export(messageType, m_messageSequenceNumber,
+  return GetStandardHeader().Export(messageType, GetSequenceNumberCode(),
                                     messageLen, soh);
 }
 
@@ -179,7 +181,7 @@ std::vector<char> Logon::Export(unsigned char soh) const {
 
 Heartbeat::Heartbeat(const Incoming::TestRequest &testRequest,
                      StandardHeader &standardHeader)
-    : Base(standardHeader), m_testRequestId(testRequest.ReadTestRequestId()) {}
+    : Base(standardHeader), m_testRequestId(testRequest.ReadTestReqId()) {}
 
 std::vector<char> Heartbeat::Export(unsigned char soh) const {
   auto result =
@@ -308,22 +310,20 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-NewOrderSingle::NewOrderSingle(const OrderId &orderId,
-                               const trdk::Security &security,
+NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                const OrderSide &side,
                                const Qty &qty,
                                const Price &price,
                                StandardHeader &standardHeader)
     : Base(security, standardHeader),
-      m_orderId(boost::lexical_cast<std::string>(orderId)),
       m_side(side == ORDER_SIDE_BUY ? '1' : '2'),
       m_qty(boost::lexical_cast<std::string>(qty)),
       m_price(boost::lexical_cast<std::string>(price)),
       m_transactTime(ConvertToTagValue(
           GetStandardHeader().GetSettings().policy->GetCurrentTime())),
-      m_customContentSize(m_orderId.size() + GetSymbolId().size() + 1 +
-                          m_qty.size() + m_price.size() +
-                          m_transactTime.size()) {}
+      m_customContentSize(GetSequenceNumberCode().size() +
+                          GetSymbolId().size() + 1 + m_qty.size() +
+                          m_price.size() + m_transactTime.size()) {}
 
 std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
   // 25 bytes:
@@ -336,7 +336,7 @@ std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
       Export(MESSAGE_TYPE_NEW_ORDER_SINGLE, 29 + m_customContentSize, soh);
   // ClOrdID:
   {
-    const std::string sub("11=" + m_orderId);
+    const std::string sub("11=" + GetSequenceNumberCode());
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }

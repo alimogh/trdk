@@ -18,6 +18,8 @@ namespace FixProtocol {
 
 enum { SOH = 0x1 };
 
+typedef uint64_t MessageSequenceNumber;
+
 namespace Detail {
 
 enum MessageType {
@@ -31,6 +33,7 @@ enum MessageType {
   MESSAGE_TYPE_NEW_ORDER_SINGLE = 'D',
   MESSAGE_TYPE_RESEND_REQUEST = '2',
   MESSAGE_TYPE_REJECT = '3',
+  MESSAGE_TYPE_BUSINESS_MESSAGE_REJECT = 'j',
 };
 
 template <typename It>
@@ -76,21 +79,33 @@ class Message : public FixProtocol::Message {
 
  public:
   const boost::posix_time::ptime &GetTime() const { return m_params.time; }
-
- public:
   const Iterator &GetMessageBegin() const { return m_params.begin; }
   const Iterator &GetUnreadBegin() const { return m_unreadBegin; }
   const Iterator &GetEnd() const { return m_params.end; }
   const Iterator &GetMessageEnd() const { return m_params.messageEnd; }
 
+  void ResetReadingState() const;
+
  public:
   virtual void Handle(Handler &,
                       Lib::NetworkStreamClient &,
-                      const Lib::TimeMeasurement::Milestones &) const = 0;
+                      const Lib::TimeMeasurement::Milestones &) = 0;
 
  protected:
   Iterator &GetUnreadBeginRef() const { return m_unreadBegin; }
   void SetUnreadBegin(const Iterator &) const;
+
+ protected:
+  MessageSequenceNumber ReadRefSeqNum() const;
+  MessageSequenceNumber ReadBusinessRejectRefId() const;
+  std::string ReadText() const;
+
+ protected:
+  std::string FindAndReadStringFromSoh(int32_t tagMatch) const;
+  template <typename Result>
+  Result FindAndReadInt(int32_t tagMatch) const;
+  template <typename Result>
+  Result FindAndReadIntFromSoh(int32_t tagMatch) const;
 
  private:
   const Detail::MessagesParams m_params;
@@ -109,18 +124,26 @@ class Message : public FixProtocol::Message {
 
  public:
   const StandardHeader &GetStandardHeader() const { return m_standardHeader; }
+  const MessageSequenceNumber &GetSequenceNumber() const {
+    return m_sequenceNumber;
+  }
 
  public:
   virtual std::vector<char> Export(unsigned char soh) const = 0;
 
  protected:
+  const std::string &GetSequenceNumberCode() const {
+    return m_sequenceNumberCode;
+  }
+
   std::vector<char> Export(const Detail::MessageType &,
                            size_t messageLen,
                            unsigned char soh) const;
 
  private:
   StandardHeader &m_standardHeader;
-  const std::string m_messageSequenceNumber;
+  const MessageSequenceNumber m_sequenceNumber;
+  const std::string m_sequenceNumberCode;
 };
 }
 
