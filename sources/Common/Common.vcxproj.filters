@@ -68,6 +68,9 @@
     <ClCompile Include="VerifyModules.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NetworkClientServiceUnsecureIo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.hpp">
@@ -152,6 +155,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VerifyModules.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkClientServiceUnsecureIo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
