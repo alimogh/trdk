@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "ShellEngineWindow.hpp"
 #include "Core/Security.hpp"
+#include "ShellLib/ShellModule.hpp"
 #include "ShellLib/ShellSecurityListModel.hpp"
 #include "ShellOrderWindow.hpp"
 
@@ -76,7 +77,7 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
 
 void EngineWindow::LoadModule() {
   Assert(!m_moduleDll);
-  Assert(!m_module);
+  AssertEq(0, m_modules.size());
 
   const IniFile conf(m_engine.GetConfigFilePath());
   const IniSectionRef frontEndConf(conf, "Front-end");
@@ -89,14 +90,13 @@ void EngineWindow::LoadModule() {
     return;
   }
 
+  ModuleFactoryResult modules;
   {
     const auto &file = frontEndConf.ReadFileSystemPath(key);
     try {
       m_moduleDll = std::make_unique<Dll>(file, true);
-      const auto &createEngineFrontEnd =
-          m_moduleDll->GetFunction<std::unique_ptr<QWidget>(QWidget *)>(
-              "CreateEngineFrontEnd");
-      m_module = createEngineFrontEnd(this);
+      modules = m_moduleDll->GetFunction<ModuleFactory>(GetModuleFactoryName())(
+          m_engine, this);
     } catch (const std::exception &ex) {
       const auto &error =
           QString("Failed to load engine front-end module \"%1\": \"%2\".")
@@ -106,14 +106,20 @@ void EngineWindow::LoadModule() {
       throw;
     }
   }
-  Assert(m_module);
 
-  m_ui.content->insertTab(0, &*m_module, tr("Trading"));
-  m_ui.content->setCurrentIndex(0);
-  if (minimumWidth() < m_module->minimumWidth()) {
-    setMinimumWidth(m_module->minimumWidth());
+  for (auto &module : boost::adaptors::reverse(modules)) {
+    Assert(!module.first.isEmpty());
+    Assert(module.second);
+    m_modules.emplace_back(std::move(module.second));
+    if (minimumWidth() < m_modules.back()->minimumWidth()) {
+      setMinimumWidth(m_modules.back()->minimumWidth());
+    }
+    if (minimumHeight() < m_modules.back()->minimumHeight()) {
+      setMinimumHeight(m_modules.back()->minimumHeight());
+    }
+    m_ui.content->insertTab(0, &*m_modules.back(), std::move(module.first));
   }
-  setMinimumHeight(minimumHeight() + m_module->minimumHeight());
+  m_ui.content->setCurrentIndex(0);
 
   adjustSize();
 }

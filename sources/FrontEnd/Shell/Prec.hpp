@@ -21,4 +21,5 @@
 #include <boost/cast.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/make_unique.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/unordered_map.hpp>

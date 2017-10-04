@@ -51,28 +51,16 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityWindow.cpp">
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MultiBrokerWidget.cpp">
       <Filter>Generated Files\Debug Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityWindow.cpp">
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MultiBrokerWidget.cpp">
       <Filter>Generated Files\Test Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityWindow.cpp">
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MultiBrokerWidget.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="SecurityWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_EngineWidget.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_EngineWidget.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_EngineWidget.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineWidget.cpp">
+    <ClCompile Include="MultiBrokerWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,14 +68,8 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_SecurityWindow.h">
+    <ClInclude Include="GeneratedFiles\ui_MultiBrokerWidget.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_EngineWidget.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fwd.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -96,22 +78,14 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="WilliamCarryFrontEndModule.def">
+    <CustomBuild Include="MultiBrokerWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MultiBrokerWidget.hpp">
       <Filter>Header Files</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="SecurityWindow.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="EngineWidget.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="SecurityWindow.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="EngineWidget.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
+    <None Include="WilliamCarryFrontEndModule.def" />
   </ItemGroup>
 </Project>
