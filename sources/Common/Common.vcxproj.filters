@@ -47,15 +47,6 @@
     <ClCompile Include="ExpirationCalendar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkStreamClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkStreamClientService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HttpStreamClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ExpirationCalendarUTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VerifyModules.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkClientServiceSecureSocketIo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -139,31 +127,10 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkClientServiceIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkStreamClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkStreamClientService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HttpStreamClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Accumulators.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VerifyModules.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceSocketIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceUnsecureSocketIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceSecureSocketIo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
