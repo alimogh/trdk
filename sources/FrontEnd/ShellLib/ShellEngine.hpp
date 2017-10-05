@@ -43,6 +43,17 @@ class TRDK_FRONTEND_SHELL_LIB_API Engine : public QObject {
   void RestartWanted();
   void Message(const QString &, bool isWarning);
   void LogRecord(const QString &);
+  void Order(unsigned int id,
+             QString tradingSystemOrderId,
+             int,
+             double remainingQty);
+  void Trade(unsigned int orderId,
+             QString tradingSystemOrderId,
+             int,
+             double remainingQty,
+             QString tradeId,
+             double tradeQty,
+             double tradePrice);
 
  public:
   void Start();

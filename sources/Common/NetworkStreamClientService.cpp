@@ -10,7 +10,8 @@
 
 #include "Prec.hpp"
 #include "NetworkStreamClientService.hpp"
-#include "NetworkClientServiceIo.hpp"
+#include "NetworkClientServiceSecureSocketIo.hpp"
+#include "NetworkClientServiceUnsecureSocketIo.hpp"
 #include "NetworkStreamClient.hpp"
 #include "SysError.hpp"
 
@@ -25,6 +26,15 @@ namespace {
 
 typedef boost::mutex ClientMutex;
 typedef ClientMutex::scoped_lock ClientLock;
+
+std::unique_ptr<NetworkClientServiceIo> CreateUnsecureIo(
+    boost::asio::io_service &service) {
+  return boost::make_unique<NetworkClientServiceUnsecureSocketIo>(service);
+}
+std::unique_ptr<NetworkClientServiceIo> CreateSecureIo(
+    boost::asio::io_service &service) {
+  return boost::make_unique<NetworkClientServiceSecureSocketIo>(service);
+}
 }
 
 NetworkStreamClientService::Exception::Exception(const char *what) throw()
@@ -34,9 +44,11 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
  public:
   NetworkStreamClientService &m_self;
 
+  const boost::function<std::unique_ptr<NetworkClientServiceIo>()> m_ioFabric;
+
   std::string m_logTag;
 
-  NetworkClientServiceIo m_io;
+  io::io_service m_service;
   boost::thread_group m_serviceThreads;
   std::unique_ptr<io::deadline_timer> m_reconnectTimer;
 
@@ -48,8 +60,11 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
   pt::ptime m_lastConnectionAttempTime;
 
  public:
-  explicit Implementation(NetworkStreamClientService &self)
-      : m_self(self), m_isWaitingForClient(false) {}
+  explicit Implementation(NetworkStreamClientService &self, bool isSecure)
+      : m_self(self),
+        m_ioFabric(boost::bind(!isSecure ? &CreateUnsecureIo : &CreateSecureIo,
+                               boost::ref(m_service))),
+        m_isWaitingForClient(false) {}
 
   void Connect() {
     boost::shared_ptr<NetworkStreamClient> client;
@@ -92,7 +107,7 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
     }
     for (;;) {
       try {
-        m_io.GetService().run();
+        m_service.run();
         break;
       } catch (const NetworkStreamClient::Exception &ex) {
         ClientLock lock(m_clientMutex);
@@ -143,8 +158,7 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
         m_self.LogInfo(message.str());
       }
 
-      auto timer =
-          boost::make_unique<io::deadline_timer>(m_io.GetService(), sleepTime);
+      auto timer = boost::make_unique<io::deadline_timer>(m_service, sleepTime);
       timer->async_wait([this](const boost::system::error_code &error) {
         m_reconnectTimer.reset();
         if (error) {
@@ -158,7 +172,7 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
       m_reconnectTimer = std::move(timer);
 
     } else {
-      m_io.GetService().post([this]() { Reconnect(); });
+      m_service.post([this]() { Reconnect(); });
     }
   }
 
@@ -208,12 +222,12 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
   }
 };
 
-NetworkStreamClientService::NetworkStreamClientService()
-    : m_pimpl(new Implementation(*this)) {}
+NetworkStreamClientService::NetworkStreamClientService(bool isSecure)
+    : m_pimpl(new Implementation(*this, isSecure)) {}
 
 NetworkStreamClientService::NetworkStreamClientService(
-    const std::string &logTag)
-    : m_pimpl(new Implementation(*this)) {
+    const std::string &logTag, bool isSecure)
+    : m_pimpl(new Implementation(*this, isSecure)) {
   m_pimpl->m_logTag = "[" + logTag + "] ";
 }
 
@@ -221,7 +235,7 @@ NetworkStreamClientService::~NetworkStreamClientService() {
   // Use NetworkStreamClientService::Stop from implemneation dtor to avoid
   // problems with virtual calls (for example to dump info into logs or if
   // new info will arrive).
-  Assert(m_pimpl->m_io.GetService().stopped());
+  Assert(m_pimpl->m_service.stopped());
   Assert(!m_pimpl->m_isWaitingForClient);
   try {
     Stop();
@@ -252,7 +266,7 @@ bool NetworkStreamClientService::IsConnected() const {
 }
 
 void NetworkStreamClientService::Stop() {
-  m_pimpl->m_io.GetService().stop();
+  m_pimpl->m_service.stop();
   m_pimpl->m_serviceThreads.join_all();
 }
 
@@ -265,7 +279,7 @@ void NetworkStreamClientService::OnClientDestroy() {
 }
 
 void NetworkStreamClientService::OnDisconnect() {
-  m_pimpl->m_io.GetService().post([this]() {
+  m_pimpl->m_service.post([this]() {
     bool hasClient;
     {
       boost::shared_ptr<NetworkStreamClient> client;
@@ -293,8 +307,8 @@ void NetworkStreamClientService::OnDisconnect() {
   });
 }
 
-NetworkClientServiceIo &NetworkStreamClientService::GetIo() {
-  return m_pimpl->m_io;
+std::unique_ptr<NetworkClientServiceIo> NetworkStreamClientService::CreateIo() {
+  return m_pimpl->m_ioFabric();
 }
 
 void NetworkStreamClientService::InvokeClient(

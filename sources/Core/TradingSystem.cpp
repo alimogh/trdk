@@ -62,6 +62,11 @@ std::string FormatStringId(const std::string &instanceName,
   result += ConvertToString(mode);
   return result;
 }
+
+struct ActiveOrder {
+  TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
+  Qty remainingQty;
+};
 }
 
 class TradingSystem::Implementation : private boost::noncopyable {
@@ -80,7 +85,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   boost::atomic_size_t m_lastOperationId;
 
-  boost::unordered_map<OrderId, OrderStatusUpdateSlot> m_callbacks;
+  boost::unordered_map<OrderId, ActiveOrder> m_activeOrders;
 
   explicit Implementation(const TradingMode &mode,
                           size_t index,
@@ -97,9 +102,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   ~Implementation() {
     try {
-      if (!m_callbacks.empty()) {
-        m_log.Warn("Final statuses for %1% orders is not received.",
-                   m_callbacks.size());
+      if (!m_activeOrders.empty()) {
+        m_log.Warn("%1% orders still be active.", m_activeOrders.size());
       }
     } catch (...) {
       AssertFailNoException();
@@ -261,8 +265,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
   }
 
   void RegisterCallback(const OrderId &orderId,
-                        const OrderStatusUpdateSlot &&callback) {
-    if (!m_callbacks.emplace(orderId, std::move(callback)).second) {
+                        const OrderStatusUpdateSlot &&callback,
+                        const Qty &qty) {
+    if (!m_activeOrders.emplace(orderId, ActiveOrder{std::move(callback), qty})
+             .second) {
       m_log.Error("Order ID %1% is not unique.", orderId);
       throw Error("Order ID %1% is not unique");
     }
@@ -271,31 +277,37 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void OnOrderStatusUpdate(const OrderId &orderId,
                            const std::string &tradingSystemOrderId,
                            const OrderStatus &status,
-                           const Qty &remainingQty,
+                           const boost::optional<Qty> &remainingQty,
                            const boost::optional<Volume> &commission,
                            const TradeInfo *tradeInfo) {
-    const auto &it = m_callbacks.find(orderId);
-    if (it == m_callbacks.cend()) {
+    const auto &it = m_activeOrders.find(orderId);
+    if (it == m_activeOrders.cend()) {
       m_log.Warn(
           "Failed to handle status update for order %1% as order is unknown.",
           orderId);
-      return;
+      throw OrderIsUnknown(
+          "Failed to handle status update for order as order is unknown");
+    }
+
+    if (remainingQty) {
+      it->second.remainingQty = *remainingQty;
     }
 
     // Maybe in the future new thread will be required here to avoid deadlocks
     // from callback (when some one will need to call the same trading system
     // from this callback).
-    it->second(orderId, tradingSystemOrderId, status, remainingQty, commission,
-               tradeInfo);
+    it->second.statusUpdateSignal(orderId, tradingSystemOrderId, status,
+                                  it->second.remainingQty, commission,
+                                  tradeInfo);
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
-      case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_FILLED:
+        AssertEq(0, it->second.remainingQty);
+      case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
       case ORDER_STATUS_ERROR:
-        AssertEq(0, remainingQty);
-        m_callbacks.erase(it);
+        m_activeOrders.erase(it);
         break;
     }
   }
@@ -754,7 +766,7 @@ OrderId TradingSystem::SendSellAtMarketPrice(
     const OrderParams &params,
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId = SendSellAtMarketPrice(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -765,7 +777,7 @@ OrderId TradingSystem::SendSell(Security &security,
                                 const OrderParams &params,
                                 const OrderStatusUpdateSlot &&callback) {
   const auto &orderId = SendSell(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -778,7 +790,7 @@ OrderId TradingSystem::SendSellImmediatelyOrCancel(
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId =
       SendSellImmediatelyOrCancel(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -790,7 +802,7 @@ OrderId TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId =
       SendSellAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -801,7 +813,7 @@ OrderId TradingSystem::SendBuyAtMarketPrice(
     const OrderParams &params,
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId = SendBuyAtMarketPrice(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -813,7 +825,7 @@ OrderId TradingSystem::SendBuy(
     const OrderParams &params,
     const TradingSystem::OrderStatusUpdateSlot &&callback) {
   const auto &orderId = SendBuy(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -826,7 +838,7 @@ OrderId TradingSystem::SendBuyImmediatelyOrCancel(
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId =
       SendBuyImmediatelyOrCancel(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -838,7 +850,7 @@ OrderId TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     const OrderStatusUpdateSlot &&callback) {
   const auto &orderId =
       SendBuyAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback));
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
   return orderId;
 }
 
@@ -873,6 +885,20 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const TradeInfo &trade) {
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
                                remainingQty, boost::none, &trade);
+}
+
+void TradingSystem::OnOrderError(const OrderId &orderId,
+                                 const std::string &tradingSystemOrderId) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                               ORDER_STATUS_ERROR, boost::none, boost::none,
+                               nullptr);
+}
+
+void TradingSystem::OnOrderReject(const OrderId &orderId,
+                                  const std::string &tradingSystemOrderId) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                               ORDER_STATUS_REJECTED, boost::none, boost::none,
+                               nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

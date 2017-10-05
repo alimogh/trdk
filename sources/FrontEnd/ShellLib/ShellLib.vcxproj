@@ -147,6 +147,7 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="ShellApi.h" />
     <ClInclude Include="ShellFwd.hpp" />
+    <ClInclude Include="ShellModule.hpp" />
     <CustomBuild Include="ShellSecurityListModel.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing ShellSecurityListModel.hpp...</Message>

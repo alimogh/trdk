@@ -110,15 +110,17 @@ class sh::Engine::Implementation : private boost::noncopyable {
                      const Qty &remainingQty,
                      const boost::optional<Volume> &,
                      const TradingSystem::TradeInfo *tradeInfo) {
-    std::ostringstream os;
-    os << "Order " << id << " (" << tradingSystemOrderId << "): " << status
-       << " (remaining " << remainingQty << ").";
-    if (tradeInfo) {
-      os << " Trade " << tradeInfo->id << " " << tradeInfo->qty << " for "
-         << tradeInfo->price << ".";
+    if (!tradeInfo) {
+      emit m_self.Order(static_cast<unsigned int>(id),
+                        QString::fromStdString(tradingSystemOrderId),
+                        int(status), remainingQty);
+    } else {
+      emit m_self.Trade(static_cast<unsigned int>(id),
+                        QString::fromStdString(tradingSystemOrderId),
+                        int(status), remainingQty,
+                        QString::fromStdString(tradeInfo->id), tradeInfo->price,
+                        tradeInfo->qty);
     }
-    QMessageBox::information(nullptr, "Order",
-                             QString::fromStdString(os.str()));
   }
 };
 

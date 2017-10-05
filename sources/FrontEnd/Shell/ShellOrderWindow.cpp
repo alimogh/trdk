@@ -126,7 +126,12 @@ void OrderWindow::SelectTradingSystem() {
       QMessageBox::Ok);
 }
 
-void OrderWindow::OnStateChanged(bool isStarted) { setEnabled(isStarted); }
+void OrderWindow::OnStateChanged(bool isStarted) {
+  if (isStarted) {
+    return;
+  }
+  setEnabled(false);
+}
 
 void OrderWindow::UpdatePrices(const Security *security) {
   Assert(security);

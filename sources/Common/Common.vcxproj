@@ -266,6 +266,7 @@
     </ClCompile>
     <ClCompile Include="HttpStreamClient.cpp" />
     <ClCompile Include="Ini.cpp" />
+    <ClCompile Include="NetworkClientServiceSecureSocketIo.cpp" />
     <ClCompile Include="NetworkStreamClient.cpp" />
     <ClCompile Include="NetworkStreamClientService.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -331,6 +332,9 @@
     <ClInclude Include="HttpStreamClient.hpp" />
     <ClInclude Include="Ini.hpp" />
     <ClInclude Include="NetworkClientServiceIo.hpp" />
+    <ClInclude Include="NetworkClientServiceSocketIo.hpp" />
+    <ClInclude Include="NetworkClientServiceUnsecureSocketIo.hpp" />
+    <ClInclude Include="NetworkClientServiceSecureSocketIo.hpp" />
     <ClInclude Include="NetworkStreamClient.hpp" />
     <ClInclude Include="NetworkStreamClientService.hpp" />
     <ClInclude Include="Numeric.hpp" />

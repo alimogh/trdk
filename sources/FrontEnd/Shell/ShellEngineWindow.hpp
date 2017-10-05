@@ -48,6 +48,18 @@ class EngineWindow : public QMainWindow {
   void OnMessage(const QString &, bool isWarning);
   void OnLogRecord(const QString &);
 
+  void OnOrder(unsigned int id,
+               QString tradingSystemOrderId,
+               int,
+               double remainingQty);
+  void OnTrade(unsigned int orderId,
+               QString tradingSystemOrderId,
+               int,
+               double remainingQty,
+               QString tradeId,
+               double tradeQty,
+               double tradePrice);
+
  private:
   void LoadModule();
 
@@ -56,7 +68,7 @@ class EngineWindow : public QMainWindow {
   const QString m_name;
   Ui::EngineWindow m_ui;
   std::unique_ptr<Lib::Dll> m_moduleDll;
-  std::unique_ptr<QWidget> m_module;
+  std::vector<std::unique_ptr<QWidget>> m_modules;
   boost::unordered_map<Lib::Symbol, std::unique_ptr<OrderWindow>>
       m_orderWindows;
 };
