@@ -18,6 +18,7 @@ namespace FixProtocol {
 struct Settings {
   std::string host;
   size_t port;
+  bool isSecure;
   std::string username;
   std::string password;
   std::string senderCompId;

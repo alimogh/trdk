@@ -22,6 +22,7 @@ fix::Settings::Settings(const IniSectionRef &conf,
                         const trdk::Settings &settings)
     : host(conf.ReadKey("host")),
       port(conf.ReadTypedKey<size_t>("port")),
+      isSecure(conf.ReadBoolKey("secure")),
       username(conf.ReadKey("username")),
       password(conf.ReadKey("password")),
       senderCompId(conf.ReadKey("sender_comp_id")),
@@ -36,8 +37,9 @@ fix::Settings::~Settings() = default;
 
 void fix::Settings::Log(Module::Log &log) const {
   log.Info(
-      "Server address: %1%:%2%. Username: \"%3%\" %4%. SenderCompID: \"%5%\". "
-      "TargetCompID: \"%6%\". SenderSubID: \"%7%\". TargetSubID: \"%8%\"",
+      "Server address: %1%:%2% (%9%). Username: \"%3%\" %4%. SenderCompID: "
+      "\"%5%\". TargetCompID: \"%6%\". SenderSubID: \"%7%\". TargetSubID: "
+      "\"%8%\"",
       host,                                                      // 1
       port,                                                      // 2
       username,                                                  // 3
@@ -45,7 +47,8 @@ void fix::Settings::Log(Module::Log &log) const {
       senderCompId,                                              // 5
       targetCompId,                                              // 6
       senderSubId,                                               // 7
-      targetSubId);                                              // 8
+      targetSubId,                                               // 8
+      isSecure ? "secure" : "not secure");                       // 9
 }
 
 void fix::Settings::Validate() const {}

@@ -68,7 +68,7 @@
     <ClCompile Include="VerifyModules.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkClientServiceUnsecureIo.cpp">
+    <ClCompile Include="NetworkClientServiceSecureSocketIo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -157,7 +157,13 @@
     <ClInclude Include="VerifyModules.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkClientServiceUnsecureIo.hpp">
+    <ClInclude Include="NetworkClientServiceSocketIo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkClientServiceUnsecureSocketIo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkClientServiceSecureSocketIo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

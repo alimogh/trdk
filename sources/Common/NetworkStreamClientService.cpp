@@ -10,7 +10,8 @@
 
 #include "Prec.hpp"
 #include "NetworkStreamClientService.hpp"
-#include "NetworkClientServiceUnsecureIo.hpp"
+#include "NetworkClientServiceSecureSocketIo.hpp"
+#include "NetworkClientServiceUnsecureSocketIo.hpp"
 #include "NetworkStreamClient.hpp"
 #include "SysError.hpp"
 
@@ -25,6 +26,15 @@ namespace {
 
 typedef boost::mutex ClientMutex;
 typedef ClientMutex::scoped_lock ClientLock;
+
+std::unique_ptr<NetworkClientServiceIo> CreateUnsecureIo(
+    boost::asio::io_service &service) {
+  return boost::make_unique<NetworkClientServiceUnsecureSocketIo>(service);
+}
+std::unique_ptr<NetworkClientServiceIo> CreateSecureIo(
+    boost::asio::io_service &service) {
+  return boost::make_unique<NetworkClientServiceSecureSocketIo>(service);
+}
 }
 
 NetworkStreamClientService::Exception::Exception(const char *what) throw()
@@ -34,9 +44,11 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
  public:
   NetworkStreamClientService &m_self;
 
+  const boost::function<std::unique_ptr<NetworkClientServiceIo>()> m_ioFabric;
+
   std::string m_logTag;
 
-  boost::asio::io_service m_service;
+  io::io_service m_service;
   boost::thread_group m_serviceThreads;
   std::unique_ptr<io::deadline_timer> m_reconnectTimer;
 
@@ -48,8 +60,11 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
   pt::ptime m_lastConnectionAttempTime;
 
  public:
-  explicit Implementation(NetworkStreamClientService &self)
-      : m_self(self), m_isWaitingForClient(false) {}
+  explicit Implementation(NetworkStreamClientService &self, bool isSecure)
+      : m_self(self),
+        m_ioFabric(boost::bind(!isSecure ? &CreateUnsecureIo : &CreateSecureIo,
+                               boost::ref(m_service))),
+        m_isWaitingForClient(false) {}
 
   void Connect() {
     boost::shared_ptr<NetworkStreamClient> client;
@@ -207,12 +222,12 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
   }
 };
 
-NetworkStreamClientService::NetworkStreamClientService()
-    : m_pimpl(new Implementation(*this)) {}
+NetworkStreamClientService::NetworkStreamClientService(bool isSecure)
+    : m_pimpl(new Implementation(*this, isSecure)) {}
 
 NetworkStreamClientService::NetworkStreamClientService(
-    const std::string &logTag)
-    : m_pimpl(new Implementation(*this)) {
+    const std::string &logTag, bool isSecure)
+    : m_pimpl(new Implementation(*this, isSecure)) {
   m_pimpl->m_logTag = "[" + logTag + "] ";
 }
 
@@ -293,7 +308,7 @@ void NetworkStreamClientService::OnDisconnect() {
 }
 
 std::unique_ptr<NetworkClientServiceIo> NetworkStreamClientService::CreateIo() {
-  return boost::make_unique<NetworkClientServiceUnsecureIo>(m_pimpl->m_service);
+  return m_pimpl->m_ioFabric();
 }
 
 void NetworkStreamClientService::InvokeClient(

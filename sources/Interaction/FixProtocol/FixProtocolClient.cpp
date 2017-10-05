@@ -157,6 +157,9 @@ class Connection : public NetworkStreamClient {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Client::Client(const std::string &name, Handler &handler)
+    : Base(name, handler.GetSettings().isSecure), m_handler(handler) {}
+
 Client::~Client() noexcept {
   try {
     Stop();

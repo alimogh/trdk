@@ -17,8 +17,7 @@ class Client : public Lib::NetworkStreamClientService {
   typedef Lib::NetworkStreamClientService Base;
 
  public:
-  explicit Client(const std::string &name, Handler &handler)
-      : Base(name), m_handler(handler) {}
+  explicit Client(const std::string &name, Handler &);
   virtual ~Client() noexcept override;
 
  public:

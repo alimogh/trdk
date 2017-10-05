@@ -24,8 +24,8 @@ class NetworkStreamClientService : private boost::noncopyable {
   };
 
  public:
-  NetworkStreamClientService();
-  explicit NetworkStreamClientService(const std::string &logTag);
+  explicit NetworkStreamClientService(bool isSecure);
+  explicit NetworkStreamClientService(const std::string &logTag, bool isSecure);
   virtual ~NetworkStreamClientService();
 
  public:
