@@ -166,7 +166,9 @@ mk::Settings::Settings(const IniSectionRef &conf)
       costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
       maxLossShare(conf.ReadTypedKey<double>("max_loss_share")),
       signalPriceCorrection(
-          conf.ReadTypedKey<Price>("signal_price_correction")) {
+          conf.ReadTypedKey<Price>("signal_price_correction")),
+      pricesPeriod(
+          pt::seconds(conf.ReadTypedKey<long>("prices_period_seconds"))) {
   {
     const auto &orderType = conf.ReadKey("order_type");
     if (boost::iequals(orderType, "lmt_gtc")) {
@@ -196,10 +198,9 @@ void mk::Settings::Validate() const {
 
 void mk::Settings::Log(Module::Log &log) const {
   log.Info(
-      "Position size: %1%. Min. order size: %2%. Number of history hours: "
-      "%3%. "
+      "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
       "Cost of funds: %4%. Max. share of loss: %5%. Signal price correction: "
-      "%6%. Order type: %7%.",
+      "%6%. Order type: %7%. Prices period: %8%.",
       qty,                    // 1
       minQty,                 // 2
       numberOfHistoryHours,   // 3
@@ -214,7 +215,8 @@ void mk::Settings::Log(Module::Log &log) const {
                 : dynamic_cast<const MarketGtcOrderPolicyFactory *>(
                       &*orderPolicyFactory)
                       ? "market GTC"
-                      : "UNKNOWN!");  // 7
+                      : "UNKNOWN!",  // 7
+      pricesPeriod);                 // 8
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -360,7 +362,7 @@ void mk::Strategy::OnPositionUpdate(Position &position) {
 }
 
 void mk::Strategy::OnLevel1Tick(Security &security,
-                                const pt::ptime &,
+                                const pt::ptime &time,
                                 const Level1TickValue &tick,
                                 const Milestones &delayMeasurement) {
   if (&security != &GetTradingSecurity()) {
@@ -372,7 +374,19 @@ void mk::Strategy::OnLevel1Tick(Security &security,
   if (FinishRollOver() || ContinueRollOver()) {
     return;
   }
-  CheckSignal(tick.GetValue(), delayMeasurement);
+
+  m_lastPrices.emplace_back(time, tick.GetValue());
+  while (!m_lastPrices.empty() &&
+         m_lastPrices.front().first + m_settings.pricesPeriod < time) {
+    m_lastPrices.pop_front();
+  }
+  AssertLe(1, m_lastPrices.size());
+
+  Price sum = 0;
+  for (const auto &price : m_lastPrices) {
+    sum += price.second;
+  }
+  CheckSignal(sum / m_lastPrices.size(), delayMeasurement);
 }
 
 void mk::Strategy::OnServiceDataUpdate(const Service &, const Milestones &) {}

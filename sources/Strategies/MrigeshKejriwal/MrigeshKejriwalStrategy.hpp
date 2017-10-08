@@ -38,6 +38,7 @@ struct Settings {
   Lib::Double maxLossShare;
   Price signalPriceCorrection;
   std::unique_ptr<OrderPolicyFactory> orderPolicyFactory;
+  boost::posix_time::time_duration pricesPeriod;
 
   explicit Settings(const Lib::IniSectionRef &);
 
@@ -196,6 +197,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   boost::optional<Rollover> m_rollover;
 
   boost::optional<PriceSignal> m_priceSignal;
+
+  std::deque<std::pair<boost::posix_time::ptime, Price>> m_lastPrices;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
