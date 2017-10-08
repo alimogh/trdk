@@ -14,6 +14,7 @@
 #include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
 #include "MrigeshKejriwalOrderPolicy.hpp"
+#include "MrigeshKejriwalPosition.hpp"
 #include "MrigeshKejriwalPositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -46,11 +47,54 @@ PositionController::PositionController(trdk::Strategy &strategy,
       m_orderPolicy(m_settings.orderPolicyFactory->CreateOrderPolicy()),
       m_trend(trend) {}
 
+void PositionController::OnSignal(Security &security,
+                                  const Price &signalPrice,
+                                  const Milestones &delayMeasurement) {
+  auto *const position = OnSignal(security, delayMeasurement);
+  if (!position) {
+    return;
+  }
+  if (position->HasActiveOpenOrders()) {
+    if (position->IsLong()) {
+      boost::polymorphic_downcast<StrategyLongPosition *>(position)
+          ->SetOpenSignalPrice(signalPrice);
+    } else {
+      boost::polymorphic_downcast<StrategyShortPosition *>(position)
+          ->SetOpenSignalPrice(signalPrice);
+    }
+  } else {
+    if (position->IsLong()) {
+      boost::polymorphic_downcast<StrategyLongPosition *>(position)
+          ->SetCloseSignalPrice(signalPrice);
+    } else {
+      boost::polymorphic_downcast<StrategyShortPosition *>(position)
+          ->SetCloseSignalPrice(signalPrice);
+    }
+  }
+}
+
 void PositionController::SetupPosition(Position &position) const {
   if (m_settings.maxLossShare != 0) {
     position.AttachAlgo(std::make_unique<tl::StopLossShare>(
         m_settings.maxLossShare, position, m_orderPolicy));
   }
+}
+
+boost::shared_ptr<LongPosition> PositionController::CreateLongPositionObject(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  return CreatePositionObject<StrategyLongPosition>(security, qty, startPrice,
+                                                    delayMeasurement);
+}
+boost::shared_ptr<ShortPosition> PositionController::CreateShortPositionObject(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  return CreatePositionObject<StrategyShortPosition>(security, qty, startPrice,
+                                                     delayMeasurement);
 }
 
 bool PositionController::IsNewPositionIsLong() const {
@@ -152,7 +196,8 @@ void mk::Settings::Validate() const {
 
 void mk::Settings::Log(Module::Log &log) const {
   log.Info(
-      "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
+      "Position size: %1%. Min. order size: %2%. Number of history hours: "
+      "%3%. "
       "Cost of funds: %4%. Max. share of loss: %5%. Signal price correction: "
       "%6%. Order type: %7%.",
       qty,                    // 1
@@ -336,7 +381,7 @@ void mk::Strategy::OnPostionsCloseRequest() {
   m_positionController.OnPostionsCloseRequest();
 }
 
-void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
+void mk::Strategy::CheckSignal(const trdk::Price &signalPrice,
                                const Milestones &delayMeasurement) {
   const auto numberOfDaysToExpiry =
       (GetTradingSecurity().GetExpiration().GetDate() -
@@ -346,7 +391,7 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
   const auto controlValue =
       lastPoint.value *
       (1 + m_settings.costOfFunds * numberOfDaysToExpiry / 365);
-  bool isTrendChanged = m_trend->Update(tradePrice, controlValue);
+  bool isTrendChanged = m_trend->Update(signalPrice, controlValue);
   GetTradingLog().Write(
       "trend\t%1%\tdirection=%2%\tlast-price=%3%\tclose-price=%4%"
       "\tclose-price-ema=%5%\tdays-to-expiry=%6%\tcontol=%7%",
@@ -355,15 +400,15 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
             % (m_trend->IsRising()
                    ? "rising"
                    : !m_trend->IsRising() ? "falling" : "-------")  // 2
-            % tradePrice                                            // 3
+            % signalPrice                                           // 3
             % lastPoint.source                                      // 4
             % lastPoint.value                                       // 5
             % numberOfDaysToExpiry                                  // 6
             % controlValue;                                         // 7
       });
   if (!isTrendChanged && m_priceSignal) {
-    isTrendChanged = m_priceSignal->isLong ? m_priceSignal->price < tradePrice
-                                           : m_priceSignal->price > tradePrice;
+    isTrendChanged = m_priceSignal->isLong ? m_priceSignal->price < signalPrice
+                                           : m_priceSignal->price > signalPrice;
   }
   if (!isTrendChanged) {
     return;
@@ -376,7 +421,8 @@ void mk::Strategy::CheckSignal(const trdk::Price &tradePrice,
     return;
   }
 
-  m_positionController.OnSignal(GetTradingSecurity(), delayMeasurement);
+  m_positionController.OnSignal(GetTradingSecurity(), signalPrice,
+                                delayMeasurement);
 }
 
 bool mk::Strategy::StartRollOver() {

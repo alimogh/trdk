@@ -25,8 +25,12 @@ class PositionController : private boost::noncopyable {
   const trdk::Strategy &GetStrategy() const;
 
  public:
-  void OnSignal(trdk::Security &,
-                const trdk::Lib::TimeMeasurement::Milestones &);
+  //! Handles trading signal event.
+  /** @return Pointer of position object if new position is started or changed.
+    *         nullptr - if no position was started or changed.
+    */
+  trdk::Position *OnSignal(trdk::Security &,
+                           const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
   void OnPostionsCloseRequest();
   void OnBrokerPositionUpdate(trdk::Security &,
@@ -50,10 +54,25 @@ class PositionController : private boost::noncopyable {
   virtual void ClosePosition(trdk::Position &, const trdk::CloseReason &);
 
  protected:
-  void ContinuePosition(trdk::Position &);
+  boost::shared_ptr<Position> CreatePosition(
+      bool isLong,
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+  boost::shared_ptr<LongPosition> CreateLongPosition(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+  boost::shared_ptr<ShortPosition> CreateShortPosition(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
 
   template <typename PositionType>
-  boost::shared_ptr<Position> CreatePosition(
+  boost::shared_ptr<PositionType> CreatePositionObject(
       trdk::Security &security,
       const trdk::Qty &qty,
       const trdk::Price &price,
@@ -62,9 +81,20 @@ class PositionController : private boost::noncopyable {
         GetStrategy(), GenerateNewOperationId(), 1, GetTradingSystem(security),
         security, security.GetSymbol().GetCurrency(), qty, price,
         delayMeasurement);
-    SetupPosition(*result);
     return result;
   }
+  virtual boost::shared_ptr<trdk::LongPosition> CreateLongPositionObject(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+  virtual boost::shared_ptr<trdk::ShortPosition> CreateShortPositionObject(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+
+  void ContinuePosition(trdk::Position &);
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
   const PositionReport &GetReport() const;

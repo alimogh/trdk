@@ -86,13 +86,10 @@ trdk::Position &PositionController::OpenPosition(
     bool isLong,
     const Qty &qty,
     const Milestones &delayMeasurement) {
-  auto position =
-      isLong ? CreatePosition<LongPosition>(
-                   security, qty, security.GetAskPrice(), delayMeasurement)
-             : CreatePosition<ShortPosition>(
-                   security, qty, security.GetBidPrice(), delayMeasurement);
-  ContinuePosition(*position);
-  return *position;
+  auto result = CreatePosition(isLong, security, qty, security.GetAskPrice(),
+                               delayMeasurement);
+  ContinuePosition(*result);
+  return *result;
 }
 
 void PositionController::ContinuePosition(Position &position) {
@@ -107,8 +104,8 @@ void PositionController::ClosePosition(Position &position,
   GetCloseOrderPolicy().Close(position);
 }
 
-void PositionController::OnSignal(Security &security,
-                                  const Milestones &delayMeasurement) {
+Position *PositionController::OnSignal(Security &security,
+                                       const Milestones &delayMeasurement) {
   Position *position = nullptr;
   if (!GetStrategy().GetPositions().IsEmpty()) {
     AssertEq(1, GetStrategy().GetPositions().GetSize());
@@ -117,19 +114,19 @@ void PositionController::OnSignal(Security &security,
       position = nullptr;
     } else if (IsPositionCorrect(*position)) {
       delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
-      return;
+      return nullptr;
     }
   }
 
   if (position &&
       (position->IsCancelling() || position->HasActiveCloseOrders())) {
-    return;
+    return nullptr;
   }
 
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
-    OpenPosition(security, delayMeasurement);
+    position = &OpenPosition(security, delayMeasurement);
   } else if (position->HasActiveOpenOrders()) {
     try {
       Verify(position->CancelAllOrders());
@@ -137,13 +134,15 @@ void PositionController::OnSignal(Security &security,
       GetStrategy().GetTradingLog().Write("failed to cancel order");
       GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
                                   ex.what());
-      return;
+      return nullptr;
     }
   } else {
     ClosePosition(*position, CLOSE_REASON_SIGNAL);
   }
 
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
+
+  return position;
 }
 
 void PositionController::OnPositionUpdate(Position &position) {
@@ -237,9 +236,57 @@ void PositionController::OnBrokerPositionUpdate(Security &security,
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  auto position =
-      isLong
-          ? CreatePosition<LongPosition>(security, qty, price, Milestones())
-          : CreatePosition<ShortPosition>(security, qty, price, Milestones());
-  position->RestoreOpenState(price);
+  CreatePosition(isLong, security, qty, price, Milestones())
+      ->RestoreOpenState(price);
+}
+
+boost::shared_ptr<LongPosition> PositionController::CreateLongPositionObject(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  return CreatePositionObject<LongPosition>(security, qty, startPrice,
+                                            delayMeasurement);
+}
+boost::shared_ptr<ShortPosition> PositionController::CreateShortPositionObject(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  return CreatePositionObject<ShortPosition>(security, qty, startPrice,
+                                             delayMeasurement);
+}
+
+boost::shared_ptr<LongPosition> PositionController::CreateLongPosition(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  const auto &result =
+      CreateLongPositionObject(security, qty, startPrice, delayMeasurement);
+  SetupPosition(*result);
+  return result;
+}
+boost::shared_ptr<ShortPosition> PositionController::CreateShortPosition(
+    Security &security,
+    const Qty &qty,
+    const Price &startPrice,
+    const Milestones &delayMeasurement) {
+  const auto &result =
+      CreateShortPositionObject(security, qty, startPrice, delayMeasurement);
+  SetupPosition(*result);
+  return result;
+}
+
+boost::shared_ptr<Position> PositionController::CreatePosition(
+    bool isLong,
+    Security &security,
+    const Qty &qty,
+    const Price &price,
+    const Milestones &delayMeasurement) {
+  if (isLong) {
+    return CreateLongPosition(security, qty, price, delayMeasurement);
+  } else {
+    return CreateShortPosition(security, qty, price, delayMeasurement);
+  }
 }
