@@ -302,6 +302,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Api.h" />
+    <ClInclude Include="MrigeshKejriwalPosition.hpp" />
     <ClInclude Include="MrigeshKejriwalPositionReport.hpp" />
     <ClInclude Include="MrigeshKejriwalStrategy.hpp" />
     <ClInclude Include="MrigeshKejriwalOrderPolicy.hpp" />

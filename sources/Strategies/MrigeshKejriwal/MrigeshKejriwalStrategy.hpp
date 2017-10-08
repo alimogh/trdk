@@ -38,6 +38,7 @@ struct Settings {
   Lib::Double maxLossShare;
   Price signalPriceCorrection;
   std::unique_ptr<OrderPolicyFactory> orderPolicyFactory;
+  boost::posix_time::time_duration pricesPeriod;
 
   explicit Settings(const Lib::IniSectionRef &);
 
@@ -70,7 +71,22 @@ class PositionController : public TradingLib::PositionController {
   explicit PositionController(Strategy &, const Trend &, const Settings &);
   virtual ~PositionController() override = default;
 
+ public:
+  void OnSignal(trdk::Security &,
+                const Price &signalPrice,
+                const trdk::Lib::TimeMeasurement::Milestones &);
+
  protected:
+  virtual boost::shared_ptr<trdk::LongPosition> CreateLongPositionObject(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
+  virtual boost::shared_ptr<trdk::ShortPosition> CreateShortPositionObject(
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual void SetupPosition(trdk::Position &) const override;
@@ -80,6 +96,9 @@ class PositionController : public TradingLib::PositionController {
 
   virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
       const override;
+
+ private:
+  using Base::OnSignal;
 
  private:
   const Settings &m_settings;
@@ -178,6 +197,8 @@ class TRDK_STRATEGY_MRIGESHKEJRIWAL_API Strategy : public trdk::Strategy {
   boost::optional<Rollover> m_rollover;
 
   boost::optional<PriceSignal> m_priceSignal;
+
+  std::deque<std::pair<boost::posix_time::ptime, Price>> m_lastPrices;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -390,7 +390,7 @@ inline std::ostream &operator<<(std::ostream &os,
 
 //////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API LongPosition : virtual public Position {
+class TRDK_CORE_API LongPosition : public Position {
  public:
   explicit LongPosition(trdk::Strategy &,
                         const boost::uuids::uuid &operationId,
@@ -450,7 +450,7 @@ class TRDK_CORE_API LongPosition : virtual public Position {
 
 //////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API ShortPosition : virtual public Position {
+class TRDK_CORE_API ShortPosition : public Position {
  public:
   explicit ShortPosition(trdk::Strategy &,
                          const boost::uuids::uuid &operationId,
