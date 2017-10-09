@@ -401,12 +401,7 @@ class TRDK_CORE_API LongPosition : public Position {
                         const trdk::Qty &,
                         const trdk::Price &startPrice,
                         const trdk::Lib::TimeMeasurement::Milestones &);
-
- protected:
-  LongPosition();
-
- public:
-  virtual ~LongPosition();
+  virtual ~LongPosition() override;
 
  public:
   virtual trdk::Position::Type GetType() const override;
@@ -461,12 +456,7 @@ class TRDK_CORE_API ShortPosition : public Position {
                          const trdk::Qty &,
                          const trdk::Price &startPrice,
                          const trdk::Lib::TimeMeasurement::Milestones &);
-
- protected:
-  ShortPosition();
-
- public:
-  virtual ~ShortPosition();
+  virtual ~ShortPosition() override;
 
  public:
   virtual trdk::Position::Type GetType() const override;

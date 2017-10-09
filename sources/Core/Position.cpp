@@ -926,7 +926,7 @@ Position::Position() {
 }
 #pragma warning(pop)
 
-Position::~Position() {}
+Position::~Position() = default;
 
 const uuids::uuid &Position::GetId() const { return m_pimpl->m_operationId; }
 
@@ -1462,21 +1462,6 @@ LongPosition::LongPosition(Strategy &strategy,
       });
 }
 
-LongPosition::LongPosition() {
-  GetStrategy().GetTradingLog().Write(
-      "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%",
-      [this](TradingRecord &record) {
-        record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
-            % GetTradingSystem().GetInstanceName().c_str()      // 2
-            % GetTradingSystem().GetMode()                      // 3
-            % GetOpenStartPrice()                               // 4
-            % GetCurrency()                                     // 5
-            % GetPlanedQty()                                    // 6
-            % GetId();                                          // 7 and last
-      });
-}
-
 LongPosition::~LongPosition() {
   GetStrategy().GetTradingLog().Write(
       "position\tdel\tlong\tpos=%1%",
@@ -1653,21 +1638,6 @@ ShortPosition::ShortPosition(Strategy &strategy,
                qty,
                startPrice,
                timeMeasurement) {
-  GetStrategy().GetTradingLog().Write(
-      "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%",
-      [this](TradingRecord &record) {
-        record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
-            % GetTradingSystem().GetInstanceName().c_str()      // 2
-            % GetTradingSystem().GetMode()                      // 3
-            % GetOpenStartPrice()                               // 4
-            % GetCurrency()                                     // 5
-            % GetPlanedQty()                                    // 6
-            % GetId();                                          // 7 and last
-      });
-}
-
-ShortPosition::ShortPosition() {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
       "\tpos=%7%",
