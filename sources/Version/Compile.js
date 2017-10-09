@@ -29,6 +29,7 @@ var requiredModules = [
 	, 'TestTradingSystems'
 	, 'InteractiveBrokers'
 	, 'FixProtocol'
+	, 'RestJson'
 	, 'Services'
 	, 'TestStrategy'
 	, 'MrigeshKejriwal'
