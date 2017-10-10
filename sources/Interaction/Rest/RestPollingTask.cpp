@@ -45,7 +45,7 @@ PollingTask::~PollingTask() {
 }
 
 void PollingTask::Run() {
-  m_log.Debug("Starting pulling task...");
+  m_log.Debug("Starting polling task...");
   try {
     Lock lock(m_mutex);
     while (!m_isStopped) {
@@ -53,9 +53,13 @@ void PollingTask::Run() {
       m_task();
       m_condition.wait_until(lock, nextStartTime);
     }
+  } catch (const std::exception &ex) {
+    m_log.Error("Error in the polling task: \"%1%\".", ex.what());
+    throw;
   } catch (...) {
+    m_log.Error("Unknown error in the polling task.");
     AssertFailNoException();
     throw;
   }
-  m_log.Debug("Pulling task completed.");
+  m_log.Debug("Polling task completed.");
 }

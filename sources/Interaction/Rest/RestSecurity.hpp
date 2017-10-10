@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Core/Security.hpp"
-#include "RestRequest.hpp"
 
 namespace trdk {
 namespace Interaction {
@@ -25,17 +24,10 @@ class Security : public trdk::Security {
   explicit Security(Context &,
                     const Lib::Symbol &,
                     MarketDataSource &,
-                    Rest::Request &&stateRequest,
                     const SupportedLevel1Types &);
 
  public:
-  Rest::Request &GetStateRequest() { return m_stateRequest; }
-
- public:
   using Base::SetLevel1;
-
- private:
-  Rest::Request m_stateRequest;
 };
 }
 }

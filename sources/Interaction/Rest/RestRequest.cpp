@@ -22,16 +22,18 @@ namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
 Request::Request(const std::string &uri,
-                 const std::string &message,
-                 const std::string &mehtod,
+                 const std::string &name,
+                 const std::string &method,
                  const std::string &apiKey,
                  const std::string &apiSecret,
+                 const std::string &uriParams,
                  const std::string &version)
     : m_apiKey(apiKey),
       m_apiSecret(apiSecret),
-      m_uri("/remote/v2" + uri),
-      m_request(boost::make_unique<net::HTTPRequest>(mehtod, m_uri, version)),
-      m_message(message) {
+      m_uri(uri),
+      m_uriParams(uriParams),
+      m_request(boost::make_unique<net::HTTPRequest>(method, m_uri, version)),
+      m_name(name) {
   m_request->set("User-Agent", TRDK_BUILD_IDENTITY);
   if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
     m_request->setContentType("application/x-www-form-urlencoded");
@@ -42,8 +44,12 @@ boost::tuple<boost::posix_time::ptime,
              boost::property_tree::ptree,
              Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPSClientSession &session, const Context &context) {
-  m_request->setURI(m_uri + "?nonce=" +
-                    pt::to_iso_string(pt::microsec_clock::universal_time()));
+  std::string uri = m_uri + "?nonce=" +
+                    pt::to_iso_string(pt::microsec_clock::universal_time());
+  if (!m_uriParams.empty()) {
+    uri += "&" + m_uriParams;
+  }
+  m_request->setURI(std::move(uri));
 
   const auto &body = CreateBody();
   if (!body.empty()) {
@@ -59,54 +65,27 @@ Request::Send(net::HTTPSClientSession &session, const Context &context) {
   const auto &updateTime = context.GetCurrentTime();
   if (response.getStatus() != 200) {
     boost::format error(
-        "Request \"%3%\" failed wiht HTTP-error: \"%1%\" (code: %2%)");
+        "Request \"%3%\" (%4%) failed with HTTP-error: \"%1%\" (code: %2%)");
     error % response.getReason()  // 1
         % response.getStatus()    // 2
-        % m_message;              // 3
+        % m_name                  // 3
+        % m_request->getURI();    // 4
     throw Exception(error.str().c_str());
   }
 
-  ptr::ptree responseTree;
+  ptr::ptree result;
   try {
-    ptr::read_json(responseStream, responseTree);
+    ptr::read_json(responseStream, result);
   } catch (const ptr::ptree_error &ex) {
     boost::format error(
-        "Failed to read server response to the request \"%2%\": \"%1%\"");
-    error % ex.what()  // 1
-        % m_message;   // 2
+        "Failed to read server response to the request \"%2%\" (%3%): \"%1%\"");
+    error % ex.what()           // 1
+        % m_name                // 2
+        % m_request->getURI();  // 3
     throw Exception(error.str().c_str());
   }
 
-  const auto &status = responseTree.get_optional<std::string>("status");
-  if (!status || *status != "success") {
-    const auto &message = responseTree.get_optional<std::string>("message");
-    std::ostringstream error;
-    error << "The server returned an error in response to the request \""
-          << m_message << "\": ";
-    if (message) {
-      error << "\"" << *message << "\"";
-    } else {
-      error << "Unknown error";
-    }
-    error << " (status: ";
-    if (status) {
-      error << "\"" << *status << "\"";
-    } else {
-      error << "unknown";
-    }
-    error << ")";
-    throw Exception(error.str().c_str());
-  }
-
-  const auto &result = responseTree.get_child_optional(m_message);
-  if (!result) {
-    boost::format error(
-        "The server did not return response to the request \"%1%\"");
-    error % m_message;
-    throw Exception(error.str().c_str());
-  }
-
-  return boost::make_tuple(std::move(updateTime), std::move(*result),
+  return boost::make_tuple(std::move(updateTime), std::move(result),
                            std::move(delayMeasurement));
 }
 

@@ -19,7 +19,5 @@ using namespace trdk::Interaction::Rest;
 Rest::Security::Security(Context &context,
                          const Symbol &symbol,
                          MarketDataSource &source,
-                         Rest::Request &&stateRequest,
                          const SupportedLevel1Types &supportedTypes)
-    : Base(context, symbol, source, supportedTypes),
-      m_stateRequest(std::move(stateRequest)) {}
+    : Base(context, symbol, source, supportedTypes) {}

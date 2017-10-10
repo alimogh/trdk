@@ -1,4 +1,5 @@
 
 EXPORTS
 	CreateNovaexchange
+	CreateYobitnet
 	GetTrdkModuleVersionInfoV1
