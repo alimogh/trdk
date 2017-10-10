@@ -17,9 +17,6 @@
     <ClCompile Include="RestVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Novaexchange.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RestApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -30,6 +27,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RestPollingTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RestNovaexchange.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
