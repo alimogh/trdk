@@ -98,8 +98,18 @@ bool DebugStrategy(int argc, const char *argv[]) {
             },
             [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); },
             params);
-      } catch (const trdk::Lib::Exception &ex) {
-        std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;
+      } catch (const std::exception &ex) {
+        // Customized logic for Mrigesh Kejriwal: if any error is occurred it
+        // restarts
+        // the engine.
+        std::cerr << "Failed to start engine: \"" << ex.what() << "\"."
+                  << std::endl;
+        result = false;
+      } catch (...) {
+        // Customized logic for Mrigesh Kejriwal: if any error is occurred it
+        // restarts
+        // the engine.
+        std::cerr << "Failed to start engine: unknown error." << std::endl;
         result = false;
       }
     }
@@ -114,6 +124,7 @@ bool DebugStrategy(int argc, const char *argv[]) {
 
     // Customized logic for Mrigesh Kejriwal: if error is occurred it restarts
     // the engine.
+    boost::this_thread::sleep(pt::seconds(5));
   } while (state != trdk::Context::STATE_DISPATCHER_TASK_STOPPED_GRACEFULLY);
 
   return result;
