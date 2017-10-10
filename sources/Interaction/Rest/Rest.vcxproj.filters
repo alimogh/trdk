@@ -14,13 +14,13 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestJsonVersion.cpp">
+    <ClCompile Include="RestVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Novaexchange.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestJsonApp.cpp">
+    <ClCompile Include="RestApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -28,14 +28,14 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestJsonApp.hpp">
+    <ClInclude Include="RestApp.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="RestJson.def" />
+    <None Include="Rest.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="RestJson.rc" />
+    <ResourceCompile Include="Rest.rc" />
   </ItemGroup>
 </Project>

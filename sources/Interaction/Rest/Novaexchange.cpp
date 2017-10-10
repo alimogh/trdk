@@ -11,11 +11,11 @@
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
-#include "RestJsonApp.hpp"
+#include "RestApp.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::Interaction::RestJson;
+using namespace trdk::Interaction::Rest;
 
 namespace pc = Poco;
 namespace net = pc::Net;

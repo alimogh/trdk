@@ -3,11 +3,11 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <_PropertySheetDisplayName>REST JSON</_PropertySheetDisplayName>
+    <_PropertySheetDisplayName>REST</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <ModuleDefinitionFile>RestJson.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Rest.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

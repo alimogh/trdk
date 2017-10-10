@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/09 22:43:56
+ *   Created: 2017/10/09 15:09:16
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,22 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-namespace trdk {
-namespace Interaction {
-namespace RestJson {
+using namespace trdk::Lib;
 
-class App : private boost::noncopyable {
- private:
-  App();
-  ~App();
-
- public:
-  static App &GetInstance();
-
- private:
-};
-}
-}
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_INTERACTION_REST_FILE_NAME);
 }

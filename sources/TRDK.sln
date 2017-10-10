@@ -67,7 +67,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "William Carry front-end mod
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Front-end shell library", "FrontEnd\ShellLib\ShellLib.vcxproj", "{F4B08541-2E1F-4EC9-BEE0-2A77B22A7A6D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "REST JSON", "Interaction\RestJson\RestJson.vcxproj", "{C73A9600-7598-4603-885F-248D4FC88192}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "REST", "Interaction\Rest\Rest.vcxproj", "{C73A9600-7598-4603-885F-248D4FC88192}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
