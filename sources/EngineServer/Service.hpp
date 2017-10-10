@@ -241,25 +241,25 @@ class Service : private boost::noncopyable {
                                   const boost::posix_time::ptime &,
                                   const trdk::Volume &value) override;
 
-    virtual void CopyLevel1Tick(const trdk::Security &,
+    virtual void CopyLevel1(const trdk::Security &,
                                 const boost::posix_time::ptime &,
                                 const trdk::Level1TickValue &) override {}
-    virtual void CopyLevel1Tick(const trdk::Security &,
+    virtual void CopyLevel1(const trdk::Security &,
                                 const boost::posix_time::ptime &,
                                 const trdk::Level1TickValue &,
                                 const trdk::Level1TickValue &) override {}
-    virtual void CopyLevel1Tick(const trdk::Security &,
-                                const boost::posix_time::ptime &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &) override {}
-    virtual void CopyLevel1Tick(const trdk::Security &,
+    virtual void CopyLevel1(const trdk::Security &,
                                 const boost::posix_time::ptime &,
                                 const trdk::Level1TickValue &,
                                 const trdk::Level1TickValue &,
+                                const trdk::Level1TickValue &) override {}
+    virtual void CopyLevel1(const trdk::Security &,
+                                const boost::posix_time::ptime &,
+                                const trdk::Level1TickValue &,
+                                const trdk::Level1TickValue &,
                                 const trdk::Level1TickValue &,
                                 const trdk::Level1TickValue &) override {}
-    virtual void CopyLevel1Tick(
+    virtual void CopyLevel1(
         const trdk::Security &,
         const boost::posix_time::ptime &,
         const std::vector<trdk::Level1TickValue> &) override {}

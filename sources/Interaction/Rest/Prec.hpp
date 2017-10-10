@@ -30,5 +30,8 @@
 #include <Poco/StreamCopier.h>
 #include <Poco/URI.h>
 #include <Poco/URIStreamOpener.h>
+// #include <boost/iostreams/stream_buffer.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include "Common/Crypto.hpp"

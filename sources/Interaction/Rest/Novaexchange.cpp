@@ -12,14 +12,19 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
 #include "RestApp.hpp"
+#include "RestPollingTask.hpp"
+#include "RestRequest.hpp"
+#include "RestSecurity.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
 namespace pc = Poco;
 namespace net = pc::Net;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -30,18 +35,22 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
   struct Settings {
     std::string apiKey;
     std::string apiSecret;
+    pt::time_duration pollingInterval;
 
     explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
         : apiKey(conf.ReadKey("api_key")),
-          apiSecret(conf.ReadKey("api_secret")) {
+          apiSecret(conf.ReadKey("api_secret")),
+          pollingInterval(pt::milliseconds(
+              conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
       Log(log);
       Validate();
     }
 
     void Log(ModuleEventsLog &log) {
-      log.Info("API key: \"%1%\". API secret: %2%.",
-               apiKey,                                     // 1
-               apiSecret.empty() ? "not set" : "is set");  // 2
+      log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+               apiKey,                                    // 1
+               apiSecret.empty() ? "not set" : "is set",  // 2
+               pollingInterval);                          // 3
     }
 
     void Validate() {}
@@ -59,8 +68,11 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_session("novaexchange.com"),
-        m_getBalancesRequest(
-            "/private/getbalances/", net::HTTPRequest::HTTP_POST, m_settings) {
+        m_getBalancesRequest("/private/getbalances/",
+                             "balances",
+                             net::HTTPRequest::HTTP_POST,
+                             m_settings.apiKey,
+                             m_settings.apiSecret) {
     m_session.setKeepAlive(true);
   }
 
@@ -78,7 +90,9 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
   }
 
  public:
-  virtual bool IsConnected() const override { return false; }
+  virtual bool IsConnected() const override {
+    return m_pollingTask ? true : false;
+  }
 
   //! Makes connection with Market Data Source.
   virtual void Connect(const IniSectionRef &conf) override {
@@ -91,17 +105,84 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SubscribeToSecurities() override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    m_pollingTask = boost::make_unique<PollingTask>(
+        [this]() {
+          for (const auto &security : m_securities) {
+            const auto &response =
+                security->GetStateRequest().Send(m_session, GetContext());
+            const auto &time = boost::get<0>(response);
+            const auto &delayMeasurement = boost::get<2>(response);
+            try {
+              for (const auto &updateRecord : boost::get<1>(response)) {
+                const auto &update = updateRecord.second;
+                const auto &marketName = update.get<std::string>("marketname");
+                if (marketName != security->GetSymbol().GetSymbol()) {
+                  boost::format error(
+                      "Received update by wrong currency pair \"%1%\" for "
+                      "\"%2%\"");
+                  error % marketName  // 1
+                      % *security;    // 2
+                  throw MarketDataSource::Error(error.str().c_str());
+                }
+                security->SetLevel1(
+                    time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                              update.get<double>("bid")),
+                    Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                        update.get<double>("ask")),
+                    Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
+                        update.get<double>("last_price")),
+                    delayMeasurement);
+              }
+            } catch (const std::exception &ex) {
+              boost::format error(
+                  "Failed to read market state for \"%1%\": \"%2%\"");
+              error % *security % ex.what();
+              throw MarketDataSource::Error(error.str().c_str());
+            }
+          }
+        },
+        m_settings.pollingInterval, GetMdsLog());
   }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
-    GetTsLog().Debug("X %1%",
-                     m_getBalancesRequest.Send<TradingSystem>(m_session));
+    //     try {
+    //       const auto &response = m_getBalancesRequest.Send(m_session,
+    //       GetContext());
+    //       for (const auto &currency : boost::get<1>(response)) {
+    //         const Volume totalAmount =
+    //         currency.second.get<double>("amount_total");
+    //         if (!totalAmount) {
+    //           continue;
+    //         }
+    //         GetTsLog().Info(
+    //             "%1% (%2%) balance: %3% (amount: %4%, trades: %5%, locked:
+    //             %6%).",
+    //             currency.second.get<std::string>("currencyname"),  // 1
+    //             currency.second.get<std::string>("currency"),      // 2
+    //             totalAmount,                                       // 3
+    //             currency.second.get<double>("amount"),             // 4
+    //             currency.second.get<double>("amount_trades"),      // 5
+    //             currency.second.get<double>("amount_lockbox"));    // 6
+    //       }
+    //     } catch (const std::exception &ex) {
+    //       boost::format error("Failed to read server balance list: \"%1%\"");
+    //       error % ex.what();
+    //       throw TradingSystem::ConnectError(error.str().c_str());
+    //     }
   }
 
-  virtual trdk::Security &CreateNewSecurityObject(const Symbol &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+  virtual trdk::Security &CreateNewSecurityObject(
+      const Symbol &symbol) override {
+    m_securities.emplace_back(boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Request("/market/info/" + symbol.GetSymbol() + "/", "markets",
+                net::HTTPRequest::HTTP_POST, m_settings.apiKey,
+                m_settings.apiSecret),
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_ASK_PRICE)));
+    return *m_securities.back();
   }
 
   virtual OrderId SendSellAtMarketPrice(trdk::Security &,
@@ -174,77 +255,11 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   net::HTTPSClientSession m_session;
-
-  class Request {
-   public:
-    explicit Request(const std::string &uri,
-                     const std::string &mehtod,
-                     const Settings &settings,
-                     const std::string &version = net::HTTPMessage::HTTP_1_1)
-        : m_settings(settings),
-          m_uri("/remote/v2" + uri),
-          m_request(mehtod, m_uri, version) {
-      m_request.set("User-Agent", TRDK_BUILD_IDENTITY);
-      if (m_request.getMethod() == net::HTTPRequest::HTTP_POST) {
-        m_request.setContentType("application/x-www-form-urlencoded");
-      }
-    }
-
-   public:
-    template <typename Base, typename Session>
-    std::string Send(Session &session) {
-      m_request.setURI(m_uri + "?nonce=" +
-                       pt::to_iso_string(pt::microsec_clock::universal_time()));
-
-      const auto &body = CreateBody();
-      if (!body.empty()) {
-        m_request.setContentLength(body.size());
-        session.sendRequest(m_request) << body;
-      } else {
-        session.sendRequest(m_request);
-      }
-
-      net::HTTPResponse response;
-      std::istream &responceContent = session.receiveResponse(response);
-      if (response.getStatus() != 200) {
-        boost::format error("%1% (HTTP-code: %2$)");
-        error % response.getReason()  // 1
-            % response.getStatus();   // 2
-        throw Base::Error(error.str().c_str());
-      }
-
-      std::string content;
-      pc::StreamCopier::copyToString(responceContent, content);
-      return content;
-    }
-
-   private:
-    std::string CreateBody() const {
-      if (m_request.getMethod() != net::HTTPRequest::HTTP_POST) {
-        return std::string();
-      }
-      std::ostringstream body;
-      body << "apikey=" << m_settings.apiKey << "&signature=";
-      {
-        const auto &uri =
-            std::string("https://novaexchange.com") + m_request.getURI();
-        unsigned char *digest =
-            HMAC(EVP_sha512(), m_settings.apiSecret.c_str(),
-                 static_cast<int>(m_settings.apiSecret.size()),
-                 reinterpret_cast<const unsigned char *>(uri.c_str()),
-                 uri.size(), nullptr, nullptr);
-        Base64Coder(false).Encode(digest, SHA512_DIGEST_LENGTH, body);
-      }
-      return body.str();
-    }
-
-   private:
-    const Settings &m_settings;
-    const std::string m_uri;
-    net::HTTPRequest m_request;
-  };
-
   Request m_getBalancesRequest;
+
+  std::vector<boost::shared_ptr<Rest::Security>> m_securities;
+
+  std::unique_ptr<PollingTask> m_pollingTask;
 };
 }
 

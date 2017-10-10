@@ -909,6 +909,9 @@ bool Security::SetLevel1(const pt::ptime &time,
                          const Milestones &delayMeasurement) {
   const bool result = m_pimpl->SetLevel1(time, tick, delayMeasurement, flush,
                                          isPreviouslyChanged);
+  GetContext().InvokeDropCopy([this, &time, &tick](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1(*this, time, tick);
+  });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick);
   return result;
 }
@@ -921,6 +924,8 @@ void Security::SetLevel1(const pt::ptime &time,
   m_pimpl->SetLevel1(
       time, tick2, delayMeasurement, true,
       m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false));
+  GetContext().InvokeDropCopy([this, &time, &tick1, &tick2](
+      DropCopy &dropCopy) { dropCopy.CopyLevel1(*this, time, tick1, tick2); });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2);
 }
 
@@ -937,6 +942,10 @@ void Security::SetLevel1(const pt::ptime &time,
       m_pimpl->SetLevel1(
           time, tick2, delayMeasurement, false,
           m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false)));
+  GetContext().InvokeDropCopy(
+      [this, &time, &tick1, &tick2, &tick3](DropCopy &dropCopy) {
+        dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3);
+      });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2, tick3);
 }
 
@@ -959,6 +968,10 @@ void Security::SetLevel1(const pt::ptime &time,
           m_pimpl->SetLevel1(time, tick2, delayMeasurement, false,
                              m_pimpl->SetLevel1(time, tick1, delayMeasurement,
                                                 false, false))));
+  GetContext().InvokeDropCopy(
+      [this, &time, &tick1, &tick2, &tick3, &tick4](DropCopy &dropCopy) {
+        dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3, tick4);
+      });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2, tick3, tick4);
 }
 
@@ -972,6 +985,9 @@ void Security::SetLevel1(const pt::ptime &time,
         m_pimpl->SetLevel1(time, tick, delayMeasurement,
                            ++counter >= ticks.size(), isPreviousChanged);
   }
+  GetContext().InvokeDropCopy([this, &time, &ticks](DropCopy &dropCopy) {
+    dropCopy.CopyLevel1(*this, time, ticks);
+  });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, ticks);
 }
 
@@ -983,7 +999,7 @@ bool Security::AddLevel1Tick(const pt::ptime &time,
   const bool result = m_pimpl->AddLevel1Tick(time, tick, delayMeasurement,
                                              flush, isPreviouslyChanged);
   GetContext().InvokeDropCopy([this, &time, &tick](DropCopy &dropCopy) {
-    dropCopy.CopyLevel1Tick(*this, time, tick);
+    dropCopy.CopyLevel1(*this, time, tick);
   });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick);
   return result;
@@ -994,7 +1010,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
                              const Milestones &delayMeasurement) {
   m_pimpl->AddLevel1Tick(time, tick, delayMeasurement, true, false);
   GetContext().InvokeDropCopy(
-      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1Tick(*this, time, tick); });
+      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1(*this, time, tick); });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick);
 }
 
@@ -1006,7 +1022,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
       time, tick2, delayMeasurement, true,
       m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false, false));
   GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
-    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2);
+    dropCopy.CopyLevel1(*this, time, tick1, tick2);
   });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2);
 }
@@ -1022,7 +1038,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
           time, tick2, delayMeasurement, false,
           m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false, false)));
   GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
-    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2, tick3);
+    dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3);
   });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick3);
 }
@@ -1042,7 +1058,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
               m_pimpl->AddLevel1Tick(time, tick1, delayMeasurement, false,
                                      false))));
   GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
-    dropCopy.CopyLevel1Tick(*this, time, tick1, tick2, tick3, tick4);
+    dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3, tick4);
   });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, tick1, tick2, tick4);
 }
@@ -1058,7 +1074,7 @@ void Security::AddLevel1Tick(const pt::ptime &time,
                                ++counter >= ticks.size(), isPreviousChanged);
   }
   GetContext().InvokeDropCopy(
-      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1Tick(*this, time, ticks); });
+      [&](DropCopy &dropCopy) { dropCopy.CopyLevel1(*this, time, ticks); });
   m_pimpl->m_marketDataLog.WriteLevel1Tick(time, ticks);
 }
 

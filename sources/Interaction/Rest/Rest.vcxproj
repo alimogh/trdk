@@ -304,7 +304,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="Novaexchange.cpp" />
+    <ClCompile Include="RestPollingTask.cpp" />
     <ClCompile Include="RestApp.cpp" />
+    <ClCompile Include="RestRequest.cpp" />
+    <ClCompile Include="RestSecurity.cpp" />
     <ClCompile Include="RestVersion.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -324,6 +327,10 @@
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="RestApp.hpp" />
+    <ClInclude Include="RestFwd.hpp" />
+    <ClInclude Include="RestPollingTask.hpp" />
+    <ClInclude Include="RestRequest.hpp" />
+    <ClInclude Include="RestSecurity.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Rest.def" />

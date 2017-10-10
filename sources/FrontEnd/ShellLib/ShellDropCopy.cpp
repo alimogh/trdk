@@ -101,35 +101,35 @@ void sh::DropCopy::CopyAbstractData(const DropCopyDataSourceInstanceId &,
                                     const pt::ptime &,
                                     const Double &) {}
 
-void sh::DropCopy::CopyLevel1Tick(const Security &security,
-                                  const pt::ptime &,
-                                  const trdk::Level1TickValue &) {
+void sh::DropCopy::CopyLevel1(const Security &security,
+                              const pt::ptime &,
+                              const trdk::Level1TickValue &) {
   SignalPriceUpdate(security);
 }
-void sh::DropCopy::CopyLevel1Tick(const Security &security,
-                                  const pt::ptime &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &) {
+void sh::DropCopy::CopyLevel1(const Security &security,
+                              const pt::ptime &,
+                              const Level1TickValue &,
+                              const Level1TickValue &) {
   SignalPriceUpdate(security);
 }
-void sh::DropCopy::CopyLevel1Tick(const Security &security,
-                                  const pt::ptime &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &) {
+void sh::DropCopy::CopyLevel1(const Security &security,
+                              const pt::ptime &,
+                              const Level1TickValue &,
+                              const Level1TickValue &,
+                              const Level1TickValue &) {
   SignalPriceUpdate(security);
 }
-void sh::DropCopy::CopyLevel1Tick(const Security &security,
-                                  const pt::ptime &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &,
-                                  const Level1TickValue &) {
+void sh::DropCopy::CopyLevel1(const Security &security,
+                              const pt::ptime &,
+                              const Level1TickValue &,
+                              const Level1TickValue &,
+                              const Level1TickValue &,
+                              const Level1TickValue &) {
   SignalPriceUpdate(security);
 }
-void sh::DropCopy::CopyLevel1Tick(const Security &security,
-                                  const pt::ptime &,
-                                  const std::vector<Level1TickValue> &) {
+void sh::DropCopy::CopyLevel1(const Security &security,
+                              const pt::ptime &,
+                              const std::vector<Level1TickValue> &) {
   SignalPriceUpdate(security);
 }
 
