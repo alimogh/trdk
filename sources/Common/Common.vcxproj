@@ -325,6 +325,7 @@
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="Crypto.hpp" />
     <ClInclude Include="Currency.hpp" />
     <ClInclude Include="Dll.hpp" />
     <ClInclude Include="ExpirationCalendar.hpp" />

@@ -303,6 +303,8 @@
     <TargetName>RestJson_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="Novaexchange.cpp" />
+    <ClCompile Include="RestJsonApp.cpp" />
     <ClCompile Include="RestJsonVersion.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -321,6 +323,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="RestJsonApp.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RestJson.def" />

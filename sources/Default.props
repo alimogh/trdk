@@ -5,7 +5,7 @@
   <PropertyGroup>
     <IntDir>$(SolutionDir)..\output\$(PlatformShortName)\int\$(Configuration)\$(ProjectName)\</IntDir>
     <LibraryPath>$(SolutionDir)..\output\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)\..\externals\poco-1.7.9-all\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

@@ -166,5 +166,8 @@
     <ClInclude Include="NetworkClientServiceSecureSocketIo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Crypto.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

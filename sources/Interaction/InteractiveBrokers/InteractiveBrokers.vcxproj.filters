@@ -123,13 +123,9 @@
     <None Include="Api\version">
       <Filter>API</Filter>
     </None>
-    <None Include="InteractiveBrokers.def">
-      <Filter>Header Files</Filter>
-    </None>
+    <None Include="InteractiveBrokers.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="InteractiveBrokers.rc">
-      <Filter>Source Files</Filter>
-    </ResourceCompile>
+    <ResourceCompile Include="InteractiveBrokers.rc" />
   </ItemGroup>
 </Project>
