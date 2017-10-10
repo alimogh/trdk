@@ -407,8 +407,8 @@ void mk::Strategy::CheckSignal(const trdk::Price &signalPrice,
       (1 + m_settings.costOfFunds * numberOfDaysToExpiry / 365);
   bool isTrendChanged = m_trend->Update(signalPrice, controlValue);
   GetTradingLog().Write(
-      "trend\t%1%\tdirection=%2%\tlast-price=%3%\tclose-price=%4%"
-      "\tclose-price-ema=%5%\tdays-to-expiry=%6%\tcontol=%7%",
+      "trend\t%1%\tdirection=%2%\tsignal-price=%3%\tcontrol-price=%4%"
+      "\tcontrol-price-ema=%5%\tdays-to-expiry=%6%\tcontol-value=%7%",
       [&](TradingRecord &record) {
         record % (isTrendChanged ? "CHANGED" : "-------")  // 1
             % (m_trend->IsRising()
