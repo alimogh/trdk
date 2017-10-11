@@ -65,14 +65,14 @@ fs::path GetIniFilePath(const char *inputValue) {
 namespace {
 
 bool DebugStrategy(int argc, const char *argv[]) {
-  std::unique_ptr<trdk::Engine::Engine> engine;
   bool result = true;
-
-  boost::mutex stateMutex;
-  boost::condition_variable stateCondition;
   boost::optional<trdk::Context::State> state;
 
   do {
+    std::unique_ptr<trdk::Engine::Engine> engine;
+    boost::mutex stateMutex;
+    boost::condition_variable stateCondition;
+
     {
       boost::unordered_map<std::string, std::string> params;
 
