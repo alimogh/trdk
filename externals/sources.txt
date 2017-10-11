@@ -1,1 +1,2 @@
 Open SSL: http://www.npcglib.org/~stathis/blog/precompiled-openssl/ (openssl-1.0.1t-vs2015.7z for MSVC 2015)
+POCO C++ Libraries: https://pocoproject.org/download/index.html (version 1.7.9; components: Foundation, XML, JSON, Util, Net, Crypto, NetSSL_OpenSSL; Runtime: Multi-threaded DLL).
