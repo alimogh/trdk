@@ -200,6 +200,8 @@ void PositionController::OnPositionUpdate(Position &position) {
       // Received signal to close...
       AssertLt(0, position.GetActiveQty());
       ClosePosition(position, CLOSE_REASON_SIGNAL);
+    } else if (position.GetActiveQty() < position.GetPlanedQty()) {
+      ContinuePosition(position);
     }
   }
 }
