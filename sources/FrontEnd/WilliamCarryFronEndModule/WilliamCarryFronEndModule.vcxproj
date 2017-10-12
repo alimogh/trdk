@@ -17,7 +17,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CF90F1AD-6453-4CA1-88B4-631D085CF64F}</ProjectGuid>
     <Keyword>Qt4VSv1.0</Keyword>
-    <ProjectName>William Carry front-end module</ProjectName>
+    <ProjectName>William Carry front-end</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -184,6 +184,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Strategies\WilliamCarry\WilliamCarry.vcxproj">
+      <Project>{9BB97C01-6929-4D24-8C6F-39CC7787F852}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
