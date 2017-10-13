@@ -101,6 +101,9 @@
     <ClCompile Include="MarketDataSourceDummy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PositionOperationContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -122,9 +125,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Api.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Observer.hpp">
@@ -209,6 +209,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MarketDataSourceDummy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PositionOperationContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

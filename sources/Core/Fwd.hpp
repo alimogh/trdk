@@ -35,6 +35,7 @@ class RiskControl;
 class RiskControlSymbolContext;
 class RiskControlScope;
 
+class PositionOperationContext;
 class Position;
 class LongPosition;
 class ShortPosition;

@@ -39,6 +39,7 @@ struct Settings {
   Price signalPriceCorrection;
   std::unique_ptr<OrderPolicyFactory> orderPolicyFactory;
   boost::posix_time::time_duration pricesPeriod;
+  boost::shared_ptr<const TradingLib::OrderPolicy> orderPolicy;
 
   explicit Settings(const Lib::IniSectionRef &);
 
@@ -68,42 +69,12 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &, const Trend &, const Settings &);
+  explicit PositionController(Strategy &);
   virtual ~PositionController() override = default;
 
- public:
-  void OnSignal(trdk::Security &,
-                const Price &signalPrice,
-                const trdk::Lib::TimeMeasurement::Milestones &);
-
  protected:
-  virtual boost::shared_ptr<trdk::LongPosition> CreateLongPositionObject(
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual boost::shared_ptr<trdk::ShortPosition> CreateShortPositionObject(
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
-  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
-  virtual void SetupPosition(trdk::Position &) const override;
-  virtual bool IsNewPositionIsLong() const override;
-  virtual trdk::Qty GetNewPositionQty() const override;
-  virtual bool IsPositionCorrect(const Position &position) const override;
-
   virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
       const override;
-
- private:
-  using Base::OnSignal;
-
- private:
-  const Settings &m_settings;
-  const boost::shared_ptr<const TradingLib::OrderPolicy> m_orderPolicy;
-  const Trend &m_trend;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

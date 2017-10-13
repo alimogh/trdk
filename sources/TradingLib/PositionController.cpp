@@ -12,6 +12,7 @@
 #include "PositionController.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Position.hpp"
+#include "Core/PositionOperationContext.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "OrderPolicy.hpp"
@@ -72,47 +73,58 @@ TradingSystem &PositionController::GetTradingSystem(const Security &security) {
 }
 
 trdk::Position &PositionController::OpenPosition(
-    Security &security, const Milestones &delayMeasurement) {
-  return OpenPosition(security, IsNewPositionIsLong(), delayMeasurement);
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Security &security,
+    const Milestones &delayMeasurement) {
+  return OpenPosition(operationContext, security, operationContext->IsLong(),
+                      delayMeasurement);
 }
 
 trdk::Position &PositionController::OpenPosition(
-    Security &security, bool isLong, const Milestones &delayMeasurement) {
-  return OpenPosition(security, isLong, GetNewPositionQty(), delayMeasurement);
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Security &security,
+    bool isLong,
+    const Milestones &delayMeasurement) {
+  return OpenPosition(operationContext, security, isLong,
+                      operationContext->GetPlannedQty(), delayMeasurement);
 }
 
 trdk::Position &PositionController::OpenPosition(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
     Security &security,
     bool isLong,
     const Qty &qty,
     const Milestones &delayMeasurement) {
-  auto result = CreatePosition(isLong, security, qty, security.GetAskPrice(),
-                               delayMeasurement);
+  auto result = CreatePosition(operationContext, isLong, security, qty,
+                               security.GetAskPrice(), delayMeasurement);
   ContinuePosition(*result);
   return *result;
 }
 
 void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  GetOpenOrderPolicy().Open(position);
+  position.GetOperationContext().GetOpenOrderPolicy().Open(position);
 }
 
-void PositionController::ClosePosition(Position &position,
-                                       const CloseReason &reason) {
+void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  position.SetCloseReason(reason);
-  GetCloseOrderPolicy().Close(position);
+  position.GetOperationContext().GetCloseOrderPolicy().Close(position);
 }
 
-Position *PositionController::OnSignal(Security &security,
-                                       const Milestones &delayMeasurement) {
+Position *PositionController::OnSignal(
+    const boost::shared_ptr<PositionOperationContext> &newOperationContext,
+    Security &security,
+    const Milestones &delayMeasurement) {
   Position *position = nullptr;
   if (!GetStrategy().GetPositions().IsEmpty()) {
     AssertEq(1, GetStrategy().GetPositions().GetSize());
     position = &*GetStrategy().GetPositions().GetBegin();
     if (position->IsCompleted()) {
       position = nullptr;
-    } else if (IsPositionCorrect(*position)) {
+    } else if (!position->GetOperationContext().HasCloseSignal(*position)) {
+      if (!position->HasActiveCloseOrders()) {
+        position->ResetCloseReason();
+      }
       delayMeasurement.Measure(SM_STRATEGY_WITHOUT_DECISION_1);
       return nullptr;
     }
@@ -126,18 +138,21 @@ Position *PositionController::OnSignal(Security &security,
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
-    position = &OpenPosition(security, delayMeasurement);
-  } else if (position->HasActiveOpenOrders()) {
-    try {
-      Verify(position->CancelAllOrders());
-    } catch (const TradingSystem::UnknownOrderCancelError &ex) {
-      GetStrategy().GetTradingLog().Write("failed to cancel order");
-      GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
-                                  ex.what());
-      return nullptr;
-    }
+    position = &OpenPosition(newOperationContext, security, delayMeasurement);
   } else {
-    ClosePosition(*position, CLOSE_REASON_SIGNAL);
+    position->SetCloseReason(CLOSE_REASON_SIGNAL);
+    if (position->HasActiveOpenOrders()) {
+      try {
+        Verify(position->CancelAllOrders());
+      } catch (const TradingSystem::UnknownOrderCancelError &ex) {
+        GetStrategy().GetTradingLog().Write("failed to cancel order");
+        GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
+                                    ex.what());
+        return nullptr;
+      }
+    } else {
+      ClosePosition(*position);
+    }
   }
 
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
@@ -155,15 +170,19 @@ void PositionController::OnPositionUpdate(Position &position) {
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
       m_pimpl->GetReport().Append(position);
-      if (!IsPositionCorrect(position)) {
-        // Opening opposite position.
-        OpenPosition(position.GetSecurity(), !position.IsLong(), Milestones());
+      const auto &context = position.GetOperationContext();
+      if (context.HasCloseSignal(position) && context.IsInvertible(position)) {
+        //! @todo Move IsInvertible to the closing start and close position x2
+        //! with "restoring" position object as opposite position.
+        OpenPosition(position.GetOperationContextPtr(), position.GetSecurity(),
+                     !position.IsLong(), Milestones());
       }
       return;
     }
     // Open order was canceled by some condition. Checking open
     // signal again and sending new open order...
-    if (IsPositionCorrect(position)) {
+    if (position.GetCloseReason() == CLOSE_REASON_NONE &&
+        !position.GetOperationContext().HasCloseSignal(position)) {
       ContinuePosition(position);
     }
 
@@ -180,7 +199,7 @@ void PositionController::OnPositionUpdate(Position &position) {
     } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Close order was canceled by some condition. Sending
       // new close order.
-      ClosePosition(position, CLOSE_REASON_SIGNAL);
+      ClosePosition(position);
     }
 
   } else if (position.HasActiveOrders()) {
@@ -188,18 +207,18 @@ void PositionController::OnPositionUpdate(Position &position) {
 
     Assert(!position.HasActiveCloseOrders());
 
-    if (!IsPositionCorrect(position)) {
+    if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Close signal received, closing position...
-      ClosePosition(position, CLOSE_REASON_SIGNAL);
+      ClosePosition(position);
     }
 
   } else {
     // Position is active.
 
-    if (!IsPositionCorrect(position)) {
+    if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Received signal to close...
       AssertLt(0, position.GetActiveQty());
-      ClosePosition(position, CLOSE_REASON_SIGNAL);
+      ClosePosition(position);
     } else if (position.GetActiveQty() < position.GetPlanedQty()) {
       ContinuePosition(position);
     }
@@ -211,11 +230,13 @@ void PositionController::OnPostionsCloseRequest() {
       "OnPostionsCloseRequest is not implemented");
 }
 
-void PositionController::OnBrokerPositionUpdate(Security &security,
-                                                bool isLong,
-                                                const Qty &qty,
-                                                const Volume &volume,
-                                                bool isInitial) {
+void PositionController::OnBrokerPositionUpdate(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Security &security,
+    bool isLong,
+    const Qty &qty,
+    const Volume &volume,
+    bool isInitial) {
   if (!isInitial || qty == 0) {
     GetStrategy().GetLog().Debug(
         "Skipped broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
@@ -228,7 +249,7 @@ void PositionController::OnBrokerPositionUpdate(Security &security,
     return;
   }
 
-  const auto price = abs(volume / qty);
+  const Price price = volume / qty;
   GetStrategy().GetLog().Info(
       "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
       "%3$.8f) for "
@@ -238,57 +259,36 @@ void PositionController::OnBrokerPositionUpdate(Security &security,
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  CreatePosition(isLong, security, qty, price, Milestones())
+  CreatePosition(operationContext, isLong, security, qty, price, Milestones())
       ->RestoreOpenState(price);
 }
 
-boost::shared_ptr<LongPosition> PositionController::CreateLongPositionObject(
+template <typename PositionType>
+boost::shared_ptr<Position> PositionController::CreatePositionObject(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
     Security &security,
     const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  return CreatePositionObject<LongPosition>(security, qty, startPrice,
-                                            delayMeasurement);
-}
-boost::shared_ptr<ShortPosition> PositionController::CreateShortPositionObject(
-    Security &security,
-    const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  return CreatePositionObject<ShortPosition>(security, qty, startPrice,
-                                             delayMeasurement);
-}
-
-boost::shared_ptr<LongPosition> PositionController::CreateLongPosition(
-    Security &security,
-    const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  const auto &result =
-      CreateLongPositionObject(security, qty, startPrice, delayMeasurement);
-  SetupPosition(*result);
-  return result;
-}
-boost::shared_ptr<ShortPosition> PositionController::CreateShortPosition(
-    Security &security,
-    const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  const auto &result =
-      CreateShortPositionObject(security, qty, startPrice, delayMeasurement);
-  SetupPosition(*result);
+    const Price &price,
+    const TimeMeasurement::Milestones &delayMeasurement) {
+  const auto &result = boost::make_shared<PositionType>(
+      operationContext, GetStrategy(), GenerateNewOperationId(), 1,
+      GetTradingSystem(security), security, security.GetSymbol().GetCurrency(),
+      qty, price, delayMeasurement);
   return result;
 }
 
 boost::shared_ptr<Position> PositionController::CreatePosition(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
     bool isLong,
     Security &security,
     const Qty &qty,
     const Price &price,
     const Milestones &delayMeasurement) {
-  if (isLong) {
-    return CreateLongPosition(security, qty, price, delayMeasurement);
-  } else {
-    return CreateShortPosition(security, qty, price, delayMeasurement);
-  }
+  const auto &result =
+      isLong ? CreatePositionObject<LongPosition>(operationContext, security,
+                                                  qty, price, delayMeasurement)
+             : CreatePositionObject<ShortPosition>(
+                   operationContext, security, qty, price, delayMeasurement);
+  result->GetOperationContext().Setup(*result);
+  return result;
 }

@@ -26,69 +26,52 @@ class PositionController : private boost::noncopyable {
 
  public:
   //! Handles trading signal event.
-  /** @return Pointer of position object if new position is started or changed.
-    *         nullptr - if no position was started or changed.
+  /** Works only with one active position per strategy instance.
+    * @param newOperationContext  New position operation context. Will be used
+    *                             only if new position instance will be created.
+    * @param security             New position security. Will be used only if
+    *                             new position instance will be created.
+    * @return A pointer to position object if a new position is started or if an
+    *         existing position is changed. nullptr - if no position was
+    *         started or changed.
     */
-  trdk::Position *OnSignal(trdk::Security &,
-                           const trdk::Lib::TimeMeasurement::Milestones &);
+  trdk::Position *OnSignal(
+      const boost::shared_ptr<trdk::PositionOperationContext>
+          &newOperationContext,
+      trdk::Security &security,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
   void OnPostionsCloseRequest();
-  void OnBrokerPositionUpdate(trdk::Security &,
-                              bool isLong,
-                              const trdk::Qty &,
-                              const trdk::Volume &,
-                              bool isInitial);
+  void OnBrokerPositionUpdate(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Security &,
+      bool isLong,
+      const trdk::Qty &,
+      const trdk::Volume &,
+      bool isInitial);
 
  public:
   virtual trdk::Position &OpenPosition(
-      trdk::Security &, const trdk::Lib::TimeMeasurement::Milestones &);
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Security &,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &OpenPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
       trdk::Security &,
       bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &OpenPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
       trdk::Security &,
       bool isLong,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void ClosePosition(trdk::Position &, const trdk::CloseReason &);
+  virtual void ClosePosition(trdk::Position &);
 
  protected:
   boost::shared_ptr<Position> CreatePosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
       bool isLong,
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  boost::shared_ptr<LongPosition> CreateLongPosition(
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  boost::shared_ptr<ShortPosition> CreateShortPosition(
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-
-  template <typename PositionType>
-  boost::shared_ptr<PositionType> CreatePositionObject(
-      trdk::Security &security,
-      const trdk::Qty &qty,
-      const trdk::Price &price,
-      const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
-    const auto &result = boost::make_shared<PositionType>(
-        GetStrategy(), GenerateNewOperationId(), 1, GetTradingSystem(security),
-        security, security.GetSymbol().GetCurrency(), qty, price,
-        delayMeasurement);
-    return result;
-  }
-  virtual boost::shared_ptr<trdk::LongPosition> CreateLongPositionObject(
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual boost::shared_ptr<trdk::ShortPosition> CreateShortPositionObject(
       trdk::Security &,
       const trdk::Qty &,
       const trdk::Price &startPrice,
@@ -99,15 +82,14 @@ class PositionController : private boost::noncopyable {
   virtual std::unique_ptr<PositionReport> OpenReport() const;
   const PositionReport &GetReport() const;
 
- protected:
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy() const = 0;
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy() const = 0;
-  virtual void SetupPosition(trdk::Position &) const = 0;
-  virtual bool IsNewPositionIsLong() const = 0;
-  virtual trdk::Qty GetNewPositionQty() const = 0;
-  virtual bool IsPositionCorrect(const trdk::Position &) const = 0;
-
  private:
+  template <typename PositionType>
+  boost::shared_ptr<trdk::Position> CreatePositionObject(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   boost::uuids::uuid GenerateNewOperationId() const;
   trdk::TradingSystem &GetTradingSystem(const trdk::Security &);
 

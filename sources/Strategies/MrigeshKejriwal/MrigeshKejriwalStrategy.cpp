@@ -11,10 +11,9 @@
 #include "Prec.hpp"
 #include "MrigeshKejriwalStrategy.hpp"
 #include "TradingLib/OrderPolicy.hpp"
-#include "TradingLib/StopLoss.hpp"
 #include "Core/TradingLog.hpp"
 #include "MrigeshKejriwalOrderPolicy.hpp"
-#include "MrigeshKejriwalPosition.hpp"
+#include "MrigeshKejriwalPositionOperationContext.hpp"
 #include "MrigeshKejriwalPositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -39,80 +38,8 @@ bool Trend::Update(const Price &lastPrice, double controlValue) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PositionController::PositionController(trdk::Strategy &strategy,
-                                       const Trend &trend,
-                                       const mk::Settings &settings)
-    : Base(strategy),
-      m_settings(settings),
-      m_orderPolicy(m_settings.orderPolicyFactory->CreateOrderPolicy()),
-      m_trend(trend) {}
-
-void PositionController::OnSignal(Security &security,
-                                  const Price &signalPrice,
-                                  const Milestones &delayMeasurement) {
-  auto *const position = OnSignal(security, delayMeasurement);
-  if (!position) {
-    return;
-  }
-  if (position->HasActiveOpenOrders()) {
-    if (position->IsLong()) {
-      boost::polymorphic_downcast<StrategyLongPosition *>(position)
-          ->SetOpenSignalPrice(signalPrice);
-    } else {
-      boost::polymorphic_downcast<StrategyShortPosition *>(position)
-          ->SetOpenSignalPrice(signalPrice);
-    }
-  } else {
-    if (position->IsLong()) {
-      boost::polymorphic_downcast<StrategyLongPosition *>(position)
-          ->SetCloseSignalPrice(signalPrice);
-    } else {
-      boost::polymorphic_downcast<StrategyShortPosition *>(position)
-          ->SetCloseSignalPrice(signalPrice);
-    }
-  }
-}
-
-void PositionController::SetupPosition(Position &position) const {
-  if (m_settings.maxLossShare != 0) {
-    position.AttachAlgo(std::make_unique<tl::StopLossShare>(
-        m_settings.maxLossShare, position, m_orderPolicy));
-  }
-}
-
-boost::shared_ptr<LongPosition> PositionController::CreateLongPositionObject(
-    Security &security,
-    const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  return CreatePositionObject<StrategyLongPosition>(security, qty, startPrice,
-                                                    delayMeasurement);
-}
-boost::shared_ptr<ShortPosition> PositionController::CreateShortPositionObject(
-    Security &security,
-    const Qty &qty,
-    const Price &startPrice,
-    const Milestones &delayMeasurement) {
-  return CreatePositionObject<StrategyShortPosition>(security, qty, startPrice,
-                                                     delayMeasurement);
-}
-
-bool PositionController::IsNewPositionIsLong() const {
-  return m_trend.IsRising();
-}
-
-Qty PositionController::GetNewPositionQty() const { return m_settings.qty; }
-
-bool PositionController::IsPositionCorrect(const Position &position) const {
-  return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
-}
-
-const tl::OrderPolicy &PositionController::GetOpenOrderPolicy() const {
-  return *m_orderPolicy;
-}
-const tl::OrderPolicy &PositionController::GetCloseOrderPolicy() const {
-  return *m_orderPolicy;
-}
+PositionController::PositionController(trdk::Strategy &strategy)
+    : Base(strategy) {}
 
 std::unique_ptr<tl::PositionReport> PositionController::OpenReport() const {
   return boost::make_unique<PositionReport>(GetStrategy());
@@ -184,6 +111,7 @@ mk::Settings::Settings(const IniSectionRef &conf)
           "Unknown order type is set (allowed \"lmt_gtc\", \"lmt_ioc\" or "
           "\"mkt_gtc\")");
     }
+    orderPolicy = orderPolicyFactory->CreateOrderPolicy();
   }
 }
 
@@ -236,7 +164,7 @@ mk::Strategy::Strategy(Context &context,
       m_underlyingSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
-      m_positionController(*this, *m_trend, m_settings) {
+      m_positionController(*this) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
@@ -321,8 +249,10 @@ void mk::Strategy::OnBrokerPositionUpdate(Security &security,
   posQty = static_cast<double>((numberOfParts + (restFromPart ? 1 : 0)) *
                                static_cast<intmax_t>(m_settings.minQty));
   const auto posVolume = (volume / qty) * posQty;
-  m_positionController.OnBrokerPositionUpdate(security, isLong, posQty,
-                                              posVolume, isInitial);
+  m_positionController.OnBrokerPositionUpdate(
+      boost::make_shared<PositionOperationContext>(m_settings, *m_trend,
+                                                   volume / qty),
+      security, isLong, posQty, posVolume, isInitial);
 
   if (isInitial && !GetPositions().IsEmpty()) {
     Assert(m_skipNextSignal);
@@ -435,8 +365,16 @@ void mk::Strategy::CheckSignal(const trdk::Price &signalPrice,
     return;
   }
 
-  m_positionController.OnSignal(GetTradingSecurity(), signalPrice,
-                                delayMeasurement);
+  auto *const changedPosition = m_positionController.OnSignal(
+      boost::make_shared<PositionOperationContext>(m_settings, *m_trend,
+                                                   signalPrice),
+      GetTradingSecurity(), delayMeasurement);
+  if (changedPosition &&
+      changedPosition->GetCloseReason() == CLOSE_REASON_SIGNAL) {
+    boost::polymorphic_cast<PositionOperationContext *>(
+        &changedPosition->GetOperationContext())
+        ->SetCloseSignalPrice(signalPrice);
+  }
 }
 
 bool mk::Strategy::StartRollOver() {
@@ -490,7 +428,8 @@ bool mk::Strategy::ContinueRollOver() {
     }
     return false;
   }
-  m_positionController.ClosePosition(position, CLOSE_REASON_ROLLOVER);
+  position.ResetCloseReason(CLOSE_REASON_ROLLOVER);
+  m_positionController.ClosePosition(position);
 
   return true;
 }
@@ -501,8 +440,9 @@ bool mk::Strategy::FinishRollOver() {
   }
   GetLog().Info("Finishing rollover...");
   AssertEq(0, GetPositions().GetSize());
-  m_positionController.OpenPosition(GetTradingSecurity(), m_rollover->isLong,
-                                    m_rollover->qty, Milestones());
+  m_positionController.OpenPosition(
+      boost::make_shared<PositionOperationContext>(m_settings, *m_trend, 0),
+      GetTradingSecurity(), m_rollover->isLong, m_rollover->qty, Milestones());
   m_rollover = boost::none;
   return true;
 }

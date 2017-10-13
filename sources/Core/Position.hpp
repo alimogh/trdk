@@ -74,16 +74,28 @@ class TRDK_CORE_API Position
       const trdk::Qty &,
       const trdk::Price &startPrice,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-
- protected:
-  //! Ctor only for virtual inheritance, always throws exception.
-  Position();
+  explicit Position(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
  public:
   virtual ~Position();
 
  public:
   void AttachAlgo(std::unique_ptr<Algo> &&);
+
+  trdk::PositionOperationContext &GetOperationContext();
+  const trdk::PositionOperationContext &GetOperationContext() const;
+  const boost::shared_ptr<trdk::PositionOperationContext>
+      &GetOperationContextPtr();
 
   const boost::uuids::uuid &GetId() const;
 
@@ -110,8 +122,8 @@ class TRDK_CORE_API Position
 
  public:
   const CloseReason &GetCloseReason() const noexcept;
-  void SetCloseReason(const CloseReason &) noexcept;
-  void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE) noexcept;
+  void SetCloseReason(const CloseReason &);
+  void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE);
 
   //! Has opened qty and doesn't have active open-orders.
   /** @sa IsClosed
@@ -401,6 +413,17 @@ class TRDK_CORE_API LongPosition : public Position {
                         const trdk::Qty &,
                         const trdk::Price &startPrice,
                         const trdk::Lib::TimeMeasurement::Milestones &);
+  explicit LongPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   virtual ~LongPosition() override;
 
  public:
@@ -456,6 +479,17 @@ class TRDK_CORE_API ShortPosition : public Position {
                          const trdk::Qty &,
                          const trdk::Price &startPrice,
                          const trdk::Lib::TimeMeasurement::Milestones &);
+  explicit ShortPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
   virtual ~ShortPosition() override;
 
  public:
