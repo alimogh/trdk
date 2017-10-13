@@ -11,6 +11,7 @@
 #include "Context.hpp"
 #include "MarketDataSource.hpp"
 #include "RiskControl.hpp"
+#include "Strategy.hpp"
 #include "TradingSystem.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -53,6 +54,10 @@ class Context : public trdk::Context {
                                                  const trdk::TradingMode &));
   MOCK_METHOD2(GetTradingSystem,
                trdk::TradingSystem &(size_t index, const trdk::TradingMode &));
+
+  MOCK_METHOD1(GetSrategy, trdk::Strategy &(const boost::uuids::uuid &));
+  MOCK_CONST_METHOD1(GetSrategy,
+                     const trdk::Strategy &(const boost::uuids::uuid &));
 
   MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 };

@@ -30,11 +30,11 @@ Context::DispatchingLock::~DispatchingLock() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Context::Exception::Exception(const char *what) throw()
+Context::Exception::Exception(const char *what) noexcept
     : Lib::Exception(what) {}
 
 Context::TradingModeIsNotLoaded::TradingModeIsNotLoaded(
-    const char *what) throw()
+    const char *what) noexcept
     : Exception(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +356,7 @@ Context::Context(Log &log,
   }
 }
 
-Context::~Context() {}
+Context::~Context() = default;
 
 void Context::OnStarted() {
   if (m_pimpl->m_statReport) {
@@ -370,9 +370,9 @@ void Context::OnBeforeStop() {
   }
 }
 
-Context::Log &Context::GetLog() const throw() { return m_pimpl->m_log; }
+Context::Log &Context::GetLog() const noexcept { return m_pimpl->m_log; }
 
-Context::TradingLog &Context::GetTradingLog() const throw() {
+Context::TradingLog &Context::GetTradingLog() const noexcept {
   return m_pimpl->m_tradingLog;
 }
 
@@ -533,20 +533,16 @@ class Context::Params::Implementation : private boost::noncopyable {
 Context::Params::Exception::Exception(const char *what) noexcept
     : Context::Exception(what) {}
 
-Context::Params::Exception::~Exception() {}
-
 Context::Params::KeyDoesntExistError::KeyDoesntExistError(
     const char *what) noexcept
     : Exception(what) {}
-
-Context::Params::KeyDoesntExistError::~KeyDoesntExistError() {}
 
 Context::Params::Params(
     const Context &context,
     const boost::unordered_map<std::string, std::string> &initial)
     : m_pimpl(boost::make_unique<Implementation>(context, initial)) {}
 
-Context::Params::~Params() {}
+Context::Params::~Params() = default;
 
 std::string Context::Params::operator[](const std::string &key) const {
   const Implementation::ReadLock lock(m_pimpl->m_mutex);

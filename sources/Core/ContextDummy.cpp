@@ -19,6 +19,7 @@ using namespace trdk::Lib;
 using namespace trdk::Tests;
 
 namespace lt = boost::local_time;
+namespace ids = boost::uuids;
 
 namespace {
 const lt::time_zone_ptr timeZone =
@@ -96,5 +97,13 @@ TradingSystem &Dummies::Context::GetTradingSystem(size_t, const TradingMode &) {
 }
 
 DropCopy *Dummies::Context::GetDropCopy() const {
+  throw std::logic_error("Not supported");
+}
+
+Strategy &Dummies::Context::GetSrategy(const ids::uuid &) {
+  throw std::logic_error("Not supported");
+}
+
+const trdk::Strategy &Dummies::Context::GetSrategy(const ids::uuid &) const {
   throw std::logic_error("Not supported");
 }

@@ -37,7 +37,7 @@ Consumer::Consumer(Context &context,
     : Module(context, typeName, name, instanceName, conf),
       m_pimpl(new Implementation) {}
 
-Consumer::~Consumer() {}
+Consumer::~Consumer() = default;
 
 void Consumer::OnSecurityStart(Security &, Security::Request &) {}
 
