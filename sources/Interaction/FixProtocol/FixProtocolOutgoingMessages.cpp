@@ -203,7 +203,7 @@ std::string ResolveSecurityFixId(const trdk::Security &security) {
   const auto *const fixSecurity =
       dynamic_cast<const fix::Security *>(&security);
   if (!fixSecurity) {
-    throw MethodDoesNotImplementedError(
+    throw MethodIsNotImplementedException(
         "Work with non FIX protocol security is not implemented yet in the "
         "module FIX protocol");
   }

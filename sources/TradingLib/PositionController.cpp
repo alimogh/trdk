@@ -226,7 +226,7 @@ void PositionController::OnPositionUpdate(Position &position) {
 }
 
 void PositionController::OnPostionsCloseRequest() {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "OnPostionsCloseRequest is not implemented");
 }
 

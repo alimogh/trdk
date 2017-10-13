@@ -103,7 +103,7 @@ fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
 }
 
 void fix::MarketDataSource::OnConnectionRestored() {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "fix::MarketDataSource::OnConnectionRestored is not implemented");
 }
 

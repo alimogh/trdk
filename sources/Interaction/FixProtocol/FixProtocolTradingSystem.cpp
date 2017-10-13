@@ -55,7 +55,7 @@ OrderId fix::TradingSystem::SendSellAtMarketPrice(trdk::Security &,
                                                   const Currency &,
                                                   const Qty &,
                                                   const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendSell(trdk::Security &security,
@@ -77,19 +77,19 @@ OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(trdk::Security &,
                                                         const Qty &,
                                                         const Price &,
                                                         const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendBuyAtMarketPrice(trdk::Security &,
                                                  const Currency &,
                                                  const Qty &,
                                                  const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
@@ -111,20 +111,20 @@ OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &,
                                                        const Qty &,
                                                        const Price &,
                                                        const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 void fix::TradingSystem::SendCancelOrder(const OrderId &) {
-  throw MethodDoesNotImplementedError("Methods is not supported");
+  throw MethodIsNotImplementedException("Methods is not supported");
 }
 
 void fix::TradingSystem::OnConnectionRestored() {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "fix::TradingSystem::OnConnectionRestored is not implemented");
 }
 

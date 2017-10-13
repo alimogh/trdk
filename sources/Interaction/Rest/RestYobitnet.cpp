@@ -208,7 +208,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
                                         const Currency &,
                                         const Qty &,
                                         const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendSell(trdk::Security &,
@@ -216,7 +216,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
                            const Qty &,
                            const Price &,
                            const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
@@ -224,7 +224,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
                                               const Qty &,
                                               const Price &,
                                               const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
@@ -232,14 +232,14 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
       const Currency &,
       const Qty &,
       const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
                                        const Currency &,
                                        const Qty &,
                                        const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendBuy(trdk::Security &,
@@ -247,7 +247,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
                           const Qty &,
                           const Price &,
                           const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
@@ -255,7 +255,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
                                              const Qty &,
                                              const Price &,
                                              const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
@@ -263,11 +263,11 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
       const Currency &,
       const Qty &,
       const OrderParams &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
   virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodDoesNotImplementedError("Methods is not supported");
+    throw MethodIsNotImplementedException("Methods is not supported");
   }
 
  private:
