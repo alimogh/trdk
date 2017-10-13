@@ -37,6 +37,9 @@
     <ClCompile Include="MrigeshKejriwalPositionReport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MrigeshKejriwalPositionOperationContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MrigeshKejriwal.rc">
@@ -59,7 +62,7 @@
     <ClInclude Include="MrigeshKejriwalPositionReport.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MrigeshKejriwalPosition.hpp">
+    <ClInclude Include="MrigeshKejriwalPositionOperationContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -12,6 +12,7 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
 #include "Core/Position.hpp"
+#include "Core/PositionOperationContext.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "Api.h"
@@ -19,6 +20,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
@@ -29,49 +31,48 @@ namespace trdk {
 namespace Strategies {
 namespace Test {
 
+class TestStrategy;
+
 ////////////////////////////////////////////////////////////////////////////////
 
-class PositionController : public TradingLib::PositionController {
+class PositionOperationContext : public trdk::PositionOperationContext {
  public:
-  typedef TradingLib::PositionController Base;
+  typedef trdk::PositionOperationContext Base;
 
  public:
-  explicit PositionController(Strategy &strategy)
-      : Base(strategy),
-        m_orderPolicy(boost::make_shared<TradingLib::LimitGtcOrderPolicy>()) {}
+  explicit PositionOperationContext(TestStrategy &strategy)
+      : m_strategy(strategy),
+        m_orderPolicy(boost::make_shared<LimitGtcOrderPolicy>()) {}
+  virtual ~PositionOperationContext() override = default;
 
-  virtual ~PositionController() override = default;
-
- protected:
-  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override {
+ public:
+  virtual const OrderPolicy &GetOpenOrderPolicy() const override {
     return *m_orderPolicy;
   }
-  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override {
+  virtual const OrderPolicy &GetCloseOrderPolicy() const override {
     return *m_orderPolicy;
   }
-
-  virtual void SetupPosition(trdk::Position &) const override{};
-
-  virtual bool IsNewPositionIsLong() const override { return *GetIsRising(); }
-
-  virtual Qty GetNewPositionQty() const override { return 10; }
-
-  virtual bool IsPositionCorrect(const Position &position) const override {
+  virtual void Setup(Position &) const override {}
+  virtual bool IsLong() const override { return *GetIsRising(); }
+  virtual Qty GetPlannedQty() const override { return 10; }
+  virtual bool HasCloseSignal(const Position &position) const override {
     const auto &isRising = GetIsRising();
-    return !isRising || IsNewPositionIsLong() == position.IsLong();
+    return !isRising || IsLong() == position.IsLong();
   }
+  virtual bool IsInvertible(const Position &) const override { return true; }
 
  private:
   boost::optional<bool> GetIsRising() const;
 
  private:
-  const boost::shared_ptr<TradingLib::OrderPolicy> m_orderPolicy;
+  TestStrategy &m_strategy;
+  const boost::shared_ptr<OrderPolicy> m_orderPolicy;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class TestStrategy : public Strategy {
-  friend class PositionController;
+  friend class PositionOperationContext;
 
  public:
   typedef Strategy Super;
@@ -147,10 +148,12 @@ class TestStrategy : public Strategy {
                           [&isRising](TradingRecord &record) {
                             record % (*isRising ? "rising" : "falling");  // 1
                           });
-    m_positionController.OnSignal(security, delayMeasurement);
+    m_positionController.OnSignal(m_positionOperationContext, security,
+                                  delayMeasurement);
   }
 
  private:
+  boost::shared_ptr<PositionOperationContext> m_positionOperationContext;
   PositionController m_positionController;
   intmax_t m_direction;
   Price m_prevPrice;
@@ -158,9 +161,8 @@ class TestStrategy : public Strategy {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::optional<bool> PositionController::GetIsRising() const {
-  return boost::polymorphic_downcast<const TestStrategy *>(&GetStrategy())
-      ->GetIsRising();
+boost::optional<bool> PositionOperationContext::GetIsRising() const {
+  return m_strategy.GetIsRising();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +172,7 @@ boost::optional<bool> PositionController::GetIsRising() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TRDK_STRATEGY_TEST_API boost::shared_ptr<trdk::Strategy> CreateStrategy(
+boost::shared_ptr<trdk::Strategy> CreateStrategy(
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &conf) {

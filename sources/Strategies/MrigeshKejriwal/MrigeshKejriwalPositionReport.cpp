@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "MrigeshKejriwalPositionReport.hpp"
 #include "Core/Position.hpp"
-#include "MrigeshKejriwalPosition.hpp"
+#include "MrigeshKejriwalPositionOperationContext.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -51,9 +51,10 @@ void PositionReport::PrintHead(std::ostream &os) {
   os << std::endl;
 }
 
-namespace {
-template <typename Position>
-void PrintReport(const Position &pos, std::ostream &os) {
+void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
+  const auto &operationContext =
+      *boost::polymorphic_downcast<const PositionOperationContext *>(
+          &pos.GetOperationContext());
   os << pos.GetOpenStartTime().date();                                      // 1
   os << ',' << ExcelTextField(pos.GetOpenStartTime().time_of_day());        // 2
   os << ',' << ExcelTextField(pos.GetOpenTime().time_of_day());             // 3
@@ -69,16 +70,24 @@ void PrintReport(const Position &pos, std::ostream &os) {
      << (pos.IsProfit() ? ",1,0" : ",0,1");  // 11, 12
   // Leakage is the difference between the signal price and the actual order
   // execution price multiplied by the quantity.
-  os << ',' << pos.GetOpenSignalPrice();  // 13
+  os << ',' << operationContext.GetOpenSignalPrice();  // 13
   os << ','
-     << ((pos.IsLong() ? pos.GetOpenAvgPrice() - pos.GetOpenSignalPrice()
-                       : pos.GetOpenSignalPrice() - pos.GetOpenAvgPrice()) *
-         pos.GetOpenedQty());              // 14
-  os << ',' << pos.GetCloseSignalPrice();  // 15
-  os << ','
-     << ((!pos.IsLong() ? pos.GetCloseAvgPrice() - pos.GetCloseSignalPrice()
-                        : pos.GetCloseSignalPrice() - pos.GetCloseAvgPrice()) *
-         pos.GetOpenedQty());                 // 16
+     << ((pos.IsLong()
+              ? pos.GetOpenAvgPrice() - operationContext.GetOpenSignalPrice()
+              : operationContext.GetOpenSignalPrice() - pos.GetOpenAvgPrice()) *
+         pos.GetOpenedQty());  // 14
+  if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
+    os << ',' << operationContext.GetCloseSignalPrice();  // 15
+    os << ',' << ((!pos.IsLong()
+                       ? pos.GetCloseAvgPrice() -
+                             operationContext.GetCloseSignalPrice()
+                       : operationContext.GetCloseSignalPrice() -
+                             pos.GetCloseAvgPrice()) *
+                  pos.GetOpenedQty());
+  } else {
+    AssertNe(CLOSE_REASON_NONE, pos.GetCloseReason());
+    os << ",,";  // 15,  16
+  }
   os << ',' << pos.CalcCommission();          // 17
   os << ',' << pos.GetOpenedQty();            // 18
   os << ',' << pos.GetOpenAvgPrice();         // 19
@@ -90,16 +99,4 @@ void PrintReport(const Position &pos, std::ostream &os) {
   os << ',' << pos.GetNumberOfCloseTrades();  // 25
   os << ',' << pos.GetId();                   // 26
   os << std::endl;
-}
-}
-
-void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
-  const trdk::Position *sss = &pos;
-  pos.IsLong()
-      ? ::PrintReport(*boost::polymorphic_downcast<
-                          const StrategyPosition<LongPosition> *>(sss),
-                      os)
-      : ::PrintReport(*boost::polymorphic_downcast<
-                          const StrategyPosition<ShortPosition> *>(sss),
-                      os);
 }
