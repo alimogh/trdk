@@ -32,6 +32,8 @@ class Security : public trdk::Security {
 
  public:
   using Base::AddLevel1Tick;
+  using Base::SetOnline;
+  using Base::SetTradingSessionState;
 
  protected:
   const size_t m_fixId;

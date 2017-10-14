@@ -55,16 +55,15 @@ void fix::MarketDataSource::SubscribeToSecurities() {
                  m_securities.size());
 
   try {
-    for (const auto &security : m_securities) {
-      if (!security.second->GetRequest()) {
-        //         security->SetOnline(security->GetLastMarketDataTime(), true);
-        //         security->SetTradingSessionState(security->GetLastMarketDataTime(),
-        //                                          true);
+    for (const auto &it : m_securities) {
+      auto &security = *it.second;
+      if (!security.GetRequest()) {
+        security.SetOnline(security.GetLastMarketDataTime(), true);
       }
-      const out::MarketDataRequest message(*security.second,
+      const out::MarketDataRequest message(security,
                                            GetStandardOutgoingHeader());
       GetLog().Info("Sending Market Data Request for \"%1%\" (%2%)...",
-                    *security.second,        // 1
+                    security,                // 1
                     message.GetSymbolId());  // 2
       m_client.Send(std::move(message));
     }
@@ -114,8 +113,11 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
   auto &security = snapshot.ReadSymbol(*this);
   bool isPreviouslyChanged = false;
   snapshot.ReadEachMdEntry([&](Level1TickValue &&value, bool isLast) {
-    return security.AddLevel1Tick(snapshot.GetTime(), std::move(value), isLast,
-                                  isPreviouslyChanged, delayMeasurement);
+    security.AddLevel1Tick(snapshot.GetTime(), std::move(value), isLast,
+                           isPreviouslyChanged, delayMeasurement);
+    if (!security.IsTradingSessionOpened()) {
+      security.SetTradingSessionState(snapshot.GetTime(), true);
+    }
   });
 }
 
