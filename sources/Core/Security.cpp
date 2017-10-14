@@ -339,7 +339,7 @@ class Log : private LogBase {
 Security::Request::Request() : m_numberOfTicks(0) {}
 
 Security::Request::operator bool() const {
-  return m_numberOfTicks || m_time.is_not_a_date_time();
+  return m_numberOfTicks || !m_time.is_not_a_date_time();
 }
 
 void Security::Request::Swap(Request &rhs) throw() {
