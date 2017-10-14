@@ -9,23 +9,27 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "MultiBrokerWidget.hpp"
+#include "WilliamCarryMultiBrokerWidget.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
+#include "Strategies/WilliamCarry/WilliamCarryMultibroker.hpp"
+#include "Strategies/WilliamCarry/WilliamCarryOperationContext.hpp"
 #include "ShellLib/ShellDropCopy.hpp"
 #include "ShellLib/ShellEngine.hpp"
 #include "ShellLib/ShellModule.hpp"
-#include "TimersDialog.hpp"
+#include "WilliamCarryTimersDialog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::Strategies::WilliamCarry;
 using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Shell;
 using namespace trdk::FrontEnd::WilliamCarry;
 
 namespace pt = boost::posix_time;
+namespace ids = boost::uuids;
 
 MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
     : QWidget(parent),
@@ -40,14 +44,22 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   connect(m_ui.lock, &QPushButton::toggled, this,
           &MultiBrokerWidget::LockSecurity);
 
-  connect(m_ui.buy1, &QPushButton::clicked, [this]() { SendBuyOrder(0); });
-  connect(m_ui.sell1, &QPushButton::clicked, [this]() { SendSellOrder(0); });
-  connect(m_ui.buy2, &QPushButton::clicked, [this]() { SendBuyOrder(1); });
-  connect(m_ui.sell2, &QPushButton::clicked, [this]() { SendSellOrder(1); });
-  connect(m_ui.buy3, &QPushButton::clicked, [this]() { SendBuyOrder(2); });
-  connect(m_ui.sell3, &QPushButton::clicked, [this]() { SendSellOrder(2); });
-  connect(m_ui.buy4, &QPushButton::clicked, [this]() { SendBuyOrder(3); });
-  connect(m_ui.sell4, &QPushButton::clicked, [this]() { SendSellOrder(3); });
+  connect(m_ui.buy1, &QPushButton::clicked,
+          [this]() { OpenPosition(0, true); });
+  connect(m_ui.sell1, &QPushButton::clicked,
+          [this]() { OpenPosition(0, false); });
+  connect(m_ui.buy2, &QPushButton::clicked,
+          [this]() { OpenPosition(1, true); });
+  connect(m_ui.sell2, &QPushButton::clicked,
+          [this]() { OpenPosition(1, false); });
+  connect(m_ui.buy3, &QPushButton::clicked,
+          [this]() { OpenPosition(2, true); });
+  connect(m_ui.sell3, &QPushButton::clicked,
+          [this]() { OpenPosition(2, false); });
+  connect(m_ui.buy4, &QPushButton::clicked,
+          [this]() { OpenPosition(3, true); });
+  connect(m_ui.sell4, &QPushButton::clicked,
+          [this]() { OpenPosition(3, false); });
   connect(m_ui.closeAll, &QPushButton::clicked,
           [this]() { CloseAllPositions(); });
 
@@ -78,73 +90,56 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
           &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection);
 }
 
-void MultiBrokerWidget::SendBuyOrder(size_t) {
-  static const OrderParams params;
-  auto *const tradingSystemMode = GetSelectedTradingSystem();
+void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
+  AssertGt(m_strategies.size(), strategyIndex);
+  Assert(m_strategies[strategyIndex]);
+
+  const auto &delayMeasurement =
+      m_engine.GetContext().StartStrategyTimeMeasurement();
+
   if (!m_currentSecurity) {
-    QMessageBox::warning(this, tr("Failed to send order"),
-                         QString("Please choose a currency to send an order."),
-                         QMessageBox::Ok);
+    QMessageBox::warning(
+        this, tr("Failed to open new position"),
+        QString("Please choose a currency to open new position."),
+        QMessageBox::Ok);
     return;
   }
-  if (!tradingSystemMode) {
-    QMessageBox::warning(this, tr("Failed to send order"),
-                         QString("Please choose an account to send an order."),
-                         QMessageBox::Ok);
-    return;
-  }
+
   for (;;) {
+    OperationContext operation(isLong, 1);
     try {
-      tradingSystemMode->Buy(
-          *m_currentSecurity, m_currentSecurity->GetSymbol().GetCurrency(), 1,
-          m_currentSecurity->GetAskPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      m_strategies[strategyIndex]->Invoke<Multibroker>(
+          [this, &operation, &delayMeasurement](Multibroker &strategy) {
+            strategy.OpenPosition(std::move(operation), *m_currentSecurity,
+                                  delayMeasurement);
+          });
       break;
     } catch (const std::exception &ex) {
-      if (QMessageBox::critical(
-              this, tr("Failed to send order"), QString("%1.").arg(ex.what()),
-              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+      if (QMessageBox::critical(this, tr("Failed to open new position"),
+                                QString("%1.").arg(ex.what()),
+                                QMessageBox::Abort | QMessageBox::Retry) !=
+          QMessageBox::Retry) {
         break;
       }
     }
   }
 }
 
-void MultiBrokerWidget::SendSellOrder(size_t) {
-  static const OrderParams params;
-  auto *const tradingSystemMode = GetSelectedTradingSystem();
-  if (!m_currentSecurity) {
-    QMessageBox::warning(this, tr("Failed to send order"),
-                         QString("Please choose a currency to send an order."),
-                         QMessageBox::Ok);
-    return;
-  }
-  if (!tradingSystemMode) {
-    QMessageBox::warning(this, tr("Failed to send order"),
-                         QString("Please choose an account to send an order."),
-                         QMessageBox::Ok);
-    return;
-  }
+void MultiBrokerWidget::CloseAllPositions() {
   for (;;) {
     try {
-      tradingSystemMode->Sell(
-          *m_currentSecurity, m_currentSecurity->GetSymbol().GetCurrency(), 1,
-          m_currentSecurity->GetAskPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      m_engine.GetContext().CloseSrategiesPositions();
       break;
     } catch (const std::exception &ex) {
-      if (QMessageBox::critical(
-              this, tr("Failed to send order"), QString("%1.").arg(ex.what()),
-              QMessageBox::Abort | QMessageBox::Retry) != QMessageBox::Retry) {
+      if (QMessageBox::critical(this, tr("Failed to close all positions"),
+                                QString("%1.").arg(ex.what()),
+                                QMessageBox::Abort | QMessageBox::Retry) !=
+          QMessageBox::Retry) {
         break;
       }
     }
   }
 }
-
-void MultiBrokerWidget::CloseAllPositions() {}
 
 void MultiBrokerWidget::LockSecurity(bool lock) {
   if (m_ignoreLockToggling) {
@@ -199,6 +194,15 @@ void MultiBrokerWidget::Reload() {
   if (m_ui.targetList->count() > 0) {
     m_ui.targetList->setCurrentRow(0);
   }
+
+  m_strategies[0] = &m_engine.GetContext().GetSrategy(
+      ids::string_generator()("DB005668-9EA5-42E2-88CD-8B25040CDE34"));
+  m_strategies[1] = &m_engine.GetContext().GetSrategy(
+      ids::string_generator()("D7E1F34F-A6A8-4656-9612-8D9F93D62760"));
+  m_strategies[2] = &m_engine.GetContext().GetSrategy(
+      ids::string_generator()("646CE7C2-216B-4C2F-A7B8-5B8B45B0EBF4"));
+  m_strategies[3] = &m_engine.GetContext().GetSrategy(
+      ids::string_generator()("A7ACF9B5-B3FB-4DD8-BA39-CE7DD04D4F2E"));
 }
 
 void MultiBrokerWidget::ReloadSecurityList() {

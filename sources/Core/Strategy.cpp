@@ -652,7 +652,7 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
   }
 }
 
-bool Strategy::IsBlocked(bool forever) const {
+bool Strategy::IsBlocked(bool isForever) const {
   if (!m_pimpl->m_isEnabled) {
     return true;
   }
@@ -666,7 +666,7 @@ bool Strategy::IsBlocked(bool forever) const {
   if (m_pimpl->m_blockEndTime == pt::not_a_date_time ||
       m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
     return true;
-  } else if (forever) {
+  } else if (isForever) {
     return false;
   }
 

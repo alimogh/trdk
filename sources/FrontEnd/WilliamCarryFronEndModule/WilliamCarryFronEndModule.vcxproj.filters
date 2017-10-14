@@ -43,36 +43,40 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{348e90aa-dd4c-411a-bc2d-cda46dd83014}</UniqueIdentifier>
+      <Extensions>lib</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_WilliamCarryMultiBrokerWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_WilliamCarryMultiBrokerWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_WilliamCarryMultiBrokerWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_WilliamCarryTimersDialog.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_WilliamCarryTimersDialog.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_WilliamCarryTimersDialog.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_MultiBrokerWidget.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_MultiBrokerWidget.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_MultiBrokerWidget.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="MultiBrokerWidget.cpp">
+    <ClCompile Include="WilliamCarryMultiBrokerWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TimersDialog.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TimersDialog.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TimersDialog.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="TimersDialog.cpp">
+    <ClCompile Include="WilliamCarryTimersDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,10 +84,10 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_MultiBrokerWidget.h">
+    <ClInclude Include="GeneratedFiles\ui_WilliamCarryTimersDialog.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_TimersDialog.h">
+    <ClInclude Include="GeneratedFiles\ui_WilliamCarryMultiBrokerWidget.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -93,20 +97,40 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="MultiBrokerWidget.ui">
+    <None Include="WilliamCarryFrontEndModule.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="WilliamCarryTimersDialog.ui">
       <Filter>Form Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="MultiBrokerWidget.hpp">
+    <CustomBuild Include="WilliamCarryMultiBrokerWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="WilliamCarryMultiBrokerWidget.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="TimersDialog.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TimersDialog.hpp">
+    <CustomBuild Include="WilliamCarryTimersDialog.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="WilliamCarryFrontEndModule.def" />
+    <Library Include="..\..\output\x64\lib\Release Standalone\WilliamCarryStrategies.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Release Standalone\WilliamCarryStrategies.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\WilliamCarryStrategies_dbg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\WilliamCarryStrategies_dbg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\WilliamCarryStrategies_test.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\WilliamCarryStrategies_test.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

@@ -122,7 +122,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   trdk::TradingSystem &GetTradingSystem(size_t index);
 
  public:
-  bool IsBlocked(bool forever = false) const;
+  bool IsBlocked(bool isForever = false) const;
   void WaitForStop();
 
   void Block() noexcept;
@@ -137,11 +137,17 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
     */
   template <typename StrategyImplementation, typename Callback>
   void Invoke(const Callback &callback) {
-    const auto &lock = LockForOtherThreads();
+    const auto lock = LockForOtherThreads();
     if (IsBlocked()) {
       throw trdk::Lib::Exception("Strategy is blocked");
     }
-    callback(*boost::polymorphic_downcast<StrategyImplementation *>(this));
+    StrategyImplementation *const impl =
+        dynamic_cast<StrategyImplementation *>(this);
+    if (!impl) {
+      throw trdk::Lib::Exception(
+          "Strategy requested to invoke has another type");
+    }
+    callback(*impl);
   }
   /** Applied only for non-system calls.
     */
@@ -151,8 +157,13 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
     if (IsBlocked()) {
       throw trdk::Lib::Exception("Strategy is blocked");
     }
-    callback(
-        *boost::polymorphic_downcast<const StrategyImplementation *>(this));
+    const StrategyImplementation *const impl =
+        dynamic_cast<const StrategyImplementation *>(this);
+    if (!impl) {
+      throw trdk::Lib::Exception(
+          "Strategy requested to invoke has another type");
+    }
+    callback(*impl);
   }
 
  public:

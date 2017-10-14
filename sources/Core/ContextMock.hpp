@@ -59,6 +59,8 @@ class Context : public trdk::Context {
   MOCK_CONST_METHOD1(GetSrategy,
                      const trdk::Strategy &(const boost::uuids::uuid &));
 
+  MOCK_METHOD0(CloseSrategiesPositions, void());
+
   MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 };
 }

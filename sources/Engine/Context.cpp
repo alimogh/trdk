@@ -512,7 +512,7 @@ const TradingSystem &Engine::Context::GetTradingSystem(
   return const_cast<Context *>(this)->GetTradingSystem(index, mode);
 }
 
-void Engine::Context::ClosePositions() {
+void Engine::Context::CloseSrategiesPositions() {
   if (!m_pimpl->m_state) {
     return;
   }

@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TimersDialog.hpp"
+#include "WilliamCarryTimersDialog.hpp"
 #include "Core/Security.hpp"
 
 using namespace trdk;

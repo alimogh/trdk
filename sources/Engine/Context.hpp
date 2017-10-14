@@ -37,8 +37,6 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   void Add(const trdk::Lib::Ini &);
   void Update(const trdk::Lib::Ini &);
 
-  void ClosePositions();
-
   virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
  public:
@@ -69,6 +67,8 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   virtual trdk::Strategy &GetSrategy(const boost::uuids::uuid &id) override;
   virtual const trdk::Strategy &GetSrategy(
       const boost::uuids::uuid &id) const override;
+
+  virtual void CloseSrategiesPositions() override;
 
  protected:
   virtual DropCopy *GetDropCopy() const override;

@@ -13,6 +13,7 @@
 #include "Common/Common.hpp"
 #include "ShellLib/ShellFwd.hpp"
 #include <boost/unordered_map.hpp>
+#include <boost/uuid/string_generator.hpp>
 #pragma warning(push)
 #pragma warning(disable : 4127)
 #include <QtWidgets>

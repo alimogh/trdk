@@ -55,6 +55,8 @@ class Context : public trdk::Context {
   virtual const trdk::Strategy &GetSrategy(
       const boost::uuids::uuid &) const override;
 
+  virtual void CloseSrategiesPositions() override;
+
  protected:
   virtual DropCopy *GetDropCopy() const override;
 };

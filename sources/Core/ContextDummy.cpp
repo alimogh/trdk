@@ -104,6 +104,10 @@ Strategy &Dummies::Context::GetSrategy(const ids::uuid &) {
   throw std::logic_error("Not supported");
 }
 
-const trdk::Strategy &Dummies::Context::GetSrategy(const ids::uuid &) const {
+const Strategy &Dummies::Context::GetSrategy(const ids::uuid &) const {
+  throw std::logic_error("Not supported");
+}
+
+void Dummies::Context::CloseSrategiesPositions() {
   throw std::logic_error("Not supported");
 }

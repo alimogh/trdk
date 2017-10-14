@@ -206,6 +206,9 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   virtual const trdk::Strategy &GetSrategy(
       const boost::uuids::uuid &id) const = 0;
 
+  //! Asks each strategy to close all opened positions if it has.
+  virtual void CloseSrategiesPositions() = 0;
+
  protected:
   //! Returns Drop Copy or nullptr.
   virtual DropCopy *GetDropCopy() const = 0;

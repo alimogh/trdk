@@ -10,7 +10,7 @@
 
 #pragma once
 #include "Prec.hpp"
-#include "GeneratedFiles/ui_MultiBrokerWidget.h"
+#include "GeneratedFiles/ui_WilliamCarryMultiBrokerWidget.h"
 
 namespace trdk {
 namespace FrontEnd {
@@ -44,8 +44,7 @@ class MultiBrokerWidget : public QWidget {
  private:
   void Reload();
   void ReloadSecurityList();
-  void SendBuyOrder(size_t strategyIndex);
-  void SendSellOrder(size_t strategyIndex);
+  void OpenPosition(size_t strategyIndex, bool isLong);
   void CloseAllPositions();
 
   void SetCurretPrices(const boost::posix_time::ptime &,
@@ -72,6 +71,8 @@ class MultiBrokerWidget : public QWidget {
 
   boost::unordered_map<Security *, Locked> m_lockedSecurityList;
   bool m_ignoreLockToggling;
+
+  boost::array<Strategy *, 4> m_strategies;
 };
 }
 }

@@ -16,9 +16,15 @@
 namespace trdk {
 
 //! Describes one or more operations with position.
-class TRDK_CORE_API PositionOperationContext : private boost::noncopyable {
+class TRDK_CORE_API PositionOperationContext {
  public:
+  PositionOperationContext() = default;
+  PositionOperationContext(PositionOperationContext &&) = default;
   virtual ~PositionOperationContext() = default;
+
+ private:
+  PositionOperationContext(const PositionOperationContext &);
+  const PositionOperationContext &operator=(const PositionOperationContext &);
 
  public:
   //! Order policy for position opening.
