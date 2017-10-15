@@ -10,7 +10,7 @@
 
 #pragma once
 #include "Prec.hpp"
-#include "GeneratedFiles/ui_WilliamCarryTimersDialog.h"
+#include "GeneratedFiles/ui_TimersDialog.h"
 
 namespace trdk {
 namespace FrontEnd {

@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "WilliamCarryMultiBrokerWidget.hpp"
+#include "MultiBrokerWidget.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
@@ -18,7 +18,7 @@
 #include "ShellLib/ShellDropCopy.hpp"
 #include "ShellLib/ShellEngine.hpp"
 #include "ShellLib/ShellModule.hpp"
-#include "WilliamCarryTimersDialog.hpp"
+#include "TimersDialog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

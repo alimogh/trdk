@@ -315,7 +315,7 @@
     <ProjectReference Include="..\ShellLib\ShellLib.vcxproj">
       <Project>{F4B08541-2E1F-4EC9-BEE0-2A77B22A7A6D}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\WilliamCarryFrontEndModule\WilliamCarryFrontEndModule.vcxproj">
+    <ProjectReference Include="..\WilliamCarryFrontEnd\WilliamCarryFrontEnd.vcxproj">
       <Project>{CF90F1AD-6453-4CA1-88B4-631D085CF64F}</Project>
     </ProjectReference>
   </ItemGroup>

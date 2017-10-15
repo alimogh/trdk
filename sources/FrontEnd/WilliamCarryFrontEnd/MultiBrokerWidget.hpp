@@ -10,7 +10,7 @@
 
 #pragma once
 #include "Prec.hpp"
-#include "GeneratedFiles/ui_WilliamCarryMultiBrokerWidget.h"
+#include "GeneratedFiles/ui_MultiBrokerWidget.h"
 
 namespace trdk {
 namespace FrontEnd {

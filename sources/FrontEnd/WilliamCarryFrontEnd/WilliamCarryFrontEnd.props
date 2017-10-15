@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <ModuleDefinitionFile>WilliamCarryFrontEndModule.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>WilliamCarryFrontEnd.def</ModuleDefinitionFile>
     </Link>
     <ClCompile />
   </ItemDefinitionGroup>
