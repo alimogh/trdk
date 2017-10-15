@@ -23,14 +23,19 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -45,7 +50,7 @@
     <Import Project="..\..\Module.props" />
     <Import Project="..\FrontEnd.props" />
     <Import Project="..\FrontEnd Module.props" />
-    <Import Project="WilliamCarryFronEndModule.props" />
+    <Import Project="WilliamCarryFrontEndModule.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -58,7 +63,7 @@
     <Import Project="..\..\Module.props" />
     <Import Project="..\FrontEnd.props" />
     <Import Project="..\FrontEnd Module.props" />
-    <Import Project="WilliamCarryFronEndModule.props" />
+    <Import Project="WilliamCarryFrontEndModule.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -71,7 +76,7 @@
     <Import Project="..\..\Module.props" />
     <Import Project="..\FrontEnd.props" />
     <Import Project="..\FrontEnd Module.props" />
-    <Import Project="WilliamCarryFronEndModule.props" />
+    <Import Project="WilliamCarryFrontEndModule.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -264,6 +269,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Lib\FrontEndLib.vcxproj">
+      <Project>{5C1475B4-256B-4154-A714-EE4C531A781B}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Strategies\WilliamCarry\WilliamCarry.vcxproj">
       <Project>{9BB97C01-6929-4D24-8C6F-39CC7787F852}</Project>

@@ -1,5 +1,5 @@
 /*******************************************************************************
-*   Created: 2017/10/01 19:02:58
+*   Created: 2017/10/15 22:02:33
 *    Author: Eugene V. Palchukovsky
 *    E-mail: eugene@palchukovsky.com
 * -------------------------------------------------------------------
@@ -38,11 +38,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", TRDK_NAME " front-end shell library" TRDK_BUILD_IDENTITY_ADD
+            VALUE "FileDescription", TRDK_NAME " front-end library" TRDK_BUILD_IDENTITY_ADD
             VALUE "FileVersion", TRDK_VERSION_FULL
-            VALUE "InternalName", TRDK_VERSION_BRANCH ".FrontEnd.Shell.Lib"
+            VALUE "InternalName", TRDK_VERSION_BRANCH ".FrontEnd.Lib"
             VALUE "LegalCopyright", TRDK_COPYRIGHT
-            VALUE "OriginalFilename", TRDK_FRONTEND_SHELL_LIB_DLL_FILE_NAME
+            VALUE "OriginalFilename", TRDK_FRONTEND_LIB_DLL_FILE_NAME
             VALUE "ProductName", TRDK_NAME
             VALUE "ProductVersion", TRDK_VERSION_FULL
         END

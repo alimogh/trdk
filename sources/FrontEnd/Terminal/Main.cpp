@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/05 08:19:04
+ *   Created: 2017/10/15 21:07:31
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,10 +10,10 @@
 
 #include "Prec.hpp"
 #include "Lib/Style.hpp"
-#include "ShellMainWindow.hpp"
+#include "MainWindow.hpp"
 
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Shell;
+using namespace trdk::FrontEnd::Terminal;
 
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
