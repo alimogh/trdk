@@ -111,11 +111,12 @@ void EngineWindow::LoadModule() {
     Assert(!module.first.isEmpty());
     Assert(module.second);
     m_modules.emplace_back(std::move(module.second));
-    if (minimumWidth() < m_modules.back()->minimumWidth()) {
-      setMinimumWidth(m_modules.back()->minimumWidth());
+    const auto &moduleWidget = *m_modules.back();
+    if (minimumWidth() < moduleWidget.minimumWidth()) {
+      setMinimumWidth(moduleWidget.minimumWidth());
     }
-    if (minimumHeight() < m_modules.back()->minimumHeight()) {
-      setMinimumHeight(m_modules.back()->minimumHeight());
+    if (minimumHeight() < moduleWidget.minimumHeight()) {
+      setMinimumHeight(moduleWidget.minimumHeight());
     }
     m_ui.content->insertTab(0, &*m_modules.back(), std::move(module.first));
   }

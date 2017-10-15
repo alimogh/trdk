@@ -33,13 +33,13 @@ class MultiBrokerWidget : public QWidget {
  public:
   TradingSystem *GetSelectedTradingSystem();
 
-  void SetCurrentSecurity(Security *);
-
  protected slots:
   void LockSecurity(bool lock);
   void OnStateChanged(bool isStarted);
   void UpdatePrices(const Security *);
   void ShowTimersSetupDialog();
+  void ShowTradingSecurityList();
+  virtual void resizeEvent(QResizeEvent *);
 
  private:
   void Reload();
@@ -61,13 +61,19 @@ class MultiBrokerWidget : public QWidget {
                  QLabel &askControl,
                  const Security *) const;
 
+  void SetTradingSecurity(Security *);
+  void SetMarketDataSecurity(Security *);
+
  private:
   const TradingMode m_mode;
   Ui::MultiBrokerWidget m_ui;
   Shell::Engine &m_engine;
 
-  Security *m_currentSecurity;
+  Security *m_currentTradingSecurity;
+  Security *m_currentMarketDataSecurity;
   std::vector<Security *> m_securityList;
+
+  QComboBox m_tradingsecurityListWidget;
 
   boost::unordered_map<Security *, Locked> m_lockedSecurityList;
   bool m_ignoreLockToggling;
