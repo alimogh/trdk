@@ -10,6 +10,7 @@
 
 #include "Common/Common.hpp"
 #include "Engine/Fwd.hpp"
+#include "Fwd.hpp"
 
 #pragma warning(push)
 #pragma warning(disable : 4127)

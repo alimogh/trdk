@@ -24,8 +24,8 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
-  Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
-                 &MainWindow::CreateNewArbitrageStrategy));
+  Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered,
+                 [this]() { CreateNewArbitrageStrategy(boost::none); }));
 
   Verify(connect(m_ui.showOrderList, &QAction::triggered, this,
                  &MainWindow::CreateNewOrderView));
@@ -36,17 +36,21 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
                  [this](bool pin) { PinToTop(*this, pin); }));
 
   CreateNewOrderView();
-  CreateNewArbitrageStrategy();
+  CreateNewArbitrageStrategy(boost::none);
 }
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::CreateNewArbitrageStrategy() {
-  (new ArbitrageStrategyWindow(*m_engine, this))->show();
+void MainWindow::CreateNewArbitrageStrategy(
+    const boost::optional<QString> &defaultSymbol) {
+  auto *const window =
+      new ArbitrageStrategyWindow(*m_engine, *this, defaultSymbol, this);
+  window->show();
 }
 
 void MainWindow::CreateNewOrderView() {
   auto *const view = new OrderListView(this);
+  view->setWindowTitle(tr("Order List"));
   view->setModel(new OrderListModel(view));
   m_ui.area->addSubWindow(view);
   view->show();

@@ -15,19 +15,24 @@
 #include "Core/Security.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
+#include "MainWindow.hpp"
 
 using namespace trdk;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
-ArbitrageStrategyWindow::ArbitrageStrategyWindow(FrontEnd::Lib::Engine &engine,
-                                                 QWidget *parent)
+ArbitrageStrategyWindow::ArbitrageStrategyWindow(
+    FrontEnd::Lib::Engine &engine,
+    MainWindow &mainWindow,
+    const boost::optional<QString> &defaultSymbol,
+    QWidget *parent)
     : QMainWindow(parent),
+      m_mainWindow(mainWindow),
       m_tradingMode(TRADING_MODE_LIVE),
       m_engine(engine),
+      m_currentSymbol(-1),
       m_instanceData({}) {
   m_ui.setupUi(this);
-  setWindowTitle(tr("Arbitrage") + " - " + QCoreApplication::applicationName());
   setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint |
                  Qt::WindowSystemMenuHint);
 
@@ -69,7 +74,7 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(FrontEnd::Lib::Engine &engine,
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
-                 this, &ArbitrageStrategyWindow::SetCurrentSymbol));
+                 this, &ArbitrageStrategyWindow::OnCurrentSymbolChange));
 
   Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.novaexchangeTradingSystem);
@@ -107,10 +112,13 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(FrontEnd::Lib::Engine &engine,
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &ArbitrageStrategyWindow::UpdatePrices, Qt::QueuedConnection));
 
-  LoadSymbols();
+  LoadSymbols(defaultSymbol);
 }
 
-void ArbitrageStrategyWindow::LoadSymbols() {
+void ArbitrageStrategyWindow::LoadSymbols(
+    const boost::optional<QString> &defaultSymbol) {
+  int defaultSymbolIndex = 0;
+
   boost::unordered_set<std::string> result;
   auto &context = m_engine.GetContext();
   for (size_t i = 0; i < context.GetNumberOfMarketDataSources(); ++i) {
@@ -122,17 +130,52 @@ void ArbitrageStrategyWindow::LoadSymbols() {
   const SignalsScopedBlocker signalsBlocker(*m_ui.symbol);
   m_ui.symbol->clear();
   for (const auto &symbol : result) {
-    m_ui.symbol->addItem(QString::fromStdString(symbol));
+    const auto &symbolQStr = QString::fromStdString(symbol);
+    if (defaultSymbol && symbolQStr == *defaultSymbol) {
+      defaultSymbolIndex = m_ui.symbol->count();
+    }
+    m_ui.symbol->addItem(std::move(symbolQStr));
   }
   if (!m_ui.symbol->count()) {
     return;
   }
-  m_ui.symbol->setCurrentIndex(0);
-  SetCurrentSymbol(0);
+  m_ui.symbol->setCurrentIndex(defaultSymbolIndex);
+  SetCurrentSymbol(defaultSymbolIndex);
+}
+
+void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
+  const QString &symbol = m_ui.symbol->itemText(newSymbolIndex);
+  if (m_currentSymbol >= 0) {
+    if (m_currentSymbol == newSymbolIndex) {
+      return;
+    }
+    const auto &response = QMessageBox::question(
+        this, tr("Strategy symbol change"),
+        tr("Are you sure you want to change the symbol of strategy from %1 to "
+           "%2?\n\nClick Yes to continue and change symbol for this strategy "
+           "instance, choose No to start new strategy instance for %2, or "
+           "click Cancel to cancel the action.")
+            .arg(m_ui.symbol->itemText(m_currentSymbol), symbol),
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+    if (response != QMessageBox::Yes) {
+      if (response == QMessageBox::No) {
+        m_mainWindow.CreateNewArbitrageStrategy(symbol);
+      }
+      const SignalsScopedBlocker blocker(*m_ui.symbol);
+      m_ui.symbol->setCurrentIndex(m_currentSymbol);
+    }
+  }
+  SetCurrentSymbol(newSymbolIndex);
 }
 
 void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
-  const std::string symbol = m_ui.symbol->itemText(symbolIndex).toStdString();
+  m_currentSymbol = symbolIndex;
+
+  setWindowTitle(m_ui.symbol->itemText(m_currentSymbol) + " " +
+                 tr("Arbitrage") + " - " + QCoreApplication::applicationName());
+
+  const std::string symbol =
+      m_ui.symbol->itemText(m_currentSymbol).toStdString();
 
   InstanceData result = {};
 

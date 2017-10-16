@@ -116,6 +116,9 @@
     <ClInclude Include="GeneratedFiles\ui_ArbitrageStrategyWindow.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Terminal.qrc">

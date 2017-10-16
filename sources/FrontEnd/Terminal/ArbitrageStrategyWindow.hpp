@@ -50,14 +50,19 @@ class ArbitrageStrategyWindow : public QMainWindow {
   };
 
  public:
-  explicit ArbitrageStrategyWindow(Lib::Engine &, QWidget *parent);
+  explicit ArbitrageStrategyWindow(
+      Lib::Engine &,
+      MainWindow &mainWindow,
+      const boost::optional<QString> &defaultSymbol,
+      QWidget *parent);
 
  private slots:
   void UpdatePrices(const Security *);
-  void SetCurrentSymbol(int symbolIndex);
+  void OnCurrentSymbolChange(int symbolIndex);
 
  private:
-  void LoadSymbols();
+  void LoadSymbols(const boost::optional<QString> &defaultSymbol);
+  void SetCurrentSymbol(int symbolIndex);
   void UpdateAllPrices();
   void UpdateTargetPrices(const Target &);
 
@@ -66,8 +71,10 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
  private:
   const TradingMode m_tradingMode;
+  MainWindow &m_mainWindow;
   Ui::ArbitrageStrategyWindow m_ui;
   Lib::Engine &m_engine;
+  int m_currentSymbol;
   std::vector<QWidget *> m_novaexchangeWidgets;
   std::vector<QWidget *> m_yobitnetWidgets;
   std::vector<QWidget *> m_ccexWidgets;
