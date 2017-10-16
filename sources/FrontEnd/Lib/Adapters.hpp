@@ -33,6 +33,8 @@ class PriceAdapter {
     return true;
   }
 
+  const Value &Get() const { return m_value; }
+
  protected:
   void SetValue(const Value &value) {
     m_widget->setText(
@@ -67,6 +69,8 @@ class QtyAdapter {
     return true;
   }
 
+  const Value &Get() const { return m_value; }
+
  protected:
   void SetValue(const Value &value) {
     m_widget->setText(
@@ -90,6 +94,16 @@ class SideAdapter {
   void Set(const trdk::Price &price, const trdk::Qty &qty) {
     m_price.Set(price);
     m_qty.Set(qty);
+  }
+
+  PriceAdapter<WidgetType> &GetPrice() { return m_price; }
+  const PriceAdapter<WidgetType> &GetPrice() const {
+    return const_cast<SideAdapter *>(this)->GetPrice();
+  }
+
+  QtyAdapter<WidgetType> &GetQty() { return m_price; }
+  const QtyAdapter<WidgetType> &GetQty() const {
+    return const_cast<SideAdapter *>(this)->GetQty();
   }
 
  private:
@@ -117,6 +131,8 @@ class TimeAdapter {
     SetValue(value);
     return true;
   }
+
+  const Value &Get() const { return m_value; }
 
  protected:
   void SetValue(const Value &value) {

@@ -18,6 +18,7 @@
 #include "MainWindow.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
@@ -38,43 +39,40 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
 
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLabel);
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLastTime);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBidPrice);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBidQty);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeAskPrice);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeAskQty);
+  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBid);
+  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeAsk);
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeSell);
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBuy);
 
   m_yobitnetWidgets.emplace_back(m_ui.yobitnetLabel);
   m_yobitnetWidgets.emplace_back(m_ui.yobitnetLastTime);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBidPrice);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBidQty);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetAskPrice);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetAskQty);
+  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBid);
+  m_yobitnetWidgets.emplace_back(m_ui.yobitnetAsk);
   m_yobitnetWidgets.emplace_back(m_ui.yobitnetSell);
   m_yobitnetWidgets.emplace_back(m_ui.yobitnetBuy);
 
   m_ccexWidgets.emplace_back(m_ui.ccexLabel);
   m_ccexWidgets.emplace_back(m_ui.ccexLastTime);
-  m_ccexWidgets.emplace_back(m_ui.ccexBidPrice);
-  m_ccexWidgets.emplace_back(m_ui.ccexBidQty);
-  m_ccexWidgets.emplace_back(m_ui.ccexAskPrice);
-  m_ccexWidgets.emplace_back(m_ui.ccexAskQty);
+  m_ccexWidgets.emplace_back(m_ui.ccexBid);
+  m_ccexWidgets.emplace_back(m_ui.ccexAsk);
   m_ccexWidgets.emplace_back(m_ui.ccexSell);
   m_ccexWidgets.emplace_back(m_ui.ccexBuy);
 
   m_gdaxWidgets.emplace_back(m_ui.gdaxLabel);
   m_gdaxWidgets.emplace_back(m_ui.gdaxLastTime);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBidPrice);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBidQty);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxAskPrice);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxAskQty);
+  m_gdaxWidgets.emplace_back(m_ui.gdaxBid);
+  m_gdaxWidgets.emplace_back(m_ui.gdaxAsk);
   m_gdaxWidgets.emplace_back(m_ui.gdaxSell);
   m_gdaxWidgets.emplace_back(m_ui.gdaxBuy);
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
                  this, &ArbitrageStrategyWindow::OnCurrentSymbolChange));
+
+  Verify(connect(m_ui.highlightLevel,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 this, &ArbitrageStrategyWindow::HighlightPrices));
 
   Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.novaexchangeTradingSystem);
@@ -149,6 +147,10 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
     if (m_currentSymbol == newSymbolIndex) {
       return;
     }
+
+    const SignalsScopedBlocker blocker(*m_ui.symbol);
+    m_ui.symbol->setCurrentIndex(m_currentSymbol);
+
     const auto &response = QMessageBox::question(
         this, tr("Strategy symbol change"),
         tr("Are you sure you want to change the symbol of strategy from %1 to "
@@ -161,9 +163,10 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
       if (response == QMessageBox::No) {
         m_mainWindow.CreateNewArbitrageStrategy(symbol);
       }
-      const SignalsScopedBlocker blocker(*m_ui.symbol);
-      m_ui.symbol->setCurrentIndex(m_currentSymbol);
+      return;
     }
+
+    m_ui.symbol->setCurrentIndex(newSymbolIndex);
   }
   SetCurrentSymbol(newSymbolIndex);
 }
@@ -206,6 +209,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
     QLabel *askPriceWidget;
     QLabel *askQtyWidget;
     QLabel *lastTimeWidget;
+    QFrame *bidFrame;
+    QFrame *askFrame;
     if (boost::iequals(name, "Novaexchange")) {
       result.novaexchangeTradingSystem = &tradingSystem;
       bidPriceWidget = m_ui.novaexchangeBidPrice;
@@ -213,6 +218,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       askPriceWidget = m_ui.novaexchangeAskPrice;
       askQtyWidget = m_ui.novaexchangeAskQty;
       lastTimeWidget = m_ui.novaexchangeLastTime;
+      bidFrame = m_ui.novaexchangeBid;
+      askFrame = m_ui.novaexchangeAsk;
     } else if (boost::iequals(name, "Yobitnet")) {
       result.yobitnetTradingSystem = &tradingSystem;
       bidPriceWidget = m_ui.yobitnetBidPrice;
@@ -220,6 +227,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       askPriceWidget = m_ui.yobitnetAskPrice;
       askQtyWidget = m_ui.yobitnetAskQty;
       lastTimeWidget = m_ui.yobitnetLastTime;
+      bidFrame = m_ui.yobitnetBid;
+      askFrame = m_ui.yobitnetAsk;
     } else if (boost::iequals(name, "Ccex")) {
       result.ccexTradingSystem = &tradingSystem;
       bidPriceWidget = m_ui.ccexBidPrice;
@@ -227,6 +236,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       askPriceWidget = m_ui.ccexAskPrice;
       askQtyWidget = m_ui.ccexAskQty;
       lastTimeWidget = m_ui.ccexLastTime;
+      bidFrame = m_ui.ccexBid;
+      askFrame = m_ui.ccexAsk;
     } else {
       QMessageBox::warning(this, tr("Configuration warning"),
                            tr("Unknown trading system \"%1\".")
@@ -239,12 +250,15 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       if (security.GetSymbol().GetSymbol() != symbol) {
         return;
       }
-      const Target target = {&tradingSystem, &security,
+      const Target target = {&tradingSystem,
+                             &security,
                              SideAdapter<QLabel>{*bidPriceWidget, *bidQtyWidget,
                                                  security.GetPricePrecision()},
                              SideAdapter<QLabel>{*askPriceWidget, *askQtyWidget,
                                                  security.GetPricePrecision()},
-                             TimeAdapter<QLabel>{*lastTimeWidget}};
+                             TimeAdapter<QLabel>{*lastTimeWidget},
+                             bidFrame,
+                             askFrame};
       Verify(result.targets.emplace(std::move(target)).second);
     });
   }
@@ -267,6 +281,7 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
   for (const auto &target : m_instanceData.targets) {
     UpdateTargetPrices(target);
   }
+  HighlightPrices();
 }
 
 void ArbitrageStrategyWindow::UpdatePrices(const Security *security) {
@@ -277,6 +292,7 @@ void ArbitrageStrategyWindow::UpdatePrices(const Security *security) {
     return;
   }
   UpdateTargetPrices(*it);
+  HighlightPrices();
 }
 
 void ArbitrageStrategyWindow::UpdateTargetPrices(const Target &target) {
@@ -284,6 +300,74 @@ void ArbitrageStrategyWindow::UpdateTargetPrices(const Target &target) {
   target.bid.Set(security.GetBidPriceValue(), security.GetBidQtyValue());
   target.ask.Set(security.GetAskPriceValue(), security.GetAskQtyValue());
   target.time.Set(security.GetLastMarketDataTime());
+}
+
+void ArbitrageStrategyWindow::HighlightPrices() {
+  Assert(!m_instanceData.targets.empty());
+  if (m_instanceData.targets.empty()) {
+    return;
+  }
+
+  std::vector<std::pair<Price, const Target *>> bids;
+  std::vector<std::pair<Price, const Target *>> asks;
+  for (const auto &target : m_instanceData.targets) {
+    bids.emplace_back(target.bid.GetPrice().Get(), &target);
+    asks.emplace_back(target.ask.GetPrice().Get(), &target);
+  }
+
+  std::sort(bids.begin(), bids.end(),
+            [](const std::pair<Price, const Target *> &lhs,
+               std::pair<Price, const Target *> &rhs) {
+              return lhs.first > rhs.first;
+            });
+  std::sort(asks.begin(), asks.end(),
+            [](const std::pair<Price, const Target *> &lhs,
+               std::pair<Price, const Target *> &rhs) {
+              return lhs.first < rhs.first;
+            });
+
+  bool isSignal = false;
+  {
+    const Price spread = bids.front().first - asks.front().first;
+    const Double spreadPercents = 100 / (asks.front().first / spread);
+    m_ui.bestSpreadAbsValue->setText(ConvertPriceToText(spread, 8));
+    m_ui.bestSpreadPencentsValue->setText(
+        QString::number(spreadPercents, 'f', 2) + "%");
+    if (spreadPercents >= m_ui.highlightLevel->value()) {
+      isSignal = true;
+      m_ui.spread->setStyleSheet("background-color: rgb(0, 146, 68);");
+    } else if (spread > 0) {
+      m_ui.spread->setStyleSheet("color: rgb(0, 195, 91);");
+    } else {
+      m_ui.spread->styleSheet();
+    }
+  }
+
+  for (const auto &target : bids) {
+    auto &frame = *target.second->bidFrame;
+    if (target.first == bids.front().first) {
+      if (isSignal) {
+        frame.setStyleSheet("background-color: rgb(230, 59, 1);");
+      } else {
+        frame.setStyleSheet("color: rgb(230, 59, 1);");
+      }
+    } else {
+      frame.setStyleSheet(styleSheet());
+    }
+  }
+
+  for (const auto &target : asks) {
+    auto &frame = *target.second->askFrame;
+    if (target.first == asks.front().first) {
+      if (isSignal) {
+        frame.setStyleSheet("background-color: rgb(0, 146, 68);");
+      } else {
+        frame.setStyleSheet("color: rgb(0, 195, 91);");
+      }
+    } else {
+      frame.setStyleSheet(styleSheet());
+    }
+  }
 }
 
 void ArbitrageStrategyWindow::Sell(TradingSystem &tradingSystem) {

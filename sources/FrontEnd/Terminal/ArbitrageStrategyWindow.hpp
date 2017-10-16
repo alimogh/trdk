@@ -27,6 +27,9 @@ class ArbitrageStrategyWindow : public QMainWindow {
     mutable Lib::SideAdapter<QLabel> ask;
     mutable Lib::TimeAdapter<QLabel> time;
 
+    QFrame *bidFrame;
+    QFrame *askFrame;
+
     const Security *GetSecurityPtr() const { return security; }
   };
 
@@ -59,6 +62,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
  private slots:
   void UpdatePrices(const Security *);
   void OnCurrentSymbolChange(int symbolIndex);
+  void HighlightPrices();
 
  private:
   void LoadSymbols(const boost::optional<QString> &defaultSymbol);
