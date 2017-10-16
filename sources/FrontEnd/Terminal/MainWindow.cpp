@@ -12,6 +12,8 @@
 #include "MainWindow.hpp"
 #include "ArbitrageStrategyWindow.hpp"
 #include "Lib/Engine.hpp"
+#include "OrderListModel.hpp"
+#include "OrderListView.hpp"
 
 using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Lib;
@@ -24,6 +26,10 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
 
   Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
                  &MainWindow::CreateNewArbitrageStrategy));
+
+  Verify(connect(m_ui.showOrderList, &QAction::triggered, this,
+                 &MainWindow::CreateNewOrderView));
+
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
   Verify(connect(m_ui.pinToTop, &QAction::triggered,
@@ -36,4 +42,11 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::CreateNewArbitrageStrategy() {
   (new ArbitrageStrategyWindow(*m_engine, this))->show();
+}
+
+void MainWindow::CreateNewOrderView() {
+  auto *const view = new OrderListView(this);
+  view->setModel(new OrderListModel(view));
+  m_ui.area->addSubWindow(view);
+  view->show();
 }
