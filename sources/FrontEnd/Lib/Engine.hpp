@@ -11,14 +11,14 @@
 #pragma once
 
 #include "Core/TradingSystem.hpp"
-#include "ShellApi.h"
-#include "ShellFwd.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
+namespace Lib {
 
-class TRDK_FRONTEND_SHELL_LIB_API Engine : public QObject {
+class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Q_OBJECT
 
  public:
@@ -32,7 +32,7 @@ class TRDK_FRONTEND_SHELL_LIB_API Engine : public QObject {
   bool IsStarted() const;
 
   Context &GetContext();
-  const Shell::DropCopy &GetDropCopy() const;
+  const Lib::DropCopy &GetDropCopy() const;
 
   const TradingSystem::OrderStatusUpdateSlot &GetOrderTradingSystemSlot();
 

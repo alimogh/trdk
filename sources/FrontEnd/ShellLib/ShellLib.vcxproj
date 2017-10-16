@@ -99,37 +99,13 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellDropCopy.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellSecurityListModel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellDropCopy.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellSecurityListModel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
@@ -143,8 +119,6 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Prec.hpp</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Prec.hpp</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="ShellDropCopy.cpp" />
-    <ClCompile Include="ShellEngine.cpp" />
     <ClCompile Include="ShellSecurityListModel.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
@@ -166,34 +140,6 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing ShellSecurityListModel.hpp...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellSecurityListModel.hpp"</Command>
-    </CustomBuild>
-    <CustomBuild Include="ShellEngine.hpp">
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing ShellEngine.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellEngine.hpp"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing ShellEngine.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellEngine.hpp"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing ShellEngine.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellEngine.hpp"</Command>
-    </CustomBuild>
-    <CustomBuild Include="ShellDropCopy.hpp">
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing ShellDropCopy.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -DDEV_VER -DBOOST_ENABLE_ASSERT_HANDLER -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellDropCopy.hpp"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Moc%27ing ShellDropCopy.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_TEST -DDEV_VER -DPROFILE -DBOOST_ENABLE_ASSERT_HANDLER -DQT_NO_DEBUG -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellDropCopy.hpp"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Moc%27ing ShellDropCopy.hpp...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -DNTEST -DBOOST_DISABLE_ASSERTS -DQT_NO_DEBUG -DTRDK_FRONTEND_SHELL_LIB -DDISTRIBUTION_STANDALONE -DUNICODE -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWINVER=0x0600 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WINDLL  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-fPrec.hpp" "-f../../ShellDropCopy.hpp"</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

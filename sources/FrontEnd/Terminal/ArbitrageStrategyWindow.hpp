@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/12 20:12:06
+ *   Created: 2017/10/16 00:42:57
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,12 +10,20 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "ShellLib/ShellFwd.hpp"
-#include "Lib/Fwd.hpp"
-#include <boost/unordered_map.hpp>
-#include <boost/uuid/string_generator.hpp>
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
+#include "ui_ArbitrageStrategyWindow.h"
+
+namespace trdk {
+namespace FrontEnd {
+namespace Terminal {
+
+class ArbitrageStrategyWindow : public QMainWindow {
+  Q_OBJECT
+ public:
+  explicit ArbitrageStrategyWindow(QWidget *parent);
+
+ private:
+  Ui::ArbitrageStrategyWindow m_ui;
+};
+}
+}
+}

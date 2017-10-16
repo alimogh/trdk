@@ -12,6 +12,7 @@
 
 #include "ShellApi.h"
 #include "ShellFwd.hpp"
+#include "Lib/Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -39,7 +40,7 @@ class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
   };
 
  public:
-  explicit SecurityListModel(Engine &, QWidget *parent);
+  explicit SecurityListModel(Lib::Engine &, QWidget *parent);
   virtual ~SecurityListModel() override = default;
 
  public:
@@ -67,10 +68,10 @@ class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
   void Load();
   void Clear();
 
-  QString ConvertFullToQString(const Lib::SecurityType &) const;
+  QString ConvertFullToQString(const trdk::Lib::SecurityType &) const;
 
  private:
-  Engine &m_engine;
+  Lib::Engine &m_engine;
   std::vector<Security *> m_securities;
 };
 }

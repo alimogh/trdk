@@ -27,7 +27,7 @@ class MultiBrokerWidget : public QWidget {
   };
 
  public:
-  explicit MultiBrokerWidget(FrontEnd::Shell::Engine &, QWidget *parent);
+  explicit MultiBrokerWidget(Lib::Engine &, QWidget *parent);
   virtual ~MultiBrokerWidget() override = default;
 
  public:
@@ -67,7 +67,7 @@ class MultiBrokerWidget : public QWidget {
  private:
   const TradingMode m_mode;
   Ui::MultiBrokerWidget m_ui;
-  Shell::Engine &m_engine;
+  Lib::Engine &m_engine;
 
   Security *m_currentTradingSecurity;
   Security *m_currentMarketDataSecurity;

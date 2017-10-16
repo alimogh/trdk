@@ -49,9 +49,6 @@
     <Filter Include="Resource Files\qdarkstyle\rc">
       <UniqueIdentifier>{64907111-ccb4-4076-9228-22da58d4e10d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Lib">
-      <UniqueIdentifier>{1744cfb7-f1f4-4b59-8643-9225b463488b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -68,6 +65,33 @@
     </ClCompile>
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_Engine.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="DropCopy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_DropCopy.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_DropCopy.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_DropCopy.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +110,12 @@
     <CustomBuild Include="Resources\qdarkstyle\style.qrc">
       <Filter>Resource Files\qdarkstyle</Filter>
     </CustomBuild>
+    <ClInclude Include="Util.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\FrontEndLib.rc">
@@ -223,6 +253,12 @@
   <ItemGroup>
     <CustomBuild Include="FrontEndLib.qrc">
       <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Engine.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="DropCopy.hpp">
+      <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

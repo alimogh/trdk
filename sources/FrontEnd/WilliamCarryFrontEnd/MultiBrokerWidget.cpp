@@ -15,8 +15,8 @@
 #include "Core/Security.hpp"
 #include "Strategies/WilliamCarry/WilliamCarryMultibroker.hpp"
 #include "Strategies/WilliamCarry/WilliamCarryOperationContext.hpp"
-#include "ShellLib/ShellDropCopy.hpp"
-#include "ShellLib/ShellEngine.hpp"
+#include "Lib/DropCopy.hpp"
+#include "Lib/Engine.hpp"
 #include "ShellLib/ShellModule.hpp"
 #include "TimersDialog.hpp"
 
@@ -25,6 +25,7 @@ using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Strategies::WilliamCarry;
 using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
 using namespace trdk::FrontEnd::WilliamCarry;
 
@@ -108,7 +109,7 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(&m_engine, &Engine::StateChanged, this,
                  &MultiBrokerWidget::OnStateChanged, Qt::QueuedConnection));
 
-  Verify(connect(&m_engine.GetDropCopy(), &Shell::DropCopy::PriceUpdate, this,
+  Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection));
 }
 

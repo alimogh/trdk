@@ -30,7 +30,6 @@ class MainWindow : public QMainWindow {
   virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
-  void ShowAboutInfo();
   void ShowEngine(const QModelIndex &);
 
  private:

@@ -12,18 +12,20 @@
 #include "ShellOrderWindow.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "ShellLib/ShellDropCopy.hpp"
-#include "ShellLib/ShellEngine.hpp"
+#include "Lib/DropCopy.hpp"
+#include "Lib/Engine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
 
 namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
-OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
+OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine), m_security(nullptr) {
   m_ui.setupUi(this);
   setEnabled(false);
@@ -53,7 +55,7 @@ OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
           mode = tr("Backtesting");
           break;
         default:
-          throw LogicError("Unknown trading mode");
+          throw trdk::Lib::LogicError("Unknown trading mode");
       }
       m_ui.mode->addItem(mode, i);
     }
@@ -70,10 +72,10 @@ OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
                                 &QComboBox::currentIndexChanged),
                  this, &OrderWindow::LoadTradingSystemList));
 
-  Verify(connect(&m_engine, &Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
                  &OrderWindow::OnStateChanged, Qt::QueuedConnection));
 
-  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+  Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &OrderWindow::UpdatePrices, Qt::QueuedConnection));
 
   Verify(connect(m_ui.buy, &QPushButton::clicked, this,

@@ -19,11 +19,21 @@ int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
 
   QApplication application(argc, argv);
-  application.setApplicationName(TRDK_NAME);
-  LoadStyle(application);
 
-  MainWindow mainWindow(Q_NULLPTR);
-  mainWindow.show();
+  try {
+    application.setApplicationName(TRDK_NAME);
+    LoadStyle(application);
 
-  return application.exec();
+    MainWindow mainWindow(Q_NULLPTR);
+    mainWindow.show();
+
+    return application.exec();
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  } catch (...) {
+    AssertFailNoException();
+    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
+                          application.tr("Unknown error."), QMessageBox::Abort);
+  }
 }

@@ -24,7 +24,7 @@ class OrderWindow : public QMainWindow {
   typedef QMainWindow Base;
 
  public:
-  explicit OrderWindow(Engine &, QWidget *parent);
+  explicit OrderWindow(Lib::Engine &, QWidget *parent);
   virtual ~OrderWindow() override = default;
 
  public:
@@ -50,7 +50,7 @@ class OrderWindow : public QMainWindow {
 
  private:
   Ui::OrderWindow m_ui;
-  Engine &m_engine;
+  Lib::Engine &m_engine;
   Security *m_security;
 };
 }

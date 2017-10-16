@@ -17,6 +17,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
 
 namespace {
@@ -51,28 +52,32 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
 
   LoadModule();
 
-  connect(m_ui.pinToTop, &QAction::triggered, this, &EngineWindow::PinToTop);
+  Verify(connect(m_ui.pinToTop, &QAction::triggered,
+                 [this](bool pin) { PinToTop(pin, *this); }));
 
-  connect(m_ui.startEngine, &QAction::triggered, this, &EngineWindow::Start);
-  connect(m_ui.stopEngine, &QAction::triggered, this, &EngineWindow::Stop);
+  Verify(connect(m_ui.startEngine, &QAction::triggered, this,
+                 &EngineWindow::Start));
+  Verify(
+      connect(m_ui.stopEngine, &QAction::triggered, this, &EngineWindow::Stop));
 
-  connect(&m_engine, &Engine::StateChanged, this, &EngineWindow::OnStateChanged,
-          Qt::QueuedConnection);
-  connect(&m_engine, &Engine::Message, this, &EngineWindow::OnMessage,
-          Qt::QueuedConnection);
-  connect(&m_engine, &Engine::LogRecord, this, &EngineWindow::OnLogRecord,
-          Qt::QueuedConnection);
-  connect(&m_engine, &Engine::Order, this, &EngineWindow::OnOrder,
-          Qt::QueuedConnection);
-  connect(&m_engine, &Engine::Trade, this, &EngineWindow::OnTrade,
-          Qt::QueuedConnection);
+  Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
+                 &EngineWindow::OnStateChanged, Qt::QueuedConnection));
+  Verify(connect(&m_engine, &Lib::Engine::Message, this,
+                 &EngineWindow::OnMessage, Qt::QueuedConnection));
+  Verify(connect(&m_engine, &Lib::Engine::LogRecord, this,
+                 &EngineWindow::OnLogRecord, Qt::QueuedConnection));
+  Verify(connect(&m_engine, &Lib::Engine::Order, this, &EngineWindow::OnOrder,
+                 Qt::QueuedConnection));
+  Verify(connect(&m_engine, &Lib::Engine::Trade, this, &EngineWindow::OnTrade,
+                 Qt::QueuedConnection));
 
-  connect(m_ui.securityList, &QTableView::doubleClicked,
-          [this](const QModelIndex &index) {
-            ShowOrderWindow(boost::polymorphic_downcast<SecurityListModel *>(
-                                m_ui.securityList->model())
-                                ->GetSecurity(index));
-          });
+  Verify(connect(m_ui.securityList, &QTableView::doubleClicked,
+                 [this](const QModelIndex &index) {
+                   ShowOrderWindow(
+                       boost::polymorphic_downcast<SecurityListModel *>(
+                           m_ui.securityList->model())
+                           ->GetSecurity(index));
+                 }));
 }
 
 void EngineWindow::LoadModule() {
@@ -123,13 +128,6 @@ void EngineWindow::LoadModule() {
   m_ui.content->setCurrentIndex(0);
 
   adjustSize();
-}
-
-void EngineWindow::PinToTop(bool pin) {
-  auto flags = windowFlags();
-  pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
-  setWindowFlags(flags);
-  show();
 }
 
 void EngineWindow::Start(bool start) {

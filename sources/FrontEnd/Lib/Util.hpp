@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/12 20:12:06
+ *   Created: 2017/10/16 00:03:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,14 +8,13 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Api.h"
 
-#include "Common/Common.hpp"
-#include "ShellLib/ShellFwd.hpp"
-#include "Lib/Fwd.hpp"
-#include <boost/unordered_map.hpp>
-#include <boost/uuid/string_generator.hpp>
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
+namespace trdk {
+namespace FrontEnd {
+namespace Lib {
+TRDK_FRONTEND_LIB_API void ShowAbout(QWidget &);
+TRDK_FRONTEND_LIB_API void PinToTop(bool pin, QWidget &);
+}
+}
+}

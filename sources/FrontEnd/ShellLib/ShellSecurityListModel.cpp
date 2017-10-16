@@ -12,11 +12,12 @@
 #include "ShellSecurityListModel.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "ShellDropCopy.hpp"
-#include "ShellEngine.hpp"
+#include "Lib/DropCopy.hpp"
+#include "Lib/Engine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
 
 namespace sh = trdk::FrontEnd::Shell;
@@ -31,11 +32,11 @@ QVariant CheckSecurityFieldValue(double value, const Security &security) {
 }
 }
 
-SecurityListModel::SecurityListModel(sh::Engine &engine, QWidget *parent)
+SecurityListModel::SecurityListModel(Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
   Verify(connect(&m_engine, &Engine::StateChanged, this,
                  &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
-  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+  Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &SecurityListModel::UpdatePrice, Qt::QueuedConnection));
 }
 

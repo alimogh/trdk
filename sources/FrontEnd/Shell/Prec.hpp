@@ -23,3 +23,6 @@
 #include <boost/make_unique.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/unordered_map.hpp>
+
+#include "Lib/Util.hpp"
+#include "Lib/Fwd.hpp"

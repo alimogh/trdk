@@ -9,9 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Lib/Engine.hpp"
 #include "Lib/Style.hpp"
 #include "MainWindow.hpp"
 
+using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
@@ -19,11 +21,39 @@ int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
 
   QApplication application(argc, argv);
-  application.setApplicationName(TRDK_NAME);
-  LoadStyle(application);
 
-  MainWindow mainWindow(Q_NULLPTR);
-  mainWindow.show();
+  try {
+    application.setApplicationName(TRDK_NAME);
+    LoadStyle(application);
 
-  return application.exec();
+    auto engine = boost::make_unique<Engine>(
+        GetExeFilePath().branch_path() / "etc" / "Brutus" / "default.ini",
+        nullptr);
+    for (;;) {
+      try {
+        engine->Start();
+        break;
+      } catch (const std::exception &ex) {
+        if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
+                                  QString("%1.").arg(ex.what()),
+                                  QMessageBox::Abort | QMessageBox::Retry) !=
+            QMessageBox::Retry) {
+          break;
+        }
+      }
+    }
+
+    MainWindow mainWindow(std::move(engine), nullptr);
+    mainWindow.show();
+
+    return application.exec();
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  } catch (...) {
+    AssertFailNoException();
+    QMessageBox::critical(nullptr, application.tr("Application fatal error"),
+                          application.tr("Unknown error."), QMessageBox::Abort);
+  }
+  return 1;
 }

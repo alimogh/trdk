@@ -19,9 +19,14 @@ namespace Terminal {
 class MainWindow : public QMainWindow {
   Q_OBJECT
  public:
-  explicit MainWindow(QWidget *parent);
+  explicit MainWindow(std::unique_ptr<Lib::Engine> &&, QWidget *parent);
+  ~MainWindow() override;
+
+ public slots:
+  void CreateNewArbitrageStrategy();
 
  private:
+  std::unique_ptr<Lib::Engine> m_engine;
   Ui::MainWindow m_ui;
 };
 }
