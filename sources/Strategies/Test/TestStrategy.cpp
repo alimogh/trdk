@@ -59,7 +59,10 @@ class PositionOperationContext : public trdk::PositionOperationContext {
     const auto &isRising = GetIsRising();
     return !isRising || IsLong() == position.IsLong();
   }
-  virtual bool IsInvertible(const Position &) const override { return true; }
+  virtual boost::shared_ptr<trdk::PositionOperationContext>
+  StartInvertedPosition(const trdk::Position &) override {
+    return boost::make_shared<PositionOperationContext>(m_strategy);
+  }
 
  private:
   boost::optional<bool> GetIsRising() const;

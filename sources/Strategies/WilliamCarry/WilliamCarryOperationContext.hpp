@@ -34,7 +34,8 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   virtual bool IsLong() const override;
   virtual Qty GetPlannedQty() const override;
   virtual bool HasCloseSignal(const Position &) const override;
-  virtual bool IsInvertible(const Position &) const override;
+  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
+      const trdk::Position &) override;
 
  private:
   class Implementation;

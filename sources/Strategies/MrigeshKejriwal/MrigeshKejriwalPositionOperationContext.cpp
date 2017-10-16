@@ -55,10 +55,6 @@ bool mk::PositionOperationContext::HasCloseSignal(
   return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
 }
 
-bool mk::PositionOperationContext::IsInvertible(const Position &) const {
-  return true;
-}
-
 void mk::PositionOperationContext::SetCloseSignalPrice(const Price &price) {
   AssertLt(0, price);
   if (m_closeSignalPrice != 0) {
@@ -81,4 +77,15 @@ void mk::PositionOperationContext::OnCloseReasonChange(
   if (newReason != CLOSE_REASON_SIGNAL) {
     m_closeSignalPrice = 0;
   }
+}
+
+boost::shared_ptr<trdk::PositionOperationContext>
+mk::PositionOperationContext::StartInvertedPosition(const Position &position) {
+  AssertEq(CLOSE_REASON_SIGNAL, position.GetCloseReason());
+  AssertNe(0, m_closeSignalPrice);
+  if (position.GetCloseReason() != CLOSE_REASON_SIGNAL) {
+    return nullptr;
+  }
+  return boost::make_shared<PositionOperationContext>(m_settings, m_trend,
+                                                      m_closeSignalPrice);
 }

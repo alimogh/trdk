@@ -927,7 +927,8 @@ class DummyPositionOperationContext : public PositionOperationContext {
   virtual bool HasCloseSignal(const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
-  virtual bool IsInvertible(const Position &) const override {
+  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
+      const Position &) override {
     throw LogicError("Position instance does not use operation context");
   }
 };
@@ -996,10 +997,6 @@ PositionOperationContext &Position::GetOperationContext() {
 }
 const trdk::PositionOperationContext &Position::GetOperationContext() const {
   return const_cast<Position *>(this)->GetOperationContext();
-}
-const boost::shared_ptr<PositionOperationContext>
-    &Position::GetOperationContextPtr() {
-  return m_pimpl->m_operationContext;
 }
 
 const ContractExpiration &Position::GetExpiration() const {

@@ -170,12 +170,16 @@ void PositionController::OnPositionUpdate(Position &position) {
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
       m_pimpl->GetReport().Append(position);
-      const auto &context = position.GetOperationContext();
-      if (context.HasCloseSignal(position) && context.IsInvertible(position)) {
-        //! @todo Move IsInvertible to the closing start and close position x2
-        //! with "restoring" position object as opposite position.
-        OpenPosition(position.GetOperationContextPtr(), position.GetSecurity(),
-                     !position.IsLong(), Milestones());
+      auto &context = position.GetOperationContext();
+      if (context.HasCloseSignal(position)) {
+        const auto &newOperationContext =
+            context.StartInvertedPosition(position);
+        if (newOperationContext) {
+          //! @todo Move StartInvertedPosition to the closing start and close
+          //! position x2 with "restoring" position object as opposite position.
+          OpenPosition(std::move(newOperationContext), position.GetSecurity(),
+                       !position.IsLong(), Milestones());
+        }
       }
       return;
     }

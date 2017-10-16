@@ -50,4 +50,7 @@ Qty OperationContext::GetPlannedQty() const { return m_pimpl->m_qty; }
 
 bool OperationContext::HasCloseSignal(const Position &) const { return false; }
 
-bool OperationContext::IsInvertible(const Position &) const { return false; }
+boost::shared_ptr<PositionOperationContext>
+OperationContext::StartInvertedPosition(const Position &) {
+  return nullptr;
+}

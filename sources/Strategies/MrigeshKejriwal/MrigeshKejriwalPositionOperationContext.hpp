@@ -38,10 +38,11 @@ class PositionOperationContext : public trdk::PositionOperationContext {
 
   virtual bool HasCloseSignal(const Position &) const;
 
-  virtual bool IsInvertible(const Position &) const override;
-
   virtual void OnCloseReasonChange(const CloseReason &,
                                    const CloseReason &) override;
+
+  virtual boost::shared_ptr<trdk::PositionOperationContext>
+  StartInvertedPosition(const trdk::Position &) override;
 
  public:
   void SetCloseSignalPrice(const Price &);
