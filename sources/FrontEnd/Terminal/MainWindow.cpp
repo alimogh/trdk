@@ -27,7 +27,7 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
   Verify(connect(m_ui.pinToTop, &QAction::triggered,
-                 [this](bool pin) { PinToTop(pin, *this); }));
+                 [this](bool pin) { PinToTop(*this, pin); }));
 
   CreateNewArbitrageStrategy();
 }
@@ -35,5 +35,5 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
 MainWindow::~MainWindow() = default;
 
 void MainWindow::CreateNewArbitrageStrategy() {
-  (new ArbitrageStrategyWindow(this))->show();
+  (new ArbitrageStrategyWindow(*m_engine, this))->show();
 }

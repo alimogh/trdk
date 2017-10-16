@@ -45,7 +45,7 @@
          </font>
         </property>
         <property name="text">
-         <string>SYMBOL</string>
+         <string>SYMBOL:</string>
         </property>
        </widget>
       </item>
@@ -53,7 +53,7 @@
        <widget class="QComboBox" name="symbol">
         <property name="font">
          <font>
-          <pointsize>12</pointsize>
+          <pointsize>11</pointsize>
          </font>
         </property>
        </widget>
@@ -79,7 +79,7 @@
        <number>9</number>
       </property>
       <item row="6" column="1">
-       <layout class="QVBoxLayout" name="ccexLayout">
+       <layout class="QVBoxLayout" name="ccexBidLayout">
         <item>
          <widget class="QLabel" name="ccexBidPrice">
           <property name="font">

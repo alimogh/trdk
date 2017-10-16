@@ -53,7 +53,7 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   LoadModule();
 
   Verify(connect(m_ui.pinToTop, &QAction::triggered,
-                 [this](bool pin) { PinToTop(pin, *this); }));
+                 [this](bool pin) { PinToTop(*this, pin); }));
 
   Verify(connect(m_ui.startEngine, &QAction::triggered, this,
                  &EngineWindow::Start));

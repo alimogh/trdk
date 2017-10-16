@@ -807,11 +807,7 @@ Qty Security::GetAskQty() const {
       m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_ASK_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetAskQtyValue() const {
-  try {
-    return GetAskQty();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return Qty(std::numeric_limits<double>::quiet_NaN());
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_ASK_QTY];
 }
 
 Price Security::GetBidPrice() const {
@@ -826,11 +822,7 @@ Qty Security::GetBidQty() const {
       m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_BID_QTY>(m_pimpl->m_level1));
 }
 Qty Security::GetBidQtyValue() const {
-  try {
-    return GetBidQty();
-  } catch (const trdk::Security::MarketDataValueDoesNotExist &) {
-    return Qty(std::numeric_limits<double>::quiet_NaN());
-  }
+  return m_pimpl->m_level1[LEVEL1_TICK_BID_QTY];
 }
 
 Security::ContractSwitchingSlotConnection

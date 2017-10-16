@@ -11,9 +11,13 @@
 #include "Prec.hpp"
 #include "Util.hpp"
 
+using namespace trdk;
 using namespace trdk::FrontEnd;
 
-void Lib::ShowAbout(QWidget &parent) {
+namespace pt = boost::posix_time;
+namespace lib = trdk::FrontEnd::Lib;
+
+void lib::ShowAbout(QWidget &parent) {
   const auto &text =
       parent
           .tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "
@@ -33,9 +37,32 @@ void Lib::ShowAbout(QWidget &parent) {
   QMessageBox::about(&parent, parent.tr("About"), text);
 }
 
-void Lib::PinToTop(bool pin, QWidget &widget) {
+void lib::PinToTop(QWidget &widget, bool pin) {
   auto flags = widget.windowFlags();
   pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
   widget.setWindowFlags(flags);
   widget.show();
+}
+
+QString lib::ConvertTimeToText(const pt::ptime &source) {
+  if (source == pt::not_a_date_time) {
+    return "--:--:--";
+  }
+  const auto &time = source.time_of_day();
+  return QString().sprintf("%02d:%02d:%02d", time.hours(), time.minutes(),
+                           time.seconds());
+}
+
+QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
+  if (isnan(source.Get())) {
+    return "---";
+  }
+  return QString::number(source, 'f', precision);
+}
+
+QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
+  if (isnan(source.Get())) {
+    return "---";
+  }
+  return QString::number(source, 'f', precision);
 }

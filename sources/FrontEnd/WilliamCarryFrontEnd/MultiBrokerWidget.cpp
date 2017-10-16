@@ -227,47 +227,50 @@ void MultiBrokerWidget::ReloadSecurityList() {
     return;
   }
 
-  m_ui.securityList->blockSignals(true);
-  m_tradingsecurityListWidget.blockSignals(true);
-  m_ui.securityList->clear();
-  m_tradingsecurityListWidget.clear();
-
   int tradingSecurity = 0;
   int marketDataSecurity = 0;
-  for (size_t i = 0; i < m_engine.GetContext().GetNumberOfMarketDataSources();
-       ++i) {
-    auto &source = m_engine.GetContext().GetMarketDataSource(i);
-    if (source.GetInstanceName() != tradingSystem->GetInstanceName()) {
-      continue;
-    }
-    source.ForEachSecurity([&](Security &security) {
-      m_securityList.emplace_back(&security);
-      if (m_currentTradingSecurity &&
-          m_currentTradingSecurity->GetSymbol() == security.GetSymbol()) {
-        tradingSecurity = m_tradingsecurityListWidget.count();
+  {
+    const SignalsScopedBlocker securityListSignalsBlocker(*m_ui.securityList);
+    const SignalsScopedBlocker tradingsecurityListSignalsBlocker(
+        m_tradingsecurityListWidget);
+
+    m_ui.securityList->clear();
+    m_tradingsecurityListWidget.clear();
+
+    for (size_t i = 0; i < m_engine.GetContext().GetNumberOfMarketDataSources();
+         ++i) {
+      auto &source = m_engine.GetContext().GetMarketDataSource(i);
+      if (source.GetInstanceName() != tradingSystem->GetInstanceName()) {
+        continue;
       }
-      if (m_currentMarketDataSecurity &&
-          m_currentMarketDataSecurity->GetSymbol() == security.GetSymbol()) {
-        marketDataSecurity = m_ui.securityList->count();
-      }
-      {
-        const auto symbol =
+      source.ForEachSecurity([&](Security &security) {
+        m_securityList.emplace_back(&security);
+        if (m_currentTradingSecurity &&
+            m_currentTradingSecurity->GetSymbol() == security.GetSymbol()) {
+          tradingSecurity = m_tradingsecurityListWidget.count();
+        }
+        if (m_currentMarketDataSecurity &&
+            m_currentMarketDataSecurity->GetSymbol() == security.GetSymbol()) {
+          marketDataSecurity = m_ui.securityList->count();
+        }
+        {
+          const auto symbol =
 #ifdef _DEBUG
-            QString("%1 (%2)").arg(
-                QString::fromStdString(security.GetSymbol().GetSymbol()),
-                QString::fromStdString(security.GetSource().GetInstanceName()))
+              QString("%1 (%2)").arg(
+                  QString::fromStdString(security.GetSymbol().GetSymbol()),
+                  QString::fromStdString(
+                      security.GetSource().GetInstanceName()))
 #else
-            QString::fromStdString(security.GetSymbol().GetSymbol())
+              QString::fromStdString(security.GetSymbol().GetSymbol())
 #endif
-            ;
-        m_ui.securityList->addItem(symbol);
-        m_tradingsecurityListWidget.addItem(symbol);
-      }
-    });
-    break;
+              ;
+          m_ui.securityList->addItem(symbol);
+          m_tradingsecurityListWidget.addItem(symbol);
+        }
+      });
+      break;
+    }
   }
-  m_ui.securityList->blockSignals(false);
-  m_tradingsecurityListWidget.blockSignals(false);
 
   m_ui.securityList->setCurrentRow(marketDataSecurity);
   m_tradingsecurityListWidget.setCurrentIndex(tradingSecurity);
