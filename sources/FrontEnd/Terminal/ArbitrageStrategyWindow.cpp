@@ -177,6 +177,13 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       askPriceWidget = m_ui.yobitnetAskPrice;
       askQtyWidget = m_ui.yobitnetAskQty;
       lastTimeWidget = m_ui.yobitnetLastTime;
+    } else if (boost::iequals(name, "Ccex")) {
+      result.ccexTradingSystem = &tradingSystem;
+      bidPriceWidget = m_ui.ccexBidPrice;
+      bidQtyWidget = m_ui.ccexBidQty;
+      askPriceWidget = m_ui.ccexAskPrice;
+      askQtyWidget = m_ui.ccexAskQty;
+      lastTimeWidget = m_ui.ccexLastTime;
     } else {
       QMessageBox::warning(this, tr("Configuration warning"),
                            tr("Unknown trading system \"%1\".")
@@ -186,7 +193,7 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
     }
 
     source->ForEachSecurity([&](Security &security) {
-      if (security.GetSymbol().GetSymbol() == symbol) {
+      if (security.GetSymbol().GetSymbol() != symbol) {
         return;
       }
       const Target target = {&tradingSystem, &security,
@@ -213,6 +220,10 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
   for (auto *const widget : m_gdaxWidgets) {
     widget->setEnabled(m_instanceData.gdaxTradingSystem ? true : false);
   }
+
+  for (const auto &target : m_instanceData.targets) {
+    UpdateTargetPrices(target);
+  }
 }
 
 void ArbitrageStrategyWindow::UpdatePrices(const Security *security) {
@@ -222,10 +233,7 @@ void ArbitrageStrategyWindow::UpdatePrices(const Security *security) {
   if (it == index.cend()) {
     return;
   }
-
-  for (const auto &target : m_instanceData.targets) {
-    UpdateTargetPrices(target);
-  }
+  UpdateTargetPrices(*it);
 }
 
 void ArbitrageStrategyWindow::UpdateTargetPrices(const Target &target) {

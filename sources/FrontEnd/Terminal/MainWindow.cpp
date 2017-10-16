@@ -35,6 +35,7 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   Verify(connect(m_ui.pinToTop, &QAction::triggered,
                  [this](bool pin) { PinToTop(*this, pin); }));
 
+  CreateNewOrderView();
   CreateNewArbitrageStrategy();
 }
 

@@ -303,6 +303,7 @@
     <TargetName>Rest_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="RestCcex.cpp" />
     <ClCompile Include="RestNovaexchange.cpp" />
     <ClCompile Include="RestPollingTask.cpp" />
     <ClCompile Include="RestApp.cpp" />

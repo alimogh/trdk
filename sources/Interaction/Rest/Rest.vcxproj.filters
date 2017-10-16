@@ -35,6 +35,9 @@
     <ClCompile Include="RestYobitnet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RestCcex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
