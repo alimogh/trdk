@@ -197,7 +197,7 @@ trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
     const trdk::Qty &,
     const trdk::OrderParams &,
     const OrderStatusUpdateSlot &&) {
-  throw MethodDoesNotImplementedError("Method is not implemented");
+  throw MethodIsNotImplementedException("Method is not implemented");
 }
 
 trdk::OrderId ib::TradingSystem::SendBuy(
@@ -236,7 +236,7 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     const trdk::Qty &,
     const trdk::OrderParams &,
     const OrderStatusUpdateSlot &&) {
-  throw MethodDoesNotImplementedError("Method is not implemented");
+  throw MethodIsNotImplementedException("Method is not implemented");
 }
 
 trdk::OrderId ib::TradingSystem::RegOrder(PlacedOrder &&order) {

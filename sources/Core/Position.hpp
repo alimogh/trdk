@@ -94,8 +94,6 @@ class TRDK_CORE_API Position
 
   trdk::PositionOperationContext &GetOperationContext();
   const trdk::PositionOperationContext &GetOperationContext() const;
-  const boost::shared_ptr<trdk::PositionOperationContext>
-      &GetOperationContextPtr();
 
   const boost::uuids::uuid &GetId() const;
 

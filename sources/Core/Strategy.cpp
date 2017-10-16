@@ -85,10 +85,6 @@ typedef boost::multi_index_container < PositionHolder,
     &PositionHolder::operator->>>>> PositionHolderList;
 }
 
-Strategy::PositionList::PositionList() {}
-
-Strategy::PositionList::~PositionList() {}
-
 class Strategy::PositionList::Iterator::Implementation {
  public:
   PositionHolderList::iterator iterator;
@@ -107,7 +103,7 @@ class Strategy::PositionList::ConstIterator::Implementation {
       : iterator(iterator) {}
 };
 
-Strategy::PositionList::Iterator::Iterator(Implementation *pimpl) throw()
+Strategy::PositionList::Iterator::Iterator(Implementation *pimpl) noexcept
     : m_pimpl(pimpl) {
   Assert(m_pimpl);
 }
@@ -140,16 +136,16 @@ void Strategy::PositionList::Iterator::advance(const difference_type &n) {
 }
 
 Strategy::PositionList::ConstIterator::ConstIterator(
-    Implementation *pimpl) throw()
+    Implementation *pimpl) noexcept
     : m_pimpl(pimpl) {
   Assert(m_pimpl);
 }
 Strategy::PositionList::ConstIterator::ConstIterator(
-    const Iterator &rhs) throw()
+    const Iterator &rhs) noexcept
     : m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {}
 Strategy::PositionList::ConstIterator::ConstIterator(const ConstIterator &rhs)
-    : m_pimpl(new Implementation(*rhs.m_pimpl)) {}
-Strategy::PositionList::ConstIterator::~ConstIterator() { delete m_pimpl; }
+    : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
+Strategy::PositionList::ConstIterator::~ConstIterator() = default;
 Strategy::PositionList::ConstIterator &Strategy::PositionList::ConstIterator::
 operator=(const ConstIterator &rhs) {
   Assert(this != &rhs);
@@ -298,7 +294,7 @@ class Strategy::Implementation : private boost::noncopyable {
     m_strategy.Block(message.str());
   }
 
-  void Block(const std::string *reason = nullptr) throw() {
+  void Block(const std::string *reason = nullptr) noexcept {
     try {
       const BlockLock lock(m_blockMutex);
       m_isBlocked = true;
@@ -388,7 +384,7 @@ void Strategy::OnLevel1Update(Security &security,
       "Subscribed to %1% level 1 updates, but can't work with it"
       " (doesn't have OnLevel1Update method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to level 1 updates, but can't work with it");
 }
 
@@ -401,7 +397,7 @@ void Strategy::OnBookUpdateTick(Security &security,
       "Subscribed to %1% book Update ticks, but can't work with it"
       " (doesn't have OnBookUpdateTick method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to book Update ticks, but can't work with it");
 }
 
@@ -412,7 +408,7 @@ void Strategy::Register(Position &position) {
   m_pimpl->m_positions.Insert(holder);
 }
 
-void Strategy::Unregister(Position &position) throw() {
+void Strategy::Unregister(Position &position) noexcept {
   try {
     Assert(m_pimpl->m_positions.IsExists(position));
     m_pimpl->m_positions.Erase(position);
@@ -656,7 +652,7 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
   }
 }
 
-bool Strategy::IsBlocked(bool forever /* = false */) const {
+bool Strategy::IsBlocked(bool isForever) const {
   if (!m_pimpl->m_isEnabled) {
     return true;
   }
@@ -670,7 +666,7 @@ bool Strategy::IsBlocked(bool forever /* = false */) const {
   if (m_pimpl->m_blockEndTime == pt::not_a_date_time ||
       m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
     return true;
-  } else if (forever) {
+  } else if (isForever) {
     return false;
   }
 
@@ -682,9 +678,9 @@ bool Strategy::IsBlocked(bool forever /* = false */) const {
   return false;
 }
 
-void Strategy::Block() throw() { m_pimpl->Block(); }
+void Strategy::Block() noexcept { m_pimpl->Block(); }
 
-void Strategy::Block(const std::string &reason) throw() {
+void Strategy::Block(const std::string &reason) noexcept {
   m_pimpl->Block(&reason);
 }
 

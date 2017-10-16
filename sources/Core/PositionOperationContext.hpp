@@ -16,9 +16,15 @@
 namespace trdk {
 
 //! Describes one or more operations with position.
-class TRDK_CORE_API PositionOperationContext : private boost::noncopyable {
+class TRDK_CORE_API PositionOperationContext {
  public:
+  PositionOperationContext() = default;
+  PositionOperationContext(PositionOperationContext &&) = default;
   virtual ~PositionOperationContext() = default;
+
+ private:
+  PositionOperationContext(const PositionOperationContext &);
+  const PositionOperationContext &operator=(const PositionOperationContext &);
 
  public:
   //! Order policy for position opening.
@@ -35,10 +41,14 @@ class TRDK_CORE_API PositionOperationContext : private boost::noncopyable {
   virtual trdk::Qty GetPlannedQty() const = 0;
   //! Returns true if the opened position should be closed as soon as possible.
   virtual bool HasCloseSignal(const trdk::Position &) const = 0;
-  //! Is the next position should be inverted to opposite side.
-  virtual bool IsInvertible(const trdk::Position &) const = 0;
   //! Will be called before each closing state changing.
   virtual void OnCloseReasonChange(const trdk::CloseReason &prevReason,
                                    const trdk::CloseReason &newReason);
+  //! Returns object for inverted position.
+  /** @return Pointer to an operation for inverted position or empty pointer if
+    *         the position can be inverted.
+    */
+  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
+      const trdk::Position &) = 0;
 };
 }

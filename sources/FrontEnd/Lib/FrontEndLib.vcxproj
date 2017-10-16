@@ -1,0 +1,235 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug Standalone|x64">
+      <Configuration>Debug Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Standalone|x64">
+      <Configuration>Release Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Test Standalone|x64">
+      <Configuration>Test Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5C1475B4-256B-4154-A714-EE4C531A781B}</ProjectGuid>
+    <Keyword>Qt4VSv1.0</Keyword>
+    <ProjectName>Front-end library</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Qt.props" />
+    <Import Project="..\..\Qt Debug.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\FrontEnd.props" />
+    <Import Project="FrontEndLib.props" />
+    <Import Project="..\..\Distribution Standalone Debug.props" />
+    <Import Project="..\..\Configuration Debug.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Qt.props" />
+    <Import Project="..\..\Qt Test.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\FrontEnd.props" />
+    <Import Project="FrontEndLib.props" />
+    <Import Project="..\..\Distribution Standalone Test.props" />
+    <Import Project="..\..\Configuration Test.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <Import Project="..\..\Default.props" />
+    <Import Project="..\..\Qt.props" />
+    <Import Project="..\..\Qt Release.props" />
+    <Import Project="..\..\x64.props" />
+    <Import Project="..\..\Distribution Standalone.props" />
+    <Import Project="..\FrontEnd.props" />
+    <Import Project="FrontEndLib.props" />
+    <Import Project="..\..\Distribution Standalone Release.props" />
+    <Import Project="..\..\Configuration Release.props" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <TargetName>FrontEnd_dbg</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <TargetName>FrontEnd</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <TargetName>FrontEnd_test</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\GeneratedFiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\GeneratedFiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\GeneratedFiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="GeneratedFiles\qrc_style.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Style.cpp" />
+    <ClCompile Include="Version.cpp" />
+    <ClCompile Include="Prec.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Prec.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Prec.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Prec.hpp</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="Api.h" />
+    <ClInclude Include="Std.hpp" />
+    <ClInclude Include="Style.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.vcxproj">
+      <Project>{a2c9bf31-4aad-4ad2-b975-2695e30c055b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
+      <Project>{48ce7676-dcb3-41f2-bed9-313d6ff57a97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Engine\Engine.vcxproj">
+      <Project>{015fb121-6122-4a00-bfbb-545e9e73abee}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Version\Version.vcxproj">
+      <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FrontEndLib.qrc">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">%(FullPath);%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">%(FullPath);%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">%(FullPath);%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\FrontEndLib.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\qdarkstyle\rc\branch_closed-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_closed.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open-on.png" />
+    <Image Include="Resources\qdarkstyle\rc\branch_open.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\checkbox_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-hover.png" />
+    <Image Include="Resources\qdarkstyle\rc\close-pressed.png" />
+    <Image Include="Resources\qdarkstyle\rc\close.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\down_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Hsepartoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\left_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_checked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\radio_unchecked_focus.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\right_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\sizegrip.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-end.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-branch-more.png" />
+    <Image Include="Resources\qdarkstyle\rc\stylesheet-vline.png" />
+    <Image Include="Resources\qdarkstyle\rc\transparent.png" />
+    <Image Include="Resources\qdarkstyle\rc\undock.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow.png" />
+    <Image Include="Resources\qdarkstyle\rc\up_arrow_disabled.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vmovetoolbar.png" />
+    <Image Include="Resources\qdarkstyle\rc\Vsepartoolbar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Resources\qdarkstyle\style.qrc">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">%(FullPath);.\Resources\qdarkstyle\rc\up_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hmovetoolbar.png;.\Resources\qdarkstyle\rc\stylesheet-branch-end.png;.\Resources\qdarkstyle\rc\branch_closed-on.png;.\Resources\qdarkstyle\rc\stylesheet-vline.png;.\Resources\qdarkstyle\rc\branch_closed.png;.\Resources\qdarkstyle\rc\branch_open-on.png;.\Resources\qdarkstyle\rc\transparent.png;.\Resources\qdarkstyle\rc\right_arrow_disabled.png;.\Resources\qdarkstyle\rc\sizegrip.png;.\Resources\qdarkstyle\rc\close.png;.\Resources\qdarkstyle\rc\close-hover.png;.\Resources\qdarkstyle\rc\close-pressed.png;.\Resources\qdarkstyle\rc\down_arrow.png;.\Resources\qdarkstyle\rc\Vmovetoolbar.png;.\Resources\qdarkstyle\rc\left_arrow.png;.\Resources\qdarkstyle\rc\stylesheet-branch-more.png;.\Resources\qdarkstyle\rc\up_arrow.png;.\Resources\qdarkstyle\rc\right_arrow.png;.\Resources\qdarkstyle\rc\left_arrow_disabled.png;.\Resources\qdarkstyle\rc\Hsepartoolbar.png;.\Resources\qdarkstyle\rc\branch_open.png;.\Resources\qdarkstyle\rc\Vsepartoolbar.png;.\Resources\qdarkstyle\rc\down_arrow_disabled.png;.\Resources\qdarkstyle\rc\undock.png;.\Resources\qdarkstyle\rc\checkbox_checked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_checked_focus.png;.\Resources\qdarkstyle\rc\checkbox_checked.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate.png;.\Resources\qdarkstyle\rc\checkbox_indeterminate_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_disabled.png;.\Resources\qdarkstyle\rc\checkbox_unchecked_focus.png;.\Resources\qdarkstyle\rc\checkbox_unchecked.png;.\Resources\qdarkstyle\rc\radio_checked_disabled.png;.\Resources\qdarkstyle\rc\radio_checked_focus.png;.\Resources\qdarkstyle\rc\radio_checked.png;.\Resources\qdarkstyle\rc\radio_unchecked_disabled.png;.\Resources\qdarkstyle\rc\radio_unchecked_focus.png;.\Resources\qdarkstyle\rc\radio_unchecked.png;.\Resources\qdarkstyle\style.qss;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Rcc%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">.\GeneratedFiles\qrc_%(Filename).cpp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">"$(QTDIR)\bin\rcc.exe" -name "%(Filename)" -no-compress "%(FullPath)" -o .\GeneratedFiles\qrc_%(Filename).cpp</Command>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FrontEndLib.def" />
+    <None Include="Resources\qdarkstyle\style.qss">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </None>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="msvc2015_64" MocOptions="" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

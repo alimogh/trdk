@@ -263,7 +263,7 @@ Contract Client::GetContract(
       contract.expiry = gr::to_iso_string(security.GetExpiration().GetDate());
       break;
     default:
-      throw MethodDoesNotImplementedError("Security type is not supported");
+      throw MethodIsNotImplementedException("Security type is not supported");
       break;
   }
   contract.currency = ConvertToIso(symbol.GetCurrency());

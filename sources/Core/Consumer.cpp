@@ -37,7 +37,7 @@ Consumer::Consumer(Context &context,
     : Module(context, typeName, name, instanceName, conf),
       m_pimpl(new Implementation) {}
 
-Consumer::~Consumer() {}
+Consumer::~Consumer() = default;
 
 void Consumer::OnSecurityStart(Security &, Security::Request &) {}
 
@@ -49,7 +49,7 @@ void Consumer::OnSecurityContractSwitched(const pt::ptime &,
       "Subscribed to %1% contract switch event, but can't work with it"
       " (doesn't have OnSecurityContractSwitched method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to contract switch event, but can't work with it");
 }
 
@@ -61,7 +61,7 @@ void Consumer::OnLevel1Tick(Security &security,
       "Subscribed to %1% level 1 ticks, but can't work with it"
       " (doesn't have OnLevel1Tick method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to Level 1 Ticks, but can't work with it");
 }
 
@@ -73,7 +73,7 @@ void Consumer::OnNewTrade(Security &security,
       "Subscribed to %1% new trades, but can't work with it"
       " (doesn't have OnNewTrade method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to new trades, but can't work with it");
 }
 
@@ -83,7 +83,7 @@ void Consumer::OnServiceDataUpdate(const Service &service,
       "Subscribed to \"%1%\", but can't work with it"
       " (doesn't have OnServiceDataUpdate method implementation).",
       service);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to service, but can't work with it");
 }
 
@@ -93,7 +93,7 @@ void Consumer::OnBrokerPositionUpdate(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
@@ -102,7 +102,7 @@ void Consumer::OnNewBar(Security &security, const Security::Bar &) {
       "Subscribed to %1% new bars, but can't work with it"
       " (doesn't have OnNewBar method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to new bars, but can't work with it");
 }
 

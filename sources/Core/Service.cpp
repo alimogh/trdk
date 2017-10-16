@@ -149,7 +149,7 @@ void Service::OnSecurityContractSwitched(const pt::ptime &,
       "Subscribed to %1% contract switch event, but can't work with it"
       " (doesn't have OnSecurityContractSwitched method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to contract switch event, but can't work with it");
 }
 
@@ -225,7 +225,7 @@ bool Service::OnLevel1Update(const Security &security) {
       "Subscribed to %1% level 1 updates, but can't work with it"
       " (doesn't have OnLevel1Update method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to level 1 updates, but can't work with it");
 }
 
@@ -236,7 +236,7 @@ bool Service::OnLevel1Tick(const Security &security,
       "Subscribed to %1% level 1 ticks, but can't work with it"
       " (doesn't have OnLevel1Tick method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to level 1 ticks, but can't work with it");
 }
 
@@ -248,7 +248,7 @@ bool Service::OnNewTrade(const Security &security,
       "Subscribed to %1% new trades, but can't work with it"
       " (doesn't have OnNewTrade method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to new trades, but can't work with it");
 }
 
@@ -258,7 +258,7 @@ bool Service::OnServiceDataUpdate(const Service &service,
       "Subscribed to \"%1%\", but can't work with it"
       " (doesn't have OnServiceDataUpdate method implementation).",
       service);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to service, but can't work with it");
 }
 
@@ -268,7 +268,7 @@ bool Service::OnBrokerPositionUpdate(
       "Subscribed to %1% broker positions updates, but can't work with it"
       " (doesn't have OnBrokerPositionUpdate method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to broker positions updates"
       ", but can't work with it");
 }
@@ -278,7 +278,7 @@ bool Service::OnNewBar(const Security &security, const Security::Bar &) {
       "Subscribed to %1% new bars, but can't work with it"
       " (doesn't have OnNewBar method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to new bars, but can't work with it");
 }
 
@@ -289,7 +289,7 @@ bool Service::OnBookUpdateTick(const Security &security,
       "Subscribed to %1% book update ticks, but can't work with it"
       " (doesn't have OnNewBookUpdateTick method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Service subscribed to book update ticks, but can't work with it");
 }
 

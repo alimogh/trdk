@@ -25,6 +25,7 @@
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
+namespace ids = boost::uuids;
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -159,6 +160,17 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
                           strategies.size(), GetModulesCount(strategies));
     context.GetLog().Info("Loaded %1% services (%2% instances).",
                           services.size(), GetModulesCount(services));
+  }
+
+  Strategy &GetSrategy(const ids::uuid &id) {
+    for (const auto &set : strategies) {
+      for (const auto &module : set.second) {
+        if (module.module->GetId() == id) {
+          return *module.module;
+        }
+      }
+    }
+    throw Exception("Strategy with the given ID is not existent");
   }
 };
 
@@ -500,7 +512,7 @@ const TradingSystem &Engine::Context::GetTradingSystem(
   return const_cast<Context *>(this)->GetTradingSystem(index, mode);
 }
 
-void Engine::Context::ClosePositions() {
+void Engine::Context::CloseSrategiesPositions() {
   if (!m_pimpl->m_state) {
     return;
   }
@@ -514,6 +526,20 @@ void Engine::Context::ClosePositions() {
   }
 
   GetLog().Debug("Closing positions: requests sent.");
+}
+
+Strategy &Engine::Context::GetSrategy(const ids::uuid &id) {
+  if (!m_pimpl->m_state) {
+    throw LogicError("Is not started");
+  }
+  return m_pimpl->m_state->GetSrategy(id);
+}
+
+const Strategy &Engine::Context::GetSrategy(const ids::uuid &id) const {
+  if (!m_pimpl->m_state) {
+    throw LogicError("Is not started");
+  }
+  return m_pimpl->m_state->GetSrategy(id);
 }
 
 //////////////////////////////////////////////////////////////////////////

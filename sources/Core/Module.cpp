@@ -25,10 +25,6 @@ using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Module::SecurityList::SecurityList() {}
-
-Module::SecurityList::~SecurityList() {}
-
 Module::SecurityList::Iterator::Iterator(Implementation *pimpl)
     : m_pimpl(pimpl) {
   Assert(m_pimpl);
@@ -182,7 +178,7 @@ Module::Module(Context &context,
     : m_pimpl(boost::make_unique<Implementation>(
           context, typeName, implementationName, instanceName, conf)) {}
 
-Module::~Module() {}
+Module::~Module() = default;
 
 const Module::InstanceId &Module::GetInstanceId() const {
   return m_pimpl->m_instanceId;

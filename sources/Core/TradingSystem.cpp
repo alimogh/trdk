@@ -349,7 +349,7 @@ const std::string &TradingSystem::GetStringId() const noexcept {
 }
 
 const TradingSystem::Account &TradingSystem::GetAccount() const {
-  throw MethodDoesNotImplementedError("Account Cash Balance not implemented");
+  throw MethodIsNotImplementedException("Account Cash Balance not implemented");
 }
 
 void TradingSystem::Connect(const IniSectionRef &conf) {
@@ -753,7 +753,7 @@ void TradingSystem::CancelOrder(const OrderId &order) {
 }
 
 void TradingSystem::Test() {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Trading system does not support testing");
 }
 

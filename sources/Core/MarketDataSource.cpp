@@ -316,13 +316,13 @@ void MarketDataSource::ForEachSecurity(
 
 boost::optional<ContractExpiration> MarketDataSource::FindContractExpiration(
     const Symbol &, const gr::date &) const {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Market data source doesn't support contract expiration");
 }
 
 void MarketDataSource::SwitchToContract(Security &,
                                         const ContractExpiration &&) const {
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Market data source doesn't support contract expiration");
 }
 

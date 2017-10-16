@@ -52,9 +52,9 @@ class SystemException : public trdk::Lib::Exception {
 
 //////////////////////////////////////////////////////////////////////////
 
-class MethodDoesNotImplementedError : public trdk::Lib::Exception {
+class MethodIsNotImplementedException : public trdk::Lib::Exception {
  public:
-  explicit MethodDoesNotImplementedError(const char *what) noexcept;
+  explicit MethodIsNotImplementedException(const char *what) noexcept;
 };
 
 //////////////////////////////////////////////////////////////////////////

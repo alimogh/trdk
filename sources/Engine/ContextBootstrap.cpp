@@ -461,8 +461,8 @@ template <>
 struct ModuleTrait<Strategy> {
   enum { Type = MODULE_TYPE_STRATEGY };
   typedef boost::shared_ptr<Strategy>(Factory)(trdk::Context &,
-                                               const std::string &instanceName,
-                                               const IniSectionRef &);
+                              const std::string &instanceName,
+                              const IniSectionRef &);
   static ModuleType GetType() { return static_cast<ModuleType>(Type); }
   static const char *GetName(bool capital) {
     return capital ? "Strategy" : "strategy";

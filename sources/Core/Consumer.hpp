@@ -22,7 +22,7 @@ class TRDK_CORE_API Consumer : public trdk::Module {
                     const std::string &name,
                     const std::string &instanceName,
                     const trdk::Lib::IniSectionRef &);
-  virtual ~Consumer();
+  virtual ~Consumer() override;
 
  public:
   void RegisterSource(trdk::Security &);

@@ -148,8 +148,7 @@ class TRDK_CORE_API trdk::Module::SecurityList {
   };
 
  public:
-  SecurityList();
-  virtual ~SecurityList();
+  virtual ~SecurityList() = default;
 
  public:
   virtual size_t GetSize() const = 0;
