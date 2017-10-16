@@ -255,11 +255,11 @@ class Level1TickValue {
 
   const Level1TickType &GetType() const { return m_type; }
 
-  double GetValue() const { return m_value; }
+  const trdk::Lib::Double &GetValue() const { return m_value; }
 
  private:
   Level1TickType m_type;
-  double m_value;
+  trdk::Lib::Double m_value;
 };
 }
 
