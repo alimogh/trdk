@@ -494,7 +494,7 @@ class Security::Implementation : private boost::noncopyable {
     }
 
     if (m_source.GetContext().GetSettings().IsMarketDataLogEnabled()) {
-      StartMarketDataLog();
+      StartMarketDataLog(m_source.GetIndex());
     }
   }
 
@@ -549,7 +549,7 @@ class Security::Implementation : private boost::noncopyable {
                  bool isPreviouslyChanged) {
     AssertLe(0, tick.GetValue());
     const bool isChanged =
-        m_level1[tick.GetType()].exchange(tick.GetValue()) != tick.GetValue() ||
+        tick.GetValue() != m_level1[tick.GetType()].exchange(tick.GetValue()) ||
         isPreviouslyChanged;
     if (flush) {
       FlushLevel1Update(time, delayMeasurement, isChanged);
@@ -615,16 +615,17 @@ class Security::Implementation : private boost::noncopyable {
     return value;
   }
 
-  void StartMarketDataLog() {
+  void StartMarketDataLog(size_t sourceIndex) {
     auto path = m_self.GetContext().GetSettings().GetLogsInstanceDir();
     path /= "MarketData";
 
     if (m_self.GetContext().GetSettings().IsReplayMode()) {
       throw Exception("Failed to start market data log file for replay mode");
     }
-    boost::format fileName("%1%__%2%");
-    fileName % m_self.GetSymbol() %
-        ConvertToFileName(m_self.GetContext().GetStartTime());
+    boost::format fileName("%1%_%2%__%3%");
+    fileName % m_self.GetSymbol()                                 // 1
+        % sourceIndex                                             // 2
+        % ConvertToFileName(m_self.GetContext().GetStartTime());  // 3
     path /= SymbolToFileName(fileName.str(), "csv");
 
     fs::create_directories(path.branch_path());
@@ -899,13 +900,15 @@ bool Security::SetLevel1(const pt::ptime &time,
                          bool flush,
                          bool isPreviouslyChanged,
                          const Milestones &delayMeasurement) {
-  const bool result = m_pimpl->SetLevel1(time, tick, delayMeasurement, flush,
-                                         isPreviouslyChanged);
+  if (!m_pimpl->SetLevel1(time, tick, delayMeasurement, flush,
+                          isPreviouslyChanged)) {
+    return false;
+  }
   GetContext().InvokeDropCopy([this, &time, &tick](DropCopy &dropCopy) {
     dropCopy.CopyLevel1(*this, time, tick);
   });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick);
-  return result;
+  return true;
 }
 
 void Security::SetLevel1(const pt::ptime &time,
@@ -913,9 +916,11 @@ void Security::SetLevel1(const pt::ptime &time,
                          const Level1TickValue &tick2,
                          const Milestones &delayMeasurement) {
   AssertNe(tick1.GetType(), tick2.GetType());
-  m_pimpl->SetLevel1(
-      time, tick2, delayMeasurement, true,
-      m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false));
+  if (!m_pimpl->SetLevel1(
+          time, tick2, delayMeasurement, true,
+          m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false))) {
+    return;
+  }
   GetContext().InvokeDropCopy([this, &time, &tick1, &tick2](
       DropCopy &dropCopy) { dropCopy.CopyLevel1(*this, time, tick1, tick2); });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2);
@@ -929,11 +934,13 @@ void Security::SetLevel1(const pt::ptime &time,
   AssertNe(tick1.GetType(), tick2.GetType());
   AssertNe(tick1.GetType(), tick3.GetType());
   AssertNe(tick2.GetType(), tick3.GetType());
-  m_pimpl->SetLevel1(
-      time, tick3, delayMeasurement, true,
-      m_pimpl->SetLevel1(
-          time, tick2, delayMeasurement, false,
-          m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false)));
+  if (!m_pimpl->SetLevel1(
+          time, tick3, delayMeasurement, true,
+          m_pimpl->SetLevel1(time, tick2, delayMeasurement, false,
+                             m_pimpl->SetLevel1(time, tick1, delayMeasurement,
+                                                false, false)))) {
+    return;
+  }
   GetContext().InvokeDropCopy(
       [this, &time, &tick1, &tick2, &tick3](DropCopy &dropCopy) {
         dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3);
@@ -953,13 +960,16 @@ void Security::SetLevel1(const pt::ptime &time,
   AssertNe(tick2.GetType(), tick4.GetType());
   AssertNe(tick3.GetType(), tick2.GetType());
   AssertNe(tick3.GetType(), tick4.GetType());
-  m_pimpl->SetLevel1(
-      time, tick4, delayMeasurement, true,
-      m_pimpl->SetLevel1(
-          time, tick3, delayMeasurement, false,
-          m_pimpl->SetLevel1(time, tick2, delayMeasurement, false,
-                             m_pimpl->SetLevel1(time, tick1, delayMeasurement,
-                                                false, false))));
+  if (!m_pimpl->SetLevel1(
+          time, tick4, delayMeasurement, true,
+          m_pimpl->SetLevel1(
+              time, tick3, delayMeasurement, false,
+              m_pimpl->SetLevel1(
+                  time, tick2, delayMeasurement, false,
+                  m_pimpl->SetLevel1(time, tick1, delayMeasurement, false,
+                                     false))))) {
+    return;
+  }
   GetContext().InvokeDropCopy(
       [this, &time, &tick1, &tick2, &tick3, &tick4](DropCopy &dropCopy) {
         dropCopy.CopyLevel1(*this, time, tick1, tick2, tick3, tick4);
@@ -976,6 +986,9 @@ void Security::SetLevel1(const pt::ptime &time,
     isPreviousChanged =
         m_pimpl->SetLevel1(time, tick, delayMeasurement,
                            ++counter >= ticks.size(), isPreviousChanged);
+  }
+  if (!isPreviousChanged) {
+    return;
   }
   GetContext().InvokeDropCopy([this, &time, &ticks](DropCopy &dropCopy) {
     dropCopy.CopyLevel1(*this, time, ticks);
