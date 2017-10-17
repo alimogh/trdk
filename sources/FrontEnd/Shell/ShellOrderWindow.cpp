@@ -12,18 +12,20 @@
 #include "ShellOrderWindow.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "ShellLib/ShellDropCopy.hpp"
-#include "ShellLib/ShellEngine.hpp"
+#include "Lib/DropCopy.hpp"
+#include "Lib/Engine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
 
 namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
-OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
+OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine), m_security(nullptr) {
   m_ui.setupUi(this);
   setEnabled(false);
@@ -53,7 +55,7 @@ OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
           mode = tr("Backtesting");
           break;
         default:
-          throw LogicError("Unknown trading mode");
+          throw trdk::Lib::LogicError("Unknown trading mode");
       }
       m_ui.mode->addItem(mode, i);
     }
@@ -70,10 +72,10 @@ OrderWindow::OrderWindow(sh::Engine &engine, QWidget *parent)
                                 &QComboBox::currentIndexChanged),
                  this, &OrderWindow::LoadTradingSystemList));
 
-  Verify(connect(&m_engine, &Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
                  &OrderWindow::OnStateChanged, Qt::QueuedConnection));
 
-  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
+  Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &OrderWindow::UpdatePrices, Qt::QueuedConnection));
 
   Verify(connect(m_ui.buy, &QPushButton::clicked, this,
@@ -138,28 +140,17 @@ void OrderWindow::UpdatePrices(const Security *security) {
   if (security != m_security) {
     return;
   }
-  {
-    const auto &lastTime = security->GetLastMarketDataTime();
-    if (lastTime != pt::not_a_date_time) {
-      const auto &time = lastTime.time_of_day();
-      QString text;
-      text.sprintf("%02d:%02d:%02d", time.hours(), time.minutes(),
-                   time.seconds());
-      m_ui.lastTime->setText(text);
-    } else {
-      m_ui.lastTime->setText("--:--:--");
-    }
-  }
+  m_ui.lastTime->setText(ConvertTimeToText(security->GetLastMarketDataTime()));
   {
     const auto &precision = security->GetPricePrecision();
     const auto &bid = security->GetBidPriceValue();
     const auto &ask = security->GetAskPriceValue();
-    m_ui.bidPrice->setText(
-        QString::number(!isnan(bid) ? bid : 0, 'f', precision));
-    m_ui.askPrice->setText(
-        QString::number(!isnan(ask) ? ask : 0, 'f', precision));
-    m_ui.spread->setText(QString::number(
-        !isnan(bid) && !isnan(ask) ? ask - bid : 0, 'f', precision));
+    m_ui.bidPrice->setText(ConvertPriceToText(bid, precision));
+    m_ui.askPrice->setText(ConvertPriceToText(ask, precision));
+    const Price spread = !isnan(bid.Get()) && !isnan(ask.Get())
+                             ? ask - bid
+                             : std::numeric_limits<double>::quiet_NaN();
+    m_ui.spread->setText(ConvertPriceToText(spread, precision));
   }
 }
 

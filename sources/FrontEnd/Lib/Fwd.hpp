@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/01 20:17:41
+ *   Created: 2017/10/16 02:35:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,9 +12,9 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
-
-class EngineListModel;
+namespace Lib {
+class DropCopy;
+class Engine;
 }
 }
 }

@@ -9,25 +9,26 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ShellEngine.hpp"
-#include "Core/RiskControl.hpp"
 #include "Engine/Engine.hpp"
-#include "ShellDropCopy.hpp"
+#include "Core/RiskControl.hpp"
+#include "DropCopy.hpp"
+#include "Engine.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Shell;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Lib;
 
-namespace sh = trdk::FrontEnd::Shell;
+namespace lib = trdk::FrontEnd::Lib;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
 
-class sh::Engine::Implementation : private boost::noncopyable {
+class lib::Engine::Implementation : private boost::noncopyable {
  public:
-  sh::Engine &m_self;
+  lib::Engine &m_self;
   const fs::path m_configFilePath;
-  sh::DropCopy m_dropCopy;
+  lib::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
   sig::scoped_connection m_engineLogSubscription;
   TradingSystem::OrderStatusUpdateSlot m_orderTradingSystemSlot;
@@ -35,7 +36,7 @@ class sh::Engine::Implementation : private boost::noncopyable {
       m_riskControls;
 
  public:
-  explicit Implementation(sh::Engine &self, const fs::path &path)
+  explicit Implementation(lib::Engine &self, const fs::path &path)
       : m_self(self),
         m_configFilePath(path),
         m_dropCopy(m_self.parent()),
@@ -124,28 +125,28 @@ class sh::Engine::Implementation : private boost::noncopyable {
   }
 };
 
-sh::Engine::Engine(const fs::path &path, QWidget *parent)
+lib::Engine::Engine(const fs::path &path, QWidget *parent)
     : QObject(parent),
       m_pimpl(boost::make_unique<Implementation>(*this, path)) {
-  connect(this, &Engine::StateChanged, [this](bool isStarted) {
+  Verify(connect(this, &Engine::StateChanged, [this](bool isStarted) {
     if (!isStarted) {
       m_pimpl->m_engine.reset();
     }
-  });
+  }));
   // Customized logic for Mrigesh Kejriwal: if error is occurred it
   // restarts engine.
   connect(this, &Engine::RestartWanted, [this]() {Start();});
 }
 
-sh::Engine::~Engine() = default;
+lib::Engine::~Engine() = default;
 
-const fs::path &sh::Engine::GetConfigFilePath() const {
+const fs::path &lib::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;
 }
 
-bool sh::Engine::IsStarted() const { return m_pimpl->m_engine ? true : false; }
+bool lib::Engine::IsStarted() const { return m_pimpl->m_engine ? true : false; }
 
-void sh::Engine::Start() {
+void lib::Engine::Start() {
   if (m_pimpl->m_engine) {
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
@@ -160,28 +161,28 @@ void sh::Engine::Start() {
       boost::unordered_map<std::string, std::string>());
 }
 
-void sh::Engine::Stop() {
+void lib::Engine::Stop() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine.reset();
 }
 
-Context &sh::Engine::GetContext() {
+Context &lib::Engine::GetContext() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   return m_pimpl->m_engine->GetContext();
 }
 
-const sh::DropCopy &sh::Engine::GetDropCopy() const {
+const lib::DropCopy &lib::Engine::GetDropCopy() const {
   return m_pimpl->m_dropCopy;
 }
 
 const TradingSystem::OrderStatusUpdateSlot &
-sh::Engine::GetOrderTradingSystemSlot() {
+lib::Engine::GetOrderTradingSystemSlot() {
   return m_pimpl->m_orderTradingSystemSlot;
 }
-RiskControlScope &sh::Engine::GetRiskControl(const TradingMode &mode) {
+RiskControlScope &lib::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }

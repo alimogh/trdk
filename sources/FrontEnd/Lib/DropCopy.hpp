@@ -11,14 +11,13 @@
 #pragma once
 
 #include "Core/DropCopy.hpp"
-#include "ShellApi.h"
+#include "Api.h"
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
+namespace Lib {
 
-class TRDK_FRONTEND_SHELL_LIB_API DropCopy : public QObject,
-                                             public trdk::DropCopy {
+class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   Q_OBJECT
 
  public:
@@ -107,27 +106,26 @@ class TRDK_FRONTEND_SHELL_LIB_API DropCopy : public QObject,
                                 const trdk::Lib::Double &value) override;
 
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &) override;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &) override;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) override;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) override;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) override;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) override;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) override;
-  virtual void CopyLevel1(
-      const trdk::Security &,
-      const boost::posix_time::ptime &,
-      const std::vector<trdk::Level1TickValue> &) override;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) override;
+  virtual void CopyLevel1(const trdk::Security &,
+                          const boost::posix_time::ptime &,
+                          const std::vector<trdk::Level1TickValue> &) override;
 
  private:
   void SignalPriceUpdate(const Security &);

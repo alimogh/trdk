@@ -52,7 +52,7 @@ Qty mk::PositionOperationContext::GetPlannedQty() const {
 
 bool mk::PositionOperationContext::HasCloseSignal(
     const Position &position) const {
-  return m_trend.IsRising() == position.IsLong() || !m_trend.IsExistent();
+  return m_trend.IsRising() != position.IsLong() || !m_trend.IsExistent();
 }
 
 void mk::PositionOperationContext::SetCloseSignalPrice(const Price &price) {
@@ -81,11 +81,8 @@ void mk::PositionOperationContext::OnCloseReasonChange(
 
 boost::shared_ptr<trdk::PositionOperationContext>
 mk::PositionOperationContext::StartInvertedPosition(const Position &position) {
-  AssertEq(CLOSE_REASON_SIGNAL, position.GetCloseReason());
-  AssertNe(0, m_closeSignalPrice);
-  if (position.GetCloseReason() != CLOSE_REASON_SIGNAL) {
-    return nullptr;
-  }
+  Assert(HasCloseSignal(position));
+  UseUnused(position);
   return boost::make_shared<PositionOperationContext>(m_settings, m_trend,
                                                       m_closeSignalPrice);
 }

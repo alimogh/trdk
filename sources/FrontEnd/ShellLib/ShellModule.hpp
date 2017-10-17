@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "ShellEngine.hpp"
+#include "Lib/Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -19,7 +19,7 @@ namespace Shell {
 typedef std::vector<std::pair<QString, std::unique_ptr<QWidget>>>
     ModuleFactoryResult;
 
-typedef ModuleFactoryResult(ModuleFactory)(Engine &, QWidget *parent);
+typedef ModuleFactoryResult(ModuleFactory)(Lib::Engine &, QWidget *parent);
 
 inline std::string GetModuleFactoryName() {
   return "CreateEngineFrontEndWidgets";

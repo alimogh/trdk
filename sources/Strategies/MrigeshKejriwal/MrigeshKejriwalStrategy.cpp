@@ -338,7 +338,8 @@ void mk::Strategy::CheckSignal(const trdk::Price &signalPrice,
   bool isTrendChanged = m_trend->Update(signalPrice, controlValue);
   GetTradingLog().Write(
       "trend\t%1%\tdirection=%2%\tsignal-price=%3%\tcontrol-price=%4%"
-      "\tcontrol-price-ema=%5%\tdays-to-expiry=%6%\tcontol-value=%7%",
+      "\tcontrol-price-ema=%5%\tdays-to-expiry=%6%\tcontol-value=%7%"
+      "\ttr-bid/ask=%8%/%9%\tund-bid/ask=%10%/%11%",
       [&](TradingRecord &record) {
         record % (isTrendChanged ? "CHANGED" : "-------")  // 1
             % (m_trend->IsRising()
@@ -348,7 +349,11 @@ void mk::Strategy::CheckSignal(const trdk::Price &signalPrice,
             % lastPoint.source                                      // 4
             % lastPoint.value                                       // 5
             % numberOfDaysToExpiry                                  // 6
-            % controlValue;                                         // 7
+            % controlValue                                          // 7
+            % m_tradingSecurity->GetBidPriceValue()                 // 8
+            % m_tradingSecurity->GetAskPriceValue()                 // 9
+            % m_underlyingSecurity->GetBidPriceValue()              // 10
+            % m_underlyingSecurity->GetAskPriceValue();             // 11
       });
   if (!isTrendChanged && m_priceSignal) {
     isTrendChanged = m_priceSignal->isLong ? m_priceSignal->price < signalPrice
