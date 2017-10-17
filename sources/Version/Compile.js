@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
+var branch = "Brutus"
 var productName	= "Trading Robot Development Kit"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
@@ -26,16 +26,9 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'FrontEnd'
-	, 'Shell'
-	, 'TestTradingSystems'
-	, 'InteractiveBrokers'
 	, 'FixProtocol'
 	, 'Rest'
-	, 'Services'
 	, 'TestStrategy'
-	, 'MrigeshKejriwal'
-	, 'WilliamCarryStrategies'
-	, 'WilliamCarryFrontEnd'
 ]
 
 //////////////////////////////////////////////////////////////////////////
