@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "WilliamCarryMultibroker.hpp"
+#include "Multibroker.hpp"
 #include "TradingLib/PositionController.hpp"
-#include "WilliamCarryOperationContext.hpp"
+#include "OperationContext.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

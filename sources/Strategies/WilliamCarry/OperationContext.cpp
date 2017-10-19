@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "WilliamCarryOperationContext.hpp"
+#include "OperationContext.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 
 using namespace trdk;

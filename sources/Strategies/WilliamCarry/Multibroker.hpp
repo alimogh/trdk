@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Core/Strategy.hpp"
-#include "WilliamCarryApi.h"
-#include "WilliamCarryFwd.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace Strategies {

@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Core/PositionOperationContext.hpp"
-#include "WilliamCarryApi.h"
+#include "Api.h"
 
 namespace trdk {
 namespace Strategies {
