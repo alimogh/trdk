@@ -17,13 +17,13 @@
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WilliamCarryVersion.cpp">
+    <ClCompile Include="Multibroker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WilliamCarryMultibroker.cpp">
+    <ClCompile Include="OperationContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WilliamCarryOperationContext.cpp">
+    <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -31,16 +31,16 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WilliamCarryMultibroker.hpp">
+    <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WilliamCarryOperationContext.hpp">
+    <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WilliamCarryApi.h">
+    <ClInclude Include="Multibroker.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WilliamCarryFwd.hpp">
+    <ClInclude Include="OperationContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

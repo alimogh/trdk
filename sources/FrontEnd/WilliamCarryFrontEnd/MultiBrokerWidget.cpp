@@ -13,11 +13,12 @@
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "Strategies/WilliamCarry/WilliamCarryMultibroker.hpp"
-#include "Strategies/WilliamCarry/WilliamCarryOperationContext.hpp"
+#include "Strategies/WilliamCarry/Multibroker.hpp"
+#include "Strategies/WilliamCarry/OperationContext.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "ShellLib/ShellModule.hpp"
+#include "StrategySetupDialog.hpp"
 #include "TimersDialog.hpp"
 
 using namespace trdk;
@@ -71,6 +72,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(m_ui.currentTradingSecurity, &QPushButton::clicked, this,
                  &MultiBrokerWidget::ShowTradingSecurityList));
 
+  Verify(connect(m_ui.showStrategy, &QPushButton::clicked, this,
+                 &MultiBrokerWidget::ShowStrategySetupDialog));
   Verify(connect(m_ui.showTimers, &QPushButton::clicked, this,
                  &MultiBrokerWidget::ShowTimersSetupDialog));
 
@@ -340,6 +343,14 @@ void MultiBrokerWidget::SetPrices(const pt::ptime &time,
     } else {
       askControl.setText(QString());
     }
+  }
+}
+
+void MultiBrokerWidget::ShowStrategySetupDialog() {
+  StrategySetupDialog dialog(this);
+
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
   }
 }
 

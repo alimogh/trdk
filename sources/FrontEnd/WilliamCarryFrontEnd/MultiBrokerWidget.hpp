@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #pragma once
-#include "Prec.hpp"
+
 #include "GeneratedFiles/ui_MultiBrokerWidget.h"
 
 namespace trdk {
@@ -37,6 +37,7 @@ class MultiBrokerWidget : public QWidget {
   void LockSecurity(bool lock);
   void OnStateChanged(bool isStarted);
   void UpdatePrices(const Security *);
+  void ShowStrategySetupDialog();
   void ShowTimersSetupDialog();
   void ShowTradingSecurityList();
   virtual void resizeEvent(QResizeEvent *);

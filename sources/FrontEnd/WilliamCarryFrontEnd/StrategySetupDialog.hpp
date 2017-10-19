@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/04 22:31:55
+ *   Created: 2017/10/15 12:49:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,22 +10,23 @@
 
 #pragma once
 
-#include "GeneratedFiles/ui_TimersDialog.h"
+#include "GeneratedFiles/ui_StrategySetupDialog.h"
 
 namespace trdk {
 namespace FrontEnd {
 namespace WilliamCarry {
 
-class TimersDialog : public QDialog {
+class StrategySetupDialog : public QDialog {
   Q_OBJECT
  public:
-  explicit TimersDialog(QWidget *parent);
-
- public:
-  void Add(const trdk::Security &);
+  explicit StrategySetupDialog(QWidget *parent);
 
  private:
-  Ui::TimersDialog m_ui;
+  void ActualizeStrategiesTitle();
+  void ActualizeStrategyTitle(int strategyNumber, const QCheckBox &enabled);
+
+ private:
+  Ui::StrategySetupDialog m_ui;
 };
 }
 }
