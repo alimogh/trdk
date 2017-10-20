@@ -16,41 +16,13 @@
 #include "Core/Strategy.hpp"
 #include "Services/MovingAverageService.hpp"
 #include "Api.h"
+#include "Settings.hpp"
 
 namespace trdk {
 namespace Strategies {
 namespace MrigeshKejriwal {
 
 ////////////////////////////////////////////////////////////////////////////////
-
-struct Settings {
-  class OrderPolicyFactory : private boost::noncopyable {
-   public:
-    virtual ~OrderPolicyFactory() = default;
-    virtual std::unique_ptr<TradingLib::OrderPolicy> CreateOrderPolicy()
-        const = 0;
-  };
-
-  Qty qty;
-  Qty minQty;
-  uint16_t numberOfHistoryHours;
-  Lib::Double costOfFunds;
-  Lib::Double maxLossShare;
-  Price signalPriceCorrection;
-  std::unique_ptr<OrderPolicyFactory> orderPolicyFactory;
-  boost::posix_time::time_duration pricesPeriod;
-  boost::shared_ptr<const TradingLib::OrderPolicy> orderPolicy;
-
-  explicit Settings(const Lib::IniSectionRef &);
-
-  void Validate() const;
-  void Log(Module::Log &) const;
-
- private:
-  class LimitGtcOrderPolicyFactory;
-  class LimitIocOrderPolicyFactory;
-  class MarketGtcOrderPolicyFactory;
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -69,12 +41,15 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(Strategy &);
+  explicit PositionController(Strategy &, const MrigeshKejriwal::Settings &);
   virtual ~PositionController() override = default;
 
  protected:
   virtual std::unique_ptr<TradingLib::PositionReport> OpenReport()
       const override;
+
+ private:
+  const MrigeshKejriwal::Settings &m_settings;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -83,6 +83,9 @@ boost::shared_ptr<trdk::PositionOperationContext>
 mk::PositionOperationContext::StartInvertedPosition(const Position &position) {
   Assert(HasCloseSignal(position));
   UseUnused(position);
+  if (m_closeSignalPrice == 0) {
+    return nullptr;
+  }
   return boost::make_shared<PositionOperationContext>(m_settings, m_trend,
                                                       m_closeSignalPrice);
 }

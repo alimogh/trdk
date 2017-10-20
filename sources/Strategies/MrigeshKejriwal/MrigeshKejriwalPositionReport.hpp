@@ -11,6 +11,7 @@
 #pragma once
 
 #include "TradingLib/PositionReport.hpp"
+#include "Settings.hpp"
 
 namespace trdk {
 namespace Strategies {
@@ -21,12 +22,15 @@ class PositionReport : public TradingLib::PositionReport {
   typedef TradingLib::PositionReport Base;
 
  public:
-  explicit PositionReport(const trdk::Strategy &);
+  explicit PositionReport(const trdk::Strategy &, const Settings &);
   virtual ~PositionReport() override = default;
 
  private:
   virtual void PrintHead(std::ostream &) override;
   virtual void PrintReport(const trdk::Position &, std::ostream &) override;
+
+ private:
+  const MrigeshKejriwal::Settings &m_settings;
 };
 }
 }

@@ -12,7 +12,6 @@
 #include "MrigeshKejriwalStrategy.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "Core/TradingLog.hpp"
-#include "MrigeshKejriwalOrderPolicy.hpp"
 #include "MrigeshKejriwalPositionOperationContext.hpp"
 #include "MrigeshKejriwalPositionReport.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -38,113 +37,12 @@ bool Trend::Update(const Price &lastPrice, double controlValue) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PositionController::PositionController(trdk::Strategy &strategy)
-    : Base(strategy) {}
+PositionController::PositionController(trdk::Strategy &strategy,
+                                       const mk::Settings &settings)
+    : Base(strategy), m_settings(settings) {}
 
 std::unique_ptr<tl::PositionReport> PositionController::OpenReport() const {
-  return boost::make_unique<PositionReport>(GetStrategy());
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-class mk::Settings::LimitGtcOrderPolicyFactory
-    : public mk::Settings::OrderPolicyFactory {
- public:
-  explicit LimitGtcOrderPolicyFactory(const Price &correction)
-      : m_correction(correction) {}
-  virtual ~LimitGtcOrderPolicyFactory() override = default;
-  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
-    return boost::make_unique<LimitOrderPolicy<tl::LimitGtcOrderPolicy>>(
-        m_correction);
-  }
-
- private:
-  const Price m_correction;
-};
-
-class mk::Settings::LimitIocOrderPolicyFactory
-    : public mk::Settings::OrderPolicyFactory {
- public:
-  explicit LimitIocOrderPolicyFactory(const Price &correction)
-      : m_correction(correction) {}
-  virtual ~LimitIocOrderPolicyFactory() override = default;
-  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
-    return boost::make_unique<LimitOrderPolicy<tl::LimitIocOrderPolicy>>(
-        m_correction);
-  }
-
- private:
-  const Price m_correction;
-};
-
-class mk::Settings::MarketGtcOrderPolicyFactory
-    : public mk::Settings::OrderPolicyFactory {
- public:
-  virtual ~MarketGtcOrderPolicyFactory() override = default;
-  virtual std::unique_ptr<tl::OrderPolicy> CreateOrderPolicy() const override {
-    return boost::make_unique<tl::MarketGtcOrderPolicy>();
-  }
-};
-
-mk::Settings::Settings(const IniSectionRef &conf)
-    : qty(conf.ReadTypedKey<Qty>("qty")),
-      minQty(conf.ReadTypedKey<Qty>("qty_min")),
-      numberOfHistoryHours(conf.ReadTypedKey<uint16_t>("history_hours")),
-      costOfFunds(conf.ReadTypedKey<double>("cost_of_funds")),
-      maxLossShare(conf.ReadTypedKey<double>("max_loss_share")),
-      signalPriceCorrection(
-          conf.ReadTypedKey<Price>("signal_price_correction")),
-      pricesPeriod(
-          pt::seconds(conf.ReadTypedKey<long>("prices_period_seconds"))) {
-  {
-    const auto &orderType = conf.ReadKey("order_type");
-    if (boost::iequals(orderType, "lmt_gtc")) {
-      orderPolicyFactory =
-          boost::make_unique<LimitGtcOrderPolicyFactory>(signalPriceCorrection);
-    } else if (boost::iequals(orderType, "lmt_ioc")) {
-      orderPolicyFactory =
-          boost::make_unique<LimitIocOrderPolicyFactory>(signalPriceCorrection);
-    } else if (boost::iequals(orderType, "mkt_gtc")) {
-      orderPolicyFactory = boost::make_unique<MarketGtcOrderPolicyFactory>();
-    } else {
-      throw Exception(
-          "Unknown order type is set (allowed \"lmt_gtc\", \"lmt_ioc\" or "
-          "\"mkt_gtc\")");
-    }
-    orderPolicy = orderPolicyFactory->CreateOrderPolicy();
-  }
-}
-
-void mk::Settings::Validate() const {
-  if (qty < 1) {
-    throw Exception("Position size is not set");
-  }
-  if (minQty < 1) {
-    throw Exception("Min. order size is not set");
-  }
-}
-
-void mk::Settings::Log(Module::Log &log) const {
-  log.Info(
-      "Position size: %1%. Min. order size: %2%. Number of history hours: %3%. "
-      "Cost of funds: %4%. Max. share of loss: %5%. Signal price correction: "
-      "%6%. Order type: %7%. Prices period: %8%.",
-      qty,                    // 1
-      minQty,                 // 2
-      numberOfHistoryHours,   // 3
-      costOfFunds,            // 4
-      maxLossShare,           // 5
-      signalPriceCorrection,  // 6
-      dynamic_cast<const LimitGtcOrderPolicyFactory *>(&*orderPolicyFactory)
-          ? "limit GTC"
-          : dynamic_cast<const LimitIocOrderPolicyFactory *>(
-                &*orderPolicyFactory)
-                ? "limit IOC"
-                : dynamic_cast<const MarketGtcOrderPolicyFactory *>(
-                      &*orderPolicyFactory)
-                      ? "market GTC"
-                      : "UNKNOWN!",  // 7
-      pricesPeriod);                 // 8
+  return boost::make_unique<PositionReport>(GetStrategy(), m_settings);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +62,7 @@ mk::Strategy::Strategy(Context &context,
       m_underlyingSecurity(nullptr),
       m_ma(nullptr),
       m_trend(trend),
-      m_positionController(*this) {
+      m_positionController(*this, m_settings) {
   m_settings.Log(GetLog());
   m_settings.Validate();
 }
