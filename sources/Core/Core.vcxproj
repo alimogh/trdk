@@ -398,6 +398,7 @@
     <ClInclude Include="DropCopy.hpp" />
     <ClInclude Include="DropCopyMock.hpp" />
     <ClInclude Include="EventsLog.hpp" />
+    <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Interactor.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="MarketDataSourceDummy.hpp" />
