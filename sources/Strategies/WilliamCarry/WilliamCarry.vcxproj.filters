@@ -17,13 +17,13 @@
     <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Multibroker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OperationContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MultibrokerStrategy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -37,10 +37,10 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Multibroker.hpp">
+    <ClInclude Include="OperationContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OperationContext.hpp">
+    <ClInclude Include="MultibrokerStrategy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -105,6 +105,9 @@
     <ClInclude Include="GeneratedFiles\ui_StrategySetupDialog.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="StrategySettings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\WilliamCarryFrontEnd.rc">

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "TradingLib/Fwd.hpp"
 #include "Api.h"
 #include "Security.hpp"
 
@@ -49,20 +50,6 @@ class TRDK_CORE_API Position
     AlreadyClosedError() noexcept;
   };
 
-  class TRDK_CORE_API Algo : private boost::noncopyable {
-   public:
-    virtual ~Algo() noexcept = default;
-
-   public:
-    //! Runs algorithm iteration.
-    /** Will be called only if position is not "completed" or
-      * not in "canceling state".
-      * @sa IsCancelling
-      * @sa IsCompleted
-      */
-    virtual void Run() = 0;
-  };
-
  public:
   explicit Position(
       trdk::Strategy &,
@@ -90,7 +77,13 @@ class TRDK_CORE_API Position
   virtual ~Position();
 
  public:
-  void AttachAlgo(std::unique_ptr<Algo> &&);
+  //! Attaches algorithm to the position.
+  /** Will try to execute algorithm at each price update, but only if position
+    * is not in the "canceling state".
+    * @sa IsCancelling
+    * @sa IsCompleted
+    */
+  void AttachAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
 
   trdk::PositionOperationContext &GetOperationContext();
   const trdk::PositionOperationContext &GetOperationContext() const;

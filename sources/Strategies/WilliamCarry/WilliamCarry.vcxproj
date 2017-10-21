@@ -308,7 +308,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
-    <ClCompile Include="Multibroker.cpp" />
+    <ClCompile Include="MultibrokerStrategy.cpp" />
     <ClCompile Include="OperationContext.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
@@ -329,7 +329,7 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Multibroker.hpp" />
+    <ClInclude Include="MultibrokerStrategy.hpp" />
     <ClInclude Include="OperationContext.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>

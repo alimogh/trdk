@@ -29,7 +29,7 @@
    <item>
     <widget class="QToolBox" name="strategiesPages">
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="strategy1Page">
       <property name="geometry">
@@ -76,6 +76,9 @@
                 <width>25</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -196,7 +199,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="strategy1Targets2">
+             <widget class="QRadioButton" name="strategy1Target2">
               <property name="text">
                <string>2 targets</string>
               </property>
@@ -229,6 +232,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy1Target1Value">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -243,8 +249,14 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy1Target1Time">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
-               <number>10000</number>
+               <number>100000</number>
+              </property>
+              <property name="singleStep">
+               <number>1</number>
               </property>
              </widget>
             </item>
@@ -287,6 +299,9 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -307,8 +322,14 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
-               <number>10000</number>
+               <number>100000</number>
+              </property>
+              <property name="singleStep">
+               <number>1</number>
               </property>
              </widget>
             </item>
@@ -357,7 +378,14 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QSpinBox" name="strategy1StopLoss1Pips"/>
+           <widget class="QSpinBox" name="strategy1StopLoss1Pips">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="2">
            <widget class="QLabel" name="strategy1StopLoss1PipsLabel">
@@ -397,6 +425,15 @@
            <widget class="QSpinBox" name="strategy1StopLoss2Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+            <property name="value">
+             <number>1</number>
             </property>
            </widget>
           </item>
@@ -446,6 +483,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -471,6 +514,15 @@
            <widget class="QSpinBox" name="strategy1StopLoss3Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+            <property name="value">
+             <number>1</number>
             </property>
            </widget>
           </item>
@@ -520,6 +572,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -551,12 +609,18 @@
             <property name="text">
              <string>Broker 1</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QCheckBox" name="strategy1Broker2">
             <property name="text">
              <string>Broker 2</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -565,6 +629,9 @@
             <property name="text">
              <string>Broker 3</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -572,12 +639,18 @@
             <property name="text">
              <string>Broker 4</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QCheckBox" name="strategy1Broker5">
             <property name="text">
              <string>Broker 5</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -596,8 +669,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>403</width>
-        <height>432</height>
+        <width>539</width>
+        <height>531</height>
        </rect>
       </property>
       <attribute name="label">
@@ -636,6 +709,9 @@
                 <width>25</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -756,7 +832,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="strategy2Targets2">
+             <widget class="QRadioButton" name="strategy2Target2">
               <property name="text">
                <string>2 targets</string>
               </property>
@@ -789,6 +865,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy2Target1Value">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -803,6 +882,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy2Target1Time">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>10000</number>
               </property>
@@ -847,6 +929,9 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -866,6 +951,9 @@
              <widget class="QSpinBox" name="strategy2Target2Time">
               <property name="enabled">
                <bool>false</bool>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -917,7 +1005,14 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QSpinBox" name="strategy2StopLoss1Pips"/>
+           <widget class="QSpinBox" name="strategy2StopLoss1Pips">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="2">
            <widget class="QLabel" name="strategy2StopLoss1PipsLabel">
@@ -957,6 +1052,12 @@
            <widget class="QSpinBox" name="strategy2StopLoss2Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -1006,6 +1107,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1031,6 +1138,12 @@
            <widget class="QSpinBox" name="strategy2StopLoss3Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -1080,6 +1193,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1111,12 +1230,18 @@
             <property name="text">
              <string>Broker 1</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QCheckBox" name="strategy2Broker2">
             <property name="text">
              <string>Broker 2</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -1125,6 +1250,9 @@
             <property name="text">
              <string>Broker 3</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -1132,12 +1260,18 @@
             <property name="text">
              <string>Broker 4</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QCheckBox" name="strategy2Broker5">
             <property name="text">
              <string>Broker 5</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -1151,8 +1285,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>403</width>
-        <height>432</height>
+        <width>539</width>
+        <height>531</height>
        </rect>
       </property>
       <attribute name="label">
@@ -1191,6 +1325,9 @@
                 <width>25</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -1311,7 +1448,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="strategy3Targets2">
+             <widget class="QRadioButton" name="strategy3Target2">
               <property name="text">
                <string>2 targets</string>
               </property>
@@ -1344,6 +1481,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy3Target1Value">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -1358,6 +1498,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy3Target1Time">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>10000</number>
               </property>
@@ -1402,6 +1545,9 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -1421,6 +1567,9 @@
              <widget class="QSpinBox" name="strategy3Target2Time">
               <property name="enabled">
                <bool>false</bool>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -1472,7 +1621,14 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QSpinBox" name="strategy3StopLoss1Pips"/>
+           <widget class="QSpinBox" name="strategy3StopLoss1Pips">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="2">
            <widget class="QLabel" name="strategy3StopLoss1PipsLabel">
@@ -1512,6 +1668,12 @@
            <widget class="QSpinBox" name="strategy3StopLoss2Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -1561,6 +1723,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1586,6 +1754,12 @@
            <widget class="QSpinBox" name="strategy3StopLoss3Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -1635,6 +1809,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1666,12 +1846,18 @@
             <property name="text">
              <string>Broker 1</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QCheckBox" name="strategy3Broker2">
             <property name="text">
              <string>Broker 2</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -1680,6 +1866,9 @@
             <property name="text">
              <string>Broker 3</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -1687,12 +1876,18 @@
             <property name="text">
              <string>Broker 4</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QCheckBox" name="strategy3Broker5">
             <property name="text">
              <string>Broker 5</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -1706,8 +1901,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>403</width>
-        <height>432</height>
+        <width>539</width>
+        <height>531</height>
        </rect>
       </property>
       <attribute name="label">
@@ -1746,6 +1941,9 @@
                 <width>25</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="minimum">
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>10000</number>
@@ -1866,7 +2064,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="strategy4Targets2">
+             <widget class="QRadioButton" name="strategy4Target2">
               <property name="text">
                <string>2 targets</string>
               </property>
@@ -1899,6 +2097,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy4Target1Value">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -1913,8 +2114,14 @@
             </item>
             <item>
              <widget class="QSpinBox" name="strategy4Target1Time">
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="value">
+               <number>1</number>
               </property>
              </widget>
             </item>
@@ -1957,6 +2164,9 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>100000</number>
               </property>
@@ -1977,8 +2187,14 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="value">
+               <number>1</number>
               </property>
              </widget>
             </item>
@@ -2027,7 +2243,14 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QSpinBox" name="strategy4StopLoss1Pips"/>
+           <widget class="QSpinBox" name="strategy4StopLoss1Pips">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="2">
            <widget class="QLabel" name="strategy4StopLoss1PipsLabel">
@@ -2064,9 +2287,15 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QSpinBox" name="strategy4StopLoss3Pips_2">
+           <widget class="QSpinBox" name="strategy4StopLoss2Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -2116,6 +2345,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -2141,6 +2376,12 @@
            <widget class="QSpinBox" name="strategy4StopLoss3Pips">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100000</number>
             </property>
            </widget>
           </item>
@@ -2190,6 +2431,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -2221,12 +2468,18 @@
             <property name="text">
              <string>Broker 1</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QCheckBox" name="strategy4Broker2">
             <property name="text">
              <string>Broker 2</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -2235,6 +2488,9 @@
             <property name="text">
              <string>Broker 3</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -2242,12 +2498,18 @@
             <property name="text">
              <string>Broker 4</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QCheckBox" name="strategy4Broker5">
             <property name="text">
              <string>Broker 5</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -2315,7 +2577,7 @@
   <tabstop>strategy1BreakEvenAnd</tabstop>
   <tabstop>strategy1BreakEvenTime</tabstop>
   <tabstop>strategy1Target1</tabstop>
-  <tabstop>strategy1Targets2</tabstop>
+  <tabstop>strategy1Target2</tabstop>
   <tabstop>strategy1TargetGrid5</tabstop>
   <tabstop>strategy1TargetGrid10</tabstop>
   <tabstop>strategy1Target1Value</tabstop>
@@ -2342,7 +2604,7 @@
   <tabstop>strategy2BreakEvenAnd</tabstop>
   <tabstop>strategy2BreakEvenTime</tabstop>
   <tabstop>strategy2Target1</tabstop>
-  <tabstop>strategy2Targets2</tabstop>
+  <tabstop>strategy2Target2</tabstop>
   <tabstop>strategy2TargetGrid5</tabstop>
   <tabstop>strategy2TargetGrid10</tabstop>
   <tabstop>strategy2Target1Value</tabstop>
@@ -2369,7 +2631,7 @@
   <tabstop>strategy3BreakEvenAnd</tabstop>
   <tabstop>strategy3BreakEvenTime</tabstop>
   <tabstop>strategy3Target1</tabstop>
-  <tabstop>strategy3Targets2</tabstop>
+  <tabstop>strategy3Target2</tabstop>
   <tabstop>strategy3TargetGrid5</tabstop>
   <tabstop>strategy3TargetGrid10</tabstop>
   <tabstop>strategy3Target1Value</tabstop>
@@ -2396,7 +2658,7 @@
   <tabstop>strategy4BreakEvenAnd</tabstop>
   <tabstop>strategy4BreakEvenTime</tabstop>
   <tabstop>strategy4Target1</tabstop>
-  <tabstop>strategy4Targets2</tabstop>
+  <tabstop>strategy4Target2</tabstop>
   <tabstop>strategy4TargetGrid5</tabstop>
   <tabstop>strategy4TargetGrid10</tabstop>
   <tabstop>strategy4Target1Value</tabstop>
@@ -2405,7 +2667,7 @@
   <tabstop>strategy4Target2Time</tabstop>
   <tabstop>strategy4StopLoss1Pips</tabstop>
   <tabstop>strategy4StopLoss2</tabstop>
-  <tabstop>strategy4StopLoss3Pips_2</tabstop>
+  <tabstop>strategy4StopLoss2Pips</tabstop>
   <tabstop>strategy4StopLoss2Time</tabstop>
   <tabstop>strategy4StopLoss3</tabstop>
   <tabstop>strategy4StopLoss3Pips</tabstop>
@@ -2453,7 +2715,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy1Targets2</sender>
+   <sender>strategy1Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy1Target2Label</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2469,7 +2731,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy1Targets2</sender>
+   <sender>strategy1Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy1Target2ValueLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2485,7 +2747,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy1Targets2</sender>
+   <sender>strategy1Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy1Target2Value</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2805,7 +3067,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy2Targets2</sender>
+   <sender>strategy2Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy2Target2Label</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2821,7 +3083,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy2Targets2</sender>
+   <sender>strategy2Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy2Target2Value</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2837,7 +3099,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy2Targets2</sender>
+   <sender>strategy2Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy2Target2ValueLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2853,7 +3115,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy2Targets2</sender>
+   <sender>strategy2Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy2Target2Time</receiver>
    <slot>setEnabled(bool)</slot>
@@ -2869,7 +3131,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy2Targets2</sender>
+   <sender>strategy2Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy2Target2TimeLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3061,7 +3323,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy1Targets2</sender>
+   <sender>strategy1Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy1Target2Time</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3077,7 +3339,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy1Targets2</sender>
+   <sender>strategy1Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy1Target2TimeLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3365,7 +3627,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy3Targets2</sender>
+   <sender>strategy3Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy3Target2Label</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3381,7 +3643,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy3Targets2</sender>
+   <sender>strategy3Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy3Target2Value</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3397,7 +3659,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy3Targets2</sender>
+   <sender>strategy3Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy3Target2ValueLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3413,7 +3675,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy3Targets2</sender>
+   <sender>strategy3Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy3Target2Time</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3429,7 +3691,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy3Targets2</sender>
+   <sender>strategy3Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy3Target2TimeLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3749,7 +4011,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy4Targets2</sender>
+   <sender>strategy4Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy4Target2Label</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3765,7 +4027,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy4Targets2</sender>
+   <sender>strategy4Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy4Target2Value</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3781,7 +4043,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy4Targets2</sender>
+   <sender>strategy4Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy4Target2ValueLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3797,7 +4059,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy4Targets2</sender>
+   <sender>strategy4Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy4Target2Time</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3813,7 +4075,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>strategy4Targets2</sender>
+   <sender>strategy4Target2</sender>
    <signal>toggled(bool)</signal>
    <receiver>strategy4Target2TimeLabel</receiver>
    <slot>setEnabled(bool)</slot>
@@ -3895,7 +4157,7 @@
   <connection>
    <sender>strategy4StopLoss2</sender>
    <signal>toggled(bool)</signal>
-   <receiver>strategy4StopLoss3Pips_2</receiver>
+   <receiver>strategy4StopLoss2Pips</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">

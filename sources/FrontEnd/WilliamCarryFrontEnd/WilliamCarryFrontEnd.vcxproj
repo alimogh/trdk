@@ -159,6 +159,7 @@
     <ClInclude Include="GeneratedFiles\ui_StrategySetupDialog.h" />
     <ClInclude Include="GeneratedFiles\ui_TimersDialog.h" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="StrategySettings.hpp" />
     <CustomBuild Include="StrategySetupDialog.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Moc%27ing StrategySetupDialog.hpp...</Message>

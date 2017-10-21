@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
+#include "TradingLib/Algo.hpp"
 #include "DropCopy.hpp"
 #include "PositionOperationContext.hpp"
 #include "Settings.hpp"
@@ -1235,7 +1236,9 @@ Position::StateUpdateConnection Position::Subscribe(
 }
 
 void Position::AttachAlgo(std::unique_ptr<Algo> &&algo) {
+  Assert(algo);
   m_pimpl->m_algos.emplace_back(std::move(algo));
+  m_pimpl->m_algos.back()->Report(*this, GetStrategy().GetTradingLog());
 }
 
 void Position::RunAlgos() {

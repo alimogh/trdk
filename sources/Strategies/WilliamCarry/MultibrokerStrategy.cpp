@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Multibroker.hpp"
+#include "MultibrokerStrategy.hpp"
 #include "TradingLib/PositionController.hpp"
 #include "OperationContext.hpp"
 
@@ -23,16 +23,16 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Multibroker::Implementation : private boost::noncopyable {
+class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
   PositionController m_controller;
 
-  explicit Implementation(Multibroker &self) : m_controller(self) {}
+  explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}
 };
 
-Multibroker::Multibroker(Context &context,
-                         const std::string &instanceName,
-                         const IniSectionRef &conf)
+MultibrokerStrategy::MultibrokerStrategy(Context &context,
+                                         const std::string &instanceName,
+                                         const IniSectionRef &conf)
     : Base(context,
            "{C66325BA-B75C-4D3D-9E18-AB2AD4BD1916}",
            "WilliamCarryMultibroker",
@@ -40,11 +40,11 @@ Multibroker::Multibroker(Context &context,
            conf),
       m_pimpl(boost::make_unique<Implementation>(*this)) {}
 
-Multibroker::~Multibroker() = default;
+MultibrokerStrategy::~MultibrokerStrategy() = default;
 
-void Multibroker::OpenPosition(OperationContext &&operation,
-                               Security &security,
-                               const Milestones &delayMeasurement) {
+void MultibrokerStrategy::OpenPosition(OperationContext &&operation,
+                                       Security &security,
+                                       const Milestones &delayMeasurement) {
   if (!GetPositions().IsEmpty()) {
     throw Exception(
         "Failed to start new position as current strategy instance already "
@@ -55,16 +55,16 @@ void Multibroker::OpenPosition(OperationContext &&operation,
       delayMeasurement);
 }
 
-void Multibroker::OnLevel1Tick(Security &,
-                               const pt::ptime &,
-                               const Level1TickValue &,
-                               const Milestones &) {}
+void MultibrokerStrategy::OnLevel1Tick(Security &,
+                                       const pt::ptime &,
+                                       const Level1TickValue &,
+                                       const Milestones &) {}
 
-void Multibroker::OnPositionUpdate(Position &position) {
+void MultibrokerStrategy::OnPositionUpdate(Position &position) {
   m_pimpl->m_controller.OnPositionUpdate(position);
 }
 
-void Multibroker::OnPostionsCloseRequest() {
+void MultibrokerStrategy::OnPostionsCloseRequest() {
   m_pimpl->m_controller.OnPostionsCloseRequest();
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,5 +72,5 @@ void Multibroker::OnPostionsCloseRequest() {
 boost::shared_ptr<Strategy> CreateMultibroker(Context &context,
                                               const std::string &instanceName,
                                               const IniSectionRef &conf) {
-  return boost::make_shared<Multibroker>(context, instanceName, conf);
+  return boost::make_shared<MultibrokerStrategy>(context, instanceName, conf);
 }

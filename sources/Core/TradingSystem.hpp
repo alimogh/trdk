@@ -397,13 +397,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderError(const trdk::OrderId &,
-                    const std::string &tradingSystemOrderId);
+                    const std::string &tradingSystemOrderId,
+                    const std::string &&error);
   //! Notifies trading system about order reject.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderReject(const trdk::OrderId &,
-                     const std::string &tradingSystemOrderId);
+                     const std::string &tradingSystemOrderId,
+                     const std::string &&reason);
 
  private:
   class Implementation;

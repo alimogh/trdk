@@ -11,6 +11,7 @@
 #pragma once
 
 #include "GeneratedFiles/ui_MultiBrokerWidget.h"
+#include "StrategySettings.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -79,7 +80,8 @@ class MultiBrokerWidget : public QWidget {
   boost::unordered_map<Security *, Locked> m_lockedSecurityList;
   bool m_ignoreLockToggling;
 
-  boost::array<Strategy *, 4> m_strategies;
+  boost::array<Strategy *, NUMBER_OF_STRATEGIES> m_strategies;
+  boost::array<StrategySettings, NUMBER_OF_STRATEGIES> m_settings;
 };
 }
 }

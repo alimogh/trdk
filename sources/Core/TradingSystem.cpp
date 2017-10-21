@@ -888,14 +888,28 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
 }
 
 void TradingSystem::OnOrderError(const OrderId &orderId,
-                                 const std::string &tradingSystemOrderId) {
+                                 const std::string &tradingSystemOrderId,
+                                 const std::string &&error) {
+  GetTradingLog().Write("ORDER ERROR\tid=%1%\treason=%2%",
+                        [&](TradingRecord &record) {
+                          record % orderId  // 1
+                              % error;      // 2
+                        });
+  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
+                 error);
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_ERROR, boost::none, boost::none,
                                nullptr);
 }
 
 void TradingSystem::OnOrderReject(const OrderId &orderId,
-                                  const std::string &tradingSystemOrderId) {
+                                  const std::string &tradingSystemOrderId,
+                                  const std::string &&reason) {
+  GetTradingLog().Write("ORDER REJECT\tid=%1%\treason=%2%",
+                        [&](TradingRecord &record) {
+                          record % orderId  // 1
+                              % reason;     // 2
+                        });
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_REJECTED, boost::none, boost::none,
                                nullptr);

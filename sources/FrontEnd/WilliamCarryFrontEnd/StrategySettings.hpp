@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/08/26 19:29:25
+ *   Created: 2017/10/21 04:58:55
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,14 +11,27 @@
 #pragma once
 
 namespace trdk {
-namespace TradingLib {
+namespace FrontEnd {
+namespace WilliamCarry {
 
-class Algo;
+enum { NUMBER_OF_STRATEGIES = 4 };
 
-class OrderPolicy;
+struct StrategySettings {
+  struct Target {
+    size_t pips;
+    boost::posix_time::time_duration delay;
+  };
 
-class PositionReport;
+  bool isEnabled;
+  unsigned int lotMultiplier;
 
-class Trend;
+  Target takeProfit1;
+  size_t numberOfStepsToTarget;
+  boost::optional<Target> takeProfit2;
+
+  boost::optional<Target> stopLoss2;
+  boost::optional<Target> stopLoss3;
+};
+}
 }
 }

@@ -18,15 +18,15 @@ namespace trdk {
 namespace Strategies {
 namespace WilliamCarry {
 
-class TRDK_STRATEGY_WILLIAMCARRY_API Multibroker : public Strategy {
+class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
  public:
   typedef Strategy Base;
 
  public:
-  explicit Multibroker(Context &,
-                       const std::string &instanceName,
-                       const Lib::IniSectionRef &);
-  virtual ~Multibroker() override;
+  explicit MultibrokerStrategy(Context &,
+                               const std::string &instanceName,
+                               const Lib::IniSectionRef &);
+  virtual ~MultibrokerStrategy() override;
 
  public:
   void OpenPosition(OperationContext &&,

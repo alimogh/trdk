@@ -13,7 +13,7 @@
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "Strategies/WilliamCarry/Multibroker.hpp"
+#include "Strategies/WilliamCarry/MultibrokerStrategy.hpp"
 #include "Strategies/WilliamCarry/OperationContext.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
@@ -40,13 +40,12 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
       m_currentTradingSecurity(nullptr),
       m_currentMarketDataSecurity(nullptr),
       m_tradingsecurityListWidget(this),
-      m_ignoreLockToggling(false) {
+      m_ignoreLockToggling(false),
+      m_settings({}) {
   m_ui.setupUi(this);
 
   m_tradingsecurityListWidget.hide();
   m_tradingsecurityListWidget.raise();
-
-  setEnabled(false);
 
   Verify(connect(m_ui.lock, &QPushButton::toggled, this,
                  &MultiBrokerWidget::LockSecurity));
@@ -122,16 +121,46 @@ void MultiBrokerWidget::resizeEvent(QResizeEvent *) {
 
 void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   AssertGt(m_strategies.size(), strategyIndex);
+  AssertGt(m_settings.size(), strategyIndex);
   Assert(m_strategies[strategyIndex]);
   Assert(m_currentTradingSecurity);
 
   for (;;) {
     const auto &delayMeasurement =
         m_engine.GetContext().StartStrategyTimeMeasurement();
-    OperationContext operation(isLong, 1);
+
+    auto &settings = m_settings[strategyIndex];
+    if (!settings.isEnabled) {
+      return;
+    }
+
+    OperationContext operation(isLong, settings.lotMultiplier);
+
+    const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecision();
+
+    if (!settings.takeProfit2) {
+      operation.AddTakeProfitStopLimit(pip * settings.takeProfit1.pips,
+                                       settings.takeProfit1.delay, 1.0);
+    } else {
+      operation.AddTakeProfitStopLimit(pip * settings.takeProfit1.pips,
+                                       settings.takeProfit1.delay, 0.5);
+      operation.AddTakeProfitStopLimit(pip * settings.takeProfit2->pips,
+                                       settings.takeProfit2->delay, 0.5);
+    }
+
+    if (settings.stopLoss2) {
+      operation.AddStopLoss(pip * settings.stopLoss2->pips,
+                            settings.stopLoss2->delay);
+    }
+    if (settings.stopLoss3) {
+      operation.AddStopLoss(pip * settings.stopLoss3->pips,
+                            settings.stopLoss3->delay);
+    }
+
     try {
-      m_strategies[strategyIndex]->Invoke<Multibroker>(
-          [this, &operation, &delayMeasurement](Multibroker &strategy) {
+      m_strategies[strategyIndex]->Invoke<MultibrokerStrategy>(
+          [this, &settings, &operation,
+           &delayMeasurement](MultibrokerStrategy &strategy) {
             strategy.OpenPosition(std::move(operation),
                                   *m_currentTradingSecurity, delayMeasurement);
           });
@@ -281,10 +310,10 @@ void MultiBrokerWidget::ReloadSecurityList() {
 }
 
 void MultiBrokerWidget::OnStateChanged(bool isStarted) {
-  if (!isEnabled() && isStarted) {
+  if (!m_ui.trading->isEnabled() && isStarted) {
     Reload();
   }
-  setEnabled(isStarted);
+  m_ui.trading->setEnabled(isStarted);
 }
 
 void MultiBrokerWidget::UpdatePrices(const Security *security) {
@@ -347,11 +376,12 @@ void MultiBrokerWidget::SetPrices(const pt::ptime &time,
 }
 
 void MultiBrokerWidget::ShowStrategySetupDialog() {
-  StrategySetupDialog dialog(this);
+  StrategySetupDialog dialog(m_settings, this);
 
   if (dialog.exec() != QDialog::Accepted) {
     return;
   }
+  m_settings = dialog.GetSettings();
 }
 
 void MultiBrokerWidget::ShowTimersSetupDialog() {

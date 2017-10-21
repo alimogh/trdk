@@ -72,12 +72,19 @@ OrderId fix::TradingSystem::SendSell(trdk::Security &security,
   return message.GetSequenceNumber();
 }
 
-OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(trdk::Security &,
-                                                        const Currency &,
-                                                        const Qty &,
-                                                        const Price &,
-                                                        const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
+OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(
+    trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &) {
+  if (currency != security.GetSymbol().GetCurrency()) {
+    throw Error("Trading system supports only security quote currency");
+  }
+  const out::NewOrderSingle message(security, ORDER_SIDE_SELL, qty, price,
+                                    GetStandardOutgoingHeader());
+  m_client.Send(message);
+  return message.GetSequenceNumber();
 }
 
 OrderId fix::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
@@ -106,12 +113,18 @@ OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
   return message.GetSequenceNumber();
 }
 
-OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &,
-                                                       const Currency &,
-                                                       const Qty &,
-                                                       const Price &,
+OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &security,
+                                                       const Currency &currency,
+                                                       const Qty &qty,
+                                                       const Price &price,
                                                        const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
+  if (currency != security.GetSymbol().GetCurrency()) {
+    throw Error("Trading system supports only security quote currency");
+  }
+  const out::NewOrderSingle message(security, ORDER_SIDE_BUY, qty, price,
+                                    GetStandardOutgoingHeader());
+  m_client.Send(message);
+  return message.GetSequenceNumber();
 }
 
 OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
@@ -131,10 +144,8 @@ void fix::TradingSystem::OnConnectionRestored() {
 void fix::TradingSystem::OnReject(const in::Reject &message,
                                   Lib::NetworkStreamClient &client) {
   const auto &orderId = message.ReadRefSeqNum();
-  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
-                 message.ReadText());
   try {
-    OnOrderReject(orderId, std::string());
+    OnOrderReject(orderId, std::string(), message.ReadText());
   } catch (const OrderIsUnknown &) {
     message.ResetReadingState();
     Handler::OnReject(message, client);
@@ -146,11 +157,9 @@ void fix::TradingSystem::OnBusinessMessageReject(
     NetworkStreamClient &client,
     const Milestones &delayMeasurement) {
   const auto &reason = message.ReadText();
-  const auto &orderId = message.ReadBusinessRejectRefId();
-  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
-                 reason);
   try {
-    OnOrderReject(orderId, std::string());
+    OnOrderReject(message.ReadBusinessRejectRefId(), std::string(),
+                  std::move(reason));
   } catch (const OrderIsUnknown &) {
     message.ResetReadingState();
     Handler::OnBusinessMessageReject(message, client, delayMeasurement);

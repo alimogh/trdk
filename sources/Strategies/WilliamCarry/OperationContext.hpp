@@ -28,6 +28,15 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   virtual ~OperationContext() override;
 
  public:
+  void AddTakeProfitStopLimit(
+      const Price &maxPriceChange,
+      const boost::posix_time::time_duration &activationTime,
+      const Lib::Double &volumeToCloseRatio);
+  void AddStopLoss(const Price &maxPriceChange);
+  void AddStopLoss(const Price &maxPriceChange,
+                   const boost::posix_time::time_duration &startDelay);
+
+ public:
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual void Setup(Position &) const override;
