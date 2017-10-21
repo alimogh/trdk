@@ -27,15 +27,13 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
     MainWindow &mainWindow,
     const boost::optional<QString> &defaultSymbol,
     QWidget *parent)
-    : QMainWindow(parent),
+    : Base(parent),
       m_mainWindow(mainWindow),
       m_tradingMode(TRADING_MODE_LIVE),
       m_engine(engine),
       m_currentSymbol(-1),
       m_instanceData({}) {
   m_ui.setupUi(this);
-  setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint |
-                 Qt::WindowSystemMenuHint);
 
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLabel);
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLastTime);
@@ -111,6 +109,14 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
                  &ArbitrageStrategyWindow::UpdatePrices, Qt::QueuedConnection));
 
   LoadSymbols(defaultSymbol);
+
+  adjustSize();
+}
+
+QSize ArbitrageStrategyWindow::sizeHint() const {
+  auto result = Base::sizeHint();
+  result *= 0.7;
+  return result;
 }
 
 void ArbitrageStrategyWindow::LoadSymbols(
@@ -181,6 +187,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       m_ui.symbol->itemText(m_currentSymbol).toStdString();
 
   InstanceData result = {};
+
+  uint8_t biggestGetPricePrecision = 1;
 
   auto &context = m_engine.GetContext();
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
@@ -260,9 +268,14 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
                              bidFrame,
                              askFrame};
       Verify(result.targets.emplace(std::move(target)).second);
+      if (biggestGetPricePrecision < security.GetPricePrecision()) {
+        biggestGetPricePrecision = security.GetPricePrecision();
+      }
     });
   }
 
+  m_bestSpreadAbsValue = Lib::PriceAdapter<QLabel>{*m_ui.bestSpreadAbsValue,
+                                                   biggestGetPricePrecision};
   m_instanceData = std::move(result);
 
   for (auto *const widget : m_novaexchangeWidgets) {
@@ -330,7 +343,7 @@ void ArbitrageStrategyWindow::HighlightPrices() {
   {
     const Price spread = bids.front().first - asks.front().first;
     const Double spreadPercents = 100 / (asks.front().first / spread);
-    m_ui.bestSpreadAbsValue->setText(ConvertPriceToText(spread, 8));
+    m_bestSpreadAbsValue.Set(spread);
     m_ui.bestSpreadPencentsValue->setText(
         QString::number(spreadPercents, 'f', 2) + "%");
     if (spreadPercents >= m_ui.highlightLevel->value()) {

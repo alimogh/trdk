@@ -19,6 +19,10 @@ namespace Terminal {
 class ArbitrageStrategyWindow : public QMainWindow {
   Q_OBJECT
 
+ public:
+  typedef QMainWindow Base;
+
+ private:
   struct Target {
     TradingSystem *tradingSystem;
     Security *security;
@@ -58,6 +62,10 @@ class ArbitrageStrategyWindow : public QMainWindow {
       MainWindow &mainWindow,
       const boost::optional<QString> &defaultSymbol,
       QWidget *parent);
+  virtual ~ArbitrageStrategyWindow() override = default;
+
+ public:
+  virtual QSize sizeHint() const override;
 
  private slots:
   void UpdatePrices(const Security *);
@@ -79,6 +87,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
   Ui::ArbitrageStrategyWindow m_ui;
   Lib::Engine &m_engine;
   int m_currentSymbol;
+  Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
   std::vector<QWidget *> m_novaexchangeWidgets;
   std::vector<QWidget *> m_yobitnetWidgets;
   std::vector<QWidget *> m_ccexWidgets;
