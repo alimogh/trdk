@@ -36,6 +36,7 @@ var requiredModules = [
 	, 'MrigeshKejriwal'
 	, 'WilliamCarryStrategies'
 	, 'WilliamCarryFrontEnd'
+	, 'ArbitrationAdviser'
 ]
 
 //////////////////////////////////////////////////////////////////////////

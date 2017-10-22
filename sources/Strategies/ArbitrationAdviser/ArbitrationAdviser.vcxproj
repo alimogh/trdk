@@ -51,9 +51,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9BB97C01-6929-4D24-8C6F-39CC7787F852}</ProjectGuid>
-    <RootNamespace>WilliamCarry</RootNamespace>
-    <ProjectName>William Carry strategies</ProjectName>
+    <ProjectGuid>{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}</ProjectGuid>
+    <RootNamespace>ArbitrationAdviser</RootNamespace>
+    <ProjectName>Arbitration adviser</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -135,7 +135,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -146,7 +146,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -158,7 +158,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -170,7 +170,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -181,7 +181,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -192,7 +192,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -204,7 +204,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -216,7 +216,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -227,7 +227,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -238,7 +238,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -250,7 +250,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -262,52 +262,48 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="WilliamCarry.props" />
+    <Import Project="ArbitrationAdviser.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-    <TargetName>WilliamCarryStrategies</TargetName>
+    <TargetName>ArbitrationAdviser</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>WilliamCarryStrategies</TargetName>
+    <TargetName>ArbitrationAdviser</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
-    <TargetExt>WilliamCarryStrategies</TargetExt>
-    <TargetName>WilliamCarryStrategies</TargetName>
+    <TargetName>ArbitrationAdviser</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
-    <TargetExt>WilliamCarryStrategies</TargetExt>
-    <TargetName>WilliamCarryStrategies</TargetName>
+    <TargetName>ArbitrationAdviser</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
-    <TargetName>WilliamCarryStrategies_dbg</TargetName>
+    <TargetName>ArbitrationAdviser_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-    <TargetName>WilliamCarryStrategies_test</TargetName>
+    <TargetName>ArbitrationAdviser_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>WilliamCarryStrategies_dbg</TargetName>
+    <TargetName>ArbitrationAdviser_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>WilliamCarryStrategies_test</TargetName>
+    <TargetName>ArbitrationAdviser_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
-    <TargetName>WilliamCarryStrategies_dbg</TargetName>
+    <TargetName>ArbitrationAdviser_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
-    <TargetName>WilliamCarryStrategies_test</TargetName>
+    <TargetName>ArbitrationAdviser_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
-    <TargetName>WilliamCarryStrategies_dbg</TargetName>
+    <TargetName>ArbitrationAdviser_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
-    <TargetName>WilliamCarryStrategies_test</TargetName>
+    <TargetName>ArbitrationAdviser_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
-    <ClCompile Include="MultibrokerStrategy.cpp" />
-    <ClCompile Include="OperationContext.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -327,8 +323,6 @@
   <ItemGroup>
     <ClInclude Include="Api.h" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="MultibrokerStrategy.hpp" />
-    <ClInclude Include="OperationContext.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -346,10 +340,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="WilliamCarry.rc" />
+    <ResourceCompile Include="ArbitrationAdviser.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="WilliamCarry.def" />
+    <None Include="ArbitrationAdviser.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
