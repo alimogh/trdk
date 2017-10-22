@@ -561,8 +561,11 @@ class Security::Implementation : private boost::noncopyable {
                          const Milestones &delayMeasurement,
                          bool isChanged) {
     delayMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_STORE);
+    if (!isChanged) {
+      return;
+    }
     CheckMarketDataUpdate(time);
-    if (isChanged && CheckLevel1Start()) {
+    if (CheckLevel1Start()) {
       m_level1UpdateSignal(delayMeasurement);
     }
   }

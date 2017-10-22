@@ -22,17 +22,27 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
+namespace ids = boost::uuids;
+
+namespace {
+size_t numberOfNextInstance = 1;
+}
+
 ArbitrageStrategyWindow::ArbitrageStrategyWindow(
     FrontEnd::Lib::Engine &engine,
     MainWindow &mainWindow,
     const boost::optional<QString> &defaultSymbol,
     QWidget *parent)
     : Base(parent),
-      m_mainWindow(mainWindow),
       m_tradingMode(TRADING_MODE_LIVE),
+      m_instanceNumber(numberOfNextInstance++),
+      m_mainWindow(mainWindow),
       m_engine(engine),
+      m_currentStrategy(nullptr),
       m_currentSymbol(-1),
       m_instanceData({}) {
+  setAttribute(Qt::WA_DeleteOnClose);
+
   m_ui.setupUi(this);
 
   m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLabel);
@@ -113,6 +123,36 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
   adjustSize();
 }
 
+ArbitrageStrategyWindow::~ArbitrageStrategyWindow() {
+  if (m_currentStrategy) {
+    try {
+      // stop strategy here
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
+}
+
+void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
+  if (!m_ui.autoTrade->isChecked()) {
+    closeEvent->accept();
+    return;
+  }
+  const auto &response = QMessageBox::question(
+      this, tr("Strategy closing"),
+      tr("Are you sure you want to the close strategy window?\n\nIf strategy "
+         "window will be closed - automatic trading will be "
+         "stopped.\n\nContinue and close strategy window for %1?")
+          .arg(m_ui.symbol->itemText(m_currentSymbol)),
+      QMessageBox::Yes | QMessageBox::No);
+  if (response == QMessageBox::Yes) {
+    closeEvent->accept();
+  } else {
+    closeEvent->ignore();
+  }
+}
+
 QSize ArbitrageStrategyWindow::sizeHint() const {
   auto result = Base::sizeHint();
   result *= 0.7;
@@ -121,70 +161,84 @@ QSize ArbitrageStrategyWindow::sizeHint() const {
 
 void ArbitrageStrategyWindow::LoadSymbols(
     const boost::optional<QString> &defaultSymbol) {
-  int defaultSymbolIndex = 0;
-
-  boost::unordered_set<std::string> result;
-  auto &context = m_engine.GetContext();
-  for (size_t i = 0; i < context.GetNumberOfMarketDataSources(); ++i) {
-    context.GetMarketDataSource(i).ForEachSecurity([&](Security &security) {
-      result.emplace(security.GetSymbol().GetSymbol());
-    });
+  {
+    const SignalsScopedBlocker blocker(*m_ui.symbol);
+    m_ui.symbol->addItem("ETH_BTC");
+    m_ui.symbol->addItem("ETC_BTC");
+    m_ui.symbol->addItem("DOGE_BTC");
+    m_ui.symbol->addItem("LTC_BTC");
+    m_ui.symbol->addItem("CNT_BTC");
+    m_ui.symbol->addItem("DASH_BTC");
   }
-
-  const SignalsScopedBlocker signalsBlocker(*m_ui.symbol);
-  m_ui.symbol->clear();
-  for (const auto &symbol : result) {
-    const auto &symbolQStr = QString::fromStdString(symbol);
-    if (defaultSymbol && symbolQStr == *defaultSymbol) {
-      defaultSymbolIndex = m_ui.symbol->count();
-    }
-    m_ui.symbol->addItem(std::move(symbolQStr));
+  if (defaultSymbol) {
+    m_ui.symbol->setCurrentText(*defaultSymbol);
+  } else {
+    SetCurrentSymbol(m_ui.symbol->currentIndex());
   }
-  if (!m_ui.symbol->count()) {
-    return;
-  }
-  m_ui.symbol->setCurrentIndex(defaultSymbolIndex);
-  SetCurrentSymbol(defaultSymbolIndex);
 }
 
 void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
-  const QString &symbol = m_ui.symbol->itemText(newSymbolIndex);
   if (m_currentSymbol >= 0) {
     if (m_currentSymbol == newSymbolIndex) {
       return;
     }
 
-    const SignalsScopedBlocker blocker(*m_ui.symbol);
-    m_ui.symbol->setCurrentIndex(m_currentSymbol);
+    if (m_ui.autoTrade->isChecked()) {
+      const QString &symbol = m_ui.symbol->itemText(newSymbolIndex);
 
-    const auto &response = QMessageBox::question(
-        this, tr("Strategy symbol change"),
-        tr("Are you sure you want to change the symbol of strategy from %1 to "
-           "%2?\n\nClick Yes to continue and change symbol for this strategy "
-           "instance, choose No to start new strategy instance for %2, or "
-           "click Cancel to cancel the action.")
-            .arg(m_ui.symbol->itemText(m_currentSymbol), symbol),
-        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-    if (response != QMessageBox::Yes) {
-      if (response == QMessageBox::No) {
-        m_mainWindow.CreateNewArbitrageStrategy(symbol);
+      const SignalsScopedBlocker blocker(*m_ui.symbol);
+      m_ui.symbol->setCurrentIndex(m_currentSymbol);
+
+      const auto &response = QMessageBox::question(
+          this, tr("Strategy symbol change"),
+          tr("Are you sure you want to change the symbol of strategy from %1 "
+             "to %2?\n\nIf symbol will be changed - automatic trading will be"
+             " stopped.\n\nClick Yes to continue and change symbol for this"
+             " strategy  instance, choose No to start new strategy instance"
+             " for %2, or click Cancel to cancel the action.")
+              .arg(m_ui.symbol->itemText(m_currentSymbol), symbol),
+          QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+      if (response != QMessageBox::Yes) {
+        if (response == QMessageBox::No) {
+          m_mainWindow.CreateNewArbitrageStrategy(symbol);
+        }
+        return;
       }
-      return;
-    }
 
-    m_ui.symbol->setCurrentIndex(newSymbolIndex);
+      m_ui.symbol->setCurrentIndex(newSymbolIndex);
+    }
   }
   SetCurrentSymbol(newSymbolIndex);
 }
 
 void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
+  if (m_currentStrategy) {
+    // Stop strategy here.
+  }
+
+  const auto &symbol = m_ui.symbol->itemText(symbolIndex).toStdString();
+
+  auto strategyId = m_strategiesUuids.find(symbol);
+  if (strategyId == m_strategiesUuids.cend()) {
+    static ids::random_generator generateId;
+    strategyId = m_strategiesUuids.emplace(symbol, generateId()).first;
+    std::ostringstream conf;
+    conf << "[Strategy.Arbitrage-" << symbol << "-" << m_instanceNumber << "]"
+         << std::endl
+         << "module = TestStrategy" << std::endl
+         << "id = " << strategyId->second << std::endl
+         << "is_enabled = true" << std::endl
+         << "trading_mode = live" << std::endl
+         << "title = " << symbol << " Arbitrage" << std::endl
+         << "requires = Level 1 Ticks[" << symbol << "]" << std::endl;
+    m_engine.GetContext().Add(IniString(conf.str()));
+  }
+
+  m_currentStrategy = &m_engine.GetContext().GetSrategy(strategyId->second);
   m_currentSymbol = symbolIndex;
 
-  setWindowTitle(m_ui.symbol->itemText(m_currentSymbol) + " " +
-                 tr("Arbitrage") + " - " + QCoreApplication::applicationName());
-
-  const std::string symbol =
-      m_ui.symbol->itemText(m_currentSymbol).toStdString();
+  setWindowTitle(m_ui.symbol->itemText(symbolIndex) + " " + tr("Arbitrage") +
+                 " - " + QCoreApplication::applicationName());
 
   InstanceData result = {};
 

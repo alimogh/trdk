@@ -47,17 +47,27 @@ PollingTask::~PollingTask() {
 void PollingTask::Run() {
   m_log.Debug("Starting polling task...");
   try {
+    size_t numberOfErrors = 0;
     Lock lock(m_mutex);
     while (!m_isStopped) {
-      const auto &nextStartTime = ch::system_clock::now() + m_pollingInterval;
-      m_task();
+      auto nextStartTime = ch::system_clock::now() + m_pollingInterval;
+      try {
+        m_task();
+        numberOfErrors = 0;
+      } catch (const trdk::Lib::Exception &ex) {
+        ++numberOfErrors;
+        m_log.Error("Polling task error: \"%1%\" (%2%).", ex.what(),
+                    numberOfErrors);
+        nextStartTime += m_pollingInterval *
+                         std::min(static_cast<size_t>(30), numberOfErrors);
+      }
       m_condition.wait_until(lock, nextStartTime);
     }
   } catch (const std::exception &ex) {
-    m_log.Error("Error in the polling task: \"%1%\".", ex.what());
+    m_log.Error("Fatal error in the polling task: \"%1%\".", ex.what());
     throw;
   } catch (...) {
-    m_log.Error("Unknown error in the polling task.");
+    m_log.Error("Fatal unknown error in the polling task.");
     AssertFailNoException();
     throw;
   }

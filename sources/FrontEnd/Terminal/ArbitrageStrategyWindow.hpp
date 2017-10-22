@@ -62,10 +62,13 @@ class ArbitrageStrategyWindow : public QMainWindow {
       MainWindow &mainWindow,
       const boost::optional<QString> &defaultSymbol,
       QWidget *parent);
-  virtual ~ArbitrageStrategyWindow() override = default;
+  virtual ~ArbitrageStrategyWindow() override;
 
  public:
   virtual QSize sizeHint() const override;
+
+ protected:
+  virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
   void UpdatePrices(const Security *);
@@ -83,9 +86,12 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
  private:
   const TradingMode m_tradingMode;
+  const size_t m_instanceNumber;
+  boost::unordered_map<std::string, boost::uuids::uuid> m_strategiesUuids;
   MainWindow &m_mainWindow;
   Ui::ArbitrageStrategyWindow m_ui;
   Lib::Engine &m_engine;
+  Strategy *m_currentStrategy;
   int m_currentSymbol;
   Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
   std::vector<QWidget *> m_novaexchangeWidgets;

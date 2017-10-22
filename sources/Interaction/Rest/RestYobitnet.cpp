@@ -139,6 +139,10 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SubscribeToSecurities() override {
+    if (m_securities.empty()) {
+      return;
+    }
+
     std::vector<std::string> uriSymbolsPath;
     uriSymbolsPath.reserve(m_securities.size());
     for (const auto &security : m_securities) {
@@ -191,6 +195,13 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
+    {
+      const auto &it = m_securities.find(symbol.GetSymbol());
+      if (it != m_securities.cend()) {
+        return *it->second;
+      }
+    }
+
     const auto &result = boost::make_shared<Rest::Security>(
         GetContext(), symbol, *this,
         Rest::Security::SupportedLevel1Types()

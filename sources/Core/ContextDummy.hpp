@@ -57,6 +57,8 @@ class Context : public trdk::Context {
 
   virtual void CloseSrategiesPositions() override;
 
+  virtual void Add(const trdk::Lib::Ini &) override;
+
  protected:
   virtual DropCopy *GetDropCopy() const override;
 };

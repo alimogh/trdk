@@ -59,34 +59,45 @@ Request::Send(net::HTTPSClientSession &session, const Context &context) {
     session.sendRequest(*m_request);
   }
 
-  net::HTTPResponse response;
-  std::istream &responseStream = session.receiveResponse(response);
-  const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
-  const auto &updateTime = context.GetCurrentTime();
-  if (response.getStatus() != 200) {
-    boost::format error(
-        "Request \"%3%\" (%4%) failed with HTTP-error: \"%1%\" (code: %2%)");
-    error % response.getReason()  // 1
-        % response.getStatus()    // 2
-        % m_name                  // 3
-        % m_request->getURI();    // 4
-    throw Exception(error.str().c_str());
-  }
-
-  ptr::ptree result;
   try {
-    ptr::read_json(responseStream, result);
-  } catch (const ptr::ptree_error &ex) {
+    net::HTTPResponse response;
+    std::istream &responseStream = session.receiveResponse(response);
+    const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
+    const auto &updateTime = context.GetCurrentTime();
+    if (response.getStatus() != 200) {
+      boost::format error(
+          "Request \"%3%\" (%4%) failed with HTTP-error: \"%1%\" (code: %2%)");
+      error % response.getReason()  // 1
+          % response.getStatus()    // 2
+          % m_name                  // 3
+          % m_request->getURI();    // 4
+      throw Exception(error.str().c_str());
+    }
+
+    ptr::ptree result;
+    try {
+      ptr::read_json(responseStream, result);
+    } catch (const ptr::ptree_error &ex) {
+      boost::format error(
+          "Failed to read server response to the request \"%2%\" (%3%): "
+          "\"%1%\"");
+      error % ex.what()           // 1
+          % m_name                // 2
+          % m_request->getURI();  // 3
+      throw Exception(error.str().c_str());
+    }
+
+    return boost::make_tuple(std::move(updateTime), std::move(result),
+                             std::move(delayMeasurement));
+
+  } catch (const Poco::Exception &ex) {
     boost::format error(
-        "Failed to read server response to the request \"%2%\" (%3%): \"%1%\"");
-    error % ex.what()           // 1
-        % m_name                // 2
-        % m_request->getURI();  // 3
+        "System-level error at the request \"%1%\" (%2%): \"%3%\"");
+    error % m_name             // 1
+        % m_request->getURI()  // 2
+        % ex.what();           // 3
     throw Exception(error.str().c_str());
   }
-
-  return boost::make_tuple(std::move(updateTime), std::move(result),
-                           std::move(delayMeasurement));
 }
 
 std::string Request::CreateBody() const {

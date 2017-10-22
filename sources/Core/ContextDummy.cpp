@@ -111,3 +111,7 @@ const Strategy &Dummies::Context::GetSrategy(const ids::uuid &) const {
 void Dummies::Context::CloseSrategiesPositions() {
   throw std::logic_error("Not supported");
 }
+
+void Dummies::Context::Add(const Ini &) {
+  throw std::logic_error("Not supported");
+}

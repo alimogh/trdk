@@ -15,7 +15,7 @@ namespace Interaction {
 namespace Rest {
 
 class PollingTask : private boost::noncopyable {
- private:
+ public:
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
 

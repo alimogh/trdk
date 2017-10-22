@@ -129,6 +129,16 @@ class CcexRequest : public Request {
 namespace {
 
 class Ccex : public TradingSystem, public MarketDataSource {
+ private:
+  typedef boost::mutex SecuritiesMutex;
+  typedef SecuritiesMutex::scoped_lock SecuritiesLock;
+
+  struct SecuritySubscribtion {
+    boost::shared_ptr<Rest::Security> security;
+    boost::shared_ptr<CcexRequest> request;
+    bool isSubscribed;
+  };
+
  public:
   explicit Ccex(const App &,
                 const TradingMode &mode,
@@ -172,18 +182,38 @@ class Ccex : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SubscribeToSecurities() override {
+    {
+      const SecuritiesLock lock(m_securitiesMutex);
+      for (auto &subscribtion : m_securities) {
+        if (subscribtion.second.isSubscribed) {
+          continue;
+        }
+        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
+                         *subscribtion.second.security);
+        subscribtion.second.isSubscribed = true;
+      }
+    }
+
+    if (m_pollingTask) {
+      return;
+    }
     m_pollingTask = boost::make_unique<PollingTask>(
         [this]() {
-          for (auto &security : m_securities) {
-            const auto &response =
-                security.second->Send(m_session, GetContext());
+          const SecuritiesLock lock(m_securitiesMutex);
+          for (const auto &subscribtion : m_securities) {
+            if (!subscribtion.second.isSubscribed) {
+              continue;
+            }
+            auto &security = *subscribtion.second.security;
+            auto &request = *subscribtion.second.request;
+            const auto &response = request.Send(m_session, GetContext());
             const auto &time = boost::get<0>(response);
             const auto &delayMeasurement = boost::get<2>(response);
             try {
               for (const auto &updateRecord :
                    boost::get<1>(response).get_child("buy")) {
                 const auto &update = updateRecord.second;
-                security.first->SetLevel1(
+                security.SetLevel1(
                     time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
                               update.get<double>("Rate")),
                     Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
@@ -193,7 +223,7 @@ class Ccex : public TradingSystem, public MarketDataSource {
               for (const auto &updateRecord :
                    boost::get<1>(response).get_child("sell")) {
                 const auto &update = updateRecord.second;
-                security.first->SetLevel1(
+                security.SetLevel1(
                     time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
                               update.get<double>("Rate")),
                     Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
@@ -203,7 +233,8 @@ class Ccex : public TradingSystem, public MarketDataSource {
             } catch (const std::exception &ex) {
               boost::format error(
                   "Failed to read order book state for \"%1%\": \"%2%\"");
-              error % *security.first % ex.what();
+              error % security  // 1
+                  % ex.what();  // 2
               throw MarketDataSource::Error(error.str().c_str());
             }
           }
@@ -218,23 +249,35 @@ class Ccex : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
+    {
+      const auto &it = m_securities.find(symbol);
+      if (it != m_securities.cend()) {
+        return *it->second.security;
+      }
+    }
+
+    const SecuritiesLock lock(m_securitiesMutex);
+
     std::vector<std::string> subs;
     boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
 
-    m_securities.emplace_back(
-        std::make_pair(boost::make_shared<Rest::Security>(
-                           GetContext(), symbol, *this,
-                           Rest::Security::SupportedLevel1Types()
-                               .set(LEVEL1_TICK_BID_PRICE)
-                               .set(LEVEL1_TICK_BID_QTY)
-                               .set(LEVEL1_TICK_ASK_PRICE)
-                               .set(LEVEL1_TICK_ASK_QTY)),
-                       boost::make_shared<CcexRequest>(
-                           "/t/api_pub.html", "orderbook",
-                           net::HTTPRequest::HTTP_GET, m_settings,
-                           "a=getorderbook&market=" + boost::join(subs, "-") +
-                               "&type=both&depth=1")));
-    return *m_securities.back().first;
+    return *m_securities
+                .emplace(
+                    symbol,
+                    SecuritySubscribtion{
+                        boost::make_shared<Rest::Security>(
+                            GetContext(), symbol, *this,
+                            Rest::Security::SupportedLevel1Types()
+                                .set(LEVEL1_TICK_BID_PRICE)
+                                .set(LEVEL1_TICK_BID_QTY)
+                                .set(LEVEL1_TICK_ASK_PRICE)
+                                .set(LEVEL1_TICK_ASK_QTY)),
+                        boost::make_shared<CcexRequest>(
+                            "/t/api_pub.html", "orderbook",
+                            net::HTTPRequest::HTTP_GET, m_settings,
+                            "a=getorderbook&market=" + boost::join(subs, "-") +
+                                "&type=both&depth=1")})
+                .first->second.security;
   }
 
   virtual OrderId SendSellAtMarketPrice(trdk::Security &,
@@ -309,9 +352,8 @@ class Ccex : public TradingSystem, public MarketDataSource {
   bool m_isConnected;
   net::HTTPSClientSession m_session;
 
-  std::vector<std::pair<boost::shared_ptr<Rest::Security>,
-                        boost::shared_ptr<CcexRequest>>>
-      m_securities;
+  SecuritiesMutex m_securitiesMutex;
+  boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
