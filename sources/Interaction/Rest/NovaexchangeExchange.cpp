@@ -11,10 +11,10 @@
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
-#include "RestApp.hpp"
-#include "RestPollingTask.hpp"
-#include "RestRequest.hpp"
-#include "RestSecurity.hpp"
+#include "App.hpp"
+#include "PollingTask.hpp"
+#include "Request.hpp"
+#include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -119,7 +119,7 @@ class NovaexchangeRequest : public Request {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-class Novaexchange : public TradingSystem, public MarketDataSource {
+class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
  private:
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
@@ -131,13 +131,13 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit Novaexchange(const App &,
-                        const TradingMode &mode,
-                        size_t tradingSystemIndex,
-                        size_t marketDataSourceIndex,
-                        Context &context,
-                        const std::string &instanceName,
-                        const IniSectionRef &conf)
+  explicit NovaexchangeExchange(const App &,
+                                const TradingMode &mode,
+                                size_t tradingSystemIndex,
+                                size_t marketDataSourceIndex,
+                                Context &context,
+                                const std::string &instanceName,
+                                const IniSectionRef &conf)
       : TradingSystem(mode, tradingSystemIndex, context, instanceName),
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -150,7 +150,7 @@ class Novaexchange : public TradingSystem, public MarketDataSource {
     m_session.setKeepAlive(true);
   }
 
-  virtual ~Novaexchange() override = default;
+  virtual ~NovaexchangeExchange() override = default;
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -384,7 +384,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateNovaexchange(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<Novaexchange>(
+  const auto &result = boost::make_shared<NovaexchangeExchange>(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};

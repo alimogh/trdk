@@ -14,28 +14,28 @@
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestVersion.cpp">
+    <ClCompile Include="App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestApp.cpp">
+    <ClCompile Include="CcexExchange.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestSecurity.cpp">
+    <ClCompile Include="NovaexchangeExchange.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestRequest.cpp">
+    <ClCompile Include="PollingTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestPollingTask.cpp">
+    <ClCompile Include="Request.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestNovaexchange.cpp">
+    <ClCompile Include="Security.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestYobitnet.cpp">
+    <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RestCcex.cpp">
+    <ClCompile Include="YobitnetExchange.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,19 +43,19 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestApp.hpp">
+    <ClInclude Include="App.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestSecurity.hpp">
+    <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestRequest.hpp">
+    <ClInclude Include="PollingTask.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestFwd.hpp">
+    <ClInclude Include="Request.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RestPollingTask.hpp">
+    <ClInclude Include="Security.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

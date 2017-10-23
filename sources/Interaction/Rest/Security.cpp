@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "RestSecurity.hpp"
+#include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

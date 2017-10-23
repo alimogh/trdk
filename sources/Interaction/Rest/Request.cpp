@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "RestRequest.hpp"
+#include "Request.hpp"
 #include "Core/Context.hpp"
 
 using namespace trdk;

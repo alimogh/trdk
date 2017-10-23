@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "RestApp.hpp"
+#include "App.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

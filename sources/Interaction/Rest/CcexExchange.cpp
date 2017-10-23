@@ -13,10 +13,10 @@
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
-#include "RestApp.hpp"
-#include "RestPollingTask.hpp"
-#include "RestRequest.hpp"
-#include "RestSecurity.hpp"
+#include "App.hpp"
+#include "PollingTask.hpp"
+#include "Request.hpp"
+#include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -128,7 +128,7 @@ class CcexRequest : public Request {
 
 namespace {
 
-class Ccex : public TradingSystem, public MarketDataSource {
+class CcexExchange : public TradingSystem, public MarketDataSource {
  private:
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
@@ -140,13 +140,13 @@ class Ccex : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit Ccex(const App &,
-                const TradingMode &mode,
-                size_t tradingSystemIndex,
-                size_t marketDataSourceIndex,
-                Context &context,
-                const std::string &instanceName,
-                const IniSectionRef &conf)
+  explicit CcexExchange(const App &,
+                        const TradingMode &mode,
+                        size_t tradingSystemIndex,
+                        size_t marketDataSourceIndex,
+                        Context &context,
+                        const std::string &instanceName,
+                        const IniSectionRef &conf)
       : TradingSystem(mode, tradingSystemIndex, context, instanceName),
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -155,7 +155,7 @@ class Ccex : public TradingSystem, public MarketDataSource {
     m_session.setKeepAlive(true);
   }
 
-  virtual ~Ccex() override = default;
+  virtual ~CcexExchange() override = default;
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -368,7 +368,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<Ccex>(
+  const auto &result = boost::make_shared<CcexExchange>(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};

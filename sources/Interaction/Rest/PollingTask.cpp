@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "RestPollingTask.hpp"
+#include "PollingTask.hpp"
 #include "Core/EventsLog.hpp"
 
 using namespace trdk;

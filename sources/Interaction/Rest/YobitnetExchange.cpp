@@ -21,10 +21,10 @@
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/TradingSystem.hpp"
-#include "RestApp.hpp"
-#include "RestPollingTask.hpp"
-#include "RestRequest.hpp"
-#include "RestSecurity.hpp"
+#include "App.hpp"
+#include "PollingTask.hpp"
+#include "Request.hpp"
+#include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -70,7 +70,7 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 
 namespace {
 
-class Yobitnet : public TradingSystem, public MarketDataSource {
+class YobitnetExchange : public TradingSystem, public MarketDataSource {
  public:
   struct Settings {
     std::string apiKey;
@@ -97,13 +97,13 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit Yobitnet(const App &,
-                    const TradingMode &mode,
-                    size_t tradingSystemIndex,
-                    size_t marketDataSourceIndex,
-                    Context &context,
-                    const std::string &instanceName,
-                    const IniSectionRef &conf)
+  explicit YobitnetExchange(const App &,
+                            const TradingMode &mode,
+                            size_t tradingSystemIndex,
+                            size_t marketDataSourceIndex,
+                            Context &context,
+                            const std::string &instanceName,
+                            const IniSectionRef &conf)
       : TradingSystem(mode, tradingSystemIndex, context, instanceName),
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -112,7 +112,7 @@ class Yobitnet : public TradingSystem, public MarketDataSource {
     m_session.setKeepAlive(true);
   }
 
-  virtual ~Yobitnet() override = default;
+  virtual ~YobitnetExchange() override = default;
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -303,7 +303,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<Yobitnet>(
+  const auto &result = boost::make_shared<YobitnetExchange>(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
