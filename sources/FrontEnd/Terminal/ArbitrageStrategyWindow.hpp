@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Strategies/ArbitrationAdvisor/Advice.hpp"
 #include "ui_ArbitrageStrategyWindow.h"
 
 namespace trdk {
@@ -24,7 +25,6 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
  private:
   struct Target {
-    TradingSystem *tradingSystem;
     Security *security;
 
     mutable Lib::SideAdapter<QLabel> bid;
@@ -49,6 +49,8 @@ class ArbitrageStrategyWindow : public QMainWindow {
       TargetList;
 
   struct InstanceData {
+    Strategy *strategy;
+    boost::signals2::scoped_connection adviceConnection;
     TargetList targets;
     TradingSystem *novaexchangeTradingSystem;
     TradingSystem *yobitnetTradingSystem;
@@ -71,18 +73,26 @@ class ArbitrageStrategyWindow : public QMainWindow {
   virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
-  void UpdatePrices(const Security *);
+  void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
   void OnCurrentSymbolChange(int symbolIndex);
-  void HighlightPrices();
+
+  void ToggleAutoTrading(bool activate);
+  void DeactivateAutoTrading();
+  void UpdateAutoTradingLevel(double level);
+
+  void UpdateAdviceLevel(double level);
+
+ signals:
+  void Advice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
 
  private:
   void LoadSymbols(const boost::optional<QString> &defaultSymbol);
   void SetCurrentSymbol(int symbolIndex);
-  void UpdateAllPrices();
-  void UpdateTargetPrices(const Target &);
 
   void Sell(TradingSystem &);
   void Buy(TradingSystem &);
+
+  bool IsAutoTradingActivated() const;
 
  private:
   const TradingMode m_tradingMode;
@@ -91,8 +101,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
   MainWindow &m_mainWindow;
   Ui::ArbitrageStrategyWindow m_ui;
   Lib::Engine &m_engine;
-  Strategy *m_currentStrategy;
-  int m_currentSymbol;
+  int m_symbol;
   Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
   std::vector<QWidget *> m_novaexchangeWidgets;
   std::vector<QWidget *> m_yobitnetWidgets;

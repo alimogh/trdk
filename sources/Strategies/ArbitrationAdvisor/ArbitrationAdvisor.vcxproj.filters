@@ -20,6 +20,9 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Strategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -31,11 +34,17 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Strategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Advice.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ArbitrationAdviser.rc" />
+    <ResourceCompile Include="ArbitrationAdvisor.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ArbitrationAdviser.def" />
+    <None Include="ArbitrationAdvisor.def" />
   </ItemGroup>
 </Project>

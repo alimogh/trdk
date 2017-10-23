@@ -52,8 +52,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}</ProjectGuid>
-    <RootNamespace>ArbitrationAdviser</RootNamespace>
-    <ProjectName>Arbitration adviser</ProjectName>
+    <RootNamespace>ArbitrationAdvisor</RootNamespace>
+    <ProjectName>Arbitration advisor</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -135,7 +135,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -146,7 +146,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -158,7 +158,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -170,7 +170,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Debug.props" />
     <Import Project="..\..\Configuration Debug.props" />
   </ImportGroup>
@@ -181,7 +181,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -192,7 +192,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -204,7 +204,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -216,7 +216,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Release.props" />
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
@@ -227,7 +227,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -238,7 +238,7 @@
     <Import Project="..\..\Distribution Standalone.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Standalone Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -250,7 +250,7 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
@@ -262,45 +262,45 @@
     <Import Project="..\..\Static lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
-    <Import Project="ArbitrationAdviser.props" />
+    <Import Project="ArbitrationAdvisor.props" />
     <Import Project="..\..\Distribution Dll Test.props" />
     <Import Project="..\..\Configuration Test.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">
-    <TargetName>ArbitrationAdviser</TargetName>
+    <TargetName>ArbitrationAdvisor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>ArbitrationAdviser</TargetName>
+    <TargetName>ArbitrationAdvisor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">
-    <TargetName>ArbitrationAdviser</TargetName>
+    <TargetName>ArbitrationAdvisor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
-    <TargetName>ArbitrationAdviser</TargetName>
+    <TargetName>ArbitrationAdvisor</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
-    <TargetName>ArbitrationAdviser_dbg</TargetName>
+    <TargetName>ArbitrationAdvisor_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">
-    <TargetName>ArbitrationAdviser_test</TargetName>
+    <TargetName>ArbitrationAdvisor_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>ArbitrationAdviser_dbg</TargetName>
+    <TargetName>ArbitrationAdvisor_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>ArbitrationAdviser_test</TargetName>
+    <TargetName>ArbitrationAdvisor_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
-    <TargetName>ArbitrationAdviser_dbg</TargetName>
+    <TargetName>ArbitrationAdvisor_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">
-    <TargetName>ArbitrationAdviser_test</TargetName>
+    <TargetName>ArbitrationAdvisor_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
-    <TargetName>ArbitrationAdviser_dbg</TargetName>
+    <TargetName>ArbitrationAdvisor_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
-    <TargetName>ArbitrationAdviser_test</TargetName>
+    <TargetName>ArbitrationAdvisor_test</TargetName>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
@@ -318,9 +318,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Advice.hpp" />
+    <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Api.h" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
@@ -340,10 +343,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ArbitrationAdviser.rc" />
+    <ResourceCompile Include="ArbitrationAdvisor.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ArbitrationAdviser.def" />
+    <None Include="ArbitrationAdvisor.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

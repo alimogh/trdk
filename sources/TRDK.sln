@@ -76,7 +76,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Terminal", "FrontEnd\Termin
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Front-end library", "FrontEnd\Lib\FrontEndLib.vcxproj", "{5C1475B4-256B-4154-A714-EE4C531A781B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Arbitration adviser", "Strategies\ArbitrationAdviser\ArbitrationAdviser.vcxproj", "{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Arbitration advisor", "Strategies\ArbitrationAdvisor\ArbitrationAdvisor.vcxproj", "{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

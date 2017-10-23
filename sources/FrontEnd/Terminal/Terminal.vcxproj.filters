@@ -43,6 +43,13 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{5c5b6dce-fe6f-4cc6-b91f-65cc5d3b3878}</UniqueIdentifier>
+      <Extensions>lib</Extensions>
+    </Filter>
+    <Filter Include="Libs\Arbitration advisor">
+      <UniqueIdentifier>{1ff19942-b326-47ad-be7d-ea7517d421d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -147,5 +154,25 @@
     <ResourceCompile Include="Resources\Terminal.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\output\x86\lib\Release Standalone\ArbitrationAdvisor.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Release Standalone\ArbitrationAdvisor.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Debug Standalone\ArbitrationAdvisor_dbg.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Debug Standalone\ArbitrationAdvisor_dbg.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
+    <Library Include="..\..\output\x64\lib\Test Standalone\ArbitrationAdvisor_test.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
+    <Library Include="..\..\output\x86\lib\Test Standalone\ArbitrationAdvisor_test.lib">
+      <Filter>Libs\Arbitration advisor</Filter>
+    </Library>
   </ItemGroup>
 </Project>

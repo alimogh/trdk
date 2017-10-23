@@ -23,15 +23,6 @@ using namespace trdk::FrontEnd::Shell;
 namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
-namespace {
-QVariant CheckSecurityFieldValue(double value, const Security &security) {
-  if (isnan(value)) {
-    return "-";
-  }
-  return QString::number(value, 'f', security.GetPricePrecision());
-}
-}
-
 SecurityListModel::SecurityListModel(Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
   Verify(connect(&m_engine, &Engine::StateChanged, this,
@@ -140,19 +131,14 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_SOURCE:
           return QString::fromStdString(security.GetSource().GetInstanceName());
         case COLUMN_BID_PRICE:
-          return CheckSecurityFieldValue(security.GetBidPriceValue(), security);
+          return ConvertPriceToText(security.GetBidPriceValue(),
+                                    security.GetPricePrecision());
         case COLUMN_ASK_PRICE:
-          return CheckSecurityFieldValue(security.GetAskPriceValue(), security);
+          return ConvertPriceToText(security.GetAskPriceValue(),
+                                    security.GetPricePrecision());
         case COLUMN_LAST_TIME: {
-          const auto &dateTime = security.GetLastMarketDataTime();
-          if (dateTime == pt::not_a_date_time) {
-            return "--:--:--";
-          }
-          const auto &time = dateTime.time_of_day();
-          QString result;
-          result.sprintf("%02d:%02d:%02d", time.hours(), time.minutes(),
-                         time.seconds());
-          return result;
+          return ConvertTimeToText(
+              security.GetLastMarketDataTime().time_of_day());
         }
         case COLUMN_TYPE:
           return QString::fromStdString(

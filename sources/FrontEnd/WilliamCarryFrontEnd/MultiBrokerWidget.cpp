@@ -362,12 +362,12 @@ void MultiBrokerWidget::SetPrices(const pt::ptime &time,
   }
   {
     const auto &precision = security ? security->GetPricePrecision() : 5;
-    if (!isnan(bid)) {
+    if (bid.IsNotNan()) {
       bidControl.setText(QString::number(bid, 'f', precision));
     } else {
       bidControl.setText(QString());
     }
-    if (!isnan(ask)) {
+    if (ask.IsNotNan()) {
       askControl.setText(QString::number(ask, 'f', precision));
     } else {
       askControl.setText(QString());

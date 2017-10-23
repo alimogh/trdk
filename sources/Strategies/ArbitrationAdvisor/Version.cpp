@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/22 17:11:54
+ *   Created: 2017/10/12 11:05:07
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,10 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-namespace trdk {
-namespace Strategies {
-namespace ArbitrationAdviser {}
-}
+using namespace trdk::Lib;
+
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_STRATEGY_ARBITRATIONADVISOR_FILE_NAME);
 }

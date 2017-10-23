@@ -140,14 +140,15 @@ void OrderWindow::UpdatePrices(const Security *security) {
   if (security != m_security) {
     return;
   }
-  m_ui.lastTime->setText(ConvertTimeToText(security->GetLastMarketDataTime()));
+  m_ui.lastTime->setText(
+      ConvertTimeToText(security->GetLastMarketDataTime().time_of_day()));
   {
     const auto &precision = security->GetPricePrecision();
     const auto &bid = security->GetBidPriceValue();
     const auto &ask = security->GetAskPriceValue();
     m_ui.bidPrice->setText(ConvertPriceToText(bid, precision));
     m_ui.askPrice->setText(ConvertPriceToText(ask, precision));
-    const Price spread = !isnan(bid.Get()) && !isnan(ask.Get())
+    const Price spread = bid.IsNotNan() && ask.IsNotNan()
                              ? ask - bid
                              : std::numeric_limits<double>::quiet_NaN();
     m_ui.spread->setText(ConvertPriceToText(spread, precision));

@@ -74,3 +74,5 @@ boost::shared_ptr<Strategy> CreateMultibroker(Context &context,
                                               const IniSectionRef &conf) {
   return boost::make_shared<MultibrokerStrategy>(context, instanceName, conf);
 }
+
+////////////////////////////////////////////////////////////////////////////////

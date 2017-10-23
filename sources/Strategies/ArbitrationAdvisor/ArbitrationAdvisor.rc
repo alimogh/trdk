@@ -40,9 +40,9 @@ BEGIN
         BEGIN
             VALUE "FileDescription", TRDK_NAME " Arbitration advisory module" TRDK_BUILD_IDENTITY_ADD
             VALUE "FileVersion", TRDK_VERSION_FULL
-            VALUE "InternalName", TRDK_VERSION_BRANCH ".Strategies.ArbitrationAdviser"
+            VALUE "InternalName", TRDK_VERSION_BRANCH ".Strategies.ArbitrationAdvisor"
             VALUE "LegalCopyright", TRDK_COPYRIGHT
-            VALUE "OriginalFilename", TRDK_STRATEGY_ARBITRATIONADVISER_DLL_FILE_NAME
+            VALUE "OriginalFilename", TRDK_STRATEGY_ARBITRATIONADVISOR_DLL_FILE_NAME
             VALUE "ProductName", TRDK_NAME
             VALUE "ProductVersion", TRDK_VERSION_FULL
         END

@@ -68,7 +68,7 @@ class QtyAdapter {
 
  public:
   bool Set(const Value &value) {
-    if (m_value == value || (isnan(m_value.Get()) && isnan(value.Get()))) {
+    if (m_value == value || (m_value.IsNan() && value.IsNan())) {
       return false;
     }
     SetValue(value);
@@ -152,7 +152,8 @@ class TimeAdapter {
     if (!m_widget) {
       return;
     }
-    m_widget->setText(trdk::FrontEnd::Lib::ConvertTimeToText(value));
+    m_widget->setText(
+        trdk::FrontEnd::Lib::ConvertTimeToText(value.time_of_day()));
     m_value = value;
   }
 
