@@ -29,6 +29,8 @@ enum SecurityType {
   SECURITY_TYPE_OPTIONS,
   //! Index.
   SECURITY_TYPE_INDEX,
+  //! Cryptocurrency.
+  SECURITY_TYPE_CRYPTO,
   //! Number of security types.
   numberOfSecurityTypes
 };

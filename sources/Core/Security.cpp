@@ -102,6 +102,8 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
         return 2;
       }
       break;
+    case SECURITY_TYPE_CRYPTO:
+      return 8;
   }
   if (symbol.GetSymbol() == "TEST_SCALE2") {
     return 2;
@@ -153,6 +155,8 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
         return 1;
       }
       break;
+    case SECURITY_TYPE_CRYPTO:
+      return 1;
   }
   if (symbol.GetSymbol() == "TEST_SCALE2" ||
       symbol.GetSymbol() == "TEST_SCALE4") {

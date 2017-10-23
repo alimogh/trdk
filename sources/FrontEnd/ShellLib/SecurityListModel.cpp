@@ -189,7 +189,7 @@ int SecurityListModel::columnCount(const QModelIndex &) const {
 
 QString SecurityListModel::ConvertFullToQString(
     const trdk::Lib::SecurityType &source) const {
-  static_assert(numberOfSecurityTypes == 7, "List changed.");
+  static_assert(numberOfSecurityTypes == 8, "List changed.");
   switch (source) {
     default:
       AssertEq(SECURITY_TYPE_STOCK, source);
@@ -208,5 +208,7 @@ QString SecurityListModel::ConvertFullToQString(
       return tr("Option Contract");
     case SECURITY_TYPE_INDEX:
       return tr("Index");
+    case SECURITY_TYPE_CRYPTO:
+      return tr("Cryptocurrency");
   }
 }
