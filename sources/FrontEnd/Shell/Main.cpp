@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Lib/Style.hpp"
-#include "ShellMainWindow.hpp"
+#include "MainWindow.hpp"
 
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;

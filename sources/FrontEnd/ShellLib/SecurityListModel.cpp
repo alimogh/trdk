@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ShellSecurityListModel.hpp"
+#include "SecurityListModel.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Lib/DropCopy.hpp"

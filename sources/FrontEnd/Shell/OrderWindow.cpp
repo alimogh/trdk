@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ShellOrderWindow.hpp"
+#include "OrderWindow.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Lib/DropCopy.hpp"

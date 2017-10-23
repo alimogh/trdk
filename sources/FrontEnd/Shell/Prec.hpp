@@ -8,7 +8,7 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "ShellFwd.hpp"
+#include "Fwd.hpp"
 
 #include "Common/Common.hpp"
 #include "Engine/Fwd.hpp"

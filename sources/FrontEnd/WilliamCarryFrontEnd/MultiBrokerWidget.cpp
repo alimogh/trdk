@@ -17,7 +17,7 @@
 #include "Strategies/WilliamCarry/OperationContext.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
-#include "ShellLib/ShellModule.hpp"
+#include "ShellLib/Module.hpp"
 #include "StrategySetupDialog.hpp"
 #include "TimersDialog.hpp"
 

@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "ShellFwd.hpp"
-#include "ui_ShellOrderWindow.h"
+#include "ui_OrderWindow.h"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {

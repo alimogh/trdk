@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "ui_ShellMainWindow.h"
+#include "ui_MainWindow.h"
 
 namespace trdk {
 namespace FrontEnd {

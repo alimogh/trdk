@@ -9,11 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ShellEngineWindow.hpp"
+#include "EngineWindow.hpp"
 #include "Core/Security.hpp"
-#include "ShellLib/ShellModule.hpp"
-#include "ShellLib/ShellSecurityListModel.hpp"
-#include "ShellOrderWindow.hpp"
+#include "OrderWindow.hpp"
+#include "ShellLib/Module.hpp"
+#include "ShellLib/SecurityListModel.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
