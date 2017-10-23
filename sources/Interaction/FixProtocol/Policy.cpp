@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FixProtocolPolicy.hpp"
+#include "Policy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

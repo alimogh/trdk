@@ -9,10 +9,10 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FixProtocolIncomingMessages.hpp"
-#include "FixProtocolIncomingMessagesFabric.hpp"
-#include "FixProtocolMarketDataSource.hpp"
-#include "FixProtocolPolicy.hpp"
+#include "IncomingMessages.hpp"
+#include "IncomingMessagesFabric.hpp"
+#include "MarketDataSource.hpp"
+#include "Policy.hpp"
 #include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;

@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "FixProtocolMessage.hpp"
+#include "Message.hpp"
 
 namespace trdk {
 namespace Interaction {

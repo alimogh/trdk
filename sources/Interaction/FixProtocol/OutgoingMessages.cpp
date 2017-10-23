@@ -9,11 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "FixProtocolOutgoingMessages.hpp"
-#include "FixProtocolIncomingMessages.hpp"
-#include "FixProtocolPolicy.hpp"
-#include "FixProtocolSecurity.hpp"
-#include "FixProtocolSettings.hpp"
+#include "OutgoingMessages.hpp"
+#include "IncomingMessages.hpp"
+#include "Policy.hpp"
+#include "Security.hpp"
+#include "Settings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Core/TradingSystem.hpp"
-#include "FixProtocolClient.hpp"
-#include "FixProtocolHandler.hpp"
+#include "Client.hpp"
+#include "Handler.hpp"
 
 namespace trdk {
 namespace Interaction {
