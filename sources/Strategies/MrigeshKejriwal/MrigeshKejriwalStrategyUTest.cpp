@@ -53,7 +53,14 @@ TEST(MrigeshKejriwal_Strategy, Setup) {
       "max_loss_share = 0.03\n"
       "signal_price_correction = 0\n"
       "order_type = lmt_ioc\n"
-      "prices_period_seconds = 180\n");
+      "prices_period_seconds = 180\n"
+      "prices_period_seconds = 180\n"
+      "sebi_turnover_fees_ratio = 0.000002\n"
+      "stamp_duty_ratio = 0.00002\n"
+      "goods_and_services_tax_ratio = 0.18\n"
+      "securities_transaction_tax_ratio = 0.001\n"
+      "initial_margin = 1\n"
+      "exchange_transaction_charges_ratio = 0.0000325\n");
   const auto &currentTime = pt::microsec_clock::local_time();
 
   Mocks::Context context;
