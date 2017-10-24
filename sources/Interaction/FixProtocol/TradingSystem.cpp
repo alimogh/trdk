@@ -142,27 +142,109 @@ void fix::TradingSystem::OnConnectionRestored() {
 }
 
 void fix::TradingSystem::OnReject(const in::Reject &message,
-                                  Lib::NetworkStreamClient &client) {
+                                  Lib::NetworkStreamClient &) {
   const auto &orderId = message.ReadRefSeqNum();
   try {
-    OnOrderReject(orderId, std::string(), message.ReadText());
-  } catch (const OrderIsUnknown &) {
+    OnOrderError(orderId, std::string(), message.ReadText());
+  } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
-    Handler::OnReject(message, client);
+    GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
+                  orderId,              // 1
+                  ex.what(),            // 2
+                  message.ReadText());  // 3
   }
 }
 
 void fix::TradingSystem::OnBusinessMessageReject(
     const in::BusinessMessageReject &message,
-    NetworkStreamClient &client,
-    const Milestones &delayMeasurement) {
+    NetworkStreamClient &,
+    const Milestones &) {
   const auto &reason = message.ReadText();
+  const auto &orderId = message.ReadBusinessRejectRefId();
   try {
-    OnOrderReject(message.ReadBusinessRejectRefId(), std::string(),
-                  std::move(reason));
-  } catch (const OrderIsUnknown &) {
+    OnOrderError(orderId, std::string(), std::move(reason));
+  } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
-    Handler::OnBusinessMessageReject(message, client, delayMeasurement);
+    GetLog().Warn(
+        "Received Business Message Reject for unknown order %1% (\"%2%\"): "
+        "\"%3%\" .",
+        orderId,              // 1
+        ex.what(),            // 2
+        message.ReadText());  // 3
+  }
+}
+
+void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
+                                           NetworkStreamClient &,
+                                           const Milestones &) {
+  const OrderId &orderId = message.ReadClOrdId();
+  const auto &tradingSystemOrderId = message.ReadOrdId();
+  const OrderStatus &orderStatus = message.ReadOrdStatus();
+  const ExecType &execType = message.ReadExecType();
+  try {
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
+    switch (execType) {
+      default:
+        GetLog().Warn(
+            "Received Execution Report with unknown status %1% (for order "
+            "%1%).",
+            execType,  // 1
+            orderId);  // 2
+        break;
+      case EXEC_TYPE_NEW:
+        OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                            ORDER_STATUS_SUBMITTED, message.ReadLeavesQty());
+        break;
+      case EXEC_TYPE_CANCELED:
+      case EXEC_TYPE_REPLACE:
+        OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                            ORDER_STATUS_CANCELLED, message.ReadLeavesQty());
+        break;
+      case EXEC_TYPE_REJECTED:
+      case EXEC_TYPE_EXPIRED:
+        message.ResetReadingState();
+        OnOrderReject(orderId, tradingSystemOrderId, message.ReadText());
+        break;
+      case EXEC_TYPE_TRADE: {
+        Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
+               orderStatus == ORDER_STATUS_FILLED);
+        message.ResetReadingState();
+        TradeInfo trade = {message.ReadAvgPx()};
+        OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
+                            message.ReadLeavesQty(), std::move(trade));
+        break;
+      }
+      case EXEC_TYPE_ORDER_STATUS:
+        switch (orderStatus) {
+          case ORDER_STATUS_SUBMITTED:
+          case ORDER_STATUS_CANCELLED:
+            OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
+                                message.ReadLeavesQty());
+            break;
+          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_FILLED_PARTIALLY: {
+            message.ResetReadingState();
+            TradeInfo trade = {message.ReadAvgPx()};
+            OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
+                                message.ReadLeavesQty(), std::move(trade));
+            break;
+          }
+          case ORDER_STATUS_REJECTED:
+            message.ResetReadingState();
+            OnOrderReject(orderId, tradingSystemOrderId, message.ReadText());
+            break;
+          case ORDER_STATUS_ERROR:
+            message.ResetReadingState();
+            OnOrderError(orderId, tradingSystemOrderId, message.ReadText());
+            break;
+        }
+    }
+  } catch (const OrderIsUnknown &ex) {
+    GetLog().Warn(
+        "Received Execution Report for unknown order %1% (\"%2%\"): %3%.",
+        orderId,    // 1
+        ex.what(),  // 2
+        execType);  // 3
   }
 }
 

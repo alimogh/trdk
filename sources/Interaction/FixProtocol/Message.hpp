@@ -34,6 +34,7 @@ enum MessageType {
   MESSAGE_TYPE_RESEND_REQUEST = '2',
   MESSAGE_TYPE_REJECT = '3',
   MESSAGE_TYPE_BUSINESS_MESSAGE_REJECT = 'j',
+  MESSAGE_TYPE_EXECUTION_REPORT = '8',
 };
 
 template <typename It>
@@ -46,6 +47,16 @@ uint32_t CalcCheckSum(It begin, const It &end) {
   return result % 256;
 }
 }
+
+enum ExecType {
+  EXEC_TYPE_NEW = '0',
+  EXEC_TYPE_CANCELED = '4',
+  EXEC_TYPE_REPLACE = '5',
+  EXEC_TYPE_REJECTED = '8',
+  EXEC_TYPE_EXPIRED = 'C',
+  EXEC_TYPE_TRADE = 'F',
+  EXEC_TYPE_ORDER_STATUS = 'I'
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -98,14 +109,31 @@ class Message : public FixProtocol::Message {
  protected:
   MessageSequenceNumber ReadRefSeqNum() const;
   MessageSequenceNumber ReadBusinessRejectRefId() const;
+  //! Tag 58.
   std::string ReadText() const;
+  //! Tag 6.
+  Price ReadAvgPx() const;
+  //! Tag 37.
+  std::string ReadOrdId() const;
+  //! Tag 11
+  MessageSequenceNumber ReadClOrdId() const;
+  //! Tag 39.
+  OrderStatus ReadOrdStatus() const;
+  //! Tag 150.
+  ExecType ReadExecType() const;
+  //! Tag 151.
+  Qty ReadLeavesQty() const;
 
  protected:
   std::string FindAndReadStringFromSoh(int32_t tagMatch) const;
-  template <typename Result>
-  Result FindAndReadInt(int32_t tagMatch) const;
-  template <typename Result>
-  Result FindAndReadIntFromSoh(int32_t tagMatch) const;
+  template <typename Result, typename TagMatch>
+  Result FindAndReadInt(const TagMatch &) const;
+  template <typename Result, typename TagMatch>
+  Result FindAndReadIntFromSoh(const TagMatch &) const;
+  template <typename Result, typename TagMatch>
+  Result FindAndReadDouble(const TagMatch &) const;
+  template <typename Result, typename TagMatch>
+  Result FindAndReadDoubleFromSoh(const TagMatch &) const;
 
  private:
   const Detail::MessagesParams m_params;

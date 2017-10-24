@@ -49,6 +49,9 @@ class OrderWindow : public QMainWindow {
   void SelectTradingSystem();
 
  private:
+  bool IsIocOrder() const;
+
+ private:
   Ui::OrderWindow m_ui;
   Lib::Engine &m_engine;
   Security *m_security;

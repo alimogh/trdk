@@ -45,10 +45,14 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   typedef trdk::ModuleEventsLog Log;
   typedef trdk::ModuleTradingLog TradingLog;
 
+  //! Trade.
   struct TradeInfo {
-    std::string id;
-    trdk::Qty qty;
+    //! Trade price.
     trdk::Price price;
+    //! Trade quantity. If set as "zero" - will be calculated automatically.
+    trdk::Qty qty;
+    //! Trade ID. Optional.
+    boost::optional<std::string> id;
   };
 
   typedef boost::function<void(const trdk::OrderId &,
@@ -365,7 +369,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission,
-                           const trdk::TradingSystem::TradeInfo &);
+                           trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order state change.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.
@@ -391,7 +395,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                            const std::string &tradingSystemOrderId,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
-                           const trdk::TradingSystem::TradeInfo &);
+                           trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order error.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.

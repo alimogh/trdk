@@ -280,7 +280,8 @@ class Position::Implementation : private boost::noncopyable {
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
         m_open.OnNewTrade(*trade, trade->price);
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
-        CopyTrade(trade->id, trade->price, trade->qty, true);
+        CopyTrade(trade->id ? *trade->id : std::string(), trade->price,
+                  trade->qty, true);
         order.isActive = remainingQty > 0;
         break;
       case ORDER_STATUS_ERROR:
@@ -367,7 +368,8 @@ class Position::Implementation : private boost::noncopyable {
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
         m_close.OnNewTrade(*trade, trade->price);
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
-        CopyTrade(trade->id, trade->price, trade->qty, false);
+        CopyTrade(trade->id ? *trade->id : std::string(), trade->price,
+                  trade->qty, false);
         if (remainingQty != 0) {
           CopyOrder(&tradingSystemOrderId, false, orderStatus);
           return;
@@ -628,7 +630,7 @@ class Position::Implementation : private boost::noncopyable {
       order.isActive = false;
 
       m_open.time = order.time;
-      m_open.OnNewTrade(TradingSystem::TradeInfo{"", order.qty, openPrice},
+      m_open.OnNewTrade(TradingSystem::TradeInfo{openPrice, order.qty},
                         openPrice);
 
       m_isRegistered = true;  // supporting prev. logic

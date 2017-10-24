@@ -181,6 +181,30 @@ class BusinessMessageReject : public Message {
                       Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) override;
 };
+
+class ExecutionReport : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit ExecutionReport(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~ExecutionReport() override = default;
+
+ public:
+  using Base::ReadOrdId;
+  using Base::ReadClOrdId;
+  using Base::ReadOrdStatus;
+  using Base::ReadExecType;
+  using Base::ReadLeavesQty;
+  using Base::ReadAvgPx;
+  using Base::ReadText;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+};
 }
 }
 }

@@ -46,7 +46,7 @@ class Handler::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(const Context &context,
-                          const Lib::IniSectionRef &conf,
+                          const IniSectionRef &conf,
                           ModuleEventsLog &log)
       : m_settings(LoadSettings(conf, context.GetSettings(), log)),
         m_isAuthorized(false),
@@ -54,7 +54,7 @@ class Handler::Implementation : private boost::noncopyable {
 };
 
 Handler::Handler(const Context &context,
-                 const Lib::IniSectionRef &conf,
+                 const IniSectionRef &conf,
                  ModuleEventsLog &log)
     : m_pimpl(boost::make_unique<Implementation>(context, conf, log)) {}
 
@@ -95,7 +95,7 @@ void Handler::OnTestRequest(const in::TestRequest &testRequest,
 }
 
 void Handler::OnResendRequest(const in::ResendRequest &message,
-                              Lib::NetworkStreamClient &client) {
+                              NetworkStreamClient &client) {
   GetLog().Error("%1%Resend Request received.", client.GetLogTag());
   throw ProtocolError("Resend request received", &*message.GetMessageBegin(),
                       0);
@@ -127,8 +127,15 @@ void Handler::OnMarketDataIncrementalRefresh(
 }
 
 void Handler::OnBusinessMessageReject(const in::BusinessMessageReject &message,
-                                      Lib::NetworkStreamClient &,
+                                      NetworkStreamClient &,
                                       const Milestones &) {
   ProtocolError("Received unsupported message Business Message Reject",
+                &*message.GetMessageBegin(), 0);
+}
+
+void Handler::OnExecutionReport(const in::ExecutionReport &message,
+                                NetworkStreamClient &,
+                                const Milestones &) {
+  ProtocolError("Received unsupported message Execution Report",
                 &*message.GetMessageBegin(), 0);
 }

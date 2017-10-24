@@ -111,11 +111,12 @@ class lib::Engine::Implementation : private boost::noncopyable {
                         QString::fromStdString(tradingSystemOrderId),
                         int(status), remainingQty);
     } else {
-      emit m_self.Trade(static_cast<unsigned int>(id),
-                        QString::fromStdString(tradingSystemOrderId),
-                        int(status), remainingQty,
-                        QString::fromStdString(tradeInfo->id), tradeInfo->price,
-                        tradeInfo->qty);
+      emit m_self.Trade(
+          static_cast<unsigned int>(id),
+          QString::fromStdString(tradingSystemOrderId), int(status),
+          remainingQty,
+          tradeInfo->id ? QString::fromStdString(*tradeInfo->id) : QString(),
+          tradeInfo->price, tradeInfo->qty);
     }
   }
 };

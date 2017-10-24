@@ -232,16 +232,83 @@ Result FindAndReadIntTagFromSoh(const TagMatch &tagMatch,
 }
 
 template <typename Result, typename It, typename TagMatch>
-std::pair<Result, It> FindAndReadCharTag(const TagMatch &tagMatch,
-                                         const It &begin,
-                                         const It &end) {
-  for (auto it = begin; it + sizeof(tagMatch) < end;) {
-    if (reinterpret_cast<const decltype(tagMatch) &>(*it) == tagMatch) {
-      return ReadIntValue<Result>(it + sizeof(tagMatch));
+Result FindAndReadDoubleTag(const TagMatch &tagMatch,
+                            It &source,
+                            const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) < end;) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
+      source += sizeof(tagMatch);
+      const auto &result = ReadDoubleValue<Result>(source);
+      ++source;
+      return result;
     }
-    it = std::find(it + sizeof(tagMatch), end, SOH);
-    if (it != end) {
-      ++it;
+    source = std::find(source + sizeof(tagMatch), end, SOH);
+    if (source != end) {
+      ++source;
+    }
+  }
+  throw ProtocolError("Message doesn't have required tag with integer value",
+                      &*begin, 0);
+}
+template <typename Result, typename It, typename TagMatch>
+Result FindAndReadDoubleTagFromSoh(const TagMatch &tagMatch,
+                                   It &source,
+                                   const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) < end;
+       source = std::find(source + sizeof(tagMatch), end, SOH)) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
+      source += sizeof(tagMatch);
+      const auto &result = ReadDoubleValue<Result>(source);
+      Assert(source < end);
+      AssertEq(SOH, *source);
+      ++source;
+      return result;
+    }
+  }
+  throw ProtocolError("Message doesn't have required tag with integer value",
+                      &*begin, 0);
+}
+
+template <typename It, typename TagMatch>
+char FindAndReadCharTag(const TagMatch &tagMatch, It &source, const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) + 2 < end;) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
+      source += sizeof(tagMatch);
+      const char result = *source;
+      if (*++source != SOH) {
+        throw ProtocolError("Request char field type but it has another type",
+                            &*source, SOH);
+      }
+      ++source;
+      return result;
+    }
+    source = std::find(source + sizeof(tagMatch), end, SOH);
+    if (source != end) {
+      ++source;
+    }
+  }
+  throw ProtocolError("Message doesn't have required tag with char value",
+                      &*begin, 0);
+}
+template <typename It, typename TagMatch>
+char FindAndReadCharTagFromSoh(const TagMatch &tagMatch,
+                               It &source,
+                               const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) + 2 < end;
+       source = std::find(source + sizeof(tagMatch), end, SOH)) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
+      source += sizeof(tagMatch);
+      const char result = *source;
+      if (*++source != SOH) {
+        throw ProtocolError("Request char field type but it has another type",
+                            &*source, SOH);
+      }
+      ++source;
+      return result;
     }
   }
   throw ProtocolError("Message doesn't have required tag with char value",
@@ -443,6 +510,8 @@ std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
       return boost::make_unique<Reject>(std::move(params));
     case MESSAGE_TYPE_BUSINESS_MESSAGE_REJECT:
       return boost::make_unique<BusinessMessageReject>(std::move(params));
+    case MESSAGE_TYPE_EXECUTION_REPORT:
+      return boost::make_unique<ExecutionReport>(std::move(params));
     default: {
       boost::format message("Message has unknown type '%1%'");
       message % type;
@@ -496,8 +565,8 @@ std::string Incoming::Message::FindAndReadStringFromSoh(
   }
 }
 
-template <typename Result>
-Result Incoming::Message::FindAndReadInt(int32_t tagMatch) const {
+template <typename Result, typename TagMatch>
+Result Incoming::Message::FindAndReadInt(const TagMatch &tagMatch) const {
   try {
     return FindAndReadIntTag<Result>(tagMatch, GetUnreadBeginRef(), GetEnd());
   } catch (const ProtocolError &ex) {
@@ -516,8 +585,9 @@ Result Incoming::Message::FindAndReadInt(int32_t tagMatch) const {
   }
 }
 
-template <typename Result>
-Result Incoming::Message::FindAndReadIntFromSoh(int32_t tagMatch) const {
+template <typename Result, typename TagMatch>
+Result Incoming::Message::FindAndReadIntFromSoh(
+    const TagMatch &tagMatch) const {
   try {
     auto it = std::prev(GetUnreadBegin());
     const auto &result =
@@ -540,6 +610,52 @@ Result Incoming::Message::FindAndReadIntFromSoh(int32_t tagMatch) const {
   }
 }
 
+template <typename Result, typename TagMatch>
+Result Incoming::Message::FindAndReadDouble(const TagMatch &tagMatch) const {
+  try {
+    return FindAndReadDoubleTag<Result>(tagMatch, GetUnreadBeginRef(),
+                                        GetEnd());
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an double value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an double value string from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
+template <typename Result, typename TagMatch>
+Result Incoming::Message::FindAndReadDoubleFromSoh(
+    const TagMatch &tagMatch) const {
+  try {
+    auto it = std::prev(GetUnreadBegin());
+    const auto &result =
+        FindAndReadDoubleTagFromSoh<Result>(tagMatch, it, GetEnd());
+    SetUnreadBegin(it);
+    return result;
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an double value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read an double value string from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
 MessageSequenceNumber Incoming::Message::ReadRefSeqNum() const {
   // |45=
   return FindAndReadIntFromSoh<MessageSequenceNumber>(
@@ -552,9 +668,79 @@ MessageSequenceNumber Incoming::Message::ReadBusinessRejectRefId() const {
       static_cast<int32_t>(1027159859));
 }
 
+std::string Incoming::Message::ReadOrdId() const {
+  // |37=
+  return FindAndReadStringFromSoh(static_cast<int32_t>(1027027713));
+}
+
+MessageSequenceNumber Incoming::Message::ReadClOrdId() const {
+  // |11=
+  return FindAndReadIntFromSoh<MessageSequenceNumber>(
+      static_cast<int32_t>(1026633985));
+}
+
 std::string Incoming::Message::ReadText() const {
   // |58=
   return FindAndReadStringFromSoh(static_cast<int32_t>(1027093761));
+}
+
+OrderStatus Incoming::Message::ReadOrdStatus() const {
+  // |39=
+  auto it = std::prev(GetUnreadBegin());
+  OrderStatus result;
+  switch (FindAndReadCharTagFromSoh(static_cast<int32_t>(1027158785), it,
+                                    GetEnd())) {
+    case '0':
+      result = ORDER_STATUS_SUBMITTED;
+      break;
+    case '1':
+      result = ORDER_STATUS_FILLED_PARTIALLY;
+      break;
+    case '2':
+      result = ORDER_STATUS_FILLED;
+      break;
+    case '8':
+      result = ORDER_STATUS_REJECTED;
+      break;
+    case '4':
+      result = ORDER_STATUS_CANCELLED;
+      break;
+    default:
+      throw ProtocolError("Unknown order status received", &*it, 0);
+  }
+  SetUnreadBegin(it);
+  return result;
+}
+
+ExecType Incoming::Message::ReadExecType() const {
+  // 150=
+  auto it = GetUnreadBegin();
+  const auto &result =
+      FindAndReadCharTag(static_cast<int32_t>(1026569521), it, GetEnd());
+  switch (result) {
+    case EXEC_TYPE_NEW:
+    case EXEC_TYPE_CANCELED:
+    case EXEC_TYPE_REPLACE:
+    case EXEC_TYPE_REJECTED:
+    case EXEC_TYPE_EXPIRED:
+    case EXEC_TYPE_TRADE:
+    case EXEC_TYPE_ORDER_STATUS:
+      break;
+    default:
+      throw ProtocolError("Unknown order status received", &*it, 0);
+  }
+  SetUnreadBegin(it);
+  return static_cast<ExecType>(result);
+}
+
+Price Incoming::Message::ReadAvgPx() const {
+  // 6=
+  return FindAndReadInt<uint32_t>(static_cast<int16_t>(15670));
+}
+
+Qty Incoming::Message::ReadLeavesQty() const {
+  // 151=
+  return FindAndReadInt<uint32_t>(static_cast<int32_t>(1026635057));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -710,6 +896,14 @@ void BusinessMessageReject::Handle(Handler &handler,
                                    NetworkStreamClient &client,
                                    const Milestones &delayMeasurement) {
   handler.OnBusinessMessageReject(*this, client, delayMeasurement);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ExecutionReport::Handle(Handler &handler,
+                             NetworkStreamClient &client,
+                             const Milestones &delayMeasurement) {
+  handler.OnExecutionReport(*this, client, delayMeasurement);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

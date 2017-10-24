@@ -48,6 +48,10 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
       const Incoming::BusinessMessageReject &,
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &) override;
+  virtual void OnExecutionReport(
+      const Incoming::ExecutionReport &message,
+      Lib::NetworkStreamClient &,
+      const Lib::TimeMeasurement::Milestones &) override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;

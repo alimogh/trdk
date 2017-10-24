@@ -82,6 +82,8 @@ OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
                  &OrderWindow::SendBuyOrder));
   Verify(connect(m_ui.sell, &QPushButton::clicked, this,
                  &OrderWindow::SendSellOrder));
+
+  adjustSize();
 }
 
 void OrderWindow::SetSecurity(Security &security) {
@@ -201,11 +203,21 @@ void OrderWindow::SendBuyOrder() {
   }
   for (;;) {
     try {
-      tradingSystemMode->Buy(
-          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security->GetAskPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      if (IsIocOrder()) {
+        tradingSystemMode->BuyImmediatelyOrCancel(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      } else {
+        tradingSystemMode->Buy(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      }
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -230,11 +242,21 @@ void OrderWindow::SendSellOrder() {
   }
   for (;;) {
     try {
-      tradingSystemMode->Sell(
-          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security->GetBidPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      if (IsIocOrder()) {
+        tradingSystemMode->SellImmediatelyOrCancel(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      } else {
+        tradingSystemMode->Sell(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      }
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -244,4 +266,8 @@ void OrderWindow::SendSellOrder() {
       }
     }
   }
+}
+
+bool OrderWindow::IsIocOrder() const {
+  return m_ui.orderType->currentText() == "IOC";
 }

@@ -57,6 +57,10 @@ class Handler : private boost::noncopyable {
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &);
 
+  virtual void OnExecutionReport(const Incoming::ExecutionReport &,
+                                 Lib::NetworkStreamClient &,
+                                 const Lib::TimeMeasurement::Milestones &);
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
