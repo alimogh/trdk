@@ -19,6 +19,7 @@ class PriceAdapter {
   typedef trdk::Price Value;
 
  public:
+  PriceAdapter() : m_widget(nullptr) {}
   explicit PriceAdapter(Widget &widget, uint8_t precision)
       : m_widget(&widget), m_precision(precision) {
     SetValue(std::numeric_limits<double>::quiet_NaN());
@@ -37,6 +38,10 @@ class PriceAdapter {
 
  protected:
   void SetValue(const Value &value) {
+    Assert(m_widget);
+    if (!m_widget) {
+      return;
+    }
     m_widget->setText(
         trdk::FrontEnd::Lib::ConvertPriceToText(value, m_precision));
     m_value = value;
@@ -55,6 +60,7 @@ class QtyAdapter {
   typedef trdk::Price Value;
 
  public:
+  QtyAdapter() : m_widget(nullptr) {}
   explicit QtyAdapter(Widget &widget, uint8_t precision)
       : m_widget(&widget), m_precision(precision) {
     SetValue(std::numeric_limits<double>::quiet_NaN());
@@ -62,7 +68,7 @@ class QtyAdapter {
 
  public:
   bool Set(const Value &value) {
-    if (m_value == value || (isnan(m_value.Get()) && isnan(value.Get()))) {
+    if (m_value == value || (m_value.IsNan() && value.IsNan())) {
       return false;
     }
     SetValue(value);
@@ -73,6 +79,10 @@ class QtyAdapter {
 
  protected:
   void SetValue(const Value &value) {
+    Assert(m_widget);
+    if (!m_widget) {
+      return;
+    }
     m_widget->setText(
         trdk::FrontEnd::Lib::ConvertQtyToText(value, m_precision));
     m_value = value;
@@ -87,6 +97,7 @@ class QtyAdapter {
 template <typename WidgetType>
 class SideAdapter {
  public:
+  SideAdapter() {}
   explicit SideAdapter(QLabel &price, QLabel &qty, uint8_t precision)
       : m_price(price, precision), m_qty(qty, precision) {}
 
@@ -118,6 +129,7 @@ class TimeAdapter {
   typedef boost::posix_time::ptime Value;
 
  public:
+  TimeAdapter() : m_widget(nullptr) {}
   explicit TimeAdapter(Widget &widget) : m_widget(&widget) {
     SetValue(boost::posix_time::not_a_date_time);
   }
@@ -136,7 +148,12 @@ class TimeAdapter {
 
  protected:
   void SetValue(const Value &value) {
-    m_widget->setText(trdk::FrontEnd::Lib::ConvertTimeToText(value));
+    Assert(m_widget);
+    if (!m_widget) {
+      return;
+    }
+    m_widget->setText(
+        trdk::FrontEnd::Lib::ConvertTimeToText(value.time_of_day()));
     m_value = value;
   }
 

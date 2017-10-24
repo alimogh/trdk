@@ -16,7 +16,7 @@ namespace Lib {
 TRDK_FRONTEND_LIB_API void ShowAbout(QWidget &);
 TRDK_FRONTEND_LIB_API void PinToTop(QWidget &, bool pin);
 TRDK_FRONTEND_LIB_API QString
-ConvertTimeToText(const boost::posix_time::ptime &);
+ConvertTimeToText(const boost::posix_time::time_duration &);
 TRDK_FRONTEND_LIB_API QString ConvertPriceToText(const trdk::Price &,
                                                  uint8_t precision);
 TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const trdk::Qty &,

@@ -135,7 +135,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                       const TradeInfo *trade) {
     m_tradingLog.Write(
         "ORDER STATUS\t%1%\t%2%\tid=%3%/%4%\tremaining=%5%"
-        "\tcomm=%6%\ttrade-id=%7%\ttrade-price=%8%\ttrade-qty=%9%",
+        "\tcomm=%6%\ttrade-id=%7%\ttrade-qty=%8%\ttrade-price=%9%",
         [&](TradingRecord &record) {
           record % operationId        // 1
               % orderStatus           // 2
@@ -148,9 +148,13 @@ class TradingSystem::Implementation : private boost::noncopyable {
             record % '-';  // 6
           }
           if (trade) {
-            record % trade->id  // 7
-                % trade->price  // 8
-                % trade->qty;   // 9
+            if (trade->id) {
+              record % *trade->id;  // 7
+            } else {
+              record % '-';  // 7
+            }
+            record % trade->qty  // 8
+                % trade->price;  // 9
           } else {
             record % '-'  // 7
                 % '-'     // 8
@@ -279,7 +283,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                            const OrderStatus &status,
                            const boost::optional<Qty> &remainingQty,
                            const boost::optional<Volume> &commission,
-                           const TradeInfo *tradeInfo) {
+                           boost::optional<TradeInfo> &&tradeInfo) {
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -290,6 +294,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
     }
 
     if (remainingQty) {
+      AssertGe(it->second.remainingQty, *remainingQty);
+      if (tradeInfo && !tradeInfo->qty) {
+        tradeInfo->qty = it->second.remainingQty - *remainingQty;
+      }
       it->second.remainingQty = *remainingQty;
     }
 
@@ -298,7 +306,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     // from this callback).
     it->second.statusUpdateSignal(orderId, tradingSystemOrderId, status,
                                   it->second.remainingQty, commission,
-                                  tradeInfo);
+                                  tradeInfo ? &*tradeInfo : nullptr);
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
@@ -859,16 +867,17 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         const Volume &commission,
-                                        const TradeInfo &trade) {
+                                        TradeInfo &&trade) {
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
-                               remainingQty, commission, &trade);
+                               remainingQty, std::move(commission),
+                               std::move(trade));
 }
 void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const std::string &tradingSystemOrderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty) {
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
-                               remainingQty, boost::none, nullptr);
+                               remainingQty, boost::none, boost::none);
 }
 void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const std::string &tradingSystemOrderId,
@@ -876,29 +885,43 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const Qty &remainingQty,
                                         const Volume &commission) {
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
-                               remainingQty, commission, nullptr);
+                               remainingQty, commission, boost::none);
 }
 void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const std::string &tradingSystemOrderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
-                                        const TradeInfo &trade) {
+                                        TradeInfo &&trade) {
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
-                               remainingQty, boost::none, &trade);
+                               remainingQty, boost::none, std::move(trade));
 }
 
 void TradingSystem::OnOrderError(const OrderId &orderId,
-                                 const std::string &tradingSystemOrderId) {
+                                 const std::string &tradingSystemOrderId,
+                                 const std::string &&error) {
+  GetTradingLog().Write("ORDER ERROR\tid=%1%\treason=%2%",
+                        [&](TradingRecord &record) {
+                          record % orderId  // 1
+                              % error;      // 2
+                        });
+  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
+                 error);
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_ERROR, boost::none, boost::none,
-                               nullptr);
+                               boost::none);
 }
 
 void TradingSystem::OnOrderReject(const OrderId &orderId,
-                                  const std::string &tradingSystemOrderId) {
+                                  const std::string &tradingSystemOrderId,
+                                  const std::string &&reason) {
+  GetTradingLog().Write("ORDER REJECT\tid=%1%\treason=%2%",
+                        [&](TradingRecord &record) {
+                          record % orderId  // 1
+                              % reason;     // 2
+                        });
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_REJECTED, boost::none, boost::none,
-                               nullptr);
+                               boost::none);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

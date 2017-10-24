@@ -216,7 +216,7 @@ Contract Client::GetContract(
   // see how to find instrument:
   // https://interactivebrokers.github.io/tws-api/basic_contracts.html#gsc.tab=0
   Contract contract;
-  static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
+  static_assert(numberOfSecurityTypes == 8, "Security type list changed.");
   const Symbol &symbol = security.GetSymbol();
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_INDEX:
@@ -1950,7 +1950,7 @@ std::vector<ContractDetails> Client::MatchContractDetails(
   m_ts.GetMdsLog().Debug("Requesting for matching symbol \"%1%\"...", symbol);
 
   Contract request;
-  static_assert(numberOfSecurityTypes == 7, "Security type list changed.");
+  static_assert(numberOfSecurityTypes == 8, "Security type list changed.");
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FUTURES:
       request.secType = "FUT";

@@ -38,6 +38,7 @@ struct Settings {
     Lib::Double goodsAndServicesTaxRatio;
     Lib::Double securitiesTransactionTaxRatio;
     Lib::Double initialMargin;
+    Lib::Double exchangeTransactionChargesRatio;
   } report;
 
   explicit Settings(const Lib::IniSectionRef &);

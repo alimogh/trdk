@@ -44,24 +44,23 @@ void lib::PinToTop(QWidget &widget, bool pin) {
   widget.show();
 }
 
-QString lib::ConvertTimeToText(const pt::ptime &source) {
+QString lib::ConvertTimeToText(const pt::time_duration &source) {
   if (source == pt::not_a_date_time) {
     return "--:--:--";
   }
-  const auto &time = source.time_of_day();
-  return QString().sprintf("%02d:%02d:%02d", time.hours(), time.minutes(),
-                           time.seconds());
+  return QString().sprintf("%02d:%02d:%02d", source.hours(), source.minutes(),
+                           source.seconds());
 }
 
 QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
-  if (isnan(source.Get())) {
+  if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', precision);
 }
 
 QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
-  if (isnan(source.Get())) {
+  if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', precision);

@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Lib/Style.hpp"
-#include "ShellMainWindow.hpp"
+#include "MainWindow.hpp"
 
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Shell;
@@ -18,6 +18,7 @@ using namespace trdk::FrontEnd::Shell;
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
 
+  QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication application(argc, argv);
 
   try {

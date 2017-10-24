@@ -34,7 +34,7 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
   void Stop(const trdk::StopMode &);
 
-  void Add(const trdk::Lib::Ini &);
+  virtual void Add(const trdk::Lib::Ini &) override;
   void Update(const trdk::Lib::Ini &);
 
   virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;

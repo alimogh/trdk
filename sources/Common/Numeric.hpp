@@ -101,6 +101,9 @@ class Numeric {
     return m_value > rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
   }
 
+  bool IsNan() const { return isnan(m_value); }
+  bool IsNotNan() const { return !IsNan(); }
+
  public:
   template <typename AnotherValueType>
   Numeric &operator+=(const AnotherValueType &rhs) {

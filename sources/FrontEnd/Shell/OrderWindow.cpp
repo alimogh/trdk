@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ShellOrderWindow.hpp"
+#include "OrderWindow.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Lib/DropCopy.hpp"
@@ -82,6 +82,8 @@ OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
                  &OrderWindow::SendBuyOrder));
   Verify(connect(m_ui.sell, &QPushButton::clicked, this,
                  &OrderWindow::SendSellOrder));
+
+  adjustSize();
 }
 
 void OrderWindow::SetSecurity(Security &security) {
@@ -140,14 +142,15 @@ void OrderWindow::UpdatePrices(const Security *security) {
   if (security != m_security) {
     return;
   }
-  m_ui.lastTime->setText(ConvertTimeToText(security->GetLastMarketDataTime()));
+  m_ui.lastTime->setText(
+      ConvertTimeToText(security->GetLastMarketDataTime().time_of_day()));
   {
     const auto &precision = security->GetPricePrecision();
     const auto &bid = security->GetBidPriceValue();
     const auto &ask = security->GetAskPriceValue();
     m_ui.bidPrice->setText(ConvertPriceToText(bid, precision));
     m_ui.askPrice->setText(ConvertPriceToText(ask, precision));
-    const Price spread = !isnan(bid.Get()) && !isnan(ask.Get())
+    const Price spread = bid.IsNotNan() && ask.IsNotNan()
                              ? ask - bid
                              : std::numeric_limits<double>::quiet_NaN();
     m_ui.spread->setText(ConvertPriceToText(spread, precision));
@@ -200,11 +203,21 @@ void OrderWindow::SendBuyOrder() {
   }
   for (;;) {
     try {
-      tradingSystemMode->Buy(
-          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security->GetAskPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      if (IsIocOrder()) {
+        tradingSystemMode->BuyImmediatelyOrCancel(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      } else {
+        tradingSystemMode->Buy(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      }
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -229,11 +242,21 @@ void OrderWindow::SendSellOrder() {
   }
   for (;;) {
     try {
-      tradingSystemMode->Sell(
-          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
-          m_security->GetBidPrice(), params,
-          m_engine.GetOrderTradingSystemSlot(),
-          m_engine.GetRiskControl(tradingSystemMode->GetMode()), Milestones());
+      if (IsIocOrder()) {
+        tradingSystemMode->SellImmediatelyOrCancel(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      } else {
+        tradingSystemMode->Sell(
+            *m_security, m_security->GetSymbol().GetCurrency(),
+            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_engine.GetOrderTradingSystemSlot(),
+            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+            Milestones());
+      }
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -243,4 +266,8 @@ void OrderWindow::SendSellOrder() {
       }
     }
   }
+}
+
+bool OrderWindow::IsIocOrder() const {
+  return m_ui.orderType->currentText() == "IOC";
 }

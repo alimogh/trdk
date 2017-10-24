@@ -36,7 +36,7 @@ class TakeProfit : public trdk::TradingLib::StopOrder {
       const boost::shared_ptr<const Params> &,
       trdk::Position &,
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
-  virtual ~TakeProfit();
+  virtual ~TakeProfit() override = default;
 
  public:
   virtual void Run() override;

@@ -1,5 +1,6 @@
+#pragma once
 /*******************************************************************************
- *   Created: 2017/08/26 19:29:25
+ *   Created: 2017/10/20 17:36:42
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,15 +11,22 @@
 
 #pragma once
 
+#include "Core/Fwd.hpp"
+
 namespace trdk {
 namespace TradingLib {
 
-class Algo;
+class Algo : private boost::noncopyable {
+ public:
+  virtual ~Algo() noexcept = default;
 
-class OrderPolicy;
+ public:
+  //! Runs algorithm iteration.
+  virtual void Run() = 0;
 
-class PositionReport;
-
-class Trend;
+  //! Reports about attaching to the position.
+  virtual void Report(const trdk::Position &,
+                      trdk::ModuleTradingLog &) const = 0;
+};
 }
 }

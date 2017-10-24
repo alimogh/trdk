@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Lib/Engine.hpp"
-#include "ui_ShellEngineWindow.h"
+#include "ui_EngineWindow.h"
 
 namespace trdk {
 namespace FrontEnd {
