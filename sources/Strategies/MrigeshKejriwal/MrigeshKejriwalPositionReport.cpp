@@ -67,8 +67,10 @@ class PositionReportCalculator : private boost::noncopyable {
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcGoodsAndServicesTax() const {
-    return m_position.CalcCommission() *
-           m_settings.report.goodsAndServicesTaxRatio;
+    return (m_position.CalcCommission() *
+            m_settings.report.goodsAndServicesTaxRatio) +
+           (CaclExchangeTransactionCharges() *
+            m_settings.report.goodsAndServicesTaxRatio);
   }
   //! Securities Transaction Tax(0.1% of the trade value only for sale)
   /** https://trello.com/c/PU46S5P4
@@ -112,6 +114,16 @@ class PositionReportCalculator : private boost::noncopyable {
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcLeveragedNetPnl() const { return CalcNetPnl() * CalcLeverage(); }
+
+  //! Exchange Transaction Charges.
+  /** https://www.interactivebrokers.co.in/en/index.php?f=1363
+    */
+  Double CaclExchangeTransactionCharges() const {
+    return (m_position.GetOpenedVolume() *
+            m_settings.report.exchangeTransactionChargesRatio) +
+           (m_position.GetClosedVolume() *
+            m_settings.report.exchangeTransactionChargesRatio);
+  }
 
  protected:
   const Position &m_position;
@@ -219,43 +231,44 @@ PositionReport::PositionReport(const Strategy &strategy,
     : Base(strategy), m_settings(settings) {}
 
 void PositionReport::PrintHead(std::ostream &os) {
-  os << "Date";                         // 1
-  os << ",Open Start Time";             // 2
-  os << ",Open Time";                   // 3
-  os << ",Opening Duration";            // 4
-  os << ",Close Start Time";            // 5
-  os << ",Close Time";                  // 6
-  os << ",Closing Duration";            // 7
-  os << ",Position Duration";           // 8
-  os << ",Type";                        // 9
-  os << ",P&L Volume";                  // 10
-  os << ",P&L %";                       // 11
-  os << ",Open Leakage";                // 12
-  os << ",Close Leakage";               // 13
-  os << ",Leakage %";                   // 14
-  os << ",SEBI Turnover Fees";          // 15
-  os << ",Stamp Duty";                  // 16
-  os << ",Goods and Services Tax";      // 17
-  os << ",Securities Transaction Tax";  // 18
-  os << ",Gross P&L";                   // 19
-  os << ",Tran Costs";                  // 20
-  os << ",Net P&L";                     // 21
-  os << ",Leverage";                    // 22
-  os << ",Leveraged Net P&L";           // 23
-  os << ",Is Profit";                   // 24
-  os << ",Is Loss";                     // 25
-  os << ",Open Signal Price";           // 26
-  os << ",Close Signal Price";          // 27
-  os << ",Commission";                  // 28
-  os << ",Qty";                         // 29
-  os << ",Open Price";                  // 30
-  os << ",Open Orders";                 // 31
-  os << ",Open Trades";                 // 32
-  os << ",Close Reason";                // 33
-  os << ",Close Price";                 // 34
-  os << ",Close Orders";                // 35
-  os << ",Close Trades";                // 36
-  os << ",ID";                          // 37
+  os << "Date";                           // 1
+  os << ",Open Start Time";               // 2
+  os << ",Open Time";                     // 3
+  os << ",Opening Duration";              // 4
+  os << ",Close Start Time";              // 5
+  os << ",Close Time";                    // 6
+  os << ",Closing Duration";              // 7
+  os << ",Position Duration";             // 8
+  os << ",Type";                          // 9
+  os << ",P&L Volume";                    // 10
+  os << ",P&L %";                         // 11
+  os << ",Open Leakage";                  // 12
+  os << ",Close Leakage";                 // 13
+  os << ",Leakage %";                     // 14
+  os << ",Exchange Transaction Charges";  // 15
+  os << ",SEBI Turnover Fees";            // 16
+  os << ",Stamp Duty";                    // 17
+  os << ",Goods and Services Tax";        // 18
+  os << ",Securities Transaction Tax";    // 19
+  os << ",Gross P&L";                     // 20
+  os << ",Tran Costs";                    // 21
+  os << ",Net P&L";                       // 22
+  os << ",Leverage";                      // 23
+  os << ",Leveraged Net P&L";             // 24
+  os << ",Is Profit";                     // 25
+  os << ",Is Loss";                       // 26
+  os << ",Open Signal Price";             // 27
+  os << ",Close Signal Price";            // 28
+  os << ",Commission";                    // 29
+  os << ",Qty";                           // 30
+  os << ",Open Price";                    // 31
+  os << ",Open Orders";                   // 32
+  os << ",Open Trades";                   // 33
+  os << ",Close Reason";                  // 34
+  os << ",Close Price";                   // 35
+  os << ",Close Orders";                  // 36
+  os << ",Close Trades";                  // 37
+  os << ",ID";                            // 38
   os << std::endl;
 }
 
@@ -292,41 +305,42 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
     AssertNe(CLOSE_REASON_NONE, pos.GetCloseReason());
     os << ",,";  // 13, 14
   }
-  os << ',' << calculator->CalcSebiTurnoverFees();          // 15
-  os << ',' << calculator->CalcStampDuty();                 // 16
-  os << ',' << calculator->CalcGoodsAndServicesTax();       // 17
-  os << ',' << calculator->CalcSecuritiesTransactionTax();  // 18
+  os << ',' << calculator->CalcSecuritiesTransactionTax();  // 15
+  os << ',' << calculator->CalcSebiTurnoverFees();          // 16
+  os << ',' << calculator->CalcStampDuty();                 // 17
+  os << ',' << calculator->CalcGoodsAndServicesTax();       // 18
+  os << ',' << calculator->CalcSecuritiesTransactionTax();  // 19
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << calculator->CalcGrossPnl();  // 19
+    os << ',' << calculator->CalcGrossPnl();  // 20
   } else {
-    os << ',';  // 19
+    os << ',';  // 20
   }
-  os << ',' << calculator->CalcTranCosts();  // 20
+  os << ',' << calculator->CalcTranCosts();  // 21
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << calculator->CalcNetPnl();           // 21
-    os << ',' << calculator->CalcLeverage();         // 22
-    os << ',' << calculator->CalcLeveragedNetPnl();  // 23
+    os << ',' << calculator->CalcNetPnl();           // 22
+    os << ',' << calculator->CalcLeverage();         // 23
+    os << ',' << calculator->CalcLeveragedNetPnl();  // 24
   } else {
-    os << ",,,";  // 21, 22, 23
+    os << ",,,";  // 22, 23, 24
   }
-  os << (pos.IsProfit() ? ",1,0" : ",0,1");            // 24, 25
-  os << ',' << operationContext.GetOpenSignalPrice();  // 26
+  os << (pos.IsProfit() ? ",1,0" : ",0,1");            // 25, 26
+  os << ',' << operationContext.GetOpenSignalPrice();  // 27
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << operationContext.GetCloseSignalPrice();  // 27
+    os << ',' << operationContext.GetCloseSignalPrice();  // 28
   } else {
     AssertNe(CLOSE_REASON_NONE, pos.GetCloseReason());
-    os << ',';  // 27
+    os << ',';  // 28
   }
-  os << ',' << pos.CalcCommission();          // 28
-  os << ',' << pos.GetOpenedQty();            // 29
-  os << ',' << pos.GetOpenAvgPrice();         // 30
-  os << ',' << pos.GetNumberOfOpenOrders();   // 31
-  os << ',' << pos.GetNumberOfOpenTrades();   // 32
-  os << ',' << pos.GetCloseReason();          // 33
-  os << ',' << pos.GetCloseAvgPrice();        // 34
-  os << ',' << pos.GetNumberOfCloseOrders();  // 35
-  os << ',' << pos.GetNumberOfCloseTrades();  // 36
-  os << ',' << pos.GetId();                   // 37
+  os << ',' << pos.CalcCommission();          // 29
+  os << ',' << pos.GetOpenedQty();            // 30
+  os << ',' << pos.GetOpenAvgPrice();         // 31
+  os << ',' << pos.GetNumberOfOpenOrders();   // 32
+  os << ',' << pos.GetNumberOfOpenTrades();   // 33
+  os << ',' << pos.GetCloseReason();          // 34
+  os << ',' << pos.GetCloseAvgPrice();        // 35
+  os << ',' << pos.GetNumberOfCloseOrders();  // 36
+  os << ',' << pos.GetNumberOfCloseTrades();  // 37
+  os << ',' << pos.GetId();                   // 38
   os << std::endl;
 }
 
