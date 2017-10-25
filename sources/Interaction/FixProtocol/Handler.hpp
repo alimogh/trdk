@@ -56,10 +56,12 @@ class Handler : private boost::noncopyable {
       const Incoming::BusinessMessageReject &,
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &);
-
   virtual void OnExecutionReport(const Incoming::ExecutionReport &,
                                  Lib::NetworkStreamClient &,
                                  const Lib::TimeMeasurement::Milestones &);
+  virtual void OnOrderCancelReject(const Incoming::OrderCancelReject &,
+                                   Lib::NetworkStreamClient &,
+                                   const Lib::TimeMeasurement::Milestones &);
 
  private:
   class Implementation;

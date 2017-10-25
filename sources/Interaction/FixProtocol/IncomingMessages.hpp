@@ -205,6 +205,24 @@ class ExecutionReport : public Message {
                       Lib::NetworkStreamClient &,
                       const Lib::TimeMeasurement::Milestones &) override;
 };
+
+class OrderCancelReject : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit OrderCancelReject(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~OrderCancelReject() override = default;
+
+ public:
+  using Base::ReadClOrdId;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+};
 }
 }
 }

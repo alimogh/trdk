@@ -31,6 +31,7 @@ class MarketDataSnapshotFullRefresh;
 class MarketDataIncrementalRefresh;
 class BusinessMessageReject;
 class ExecutionReport;
+class OrderCancelReject;
 }
 
 namespace Outgoing {

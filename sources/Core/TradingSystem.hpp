@@ -295,6 +295,12 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Price &,
       const trdk::OrderParams &,
       const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+  trdk::OrderId SendSellAndEmulateImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &);
 
   virtual trdk::OrderId SendSellAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,
@@ -345,6 +351,12 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Price &,
       const trdk::OrderParams &,
       const trdk::TradingSystem::OrderStatusUpdateSlot &&);
+  trdk::OrderId SendBuyAndEmulateImmediatelyOrCancel(
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &);
 
   virtual trdk::OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
       trdk::Security &,

@@ -744,7 +744,7 @@ void EngineServer::Service::RunIoThread() {
       }
     }
 
-    GetLog().Debug("TWS IO task completed.");
+    GetLog().Debug("TWS IO task is completed.");
 
   });
 }

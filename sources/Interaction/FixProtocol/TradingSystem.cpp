@@ -77,14 +77,9 @@ OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(
     const Currency &currency,
     const Qty &qty,
     const Price &price,
-    const OrderParams &) {
-  if (currency != security.GetSymbol().GetCurrency()) {
-    throw Error("Trading system supports only security quote currency");
-  }
-  const out::NewOrderSingle message(security, ORDER_SIDE_SELL, qty, price,
-                                    GetStandardOutgoingHeader());
-  m_client.Send(message);
-  return message.GetSequenceNumber();
+    const OrderParams &params) {
+  return SendSellAndEmulateImmediatelyOrCancel(security, currency, qty, price,
+                                               params);
 }
 
 OrderId fix::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
@@ -113,18 +108,14 @@ OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
   return message.GetSequenceNumber();
 }
 
-OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(trdk::Security &security,
-                                                       const Currency &currency,
-                                                       const Qty &qty,
-                                                       const Price &price,
-                                                       const OrderParams &) {
-  if (currency != security.GetSymbol().GetCurrency()) {
-    throw Error("Trading system supports only security quote currency");
-  }
-  const out::NewOrderSingle message(security, ORDER_SIDE_BUY, qty, price,
-                                    GetStandardOutgoingHeader());
-  m_client.Send(message);
-  return message.GetSequenceNumber();
+OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(
+    trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params) {
+  return SendBuyAndEmulateImmediatelyOrCancel(security, currency, qty, price,
+                                              params);
 }
 
 OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
@@ -132,8 +123,8 @@ OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
   throw MethodIsNotImplementedException("Methods is not supported");
 }
 
-void fix::TradingSystem::SendCancelOrder(const OrderId &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
+void fix::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+  m_client.Send(out::OrderCancelRequest(orderId, GetStandardOutgoingHeader()));
 }
 
 void fix::TradingSystem::OnConnectionRestored() {
@@ -246,6 +237,14 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
         ex.what(),  // 2
         execType);  // 3
   }
+}
+
+void fix::TradingSystem::OnOrderCancelReject(
+    const in::OrderCancelReject &message,
+    NetworkStreamClient &,
+    const Milestones &) {
+  GetLog().Warn("Received Order Cancel Reject for order %1%.",
+                message.ReadClOrdId());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

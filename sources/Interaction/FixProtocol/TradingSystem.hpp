@@ -49,7 +49,11 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &) override;
   virtual void OnExecutionReport(
-      const Incoming::ExecutionReport &message,
+      const Incoming::ExecutionReport &,
+      Lib::NetworkStreamClient &,
+      const Lib::TimeMeasurement::Milestones &) override;
+  virtual void OnOrderCancelReject(
+      const Incoming::OrderCancelReject &,
       Lib::NetworkStreamClient &,
       const Lib::TimeMeasurement::Milestones &) override;
 

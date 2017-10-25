@@ -139,3 +139,10 @@ void Handler::OnExecutionReport(const in::ExecutionReport &message,
   ProtocolError("Received unsupported message Execution Report",
                 &*message.GetMessageBegin(), 0);
 }
+
+void Handler::OnOrderCancelReject(const in::OrderCancelReject &message,
+                                  NetworkStreamClient &,
+                                  const Milestones &) {
+  ProtocolError("Received unsupported message Order Cancel Reject",
+                &*message.GetMessageBegin(), 0);
+}

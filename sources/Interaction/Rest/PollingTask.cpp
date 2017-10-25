@@ -71,5 +71,5 @@ void PollingTask::Run() {
     AssertFailNoException();
     throw;
   }
-  m_log.Debug("Polling task completed.");
+  m_log.Debug("Polling task is completed.");
 }

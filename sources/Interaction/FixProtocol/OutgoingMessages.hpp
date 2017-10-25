@@ -163,6 +163,24 @@ class NewOrderSingle : public SecurityMessage {
   const size_t m_customContentSize;
 };
 
+class OrderCancelRequest : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit OrderCancelRequest(const OrderId &, StandardHeader &);
+  virtual ~OrderCancelRequest() override = default;
+
+ public:
+  virtual std::vector<char> Export(unsigned char soh) const override;
+
+ protected:
+  using Base::Export;
+
+ private:
+  const std::string m_orderId;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 }
 }

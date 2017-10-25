@@ -12,10 +12,13 @@
 #include "TradingSystem.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+
+namespace pt = boost::posix_time;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -66,6 +69,7 @@ std::string FormatStringId(const std::string &instanceName,
 struct ActiveOrder {
   TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
   Qty remainingQty;
+  std::unique_ptr<Timer::Scope> timerScope;
 };
 }
 
@@ -86,6 +90,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   boost::atomic_size_t m_lastOperationId;
 
   boost::unordered_map<OrderId, ActiveOrder> m_activeOrders;
+  std::unique_ptr<Timer::Scope> m_lastOrderTimerScope;
 
   explicit Implementation(const TradingMode &mode,
                           size_t index,
@@ -271,10 +276,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void RegisterCallback(const OrderId &orderId,
                         const OrderStatusUpdateSlot &&callback,
                         const Qty &qty) {
-    if (!m_activeOrders.emplace(orderId, ActiveOrder{std::move(callback), qty})
-             .second) {
+    auto result =
+        m_activeOrders.emplace(orderId, ActiveOrder{std::move(callback), qty});
+    if (!result.second) {
       m_log.Error("Order ID %1% is not unique.", orderId);
       throw Error("Order ID %1% is not unique");
+    }
+    Assert(!result.first->second.timerScope);
+    if (m_lastOrderTimerScope) {
+      result.first->second.timerScope = std::move(m_lastOrderTimerScope);
     }
   }
 
@@ -850,6 +860,36 @@ OrderId TradingSystem::SendBuyImmediatelyOrCancel(
   return orderId;
 }
 
+OrderId TradingSystem::SendSellAndEmulateImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params) {
+  const auto &orderId = SendSell(security, currency, qty, price, params);
+  Assert(!m_pimpl->m_lastOrderTimerScope);
+  m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>(orderId);
+  GetContext().GetTimer().Schedule(pt::milliseconds(300),
+                                   [this, orderId] { CancelOrder(orderId); },
+                                   *m_pimpl->m_lastOrderTimerScope);
+  return orderId;
+}
+
+OrderId TradingSystem::SendBuyAndEmulateImmediatelyOrCancel(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &price,
+    const OrderParams &params) {
+  const auto &orderId = SendBuy(security, currency, qty, price, params);
+  Assert(!m_pimpl->m_lastOrderTimerScope);
+  m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>(orderId);
+  GetContext().GetTimer().Schedule(pt::milliseconds(300),
+                                   [this, orderId] { CancelOrder(orderId); },
+                                   *m_pimpl->m_lastOrderTimerScope);
+  return orderId;
+}
+
 OrderId TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
     Security &security,
     const Currency &currency,
@@ -904,8 +944,8 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
                           record % orderId  // 1
                               % error;      // 2
                         });
-  GetLog().Error("Order %1% is rejected with the reason: \"%2%\".", orderId,
-                 error);
+  GetLog().Warn("Order %1% is rejected with the reason: \"%2%\".", orderId,
+                error);
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_ERROR, boost::none, boost::none,
                                boost::none);

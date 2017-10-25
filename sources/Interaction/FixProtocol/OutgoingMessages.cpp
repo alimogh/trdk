@@ -384,3 +384,32 @@ std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+OrderCancelRequest::OrderCancelRequest(const OrderId &orderId,
+                                       StandardHeader &standardHeader)
+    : Base(standardHeader),
+      m_orderId(boost::lexical_cast<std::string>(orderId)) {}
+
+std::vector<char> OrderCancelRequest::Export(unsigned char soh) const {
+  // 8 bytes:
+  // without custom fields:
+  //  41=|11=|
+  auto result = Export(MESSAGE_TYPE_ORDER_CANCEL_REQUEST,
+                       8 + (m_orderId.size() * 2), soh);
+  // OrigClOrdID:
+  {
+    const std::string sub("41=" + m_orderId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  // ClOrdID:
+  {
+    const std::string sub("11=" + m_orderId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
+  WriteStandardTrailer(result, soh);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////

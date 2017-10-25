@@ -203,41 +203,5 @@
     <Library Include="..\..\output\x64\lib\Release Standalone\MrigeshKejriwal.lib">
       <Filter>Lib Files</Filter>
     </Library>
-    <Library Include="..\..\output\x86\lib\Debug DLL\DocFeels_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug Standalone\DocFeels_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test DLL\DocFeels_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test Standalone\DocFeels_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release DLL\DocFeels.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release Standalone\DocFeels.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug DLL\DocFeels_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug Standalone\DocFeels_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test DLL\DocFeels_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test Standalone\DocFeels_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release DLL\DocFeels.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release Standalone\DocFeels.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
   </ItemGroup>
 </Project>
