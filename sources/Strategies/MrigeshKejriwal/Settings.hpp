@@ -37,7 +37,8 @@ struct Settings {
     Lib::Double stampDutyRatio;
     Lib::Double goodsAndServicesTaxRatio;
     Lib::Double securitiesTransactionTaxRatio;
-    Lib::Double initialMargin;
+    // Custom branch for Mrigesh Kejriwal:
+    // Lib::Double initialMargin;
     Lib::Double exchangeTransactionChargesRatio;
   } report;
 

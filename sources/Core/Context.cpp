@@ -349,7 +349,8 @@ Context::Context(Log &log,
                  TradingLog &tradingLog,
                  const Settings &settings,
                  const boost::unordered_map<std::string, std::string> &params)
-    : m_pimpl(boost::make_unique<Implementation>(
+    : lastInitialMargin(0),
+      m_pimpl(boost::make_unique<Implementation>(
           *this, log, tradingLog, settings, params)) {
   if (settings.IsMarketDataLogEnabled()) {
     m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);

@@ -56,6 +56,10 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   typedef boost::signals2::connection StateUpdateConnection;
 
  public:
+  // Custom branch for Mrigesh Kejriwal:
+  Lib::Double lastInitialMargin;
+
+ public:
   explicit Context(
       trdk::Context::Log &,
       trdk::Context::TradingLog &,

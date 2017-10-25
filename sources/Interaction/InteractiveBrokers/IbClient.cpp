@@ -1341,7 +1341,16 @@ void Client::tickEFP(TickerId /*tickerId*/,
 void Client::openOrder(::OrderId /*orderId*/,
                        const Contract &,
                        const Order &,
-                       const OrderState &) {}
+                       const OrderState &orderState) {
+  // Custom branch for Mrigesh Kejriwal:
+  try {
+    m_ts.GetContext().lastInitialMargin =
+        boost::lexical_cast<double>(orderState.initMargin);
+  } catch (...) {
+    AssertFailNoException();
+    m_ts.GetContext().lastInitialMargin = 0;
+  }
+}
 
 void Client::openOrderEnd() {}
 

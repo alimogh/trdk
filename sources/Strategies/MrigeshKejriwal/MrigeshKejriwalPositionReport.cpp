@@ -13,6 +13,8 @@
 #include "Core/Position.hpp"
 #include "MrigeshKejriwalPositionOperationContext.hpp"
 #include "Settings.hpp"
+// Custom branch for Mrigesh Kejriwal:
+#include "Core/Context.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -103,10 +105,12 @@ class PositionReportCalculator : private boost::noncopyable {
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcLeverage() const {
-    if (m_settings.report.initialMargin == 0) {
+    // Custom branch for Mrigesh Kejriwal:
+    if (m_position.GetSecurity().GetContext().lastInitialMargin == 0) {
       return 0;
     }
-    return m_position.GetOpenedVolume() / m_settings.report.initialMargin;
+    return m_position.GetOpenedVolume() /
+           m_position.GetSecurity().GetContext().lastInitialMargin;
   }
   //! Leveraged_Net_PnL = Net_PnL%*Leverage
   /** https://trello.com/c/PU46S5P4

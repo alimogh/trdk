@@ -20,6 +20,8 @@
 #include "Api/EWrapper.h"
 #include "Api/Execution.h"
 #include "Api/Order.h"
+// Custom branch for Mrigesh Kejriwal:
+#include "Api/OrderState.h"
 #pragma warning(pop)
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
