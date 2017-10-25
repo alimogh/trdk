@@ -51,6 +51,14 @@ class Context : public trdk::Context {
   virtual trdk::TradingSystem &GetTradingSystem(
       size_t, const trdk::TradingMode &) override;
 
+  virtual trdk::Strategy &GetSrategy(const boost::uuids::uuid &) override;
+  virtual const trdk::Strategy &GetSrategy(
+      const boost::uuids::uuid &) const override;
+
+  virtual void CloseSrategiesPositions() override;
+
+  virtual void Add(const trdk::Lib::Ini &) override;
+
  protected:
   virtual DropCopy *GetDropCopy() const override;
 };

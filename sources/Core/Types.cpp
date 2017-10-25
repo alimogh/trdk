@@ -196,7 +196,7 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
 ////////////////////////////////////////////////////////////////////////////////
 
 const char *trdk::ConvertToPch(const CloseReason &closeReason) {
-  static_assert(numberOfCloseReasons == 12, "List changed.");
+  static_assert(numberOfCloseReasons == 13, "List changed.");
   switch (closeReason) {
     default:
       AssertEq(int(CLOSE_REASON_NONE),
@@ -212,6 +212,8 @@ const char *trdk::ConvertToPch(const CloseReason &closeReason) {
       return "trailing-stop";
     case CLOSE_REASON_STOP_LOSS:
       return "stop-loss";
+    case CLOSE_REASON_STOP_LIMIT:
+      return "stop-limit";
     case CLOSE_REASON_TIMEOUT:
       return "timeout";
     case CLOSE_REASON_SCHEDULE:

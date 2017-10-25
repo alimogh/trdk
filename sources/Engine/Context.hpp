@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Core/Context.hpp"
+#include "Core/DropCopy.hpp"
 #include "Api.h"
-#include <Core/DropCopy.hpp>
 
 namespace trdk {
 namespace Engine {
@@ -34,10 +34,8 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
   void Stop(const trdk::StopMode &);
 
-  void Add(const trdk::Lib::Ini &);
+  virtual void Add(const trdk::Lib::Ini &) override;
   void Update(const trdk::Lib::Ini &);
-
-  void ClosePositions();
 
   virtual std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 
@@ -65,6 +63,12 @@ class TRDK_ENGINE_API Context : public trdk::Context {
       size_t index, const TradingMode &) const override;
   virtual trdk::TradingSystem &GetTradingSystem(size_t index,
                                                 const TradingMode &) override;
+
+  virtual trdk::Strategy &GetSrategy(const boost::uuids::uuid &id) override;
+  virtual const trdk::Strategy &GetSrategy(
+      const boost::uuids::uuid &id) const override;
+
+  virtual void CloseSrategiesPositions() override;
 
  protected:
   virtual DropCopy *GetDropCopy() const override;

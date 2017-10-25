@@ -145,21 +145,22 @@ enum OrderType {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum CloseReason {
-  CLOSE_REASON_NONE = 0,
-  CLOSE_REASON_SIGNAL = 100,
-  CLOSE_REASON_TAKE_PROFIT = 200,
-  CLOSE_REASON_TRAILING_STOP = 300,
-  CLOSE_REASON_STOP_LOSS = 400,
-  CLOSE_REASON_TIMEOUT = 500,
-  CLOSE_REASON_SCHEDULE = 600,
-  CLOSE_REASON_ROLLOVER = 700,
+  CLOSE_REASON_NONE,
+  CLOSE_REASON_SIGNAL,
+  CLOSE_REASON_TAKE_PROFIT,
+  CLOSE_REASON_TRAILING_STOP,
+  CLOSE_REASON_STOP_LOSS,
+  CLOSE_REASON_STOP_LIMIT,
+  CLOSE_REASON_TIMEOUT,
+  CLOSE_REASON_SCHEDULE,
+  CLOSE_REASON_ROLLOVER,
   //! Closed by request, not by logic or error.
-  CLOSE_REASON_REQUEST = 800,
+  CLOSE_REASON_REQUEST,
   //! Closed by engine stop.
-  CLOSE_REASON_ENGINE_STOP = 900,
-  CLOSE_REASON_OPEN_FAILED = 1000,
-  CLOSE_REASON_SYSTEM_ERROR = 1100,
-  numberOfCloseReasons = 12
+  CLOSE_REASON_ENGINE_STOP,
+  CLOSE_REASON_OPEN_FAILED,
+  CLOSE_REASON_SYSTEM_ERROR,
+  numberOfCloseReasons
 };
 
 TRDK_CORE_API const char *ConvertToPch(const trdk::CloseReason &);
@@ -255,11 +256,11 @@ class Level1TickValue {
 
   const Level1TickType &GetType() const { return m_type; }
 
-  double GetValue() const { return m_value; }
+  const trdk::Lib::Double &GetValue() const { return m_value; }
 
  private:
   Level1TickType m_type;
-  double m_value;
+  trdk::Lib::Double m_value;
 };
 }
 

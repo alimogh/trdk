@@ -24,8 +24,8 @@ class NetworkStreamClientService : private boost::noncopyable {
   };
 
  public:
-  NetworkStreamClientService();
-  explicit NetworkStreamClientService(const std::string &logTag);
+  explicit NetworkStreamClientService(bool isSecure);
+  explicit NetworkStreamClientService(const std::string &logTag, bool isSecure);
   virtual ~NetworkStreamClientService();
 
  public:
@@ -41,7 +41,7 @@ class NetworkStreamClientService : private boost::noncopyable {
   //! Stops all.
   void Stop();
 
-  trdk::Lib::NetworkClientServiceIo &GetIo();
+  std::unique_ptr<trdk::Lib::NetworkClientServiceIo> CreateIo();
 
  public:
   void OnDisconnect();

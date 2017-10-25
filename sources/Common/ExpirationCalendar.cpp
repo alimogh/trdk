@@ -99,7 +99,7 @@ std::string ContractExpiration::GetContract(bool isShort) const {
 
   const auto &year = GetYear();
   if (year > 2019 || year < 2010) {
-    throw MethodDoesNotImplementedError(
+    throw MethodIsNotImplementedException(
         "Work with features from < 2010 or > 2019 is not implemented");
   }
   result << (year - (isShort ? 2010 : 2000));

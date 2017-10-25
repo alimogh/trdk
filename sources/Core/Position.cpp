@@ -10,7 +10,9 @@
 
 #include "Prec.hpp"
 #include "Position.hpp"
+#include "TradingLib/Algo.hpp"
 #include "DropCopy.hpp"
+#include "PositionOperationContext.hpp"
 #include "Settings.hpp"
 #include "Strategy.hpp"
 #include "TradingLog.hpp"
@@ -18,6 +20,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::TradingLib;
 
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
@@ -159,6 +162,8 @@ class Position::Implementation : private boost::noncopyable {
  public:
   Position &m_self;
 
+  const boost::shared_ptr<PositionOperationContext> m_operationContext;
+
   TradingSystem &m_tradingSystem;
 
   mutable StateUpdateSignal m_stateUpdateSignal;
@@ -188,17 +193,20 @@ class Position::Implementation : private boost::noncopyable {
 
   std::vector<boost::shared_ptr<Algo>> m_algos;
 
-  explicit Implementation(Position &position,
-                          TradingSystem &tradingSystem,
-                          Strategy &strategy,
-                          const uuids::uuid &operationId,
-                          int64_t subOperationId,
-                          Security &security,
-                          const Currency &currency,
-                          const Qty &qty,
-                          const Price &startPrice,
-                          const TimeMeasurement::Milestones &timeMeasurement)
+  explicit Implementation(
+      Position &position,
+      const boost::shared_ptr<PositionOperationContext> &operationContext,
+      TradingSystem &tradingSystem,
+      Strategy &strategy,
+      const uuids::uuid &operationId,
+      int64_t subOperationId,
+      Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const Price &startPrice,
+      const TimeMeasurement::Milestones &timeMeasurement)
       : m_self(position),
+        m_operationContext(operationContext),
         m_tradingSystem(tradingSystem),
         m_strategy(strategy),
         m_operationId(operationId),
@@ -272,7 +280,8 @@ class Position::Implementation : private boost::noncopyable {
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
         m_open.OnNewTrade(*trade, trade->price);
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
-        CopyTrade(trade->id, trade->price, trade->qty, true);
+        CopyTrade(trade->id ? *trade->id : std::string(), trade->price,
+                  trade->qty, true);
         order.isActive = remainingQty > 0;
         break;
       case ORDER_STATUS_ERROR:
@@ -359,7 +368,8 @@ class Position::Implementation : private boost::noncopyable {
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
         m_close.OnNewTrade(*trade, trade->price);
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
-        CopyTrade(trade->id, trade->price, trade->qty, false);
+        CopyTrade(trade->id ? *trade->id : std::string(), trade->price,
+                  trade->qty, false);
         if (remainingQty != 0) {
           CopyOrder(&tradingSystemOrderId, false, orderStatus);
           return;
@@ -620,7 +630,7 @@ class Position::Implementation : private boost::noncopyable {
       order.isActive = false;
 
       m_open.time = order.time;
-      m_open.OnNewTrade(TradingSystem::TradeInfo{"", order.qty, openPrice},
+      m_open.OnNewTrade(TradingSystem::TradeInfo{openPrice, order.qty},
                         openPrice);
 
       m_isRegistered = true;  // supporting prev. logic
@@ -885,10 +895,11 @@ class Position::Implementation : private boost::noncopyable {
       const Order &order =
           isOpen ? m_open.orders.back() : m_close.orders.back();
 
-      dropCopy.CopyTrade(m_strategy.GetContext().GetCurrentTime(),
-                         tradingSystemId, order.uuid, price, qty,
-                         m_security.GetBidPrice(), m_security.GetBidQty(),
-                         m_security.GetAskPrice(), m_security.GetAskQty());
+      dropCopy.CopyTrade(
+          m_strategy.GetContext().GetCurrentTime(), tradingSystemId, order.uuid,
+          price, qty, m_security.GetBidPriceValue(),
+          m_security.GetBidQtyValue(), m_security.GetAskPriceValue(),
+          m_security.GetAskQtyValue());
 
     });
   }
@@ -896,6 +907,36 @@ class Position::Implementation : private boost::noncopyable {
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+class DummyPositionOperationContext : public PositionOperationContext {
+ public:
+  virtual ~DummyPositionOperationContext() override = default;
+
+ public:
+  virtual const OrderPolicy &GetOpenOrderPolicy() const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual const OrderPolicy &GetCloseOrderPolicy() const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual void Setup(Position &) const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual bool IsLong() const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual Qty GetPlannedQty() const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual bool HasCloseSignal(const Position &) const override {
+    throw LogicError("Position instance does not use operation context");
+  }
+  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
+      const Position &) override {
+    throw LogicError("Position instance does not use operation context");
+  }
+};
+}
 Position::Position(Strategy &strategy,
                    const uuids::uuid &operationId,
                    int64_t subOperationId,
@@ -905,7 +946,34 @@ Position::Position(Strategy &strategy,
                    const Qty &qty,
                    const Price &startPrice,
                    const TimeMeasurement::Milestones &timeMeasurement)
+    : m_pimpl(std::make_unique<Implementation>(
+          *this,
+          boost::make_shared<DummyPositionOperationContext>(),
+          tradingSystem,
+          strategy,
+          operationId,
+          subOperationId,
+          security,
+          currency,
+          qty,
+          startPrice,
+          timeMeasurement)) {
+  Assert(!strategy.IsBlocked());
+}
+
+Position::Position(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Strategy &strategy,
+    const uuids::uuid &operationId,
+    int64_t subOperationId,
+    TradingSystem &tradingSystem,
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &startPrice,
+    const TimeMeasurement::Milestones &timeMeasurement)
     : m_pimpl(std::make_unique<Implementation>(*this,
+                                               operationContext,
                                                tradingSystem,
                                                strategy,
                                                operationId,
@@ -918,15 +986,7 @@ Position::Position(Strategy &strategy,
   Assert(!strategy.IsBlocked());
 }
 
-#pragma warning(push)
-#pragma warning(disable : 4702)
-Position::Position() {
-  AssertFail("Position::Position exists only for virtual inheritance");
-  throw LogicError("Position::Position exists only for virtual inheritance");
-}
-#pragma warning(pop)
-
-Position::~Position() {}
+Position::~Position() = default;
 
 const uuids::uuid &Position::GetId() const { return m_pimpl->m_operationId; }
 
@@ -934,6 +994,13 @@ bool Position::IsLong() const {
   static_assert(numberOfTypes == 2, "List changed.");
   Assert(GetType() == Position::TYPE_LONG || GetType() == Position::TYPE_SHORT);
   return GetType() == Position::TYPE_LONG;
+}
+
+PositionOperationContext &Position::GetOperationContext() {
+  return *m_pimpl->m_operationContext;
+}
+const trdk::PositionOperationContext &Position::GetOperationContext() const {
+  return const_cast<Position *>(this)->GetOperationContext();
 }
 
 const ContractExpiration &Position::GetExpiration() const {
@@ -973,15 +1040,18 @@ const CloseReason &Position::GetCloseReason() const noexcept {
   return m_pimpl->m_closeReason;
 }
 
-void Position::SetCloseReason(const CloseReason &newCloseReason) noexcept {
+void Position::SetCloseReason(const CloseReason &newCloseReason) {
   AssertNe(CLOSE_REASON_NONE, newCloseReason);
   if (m_pimpl->m_closeReason != CLOSE_REASON_NONE) {
     return;
   }
+  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason,
+                                            newCloseReason);
   m_pimpl->m_closeReason = newCloseReason;
 }
 
-void Position::ResetCloseReason(const CloseReason &newReason) noexcept {
+void Position::ResetCloseReason(const CloseReason &newReason) {
+  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason, newReason);
   m_pimpl->m_closeReason = newReason;
 }
 
@@ -1169,7 +1239,9 @@ Position::StateUpdateConnection Position::Subscribe(
 }
 
 void Position::AttachAlgo(std::unique_ptr<Algo> &&algo) {
+  Assert(algo);
   m_pimpl->m_algos.emplace_back(std::move(algo));
+  m_pimpl->m_algos.back()->Report(*this, GetStrategy().GetTradingLog());
 }
 
 void Position::RunAlgos() {
@@ -1462,7 +1534,27 @@ LongPosition::LongPosition(Strategy &strategy,
       });
 }
 
-LongPosition::LongPosition() {
+LongPosition::LongPosition(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Strategy &strategy,
+    const uuids::uuid &operationId,
+    int64_t subOperationId,
+    TradingSystem &tradingSystem,
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &startPrice,
+    const TimeMeasurement::Milestones &timeMeasurement)
+    : Position(operationContext,
+               strategy,
+               operationId,
+               subOperationId,
+               tradingSystem,
+               security,
+               currency,
+               qty,
+               startPrice,
+               timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
       "\tpos=%7%",
@@ -1667,7 +1759,27 @@ ShortPosition::ShortPosition(Strategy &strategy,
       });
 }
 
-ShortPosition::ShortPosition() {
+ShortPosition::ShortPosition(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Strategy &strategy,
+    const uuids::uuid &operationId,
+    int64_t subOperationId,
+    TradingSystem &tradingSystem,
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const Price &startPrice,
+    const TimeMeasurement::Milestones &timeMeasurement)
+    : Position(operationContext,
+               strategy,
+               operationId,
+               subOperationId,
+               tradingSystem,
+               security,
+               currency,
+               qty,
+               startPrice,
+               timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
       "\tpos=%7%",

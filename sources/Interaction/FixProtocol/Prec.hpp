@@ -12,8 +12,8 @@
 
 #include "Common/Common.hpp"
 #include "Core/Settings.hpp"
-#include "FixProtocolApi.h"
-#include "FixProtocolFwd.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
 #include <boost/thread/recursive_mutex.hpp>
 
 #include "Common/NetworkStreamClient.hpp"

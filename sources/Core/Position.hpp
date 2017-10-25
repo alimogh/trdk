@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "TradingLib/Fwd.hpp"
 #include "Api.h"
 #include "Security.hpp"
 
@@ -49,20 +50,6 @@ class TRDK_CORE_API Position
     AlreadyClosedError() noexcept;
   };
 
-  class TRDK_CORE_API Algo : private boost::noncopyable {
-   public:
-    virtual ~Algo() noexcept = default;
-
-   public:
-    //! Runs algorithm iteration.
-    /** Will be called only if position is not "completed" or
-      * not in "canceling state".
-      * @sa IsCancelling
-      * @sa IsCompleted
-      */
-    virtual void Run() = 0;
-  };
-
  public:
   explicit Position(
       trdk::Strategy &,
@@ -74,16 +61,32 @@ class TRDK_CORE_API Position
       const trdk::Qty &,
       const trdk::Price &startPrice,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
-
- protected:
-  //! Ctor only for virtual inheritance, always throws exception.
-  Position();
+  explicit Position(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
 
  public:
   virtual ~Position();
 
  public:
-  void AttachAlgo(std::unique_ptr<Algo> &&);
+  //! Attaches algorithm to the position.
+  /** Will try to execute algorithm at each price update, but only if position
+    * is not in the "canceling state".
+    * @sa IsCancelling
+    * @sa IsCompleted
+    */
+  void AttachAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+
+  trdk::PositionOperationContext &GetOperationContext();
+  const trdk::PositionOperationContext &GetOperationContext() const;
 
   const boost::uuids::uuid &GetId() const;
 
@@ -110,8 +113,8 @@ class TRDK_CORE_API Position
 
  public:
   const CloseReason &GetCloseReason() const noexcept;
-  void SetCloseReason(const CloseReason &) noexcept;
-  void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE) noexcept;
+  void SetCloseReason(const CloseReason &);
+  void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE);
 
   //! Has opened qty and doesn't have active open-orders.
   /** @sa IsClosed
@@ -390,7 +393,7 @@ inline std::ostream &operator<<(std::ostream &os,
 
 //////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API LongPosition : virtual public Position {
+class TRDK_CORE_API LongPosition : public Position {
  public:
   explicit LongPosition(trdk::Strategy &,
                         const boost::uuids::uuid &operationId,
@@ -401,12 +404,18 @@ class TRDK_CORE_API LongPosition : virtual public Position {
                         const trdk::Qty &,
                         const trdk::Price &startPrice,
                         const trdk::Lib::TimeMeasurement::Milestones &);
-
- protected:
-  LongPosition();
-
- public:
-  virtual ~LongPosition();
+  explicit LongPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+  virtual ~LongPosition() override;
 
  public:
   virtual trdk::Position::Type GetType() const override;
@@ -450,7 +459,7 @@ class TRDK_CORE_API LongPosition : virtual public Position {
 
 //////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API ShortPosition : virtual public Position {
+class TRDK_CORE_API ShortPosition : public Position {
  public:
   explicit ShortPosition(trdk::Strategy &,
                          const boost::uuids::uuid &operationId,
@@ -461,12 +470,18 @@ class TRDK_CORE_API ShortPosition : virtual public Position {
                          const trdk::Qty &,
                          const trdk::Price &startPrice,
                          const trdk::Lib::TimeMeasurement::Milestones &);
-
- protected:
-  ShortPosition();
-
- public:
-  virtual ~ShortPosition();
+  explicit ShortPosition(
+      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      trdk::Strategy &,
+      const boost::uuids::uuid &operationId,
+      int64_t subOperationId,
+      trdk::TradingSystem &,
+      trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const trdk::Price &startPrice,
+      const trdk::Lib::TimeMeasurement::Milestones &);
+  virtual ~ShortPosition() override;
 
  public:
   virtual trdk::Position::Type GetType() const override;

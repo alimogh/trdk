@@ -14,6 +14,7 @@
 #include "MarketDataSource.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 
 using namespace trdk;
@@ -30,11 +31,11 @@ Context::DispatchingLock::~DispatchingLock() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Context::Exception::Exception(const char *what) throw()
+Context::Exception::Exception(const char *what) noexcept
     : Lib::Exception(what) {}
 
 Context::TradingModeIsNotLoaded::TradingModeIsNotLoaded(
-    const char *what) throw()
+    const char *what) noexcept
     : Exception(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,7 +185,7 @@ class StatReport : private boost::noncopyable {
       EventsLog::BroadcastUnhandledException(__FUNCTION__, __FILE__, __LINE__);
       throw;
     }
-    m_context.GetLog().Debug("Stat-monitoring task completed.");
+    m_context.GetLog().Debug("Stat-monitoring task is completed.");
   }
 
   void DumpLatancy() {
@@ -331,6 +332,8 @@ class Context::Implementation : private boost::noncopyable {
 
   SignalTrait<StateUpdateSlotSignature>::Signal m_stateUpdateSignal;
 
+  std::unique_ptr<Timer> m_timer;
+
   explicit Implementation(
       Context &context,
       Log &log,
@@ -354,9 +357,10 @@ Context::Context(Log &log,
   if (settings.IsMarketDataLogEnabled()) {
     m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
   }
+  m_pimpl->m_timer = boost::make_unique<Timer>(*this);
 }
 
-Context::~Context() {}
+Context::~Context() = default;
 
 void Context::OnStarted() {
   if (m_pimpl->m_statReport) {
@@ -370,9 +374,9 @@ void Context::OnBeforeStop() {
   }
 }
 
-Context::Log &Context::GetLog() const throw() { return m_pimpl->m_log; }
+Context::Log &Context::GetLog() const noexcept { return m_pimpl->m_log; }
 
-Context::TradingLog &Context::GetTradingLog() const throw() {
+Context::TradingLog &Context::GetTradingLog() const noexcept {
   return m_pimpl->m_tradingLog;
 }
 
@@ -438,6 +442,8 @@ pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
     return m_pimpl->m_customCurrentTime;
   }
 }
+
+Timer &Context::GetTimer() { return *m_pimpl->m_timer; }
 
 const Settings &Context::GetSettings() const { return m_pimpl->m_settings; }
 
@@ -533,20 +539,16 @@ class Context::Params::Implementation : private boost::noncopyable {
 Context::Params::Exception::Exception(const char *what) noexcept
     : Context::Exception(what) {}
 
-Context::Params::Exception::~Exception() {}
-
 Context::Params::KeyDoesntExistError::KeyDoesntExistError(
     const char *what) noexcept
     : Exception(what) {}
-
-Context::Params::KeyDoesntExistError::~KeyDoesntExistError() {}
 
 Context::Params::Params(
     const Context &context,
     const boost::unordered_map<std::string, std::string> &initial)
     : m_pimpl(boost::make_unique<Implementation>(context, initial)) {}
 
-Context::Params::~Params() {}
+Context::Params::~Params() = default;
 
 std::string Context::Params::operator[](const std::string &key) const {
   const Implementation::ReadLock lock(m_pimpl->m_mutex);

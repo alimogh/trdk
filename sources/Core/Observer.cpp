@@ -30,7 +30,7 @@ void Observer::OnLevel1Update(Security &security) {
       "Subscribed to %1% level 1 updates, but can't work with it"
       " (doesn't have OnLevel1Update method implementation).",
       security);
-  throw MethodDoesNotImplementedError(
+  throw MethodIsNotImplementedException(
       "Module subscribed to level 1 updates, but can't work with it");
 }
 

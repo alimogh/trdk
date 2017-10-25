@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(BOOST_DIR_X64)\boost_1_63_0\lib64-msvc-14.0\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(BOOST_DIR_X64)\boost_1_63_0\lib64-msvc-14.0\;$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\lib64\;$(SolutionDir)\..\externals\poco-1.7.9-all\lib64;$(LibraryPath)</LibraryPath>
     <IncludePath>$(BOOST_DIR_X64)\boost_1_63_0\;$(SolutionDir)\..\externals\openssl-1.0.1t-vs2015\include64\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup />

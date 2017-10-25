@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "StopLoss.hpp"
+#include "Core/Position.hpp"
 #include "Core/TradingLog.hpp"
 
 using namespace trdk;
@@ -27,7 +28,7 @@ void StopLossOrder::Run() {
     return;
   }
 
-  static_assert(numberOfCloseReasons == 12, "List changed.");
+  static_assert(numberOfCloseReasons == 13, "List changed.");
   switch (GetPosition().GetCloseReason()) {
     case CLOSE_REASON_STOP_LOSS:
       break;
@@ -58,6 +59,15 @@ StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
     : StopLossOrder(position, orderPolicy), m_params(params) {}
 
 const char *StopPrice::GetName() const { return "stop price"; }
+
+void StopPrice::Report(const Position &position, ModuleTradingLog &log) const {
+  log.Write("%1%\tattach\tprice=%2$.8f\tpos=%3%",
+            [this, &position](TradingRecord &record) {
+              record % GetName()          // 1
+                  % m_params->GetPrice()  // 2
+                  % position.GetId();     // 3
+            });
+}
 
 bool StopPrice::Activate() {
   const auto &currentPrice = GetPosition().GetSecurity().GetLastPrice();
@@ -98,7 +108,16 @@ StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
                    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
     : StopLossOrder(position, orderPolicy), m_params(params) {}
 
-const char *StopLoss::GetName() const { return "stop loss"; }
+const char *StopLoss::GetName() const { return "stop-loss"; }
+
+void StopLoss::Report(const Position &position, ModuleTradingLog &log) const {
+  log.Write("%1%\tattach\tmax-loss=%2$.8f\tpos=%3%",
+            [this, &position](TradingRecord &record) {
+              record % GetName()                  // 1
+                  % m_params->GetMaxLossPerLot()  // 2
+                  % position.GetId();             // 3
+            });
+}
 
 bool StopLoss::Activate() {
   const Double maxLoss =
@@ -149,7 +168,17 @@ StopLossShare::StopLossShare(
     : StopLossOrder(position, orderPolicy),
       m_params(boost::make_shared<Params>(maxLossShare)) {}
 
-const char *StopLossShare::GetName() const { return "stop loss share"; }
+const char *StopLossShare::GetName() const { return "stop-loss share"; }
+
+void StopLossShare::Report(const Position &position,
+                           ModuleTradingLog &log) const {
+  log.Write("%1%\tattach\tmax-loss=%2$.8f\tpos=%3%",
+            [this, &position](TradingRecord &record) {
+              record % GetName()                 // 1
+                  % m_params->GetMaxLossShare()  // 2
+                  % GetPosition().GetId();       // 3
+            });
+}
 
 bool StopLossShare::Activate() {
   const auto &plannedPnl = GetPosition().GetPlannedPnl();

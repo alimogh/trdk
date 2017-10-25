@@ -21,11 +21,11 @@ class TRDK_CORE_API Context : private boost::noncopyable {
  public:
   class TRDK_CORE_API Exception : public trdk::Lib::Exception {
    public:
-    explicit Exception(const char *what) throw();
+    explicit Exception(const char *what) noexcept;
   };
   class TRDK_CORE_API TradingModeIsNotLoaded : public trdk::Context::Exception {
    public:
-    explicit TradingModeIsNotLoaded(const char *what) throw();
+    explicit TradingModeIsNotLoaded(const char *what) noexcept;
   };
 
   typedef trdk::EventsLog Log;
@@ -64,8 +64,10 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   virtual ~Context();
 
  public:
-  trdk::Context::Log &GetLog() const throw();
-  trdk::Context::TradingLog &GetTradingLog() const throw();
+  trdk::Context::Log &GetLog() const noexcept;
+  trdk::Context::TradingLog &GetTradingLog() const noexcept;
+
+  trdk::Timer &GetTimer();
 
   //! Subscribes to state changes.
   StateUpdateConnection SubscribeToStateUpdates(const StateUpdateSlot &) const;
@@ -202,6 +204,15 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   virtual trdk::TradingSystem &GetTradingSystem(size_t index,
                                                 const trdk::TradingMode &) = 0;
 
+  virtual trdk::Strategy &GetSrategy(const boost::uuids::uuid &id) = 0;
+  virtual const trdk::Strategy &GetSrategy(
+      const boost::uuids::uuid &id) const = 0;
+
+  //! Asks each strategy to close all opened positions if it has.
+  virtual void CloseSrategiesPositions() = 0;
+
+  virtual void Add(const trdk::Lib::Ini &) = 0;
+
  protected:
   //! Returns Drop Copy or nullptr.
   virtual DropCopy *GetDropCopy() const = 0;
@@ -222,13 +233,11 @@ class trdk::Context::Params : private boost::noncopyable {
   class TRDK_CORE_API Exception : public trdk::Context::Exception {
    public:
     Exception(const char *what) noexcept;
-    ~Exception();
   };
 
   class TRDK_CORE_API KeyDoesntExistError : public Exception {
    public:
     KeyDoesntExistError(const char *what) noexcept;
-    ~KeyDoesntExistError();
   };
 
   typedef uintmax_t Revision;

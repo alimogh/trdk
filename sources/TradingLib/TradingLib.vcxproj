@@ -279,6 +279,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="StopLimit.cpp" />
     <ClCompile Include="StopLoss.cpp" />
     <ClCompile Include="StopOrder.cpp" />
     <ClCompile Include="TakeProfit.cpp" />
@@ -300,12 +301,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Algo.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SourcesSynchronizer.hpp" />
+    <ClInclude Include="StopLimit.hpp" />
     <ClInclude Include="StopLoss.hpp" />
     <ClInclude Include="StopOrder.hpp" />
     <ClInclude Include="TakeProfit.hpp" />

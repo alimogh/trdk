@@ -14,7 +14,6 @@
 #include "NetworkStreamClientService.hpp"
 #include "SysError.hpp"
 
-using namespace trdk;
 using namespace trdk::Lib;
 
 namespace io = boost::asio;
@@ -47,7 +46,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
   NetworkStreamClient &m_self;
 
   NetworkStreamClientService &m_service;
-  io::ip::tcp::socket m_socket;
+  const std::unique_ptr<NetworkClientServiceIo> m_io;
 
   std::pair<Buffer, Buffer> m_buffer;
   BufferMutex m_bufferMutex;
@@ -58,7 +57,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
                           NetworkStreamClient &self)
       : m_self(self),
         m_service(service),
-        m_socket(m_service.GetIo().GetService()),
+        m_io(m_service.CreateIo()),
         m_numberOfReceivedBytes(0) {}
 
   template <typename Message>
@@ -70,9 +69,9 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
     AssertEq(0, m_buffer.first.size());
     AssertEq(0, m_buffer.second.size());
 
-    boost::system::error_code error;
-    const auto size = io::write(m_socket, io::buffer(message), error);
-
+    const auto &result = m_io->Write(io::buffer(message));
+    const auto &error = result.first;
+    const auto &size = result.second;
     if (error || size != message.size()) {
       {
         boost::format logMessage(
@@ -96,17 +95,16 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
     AssertLt(0, m_buffer.second.size());
 
     const auto &self = m_self.shared_from_this();
-    const boost::function<void(const boost::system::error_code &)> &callback =
-        [ self, onOperatonÑompletion ](const boost::system::error_code &error) {
-      onOperatonÑompletion();
-      if (error) {
-        self->m_pimpl->OnConnectionError(error);
-      }
-    };
 
     try {
-      io::async_write(m_socket, std::move(bufferSequnce),
-                      boost::bind(callback, io::placeholders::error));
+      m_io->StartAsyncWrite(std::move(bufferSequnce), [
+        self, onOperatonÑompletion
+      ](const boost::system::error_code &error) {
+        onOperatonÑompletion();
+        if (error) {
+          self->m_pimpl->OnConnectionError(error);
+        }
+      });
     } catch (const std::exception &ex) {
       boost::format error("Failed to write to socket: \"%1%\"");
       error % ex.what();
@@ -123,16 +121,15 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
 
     const auto &self = m_self.shared_from_this();
     const auto &messageCopy = boost::make_shared<Message>(std::move(message));
-    const boost::function<void(const boost::system::error_code &)> &callback =
-        [self, messageCopy](const boost::system::error_code &error) {
-          if (error) {
-            self->m_pimpl->OnConnectionError(error);
-          }
-        };
 
     try {
-      io::async_write(m_socket, io::buffer(*messageCopy),
-                      boost::bind(callback, io::placeholders::error));
+      m_io->StartAsyncWrite(
+          io::buffer(*messageCopy),
+          [self, messageCopy](const boost::system::error_code &error) {
+            if (error) {
+              self->m_pimpl->OnConnectionError(error);
+            }
+          });
     } catch (const std::exception &ex) {
       boost::format error("Failed to write to socket: \"%1%\"");
       error % ex.what();
@@ -148,16 +145,14 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
     AssertLt(0, m_buffer.second.size());
 
     const auto &self = m_self.shared_from_this();
-    const boost::function<void(const boost::system::error_code &)> &callback =
-        [self](const boost::system::error_code &error) {
-          if (error) {
-            self->m_pimpl->OnConnectionError(error);
-          }
-        };
 
     try {
-      io::async_write(m_socket, io::buffer(persistentBuffer, len),
-                      boost::bind(callback, io::placeholders::error));
+      m_io->StartAsyncWrite(io::buffer(persistentBuffer, len),
+                            [self](const boost::system::error_code &error) {
+                              if (error) {
+                                self->m_pimpl->OnConnectionError(error);
+                              }
+                            });
     } catch (const std::exception &ex) {
       boost::format error("Failed to write to socket: \"%1%\"");
       error % ex.what();
@@ -176,22 +171,17 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
 #endif
 
     auto self = m_self.shared_from_this();
-    using Handler =
-        boost::function<void(const boost::system::error_code &, size_t)>;
-    const Handler &handler = [self, &activeBuffer, bufferStartOffset,
-                              &nextBuffer](
-        const boost::system::error_code &error, size_t transferredBytes) {
-      self->m_pimpl->OnReadCompleted(activeBuffer, bufferStartOffset,
-                                     nextBuffer, error, transferredBytes);
-    };
 
     try {
-      io::async_read(m_socket,
-                     io::buffer(activeBuffer.data() + bufferStartOffset,
-                                activeBuffer.size() - bufferStartOffset),
-                     io::transfer_at_least(1),
-                     boost::bind(handler, io::placeholders::error,
-                                 io::placeholders::bytes_transferred));
+      m_io->StartAsyncRead(
+          io::buffer(activeBuffer.data() + bufferStartOffset,
+                     activeBuffer.size() - bufferStartOffset),
+          io::transfer_at_least(1),
+          [self, &activeBuffer, bufferStartOffset, &nextBuffer](
+              const boost::system::error_code &error, size_t transferredBytes) {
+            self->m_pimpl->OnReadCompleted(activeBuffer, bufferStartOffset,
+                                           nextBuffer, error, transferredBytes);
+          });
     } catch (const std::exception &ex) {
       boost::format message("Failed to start read: \"%1%\"");
       message % ex.what();
@@ -352,7 +342,7 @@ class NetworkStreamClient::Implementation : private boost::noncopyable {
 
   void OnConnectionError(const boost::system::error_code &error) {
     Assert(error);
-    m_socket.close();
+    m_io->Close();
     {
       boost::format message(
           "%1%Connection to server closed by error:"
@@ -405,11 +395,7 @@ NetworkStreamClient::NetworkStreamClient(NetworkStreamClientService &service,
         host, boost::lexical_cast<std::string>(port));
 
     {
-      boost::system::error_code error;
-      io::connect(m_pimpl->m_socket,
-                  ip::tcp::resolver(m_pimpl->m_service.GetIo().GetService())
-                      .resolve(query),
-                  error);
+      const auto &error = m_pimpl->m_io->Connect(std::move(query));
       if (error) {
         boost::format errorText("\"%1%\" (network error: \"%2%\")");
         errorText % SysError(error.value()) % error;
@@ -458,7 +444,7 @@ void NetworkStreamClient::Start() {
     const timeval timeout = {timeoutMilliseconds / 1000};
 #endif
     auto setsockoptResult =
-        setsockopt(m_pimpl->m_socket.native_handle(), SOL_SOCKET, SO_RCVTIMEO,
+        setsockopt(m_pimpl->m_io->GetNativeHandle(), SOL_SOCKET, SO_RCVTIMEO,
                    reinterpret_cast<const char *>(&timeout), sizeof(timeout));
     if (setsockoptResult) {
       boost::format message("%1%Failed to set SO_RCVTIMEO: \"%2%\".");
@@ -466,7 +452,7 @@ void NetworkStreamClient::Start() {
       LogError(message.str());
     }
     setsockoptResult =
-        setsockopt(m_pimpl->m_socket.native_handle(), SOL_SOCKET, SO_SNDTIMEO,
+        setsockopt(m_pimpl->m_io->GetNativeHandle(), SOL_SOCKET, SO_SNDTIMEO,
                    reinterpret_cast<const char *>(&timeout), sizeof(timeout));
     if (setsockoptResult) {
       boost::format message("%1%Failed to set SO_SNDTIMEO: \"%2%\".");
@@ -495,7 +481,7 @@ void NetworkStreamClient::Start() {
 }
 
 void NetworkStreamClient::Stop() {
-  if (!m_pimpl->m_socket.is_open()) {
+  if (!m_pimpl->m_io->IsOpen()) {
     return;
   }
   {
@@ -503,8 +489,8 @@ void NetworkStreamClient::Stop() {
     message % GetLogTag();
     LogInfo(message.str().c_str());
   }
-  m_pimpl->m_socket.shutdown(io::ip::tcp::socket::shutdown_both);
-  m_pimpl->m_socket.close();
+  m_pimpl->m_io->Shutdown(io::ip::tcp::socket::shutdown_both);
+  m_pimpl->m_io->Close();
 }
 
 bool NetworkStreamClient::CheckResponceSynchronously(
@@ -588,9 +574,10 @@ std::vector<char> NetworkStreamClient::ReceiveSynchronously(
 
   std::vector<char> result(size);
 
-  boost::system::error_code error;
-  const auto &serverResponseSize = io::read(
-      m_pimpl->m_socket, io::buffer(result), io::transfer_at_least(1), error);
+  const auto &ioResult =
+      m_pimpl->m_io->Read(io::buffer(result), io::transfer_at_least(1));
+  const auto &error = ioResult.first;
+  const auto &serverResponseSize = ioResult.second;
   AssertLe(serverResponseSize, result.size());
   result.resize(serverResponseSize);
 

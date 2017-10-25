@@ -84,7 +84,7 @@ SystemException::SystemException(const char *what) noexcept : Exception(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-MethodDoesNotImplementedError::MethodDoesNotImplementedError(
+MethodIsNotImplementedException::MethodIsNotImplementedException(
     const char *what) noexcept
     : Exception(what) {}
 

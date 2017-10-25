@@ -167,7 +167,7 @@ void Engine::ClosePositions() {
   if (!m_pimpl->m_context) {
     throw Exception("Failed to close engine positions, engine is stopped");
   }
-  m_pimpl->m_context->ClosePositions();
+  m_pimpl->m_context->CloseSrategiesPositions();
 }
 
 void Engine::VerifyModules() const {

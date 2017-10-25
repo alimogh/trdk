@@ -51,40 +51,16 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellDropCopy.cpp">
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListModel.cpp">
       <Filter>Generated Files\Debug Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellDropCopy.cpp">
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListModel.cpp">
       <Filter>Generated Files\Test Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellDropCopy.cpp">
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListModel.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellEngine.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ShellSecurityListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellDropCopy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShellSecurityListModel.cpp">
+    <ClCompile Include="SecurityListModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -92,13 +68,13 @@
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShellApi.h">
+    <ClInclude Include="Module.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShellFwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShellModule.hpp">
+    <ClInclude Include="ShellApi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -113,13 +89,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="ShellDropCopy.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ShellEngine.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="ShellSecurityListModel.hpp">
+    <CustomBuild Include="SecurityListModel.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

@@ -35,6 +35,7 @@ class RiskControl;
 class RiskControlSymbolContext;
 class RiskControlScope;
 
+class PositionOperationContext;
 class Position;
 class LongPosition;
 class ShortPosition;
@@ -46,4 +47,6 @@ class EventsLog;
 class ModuleEventsLog;
 class TradingLog;
 class ModuleTradingLog;
+
+class Timer;
 }

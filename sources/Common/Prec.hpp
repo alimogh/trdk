@@ -13,6 +13,14 @@
 #include "Assert.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#ifdef _DEBUG
+#pragma comment(lib, "ssleay32MTd.lib")
+#pragma comment(lib, "libeay32MTd.lib")
+#else
+#pragma comment(lib, "ssleay32MT.lib")
+#pragma comment(lib, "libeay32MT.lib")
+#endif  // _DEBUG
 #include <boost/atomic.hpp>
 #include <boost/date_time/gregorian/gregorian_io.hpp>
 #include <boost/date_time/local_time/local_time_types.hpp>
@@ -36,5 +44,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <iomanip>
 #include <iostream>
+
+#include <Windows.h>
 
 #include "Core/Log.hpp"

@@ -25,10 +25,12 @@ var concurrencyProfileRelease = "PROFILE_RELAX"
 var requiredModules = [
 	'Core'
 	, 'Engine'
+	, 'FrontEnd'
 	, 'Shell'
 	, 'TestTradingSystems'
 	, 'FixProtocol'
 	, 'TestStrategy'
+	, 'WilliamCarryStrategies'
 	, 'WilliamCarryFrontEnd'
 ]
 

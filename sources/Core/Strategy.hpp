@@ -36,7 +36,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       class Implementation;
 
      public:
-      explicit Iterator(Implementation *) throw();
+      explicit Iterator(Implementation *) noexcept;
       Iterator(const Iterator &);
       ~Iterator();
 
@@ -66,8 +66,8 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       class Implementation;
 
      public:
-      explicit ConstIterator(Implementation *) throw();
-      explicit ConstIterator(const Iterator &) throw();
+      explicit ConstIterator(Implementation *) noexcept;
+      explicit ConstIterator(const Iterator &) noexcept;
       ConstIterator(const ConstIterator &);
       ~ConstIterator();
 
@@ -84,12 +84,12 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       void advance(const difference_type &);
 
      private:
-      Implementation *m_pimpl;
+      class Implementation;
+      std::unique_ptr<Implementation> m_pimpl;
     };
 
    public:
-    PositionList();
-    virtual ~PositionList();
+    virtual ~PositionList() = default;
 
    public:
     virtual size_t GetSize() const = 0;
@@ -108,7 +108,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
                     const std::string &implementationName,
                     const std::string &instanceName,
                     const trdk::Lib::IniSectionRef &);
-  virtual ~Strategy();
+  virtual ~Strategy() override;
 
  public:
   const boost::uuids::uuid &GetTypeId() const;
@@ -122,15 +122,49 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   trdk::TradingSystem &GetTradingSystem(size_t index);
 
  public:
-  bool IsBlocked(bool forever = false) const;
+  bool IsBlocked(bool isForever = false) const;
   void WaitForStop();
 
-  void Block() throw();
-  void Block(const std::string &reason) throw();
+  void Block() noexcept;
+  void Block(const std::string &reason) noexcept;
   void Block(const boost::posix_time::time_duration &);
   void Stop(const trdk::StopMode &);
 
   void ClosePositions();
+
+  //! Safely invokes an action with the instance of the strategy.
+  /** Applied only for non-system calls.
+    */
+  template <typename StrategyImplementation, typename Callback>
+  void Invoke(const Callback &callback) {
+    const auto lock = LockForOtherThreads();
+    if (IsBlocked()) {
+      throw trdk::Lib::Exception("Strategy is blocked");
+    }
+    StrategyImplementation *const impl =
+        dynamic_cast<StrategyImplementation *>(this);
+    if (!impl) {
+      throw trdk::Lib::Exception(
+          "Strategy requested to invoke has another type");
+    }
+    callback(*impl);
+  }
+  /** Applied only for non-system calls.
+    */
+  template <typename StrategyImplementation, typename Callback>
+  void Invoke(const Callback &callback) const {
+    const auto &lock = LockForOtherThreads();
+    if (IsBlocked()) {
+      throw trdk::Lib::Exception("Strategy is blocked");
+    }
+    const StrategyImplementation *const impl =
+        dynamic_cast<const StrategyImplementation *>(this);
+    if (!impl) {
+      throw trdk::Lib::Exception(
+          "Strategy requested to invoke has another type");
+    }
+    callback(*impl);
+  }
 
  public:
   virtual void RaiseSecurityContractSwitchedEvent(
@@ -179,7 +213,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   /** Thread-unsafe method! Must be called only from event-methods, or if
     * strategy locked by GetMutex().
     */
-  virtual void Unregister(Position &) throw();
+  virtual void Unregister(Position &) noexcept;
 
   PositionList &GetPositions();
   const PositionList &GetPositions() const;
