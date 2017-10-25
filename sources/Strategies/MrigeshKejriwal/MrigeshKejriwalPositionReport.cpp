@@ -34,18 +34,18 @@ class PositionReportCalculator : private boost::noncopyable {
   virtual ~PositionReportCalculator() = default;
 
  public:
-  //!  Leakage is the difference between the signal price and the actual order
+  //!  Slippage is the difference between the signal price and the actual order
   // execution price multiplied by the quantity.
-  virtual Double CalcOpenLeakage() const = 0;
-  //!  Leakage is the difference between the signal price and the actual order
+  virtual Double CalcOpenSlippage() const = 0;
+  //!  Slippage is the difference between the signal price and the actual order
   // execution price multiplied by the quantity.
-  virtual Double CalcCloseLeakage() const = 0;
+  virtual Double CalcCloseSlippage() const = 0;
   //!  (op_average_price / op_control_price - cl_average_price /
   //!  cl_control_price) for long and -(op_average_price / op_control_price -
   //!  cl_average_price / cl_control_price) for short positions
   /** https://trello.com/c/PU46S5P4
     */
-  virtual Double CalcLeakagePercent() const = 0;
+  virtual Double CalcSlippagePercent() const = 0;
 
   //! SEBI Turnover fees(0.0002% of the trade value)
   /** https://trello.com/c/PU46S5P4
@@ -67,10 +67,8 @@ class PositionReportCalculator : private boost::noncopyable {
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcGoodsAndServicesTax() const {
-    return (m_position.CalcCommission() *
-            m_settings.report.goodsAndServicesTaxRatio) +
-           (CaclExchangeTransactionCharges() *
-            m_settings.report.goodsAndServicesTaxRatio);
+    return (m_position.CalcCommission() + CaclExchangeTransactionCharges()) *
+           m_settings.report.goodsAndServicesTaxRatio;
   }
   //! Securities Transaction Tax(0.1% of the trade value only for sale)
   /** https://trello.com/c/PU46S5P4
@@ -95,11 +93,11 @@ class PositionReportCalculator : private boost::noncopyable {
             CalcSecuritiesTransactionTax()) /
            m_position.GetOpenedVolume();
   }
-  //! Net_PnL% = GrossPnL%-Leakage%-Tran_costs%
+  //! Net_PnL% = GrossPnL%-Slippage%-Tran_costs%
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcNetPnl() const {
-    return CalcGrossPnl() - CalcLeakagePercent() - CalcTranCosts();
+    return CalcGrossPnl() - CalcSlippagePercent() - CalcTranCosts();
   }
   //! Leverage = op_volume / initial_margin
   /** https://trello.com/c/PU46S5P4
@@ -138,17 +136,17 @@ class LongPositionReportCalculator : public PositionReportCalculator {
   virtual ~LongPositionReportCalculator() override = default;
 
  public:
-  virtual Double CalcOpenLeakage() const override {
+  virtual Double CalcOpenSlippage() const override {
     return (m_position.GetOpenAvgPrice() -
             m_operationContext.GetOpenSignalPrice()) *
            m_position.GetOpenedQty();
   }
-  virtual Double CalcCloseLeakage() const override {
+  virtual Double CalcCloseSlippage() const override {
     return (m_operationContext.GetCloseSignalPrice() -
             m_position.GetCloseAvgPrice()) *
            m_position.GetOpenedQty();
   }
-  virtual Double CalcLeakagePercent() const override {
+  virtual Double CalcSlippagePercent() const override {
     AssertNe(0, m_operationContext.GetOpenSignalPrice());
     AssertNe(0, m_operationContext.GetCloseSignalPrice());
     if (m_operationContext.GetOpenSignalPrice() == 0 ||
@@ -184,17 +182,17 @@ class ShortPositionReportCalculator : public PositionReportCalculator {
   virtual ~ShortPositionReportCalculator() override = default;
 
  public:
-  virtual Double CalcOpenLeakage() const override {
+  virtual Double CalcOpenSlippage() const override {
     return (m_operationContext.GetOpenSignalPrice() -
             m_position.GetOpenAvgPrice()) *
            m_position.GetOpenedQty();
   }
-  virtual Double CalcCloseLeakage() const override {
+  virtual Double CalcCloseSlippage() const override {
     return (m_position.GetCloseAvgPrice() -
             m_operationContext.GetCloseSignalPrice()) *
            m_position.GetOpenedQty();
   }
-  virtual Double CalcLeakagePercent() const override {
+  virtual Double CalcSlippagePercent() const override {
     AssertNe(0, m_operationContext.GetOpenSignalPrice());
     AssertNe(0, m_operationContext.GetCloseSignalPrice());
     if (m_operationContext.GetOpenSignalPrice() == 0 ||
@@ -242,9 +240,9 @@ void PositionReport::PrintHead(std::ostream &os) {
   os << ",Type";                          // 9
   os << ",P&L Volume";                    // 10
   os << ",P&L %";                         // 11
-  os << ",Open Leakage";                  // 12
-  os << ",Close Leakage";                 // 13
-  os << ",Leakage %";                     // 14
+  os << ",Open Slippage";                 // 12
+  os << ",Close Slippage";                // 13
+  os << ",Slippage %";                    // 14
   os << ",Exchange Transaction Charges";  // 15
   os << ",SEBI Turnover Fees";            // 16
   os << ",Stamp Duty";                    // 17
@@ -297,10 +295,10 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   os << ',' << pos.GetType();                                           // 9
   os << ',' << pos.GetRealizedPnlVolume();                              // 10
   os << ',' << pos.GetRealizedPnlRatio();                               // 11
-  os << ',' << calculator->CalcOpenLeakage();                           // 12
+  os << ',' << calculator->CalcOpenSlippage();                          // 12
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << calculator->CalcCloseLeakage();    // 13
-    os << ',' << calculator->CalcLeakagePercent();  // 14
+    os << ',' << calculator->CalcCloseSlippage();    // 13
+    os << ',' << calculator->CalcSlippagePercent();  // 14
   } else {
     AssertNe(CLOSE_REASON_NONE, pos.GetCloseReason());
     os << ",,";  // 13, 14
