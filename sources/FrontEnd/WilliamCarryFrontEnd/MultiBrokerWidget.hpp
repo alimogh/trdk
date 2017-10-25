@@ -39,6 +39,7 @@ class MultiBrokerWidget : public QWidget {
   void OnStateChanged(bool isStarted);
   void UpdatePrices(const Security *);
   void ShowStrategySetupDialog();
+  void ShowGeneralSetup();
   void ShowTimersSetupDialog();
   void ShowTradingSecurityList();
   virtual void resizeEvent(QResizeEvent *);
@@ -82,6 +83,7 @@ class MultiBrokerWidget : public QWidget {
 
   boost::array<Strategy *, NUMBER_OF_STRATEGIES> m_strategies;
   boost::array<StrategySettings, NUMBER_OF_STRATEGIES> m_settings;
+  std::vector<trdk::Lib::Double> m_lots;
 };
 }
 }

@@ -23,7 +23,7 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   typedef trdk::PositionOperationContext Base;
 
  public:
-  explicit OperationContext(bool isLong, const Qty &);
+  explicit OperationContext(bool isLong, const Qty &, const Price &price);
   OperationContext(OperationContext &&);
   virtual ~OperationContext() override;
 

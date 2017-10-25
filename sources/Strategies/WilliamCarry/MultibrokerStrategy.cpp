@@ -25,9 +25,9 @@ namespace pt = boost::posix_time;
 
 class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
-  PositionController m_controller;
+  std::vector<boost::shared_ptr<PositionController>> m_controllers;
 
-  explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}
+  explicit Implementation(MultibrokerStrategy &) {}
 };
 
 MultibrokerStrategy::MultibrokerStrategy(Context &context,
@@ -42,17 +42,27 @@ MultibrokerStrategy::MultibrokerStrategy(Context &context,
 
 MultibrokerStrategy::~MultibrokerStrategy() = default;
 
-void MultibrokerStrategy::OpenPosition(OperationContext &&operation,
-                                       Security &security,
-                                       const Milestones &delayMeasurement) {
+void MultibrokerStrategy::OpenPosition(
+    std::vector<OperationContext> &&operations,
+    Security &security,
+    const Milestones &delayMeasurement) {
   if (!GetPositions().IsEmpty()) {
     throw Exception(
         "Failed to start new position as current strategy instance already "
         "handles position");
   }
-  m_pimpl->m_controller.OnSignal(
-      boost::make_shared<OperationContext>(std::move(operation)), security,
-      delayMeasurement);
+  AssertEq(0, m_pimpl->m_controllers.size());
+  m_pimpl->m_controllers.clear();
+  m_pimpl->m_controllers.reserve(operations.size());
+  for (size_t i = 0; i < std::min(GetContext().GetNumberOfTradingSystems(),
+                                  operations.size());
+       ++i) {
+    m_pimpl->m_controllers.emplace_back(boost::make_shared<PositionController>(
+        *this, GetContext().GetTradingSystem(i, GetTradingMode())));
+    m_pimpl->m_controllers.back()->OpenPosition(
+        boost::make_shared<OperationContext>(std::move(operations[i])),
+        security, delayMeasurement);
+  }
 }
 
 void MultibrokerStrategy::OnLevel1Tick(Security &,
@@ -61,11 +71,19 @@ void MultibrokerStrategy::OnLevel1Tick(Security &,
                                        const Milestones &) {}
 
 void MultibrokerStrategy::OnPositionUpdate(Position &position) {
-  m_pimpl->m_controller.OnPositionUpdate(position);
+  AssertGt(m_pimpl->m_controllers.size(),
+           position.GetTradingSystem().GetIndex());
+  if (m_pimpl->m_controllers.size() <= position.GetTradingSystem().GetIndex()) {
+    return;
+  }
+  m_pimpl->m_controllers[position.GetTradingSystem().GetIndex()]
+      ->OnPositionUpdate(position);
 }
 
 void MultibrokerStrategy::OnPostionsCloseRequest() {
-  m_pimpl->m_controller.OnPostionsCloseRequest();
+  for (auto &controller : m_pimpl->m_controllers) {
+    controller->OnPostionsCloseRequest();
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 

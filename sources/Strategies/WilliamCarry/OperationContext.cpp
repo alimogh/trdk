@@ -10,10 +10,11 @@
 
 #include "Prec.hpp"
 #include "OperationContext.hpp"
-#include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/StopLimit.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/Position.hpp"
+#include "Core/Strategy.hpp"
+#include "OrderPolicy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -21,11 +22,13 @@ using namespace trdk::TradingLib;
 using namespace trdk::Strategies::WilliamCarry;
 
 namespace pt = boost::posix_time;
+namespace wc = trdk::Strategies::WilliamCarry;
+namespace tl = trdk::TradingLib;
 
 class OperationContext::Implementation : private boost::noncopyable {
  public:
   const bool m_isLong;
-  const Qty &m_qty;
+  const Qty m_qty;
   boost::shared_ptr<OrderPolicy> m_orderPolicy;
 
   std::vector<
@@ -35,24 +38,26 @@ class OperationContext::Implementation : private boost::noncopyable {
       m_takeProfitStopLimits;
   pt::time_duration m_stopTime;
 
-  explicit Implementation(bool isLong, const Qty &qty)
+  explicit Implementation(bool isLong, const Qty &qty, const Price &price)
       : m_isLong(isLong),
         m_qty(qty),
-        m_orderPolicy(boost::make_shared<LimitIocOrderPolicy>()) {}
+        m_orderPolicy(boost::make_shared<OrderPolicy>(price)) {}
 };
 
-OperationContext::OperationContext(bool isLong, const Qty &qty)
-    : m_pimpl(boost::make_unique<Implementation>(isLong, qty)) {}
+OperationContext::OperationContext(bool isLong,
+                                   const Qty &qty,
+                                   const Price &price)
+    : m_pimpl(boost::make_unique<Implementation>(isLong, qty, price)) {}
 
 OperationContext::OperationContext(OperationContext &&) = default;
 
 OperationContext::~OperationContext() = default;
 
-const OrderPolicy &OperationContext::GetOpenOrderPolicy() const {
+const tl::OrderPolicy &OperationContext::GetOpenOrderPolicy() const {
   return *m_pimpl->m_orderPolicy;
 }
 
-const OrderPolicy &OperationContext::GetCloseOrderPolicy() const {
+const tl::OrderPolicy &OperationContext::GetCloseOrderPolicy() const {
   return *m_pimpl->m_orderPolicy;
 }
 
@@ -72,7 +77,9 @@ bool OperationContext::IsLong() const { return m_pimpl->m_isLong; }
 Qty OperationContext::GetPlannedQty() const { return m_pimpl->m_qty; }
 
 bool OperationContext::HasCloseSignal(const Position &position) const {
-  return position.GetOpenedQty() == 0;
+  return position.GetOpenedQty() == 0 &&
+         position.GetOpenStartTime() + pt::seconds(1) <=
+             position.GetStrategy().GetContext().GetCurrentTime();
 }
 
 boost::shared_ptr<PositionOperationContext>

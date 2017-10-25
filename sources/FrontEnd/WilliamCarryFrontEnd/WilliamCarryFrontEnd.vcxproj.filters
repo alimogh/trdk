@@ -91,6 +91,18 @@
     <ClCompile Include="StrategySetupDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_GeneralSetupDialog.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_GeneralSetupDialog.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_GeneralSetupDialog.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneralSetupDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -107,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="StrategySettings.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_GeneralSetupDialog.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +149,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="StrategySetupDialog.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="GeneralSetupDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="GeneralSetupDialog.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

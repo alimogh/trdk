@@ -15,6 +15,7 @@
 #include "Core/Security.hpp"
 #include "Strategies/WilliamCarry/MultibrokerStrategy.hpp"
 #include "Strategies/WilliamCarry/OperationContext.hpp"
+#include "GeneralSetupDialog.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "ShellLib/Module.hpp"
@@ -41,7 +42,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
       m_currentMarketDataSecurity(nullptr),
       m_tradingsecurityListWidget(this),
       m_ignoreLockToggling(false),
-      m_settings({}) {
+      m_settings({}),
+      m_lots{1, 1, 1, 1, 1} {
   m_ui.setupUi(this);
 
   m_tradingsecurityListWidget.hide();
@@ -75,6 +77,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
                  &MultiBrokerWidget::ShowStrategySetupDialog));
   Verify(connect(m_ui.showTimers, &QPushButton::clicked, this,
                  &MultiBrokerWidget::ShowTimersSetupDialog));
+  Verify(connect(m_ui.showSetup, &QPushButton::clicked, this,
+                 &MultiBrokerWidget::ShowGeneralSetup));
 
   Verify(connect(m_ui.targetList, &QListWidget::currentRowChanged,
                  [this](int index) {
@@ -125,18 +129,38 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   Assert(m_strategies[strategyIndex]);
   Assert(m_currentTradingSecurity);
 
-  for (;;) {
-    const auto &delayMeasurement =
-        m_engine.GetContext().StartStrategyTimeMeasurement();
+  const auto &delayMeasurement =
+      m_engine.GetContext().StartStrategyTimeMeasurement();
 
-    auto &settings = m_settings[strategyIndex];
-    if (!settings.isEnabled) {
-      return;
+  auto &settings = m_settings[strategyIndex];
+  if (!settings.isEnabled) {
+    return;
+  }
+
+  Price price;
+  {
+    const auto it = m_lockedSecurityList.find(m_currentTradingSecurity);
+    if (it != m_lockedSecurityList.cend()) {
+      if (isLong) {
+        price = it->second.bid;
+      } else {
+        price = it->second.ask;
+      }
+    } else if (isLong) {
+      price = m_currentTradingSecurity->GetAskPrice();
+    } else {
+      price = m_currentTradingSecurity->GetBidPrice();
     }
+  }
 
-    OperationContext operation(isLong, settings.lotMultiplier);
+  std::vector<OperationContext> operations;
+  operations.reserve(m_lots.size());
+  for (const auto &lot : m_lots) {
+    const auto qty = settings.lotMultiplier * lot;
+    operations.emplace_back(isLong, qty, price);
+    auto &operation = operations.back();
 
-    const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecision();
+    const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
 
     if (!settings.takeProfit2) {
       operation.AddTakeProfitStopLimit(pip * settings.takeProfit1.pips,
@@ -156,23 +180,18 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
       operation.AddStopLoss(pip * settings.stopLoss3->pips,
                             settings.stopLoss3->delay);
     }
+  }
 
-    try {
-      m_strategies[strategyIndex]->Invoke<MultibrokerStrategy>(
-          [this, &settings, &operation,
-           &delayMeasurement](MultibrokerStrategy &strategy) {
-            strategy.OpenPosition(std::move(operation),
-                                  *m_currentTradingSecurity, delayMeasurement);
-          });
-      break;
-    } catch (const std::exception &ex) {
-      if (QMessageBox::critical(this, tr("Failed to open new position"),
-                                QString("%1.").arg(ex.what()),
-                                QMessageBox::Abort | QMessageBox::Retry) !=
-          QMessageBox::Retry) {
-        break;
-      }
-    }
+  try {
+    m_strategies[strategyIndex]->Invoke<MultibrokerStrategy>(
+        [this, &settings, &operations,
+         &delayMeasurement](MultibrokerStrategy &strategy) {
+          strategy.OpenPosition(std::move(operations),
+                                *m_currentTradingSecurity, delayMeasurement);
+        });
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to send order"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
 }
 
@@ -382,6 +401,15 @@ void MultiBrokerWidget::ShowStrategySetupDialog() {
     return;
   }
   m_settings = dialog.GetSettings();
+}
+
+void MultiBrokerWidget::ShowGeneralSetup() {
+  GeneralSetupDialog dialog(m_lots, this);
+
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
+  }
+  m_lots = dialog.GetLots();
 }
 
 void MultiBrokerWidget::ShowTimersSetupDialog() {

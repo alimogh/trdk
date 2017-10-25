@@ -329,6 +329,7 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="MultibrokerStrategy.hpp" />
     <ClInclude Include="OperationContext.hpp" />
+    <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

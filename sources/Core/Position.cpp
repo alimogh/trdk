@@ -895,10 +895,11 @@ class Position::Implementation : private boost::noncopyable {
       const Order &order =
           isOpen ? m_open.orders.back() : m_close.orders.back();
 
-      dropCopy.CopyTrade(m_strategy.GetContext().GetCurrentTime(),
-                         tradingSystemId, order.uuid, price, qty,
-                         m_security.GetBidPrice(), m_security.GetBidQty(),
-                         m_security.GetAskPrice(), m_security.GetAskQty());
+      dropCopy.CopyTrade(
+          m_strategy.GetContext().GetCurrentTime(), tradingSystemId, order.uuid,
+          price, qty, m_security.GetBidPriceValue(),
+          m_security.GetBidQtyValue(), m_security.GetAskPriceValue(),
+          m_security.GetAskQtyValue());
 
     });
   }

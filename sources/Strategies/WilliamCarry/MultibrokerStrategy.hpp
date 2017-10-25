@@ -29,7 +29,7 @@ class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
   virtual ~MultibrokerStrategy() override;
 
  public:
-  void OpenPosition(OperationContext &&,
+  void OpenPosition(std::vector<OperationContext> &&,
                     Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
