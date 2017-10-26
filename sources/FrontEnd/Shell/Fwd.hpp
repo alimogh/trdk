@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "ShellLib/ShellFwd.hpp"
+#include "ShellLib/Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {

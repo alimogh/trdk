@@ -12,15 +12,14 @@
 #include "SecurityListModel.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "Lib/DropCopy.hpp"
-#include "Lib/Engine.hpp"
+#include "DropCopy.hpp"
+#include "Engine.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Shell;
 
-namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
 SecurityListModel::SecurityListModel(Engine &engine, QWidget *parent)

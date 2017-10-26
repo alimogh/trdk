@@ -51,18 +51,6 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListModel.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="SecurityListModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -71,10 +59,10 @@
     <ClInclude Include="Module.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShellFwd.hpp">
+    <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShellApi.h">
+    <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -87,10 +75,5 @@
     <ResourceCompile Include="Resources\ShellLib.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="SecurityListModel.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
   </ItemGroup>
 </Project>
