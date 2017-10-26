@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/11 00:57:13
+ *   Created: 2017/10/26 14:44:45
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -7,6 +7,8 @@
  *       URL: http://robotdk.com
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
+
+#pragma once
 
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -18,6 +20,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -29,6 +32,31 @@ namespace ptr = boost::property_tree;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+struct Settings {
+  std::string apiKey;
+  std::string apiSecret;
+  pt::time_duration pollingInterval;
+
+  explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
+      : apiKey(conf.ReadKey("api_key")),
+        apiSecret(conf.ReadKey("api_secret")),
+        pollingInterval(pt::milliseconds(
+            conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
+    Log(log);
+    Validate();
+  }
+
+  void Log(ModuleEventsLog &log) {
+    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+             apiKey,                                    // 1
+             apiSecret.empty() ? "not set" : "is set",  // 2
+             pollingInterval);                          // 3
+  }
+
+  void Validate() {}
+};
+
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
@@ -62,49 +90,89 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 
 namespace {
 
-class YobitnetExchange : public TradingSystem, public MarketDataSource {
+class GdaxRequest : public Request {
  public:
-  struct Settings {
-    std::string apiKey;
-    std::string apiSecret;
-    pt::time_duration pollingInterval;
+  typedef Request Base;
 
-    explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-        : apiKey(conf.ReadKey("api_key")),
-          apiSecret(conf.ReadKey("api_secret")),
-          pollingInterval(pt::milliseconds(
-              conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
-      Log(log);
-      Validate();
-    }
+ public:
+  explicit GdaxRequest(const std::string &uri,
+                       const std::string &message,
+                       const std::string &method,
+                       const Settings &settings)
+      : Base(uri, message, method, settings.apiKey, settings.apiSecret) {}
 
-    void Log(ModuleEventsLog &log) {
-      log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
-               apiKey,                                    // 1
-               apiSecret.empty() ? "not set" : "is set",  // 2
-               pollingInterval);                          // 3
-    }
+  virtual ~GdaxRequest() override = default;
 
-    void Validate() {}
+ public:
+  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
+      net::HTTPSClientSession &session, const Context &context) override {
+    const auto &result = Base::Send(session, context);
+    return boost::make_tuple(std::move(boost::get<0>(result)),
+                             ExtractContent(boost::get<1>(result)),
+                             std::move(boost::get<2>(result)));
+  }
+
+ protected:
+  virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) = 0;
+};
+
+class BookGdaxRequest : public GdaxRequest {
+ public:
+  typedef GdaxRequest Base;
+
+ public:
+  explicit BookGdaxRequest(const std::string &uri,
+                           const std::string &message,
+                           const std::string &method,
+                           const Settings &settings)
+      : Base(uri, message, method, settings) {}
+
+  virtual ~BookGdaxRequest() override = default;
+
+ protected:
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) override {
+    return responseTree;
+  }
+};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+class GdaxExchange : public TradingSystem, public MarketDataSource {
+ private:
+  typedef boost::mutex SecuritiesMutex;
+  typedef SecuritiesMutex::scoped_lock SecuritiesLock;
+
+  struct SecuritySubscribtion {
+    boost::shared_ptr<Rest::Security> security;
+    boost::shared_ptr<GdaxRequest> request;
+    bool isSubscribed;
   };
 
  public:
-  explicit YobitnetExchange(const App &,
-                            const TradingMode &mode,
-                            size_t tradingSystemIndex,
-                            size_t marketDataSourceIndex,
-                            Context &context,
-                            const std::string &instanceName,
-                            const IniSectionRef &conf)
+  explicit GdaxExchange(const App &,
+                        const TradingMode &mode,
+                        size_t tradingSystemIndex,
+                        size_t marketDataSourceIndex,
+                        Context &context,
+                        const std::string &instanceName,
+                        const IniSectionRef &conf)
       : TradingSystem(mode, tradingSystemIndex, context, instanceName),
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_session("yobit.net") {
-    m_session.setKeepAlive(true);
+        m_marketDataSession("api.gdax.com"),
+        m_tradingSession(!conf.ReadBoolKey("sandbox")
+                             ? "api.gdax.com"
+                             : "api-public.sandbox.gdax.com") {
+    m_marketDataSession.setKeepAlive(true);
+    m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~YobitnetExchange() override = default;
+  virtual ~GdaxExchange() override = default;
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -131,50 +199,53 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SubscribeToSecurities() override {
-    if (m_securities.empty()) {
-      return;
+    {
+      const SecuritiesLock lock(m_securitiesMutex);
+      for (auto &subscribtion : m_securities) {
+        if (subscribtion.second.isSubscribed) {
+          continue;
+        }
+        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
+                         *subscribtion.second.security);
+        subscribtion.second.isSubscribed = true;
+      }
     }
 
-    std::vector<std::string> uriSymbolsPath;
-    uriSymbolsPath.reserve(m_securities.size());
-    for (const auto &security : m_securities) {
-      uriSymbolsPath.emplace_back(security.first);
+    if (m_pollingTask) {
+      return;
     }
-    const auto &uri = "/api/3/depth/" + boost::join(uriSymbolsPath, "-");
-    const auto &depthRequest = boost::make_shared<Request>(
-        std::move(uri), "Depth", net::HTTPRequest::HTTP_GET, m_settings.apiKey,
-        m_settings.apiSecret, "limit=1");
     m_pollingTask = boost::make_unique<PollingTask>(
-        [this, depthRequest]() {
-          const auto &response = depthRequest->Send(m_session, GetContext());
-          const auto &time = boost::get<0>(response);
-          const auto &delayMeasurement = boost::get<2>(response);
-          try {
-            for (const auto &updateRecord : boost::get<1>(response)) {
-              const auto &symbol = updateRecord.first;
-              const auto security = m_securities.find(symbol);
-              if (security == m_securities.cend()) {
-                GetMdsLog().Warn(
-                    "Received \"depth\"-packet for unknown symbol \"%1%\".",
-                    symbol);
-                continue;
-              }
-              const auto &data = updateRecord.second;
-              const auto &bestAsk =
-                  ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-                      data.get_child("asks"));
+        [this]() {
+          const SecuritiesLock lock(m_securitiesMutex);
+          for (const auto &subscribtion : m_securities) {
+            if (!subscribtion.second.isSubscribed) {
+              continue;
+            }
+            auto &security = *subscribtion.second.security;
+            auto &request = *subscribtion.second.request;
+            const auto &response =
+                request.Send(m_marketDataSession, GetContext());
+            const auto &time = boost::get<0>(response);
+            const auto &update = boost::get<1>(response);
+            const auto &delayMeasurement = boost::get<2>(response);
+            try {
               const auto &bestBid =
                   ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-                      data.get_child("bids"));
-              security->second->SetLevel1(
-                  time, std::move(bestBid.first), std::move(bestBid.second),
-                  std::move(bestAsk.first), std::move(bestAsk.second),
-                  delayMeasurement);
+                      update.get_child("bids"));
+              const auto &bestAsk =
+                  ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+                      update.get_child("asks"));
+              security.SetLevel1(time, std::move(bestBid.first),
+                                 std::move(bestBid.second),
+                                 std::move(bestAsk.first),
+                                 std::move(bestAsk.second), delayMeasurement);
+            } catch (const std::exception &ex) {
+              boost::format error(
+                  "Failed to read order book state for \"%1%\": \"%2%\"");
+              error % security  // 1
+                  % ex.what();  // 2
+              throw MarketDataSource::Error(error.str().c_str());
             }
-          } catch (const std::exception &ex) {
-            boost::format error("Failed to read \"depth\": \"%1%\"");
-            error % ex.what();
-            throw MarketDataSource::Error(error.str().c_str());
           }
         },
         m_settings.pollingInterval, GetMdsLog());
@@ -188,23 +259,32 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
-      const auto &it = m_securities.find(symbol.GetSymbol());
+      const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
-        return *it->second;
+        return *it->second.security;
       }
     }
 
-    const auto &result = boost::make_shared<Rest::Security>(
-        GetContext(), symbol, *this,
-        Rest::Security::SupportedLevel1Types()
-            .set(LEVEL1_TICK_BID_PRICE)
-            .set(LEVEL1_TICK_ASK_PRICE));
-    Verify(
-        m_securities
-            .emplace(std::make_pair(
-                boost::to_lower_copy(result->GetSymbol().GetSymbol()), result))
-            .second);
-    return *result;
+    const SecuritiesLock lock(m_securitiesMutex);
+
+    std::vector<std::string> subs;
+    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
+
+    return *m_securities
+                .emplace(
+                    symbol,
+                    SecuritySubscribtion{
+                        boost::make_shared<Rest::Security>(
+                            GetContext(), symbol, *this,
+                            Rest::Security::SupportedLevel1Types()
+                                .set(LEVEL1_TICK_BID_PRICE)
+                                .set(LEVEL1_TICK_BID_QTY)
+                                .set(LEVEL1_TICK_ASK_PRICE)
+                                .set(LEVEL1_TICK_ASK_QTY)),
+                        boost::make_shared<BookGdaxRequest>(
+                            "/products/" + boost::join(subs, "-") + "/book/",
+                            "book", net::HTTPRequest::HTTP_GET, m_settings)})
+                .first->second.security;
   }
 
   virtual OrderId SendSellAtMarketPrice(trdk::Security &,
@@ -277,10 +357,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_session;
+  net::HTTPSClientSession m_marketDataSession;
+  net::HTTPSClientSession m_tradingSession;
 
-  boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
-      m_securities;
+  SecuritiesMutex m_securitiesMutex;
+  boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
@@ -288,14 +369,14 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
+TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
     const TradingMode &mode,
     size_t tradingSystemIndex,
     size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<YobitnetExchange>(
+  const auto &result = boost::make_shared<GdaxExchange>(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};

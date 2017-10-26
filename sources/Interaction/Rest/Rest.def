@@ -3,4 +3,5 @@ EXPORTS
 	CreateNovaexchange
 	CreateYobitnet
 	CreateCcex
+	CreateGdax
 	GetTrdkModuleVersionInfoV1

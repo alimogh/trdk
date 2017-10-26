@@ -312,6 +312,15 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       lastTimeWidget = m_ui.ccexLastTime;
       bidFrame = m_ui.ccexBid;
       askFrame = m_ui.ccexAsk;
+    } else if (boost::iequals(name, "Gdax")) {
+      result.gdaxTradingSystem = &tradingSystem;
+      bidPriceWidget = m_ui.gdaxBidPrice;
+      bidQtyWidget = m_ui.gdaxBidQty;
+      askPriceWidget = m_ui.gdaxAskPrice;
+      askQtyWidget = m_ui.gdaxAskQty;
+      lastTimeWidget = m_ui.gdaxLastTime;
+      bidFrame = m_ui.gdaxBid;
+      askFrame = m_ui.gdaxAsk;
     } else {
       QMessageBox::warning(this, tr("Configuration warning"),
                            tr("Unknown trading system \"%1\".")

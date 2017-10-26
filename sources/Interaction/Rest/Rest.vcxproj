@@ -305,6 +305,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
+    <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">
