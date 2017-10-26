@@ -171,13 +171,13 @@ QSize ArbitrageStrategyWindow::sizeHint() const {
 void ArbitrageStrategyWindow::LoadSymbols(
     const boost::optional<QString> &defaultSymbol) {
   {
+    IniFile conf(m_engine.GetConfigFilePath());
+    IniSectionRef defaults(conf, "Defaults");
     const SignalsScopedBlocker blocker(*m_ui.symbol);
-    m_ui.symbol->addItem("ETH_BTC");
-    m_ui.symbol->addItem("ETC_BTC");
-    m_ui.symbol->addItem("DOGE_BTC");
-    m_ui.symbol->addItem("LTC_BTC");
-    m_ui.symbol->addItem("CNT_BTC");
-    m_ui.symbol->addItem("DASH_BTC");
+    for (const std::string &symbol :
+         defaults.ReadList("symbol_list", ",", true)) {
+      m_ui.symbol->addItem(QString::fromStdString(symbol));
+    }
   }
   if (defaultSymbol) {
     m_ui.symbol->setCurrentText(*defaultSymbol);
