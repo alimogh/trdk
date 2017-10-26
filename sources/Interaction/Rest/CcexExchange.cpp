@@ -20,6 +20,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -81,10 +82,8 @@ class CcexRequest : public Request {
   virtual ~CcexRequest() override = default;
 
  public:
-  virtual boost::tuple<boost::posix_time::ptime,
-                       boost::property_tree::ptree,
-                       Lib::TimeMeasurement::Milestones>
-  Send(net::HTTPSClientSession &session, const Context &context) override {
+  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
+      net::HTTPSClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
 

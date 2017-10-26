@@ -40,9 +40,7 @@ Request::Request(const std::string &uri,
   }
 }
 
-boost::tuple<boost::posix_time::ptime,
-             boost::property_tree::ptree,
-             Lib::TimeMeasurement::Milestones>
+boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPSClientSession &session, const Context &context) {
   std::string uri = m_uri + "?nonce=" +
                     pt::to_iso_string(pt::microsec_clock::universal_time());

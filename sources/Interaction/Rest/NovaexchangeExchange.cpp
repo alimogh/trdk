@@ -18,6 +18,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -53,6 +54,47 @@ struct Settings {
 
   void Validate() {}
 };
+
+#pragma warning(push)
+#pragma warning(disable : 4702)  // Warning	C4702	unreachable code
+void ReadTopOfBook(const pt::ptime &time,
+                   const ptr::ptree &bids,
+                   const ptr::ptree &asks,
+                   Rest::Security &security,
+                   const Milestones &delayMeasurement) {
+  for (const auto &bidNode : bids) {
+    const auto &bid = bidNode.second;
+    for (const auto &askNode : asks) {
+      const auto &ask = askNode.second;
+      security.SetLevel1(time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                                   bid.get<double>("price")),
+                         Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+                             bid.get<double>("amount")),
+                         Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                             ask.get<double>("price")),
+                         Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+                             ask.get<double>("amount")),
+                         delayMeasurement);
+      return;
+    }
+    security.SetLevel1(
+        time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                  bid.get<double>("price")),
+        Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(bid.get<double>("amount")),
+        delayMeasurement);
+    return;
+  }
+  for (const auto &askNode : asks) {
+    const auto &ask = askNode.second;
+    security.SetLevel1(
+        time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                  ask.get<double>("price")),
+        Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(ask.get<double>("amount")),
+        delayMeasurement);
+    return;
+  }
+}
+#pragma warning(pop)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,13 +115,29 @@ class NovaexchangeRequest : public Request {
   virtual ~NovaexchangeRequest() override = default;
 
  public:
-  virtual boost::tuple<boost::posix_time::ptime,
-                       boost::property_tree::ptree,
-                       Lib::TimeMeasurement::Milestones>
-  Send(net::HTTPSClientSession &session, const Context &context) override {
+  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
+      net::HTTPSClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
+    CheckResponseError(responseTree);
+    return boost::make_tuple(std::move(boost::get<0>(result)),
+                             ExtractContent(responseTree),
+                             std::move(boost::get<2>(result)));
+  }
 
+ protected:
+  virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) {
+    const auto &result = responseTree.get_child_optional(GetName());
+    if (!result) {
+      boost::format error(
+          "The server did not return response to the request \"%1%\"");
+      error % GetName();
+      throw Exception(error.str().c_str());
+    }
+    return *result;
+  }
+
+  void CheckResponseError(const ptr::ptree &responseTree) const {
     const auto &status = responseTree.get_optional<std::string>("status");
     if (!status || *status != "success") {
       const auto &message = responseTree.get_optional<std::string>("message");
@@ -100,18 +158,26 @@ class NovaexchangeRequest : public Request {
       error << ")";
       throw Exception(error.str().c_str());
     }
+  }
+};
 
-    const auto &contentTree = responseTree.get_child_optional(GetName());
-    if (!contentTree) {
-      boost::format error(
-          "The server did not return response to the request \"%1%\"");
-      error % GetName();
-      throw Exception(error.str().c_str());
-    }
+class OpenOrdersNovaexchangeRequest : public NovaexchangeRequest {
+ public:
+  typedef NovaexchangeRequest Base;
 
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             std::move(*contentTree),
-                             std::move(boost::get<2>(result)));
+ public:
+  explicit OpenOrdersNovaexchangeRequest(const std::string &uri,
+                                         const std::string &message,
+                                         const std::string &method,
+                                         const Settings &settings)
+      : Base(uri, message, method, settings) {}
+
+  virtual ~OpenOrdersNovaexchangeRequest() override = default;
+
+ protected:
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) override {
+    return responseTree;
   }
 };
 }
@@ -203,34 +269,14 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             const auto &response = request.Send(m_session, GetContext());
             const auto &time = boost::get<0>(response);
             const auto &delayMeasurement = boost::get<2>(response);
+            const auto &update = boost::get<1>(response);
             try {
-              for (const auto &updateRecord : boost::get<1>(response)) {
-                const auto &update = updateRecord.second;
-                // const auto &marketName =
-                // update.get<std::string>("marketname");
-                //                 if (marketName !=
-                //                 security.first->GetSymbol().GetSymbol()) {
-                //                   boost::format error(
-                //                       "Received update by wrong currency pair
-                //                       \"%1%\" for "
-                //                       "\"%2%\"");
-                //                   error % marketName      // 1
-                //                       % *security.first;  // 2
-                //                   throw
-                //                   MarketDataSource::Error(error.str().c_str());
-                //                 }
-                security.SetLevel1(
-                    time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                              update.get<double>("bid")),
-                    Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                        update.get<double>("ask")),
-                    Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(
-                        update.get<double>("last_price")),
-                    delayMeasurement);
-              }
+              ReadTopOfBook(time, update.get_child("buyorders"),
+                            update.get_child("sellorders"), security,
+                            delayMeasurement);
             } catch (const std::exception &ex) {
               boost::format error(
-                  "Failed to read market state for \"%1%\": \"%2%\"");
+                  "Failed to read order book for \"%1%\": \"%2%\"");
               error % security % ex.what();
               throw MarketDataSource::Error(error.str().c_str());
             }
@@ -280,18 +326,20 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     subs[0].swap(subs[1]);
 
     return *m_securities
-                .emplace(symbol,
-                         SecuritySubscribtion{
-                             boost::make_shared<Rest::Security>(
-                                 GetContext(), symbol, *this,
-                                 Rest::Security::SupportedLevel1Types()
-                                     .set(LEVEL1_TICK_BID_PRICE)
-                                     .set(LEVEL1_TICK_ASK_PRICE)),
-                             boost::make_shared<NovaexchangeRequest>(
-                                 "/remote/v2/market/info/" +
-                                     boost::join(subs, "_") + "/",
-                                 "markets", net::HTTPRequest::HTTP_POST,
-                                 m_settings)})
+                .emplace(
+                    symbol,
+                    SecuritySubscribtion{
+                        boost::make_shared<Rest::Security>(
+                            GetContext(), symbol, *this,
+                            Rest::Security::SupportedLevel1Types()
+                                .set(LEVEL1_TICK_BID_PRICE)
+                                .set(LEVEL1_TICK_BID_QTY)
+                                .set(LEVEL1_TICK_ASK_PRICE)
+                                .set(LEVEL1_TICK_ASK_QTY)),
+                        boost::make_shared<OpenOrdersNovaexchangeRequest>(
+                            "/remote/v2/market/openorders/" +
+                                boost::join(subs, "_") + "/BOTH/",
+                            "orders", net::HTTPRequest::HTTP_POST, m_settings)})
                 .first->second.security;
   }
 
@@ -369,7 +417,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   NovaexchangeRequest m_getBalancesRequest;
 
   SecuritiesMutex m_securitiesMutex;
-  boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
+  boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
