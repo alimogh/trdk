@@ -104,21 +104,12 @@
     <ClCompile Include="PositionOperationContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Security.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Instrument.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Position.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Settings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MarketDataSource.hpp">
@@ -127,37 +118,13 @@
     <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Observer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Module.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Strategy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StrategyPositionState.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Service.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Types.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModuleVariant.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModuleRef.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Context.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Consumer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModuleSecurityList.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Interactor.hpp">
@@ -172,13 +139,7 @@
     <ClInclude Include="TradingLog.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RiskControl.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DropCopy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PriceBook.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Log.hpp">
@@ -196,22 +157,70 @@
     <ClInclude Include="DropCopyMock.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MarketDataSourceMock.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SecurityMock.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ServiceMock.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ContextDummy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MarketDataSourceDummy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MarketDataSourceMock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Module.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleRef.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleSecurityList.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleVariant.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Observer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Position.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="PositionOperationContext.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PriceBook.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RiskControl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Security.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecurityMock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceMock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Strategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StrategyPositionState.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

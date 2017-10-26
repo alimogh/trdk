@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Strategies/ArbitrationAdvisor/Advice.hpp"
 #include "ui_ArbitrageStrategyWindow.h"
 
 namespace trdk {
@@ -19,8 +20,11 @@ namespace Terminal {
 class ArbitrageStrategyWindow : public QMainWindow {
   Q_OBJECT
 
+ public:
+  typedef QMainWindow Base;
+
+ private:
   struct Target {
-    TradingSystem *tradingSystem;
     Security *security;
 
     mutable Lib::SideAdapter<QLabel> bid;
@@ -45,6 +49,8 @@ class ArbitrageStrategyWindow : public QMainWindow {
       TargetList;
 
   struct InstanceData {
+    Strategy *strategy;
+    boost::signals2::scoped_connection adviceConnection;
     TargetList targets;
     TradingSystem *novaexchangeTradingSystem;
     TradingSystem *yobitnetTradingSystem;
@@ -58,27 +64,45 @@ class ArbitrageStrategyWindow : public QMainWindow {
       MainWindow &mainWindow,
       const boost::optional<QString> &defaultSymbol,
       QWidget *parent);
+  virtual ~ArbitrageStrategyWindow() override;
+
+ public:
+  virtual QSize sizeHint() const override;
+
+ protected:
+  virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
-  void UpdatePrices(const Security *);
+  void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
   void OnCurrentSymbolChange(int symbolIndex);
-  void HighlightPrices();
+
+  void ToggleAutoTrading(bool activate);
+  void DeactivateAutoTrading();
+  void UpdateAutoTradingLevel(double level);
+
+  void UpdateAdviceLevel(double level);
+
+ signals:
+  void Advice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
 
  private:
   void LoadSymbols(const boost::optional<QString> &defaultSymbol);
   void SetCurrentSymbol(int symbolIndex);
-  void UpdateAllPrices();
-  void UpdateTargetPrices(const Target &);
 
   void Sell(TradingSystem &);
   void Buy(TradingSystem &);
 
+  bool IsAutoTradingActivated() const;
+
  private:
   const TradingMode m_tradingMode;
+  const size_t m_instanceNumber;
+  boost::unordered_map<std::string, boost::uuids::uuid> m_strategiesUuids;
   MainWindow &m_mainWindow;
   Ui::ArbitrageStrategyWindow m_ui;
   Lib::Engine &m_engine;
-  int m_currentSymbol;
+  int m_symbol;
+  Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
   std::vector<QWidget *> m_novaexchangeWidgets;
   std::vector<QWidget *> m_yobitnetWidgets;
   std::vector<QWidget *> m_ccexWidgets;

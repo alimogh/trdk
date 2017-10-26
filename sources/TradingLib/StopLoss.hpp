@@ -53,6 +53,9 @@ class StopPrice : public trdk::TradingLib::StopLossOrder {
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopPrice() override = default;
 
+  virtual void Report(const trdk::Position &,
+                      trdk::ModuleTradingLog &) const override;
+
  protected:
   virtual const char *GetName() const override;
 
@@ -83,6 +86,9 @@ class StopLoss : public trdk::TradingLib::StopLossOrder {
       trdk::Position &,
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopLoss() override = default;
+
+  virtual void Report(const trdk::Position &,
+                      trdk::ModuleTradingLog &) const override;
 
  protected:
   virtual const char *GetName() const override;
@@ -121,6 +127,9 @@ class StopLossShare : public trdk::TradingLib::StopLossOrder {
       const trdk::Lib::Double &maxLossShare,
       trdk::Position &,
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+
+  virtual void Report(const trdk::Position &,
+                      trdk::ModuleTradingLog &) const override;
 
  protected:
   virtual const char *GetName() const override;

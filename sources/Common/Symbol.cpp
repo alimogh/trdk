@@ -100,7 +100,7 @@ Symbol::Symbol(const std::string &line,
 
   symbolSubs.front().swap(m_data.symbol);
 
-  static_assert(numberOfSecurityTypes == 7, "List changed.");
+  static_assert(numberOfSecurityTypes == 8, "List changed.");
   size_t currencyIndex = 0;
   switch (m_data.securityType) {
     case SECURITY_TYPE_STOCK:
@@ -135,6 +135,12 @@ Symbol::Symbol(const std::string &line,
           " are not supported");
     case SECURITY_TYPE_OPTIONS:
       throw Exception("Options symbols paring is not supported");
+    case SECURITY_TYPE_CRYPTO:
+      if (symbolSubs.size() > 2) {
+        throw StringFormatError("Too many fields for cryptocurrency symbol");
+      }
+      currencyIndex = 1;
+      break;
     default:
       AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
       throw Exception("System error: Unknown security ID");
@@ -169,7 +175,7 @@ Symbol::Symbol(const std::string &line,
         }
       }
 
-      static_assert(numberOfSecurityTypes == 7, "List changed.");
+      static_assert(numberOfSecurityTypes == 8, "List changed.");
       switch (m_data.securityType) {
         case SECURITY_TYPE_STOCK:
         case SECURITY_TYPE_INDEX:
@@ -204,6 +210,13 @@ Symbol::Symbol(const std::string &line,
               " are not supported");
         case SECURITY_TYPE_OPTIONS:
           throw Exception("Options symbols parsing is not supported");
+        case SECURITY_TYPE_CRYPTO:
+          if (exchangeSubs.size() > 1) {
+            throw StringFormatError(
+                "Too many fields for cryptocurrency exchange");
+          }
+          exchangeSubs[0].swap(m_data.exchange);
+          break;
         default:
           AssertEq(SECURITY_TYPE_STOCK, m_data.securityType);
           throw Exception("System error: Unknown security ID");
@@ -297,7 +310,7 @@ Symbol::Hash Symbol::GetHash() const {
 }
 
 const SecurityType &Symbol::GetSecurityType() const {
-  static_assert(numberOfSecurityTypes == 7, "List changed.");
+  static_assert(numberOfSecurityTypes == 8, "List changed.");
   if (m_data.securityType < 0 || m_data.securityType >= numberOfSecurityTypes) {
     throw Lib::LogicError("Symbol doesn't have security type");
   }
@@ -419,7 +432,7 @@ const Currency &Symbol::GetFotQuoteCurrency() const {
 
 std::ostream &trdk::Lib::operator<<(std::ostream &os, const Symbol &symbol) {
   // If changing here - look at Symbol::GetHash, how hash creating.
-  static_assert(numberOfSecurityTypes == 7, "List changed.");
+  static_assert(numberOfSecurityTypes == 8, "List changed.");
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_STOCK:
     case SECURITY_TYPE_INDEX:
@@ -456,6 +469,13 @@ std::ostream &trdk::Lib::operator<<(std::ostream &os, const Symbol &symbol) {
       }
       os << '/' << symbol.GetCurrency() << '/' << symbol.GetRightAsString()
          << '/' << symbol.GetStrike();
+      if (!symbol.m_data.exchange.empty()) {
+        os << ':' << symbol.m_data.exchange;
+      }
+      break;
+    case SECURITY_TYPE_CRYPTO:
+      Assert(symbol.IsExplicit());
+      os << symbol.GetSymbol() << '/' << symbol.GetCurrency();
       if (!symbol.m_data.exchange.empty()) {
         os << ':' << symbol.m_data.exchange;
       }

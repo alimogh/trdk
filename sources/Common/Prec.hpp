@@ -45,4 +45,6 @@
 #include <iomanip>
 #include <iostream>
 
+#include <Windows.h>
+
 #include "Core/Log.hpp"

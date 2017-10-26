@@ -41,8 +41,6 @@ TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
   Assert(m_params);
 }
 
-TakeProfit::~TakeProfit() = default;
-
 const char *TakeProfit::GetName() const { return "take profit"; }
 
 void TakeProfit::Run() {
@@ -50,7 +48,7 @@ void TakeProfit::Run() {
     return;
   }
 
-  static_assert(numberOfCloseReasons == 12, "List changed.");
+  static_assert(numberOfCloseReasons == 13, "List changed.");
   switch (GetPosition().GetCloseReason()) {
     case CLOSE_REASON_NONE:
       if (!CheckSignal()) {

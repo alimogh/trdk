@@ -20,6 +20,7 @@ using namespace trdk::FrontEnd::Terminal;
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
 
+  QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication application(argc, argv);
 
   try {

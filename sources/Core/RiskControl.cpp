@@ -818,7 +818,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
  private:
   static_assert(
-      numberOfCurrencies == 8,
+      numberOfCurrencies == 9,
       "List changes. Each new currency adds new item into static array here!"
       "See Ctor.");
   mutable std::vector<Double> m_stat;

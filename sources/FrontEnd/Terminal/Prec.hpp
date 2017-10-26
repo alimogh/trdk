@@ -23,6 +23,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 
 #include "Lib/Adapters.hpp"
 #include "Lib/Util.hpp"
