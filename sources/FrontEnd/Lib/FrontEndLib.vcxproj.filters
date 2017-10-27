@@ -93,6 +93,18 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_DropCopy.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="SecurityListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SecurityListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SecurityListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SecurityListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -261,6 +273,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="DropCopy.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="SecurityListModel.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

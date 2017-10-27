@@ -117,6 +117,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
 
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection));
+
+  LoadSettings();
 }
 
 void MultiBrokerWidget::resizeEvent(QResizeEvent *) {
@@ -162,14 +164,14 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
 
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
 
-    if (!settings.takeProfit2) {
-      operation.AddTakeProfitStopLimit(pip * settings.takeProfit1.pips,
-                                       settings.takeProfit1.delay, 1.0);
+    if (!settings.target2) {
+      operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
+                                       settings.target1.delay, 1.0);
     } else {
-      operation.AddTakeProfitStopLimit(pip * settings.takeProfit1.pips,
-                                       settings.takeProfit1.delay, 0.5);
-      operation.AddTakeProfitStopLimit(pip * settings.takeProfit2->pips,
-                                       settings.takeProfit2->delay, 0.5);
+      operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
+                                       settings.target1.delay, 0.5);
+      operation.AddTakeProfitStopLimit(pip * settings.target2->pips,
+                                       settings.target2->delay, 0.5);
     }
 
     if (settings.stopLoss2) {
@@ -329,7 +331,7 @@ void MultiBrokerWidget::ReloadSecurityList() {
 }
 
 void MultiBrokerWidget::OnStateChanged(bool isStarted) {
-  if (!m_ui.trading->isEnabled() && isStarted) {
+  if (isStarted) {
     Reload();
   }
   m_ui.trading->setEnabled(isStarted);
@@ -396,28 +398,28 @@ void MultiBrokerWidget::SetPrices(const pt::ptime &time,
 
 void MultiBrokerWidget::ShowStrategySetupDialog() {
   StrategySetupDialog dialog(m_settings, this);
-
   if (dialog.exec() != QDialog::Accepted) {
     return;
   }
   m_settings = dialog.GetSettings();
+  SaveSettings();
 }
 
 void MultiBrokerWidget::ShowGeneralSetup() {
   GeneralSetupDialog dialog(m_lots, this);
-
   if (dialog.exec() != QDialog::Accepted) {
     return;
   }
   m_lots = dialog.GetLots();
+  SaveSettings();
 }
 
 void MultiBrokerWidget::ShowTimersSetupDialog() {
   TimersDialog dialog(this);
-
   if (dialog.exec() != QDialog::Accepted) {
     return;
   }
+  SaveSettings();
 }
 
 void MultiBrokerWidget::ShowTradingSecurityList() {
@@ -475,6 +477,91 @@ void MultiBrokerWidget::SetMarketDataSecurity(Security *security) {
     }
     Assert(m_ignoreLockToggling);
     m_ignoreLockToggling = false;
+  }
+}
+
+void MultiBrokerWidget::SaveSettings() {
+  QSettings settingsStorage;
+  settingsStorage.clear();
+  {
+    settingsStorage.beginGroup("General");
+    size_t i = 0;
+    for (const auto &lots : m_lots) {
+      settingsStorage.setValue(QString("brokers/%1/lots").arg(++i), lots.Get());
+    }
+    settingsStorage.endGroup();
+  }
+  {
+    settingsStorage.beginGroup("Strategies");
+    size_t i = 0;
+    for (const auto &strategySettings : m_settings) {
+      settingsStorage.beginGroup(QString("%1").arg(++i));
+      settingsStorage.setValue("enabled", strategySettings.isEnabled);
+      settingsStorage.setValue("lot multiplier",
+                               strategySettings.lotMultiplier);
+      settingsStorage.setValue("targets/1/pips", strategySettings.target1.pips);
+      settingsStorage.setValue(
+          "targets/1/delay",
+          strategySettings.target1.delay.total_microseconds());
+      settingsStorage.setValue("number of steps to target",
+                               strategySettings.numberOfStepsToTarget);
+      if (strategySettings.target2) {
+        settingsStorage.setValue("targets/2/pips",
+                                 strategySettings.target2->pips);
+        settingsStorage.setValue(
+            "targets/2/delay",
+            strategySettings.target2->delay.total_microseconds());
+      }
+      if (strategySettings.stopLoss2) {
+        settingsStorage.setValue("stop-loses/2/pips",
+                                 strategySettings.stopLoss2->pips);
+        settingsStorage.setValue(
+            "stop-loses/2/delay",
+            strategySettings.stopLoss2->delay.total_microseconds());
+        if (strategySettings.stopLoss3) {
+          settingsStorage.setValue("stop-loses/3/pips",
+                                   strategySettings.stopLoss3->pips);
+
+          settingsStorage.setValue(
+              "stop-loses/3/delay",
+              strategySettings.stopLoss3->delay.total_microseconds());
+        }
+        settingsStorage.endGroup();
+      }
+      settingsStorage.endGroup();
+    }
+  }
+}
+
+void MultiBrokerWidget::LoadSettings() {
+  QSettings settingsStorage;
+  {
+    settingsStorage.beginGroup("General");
+    size_t i = 0;
+    for (auto &lots : m_lots) {
+      lots = settingsStorage.value(QString("brokers/%1/lots").arg(++i), 1)
+                 .toDouble();
+    }
+    settingsStorage.endGroup();
+  }
+  {
+    settingsStorage.beginGroup("Strategies");
+    size_t i = 0;
+    for (auto &strategySettings : m_settings) {
+      settingsStorage.beginGroup(QString("%1").arg(++i));
+      strategySettings.isEnabled =
+          settingsStorage.value("enabled", false).toBool();
+      strategySettings.lotMultiplier =
+          settingsStorage.value("lot multiplier", 1).toUInt();
+      strategySettings.target1.pips =
+          settingsStorage.value("targets/1/pips", 1).toULongLong();
+      strategySettings.target1.delay = pt::microseconds(
+          settingsStorage.value("targets/1/delay", 1000 * 1000).toULongLong());
+      strategySettings.numberOfStepsToTarget =
+          settingsStorage.value("number of steps to target", 1).toUInt();
+      settingsStorage.endGroup();
+    }
+    settingsStorage.endGroup();
   }
 }
 

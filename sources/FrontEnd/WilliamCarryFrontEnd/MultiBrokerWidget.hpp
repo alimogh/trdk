@@ -67,6 +67,9 @@ class MultiBrokerWidget : public QWidget {
   void SetTradingSecurity(Security *);
   void SetMarketDataSecurity(Security *);
 
+  void LoadSettings();
+  void SaveSettings();
+
  private:
   const TradingMode m_mode;
   Ui::MultiBrokerWidget m_ui;

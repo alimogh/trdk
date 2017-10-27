@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#include "ShellLib/ShellFwd.hpp"
+#include "ShellLib/Fwd.hpp"
 
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/string_generator.hpp>
