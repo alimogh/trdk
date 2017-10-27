@@ -50,19 +50,19 @@ void StrategySetupDialog::Fields::Import(const StrategySettings &source) {
 
   lotMultiplier->setValue(source.lotMultiplier);
 
-  target1Pips->setValue(static_cast<int>(source.takeProfit1.pips));
-  target1Time->setValue(source.takeProfit1.delay.total_seconds());
+  target1Pips->setValue(static_cast<int>(source.target1.pips));
+  target1Time->setValue(source.target1.delay.total_seconds());
 
   switch (source.numberOfStepsToTarget) {
     default:
       AssertEq(1, source.numberOfStepsToTarget);
     case 1:
-      if (!source.takeProfit2) {
+      if (!source.target2) {
         target1->setChecked(true);
       } else {
         target2->setChecked(true);
-        target2Pips->setValue(static_cast<int>(source.takeProfit2->pips));
-        target2Time->setValue(source.takeProfit2->delay.total_seconds());
+        target2Pips->setValue(static_cast<int>(source.target2->pips));
+        target2Time->setValue(source.target2->delay.total_seconds());
       }
       break;
     case 5:
@@ -93,11 +93,11 @@ StrategySettings StrategySetupDialog::Fields::Export() const {
 
   result.lotMultiplier = static_cast<unsigned int>(lotMultiplier->value());
 
-  result.takeProfit1 = {static_cast<size_t>(target1Pips->value()),
-                        pt::seconds(target1Time->value())};
+  result.target1 = {static_cast<size_t>(target1Pips->value()),
+                    pt::seconds(target1Time->value())};
 
   if (target2->isChecked()) {
-    result.takeProfit2 =
+    result.target2 =
         StrategySettings::Target{static_cast<size_t>(target2Pips->value()),
                                  pt::seconds(target2Time->value())};
     result.numberOfStepsToTarget = 1;

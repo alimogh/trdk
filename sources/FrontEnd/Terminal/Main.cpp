@@ -25,6 +25,8 @@ int main(int argc, char *argv[]) {
 
   try {
     application.setApplicationName(TRDK_NAME);
+    application.setOrganizationDomain(TRDK_DOMAIN);
+
     LoadStyle(application);
 
     auto engine = boost::make_unique<Engine>(

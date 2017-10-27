@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
 
   try {
     application.setApplicationName(TRDK_NAME);
+    application.setOrganizationDomain(TRDK_DOMAIN);
+
     LoadStyle(application);
 
     MainWindow mainWindow(Q_NULLPTR);

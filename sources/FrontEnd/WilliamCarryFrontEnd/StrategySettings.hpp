@@ -25,9 +25,9 @@ struct StrategySettings {
   bool isEnabled;
   unsigned int lotMultiplier;
 
-  Target takeProfit1;
+  Target target1;
   size_t numberOfStepsToTarget;
-  boost::optional<Target> takeProfit2;
+  boost::optional<Target> target2;
 
   boost::optional<Target> stopLoss2;
   boost::optional<Target> stopLoss3;
