@@ -27,9 +27,7 @@ var requiredModules = [
 	, 'Engine'
 	, 'FrontEnd'
 	, 'Shell'
-	, 'TestTradingSystems'
 	, 'FixProtocol'
-	, 'TestStrategy'
 	, 'WilliamCarryStrategies'
 	, 'WilliamCarryFrontEnd'
 ]
