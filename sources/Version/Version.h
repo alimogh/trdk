@@ -3,7 +3,7 @@
 
 #define TRDK_VERSION_RELEASE	1
 #define TRDK_VERSION_BUILD	0
-#define TRDK_VERSION_STATUS	2
+#define TRDK_VERSION_STATUS	4
 
 #define TRDK_VERSION_BRANCH		"WilliamCarry"
 #define TRDK_VERSION_BRANCH_W	L"WilliamCarry"
@@ -30,5 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
-#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "Shell", "TestTradingSystems", "FixProtocol", "TestStrategy", "WilliamCarryStrategies", "WilliamCarryFrontEnd", };
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "Shell", "FixProtocol", "WilliamCarryStrategies", "WilliamCarryFrontEnd", };
 
