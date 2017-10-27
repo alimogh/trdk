@@ -10,16 +10,14 @@
 
 #pragma once
 
-#include "ShellApi.h"
-#include "ShellFwd.hpp"
-#include "Lib/Fwd.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
-namespace Shell {
+namespace Lib {
 
-class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
-    : public QAbstractItemModel {
+class TRDK_FRONTEND_LIB_API SecurityListModel : public QAbstractItemModel {
   Q_OBJECT
 
  public:
@@ -30,7 +28,9 @@ class TRDK_FRONTEND_SHELL_LIB_API SecurityListModel
     COLUMN_SYMBOL,
     COLUMN_SOURCE,
     COLUMN_BID_PRICE,
+    COLUMN_BID_QTY,
     COLUMN_ASK_PRICE,
+    COLUMN_ASK_QTY,
     COLUMN_LAST_TIME,
     COLUMN_TYPE,
     COLUMN_CURRENCY,

@@ -31,12 +31,15 @@ class PositionController::Implementation : private boost::noncopyable {
   ids::random_generator m_generateUuid;
 
   Strategy &m_strategy;
+  TradingSystem *m_tradingSystem;
 
   std::unique_ptr<PositionReport> m_report;
 
  public:
-  explicit Implementation(PositionController &self, Strategy &strategy)
-      : m_self(self), m_strategy(strategy) {}
+  explicit Implementation(PositionController &self,
+                          Strategy &strategy,
+                          TradingSystem *tradingSystem)
+      : m_self(self), m_strategy(strategy), m_tradingSystem(tradingSystem) {}
 
   PositionReport &GetReport() {
     if (!m_report) {
@@ -48,7 +51,12 @@ class PositionController::Implementation : private boost::noncopyable {
 };
 
 PositionController::PositionController(Strategy &strategy)
-    : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this, strategy, nullptr)) {}
+
+PositionController::PositionController(Strategy &strategy,
+                                       TradingSystem &tradingSystem)
+    : m_pimpl(
+          std::make_unique<Implementation>(*this, strategy, &tradingSystem)) {}
 
 PositionController::~PositionController() = default;
 
@@ -69,7 +77,9 @@ ids::uuid PositionController::GenerateNewOperationId() const {
   return m_pimpl->m_generateUuid();
 }
 TradingSystem &PositionController::GetTradingSystem(const Security &security) {
-  return GetStrategy().GetTradingSystem(security.GetSource().GetIndex());
+  return m_pimpl->m_tradingSystem
+             ? *m_pimpl->m_tradingSystem
+             : GetStrategy().GetTradingSystem(security.GetSource().GetIndex());
 }
 
 trdk::Position &PositionController::OpenPosition(
@@ -95,8 +105,10 @@ trdk::Position &PositionController::OpenPosition(
     bool isLong,
     const Qty &qty,
     const Milestones &delayMeasurement) {
-  auto result = CreatePosition(operationContext, isLong, security, qty,
-                               security.GetAskPrice(), delayMeasurement);
+  auto result =
+      CreatePosition(operationContext, isLong, security, qty,
+                     isLong ? security.GetAskPrice() : security.GetBidPrice(),
+                     delayMeasurement);
   ContinuePosition(*result);
   return *result;
 }

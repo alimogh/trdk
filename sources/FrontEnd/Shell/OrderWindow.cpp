@@ -206,14 +206,14 @@ void OrderWindow::SendBuyOrder() {
       if (IsIocOrder()) {
         tradingSystemMode->BuyImmediatelyOrCancel(
             *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_ui.qty->value(), m_ui.price->value(), params,
             m_engine.GetOrderTradingSystemSlot(),
             m_engine.GetRiskControl(tradingSystemMode->GetMode()),
             Milestones());
       } else {
         tradingSystemMode->Buy(
             *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_security->GetAskPrice(), params,
+            m_ui.qty->value(), m_ui.price->value(), params,
             m_engine.GetOrderTradingSystemSlot(),
             m_engine.GetRiskControl(tradingSystemMode->GetMode()),
             Milestones());
@@ -245,14 +245,14 @@ void OrderWindow::SendSellOrder() {
       if (IsIocOrder()) {
         tradingSystemMode->SellImmediatelyOrCancel(
             *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_ui.qty->value(), m_ui.price->value(), params,
             m_engine.GetOrderTradingSystemSlot(),
             m_engine.GetRiskControl(tradingSystemMode->GetMode()),
             Milestones());
       } else {
         tradingSystemMode->Sell(
             *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_security->GetBidPrice(), params,
+            m_ui.qty->value(), m_ui.price->value(), params,
             m_engine.GetOrderTradingSystemSlot(),
             m_engine.GetRiskControl(tradingSystemMode->GetMode()),
             Milestones());

@@ -11,9 +11,9 @@
 #include "Prec.hpp"
 #include "EngineWindow.hpp"
 #include "Core/Security.hpp"
+#include "Lib/SecurityListModel.hpp"
 #include "OrderWindow.hpp"
 #include "ShellLib/Module.hpp"
-#include "ShellLib/SecurityListModel.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

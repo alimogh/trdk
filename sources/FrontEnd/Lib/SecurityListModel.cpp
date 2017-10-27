@@ -12,15 +12,14 @@
 #include "SecurityListModel.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
-#include "Lib/DropCopy.hpp"
-#include "Lib/Engine.hpp"
+#include "DropCopy.hpp"
+#include "Engine.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Shell;
 
-namespace sh = trdk::FrontEnd::Shell;
 namespace pt = boost::posix_time;
 
 SecurityListModel::SecurityListModel(Engine &engine, QWidget *parent)
@@ -90,7 +89,7 @@ QVariant SecurityListModel::headerData(int section,
   if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfColumns == 9, "List changed.");
+  static_assert(numberOfColumns == 11, "List changed.");
   switch (section) {
     default:
       return Base::headerData(section, orientation, role);
@@ -99,9 +98,13 @@ QVariant SecurityListModel::headerData(int section,
     case COLUMN_SOURCE:
       return tr("Source");
     case COLUMN_BID_PRICE:
-      return tr("Bid");
+      return tr("Bid price");
+    case COLUMN_BID_QTY:
+      return tr("Bid qty");
     case COLUMN_ASK_PRICE:
-      return tr("Ask");
+      return tr("Ask price");
+    case COLUMN_ASK_QTY:
+      return tr("Ask qty");
     case COLUMN_LAST_TIME:
       return tr("Last time");
     case COLUMN_TYPE:
@@ -124,7 +127,7 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
 
   switch (role) {
     case Qt::DisplayRole:
-      static_assert(numberOfColumns == 9, "List changed.");
+      static_assert(numberOfColumns == 11, "List changed.");
       switch (index.column()) {
         case COLUMN_SYMBOL:
           return QString::fromStdString(security.GetSymbol().GetSymbol());
@@ -133,8 +136,14 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_BID_PRICE:
           return ConvertPriceToText(security.GetBidPriceValue(),
                                     security.GetPricePrecision());
+        case COLUMN_BID_QTY:
+          return ConvertPriceToText(security.GetBidQtyValue(),
+                                    security.GetPricePrecision());
         case COLUMN_ASK_PRICE:
           return ConvertPriceToText(security.GetAskPriceValue(),
+                                    security.GetPricePrecision());
+        case COLUMN_ASK_QTY:
+          return ConvertPriceToText(security.GetAskQtyValue(),
                                     security.GetPricePrecision());
         case COLUMN_LAST_TIME: {
           return ConvertTimeToText(

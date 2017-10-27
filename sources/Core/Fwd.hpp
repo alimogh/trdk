@@ -47,4 +47,6 @@ class EventsLog;
 class ModuleEventsLog;
 class TradingLog;
 class ModuleTradingLog;
+
+class Timer;
 }

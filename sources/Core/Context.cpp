@@ -14,6 +14,7 @@
 #include "MarketDataSource.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 
 using namespace trdk;
@@ -184,7 +185,7 @@ class StatReport : private boost::noncopyable {
       EventsLog::BroadcastUnhandledException(__FUNCTION__, __FILE__, __LINE__);
       throw;
     }
-    m_context.GetLog().Debug("Stat-monitoring task completed.");
+    m_context.GetLog().Debug("Stat-monitoring task is completed.");
   }
 
   void DumpLatancy() {
@@ -331,6 +332,8 @@ class Context::Implementation : private boost::noncopyable {
 
   SignalTrait<StateUpdateSlotSignature>::Signal m_stateUpdateSignal;
 
+  std::unique_ptr<Timer> m_timer;
+
   explicit Implementation(
       Context &context,
       Log &log,
@@ -355,6 +358,7 @@ Context::Context(Log &log,
   if (settings.IsMarketDataLogEnabled()) {
     m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
   }
+  m_pimpl->m_timer = boost::make_unique<Timer>(*this);
 }
 
 Context::~Context() = default;
@@ -439,6 +443,8 @@ pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
     return m_pimpl->m_customCurrentTime;
   }
 }
+
+Timer &Context::GetTimer() { return *m_pimpl->m_timer; }
 
 const Settings &Context::GetSettings() const { return m_pimpl->m_settings; }
 

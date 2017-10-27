@@ -372,6 +372,7 @@
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="RiskControl.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="TradingSystem.cpp" />
     <ClCompile Include="TradingSystemMock.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -424,6 +425,7 @@
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="RiskControl.hpp" />
+    <ClInclude Include="Timer.hpp" />
     <ClInclude Include="TradingLog.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
     <ClInclude Include="TradingSystemMock.hpp" />

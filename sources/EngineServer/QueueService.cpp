@@ -109,7 +109,7 @@ void QueueService::Start() {
       m_log.Error("Fatal error in the Drop Copy queue task.");
       throw;
     }
-    m_log.Debug("Drop Copy queue task completed.");
+    m_log.Debug("Drop Copy queue task is completed.");
   });
 }
 

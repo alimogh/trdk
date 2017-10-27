@@ -18,6 +18,7 @@ namespace TradingLib {
 class PositionController : private boost::noncopyable {
  public:
   explicit PositionController(trdk::Strategy &);
+  explicit PositionController(trdk::Strategy &, trdk::TradingSystem &);
   virtual ~PositionController();
 
  public:

@@ -46,12 +46,13 @@ void TakeProfitStopLimit::Run() {
     return;
   }
 
-  static_assert(numberOfCloseReasons == 12, "List changed.");
+  static_assert(numberOfCloseReasons == 13, "List changed.");
   switch (GetPosition().GetCloseReason()) {
     case CLOSE_REASON_NONE:
       if (!CheckSignal()) {
         return;
       }
+      GetPosition().SetCloseReason(CLOSE_REASON_STOP_LIMIT);
       m_isActivated = true;
       break;
     default:

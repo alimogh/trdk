@@ -75,8 +75,6 @@ mk::Settings::Settings(const IniSectionRef &conf)
              conf.ReadTypedKey<double>("stamp_duty_ratio"),
              conf.ReadTypedKey<double>("goods_and_services_tax_ratio"),
              conf.ReadTypedKey<double>("securities_transaction_tax_ratio"),
-             // Custom branch for Mrigesh Kejriwal:
-             // conf.ReadTypedKey<double>("initial_margin"),
              conf.ReadTypedKey<double>("exchange_transaction_charges_ratio")} {
   {
     const auto &orderType = conf.ReadKey("order_type");
@@ -130,18 +128,14 @@ void mk::Settings::Log(ModuleEventsLog &log) const {
   log.Info(
       "SEBI Turnover Fees Ratio = %1% (%2%%%); Stamp Duty Ratio = %3% (%4%%%);"
       " Goods and Services Tax Ratio = %5% (%6%%%); Securities Transaction Tax "
-      "Ratio = %7% (%8%%%); Initial Margin = %9%; Exchange Transaction Charges "
-      "Ratio = %10%%%",
-      report.sebiTurnoverFeesRatio,                // 1
-      report.sebiTurnoverFeesRatio * 100,          // 2
-      report.stampDutyRatio,                       // 3
-      report.stampDutyRatio * 100,                 // 4
-      report.goodsAndServicesTaxRatio,             // 5
-      report.goodsAndServicesTaxRatio * 100,       // 6
-      report.securitiesTransactionTaxRatio,        // 7
-      report.securitiesTransactionTaxRatio * 100,  // 8
-      // Custom branch for Mrigesh Kejriwal:
-      // report.initialMargin,                           // 9
-      "auto",
-      report.exchangeTransactionChargesRatio * 100);  // 10
+      "Ratio = %7% (%8%%%); Exchange Transaction Charges Ratio = %9%%%",
+      report.sebiTurnoverFeesRatio,                   // 1
+      report.sebiTurnoverFeesRatio * 100,             // 2
+      report.stampDutyRatio,                          // 3
+      report.stampDutyRatio * 100,                    // 4
+      report.goodsAndServicesTaxRatio,                // 5
+      report.goodsAndServicesTaxRatio * 100,          // 6
+      report.securitiesTransactionTaxRatio,           // 7
+      report.securitiesTransactionTaxRatio * 100,     // 8
+      report.exchangeTransactionChargesRatio * 100);  // 9
 }
