@@ -74,7 +74,7 @@ class Timer::Implementation : private boost::noncopyable {
       Lock lock(m_mutex);
       m_tasks.emplace_back(
           Task{scope.m_id, callback, m_context.GetCurrentTime() + time});
-      m_context.GetTradingLog().Write("timer", "scheduling\t%1%\t%2%",
+      m_context.GetTradingLog().Write("Timer", "scheduling\t%1%\t%2%",
                                       [this](TradingRecord &record) {
                                         record % m_tasks.back().time  // 1
                                             % m_tasks.back().scope;   // 2
@@ -115,7 +115,7 @@ class Timer::Implementation : private boost::noncopyable {
               continue;
             }
 
-            m_context.GetTradingLog().Write("timer", "exec\t%1%\t%2%",
+            m_context.GetTradingLog().Write("Timer", "exec\t%1%\t%2%",
                                             [&it](TradingRecord &record) {
                                               record % it->time  // 1
                                                   % it->scope;   // 2
@@ -169,7 +169,7 @@ size_t Timer::Scope::Cancel() noexcept {
       }
       ++result;
       m_timer->m_pimpl->m_context.GetTradingLog().Write(
-          "timer", "cancel\t%1%\t%2%", [&it](TradingRecord &record) {
+          "Timer", "cancel\t%1%\t%2%", [&it](TradingRecord &record) {
             record % it->time  // 1
                 % it->scope;   // 2
           });
