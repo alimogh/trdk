@@ -99,14 +99,21 @@ class PositionReportCalculator : private boost::noncopyable {
   Double CalcNetPnl() const {
     return CalcGrossPnl() - CalcSlippagePercent() - CalcTranCosts();
   }
+
+  Double GetInitialMargin() const {
+    // Will be customized in the custom branch.
+    return 1;
+  }
+
   //! Leverage = op_volume / initial_margin
   /** https://trello.com/c/PU46S5P4
     */
   Double CalcLeverage() const {
-    if (m_settings.report.initialMargin == 0) {
+    const auto &initialMargin = GetInitialMargin();
+    if (initialMargin == 0) {
       return 0;
     }
-    return m_position.GetOpenedVolume() / m_settings.report.initialMargin;
+    return m_position.GetOpenedVolume() / initialMargin;
   }
   //! Leveraged_Net_PnL = Net_PnL%*Leverage
   /** https://trello.com/c/PU46S5P4
@@ -250,23 +257,24 @@ void PositionReport::PrintHead(std::ostream &os) {
   os << ",Securities Transaction Tax";    // 19
   os << ",Gross P&L";                     // 20
   os << ",Tran Costs";                    // 21
-  os << ",Net P&L";                       // 22
-  os << ",Leverage";                      // 23
-  os << ",Leveraged Net P&L";             // 24
-  os << ",Is Profit";                     // 25
-  os << ",Is Loss";                       // 26
-  os << ",Open Signal Price";             // 27
-  os << ",Close Signal Price";            // 28
-  os << ",Commission";                    // 29
-  os << ",Qty";                           // 30
-  os << ",Open Price";                    // 31
-  os << ",Open Orders";                   // 32
-  os << ",Open Trades";                   // 33
-  os << ",Close Reason";                  // 34
-  os << ",Close Price";                   // 35
-  os << ",Close Orders";                  // 36
-  os << ",Close Trades";                  // 37
-  os << ",ID";                            // 38
+  os << ",Initial margin";                // 22
+  os << ",Net P&L";                       // 23
+  os << ",Leverage";                      // 24
+  os << ",Leveraged Net P&L";             // 25
+  os << ",Is Profit";                     // 26
+  os << ",Is Loss";                       // 27
+  os << ",Open Signal Price";             // 28
+  os << ",Close Signal Price";            // 29
+  os << ",Commission";                    // 30
+  os << ",Qty";                           // 31
+  os << ",Open Price";                    // 32
+  os << ",Open Orders";                   // 33
+  os << ",Open Trades";                   // 34
+  os << ",Close Reason";                  // 35
+  os << ",Close Price";                   // 36
+  os << ",Close Orders";                  // 37
+  os << ",Close Trades";                  // 38
+  os << ",ID";                            // 39
   os << std::endl;
 }
 
@@ -313,32 +321,33 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   } else {
     os << ',';  // 20
   }
-  os << ',' << calculator->CalcTranCosts();  // 21
+  os << ',' << calculator->CalcTranCosts();     // 21
+  os << ',' << calculator->GetInitialMargin();  // 22
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << calculator->CalcNetPnl();           // 22
-    os << ',' << calculator->CalcLeverage();         // 23
-    os << ',' << calculator->CalcLeveragedNetPnl();  // 24
+    os << ',' << calculator->CalcNetPnl();           // 23
+    os << ',' << calculator->CalcLeverage();         // 24
+    os << ',' << calculator->CalcLeveragedNetPnl();  // 25
   } else {
-    os << ",,,";  // 22, 23, 24
+    os << ",,,";  // 23, 24, 25
   }
-  os << (pos.IsProfit() ? ",1,0" : ",0,1");            // 25, 26
-  os << ',' << operationContext.GetOpenSignalPrice();  // 27
+  os << (pos.IsProfit() ? ",1,0" : ",0,1");            // 26, 27
+  os << ',' << operationContext.GetOpenSignalPrice();  // 28
   if (pos.GetCloseReason() == CLOSE_REASON_SIGNAL) {
-    os << ',' << operationContext.GetCloseSignalPrice();  // 28
+    os << ',' << operationContext.GetCloseSignalPrice();  // 29
   } else {
     AssertNe(CLOSE_REASON_NONE, pos.GetCloseReason());
-    os << ',';  // 28
+    os << ',';  // 29
   }
-  os << ',' << pos.CalcCommission();          // 29
-  os << ',' << pos.GetOpenedQty();            // 30
-  os << ',' << pos.GetOpenAvgPrice();         // 31
-  os << ',' << pos.GetNumberOfOpenOrders();   // 32
-  os << ',' << pos.GetNumberOfOpenTrades();   // 33
-  os << ',' << pos.GetCloseReason();          // 34
-  os << ',' << pos.GetCloseAvgPrice();        // 35
-  os << ',' << pos.GetNumberOfCloseOrders();  // 36
-  os << ',' << pos.GetNumberOfCloseTrades();  // 37
-  os << ',' << pos.GetId();                   // 38
+  os << ',' << pos.CalcCommission();          // 30
+  os << ',' << pos.GetOpenedQty();            // 31
+  os << ',' << pos.GetOpenAvgPrice();         // 32
+  os << ',' << pos.GetNumberOfOpenOrders();   // 33
+  os << ',' << pos.GetNumberOfOpenTrades();   // 34
+  os << ',' << pos.GetCloseReason();          // 35
+  os << ',' << pos.GetCloseAvgPrice();        // 36
+  os << ',' << pos.GetNumberOfCloseOrders();  // 37
+  os << ',' << pos.GetNumberOfCloseTrades();  // 38
+  os << ',' << pos.GetId();                   // 39
   os << std::endl;
 }
 
