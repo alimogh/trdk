@@ -13,6 +13,9 @@
 #include "Core/Settings.hpp"
 #include "IbTradingSystem.hpp"
 
+// Custom branch for Mrigesh Kejriwal:
+#include "Core/TradingLog.hpp"
+
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::InteractiveBrokers;
@@ -1343,6 +1346,7 @@ void Client::openOrder(::OrderId /*orderId*/,
                        const Order &,
                        const OrderState &orderState) {
   // Custom branch for Mrigesh Kejriwal:
+  m_ts.GetContext().prevInitialMargin = m_ts.GetContext().lastInitialMargin;
   try {
     m_ts.GetContext().lastInitialMargin =
         boost::lexical_cast<double>(orderState.initMargin);
@@ -1350,6 +1354,12 @@ void Client::openOrder(::OrderId /*orderId*/,
     AssertFailNoException();
     m_ts.GetContext().lastInitialMargin = 0;
   }
+  static_cast<trdk::TradingSystem &>(m_ts).GetTradingLog().Write(
+      "initial margin\t%1%->%2%(%3%)", [&](TradingRecord &record) {
+        record % m_ts.GetContext().prevInitialMargin  // 1
+            % m_ts.GetContext().lastInitialMargin     // 2
+            % orderState.initMargin;                  // 3
+      });
 }
 
 void Client::openOrderEnd() {}

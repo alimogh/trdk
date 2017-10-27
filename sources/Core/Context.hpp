@@ -58,6 +58,7 @@ class TRDK_CORE_API Context : private boost::noncopyable {
  public:
   // Custom branch for Mrigesh Kejriwal:
   Lib::Double lastInitialMargin;
+  Lib::Double prevInitialMargin;
 
  public:
   explicit Context(

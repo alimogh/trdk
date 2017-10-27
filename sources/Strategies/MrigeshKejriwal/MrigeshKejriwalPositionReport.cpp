@@ -103,8 +103,8 @@ class PositionReportCalculator : private boost::noncopyable {
   }
 
   Double GetInitialMargin() const {
-    // Will be customized in the custom branch.
-    return 1;
+    // Customized in the custom branch.
+    return m_position.GetSecurity().GetContext().prevInitialMargin;
   }
 
   //! Leverage = op_volume / initial_margin
