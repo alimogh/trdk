@@ -39,9 +39,6 @@
        <layout class="QGridLayout" name="pricesLayout">
         <item row="0" column="0">
          <widget class="QLabel" name="symbol">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -72,9 +69,6 @@
         </item>
         <item row="0" column="1">
          <widget class="QLabel" name="time">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -105,9 +99,6 @@
         </item>
         <item row="0" column="2">
          <widget class="QLabel" name="bid">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -138,9 +129,6 @@
         </item>
         <item row="0" column="3">
          <widget class="QLabel" name="ask">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -174,9 +162,6 @@
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="lockedTime">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -207,9 +192,6 @@
         </item>
         <item row="1" column="2">
          <widget class="QLabel" name="lockedBid">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -240,9 +222,6 @@
         </item>
         <item row="1" column="3">
          <widget class="QLabel" name="lockedAsk">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -273,9 +252,6 @@
         </item>
         <item row="1" column="0">
          <widget class="QPushButton" name="lock">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -342,9 +318,6 @@
         </item>
         <item row="1" column="1">
          <widget class="QPushButton" name="sell2">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -369,9 +342,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="2" column="0">
          <widget class="QPushButton" name="buy3">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -396,9 +366,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="2" column="1">
          <widget class="QPushButton" name="sell3">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -423,9 +390,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="3" column="0">
          <widget class="QPushButton" name="buy4">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -450,9 +414,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="1">
          <widget class="QPushButton" name="sell1">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -477,9 +438,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="1" column="0">
          <widget class="QPushButton" name="buy2">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -504,9 +462,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="0">
          <widget class="QPushButton" name="buy1">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -531,9 +486,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="sell4">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -575,9 +527,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="1">
          <widget class="QLabel" name="targetListLabel">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="text">
            <string>Accounts:</string>
           </property>
@@ -595,9 +544,6 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="securityListLabel">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="text">
            <string>Currencies:</string>
           </property>

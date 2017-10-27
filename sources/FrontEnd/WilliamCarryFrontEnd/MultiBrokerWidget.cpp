@@ -329,7 +329,7 @@ void MultiBrokerWidget::ReloadSecurityList() {
 }
 
 void MultiBrokerWidget::OnStateChanged(bool isStarted) {
-  if (!m_ui.trading->isEnabled() && isStarted) {
+  if (isStarted) {
     Reload();
   }
   m_ui.trading->setEnabled(isStarted);
