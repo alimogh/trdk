@@ -703,8 +703,7 @@ class Position::Implementation : private boost::noncopyable {
         m_strategy.Unregister(m_self);
       }
       try {
-        CopyOrder(nullptr,  // order ID (from trading system)
-                  true, ORDER_STATUS_ERROR, &timeInForce, &orderParams);
+        CopyOrder(nullptr, true, ORDER_STATUS_ERROR, &timeInForce);
       } catch (...) {
         AssertFailNoException();
       }
@@ -713,8 +712,7 @@ class Position::Implementation : private boost::noncopyable {
     }
 
     try {
-      CopyOrder(nullptr,  // order ID (from trading system)
-                true, ORDER_STATUS_SENT, &timeInForce, &orderParams);
+      CopyOrder(nullptr, true, ORDER_STATUS_SENT, &timeInForce);
     } catch (...) {
       AssertFailNoException();
     }
@@ -781,15 +779,13 @@ class Position::Implementation : private boost::noncopyable {
       ReportClosingStart("sent", order.uuid, order.id, maxQty);
 
     } catch (...) {
-      CopyOrder(nullptr,  // order ID (from trading system)
-                false, ORDER_STATUS_SENT, &timeInForce, &orderParams);
+      CopyOrder(nullptr, false, ORDER_STATUS_SENT, &timeInForce);
       m_close.orders.pop_back();
       throw;
     }
 
     try {
-      CopyOrder(nullptr,  // order ID (from trading system)
-                false, ORDER_STATUS_SENT, &timeInForce, &orderParams);
+      CopyOrder(nullptr, false, ORDER_STATUS_SENT, &timeInForce);
     } catch (...) {
       AssertFailNoException();
     }
@@ -827,8 +823,7 @@ class Position::Implementation : private boost::noncopyable {
   void CopyOrder(const std::string *orderTradeSystemId,
                  bool isOpen,
                  const OrderStatus &status,
-                 const TimeInForce *timeInForce = nullptr,
-                 const OrderParams *orderParams = nullptr) {
+                 const TimeInForce *timeInForce = nullptr) {
     Assert(!m_open.orders.empty());
     Assert(isOpen || !m_close.orders.empty());
 
@@ -864,21 +859,19 @@ class Position::Implementation : private boost::noncopyable {
           break;
       }
 
-      dropCopy.CopyOrder(
-          order.uuid, orderTradeSystemId, order.time,
-          !execTime.is_not_a_date_time() ? &execTime : nullptr, status,
-          m_operationId, &m_subOperationId, m_security, m_tradingSystem,
-          m_self.GetType() == TYPE_LONG
-              ? (isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
-              : (!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
-          order.qty, order.price ? &orderPrice : nullptr, timeInForce,
-          m_self.GetCurrency(),
-          orderParams && orderParams->minTradeQty ? &*orderParams->minTradeQty
-                                                  : nullptr,
-          order.executedQty, !orderTradeSystemId ? &bidPrice : nullptr,
-          !orderTradeSystemId ? &bidQty : nullptr,
-          !orderTradeSystemId ? &askPrice : nullptr,
-          !orderTradeSystemId ? &askQty : nullptr);
+      dropCopy.CopyOrder(order.uuid, orderTradeSystemId, order.time,
+                         !execTime.is_not_a_date_time() ? &execTime : nullptr,
+                         status, m_operationId, &m_subOperationId, m_security,
+                         m_tradingSystem,
+                         m_self.GetType() == TYPE_LONG
+                             ? (isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL)
+                             : (!isOpen ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
+                         order.qty, order.price ? &orderPrice : nullptr,
+                         timeInForce, m_self.GetCurrency(), order.executedQty,
+                         !orderTradeSystemId ? &bidPrice : nullptr,
+                         !orderTradeSystemId ? &bidQty : nullptr,
+                         !orderTradeSystemId ? &askPrice : nullptr,
+                         !orderTradeSystemId ? &askQty : nullptr);
 
     });
   }
@@ -1406,19 +1399,6 @@ OrderId Position::OpenImmediatelyOrCancel(const Price &price,
       TIME_IN_FORCE_IOC, params, price);
 }
 
-OrderId Position::OpenAtMarketPriceImmediatelyOrCancel() {
-  return OpenAtMarketPriceImmediatelyOrCancel(defaultOrderParams);
-}
-
-OrderId Position::OpenAtMarketPriceImmediatelyOrCancel(
-    const OrderParams &params) {
-  return m_pimpl->Open(
-      [this](const Qty &qty, const OrderParams &params) {
-        return DoOpenAtMarketPriceImmediatelyOrCancel(qty, params);
-      },
-      TIME_IN_FORCE_IOC, params, boost::none);
-}
-
 OrderId Position::CloseAtMarketPrice() {
   return CloseAtMarketPrice(defaultOrderParams);
 }
@@ -1464,19 +1444,6 @@ OrderId Position::CloseImmediatelyOrCancel(const Price &price,
         return DoCloseImmediatelyOrCancel(qty, price, params);
       },
       TIME_IN_FORCE_IOC, price, GetActiveQty(), params);
-}
-
-OrderId Position::CloseAtMarketPriceImmediatelyOrCancel() {
-  return CloseAtMarketPriceImmediatelyOrCancel(defaultOrderParams);
-}
-
-OrderId Position::CloseAtMarketPriceImmediatelyOrCancel(
-    const OrderParams &params) {
-  return m_pimpl->Close(
-      [this](const Qty &qty, const OrderParams &params) {
-        return DoCloseAtMarketPriceImmediatelyOrCancel(qty, params);
-      },
-      TIME_IN_FORCE_IOC, boost::none, GetActiveQty(), params);
 }
 
 bool Position::CancelAllOrders() {
@@ -1635,11 +1602,12 @@ OrderId LongPosition::DoOpenAtMarketPrice(const Qty &qty,
                                           const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPrice(
-      GetSecurity(), GetCurrency(), qty, params,
+  return GetTradingSystem().SendOrder(
+      GetSecurity(), GetCurrency(), qty, boost::none, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId LongPosition::DoOpen(const Qty &qty,
@@ -1647,11 +1615,12 @@ OrderId LongPosition::DoOpen(const Qty &qty,
                              const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().Buy(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
@@ -1659,33 +1628,24 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                 const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().BuyImmediatelyOrCancel(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId LongPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
-    const Qty &qty, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
-      GetSecurity(), GetCurrency(), qty, params,
-      boost::bind(&LongPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
+      GetTimeMeasurement());
 }
 
 OrderId LongPosition::DoCloseAtMarketPrice(const Qty &qty,
                                            const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPrice(
-      GetSecurity(), GetCurrency(), qty, params,
+  return GetTradingSystem().SendOrder(
+      GetSecurity(), GetCurrency(), qty, boost::none, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId LongPosition::DoClose(const Qty &qty,
@@ -1693,11 +1653,13 @@ OrderId LongPosition::DoClose(const Qty &qty,
                               const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().Sell(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
+
+      GetTimeMeasurement());
 }
 
 OrderId LongPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
@@ -1706,23 +1668,12 @@ OrderId LongPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
   Assert(IsOpened());
   Assert(!IsClosed());
   AssertLt(0, qty);
-  return GetTradingSystem().SellImmediatelyOrCancel(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId LongPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
-    const Qty &qty, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  AssertLt(0, qty);
-  return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
-      GetSecurity(), GetCurrency(), qty, params,
-      boost::bind(&LongPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
+      GetTimeMeasurement());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1854,11 +1805,12 @@ OrderId ShortPosition::DoOpenAtMarketPrice(const Qty &qty,
                                            const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPrice(
-      GetSecurity(), GetCurrency(), qty, params,
+  return GetTradingSystem().SendOrder(
+      GetSecurity(), GetCurrency(), qty, boost::none, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId ShortPosition::DoOpen(const Qty &qty,
@@ -1866,11 +1818,12 @@ OrderId ShortPosition::DoOpen(const Qty &qty,
                               const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().Sell(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
@@ -1878,43 +1831,35 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
                                                  const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SellImmediatelyOrCancel(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId ShortPosition::DoOpenAtMarketPriceImmediatelyOrCancel(
-    const Qty &qty, const OrderParams &params) {
-  Assert(!IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().SellAtMarketPriceImmediatelyOrCancel(
-      GetSecurity(), GetCurrency(), qty, params,
-      boost::bind(&ShortPosition::UpdateOpening, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
+      GetTimeMeasurement());
 }
 
 OrderId ShortPosition::DoCloseAtMarketPrice(const Qty &qty,
                                             const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPrice(
-      GetSecurity(), GetCurrency(), qty, params,
+  return GetTradingSystem().SendOrder(
+      GetSecurity(), GetCurrency(), qty, boost::none, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId ShortPosition::DoClose(const Qty &qty,
                                const Price &price,
                                const OrderParams &params) {
-  return GetTradingSystem().Buy(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
+      GetTimeMeasurement());
 }
 
 OrderId ShortPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
@@ -1922,22 +1867,12 @@ OrderId ShortPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
                                                   const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().BuyImmediatelyOrCancel(
+  return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
                   _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
-}
-
-OrderId ShortPosition::DoCloseAtMarketPriceImmediatelyOrCancel(
-    const Qty &qty, const OrderParams &params) {
-  Assert(IsOpened());
-  Assert(!IsClosed());
-  return GetTradingSystem().BuyAtMarketPriceImmediatelyOrCancel(
-      GetSecurity(), GetCurrency(), qty, params,
-      boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
-                  _4, _5, _6),
-      GetStrategy().GetRiskControlScope(), GetTimeMeasurement());
+      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
+      GetTimeMeasurement());
 }
 
 //////////////////////////////////////////////////////////////////////////

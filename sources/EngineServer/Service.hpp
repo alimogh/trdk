@@ -131,7 +131,6 @@ class Service : private boost::noncopyable {
     boost::optional<Price> price;
     boost::optional<TimeInForce> timeInForce;
     Lib::Currency currency;
-    boost::optional<Qty> minQty;
     Qty executedQty;
     boost::optional<Price> bestBidPrice;
     boost::optional<Qty> bestBidQty;
@@ -152,7 +151,6 @@ class Service : private boost::noncopyable {
                         const Price *price,
                         const TimeInForce *timeInForce,
                         const Lib::Currency &currency,
-                        const Qty *minQty,
                         const Qty &executedQty,
                         const Price *bestBidPrice,
                         const Qty *bestBidQty,
@@ -202,7 +200,6 @@ class Service : private boost::noncopyable {
                            const trdk::Price *price,
                            const trdk::TimeInForce *,
                            const trdk::Lib::Currency &,
-                           const trdk::Qty *minQty,
                            const trdk::Qty &executedQty,
                            const trdk::Price *bestBidPrice,
                            const trdk::Qty *bestBidQty,
@@ -242,23 +239,23 @@ class Service : private boost::noncopyable {
                                   const trdk::Volume &value) override;
 
     virtual void CopyLevel1(const trdk::Security &,
-                                const boost::posix_time::ptime &,
-                                const trdk::Level1TickValue &) override {}
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &) override {}
     virtual void CopyLevel1(const trdk::Security &,
-                                const boost::posix_time::ptime &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &) override {}
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &) override {}
     virtual void CopyLevel1(const trdk::Security &,
-                                const boost::posix_time::ptime &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &) override {}
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &) override {}
     virtual void CopyLevel1(const trdk::Security &,
-                                const boost::posix_time::ptime &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &,
-                                const trdk::Level1TickValue &) override {}
+                            const boost::posix_time::ptime &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &,
+                            const trdk::Level1TickValue &) override {}
     virtual void CopyLevel1(
         const trdk::Security &,
         const boost::posix_time::ptime &,

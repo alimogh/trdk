@@ -65,7 +65,6 @@ class TRDK_CORE_API DropCopy {
                          const trdk::Price *price,
                          const trdk::TimeInForce *,
                          const trdk::Lib::Currency &,
-                         const trdk::Qty *minQty,
                          const trdk::Qty &executedQty,
                          const trdk::Price *bestBidPrice,
                          const trdk::Qty *bestBidQty,
@@ -108,25 +107,25 @@ class TRDK_CORE_API DropCopy {
                                 const trdk::Lib::Double &value) = 0;
 
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const std::vector<trdk::Level1TickValue> &) = 0;
+                          const boost::posix_time::ptime &,
+                          const std::vector<trdk::Level1TickValue> &) = 0;
 };
 }

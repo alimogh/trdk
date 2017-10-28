@@ -458,19 +458,6 @@ OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
   return id;
 }
 
-OrderId Test::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           std::move(statusUpdateSlot), qty, 0, params});
-  return id;
-}
-
 OrderId Test::TradingSystem::SendBuyAtMarketPrice(
     Security &security,
     const Currency &currency,
@@ -511,20 +498,6 @@ OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
   const auto &id = m_pimpl->TakeOrderId();
   m_pimpl->SendOrder(Order{true, &security, currency, false, id,
                            std::move(statusUpdateSlot), qty, price, params});
-  return id;
-}
-
-OrderId Test::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{true, &security, currency, false,
-                           m_pimpl->TakeOrderId(), statusUpdateSlot, qty, 0,
-                           params});
   return id;
 }
 

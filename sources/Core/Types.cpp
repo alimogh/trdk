@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Types.hpp"
+#include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -52,9 +53,9 @@ void DumpOrderParam(const char *paramName,
 
 std::ostream &trdk::operator<<(std::ostream &os, const OrderParams &params) {
   size_t count = 0;
-  DumpOrderParam("displaySize", params.displaySize, count, os);
-  DumpOrderParam("goodTillTime", params.goodTillTime, count, os);
-  DumpOrderParam("goodInSeconds", params.goodInSeconds, count, os);
+  DumpOrderParam("account", params.account, count, os);
+  DumpOrderParam("goodInTime", params.goodInTime, count, os);
+  DumpOrderParam("expiration", params.expiration, count, os);
   return os;
 }
 

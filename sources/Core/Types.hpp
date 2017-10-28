@@ -27,8 +27,6 @@ typedef boost::uint64_t OrderId;
 ////////////////////////////////////////////////////////////////////////////////
 
 //! Order side
-/** https://mbcm.robotdk.com:8443/display/API/Constants
-  */
 enum OrderSide {
   ORDER_SIDE_BUY = 0,
   ORDER_SIDE_BID = ORDER_SIDE_BUY,
@@ -70,43 +68,17 @@ struct OrderParams {
   //! Account.
   boost::optional<std::string> account;
 
-  //! Display size for Iceberg orders.
-  boost::optional<trdk::Qty> displaySize;
-
-  //! Minimum trade quantity. Must be at most the order quantity.
-  /** For cache pair could be in different currency.
+  //! Good in Time.
+  /** The order should be canceled if is not filled after this time.
     */
-  boost::optional<trdk::Qty> minTradeQty;
-
-  //! Good Till Time.
-  /** Absolute value in Coordinated Universal Time (UTC). Incompatible
-    * with goodInSeconds.
-    * @sa trdk::OrderParams::goodInSeconds
-    */
-  boost::optional<boost::posix_time::ptime> goodTillTime;
-  //! Good next N seconds.
-  /** Incompatible with goodTillTime.
-    * @sa trdk::OrderParams::goodTillTime
-    */
-  boost::optional<uintmax_t> goodInSeconds;
-
-  //! Order ID to replace.
-  boost::optional<uintmax_t> orderIdToReplace;
-
-  //! Order sent not by strategy.
-  bool isManualOrder;
-
-  //! Defines order quantity precision.
-  /** If set - order quantity will be rounded to this precision.
-    */
-  boost::optional<uint8_t> qtyPrecision;
+  boost::optional<boost::posix_time::time_duration> goodInTime;
 
   //! Define forced expiration for order contract.
   /** If set - this expiration will be used, not from security object.
     */
   const trdk::Lib::ContractExpiration *expiration;
 
-  explicit OrderParams() : isManualOrder(false), expiration(nullptr) {}
+  explicit OrderParams() : expiration(nullptr) {}
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
                                                 const trdk::OrderParams &);

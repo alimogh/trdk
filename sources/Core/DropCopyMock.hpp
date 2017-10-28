@@ -49,7 +49,6 @@ class DropCopy : public trdk::DropCopy {
                          const trdk::Price *,
                          const trdk::TimeInForce *,
                          const trdk::Lib::Currency &,
-                         const trdk::Qty *,
                          const trdk::Qty &,
                          const trdk::Price *,
                          const trdk::Qty *,

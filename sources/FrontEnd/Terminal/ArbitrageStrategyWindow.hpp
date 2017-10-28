@@ -25,6 +25,8 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
  private:
   struct Target {
+    TradingMode tradingMode;
+
     Security *security;
 
     mutable Lib::SideAdapter<QLabel> bid;
@@ -35,17 +37,31 @@ class ArbitrageStrategyWindow : public QMainWindow {
     QFrame *askFrame;
 
     const Security *GetSecurityPtr() const { return security; }
+    const std::string &GetSymbol() const;
+    const trdk::TradingSystem *GetTradingSystem() const;
   };
 
   struct BySecurity {};
+  struct BySymbol {};
 
   typedef boost::multi_index_container<
       Target,
-      boost::multi_index::indexed_by<boost::multi_index::hashed_unique<
-          boost::multi_index::tag<BySecurity>,
-          boost::multi_index::const_mem_fun<Target,
-                                            const Security *,
-                                            &Target::GetSecurityPtr>>>>
+      boost::multi_index::indexed_by<
+          boost::multi_index::hashed_unique<
+              boost::multi_index::tag<BySecurity>,
+              boost::multi_index::const_mem_fun<Target,
+                                                const Security *,
+                                                &Target::GetSecurityPtr>>,
+          boost::multi_index::hashed_unique<
+              boost::multi_index::tag<BySymbol>,
+              boost::multi_index::composite_key<
+                  Target,
+                  boost::multi_index::const_mem_fun<Target,
+                                                    const TradingSystem *,
+                                                    &Target::GetTradingSystem>,
+                  boost::multi_index::const_mem_fun<Target,
+                                                    const std::string &,
+                                                    &Target::GetSymbol>>>>>
       TargetList;
 
   struct InstanceData {
@@ -89,8 +105,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
   void LoadSymbols(const boost::optional<QString> &defaultSymbol);
   void SetCurrentSymbol(int symbolIndex);
 
-  void Sell(TradingSystem &);
-  void Buy(TradingSystem &);
+  void SendOrder(TradingSystem &, const OrderSide &);
 
   bool IsAutoTradingActivated() const;
 

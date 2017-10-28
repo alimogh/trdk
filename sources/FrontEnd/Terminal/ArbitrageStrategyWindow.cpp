@@ -19,12 +19,21 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
+
+const std::string &ArbitrageStrategyWindow::Target::GetSymbol() const {
+  return security->GetSymbol().GetSymbol();
+}
+const TradingSystem *ArbitrageStrategyWindow::Target::GetTradingSystem() const {
+  return &security->GetContext().GetTradingSystem(
+      security->GetSource().GetIndex(), tradingMode);
+}
 
 namespace {
 size_t numberOfNextInstance = 1;
@@ -92,35 +101,35 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
 
   Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.novaexchangeTradingSystem);
-    Sell(*m_instanceData.novaexchangeTradingSystem);
+    SendOrder(*m_instanceData.novaexchangeTradingSystem, ORDER_SIDE_SELL);
   }));
   Verify(connect(m_ui.novaexchangeBuy, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.novaexchangeTradingSystem);
-    Buy(*m_instanceData.novaexchangeTradingSystem);
+    SendOrder(*m_instanceData.novaexchangeTradingSystem, ORDER_SIDE_BUY);
   }));
   Verify(connect(m_ui.yobitnetSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.yobitnetTradingSystem);
-    Sell(*m_instanceData.yobitnetTradingSystem);
+    SendOrder(*m_instanceData.yobitnetTradingSystem, ORDER_SIDE_SELL);
   }));
   Verify(connect(m_ui.yobitnetBuy, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.yobitnetTradingSystem);
-    Buy(*m_instanceData.yobitnetTradingSystem);
+    SendOrder(*m_instanceData.yobitnetTradingSystem, ORDER_SIDE_BUY);
   }));
   Verify(connect(m_ui.ccexSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.ccexTradingSystem);
-    Sell(*m_instanceData.ccexTradingSystem);
+    SendOrder(*m_instanceData.ccexTradingSystem, ORDER_SIDE_SELL);
   }));
   Verify(connect(m_ui.ccexBuy, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.ccexTradingSystem);
-    Buy(*m_instanceData.ccexTradingSystem);
+    SendOrder(*m_instanceData.ccexTradingSystem, ORDER_SIDE_BUY);
   }));
   Verify(connect(m_ui.gdaxSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.gdaxTradingSystem);
-    Sell(*m_instanceData.gdaxTradingSystem);
+    SendOrder(*m_instanceData.gdaxTradingSystem, ORDER_SIDE_SELL);
   }));
   Verify(connect(m_ui.gdaxBuy, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.gdaxTradingSystem);
-    Buy(*m_instanceData.gdaxTradingSystem);
+    SendOrder(*m_instanceData.gdaxTradingSystem, ORDER_SIDE_BUY);
   }));
 
   qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
@@ -333,7 +342,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       if (security.GetSymbol().GetSymbol() != symbol) {
         return;
       }
-      const Target target = {&security,
+      const Target target = {m_tradingMode,
+                             &security,
                              SideAdapter<QLabel>{*bidPriceWidget, *bidQtyWidget,
                                                  security.GetPricePrecision()},
                              SideAdapter<QLabel>{*askPriceWidget, *askQtyWidget,
@@ -454,12 +464,28 @@ void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
   }
 }
 
-void ArbitrageStrategyWindow::Sell(TradingSystem &tradingSystem) {
-  tradingSystem;
-}
-
-void ArbitrageStrategyWindow::Buy(TradingSystem &tradingSystem) {
-  tradingSystem;
+void ArbitrageStrategyWindow::SendOrder(TradingSystem &tradingSystem,
+                                        const OrderSide &side) {
+  const auto &index = m_instanceData.targets.get<BySymbol>();
+  const auto &tragetIt = index.find(boost::make_tuple(
+      &tradingSystem, m_ui.symbol->currentText().toStdString()));
+  Assert(tragetIt != index.cend());
+  if (tragetIt == index.cend()) {
+    return;
+  }
+  Assert(tragetIt->security);
+  Security &security = *tragetIt->security;
+  static const OrderParams params;
+  try {
+    tradingSystem.SendOrder(security, security.GetSymbol().GetCurrency(),
+                            security.GetAskQty(), security.GetAskPrice(),
+                            params, m_engine.GetOrderTradingSystemSlot(),
+                            m_engine.GetRiskControl(m_tradingMode), side,
+                            TIME_IN_FORCE_GTC, Milestones());
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to send order"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  }
 }
 
 bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {

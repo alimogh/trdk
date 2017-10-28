@@ -190,15 +190,6 @@ trdk::OrderId ib::TradingSystem::SendBuyAtMarketPrice(
   return RegOrder(std::move(order));
 }
 
-trdk::OrderId ib::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &,
-    const trdk::Lib::Currency &,
-    const trdk::Qty &,
-    const trdk::OrderParams &,
-    const OrderStatusUpdateSlot &&) {
-  throw MethodIsNotImplementedException("Method is not implemented");
-}
-
 trdk::OrderId ib::TradingSystem::SendBuy(
     trdk::Security &security,
     const Currency &currency,
@@ -227,15 +218,6 @@ trdk::OrderId ib::TradingSystem::SendBuyImmediatelyOrCancel(
   return RegOrder(
       PlacedOrder{m_client->PlaceBuyIocOrder(security, qty, price, params),
                   &security, statusUpdateSlot});
-}
-
-trdk::OrderId ib::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &,
-    const trdk::Lib::Currency &,
-    const trdk::Qty &,
-    const trdk::OrderParams &,
-    const OrderStatusUpdateSlot &&) {
-  throw MethodIsNotImplementedException("Method is not implemented");
 }
 
 trdk::OrderId ib::TradingSystem::RegOrder(PlacedOrder &&order) {

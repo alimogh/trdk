@@ -207,65 +207,31 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const Currency &,
-                                        const Qty &,
-                                        const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
+  virtual OrderId SendOrderTransaction(trdk::Security &security,
+                                       const Currency &currency,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const OrderParams &params,
+                                       const OrderSide &side,
+                                       const TimeInForce &tif) override {
+    static_assert(numberOfTimeInForces == 5, "List changed.");
+    switch (tif) {
+      case TIME_IN_FORCE_IOC:
+        return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                                 params, side);
+      case TIME_IN_FORCE_GTC:
+        break;
+      default:
+        throw TradingSystem::Error("Order time-in-force type is not supported");
+    }
+    if (currency != security.GetSymbol().GetCurrency()) {
+      throw TradingSystem::Error(
+          "Trading system supports only security quote currency");
+    }
+    if (!price) {
+      throw TradingSystem::Error("Market order is not supported");
+    }
 
-  virtual OrderId SendSell(trdk::Security &,
-                           const Currency &,
-                           const Qty &,
-                           const Price &,
-                           const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const Currency &,
-                                              const Qty &,
-                                              const Price &,
-                                              const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const Currency &,
-                                       const Qty &,
-                                       const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuy(trdk::Security &,
-                          const Currency &,
-                          const Qty &,
-                          const Price &,
-                          const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const Currency &,
-                                             const Qty &,
-                                             const Price &,
-                                             const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 

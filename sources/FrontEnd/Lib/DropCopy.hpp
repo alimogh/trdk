@@ -62,7 +62,6 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                          const trdk::Price *price,
                          const trdk::TimeInForce *,
                          const trdk::Lib::Currency &,
-                         const trdk::Qty *minQty,
                          const trdk::Qty &executedQty,
                          const trdk::Price *bestBidPrice,
                          const trdk::Qty *bestBidQty,

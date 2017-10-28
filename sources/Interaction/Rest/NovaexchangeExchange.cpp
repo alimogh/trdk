@@ -109,8 +109,14 @@ class NovaexchangeRequest : public Request {
   explicit NovaexchangeRequest(const std::string &uri,
                                const std::string &message,
                                const std::string &method,
-                               const Settings &settings)
-      : Base(uri, message, method, settings.apiKey, settings.apiSecret) {}
+                               const Settings &settings,
+                               const std::string &uriParams = std::string())
+      : Base(uri,
+             message,
+             method,
+             settings.apiKey,
+             settings.apiSecret,
+             uriParams) {}
 
   virtual ~NovaexchangeRequest() override = default;
 
@@ -343,66 +349,43 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                 .first->second.security;
   }
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const Currency &,
-                                        const Qty &,
-                                        const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
+  virtual OrderId SendOrderTransaction(trdk::Security &security,
+                                       const Currency &currency,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const OrderParams &params,
+                                       const OrderSide &side,
+                                       const TimeInForce &tif) override {
+    static_assert(numberOfTimeInForces == 5, "List changed.");
+    switch (tif) {
+      case TIME_IN_FORCE_IOC:
+        return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                                 params, side);
+      case TIME_IN_FORCE_GTC:
+        break;
+      default:
+        throw TradingSystem::Error("Order time-in-force type is not supported");
+    }
+    if (currency != security.GetSymbol().GetCurrency()) {
+      throw TradingSystem::Error(
+          "Trading system supports only security quote currency");
+    }
+    if (!price) {
+      throw TradingSystem::Error("Market order is not supported");
+    }
 
-  virtual OrderId SendSell(trdk::Security &,
-                           const Currency &,
-                           const Qty &,
-                           const Price &,
-                           const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const Currency &,
-                                              const Qty &,
-                                              const Price &,
-                                              const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const Currency &,
-                                       const Qty &,
-                                       const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuy(trdk::Security &,
-                          const Currency &,
-                          const Qty &,
-                          const Price &,
-                          const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const Currency &,
-                                             const Qty &,
-                                             const Price &,
-                                             const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+    boost::format requestParams(
+        "tradetype=BUY&tradeamount=%1%&tradeprice=%2%&tradebase=0");
+    requestParams % qty  // 1
+        % price;         // 2
+    NovaexchangeRequest request("/remote/v2/private/trade/<market_name>/",
+                                "tradeitems", net::HTTPRequest::HTTP_POST,
+                                m_settings, requestParams.str());
+    const auto &result = request.Send(m_session, GetContext());
+    std::stringstream ss;
+    boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
+    GetTsLog().Debug(ss.str().c_str());
+    return 1;
   }
 
   virtual void SendCancelOrder(const OrderId &) override {

@@ -156,7 +156,6 @@ EngineServer::Service::OrderCache::OrderCache(
     const Price *price,
     const TimeInForce *timeInForce,
     const Currency &currency,
-    const Qty *minQty,
     const Qty &executedQty,
     const Price *bestBidPrice,
     const Qty *bestBidQty,
@@ -186,9 +185,6 @@ EngineServer::Service::OrderCache::OrderCache(
   }
   if (timeInForce) {
     this->timeInForce = *timeInForce;
-  }
-  if (minQty) {
-    this->minQty = *minQty;
   }
   if (bestBidPrice) {
     this->bestBidPrice = *bestBidPrice;
@@ -287,7 +283,6 @@ void EngineServer::Service::DropCopy::CopyOrder(
     const Price *price,
     const TimeInForce *timeInForce,
     const Currency &currency,
-    const Qty *minQty,
     const Qty &executedQty,
     const Price *bestBidPrice,
     const Qty *bestBidQty,
@@ -295,9 +290,8 @@ void EngineServer::Service::DropCopy::CopyOrder(
     const Qty *bestAskQty) {
   const OrderCache order(id, tradingSystemId, orderTime, executionTime, status,
                          operationId, subOperationId, security, tradingSystem,
-                         side, qty, price, timeInForce, currency, minQty,
-                         executedQty, bestBidPrice, bestBidQty, bestAskPrice,
-                         bestAskQty);
+                         side, qty, price, timeInForce, currency, executedQty,
+                         bestBidPrice, bestBidQty, bestAskPrice, bestAskQty);
   m_queue.Enqueue(
       [this, order](size_t recordNumber, size_t attemptNo, bool dump) -> bool {
         return m_service.StoreOrder(recordNumber, attemptNo, dump, order);
@@ -1169,9 +1163,6 @@ bool EngineServer::Service::StoreOrder(size_t recordNumber,
     record["time_in_force"] = *order.timeInForce;
   }
   record["currency"] = order.currency;
-  if (order.minQty) {
-    record["min_qty"] = *order.minQty;
-  }
   record["executed_qty"] = order.executedQty;
   if (order.bestBidPrice) {
     record["bid_price"] = *order.bestBidPrice;
