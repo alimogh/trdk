@@ -56,6 +56,10 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
               std::numeric_limits<double>::quiet_NaN())};
 }
 #pragma warning(pop)
+
+std::string NormilizeSymbol(const std::string &source) {
+  return boost::to_lower_copy(source);
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -199,11 +203,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         Rest::Security::SupportedLevel1Types()
             .set(LEVEL1_TICK_BID_PRICE)
             .set(LEVEL1_TICK_ASK_PRICE));
-    Verify(
-        m_securities
-            .emplace(std::make_pair(
-                boost::to_lower_copy(result->GetSymbol().GetSymbol()), result))
-            .second);
+    {
+      Verify(
+          m_securities
+              .emplace(NormilizeSymbol(result->GetSymbol().GetSymbol()), result)
+              .second);
+    }
+
     return *result;
   }
 

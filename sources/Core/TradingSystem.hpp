@@ -102,38 +102,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                               const trdk::OrderParams &) noexcept;
   };
 
-  class TRDK_CORE_API SendingError : public trdk::TradingSystem::Error {
-   public:
-    SendingError(const char *what) noexcept;
-  };
-
   class TRDK_CORE_API OrderIsUnknown : public trdk::TradingSystem::Error {
    public:
     explicit OrderIsUnknown(const char *what) noexcept;
-  };
-
-  class TRDK_CORE_API UnknownOrderCancelError
-      : public trdk::TradingSystem::OrderIsUnknown {
-   public:
-    explicit UnknownOrderCancelError(const char *what) noexcept;
   };
 
   class TRDK_CORE_API ConnectionDoesntExistError
       : public trdk::TradingSystem::Error {
    public:
     explicit ConnectionDoesntExistError(const char *what) noexcept;
-  };
-
-  //! Account is unknown or default account requested but hasn't been set.
-  class TRDK_CORE_API UnknownAccountError : public trdk::TradingSystem::Error {
-   public:
-    explicit UnknownAccountError(const char *what) noexcept;
-  };
-
-  //! Broker position error.
-  class TRDK_CORE_API PositionError : public trdk::TradingSystem::Error {
-   public:
-    explicit PositionError(const char *what) noexcept;
   };
 
  public:
@@ -172,7 +149,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! Returns default account info.
   /** All values is unscaled. If default account hasn't been set - throws
     * an exception.
-    * @throw trdk::TradingSystem::UnknownAccountError
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 

@@ -30,25 +30,11 @@ TradingSystem::OrderParamsError::OrderParamsError(const char *what,
                                                   const OrderParams &) noexcept
     : Error(what) {}
 
-TradingSystem::SendingError::SendingError(const char *what) noexcept
-    : Error(what) {}
-
 TradingSystem::OrderIsUnknown::OrderIsUnknown(const char *what) noexcept
     : Error(what) {}
 
-TradingSystem::UnknownOrderCancelError::UnknownOrderCancelError(
-    const char *what) noexcept
-    : OrderIsUnknown(what) {}
-
 TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
     const char *what) noexcept
-    : Error(what) {}
-
-TradingSystem::UnknownAccountError::UnknownAccountError(
-    const char *what) noexcept
-    : Error(what) {}
-
-TradingSystem::PositionError::PositionError(const char *what) noexcept
     : Error(what) {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -125,9 +111,9 @@ class TradingSystem::Implementation : private boost::noncopyable {
                    const OrderSide &side,
                    const TimeInForce &tif) {
     m_tradingLog.Write(
-        "'newOrder': {'operationId': %1%, side: '%2%', 'security': '%3%', "
-        "'currency': '%4%', 'type'='%5%', 'price'=%6%, 'qty'=%7%, 'tif': "
-        "'%8%'}",
+        "{'newOrder': {'operationId': %1%, side: '%2%', 'security': '%3%', "
+        "'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': %7%, 'tif': "
+        "'%8%'}}",
         [&](TradingRecord &record) {
           record % operationId                     // 1
               % side                               // 2
@@ -147,8 +133,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
                       const boost::optional<Volume> &commission,
                       const TradeInfo *trade) {
     m_tradingLog.Write(
-        "'orderStatus': {'status': '%1%', remainingQty: '%2%', 'operationId': "
-        "%3%, 'id': %4%, 'tsId': '%5%', commission: '%6%'}",
+        "{'orderStatus': {'status': '%1%', remainingQty: '%2%', 'operationId': "
+        "%3%, 'id': %4%, 'tsId': '%5%', commission: '%6%'}}",
         [&](TradingRecord &record) {
           record % orderStatus         // 1
               % remainingQty           // 2
@@ -162,7 +148,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
           }
         });
     if (trade) {
-      m_tradingLog.Write("'trade': {'id': '%1%', qty: %2%, 'price': %3%}",
+      m_tradingLog.Write("{'trade': {'id': '%1%', qty: %2%, 'price': %3%}}",
                          [&trade](TradingRecord &record) {
                            if (trade->id) {
                              record % *trade->id;  // 1
@@ -376,15 +362,27 @@ OrderId TradingSystem::SendOrder(Security &security,
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
                    commission, trade);
         });
+  } catch (const std::exception &ex) {
+    GetTradingLog().Write(
+        "{'orderSendError': {'reason': '%1%', 'operationId': %2%}}",
+        [&ex, &operationId](TradingRecord &record) {
+          record % ex.what()  // 2
+              % operationId;  // 3
+        });
+    GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
+    m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
+                              ORDER_STATUS_ERROR, security, currency,
+                              actualPrice, qty, nullptr, delaysMeasurement);
+    throw;
   } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order to trading system: \"%1%\".",
-                    ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order to trading system.");
-    }
+    GetTradingLog().Write(
+        "{'orderSendError': {'reason': 'Unknown exception', 'operationId': "
+        "%1%}}",
+        [&operationId](TradingRecord &record) {
+          record % operationId;  // 1
+        });
+    GetLog().Error("Unknown error while sending order transaction.");
+    AssertFailNoException();
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
                               actualPrice, qty, nullptr, delaysMeasurement);
@@ -426,7 +424,7 @@ OrderId TradingSystem::SendOrderTransactionAndEmulateIoc(
 }
 
 void TradingSystem::CancelOrder(const OrderId &order) {
-  GetTradingLog().Write("'orderCancel': {'id': %1%}",
+  GetTradingLog().Write("{'orderCancel': {'id': %1%}}",
                         [&order](TradingRecord &record) { record % order; });
   SendCancelOrder(order);
 }
@@ -470,7 +468,7 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
 void TradingSystem::OnOrderError(const OrderId &orderId,
                                  const std::string &tradingSystemOrderId,
                                  const std::string &&error) {
-  GetTradingLog().Write("ORDER ERROR\tid=%1%\treason=%2%",
+  GetTradingLog().Write("{'orderError': {'id': %1%, 'reason': '%2%'}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % error;      // 2
@@ -485,7 +483,7 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
 void TradingSystem::OnOrderReject(const OrderId &orderId,
                                   const std::string &tradingSystemOrderId,
                                   const std::string &&reason) {
-  GetTradingLog().Write("ORDER REJECT\tid=%1%\treason=%2%",
+  GetTradingLog().Write("{'orderReject': {'id': %1%, 'reason': '%2%'}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % reason;     // 2

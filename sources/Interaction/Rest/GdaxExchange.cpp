@@ -135,6 +135,10 @@ class BookGdaxRequest : public GdaxRequest {
     return responseTree;
   }
 };
+
+std::string NormilizeSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "_", "-");
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -259,32 +263,32 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
 
-    const SecuritiesLock lock(m_securitiesMutex);
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
+    {
+      const auto request = boost::make_shared<BookGdaxRequest>(
+          "/products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+              "/book/",
+          "book", net::HTTPRequest::HTTP_GET, m_settings);
 
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
+      const SecuritiesLock lock(m_securitiesMutex);
+      Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
+                 .second);
+    }
 
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<BookGdaxRequest>(
-                            "/products/" + boost::join(subs, "-") + "/book/",
-                            "book", net::HTTPRequest::HTTP_GET, m_settings)})
-                .first->second.security;
+    return *result;
   }
 
   virtual OrderId SendOrderTransaction(trdk::Security &security,

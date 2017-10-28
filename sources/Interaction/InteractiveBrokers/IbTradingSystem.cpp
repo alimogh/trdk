@@ -87,7 +87,7 @@ void ib::TradingSystem::SubscribeToSecurities() {
 
 const ib::TradingSystem::Account &ib::TradingSystem::GetAccount() const {
   if (!m_account) {
-    throw UnknownAccountError("Account not specified");
+    throw trdk::TradingSystem::Error("Account is not specified");
   }
   return *m_account;
 }

@@ -121,6 +121,10 @@ class CcexRequest : public Request {
                              std::move(boost::get<2>(result)));
   }
 };
+
+std::string NormilizeSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "_", "-");
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -249,34 +253,33 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
 
-    const SecuritiesLock lock(m_securitiesMutex);
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
+    {
+      const auto request = boost::make_shared<CcexRequest>(
+          "/t/api_pub.html", "orderbook", net::HTTPRequest::HTTP_GET,
+          m_settings,
+          "a=getorderbook&market=" +
+              NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+              "&type=both&depth=1");
 
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
-
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<CcexRequest>(
-                            "/t/api_pub.html", "orderbook",
-                            net::HTTPRequest::HTTP_GET, m_settings,
-                            "a=getorderbook&market=" + boost::join(subs, "-") +
-                                "&type=both&depth=1")})
-                .first->second.security;
+      const SecuritiesLock lock(m_securitiesMutex);
+      m_securities.emplace(symbol, SecuritySubscribtion{result, request})
+          .first->second.security;
+    }
+    return *result;
   }
 
   virtual OrderId SendOrderTransaction(trdk::Security &security,

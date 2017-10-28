@@ -44,8 +44,9 @@ boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPSClientSession &session, const Context &context) {
   std::string uri = m_uri + "?nonce=" +
                     pt::to_iso_string(pt::microsec_clock::universal_time());
-  if (!m_uriParams.empty()) {
-    uri += "&" + m_uriParams;
+  if (!m_uriParams.empty() &&
+      m_request->getMethod() == net::HTTPRequest::HTTP_GET) {
+    uri += '&' + m_uriParams;
   }
   m_request->setURI(std::move(uri));
 
@@ -102,8 +103,8 @@ std::string Request::CreateBody() const {
   if (m_request->getMethod() != net::HTTPRequest::HTTP_POST) {
     return std::string();
   }
-  std::ostringstream body;
-  body << "apikey=" << m_apiKey << "&signature=";
+  std::ostringstream result;
+  result << "apikey=" << m_apiKey << "&signature=";
   {
     const auto &uri =
         std::string("https://novaexchange.com") + m_request->getURI();
@@ -112,7 +113,10 @@ std::string Request::CreateBody() const {
         EVP_sha512(), m_apiSecret.c_str(), static_cast<int>(m_apiSecret.size()),
         reinterpret_cast<const unsigned char *>(uri.c_str()), uri.size(),
         &buffer[0], nullptr);
-    Base64Coder(false).Encode(digest, SHA512_DIGEST_LENGTH, body);
+    Base64Coder(false).Encode(digest, SHA512_DIGEST_LENGTH, result);
   }
-  return body.str();
+  if (!m_uriParams.empty()) {
+    result << '&' << m_uriParams;
+  }
+  return result.str();
 }

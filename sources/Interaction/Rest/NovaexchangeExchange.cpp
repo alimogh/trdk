@@ -95,6 +95,16 @@ void ReadTopOfBook(const pt::ptime &time,
   }
 }
 #pragma warning(pop)
+
+std::string NormilizeSymbol(const std::string &source) {
+  std::vector<std::string> subs;
+  boost::split(subs, source, boost::is_any_of("_"));
+  if (subs.size() != 2) {
+    return source;
+  }
+  subs[0].swap(subs[1]);
+  return boost::join(subs, "_");
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,6 +225,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_session("novaexchange.com"),
+        m_session2("novaexchange.com"),
         m_getBalancesRequest("/remote/v2/private/getbalances/",
                              "balances",
                              net::HTTPRequest::HTTP_POST,
@@ -320,33 +331,36 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
-    const SecuritiesLock lock(m_securitiesMutex);
 
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
-    subs[0].swap(subs[1]);
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
+    {
+      const auto marketDataRequest =
+          boost::make_shared<OpenOrdersNovaexchangeRequest>(
+              "/remote/v2/market/openorders/" +
+                  NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
+              "orders", net::HTTPRequest::HTTP_POST, m_settings);
 
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<OpenOrdersNovaexchangeRequest>(
-                            "/remote/v2/market/openorders/" +
-                                boost::join(subs, "_") + "/BOTH/",
-                            "orders", net::HTTPRequest::HTTP_POST, m_settings)})
-                .first->second.security;
+      const SecuritiesLock lock(m_securitiesMutex);
+      Verify(m_securities
+                 .emplace(
+                     symbol,
+                     SecuritySubscribtion{result, std::move(marketDataRequest)})
+                 .second);
+    }
+
+    return *result;
   }
 
   virtual OrderId SendOrderTransaction(trdk::Security &security,
@@ -378,10 +392,12 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         "tradetype=BUY&tradeamount=%1%&tradeprice=%2%&tradebase=0");
     requestParams % qty  // 1
         % price;         // 2
-    NovaexchangeRequest request("/remote/v2/private/trade/<market_name>/",
-                                "tradeitems", net::HTTPRequest::HTTP_POST,
-                                m_settings, requestParams.str());
-    const auto &result = request.Send(m_session, GetContext());
+    NovaexchangeRequest request(
+        "/remote/v2/private/trade/" +
+            NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
+        "tradeitems", net::HTTPRequest::HTTP_POST, m_settings,
+        requestParams.str());
+    const auto &result = request.Send(m_session2, GetContext());
     std::stringstream ss;
     boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
     GetTsLog().Debug(ss.str().c_str());
@@ -397,6 +413,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
   bool m_isConnected;
   net::HTTPSClientSession m_session;
+  net::HTTPSClientSession m_session2;
   NovaexchangeRequest m_getBalancesRequest;
 
   SecuritiesMutex m_securitiesMutex;

@@ -156,7 +156,7 @@ Position *PositionController::OnSignal(
     if (position->HasActiveOpenOrders()) {
       try {
         Verify(position->CancelAllOrders());
-      } catch (const TradingSystem::UnknownOrderCancelError &ex) {
+      } catch (const TradingSystem::OrderIsUnknown &ex) {
         GetStrategy().GetTradingLog().Write("failed to cancel order");
         GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
                                     ex.what());
