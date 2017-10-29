@@ -24,7 +24,19 @@ lib::DropCopy::DropCopy(QObject *parent)
     : QObject(parent),
       m_pollingInterval(pt::milliseconds(500)),
       m_lastSignalTime(pt::microsec_clock::universal_time() -
-                       m_pollingInterval) {}
+                       m_pollingInterval) {
+  qRegisterMetaType<trdk::OrderId>("trdk::OrderId");
+  qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
+  qRegisterMetaType<std::string>("std::string");
+  qRegisterMetaType<trdk::Lib::Currency>("trdk::Lib::Currency");
+  qRegisterMetaType<trdk::OrderStatus>("trdk::OrderStatus");
+  qRegisterMetaType<trdk::OrderSide>("trdk::OrderSide");
+  qRegisterMetaType<trdk::Qty>("trdk::Qty");
+  qRegisterMetaType<trdk::Price>("trdk::Price");
+  qRegisterMetaType<boost::optional<trdk::Price>>(
+      "boost::optional<trdk::Price>");
+  qRegisterMetaType<trdk::TimeInForce>("trdk::TimeInForce");
+}
 
 void lib::DropCopy::Flush() {}
 
@@ -45,33 +57,33 @@ DropCopyDataSourceInstanceId lib::DropCopy::RegisterDataSourceInstance(
   return 0;
 }
 
-void lib::DropCopy::CopyOrder(const ids::uuid &,
-                              const std::string *,
-                              const pt::ptime &,
-                              const pt::ptime *,
-                              const OrderStatus &,
-                              const ids::uuid &,
-                              const int64_t *,
-                              const Security &,
-                              const TradingSystem &,
-                              const OrderSide &,
-                              const Qty &,
-                              const Price *,
-                              const TimeInForce *,
-                              const trdk::Lib::Currency &,
-                              const Qty &,
-                              const Price *,
-                              const Qty *,
-                              const Price *,
-                              const Qty *) {}
+void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
+                                       const pt::ptime &time,
+                                       const Security &security,
+                                       const Currency &currency,
+                                       const TradingSystem &tradingSystem,
+                                       const OrderSide &sid,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const TimeInForce &tif) {
+  emit OrderSubmitted(id, time, &security, currency, &tradingSystem, sid, qty,
+                      price, tif);
+}
+
+void lib::DropCopy::CopyOrderStatus(const OrderId &id,
+                                    const std::string &tradingSystemId,
+                                    const TradingSystem &tradingSystem,
+                                    const pt::ptime &time,
+                                    const OrderStatus &status,
+                                    const Qty &remainingQty) {
+  emit OrderUpdated(id, tradingSystemId, &tradingSystem, time, status,
+                    remainingQty);
+}
 
 void lib::DropCopy::CopyTrade(const pt::ptime &,
-                              const std::string &,
-                              const ids::uuid &,
-                              const Price &,
-                              const Qty &,
-                              const Price &,
-                              const Qty &,
+                              const boost::optional<std::string> &,
+                              const OrderId &,
+                              const TradingSystem &,
                               const Price &,
                               const Qty &) {}
 

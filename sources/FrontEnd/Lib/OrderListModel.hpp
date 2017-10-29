@@ -10,31 +10,22 @@
 
 #pragma once
 
+#include "Api.h"
+#include "Fwd.hpp"
+
 namespace trdk {
 namespace FrontEnd {
-namespace Terminal {
+namespace Lib {
 
-class OrderListModel : public QAbstractItemModel {
+class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
   Q_OBJECT
 
  public:
   typedef QAbstractItemModel Base;
 
- private:
-  enum Column {
-    COLUMN_TIME,
-    COLUMN_SYMBOL,
-    COLUMN_EXCHANGE,
-    COLUMN_STATUS,
-    COLUMN_PRICE,
-    COLUMN_QTY,
-    COLUMN_EXECUTION_TIME,
-    numberOfColumns
-  };
-
  public:
-  explicit OrderListModel(QWidget *parent);
-  virtual ~OrderListModel() override = default;
+  explicit OrderListModel(Engine &, QWidget *parent);
+  virtual ~OrderListModel() override;
 
  public:
   virtual QVariant headerData(int section,
@@ -47,6 +38,27 @@ class OrderListModel : public QAbstractItemModel {
   virtual QModelIndex parent(const QModelIndex &index) const override;
   virtual int rowCount(const QModelIndex &parent) const override;
   virtual int columnCount(const QModelIndex &parent) const override;
+
+ private slots:
+  void OnOrderSubmitted(const trdk::OrderId &,
+                        const boost::posix_time::ptime &,
+                        const trdk::Security *,
+                        const trdk::Lib::Currency &,
+                        const trdk::TradingSystem *,
+                        const trdk::OrderSide &,
+                        const trdk::Qty &,
+                        const boost::optional<trdk::Price> &,
+                        const trdk::TimeInForce &);
+  void OnOrderUpdated(const trdk::OrderId &,
+                      const std::string &tradingSystemId,
+                      const trdk::TradingSystem *,
+                      const boost::posix_time::ptime &,
+                      const trdk::OrderStatus &,
+                      const trdk::Qty &remainingQty);
+
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 }
 }

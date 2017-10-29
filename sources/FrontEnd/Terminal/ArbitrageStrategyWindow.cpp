@@ -475,11 +475,17 @@ void ArbitrageStrategyWindow::SendOrder(TradingSystem &tradingSystem,
   }
   Assert(tragetIt->security);
   Security &security = *tragetIt->security;
+
+  const auto qty = std::min(
+      side == ORDER_SIDE_BUY ? security.GetAskQty() : security.GetBidQty(),
+      static_cast<Qty>(m_ui.maxQty->value()));
+  const auto price =
+      side == ORDER_SIDE_BUY ? security.GetAskPrice() : security.GetBidPrice();
+
   static const OrderParams params;
   try {
-    tradingSystem.SendOrder(security, security.GetSymbol().GetCurrency(),
-                            security.GetAskQty(), security.GetAskPrice(),
-                            params, m_engine.GetOrderTradingSystemSlot(),
+    tradingSystem.SendOrder(security, security.GetSymbol().GetCurrency(), qty,
+                            price, params, m_engine.GetOrderTradingSystemSlot(),
                             m_engine.GetRiskControl(m_tradingMode), side,
                             TIME_IN_FORCE_GTC, Milestones());
   } catch (const std::exception &ex) {

@@ -58,11 +58,12 @@ Request::Send(net::HTTPSClientSession &session, const Context &context) {
     session.sendRequest(*m_request);
   }
 
+  const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
+  const auto &updateTime = context.GetCurrentTime();
+
   try {
     net::HTTPResponse response;
     std::istream &responseStream = session.receiveResponse(response);
-    const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
-    const auto &updateTime = context.GetCurrentTime();
     if (response.getStatus() != 200) {
       boost::format error(
           "Request \"%3%\" (%4%) failed with HTTP-error: \"%1%\" (code: %2%)");

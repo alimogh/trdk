@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "DropCopy.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Timer.hpp"
@@ -53,6 +54,23 @@ std::string FormatStringId(const std::string &instanceName,
   return result;
 }
 
+template <trdk::Lib::Concurrency::Profile profile>
+struct ActiveOrderConcurrencyPolicy {
+  static_assert(profile == trdk::Lib::Concurrency::PROFILE_RELAX,
+                "Wrong concurrency profile");
+  typedef boost::mutex Mutex;
+  typedef Mutex::scoped_lock Lock;
+};
+template <>
+struct ActiveOrderConcurrencyPolicy<trdk::Lib::Concurrency::PROFILE_HFT> {
+  typedef trdk::Lib::Concurrency::SpinMutex Mutex;
+  typedef Mutex::ScopedLock Lock;
+};
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Mutex
+    ActiveOrderMutex;
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Lock
+    ActiveOrderLock;
+
 struct ActiveOrder {
   TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
   Qty remainingQty;
@@ -62,6 +80,8 @@ struct ActiveOrder {
 
 class TradingSystem::Implementation : private boost::noncopyable {
  public:
+  TradingSystem &m_self;
+
   const TradingMode m_mode;
 
   const size_t m_index;
@@ -76,14 +96,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   boost::atomic_size_t m_lastOperationId;
 
+  ActiveOrderMutex m_activeOrdersMutex;
   boost::unordered_map<OrderId, ActiveOrder> m_activeOrders;
   std::unique_ptr<Timer::Scope> m_lastOrderTimerScope;
 
-  explicit Implementation(const TradingMode &mode,
+  explicit Implementation(TradingSystem &self,
+                          const TradingMode &mode,
                           size_t index,
                           Context &context,
                           const std::string &instanceName)
-      : m_mode(mode),
+      : m_self(self),
+        m_mode(mode),
         m_index(index),
         m_context(context),
         m_instanceName(instanceName),
@@ -111,18 +134,18 @@ class TradingSystem::Implementation : private boost::noncopyable {
                    const OrderSide &side,
                    const TimeInForce &tif) {
     m_tradingLog.Write(
-        "{'newOrder': {'operationId': %1%, side: '%2%', 'security': '%3%', "
-        "'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': %7%, 'tif': "
-        "'%8%'}}",
+        "{'newOrder': {'operationId': %1%, 'side': '%2%', 'security': '%3%', "
+        "'currency': '%4%', 'type': '%5%', 'price': %6$.8f, 'qty': %7$.8f"
+        ", 'tif': '%8%'}}",
         [&](TradingRecord &record) {
-          record % operationId                     // 1
-              % side                               // 2
-              % security                           // 3
-              % currency                           // 4
-              % (orderPrice ? "limit" : "market")  // 5
-              % actualPrice                        // 6
-              % qty                                // 7
-              % tif;                               // 8
+          record % operationId                                       // 1
+              % side                                                 // 2
+              % security                                             // 3
+              % currency                                             // 4
+              % (orderPrice ? ORDER_TYPE_LIMIT : ORDER_TYPE_MARKET)  // 5
+              % actualPrice                                          // 6
+              % qty                                                  // 7
+              % tif;                                                 // 8
         });
   }
   void LogOrderUpdate(size_t operationId,
@@ -133,8 +156,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
                       const boost::optional<Volume> &commission,
                       const TradeInfo *trade) {
     m_tradingLog.Write(
-        "{'orderStatus': {'status': '%1%', remainingQty: '%2%', 'operationId': "
-        "%3%, 'id': %4%, 'tsId': '%5%', commission: '%6%'}}",
+        "{'orderStatus': {'status': '%1%', 'remainingQty': %2$.8f, "
+        "'operationId': %3%, 'id': %4%, 'tsId': '%5%', 'commission': %6$.8f}}",
         [&](TradingRecord &record) {
           record % orderStatus         // 1
               % remainingQty           // 2
@@ -148,16 +171,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
           }
         });
     if (trade) {
-      m_tradingLog.Write("{'trade': {'id': '%1%', qty: %2%, 'price': %3%}}",
-                         [&trade](TradingRecord &record) {
-                           if (trade->id) {
-                             record % *trade->id;  // 1
-                           } else {
-                             record % "";  // 1
-                           }
-                           record % trade->qty  // 2
-                               % trade->price;  // 3
-                         });
+      m_tradingLog.Write(
+          "{'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}",
+          [&trade](TradingRecord &record) {
+            if (trade->id) {
+              record % *trade->id;  // 1
+            } else {
+              record % "";  // 1
+            }
+            record % trade->qty  // 2
+                % trade->price;  // 3
+          });
     }
   }
 
@@ -229,6 +253,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
                            const boost::optional<Qty> &remainingQty,
                            const boost::optional<Volume> &commission,
                            boost::optional<TradeInfo> &&tradeInfo) {
+    const auto &time = m_context.GetCurrentTime();
+
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -253,6 +279,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
                                   it->second.remainingQty, commission,
                                   tradeInfo ? &*tradeInfo : nullptr);
 
+    m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
+      dropCopy.CopyOrderStatus(orderId, tradingSystemOrderId, m_self, time,
+                               status, it->second.remainingQty);
+      if (tradeInfo) {
+        dropCopy.CopyTrade(time, tradeInfo->id, orderId, m_self,
+                           tradeInfo->price, tradeInfo->qty);
+      }
+    });
+
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_FILLED:
@@ -271,7 +306,7 @@ TradingSystem::TradingSystem(const TradingMode &mode,
                              Context &context,
                              const std::string &instanceName)
     : m_pimpl(boost::make_unique<Implementation>(
-          mode, index, context, instanceName)) {}
+          *this, mode, index, context, instanceName)) {}
 
 TradingSystem::~TradingSystem() = default;
 
@@ -340,15 +375,13 @@ OrderId TradingSystem::SendOrder(Security &security,
   try {
     return SendOrderTransaction(
         security, currency, qty, price, params, side, tif,
-        [&, operationId, riskControlOperationId, currency, actualPrice,
-         delaysMeasurement, callback](
+        [this, operationId, &riskControlScope, riskControlOperationId,
+         &security, currency, actualPrice, delaysMeasurement, callback, side](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
-
           m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
                                   orderStatus, remainingQty, commission, trade);
-
           side == ORDER_SIDE_BUY
               ? m_pimpl->ConfirmBuyOrder(riskControlOperationId,
                                          riskControlScope, orderStatus,
@@ -358,7 +391,6 @@ OrderId TradingSystem::SendOrder(Security &security,
                     riskControlOperationId, riskControlScope, orderStatus,
                     security, currency, actualPrice, remainingQty, trade,
                     delaysMeasurement);
-
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
                    commission, trade);
         });
@@ -399,9 +431,15 @@ OrderId TradingSystem::SendOrderTransaction(
     const OrderSide &side,
     const TimeInForce &tif,
     const OrderStatusUpdateSlot &&callback) {
+  const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+  const auto &time = GetContext().GetCurrentTime();
   const auto &orderId =
       SendOrderTransaction(security, currency, qty, price, params, side, tif);
   m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopySubmittedOrder(orderId, time, security, currency, *this, side,
+                                qty, price, tif);
+  });
   return orderId;
 }
 

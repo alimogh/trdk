@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Engine/Engine.hpp"
-#include "Service.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::EngineServer;
@@ -99,15 +98,7 @@ bool RunService(int argc, const char *argv[]) {
     }
   }
 
-  try {
-    Service service(GetIniFilePath(argv[2]), startDelay);
-    getchar();
-    return true;
-  } catch (const trdk::Lib::Exception &ex) {
-    std::cerr << "Failed to start engine service: \"" << ex << "\"."
-              << std::endl;
-    getchar();
-  }
+  std::cerr << "Service mode is not supported." << std::endl;
 
   return false;
 }

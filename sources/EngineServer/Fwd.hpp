@@ -11,15 +11,5 @@
 #pragma once
 
 namespace trdk {
-namespace EngineServer {
-
-class Service;
-class Settings;
-
-class ClientRequestHandler;
-class Client;
-
-class DropCopyClient;
-class DropCopyService;
-}
+namespace EngineServer {}
 }

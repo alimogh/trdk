@@ -47,21 +47,26 @@ inline std::ostream &operator<<(std::ostream &os, const trdk::OrderSide &side) {
 ////////////////////////////////////////////////////////////////////////////////
 
 //! Time in Force
-/** https://mbcm.robotdk.com:8443/display/API/Constants
-  */
 enum TimeInForce {
   // Good Till Day.
-  TIME_IN_FORCE_DAY = 0,
+  TIME_IN_FORCE_DAY,
   // Good Till Cancel.
-  TIME_IN_FORCE_GTC = 1,
+  TIME_IN_FORCE_GTC,
   // At the Opening.
-  TIME_IN_FORCE_OPG = 2,
+  TIME_IN_FORCE_OPG,
   // Immediate or Cancel.
-  TIME_IN_FORCE_IOC = 3,
+  TIME_IN_FORCE_IOC,
   // Fill or Kill.
-  TIME_IN_FORCE_FOK = 4,
+  TIME_IN_FORCE_FOK,
   numberOfTimeInForces
 };
+
+TRDK_CORE_API const char *ConvertToPch(const trdk::TimeInForce &);
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const trdk::TimeInForce &tif) {
+  return os << trdk::ConvertToPch(tif);
+}
 
 //! Extended order parameters.
 struct OrderParams {

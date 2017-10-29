@@ -16,3 +16,9 @@
 #pragma warning(disable : 4127)
 #include <QtWidgets>
 #pragma warning(pop)
+
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index_container.hpp>

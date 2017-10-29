@@ -178,7 +178,7 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
     case ORDER_STATUS_SENT:
       return "sent";
     case ORDER_STATUS_REQUESTED_CANCEL:
-      return "req. cancel";
+      return "cancel requested";
     case ORDER_STATUS_SUBMITTED:
       return "submitted";
     case ORDER_STATUS_CANCELLED:
@@ -186,7 +186,7 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
     case ORDER_STATUS_FILLED:
       return "filled";
     case ORDER_STATUS_FILLED_PARTIALLY:
-      return "filled part.";
+      return "filled partially";
     case ORDER_STATUS_REJECTED:
       return "rejected";
     case ORDER_STATUS_ERROR:
@@ -229,6 +229,28 @@ const char *trdk::ConvertToPch(const CloseReason &closeReason) {
       return "open failed";
     case CLOSE_REASON_SYSTEM_ERROR:
       return "sys error";
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char *trdk::ConvertToPch(const TimeInForce &tif) {
+  static_assert(numberOfTimeInForces == 5, "List changed.");
+  switch (tif) {
+    default:
+      AssertEq(int(TIME_IN_FORCE_DAY),
+               int(tif));  // "to int" - to avoid recursion
+      return "unknown";
+    case TIME_IN_FORCE_DAY:
+      return "day";
+    case TIME_IN_FORCE_GTC:
+      return "gtc";
+    case TIME_IN_FORCE_OPG:
+      return "opg";
+    case TIME_IN_FORCE_IOC:
+      return "ioc";
+    case TIME_IN_FORCE_FOK:
+      return "foc";
   }
 }
 

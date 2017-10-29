@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Core/MarketDataSource.hpp"
+#include "Core/Timer.hpp"
 #include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
@@ -224,13 +225,14 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_session("novaexchange.com"),
-        m_session2("novaexchange.com"),
+        m_marketDataSession("novaexchange.com"),
+        m_tradingSession(m_marketDataSession.getHost()),
         m_getBalancesRequest("/remote/v2/private/getbalances/",
                              "balances",
                              net::HTTPRequest::HTTP_POST,
                              m_settings) {
-    m_session.setKeepAlive(true);
+    m_marketDataSession.setKeepAlive(true);
+    m_tradingSession.setKeepAlive(true);
   }
 
   virtual ~NovaexchangeExchange() override = default;
@@ -283,7 +285,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             }
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
-            const auto &response = request.Send(m_session, GetContext());
+            const auto &response =
+                request.Send(m_marketDataSession, GetContext());
             const auto &time = boost::get<0>(response);
             const auto &delayMeasurement = boost::get<2>(response);
             const auto &update = boost::get<1>(response);
@@ -305,14 +308,16 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
-      const auto &response = m_getBalancesRequest.Send(m_session, GetContext());
+      const auto &response =
+          m_getBalancesRequest.Send(m_marketDataSession, GetContext());
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
           continue;
         }
         GetTsLog().Info(
-            "%1% (%2%) balance: %3% (amount: %4%, trades: %5%, locked: %6%).",
+            "%1% (%2%) balance: %3% (amount: %4%, trades: %5%, locked: "
+            "%6%).",
             currency.second.get<std::string>("currencyname"),  // 1
             currency.second.get<std::string>("currency"),      // 2
             totalAmount,                                       // 3
@@ -350,7 +355,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           boost::make_shared<OpenOrdersNovaexchangeRequest>(
               "/remote/v2/market/openorders/" +
                   NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
-              "orders", net::HTTPRequest::HTTP_POST, m_settings);
+              "orders", net::HTTPRequest::HTTP_GET, m_settings);
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -397,29 +402,86 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
         "tradeitems", net::HTTPRequest::HTTP_POST, m_settings,
         requestParams.str());
-    const auto &result = request.Send(m_session2, GetContext());
-    std::stringstream ss;
-    boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
-    GetTsLog().Debug(ss.str().c_str());
-    return 1;
+    const auto &result = request.Send(m_tradingSession, GetContext());
+#ifdef DEV_VER
+    {
+      std::stringstream ss;
+      boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
+      GetTsLog().Debug(ss.str().c_str());
+    }
+#endif
+
+    boost::optional<OrderId> orderId;
+    std::vector<TradeInfo> trades;
+    for (const auto &node : boost::get<1>(result)) {
+      const auto &item = node.second;
+      try {
+        const auto &type = item.get<std::string>("type");
+        if (boost::iequals(type, "trade")) {
+          trades.emplace_back(TradeInfo{
+              item.get<double>("price"),
+              item.get<double>("fromamount") - item.get<double>("toamount")});
+        } else if (boost::iequals(type, "created")) {
+          Assert(!orderId);
+          orderId = item.get<OrderId>("orderid");
+          GetContext().GetTimer().Schedule(
+              [this, orderId, qty] {
+                OnOrderStatusUpdate(*orderId,
+                                    boost::lexical_cast<std::string>(*orderId),
+                                    ORDER_STATUS_SUBMITTED, qty);
+              },
+              m_timerScope);
+        }
+      } catch (const std::exception &ex) {
+        boost::format error("Failed to read order transaction reply: \"%1%\"");
+        error % ex.what();
+        throw TradingSystem::Error(error.str().c_str());
+      }
+    }
+
+    if (!orderId) {
+      throw TradingSystem::Error("Exchange answer is empty");
+    }
+
+    if (!trades.empty()) {
+      GetContext().GetTimer().Schedule(
+          boost::bind(&NovaexchangeExchange::OnTradesInfo, this, *orderId, qty,
+                      trades),
+          m_timerScope);
+    }
+    return *orderId;
   }
 
   virtual void SendCancelOrder(const OrderId &) override {
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 
+  void OnTradesInfo(const OrderId &orderId,
+                    Qty &remainingQty,
+                    std::vector<TradeInfo> &trades) {
+    const auto &tradingSystemId = boost::lexical_cast<std::string>(orderId);
+    for (auto &trade : trades) {
+      remainingQty -= trade.qty;
+      OnOrderStatusUpdate(orderId, tradingSystemId,
+                          remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
+                                           : ORDER_STATUS_FILLED,
+                          remainingQty, std::move(trade));
+    }
+  }
+
  private:
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_session;
-  net::HTTPSClientSession m_session2;
+  net::HTTPSClientSession m_marketDataSession;
+  net::HTTPSClientSession m_tradingSession;
   NovaexchangeRequest m_getBalancesRequest;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
+  trdk::Timer::Scope m_timerScope;
 };
 }
 

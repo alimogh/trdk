@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/16 21:40:46
+ *   Created: 2017/10/16 21:41:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,21 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "OrderListView.hpp"
 
-namespace trdk {
-namespace FrontEnd {
-namespace Terminal {
+using namespace trdk::FrontEnd::Lib;
 
-class OrderListView : public QTableView {
-  Q_OBJECT
-
- public:
-  typedef QTableView Base;
-
- public:
-  explicit OrderListView(QWidget *parent);
-};
-}
-}
+OrderListView::OrderListView(QWidget *parent) : Base(parent) {
+  setWindowTitle(tr("Order List"));
 }
