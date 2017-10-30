@@ -35,40 +35,31 @@ class DropCopy : public trdk::DropCopy {
                                             const boost::uuids::uuid &type,
                                             const boost::uuids::uuid &id));
 
-  virtual void CopyOrder(const boost::uuids::uuid &,
-                         const std::string *,
-                         const boost::posix_time::ptime &,
-                         const boost::posix_time::ptime *,
-                         const trdk::OrderStatus &,
-                         const boost::uuids::uuid &,
-                         const int64_t *,
-                         const trdk::Security &,
-                         const trdk::TradingSystem &,
-                         const trdk::OrderSide &,
-                         const trdk::Qty &,
-                         const trdk::Price *,
-                         const trdk::TimeInForce *,
-                         const trdk::Lib::Currency &,
-                         const trdk::Qty *,
-                         const trdk::Qty &,
-                         const trdk::Price *,
-                         const trdk::Qty *,
-                         const trdk::Price *,
-                         const trdk::Qty *) {
-    //! @todo Make wrapper to struct to test this method.
-    throw std::exception("Method is not mocked");
-  }
+  MOCK_METHOD9(CopySubmittedOrder,
+               void(const trdk::OrderId &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Security &,
+                    const trdk::Lib::Currency &,
+                    const trdk::TradingSystem &,
+                    const trdk::OrderSide &,
+                    const trdk::Qty &,
+                    const boost::optional<trdk::Price> &,
+                    const trdk::TimeInForce &));
+  MOCK_METHOD6(CopyOrderStatus,
+               void(const trdk::OrderId &,
+                    const std::string &,
+                    const trdk::TradingSystem &,
+                    const boost::posix_time::ptime &,
+                    const trdk::OrderStatus &,
+                    const trdk::Qty &));
 
-  MOCK_METHOD9(CopyTrade,
+  MOCK_METHOD6(CopyTrade,
                void(const boost::posix_time::ptime &,
-                    const std::string &tradingSystemTradeId,
-                    const boost::uuids::uuid &orderId,
-                    const trdk::Price &price,
-                    const trdk::Qty &qty,
-                    const trdk::Price &bestBidPrice,
-                    const trdk::Qty &bestBidQty,
-                    const trdk::Price &bestAskPrice,
-                    const trdk::Qty &bestAskQty));
+                    const boost::optional<std::string> &,
+                    const trdk::OrderId &,
+                    const trdk::TradingSystem &,
+                    const trdk::Price &,
+                    const trdk::Qty &));
 
   MOCK_METHOD3(ReportOperationStart,
                void(const trdk::Strategy &,

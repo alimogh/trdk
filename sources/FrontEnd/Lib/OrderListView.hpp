@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/15 22:29:44
+ *   Created: 2017/10/16 21:40:46
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,15 +10,21 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
+#include "Api.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
+namespace trdk {
+namespace FrontEnd {
+namespace Lib {
 
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-#include <boost/multi_index_container.hpp>
+class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
+  Q_OBJECT
+
+ public:
+  typedef QTableView Base;
+
+ public:
+  explicit OrderListView(QWidget *parent);
+};
+}
+}
+}

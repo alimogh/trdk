@@ -60,47 +60,14 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const trdk::Lib::Currency &,
-                                        const trdk::Qty &,
-                                        const trdk::OrderParams &) override;
-  virtual OrderId SendSell(trdk::Security &,
-                           const trdk::Lib::Currency &,
-                           const trdk::Qty &,
-                           const trdk::Price &,
-                           const trdk::OrderParams &) override;
-  virtual OrderId SendSellImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &) override;
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::OrderParams &) override;
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const trdk::Lib::Currency &,
-                                       const trdk::Qty &,
-                                       const trdk::OrderParams &) override;
-  virtual OrderId SendBuy(trdk::Security &,
-                          const trdk::Lib::Currency &,
-                          const trdk::Qty &,
-                          const trdk::Price &,
-                          const trdk::OrderParams &) override;
-  virtual OrderId SendBuyImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &) override;
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::OrderParams &) override;
+  virtual OrderId SendOrderTransaction(
+      trdk::Security &security,
+      const trdk::Lib::Currency &currency,
+      const trdk::Qty &qty,
+      const boost::optional<trdk::Price> &price,
+      const trdk::OrderParams &params,
+      const trdk::OrderSide &side,
+      const trdk::TimeInForce &tif) override;
 
   virtual void SendCancelOrder(const OrderId &) override;
 

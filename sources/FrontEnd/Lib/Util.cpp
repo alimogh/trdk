@@ -59,6 +59,12 @@ QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
   return QString::number(source, 'f', precision);
 }
 
+QString lib::ConvertPriceToText(const boost::optional<Price> &source,
+                                uint8_t precision) {
+  return ConvertPriceToText(
+      source ? *source : std::numeric_limits<double>::quiet_NaN(), precision);
+}
+
 QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
   if (source.IsNan()) {
     return "---";

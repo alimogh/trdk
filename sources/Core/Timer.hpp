@@ -10,11 +10,13 @@
 
 #pragma once
 
+#include "Api.h"
+
 namespace trdk {
 
-class Timer {
+class TRDK_CORE_API Timer {
  public:
-  class Scope {
+  class TRDK_CORE_API Scope {
     friend class trdk::Timer;
 
    public:
@@ -53,7 +55,7 @@ class Timer {
 
  public:
   explicit Timer(const trdk::Context &);
-  Timer(Timer &&) = default;
+  Timer(Timer &&);
   ~Timer();
 
  private:
@@ -64,6 +66,7 @@ class Timer {
   void Schedule(const boost::posix_time::time_duration &,
                 const boost::function<void()> &,
                 Scope &);
+  void Schedule(const boost::function<void()> &, Scope &);
 
  private:
   class Implementation;
