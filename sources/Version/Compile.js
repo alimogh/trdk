@@ -28,7 +28,6 @@ var requiredModules = [
 	, 'FrontEnd'
 	, 'FixProtocol'
 	, 'Rest'
-	, 'TestStrategy'
 	, 'ArbitrationAdvisor'
 ]
 
