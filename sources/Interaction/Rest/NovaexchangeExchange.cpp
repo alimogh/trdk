@@ -9,9 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Timer.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -120,20 +117,14 @@ class NovaexchangeRequest : public Request {
   explicit NovaexchangeRequest(const std::string &uri,
                                const std::string &message,
                                const std::string &method,
-                               const Settings &settings,
                                const std::string &uriParams = std::string())
-      : Base(uri,
-             message,
-             method,
-             settings.apiKey,
-             settings.apiSecret,
-             uriParams) {}
+      : Base(uri, message, method, uriParams) {}
 
   virtual ~NovaexchangeRequest() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
@@ -178,16 +169,68 @@ class NovaexchangeRequest : public Request {
   }
 };
 
-class OpenOrdersNovaexchangeRequest : public NovaexchangeRequest {
+class NovaexchangePublicRequest : public NovaexchangeRequest {
  public:
   typedef NovaexchangeRequest Base;
 
  public:
+  explicit NovaexchangePublicRequest(
+      const std::string &uri,
+      const std::string &message,
+      const std::string &uriParams = std::string())
+      : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
+
+  virtual ~NovaexchangePublicRequest() override = default;
+};
+
+class NovaexchangePrivateRequest : public NovaexchangeRequest {
+ public:
+  typedef NovaexchangeRequest Base;
+
+ public:
+  explicit NovaexchangePrivateRequest(
+      const std::string &uri,
+      const std::string &message,
+      const Settings &settings,
+      const std::string &uriParams = std::string())
+      : Base(uri,
+             message,
+             net::HTTPRequest::HTTP_POST,
+             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+        m_apiSecret(settings.apiSecret) {}
+
+  virtual ~NovaexchangePrivateRequest() override = default;
+
+ protected:
+  virtual void CreateBody(const net::HTTPClientSession &session,
+                          std::string &result) const override {
+    if (!result.empty()) {
+      result += '&';
+    }
+    result += "signature=";
+    {
+      using namespace trdk::Lib::Crypto;
+      const auto &digest =
+          CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
+                                   session.getHost() + GetRequest().getURI(),
+                               m_apiSecret);
+      result += Base64Coder(false).Encode(&digest[0], digest.size());
+    }
+    Base::CreateBody(session, result);
+  }
+
+ private:
+  const std::string m_apiSecret;
+};
+
+class OpenOrdersNovaexchangeRequest : public NovaexchangePublicRequest {
+ public:
+  typedef NovaexchangePublicRequest Base;
+
+ public:
   explicit OpenOrdersNovaexchangeRequest(const std::string &uri,
-                                         const std::string &message,
-                                         const std::string &method,
-                                         const Settings &settings)
-      : Base(uri, message, method, settings) {}
+                                         const std::string &message)
+      : Base(uri, message) {}
 
   virtual ~OpenOrdersNovaexchangeRequest() override = default;
 
@@ -209,7 +252,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<NovaexchangeRequest> request;
+    boost::shared_ptr<NovaexchangePublicRequest> request;
     bool isSubscribed;
   };
 
@@ -227,10 +270,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_getBalancesRequest("/remote/v2/private/getbalances/",
-                             "balances",
-                             net::HTTPRequest::HTTP_POST,
-                             m_settings) {
+        m_getBalancesRequest(
+            "/remote/v2/private/getbalances/", "balances", m_settings) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -355,7 +396,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           boost::make_shared<OpenOrdersNovaexchangeRequest>(
               "/remote/v2/market/openorders/" +
                   NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
-              "orders", net::HTTPRequest::HTTP_GET, m_settings);
+              "orders");
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -394,14 +435,13 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     }
 
     boost::format requestParams(
-        "tradetype=BUY&tradeamount=%1%&tradeprice=%2%&tradebase=0");
+        "tradetype=BUY&tradeamount=%1$.8f&tradeprice=%2$.8f&tradebase=0");
     requestParams % qty  // 1
-        % price;         // 2
-    NovaexchangeRequest request(
+        % *price;        // 2
+    NovaexchangePrivateRequest request(
         "/remote/v2/private/trade/" +
             NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
-        "tradeitems", net::HTTPRequest::HTTP_POST, m_settings,
-        requestParams.str());
+        "tradeitems", m_settings, requestParams.str());
     const auto &result = request.Send(m_tradingSession, GetContext());
 #ifdef DEV_VER
     {
@@ -475,7 +515,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   bool m_isConnected;
   net::HTTPSClientSession m_marketDataSession;
   net::HTTPSClientSession m_tradingSession;
-  NovaexchangeRequest m_getBalancesRequest;
+  NovaexchangePrivateRequest m_getBalancesRequest;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;

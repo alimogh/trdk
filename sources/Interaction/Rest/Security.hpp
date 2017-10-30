@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Core/Security.hpp"
-
 namespace trdk {
 namespace Interaction {
 namespace Rest {

@@ -11,8 +11,6 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -98,14 +96,14 @@ class GdaxRequest : public Request {
   explicit GdaxRequest(const std::string &uri,
                        const std::string &message,
                        const std::string &method,
-                       const Settings &settings)
-      : Base(uri, message, method, settings.apiKey, settings.apiSecret) {}
+                       const Settings &)
+      : Base(uri, message, method, std::string()) {}
 
   virtual ~GdaxRequest() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     const auto &result = Base::Send(session, context);
     return boost::make_tuple(std::move(boost::get<0>(result)),
                              ExtractContent(boost::get<1>(result)),

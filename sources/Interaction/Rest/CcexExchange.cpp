@@ -11,8 +11,6 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -69,21 +67,14 @@ class CcexRequest : public Request {
  public:
   explicit CcexRequest(const std::string &uri,
                        const std::string &message,
-                       const std::string &method,
-                       const Settings &settings,
                        const std::string &uriParams = std::string())
-      : Base(uri,
-             message,
-             method,
-             settings.apiKey,
-             settings.apiSecret,
-             uriParams) {}
+      : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
 
   virtual ~CcexRequest() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
 
@@ -122,15 +113,58 @@ class CcexRequest : public Request {
   }
 };
 
+class CcexPublicRequest : public CcexRequest {
+ public:
+  typedef CcexRequest Base;
+
+ public:
+  explicit CcexPublicRequest(const std::string &message,
+                             const std::string &uriParams = std::string())
+      : Base("/t/api_pub.html", message, uriParams) {}
+
+  virtual ~CcexPublicRequest() override = default;
+};
+
+class CcexPrivateRequest : public CcexRequest {
+ public:
+  typedef CcexRequest Base;
+
+ public:
+  explicit CcexPrivateRequest(const std::string &message,
+                              const Settings &settings,
+                              const std::string &uriParams = std::string())
+      : Base("/t/api.html",
+             message,
+             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+        m_apiSecret(settings.apiSecret) {}
+
+  virtual ~CcexPrivateRequest() override = default;
+
+ protected:
+  virtual void PreprareRequest(const net::HTTPClientSession &session,
+                               net::HTTPRequest &request) const override {
+    using namespace trdk::Lib::Crypto;
+    const auto &digest =
+        CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
+                                 session.getHost() + GetRequest().getURI(),
+                             m_apiSecret);
+    request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+  }
+
+ private:
+  const std::string m_apiSecret;
+};
+
 std::string NormilizeSymbol(const std::string &source) {
-  return boost::replace_first_copy(source, "_", "-");
+  auto resutl = boost::replace_first_copy(source, "_", "-");
+  boost::to_lower(resutl);
+  return resutl;
 }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-
 class CcexExchange : public TradingSystem, public MarketDataSource {
  private:
   typedef boost::mutex SecuritiesMutex;
@@ -154,8 +188,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_session("c-cex.com") {
-    m_session.setKeepAlive(true);
+        m_marketDataSession("c-cex.com"),
+        m_tradingSession(m_marketDataSession.getHost()) {
+    m_marketDataSession.setKeepAlive(true);
+    m_tradingSession.setKeepAlive(true);
   }
 
   virtual ~CcexExchange() override = default;
@@ -209,7 +245,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             }
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
-            const auto &response = request.Send(m_session, GetContext());
+            const auto &response =
+                request.Send(m_marketDataSession, GetContext());
             const auto &time = boost::get<0>(response);
             const auto &delayMeasurement = boost::get<2>(response);
             try {
@@ -268,9 +305,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
     {
-      const auto request = boost::make_shared<CcexRequest>(
-          "/t/api_pub.html", "orderbook", net::HTTPRequest::HTTP_GET,
-          m_settings,
+      const auto request = boost::make_shared<CcexPublicRequest>(
+          "orderbook",
           "a=getorderbook&market=" +
               NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "&type=both&depth=1");
@@ -307,7 +343,30 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
-    throw MethodIsNotImplementedException("Methods is not supported");
+    boost::format requestParams("a=%1%&market=%2%&quantity=%3$.8f&rate=%4$.8f");
+    requestParams % (side == ORDER_SIDE_SELL ? "selllimit" : "buylimit")  // 1
+        % NormilizeSymbol(security.GetSymbol().GetSymbol())               // 2
+        % qty                                                             // 3
+        % *price;                                                         // 4
+    GetTsLog().Debug(requestParams.str().c_str());
+    CcexPrivateRequest request("order", m_settings, requestParams.str());
+    const auto &result = request.Send(m_tradingSession, GetContext());
+#ifdef DEV_VER
+    {
+      std::stringstream ss;
+      boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
+      GetTsLog().Debug(ss.str().c_str());
+    }
+#endif
+    try {
+      return boost::get<1>(result).get<OrderId>("uuid");
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to read order transaction reply: \"%1%\"");
+      error % ex.what();
+      throw TradingSystem::Error(error.str().c_str());
+    }
+
+    return 0;
   }
 
   virtual void SendCancelOrder(const OrderId &) override {
@@ -318,7 +377,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_session;
+  net::HTTPSClientSession m_marketDataSession;
+  net::HTTPSClientSession m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;

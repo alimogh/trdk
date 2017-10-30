@@ -248,6 +248,7 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
+    <ClCompile Include="Crypto.cpp" />
     <ClCompile Include="Currency.cpp" />
     <ClCompile Include="ExpirationCalendar.cpp" />
     <ClCompile Include="ExpirationCalendarUTest.cpp">

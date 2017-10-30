@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Request.hpp"
-#include "Core/Context.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -21,27 +20,45 @@ namespace net = pc::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
+void Request::AppendUriParams(const std::string &newParams,
+                              std::string &result) {
+  if (newParams.empty()) {
+    return;
+  }
+  if (!result.empty()) {
+    result += '&';
+  }
+  result += newParams;
+}
+std::string Request::AppendUriParams(const std::string &newParams,
+                                     const std::string &result) {
+  if (newParams.empty()) {
+    return result;
+  }
+  std::string resultCopy = result;
+  AppendUriParams(newParams, resultCopy);
+  return resultCopy;
+}
+
 Request::Request(const std::string &uri,
                  const std::string &name,
                  const std::string &method,
-                 const std::string &apiKey,
-                 const std::string &apiSecret,
                  const std::string &uriParams,
                  const std::string &version)
-    : m_apiKey(apiKey),
-      m_apiSecret(apiSecret),
-      m_uri(uri),
+    : m_uri(uri),
       m_uriParams(uriParams),
       m_request(boost::make_unique<net::HTTPRequest>(method, m_uri, version)),
       m_name(name) {
-  m_request->set("User-Agent", TRDK_BUILD_IDENTITY);
+  m_request->set("User-Agent", TRDK_NAME " " TRDK_BUILD_IDENTITY);
+  m_request->set("Connection", "keep-alive");
+  m_request->set("DNT", "1");
   if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
     m_request->setContentType("application/x-www-form-urlencoded");
   }
 }
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
-Request::Send(net::HTTPSClientSession &session, const Context &context) {
+Request::Send(net::HTTPClientSession &session, const Context &context) {
   std::string uri = m_uri + "?nonce=" +
                     pt::to_iso_string(pt::microsec_clock::universal_time());
   if (!m_uriParams.empty() &&
@@ -50,7 +67,10 @@ Request::Send(net::HTTPSClientSession &session, const Context &context) {
   }
   m_request->setURI(std::move(uri));
 
-  const auto &body = CreateBody();
+  PreprareRequest(session, *m_request);
+
+  std::string body;
+  CreateBody(session, body);
   if (!body.empty()) {
     m_request->setContentLength(body.size());
     session.sendRequest(*m_request) << body;
@@ -100,24 +120,10 @@ Request::Send(net::HTTPSClientSession &session, const Context &context) {
   }
 }
 
-std::string Request::CreateBody() const {
+void Request::CreateBody(const net::HTTPClientSession &,
+                         std::string &result) const {
   if (m_request->getMethod() != net::HTTPRequest::HTTP_POST) {
-    return std::string();
+    return;
   }
-  std::ostringstream result;
-  result << "apikey=" << m_apiKey << "&signature=";
-  {
-    const auto &uri =
-        std::string("https://novaexchange.com") + m_request->getURI();
-    boost::array<unsigned char, EVP_MAX_MD_SIZE> buffer;
-    unsigned char *digest = HMAC(
-        EVP_sha512(), m_apiSecret.c_str(), static_cast<int>(m_apiSecret.size()),
-        reinterpret_cast<const unsigned char *>(uri.c_str()), uri.size(),
-        &buffer[0], nullptr);
-    Base64Coder(false).Encode(digest, SHA512_DIGEST_LENGTH, result);
-  }
-  if (!m_uriParams.empty()) {
-    result << '&' << m_uriParams;
-  }
-  return result.str();
+  AppendUriParams(m_uriParams, result);
 }
