@@ -13,7 +13,7 @@
 // Customization:
 
 var branch = "WilliamCarry"
-var productName	= "Trading Robot Development Kit"
+var productName = "Multibroker"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
