@@ -30,6 +30,8 @@ class Base64Coder : private boost::noncopyable {
 std::string EncodeToHex(const unsigned char *cource, size_t sourceLen);
 
 boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcHmacSha512Digest(
+    const unsigned char *source, size_t sourceLen, const std::string &key);
+boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcHmacSha512Digest(
     const std::string &source, const std::string &key);
 }
 }

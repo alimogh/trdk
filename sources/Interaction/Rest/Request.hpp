@@ -40,6 +40,7 @@ class Request {
                                      const std::string &result);
 
   const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
+  const std::string &GetUriParams() const { return m_uriParams; }
   virtual void CreateBody(const Poco::Net::HTTPClientSession &,
                           std::string &result) const;
   virtual void PreprareRequest(const Poco::Net::HTTPClientSession &,

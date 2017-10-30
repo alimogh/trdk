@@ -196,7 +196,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 

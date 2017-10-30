@@ -13,6 +13,7 @@
 #include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -109,18 +110,18 @@ std::string NormilizeSymbol(const std::string &source) {
 
 namespace {
 
-class NovaexchangeRequest : public Request {
+class Request : public Rest::Request {
  public:
-  typedef Request Base;
+  typedef Rest::Request Base;
 
  public:
-  explicit NovaexchangeRequest(const std::string &uri,
-                               const std::string &message,
-                               const std::string &method,
-                               const std::string &uriParams = std::string())
+  explicit Request(const std::string &uri,
+                   const std::string &message,
+                   const std::string &method,
+                   const std::string &uriParams = std::string())
       : Base(uri, message, method, uriParams) {}
 
-  virtual ~NovaexchangeRequest() override = default;
+  virtual ~Request() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
@@ -134,7 +135,8 @@ class NovaexchangeRequest : public Request {
   }
 
  protected:
-  virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) {
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) const {
     const auto &result = responseTree.get_child_optional(GetName());
     if (!result) {
       boost::format error(
@@ -169,37 +171,33 @@ class NovaexchangeRequest : public Request {
   }
 };
 
-class NovaexchangePublicRequest : public NovaexchangeRequest {
+class PublicRequest : public Request {
  public:
-  typedef NovaexchangeRequest Base;
+  typedef Request Base;
 
  public:
-  explicit NovaexchangePublicRequest(
-      const std::string &uri,
-      const std::string &message,
-      const std::string &uriParams = std::string())
+  explicit PublicRequest(const std::string &uri,
+                         const std::string &message,
+                         const std::string &uriParams = std::string())
       : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
-
-  virtual ~NovaexchangePublicRequest() override = default;
 };
 
-class NovaexchangePrivateRequest : public NovaexchangeRequest {
+class PrivateRequest : public Request {
  public:
-  typedef NovaexchangeRequest Base;
+  typedef Request Base;
 
  public:
-  explicit NovaexchangePrivateRequest(
-      const std::string &uri,
-      const std::string &message,
-      const Settings &settings,
-      const std::string &uriParams = std::string())
+  explicit PrivateRequest(const std::string &uri,
+                          const std::string &message,
+                          const Settings &settings,
+                          const std::string &uriParams = std::string())
       : Base(uri,
              message,
              net::HTTPRequest::HTTP_POST,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
         m_apiSecret(settings.apiSecret) {}
 
-  virtual ~NovaexchangePrivateRequest() override = default;
+  virtual ~PrivateRequest() override = default;
 
  protected:
   virtual void CreateBody(const net::HTTPClientSession &session,
@@ -223,20 +221,19 @@ class NovaexchangePrivateRequest : public NovaexchangeRequest {
   const std::string m_apiSecret;
 };
 
-class OpenOrdersNovaexchangeRequest : public NovaexchangePublicRequest {
+class OpenOrdersRequest : public PublicRequest {
  public:
-  typedef NovaexchangePublicRequest Base;
+  typedef PublicRequest Base;
 
  public:
-  explicit OpenOrdersNovaexchangeRequest(const std::string &uri,
-                                         const std::string &message)
+  explicit OpenOrdersRequest(const std::string &uri, const std::string &message)
       : Base(uri, message) {}
 
-  virtual ~OpenOrdersNovaexchangeRequest() override = default;
+  virtual ~OpenOrdersRequest() override = default;
 
  protected:
   virtual const ptr::ptree &ExtractContent(
-      const ptr::ptree &responseTree) override {
+      const ptr::ptree &responseTree) const override {
     return responseTree;
   }
 };
@@ -252,7 +249,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<NovaexchangePublicRequest> request;
+    boost::shared_ptr<Request> request;
     bool isSubscribed;
   };
 
@@ -269,9 +266,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
-        m_tradingSession(m_marketDataSession.getHost()),
-        m_getBalancesRequest(
-            "/remote/v2/private/getbalances/", "balances", m_settings) {
+        m_tradingSession(m_marketDataSession.getHost()) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -298,7 +293,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -348,9 +343,11 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    PrivateRequest request("/remote/v2/private/getbalances/", "balances",
+                           m_settings);
     try {
-      const auto &response =
-          m_getBalancesRequest.Send(m_marketDataSession, GetContext());
+      const auto &response = request.Send(m_marketDataSession, GetContext());
+      MakeServerAnswerDebugDump(boost::get<1>(response), *this);
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
@@ -392,11 +389,10 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
     {
-      const auto marketDataRequest =
-          boost::make_shared<OpenOrdersNovaexchangeRequest>(
-              "/remote/v2/market/openorders/" +
-                  NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
-              "orders");
+      const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
+          "/remote/v2/market/openorders/" +
+              NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
+          "orders");
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -438,18 +434,12 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         "tradetype=BUY&tradeamount=%1$.8f&tradeprice=%2$.8f&tradebase=0");
     requestParams % qty  // 1
         % *price;        // 2
-    NovaexchangePrivateRequest request(
+    PrivateRequest request(
         "/remote/v2/private/trade/" +
             NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
         "tradeitems", m_settings, requestParams.str());
     const auto &result = request.Send(m_tradingSession, GetContext());
-#ifdef DEV_VER
-    {
-      std::stringstream ss;
-      boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
-      GetTsLog().Debug(ss.str().c_str());
-    }
-#endif
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
     boost::optional<OrderId> orderId;
     std::vector<TradeInfo> trades;
@@ -515,7 +505,6 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   bool m_isConnected;
   net::HTTPSClientSession m_marketDataSession;
   net::HTTPSClientSession m_tradingSession;
-  NovaexchangePrivateRequest m_getBalancesRequest;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;

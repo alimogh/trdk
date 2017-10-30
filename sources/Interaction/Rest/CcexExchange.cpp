@@ -15,6 +15,7 @@
 #include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -60,85 +61,90 @@ struct Settings {
 
 namespace {
 
-class CcexRequest : public Request {
+class Request : public Rest::Request {
  public:
-  typedef Request Base;
+  typedef Rest::Request Base;
 
  public:
-  explicit CcexRequest(const std::string &uri,
-                       const std::string &message,
-                       const std::string &uriParams = std::string())
+  explicit Request(const std::string &uri,
+                   const std::string &message,
+                   const std::string &uriParams = std::string())
       : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
 
-  virtual ~CcexRequest() override = default;
+  virtual ~Request() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
       net::HTTPClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
-    auto &responseTree = boost::get<1>(result);
+    const auto &responseTree = boost::get<1>(result);
 
-    const auto &status = responseTree.get_optional<std::string>("success");
-    if (!status || *status != "true") {
-      const auto &message = responseTree.get_optional<std::string>("message");
-      std::ostringstream error;
-      error << "The server returned an error in response to the request \""
-            << GetName() << "\" (" << GetRequest().getURI() << "): ";
-      if (message) {
-        error << "\"" << *message << "\"";
-      } else {
-        error << "Unknown error";
+    {
+      const auto &status = responseTree.get_optional<std::string>("success");
+      if (!status || *status != "true") {
+        const auto &message = responseTree.get_optional<std::string>("message");
+        std::ostringstream error;
+        error << "The server returned an error in response to the request \""
+              << GetName() << "\" (" << GetRequest().getURI() << "): ";
+        if (message) {
+          error << "\"" << *message << "\"";
+        } else {
+          error << "Unknown error";
+        }
+        error << " (status: ";
+        if (status) {
+          error << "\"" << *status << "\"";
+        } else {
+          error << "unknown";
+        }
+        error << ")";
+        throw Exception(error.str().c_str());
       }
-      error << " (status: ";
-      if (status) {
-        error << "\"" << *status << "\"";
-      } else {
-        error << "unknown";
-      }
-      error << ")";
-      throw Exception(error.str().c_str());
     }
 
-    const auto &contentTree = responseTree.get_child_optional("result");
-    if (!contentTree) {
+    return boost::make_tuple(std::move(boost::get<0>(result)),
+                             std::move(ExtractContent(responseTree)),
+                             std::move(boost::get<2>(result)));
+  }
+
+ protected:
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) const {
+    const auto &result = responseTree.get_child_optional("result");
+    if (!result) {
       boost::format error(
           "The server did not return response to the request \"%1%\"");
       error % GetName();
       throw Exception(error.str().c_str());
     }
-
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             std::move(*contentTree),
-                             std::move(boost::get<2>(result)));
+    return *result;
   }
 };
 
-class CcexPublicRequest : public CcexRequest {
+class PublicRequest : public Request {
  public:
-  typedef CcexRequest Base;
+  typedef Request Base;
 
  public:
-  explicit CcexPublicRequest(const std::string &message,
-                             const std::string &uriParams = std::string())
+  explicit PublicRequest(const std::string &message,
+                         const std::string &uriParams = std::string())
       : Base("/t/api_pub.html", message, uriParams) {}
-
-  virtual ~CcexPublicRequest() override = default;
 };
 
-class CcexPrivateRequest : public CcexRequest {
+class PrivateRequest : public Request {
  public:
-  typedef CcexRequest Base;
+  typedef Request Base;
 
  public:
-  explicit CcexPrivateRequest(const std::string &message,
-                              const Settings &settings,
-                              const std::string &uriParams = std::string())
+  explicit PrivateRequest(const std::string &message,
+                          const Settings &settings,
+                          const std::string &uriParams = std::string())
       : Base("/t/api.html",
              message,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
         m_apiSecret(settings.apiSecret) {}
 
-  virtual ~CcexPrivateRequest() override = default;
+  virtual ~PrivateRequest() override = default;
 
  protected:
   virtual void PreprareRequest(const net::HTTPClientSession &session,
@@ -156,9 +162,7 @@ class CcexPrivateRequest : public CcexRequest {
 };
 
 std::string NormilizeSymbol(const std::string &source) {
-  auto resutl = boost::replace_first_copy(source, "_", "-");
-  boost::to_lower(resutl);
-  return resutl;
+  return boost::replace_first_copy(source, "_", "-");
 }
 }
 
@@ -172,7 +176,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<CcexRequest> request;
+    boost::shared_ptr<Request> request;
     bool isSubscribed;
   };
 
@@ -216,7 +220,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -305,7 +309,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
     {
-      const auto request = boost::make_shared<CcexPublicRequest>(
+      const auto request = boost::make_shared<PublicRequest>(
           "orderbook",
           "a=getorderbook&market=" +
               NormilizeSymbol(result->GetSymbol().GetSymbol()) +
@@ -348,16 +352,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         % NormilizeSymbol(security.GetSymbol().GetSymbol())               // 2
         % qty                                                             // 3
         % *price;                                                         // 4
-    GetTsLog().Debug(requestParams.str().c_str());
-    CcexPrivateRequest request("order", m_settings, requestParams.str());
+    PrivateRequest request("order", m_settings, requestParams.str());
+
     const auto &result = request.Send(m_tradingSession, GetContext());
-#ifdef DEV_VER
-    {
-      std::stringstream ss;
-      boost::property_tree::json_parser::write_json(ss, boost::get<1>(result));
-      GetTsLog().Debug(ss.str().c_str());
-    }
-#endif
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+
     try {
       return boost::get<1>(result).get<OrderId>("uuid");
     } catch (const std::exception &ex) {
@@ -365,8 +364,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       error % ex.what();
       throw TradingSystem::Error(error.str().c_str());
     }
-
-    return 0;
   }
 
   virtual void SendCancelOrder(const OrderId &) override {
