@@ -13,7 +13,7 @@
 // Customization:
 
 var branch = "Brutus"
-var productName	= "Trading Robot Development Kit"
+var productName = "Brutus"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"

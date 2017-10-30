@@ -20,8 +20,8 @@
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN		"licensing"
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN_W	L"licensing"
 
-#define TRDK_NAME	"Trading Robot Development Kit"
-#define TRDK_NAME_W	L"Trading Robot Development Kit"
+#define TRDK_NAME	"Brutus"
+#define TRDK_NAME_W	L"Brutus"
 
 #define TRDK_COPYRIGHT		"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
 #define TRDK_COPYRIGHT_W	L"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
