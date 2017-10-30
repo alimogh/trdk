@@ -9,9 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Timer.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -125,15 +122,16 @@ class NovaexchangeRequest : public Request {
       : Base(uri,
              message,
              method,
-             settings.apiKey,
-             settings.apiSecret,
-             uriParams) {}
+             method == net::HTTPRequest::HTTP_POST
+                 ? AppendUriParams("apikey=" + settings.apiKey, uriParams)
+                 : uriParams),
+        m_apiSecret(settings.apiSecret) {}
 
   virtual ~NovaexchangeRequest() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
@@ -143,6 +141,25 @@ class NovaexchangeRequest : public Request {
   }
 
  protected:
+  virtual void CreateBody(const net::HTTPClientSession &session,
+                          std::string &result) const override {
+    if (GetRequest().getMethod() == net::HTTPRequest::HTTP_POST) {
+      if (!result.empty()) {
+        result += '&';
+      }
+      result += "signature=";
+      {
+        using namespace trdk::Lib::Crypto;
+        const auto &digest =
+            CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
+                                     session.getHost() + GetRequest().getURI(),
+                                 m_apiSecret);
+        result += Base64Coder(false).Encode(&digest[0], digest.size());
+      }
+    }
+    Base::CreateBody(session, result);
+  }
+
   virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) {
     const auto &result = responseTree.get_child_optional(GetName());
     if (!result) {
@@ -176,6 +193,9 @@ class NovaexchangeRequest : public Request {
       throw Exception(error.str().c_str());
     }
   }
+
+ private:
+  const std::string m_apiSecret;
 };
 
 class OpenOrdersNovaexchangeRequest : public NovaexchangeRequest {
@@ -394,9 +414,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     }
 
     boost::format requestParams(
-        "tradetype=BUY&tradeamount=%1%&tradeprice=%2%&tradebase=0");
+        "tradetype=BUY&tradeamount=%1$.8f&tradeprice=%2$.8f&tradebase=0");
     requestParams % qty  // 1
-        % price;         // 2
+        % *price;        // 2
     NovaexchangeRequest request(
         "/remote/v2/private/trade/" +
             NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",

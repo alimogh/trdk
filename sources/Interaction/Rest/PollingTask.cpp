@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "PollingTask.hpp"
-#include "Core/EventsLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

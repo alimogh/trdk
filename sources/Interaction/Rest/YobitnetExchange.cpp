@@ -9,8 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -29,6 +27,31 @@ namespace ptr = boost::property_tree;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+struct Settings {
+  std::string apiKey;
+  std::string apiSecret;
+  pt::time_duration pollingInterval;
+
+  explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
+      : apiKey(conf.ReadKey("api_key")),
+        apiSecret(conf.ReadKey("api_secret")),
+        pollingInterval(pt::milliseconds(
+            conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
+    Log(log);
+    Validate();
+  }
+
+  void Log(ModuleEventsLog &log) {
+    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+             apiKey,                                    // 1
+             apiSecret.empty() ? "not set" : "is set",  // 2
+             pollingInterval);                          // 3
+  }
+
+  void Validate() {}
+};
+
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
@@ -57,6 +80,27 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 }
 #pragma warning(pop)
 
+class YobitnetRequest : public Request {
+ public:
+  typedef Request Base;
+
+ public:
+  explicit YobitnetRequest(const std::string &uri,
+                           const std::string &name,
+                           const std::string &method,
+                           const Settings &settings,
+                           const std::string &uriParams = std::string())
+      : Base(uri, name, method, uriParams),
+        m_apiKey(settings.apiKey),
+        m_apiSecret(settings.apiSecret) {}
+
+  virtual ~YobitnetRequest() override = default;
+
+ private:
+  const std::string m_apiKey;
+  const std::string m_apiSecret;
+};
+
 std::string NormilizeSymbol(const std::string &source) {
   return boost::to_lower_copy(source);
 }
@@ -67,31 +111,6 @@ std::string NormilizeSymbol(const std::string &source) {
 namespace {
 
 class YobitnetExchange : public TradingSystem, public MarketDataSource {
- public:
-  struct Settings {
-    std::string apiKey;
-    std::string apiSecret;
-    pt::time_duration pollingInterval;
-
-    explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-        : apiKey(conf.ReadKey("api_key")),
-          apiSecret(conf.ReadKey("api_secret")),
-          pollingInterval(pt::milliseconds(
-              conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
-      Log(log);
-      Validate();
-    }
-
-    void Log(ModuleEventsLog &log) {
-      log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
-               apiKey,                                    // 1
-               apiSecret.empty() ? "not set" : "is set",  // 2
-               pollingInterval);                          // 3
-    }
-
-    void Validate() {}
-  };
-
  public:
   explicit YobitnetExchange(const App &,
                             const TradingMode &mode,
@@ -145,9 +164,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       uriSymbolsPath.emplace_back(security.first);
     }
     const auto &uri = "/api/3/depth/" + boost::join(uriSymbolsPath, "-");
-    const auto &depthRequest = boost::make_shared<Request>(
-        std::move(uri), "Depth", net::HTTPRequest::HTTP_GET, m_settings.apiKey,
-        m_settings.apiSecret, "limit=1");
+    const auto &depthRequest = boost::make_shared<YobitnetRequest>(
+        std::move(uri), "Depth", net::HTTPRequest::HTTP_GET, m_settings,
+        "limit=1");
     m_pollingTask = boost::make_unique<PollingTask>(
         [this, depthRequest]() {
           const auto &response = depthRequest->Send(m_session, GetContext());
