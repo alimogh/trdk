@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/16 21:40:46
+ *   Created: 2017/11/01 22:42:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,32 +10,14 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 namespace Lib {
 
-class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
-  Q_OBJECT
-
- public:
-  typedef QTableView Base;
-
- public:
-  explicit OrderListView(Engine &, QWidget *parent);
-
- public slots:
-  void ShowContextMenu(const QPoint &);
-
- private:
-  void CancelSelectedOrders();
-  bool CancelOrder(const QModelIndex &);
-
- private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+enum ItemDataRole {
+  ITEM_DATA_ROLE_ITEM_ID = Qt::UserRole,
+  ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX,
+  ITEM_DATA_ROLE_TRADING_MODE,
 };
 }
 }

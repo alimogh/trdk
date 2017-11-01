@@ -22,3 +22,5 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
+
+#include "Types.hpp"

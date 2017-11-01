@@ -299,6 +299,12 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
       }
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;
+    case ITEM_DATA_ROLE_ITEM_ID:
+      return order.id;
+    case ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX:
+      return order.tradingSystem->GetIndex();
+    case ITEM_DATA_ROLE_TRADING_MODE:
+      return order.tradingSystem->GetMode();
   }
 
   return QVariant();
