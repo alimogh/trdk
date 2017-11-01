@@ -19,7 +19,9 @@ using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
 MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
-    : QMainWindow(parent), m_engine(std::move(engine)), m_orderList(this) {
+    : QMainWindow(parent),
+      m_engine(std::move(engine)),
+      m_orderList(*m_engine, this) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
@@ -40,7 +42,6 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
                  [this](bool pin) { PinToTop(*this, pin); }));
 
   m_orderList.showMaximized();
-  CreateNewArbitrageStrategy(boost::none);
 }
 
 MainWindow::~MainWindow() = default;

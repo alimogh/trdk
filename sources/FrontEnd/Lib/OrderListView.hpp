@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Api.h"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -23,7 +24,17 @@ class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
   typedef QTableView Base;
 
  public:
-  explicit OrderListView(QWidget *parent);
+  explicit OrderListView(Engine &, QWidget *parent);
+
+ public slots:
+  void ShowContextMenu(const QPoint &);
+
+ private:
+  void OnCancelRequest();
+
+ private:
+  Engine &m_engine;
+  QMenu m_contextMenu;
 };
 }
 }

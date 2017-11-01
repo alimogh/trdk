@@ -67,9 +67,12 @@ class Request : public Rest::Request {
 
  public:
   explicit Request(const std::string &uri,
-                   const std::string &message,
+                   const std::string &name,
                    const std::string &uriParams = std::string())
-      : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
+      : Base(uri,
+             name,
+             net::HTTPRequest::HTTP_GET,
+             AppendUriParams("a=" + name, uriParams)) {}
 
   virtual ~Request() override = default;
 
@@ -126,9 +129,9 @@ class PublicRequest : public Request {
   typedef Request Base;
 
  public:
-  explicit PublicRequest(const std::string &message,
+  explicit PublicRequest(const std::string &name,
                          const std::string &uriParams = std::string())
-      : Base("/t/api_pub.html", message, uriParams) {}
+      : Base("/t/api_pub.html", name, uriParams) {}
 };
 
 class PrivateRequest : public Request {
@@ -136,11 +139,11 @@ class PrivateRequest : public Request {
   typedef Request Base;
 
  public:
-  explicit PrivateRequest(const std::string &message,
+  explicit PrivateRequest(const std::string &name,
                           const Settings &settings,
                           const std::string &uriParams = std::string())
       : Base("/t/api.html",
-             message,
+             name,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
         m_apiSecret(settings.apiSecret) {}
 
@@ -288,6 +291,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    try {
+      RequestOpenedOrders();
+    } catch (const std::exception &ex) {
+      GetTsLog().Error(ex.what());
+    }
     m_isConnected = true;
   }
 
@@ -311,8 +319,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     {
       const auto request = boost::make_shared<PublicRequest>(
           "orderbook",
-          "a=getorderbook&market=" +
-              NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+          "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "&type=both&depth=1");
 
       const SecuritiesLock lock(m_securitiesMutex);
@@ -347,12 +354,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
-    boost::format requestParams("a=%1%&market=%2%&quantity=%3$.8f&rate=%4$.8f");
-    requestParams % (side == ORDER_SIDE_SELL ? "selllimit" : "buylimit")  // 1
-        % NormilizeSymbol(security.GetSymbol().GetSymbol())               // 2
-        % qty                                                             // 3
-        % *price;                                                         // 4
-    PrivateRequest request("order", m_settings, requestParams.str());
+    boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())   // 1
+        % qty                                                           // 2
+        % (side == ORDER_SIDE_SELL ? (*price * 1.1) : (*price * 0.9));  // 3
+    PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
+                           m_settings, requestParams.str());
 
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
@@ -368,6 +375,66 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   virtual void SendCancelOrder(const OrderId &) override {
     throw MethodIsNotImplementedException("Methods is not supported");
+  }
+
+ private:
+  void RequestOpenedOrders() {
+    PrivateRequest request("getopenorders", m_settings);
+    try {
+      const auto orders =
+          boost::get<1>(request.Send(m_tradingSession, GetContext()));
+      MakeServerAnswerDebugDump(orders, *this);
+      for (const auto &orderNode : orders) {
+        const auto &order = orderNode.second;
+
+        const auto &orderId = order.get<std::string>("OrderUuid");
+
+        OrderSide side;
+        boost::optional<Price> price;
+        const auto &type = order.get<std::string>("OrderType");
+        if (type == "LIMIT_SELL") {
+          side = ORDER_SIDE_SELL;
+          price = order.get<double>("Price");
+        } else if (type == "LIMIT_BUY") {
+          side = ORDER_SIDE_BUY;
+          price = order.get<double>("Price");
+        } else {
+          GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                           orderId);
+          continue;
+        }
+
+        const Qty qty = order.get<double>("Quantity");
+        const Qty remainingQty = order.get<double>("QuantityRemaining");
+
+        const auto &openTime =
+            pt::time_from_string(order.get<std::string>("Opened"));
+        const auto &closedField = order.get<std::string>("Closed");
+        pt::ptime updateTime;
+        OrderStatus status;
+        if (!boost::iequals(closedField, "null")) {
+          updateTime = pt::time_from_string(closedField);
+          status = remainingQty == qty ? ORDER_STATUS_CANCELLED
+                                       : ORDER_STATUS_FILLED;
+        } else {
+          updateTime = openTime;
+          status = order.get<bool>("CancelInitiated")
+                       ? ORDER_STATUS_CANCELLED
+                       : remainingQty == qty ? ORDER_STATUS_SUBMITTED
+                                             : ORDER_STATUS_FILLED_PARTIALLY;
+        }
+
+        UpdateOrder(boost::lexical_cast<OrderId>(orderId), orderId,
+                    order.get<std::string>("Exchange"), status, qty,
+                    remainingQty, price, side,
+                    order.get<bool>("ImmediateOrCancel") ? TIME_IN_FORCE_IOC
+                                                         : TIME_IN_FORCE_GTC,
+                    openTime, updateTime);
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
+      throw Exception("Failed to request order list");
+    }
   }
 
  private:

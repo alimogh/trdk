@@ -116,10 +116,10 @@ class Request : public Rest::Request {
 
  public:
   explicit Request(const std::string &uri,
-                   const std::string &message,
+                   const std::string &name,
                    const std::string &method,
                    const std::string &uriParams = std::string())
-      : Base(uri, message, method, uriParams) {}
+      : Base(uri, name, method, uriParams) {}
 
   virtual ~Request() override = default;
 
@@ -177,9 +177,9 @@ class PublicRequest : public Request {
 
  public:
   explicit PublicRequest(const std::string &uri,
-                         const std::string &message,
+                         const std::string &name,
                          const std::string &uriParams = std::string())
-      : Base(uri, message, net::HTTPRequest::HTTP_GET, uriParams) {}
+      : Base(uri, name, net::HTTPRequest::HTTP_GET, uriParams) {}
 };
 
 class PrivateRequest : public Request {
@@ -188,11 +188,11 @@ class PrivateRequest : public Request {
 
  public:
   explicit PrivateRequest(const std::string &uri,
-                          const std::string &message,
+                          const std::string &name,
                           const Settings &settings,
                           const std::string &uriParams = std::string())
       : Base(uri,
-             message,
+             name,
              net::HTTPRequest::HTTP_POST,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
         m_apiSecret(settings.apiSecret) {}
@@ -226,8 +226,7 @@ class OpenOrdersRequest : public PublicRequest {
   typedef PublicRequest Base;
 
  public:
-  explicit OpenOrdersRequest(const std::string &uri, const std::string &message)
-      : Base(uri, message) {}
+  explicit OpenOrdersRequest(const std::string &uri) : Base(uri, "orders") {}
 
   virtual ~OpenOrdersRequest() override = default;
 
@@ -364,9 +363,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             currency.second.get<double>("amount_lockbox"));    // 6
       }
     } catch (const std::exception &ex) {
-      boost::format error("Failed to read server balance list: \"%1%\"");
-      error % ex.what();
-      throw TradingSystem::ConnectError(error.str().c_str());
+      GetTsLog().Error("Failed to read server balance list: \"%1%\".",
+                       ex.what());
     }
     m_isConnected = true;
   }
@@ -391,8 +389,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     {
       const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
           "/remote/v2/market/openorders/" +
-              NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/",
-          "orders");
+          NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/");
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -482,8 +479,12 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     return *orderId;
   }
 
-  virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual void SendCancelOrder(const OrderId &orderId) override {
+    PrivateRequest request("/remote/v2/private/cancelorder/" +
+                               boost::lexical_cast<std::string>(orderId) + "/",
+                           "cancelorder", m_settings);
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
   }
 
   void OnTradesInfo(const OrderId &orderId,

@@ -89,6 +89,8 @@ OrderListModel::OrderListModel(Engine &engine, QWidget *parent)
                  &OrderListModel::OnOrderSubmitted, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
                  &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::Order, this,
+                 &OrderListModel::OnOrder, Qt::QueuedConnection));
 }
 
 OrderListModel::~OrderListModel() = default;
@@ -102,8 +104,7 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                                       const Qty &qty,
                                       const boost::optional<Price> &price,
                                       const TimeInForce &tif) {
-  const auto timeStr =
-      QString::fromStdString(pt::to_simple_string(time.time_of_day()));
+  const auto timeStr = QString::fromStdString(pt::to_simple_string(time));
   const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
   const Order order{id,
                     QString::number(id),
@@ -146,8 +147,7 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
   if (!tradingSystemId.empty()) {
     it->tradingSystemId = QString::fromStdString(tradingSystemId);
   }
-  it->lastTime =
-      QString::fromStdString(pt::to_simple_string(time.time_of_day()));
+  it->lastTime = QString::fromStdString(pt::to_simple_string(time));
   it->filledQty = ConvertQtyToText(it->qty - remainingQty,
                                    it->security->GetPricePrecision());
   it->remainingQty =
@@ -158,6 +158,66 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
         sequnce.cbegin(), m_pimpl->m_orders.project<BySequnce>(it)));
     dataChanged(createIndex(index, 0), createIndex(index, numberOfColumns - 1),
                 {Qt::DisplayRole});
+  }
+}
+
+void OrderListModel::OnOrder(const OrderId &id,
+                             const std::string &tradingSystemId,
+                             const TradingSystem *tradingSystem,
+                             const std::string &symbol,
+                             const OrderStatus &status,
+                             const Qty &qty,
+                             const Qty &remainingQty,
+                             const boost::optional<Price> &price,
+                             const OrderSide &side,
+                             const TimeInForce &tif,
+                             const pt::ptime &openTime,
+                             const pt::ptime &updateTime) {
+  uint8_t precision = 8;
+
+  auto &orders = m_pimpl->m_orders.get<ById>();
+  auto it = orders.find(boost::make_tuple(tradingSystem, id));
+  if (it == orders.cend()) {
+    const Order order{id,
+                      QString::number(id),
+                      QString::fromStdString(pt::to_simple_string(openTime)),
+                      nullptr,
+                      QString::fromStdString(symbol),
+                      QVariant(),
+                      tradingSystem,
+                      QString::fromStdString(tradingSystem->GetInstanceName()),
+                      QString(ConvertToPch(side)).toUpper(),
+                      qty,
+                      ConvertQtyToText(qty, precision),
+                      ConvertPriceToText(price, precision),
+                      QString(ConvertToPch(tif)).toUpper(),
+                      QString(ConvertToPch(status)),
+                      ConvertPriceToText(qty - remainingQty, precision),
+                      ConvertPriceToText(remainingQty, precision),
+                      QString::fromStdString(pt::to_simple_string(updateTime)),
+                      QString::fromStdString(tradingSystemId)};
+    {
+      const auto index = static_cast<int>(m_pimpl->m_orders.size());
+      beginInsertRows(QModelIndex(), index, index);
+      Verify(m_pimpl->m_orders.emplace(std::move(order)).second);
+      endInsertRows();
+    }
+  } else {
+    if (it->security) {
+      precision = it->security->GetPricePrecision();
+    }
+    it->status = QString(ConvertToPch(status));
+    it->filledQty = ConvertPriceToText(qty - remainingQty, precision);
+    it->remainingQty = ConvertPriceToText(remainingQty, precision);
+    it->lastTime = QString::fromStdString(pt::to_simple_string(updateTime));
+    it->tradingSystemId = QString::fromStdString(tradingSystemId);
+    {
+      const auto &sequnce = m_pimpl->m_orders.get<BySequnce>();
+      const auto index = static_cast<int>(std::distance(
+          sequnce.cbegin(), m_pimpl->m_orders.project<BySequnce>(it)));
+      dataChanged(createIndex(index, 0),
+                  createIndex(index, numberOfColumns - 1), {Qt::DisplayRole});
+    }
   }
 }
 

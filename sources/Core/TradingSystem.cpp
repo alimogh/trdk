@@ -74,6 +74,7 @@ typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Lock
 struct ActiveOrder {
   TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
   Qty remainingQty;
+  OrderStatus status;
   std::unique_ptr<trdk::Timer::Scope> timerScope;
 };
 }
@@ -235,8 +236,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void RegisterCallback(const OrderId &orderId,
                         const OrderStatusUpdateSlot &&callback,
                         const Qty &qty) {
-    auto result =
-        m_activeOrders.emplace(orderId, ActiveOrder{std::move(callback), qty});
+    auto result = m_activeOrders.emplace(
+        orderId, ActiveOrder{std::move(callback), qty, ORDER_STATUS_SENT});
     if (!result.second) {
       m_log.Error("Order ID %1% is not unique.", orderId);
       throw Error("Order ID %1% is not unique");
@@ -254,7 +255,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                            const boost::optional<Volume> &commission,
                            boost::optional<TradeInfo> &&tradeInfo) {
     const auto &time = m_context.GetCurrentTime();
-
+    const ActiveOrderLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -262,6 +263,37 @@ class TradingSystem::Implementation : private boost::noncopyable {
           orderId);
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
+    }
+    OnOrderStatusUpdate(orderId, tradingSystemOrderId, status, remainingQty,
+                        commission, std::move(tradeInfo), time, it);
+  }
+
+  void OnOrderStatusUpdate(
+      const OrderId &orderId,
+      const std::string &tradingSystemOrderId,
+      OrderStatus status,
+      const boost::optional<Qty> &remainingQty,
+      const boost::optional<Volume> &commission,
+      boost::optional<TradeInfo> &&tradeInfo,
+      const pt::ptime &time,
+      const boost::unordered_map<OrderId, ActiveOrder>::iterator &it) {
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
+    switch (status) {
+      case ORDER_STATUS_SENT:
+      case ORDER_STATUS_SUBMITTED:
+        switch (it->second.status) {
+          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_FILLED_PARTIALLY:
+            status = it->second.status;
+            break;
+          default:
+            it->second.status = status;
+            break;
+        }
+        break;
+      default:
+        it->second.status = status;
+        break;
     }
 
     if (remainingQty) {
@@ -531,6 +563,34 @@ void TradingSystem::OnOrderReject(const OrderId &orderId,
                                boost::none);
 }
 
+void TradingSystem::UpdateOrder(const OrderId &orderId,
+                                const std::string &tradingSystemOrderId,
+                                const std::string &symbol,
+                                const OrderStatus &status,
+                                const Qty &qty,
+                                const Qty &remainingQty,
+                                const boost::optional<Price> &price,
+                                const OrderSide &side,
+                                const TimeInForce &tif,
+                                const pt::ptime &openTime,
+                                const pt::ptime &updateTime) {
+  {
+    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    const auto &it = m_pimpl->m_activeOrders.find(orderId);
+    if (it != m_pimpl->m_activeOrders.cend()) {
+      m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                                   remainingQty, boost::none, boost::none,
+                                   updateTime, it);
+      return;
+    }
+  }
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopyOrder(orderId, tradingSystemOrderId, *this, symbol, status,
+                       qty, remainingQty, price, side, tif, openTime,
+                       updateTime);
+  });
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 LegacyTradingSystem::LegacyTradingSystem(const TradingMode &tradingMode,
@@ -597,7 +657,8 @@ OrderId LegacyTradingSystem::SendOrderTransaction(
     const TimeInForce &) {
   AssertFail(
       "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system uses own methods with "
+      "never should be called, as legacy trading system uses own methods "
+      "with "
       "callback argument.");
   throw Error("Internal error of legacy trading system implementation");
 }

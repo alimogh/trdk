@@ -246,6 +246,21 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                      const std::string &tradingSystemOrderId,
                      const std::string &&reason);
 
+  //! General order update notification.
+  /** May be used for any order.
+    */
+  void UpdateOrder(const trdk::OrderId &,
+                   const std::string &tradingSystemOrderId,
+                   const std::string &symbol,
+                   const trdk::OrderStatus &,
+                   const trdk::Qty &qty,
+                   const trdk::Qty &remainingQty,
+                   const boost::optional<trdk::Price> &,
+                   const trdk::OrderSide &,
+                   const trdk::TimeInForce &,
+                   const boost::posix_time::ptime &openTime,
+                   const boost::posix_time::ptime &updateTime);
+
   trdk::OrderId SendOrderTransactionAndEmulateIoc(
       trdk::Security &,
       const trdk::Lib::Currency &,

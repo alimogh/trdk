@@ -52,6 +52,18 @@ class DropCopy : public trdk::DropCopy {
                     const boost::posix_time::ptime &,
                     const trdk::OrderStatus &,
                     const trdk::Qty &));
+  virtual void CopyOrder(const trdk::OrderId &,
+                         const std::string &,
+                         const trdk::TradingSystem &,
+                         const std::string &,
+                         const trdk::OrderStatus &,
+                         const trdk::Qty &,
+                         const trdk::Qty &,
+                         const boost::optional<trdk::Price> &,
+                         const trdk::OrderSide &,
+                         const trdk::TimeInForce &,
+                         const boost::posix_time::ptime &,
+                         const boost::posix_time::ptime &) override {}
 
   MOCK_METHOD6(CopyTrade,
                void(const boost::posix_time::ptime &,

@@ -80,6 +80,22 @@ void lib::DropCopy::CopyOrderStatus(const OrderId &id,
                     remainingQty);
 }
 
+void lib::DropCopy::CopyOrder(const OrderId &id,
+                              const std::string &tradingSystemOrderId,
+                              const TradingSystem &tradingSystem,
+                              const std::string &symbol,
+                              const OrderStatus &status,
+                              const Qty &qty,
+                              const Qty &remainingQty,
+                              const boost::optional<Price> &price,
+                              const OrderSide &side,
+                              const TimeInForce &tif,
+                              const pt::ptime &openTime,
+                              const pt::ptime &updateTime) {
+  emit Order(id, tradingSystemOrderId, &tradingSystem, symbol, status, qty,
+             remainingQty, price, side, tif, openTime, updateTime);
+}
+
 void lib::DropCopy::CopyTrade(const pt::ptime &,
                               const boost::optional<std::string> &,
                               const OrderId &,

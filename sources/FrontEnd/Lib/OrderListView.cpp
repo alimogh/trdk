@@ -13,6 +13,19 @@
 
 using namespace trdk::FrontEnd::Lib;
 
-OrderListView::OrderListView(QWidget *parent) : Base(parent) {
+OrderListView::OrderListView(Engine &engine, QWidget *parent)
+    : Base(parent), m_engine(engine) {
   setWindowTitle(tr("Order List"));
+
+  m_contextMenu.addAction(tr("&Cancel"), this, &OrderListView::OnCancelRequest);
+
+  setContextMenuPolicy(Qt::CustomContextMenu);
+  Verify(connect(this, &OrderListView::customContextMenuRequested, this,
+                 &OrderListView::ShowContextMenu));
 }
+
+void OrderListView::ShowContextMenu(const QPoint &pos) {
+  m_contextMenu.exec(mapToGlobal(pos));
+}
+
+void OrderListView::OnCancelRequest() {}

@@ -23,6 +23,9 @@ class MainWindow : public QMainWindow {
   explicit MainWindow(std::unique_ptr<Lib::Engine> &&, QWidget *parent);
   ~MainWindow() override;
 
+ public:
+  Lib::Engine &GetEngine() { return *m_engine; }
+
  public slots:
   void CreateNewArbitrageStrategy(
       const boost::optional<QString> &defaultSymbol);

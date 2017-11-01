@@ -94,10 +94,10 @@ class GdaxRequest : public Request {
 
  public:
   explicit GdaxRequest(const std::string &uri,
-                       const std::string &message,
+                       const std::string &name,
                        const std::string &method,
                        const Settings &)
-      : Base(uri, message, method, std::string()) {}
+      : Base(uri, name, method, std::string()) {}
 
   virtual ~GdaxRequest() override = default;
 
@@ -120,10 +120,10 @@ class BookGdaxRequest : public GdaxRequest {
 
  public:
   explicit BookGdaxRequest(const std::string &uri,
-                           const std::string &message,
+                           const std::string &name,
                            const std::string &method,
                            const Settings &settings)
-      : Base(uri, message, method, settings) {}
+      : Base(uri, name, method, settings) {}
 
   virtual ~BookGdaxRequest() override = default;
 
