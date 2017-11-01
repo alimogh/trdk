@@ -149,7 +149,7 @@ class TradeRequest : public Request {
 
     {
       const auto &status = responseTree.get_optional<int>("success");
-      if (!status) {
+      if (!status || !*status) {
         std::ostringstream error;
         error << "The server returned an error in response to the request \""
               << GetName() << "\" (" << GetRequest().getURI() << "): ";
@@ -382,13 +382,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         }
       }
     } catch (const std::exception &ex) {
-      boost::format error(
-          "Failed to read general account information: \"%1%\" (Please check "
+      GetTsLog().Error(
+          "Failed to read general account information: \"%1%\". Please check "
           "YoBit.Net credential, initial nonce-value in settings and/or "
-          "nonce-value storage file %2%)");
-      error % ex.what()                   // 1
-          % m_settings.nonceStorageFile;  // 2
-      throw TradingSystem::ConnectError(error.str().c_str());
+          "nonce-value storage file %2%.",
+          ex.what(),                     // 1
+          m_settings.nonceStorageFile);  // 2
     }
 
     GetTsLog().Info(
