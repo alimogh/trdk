@@ -258,6 +258,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     std::vector<std::string> uriSymbolsPath;
     uriSymbolsPath.reserve(m_securities.size());
     for (const auto &security : m_securities) {
+      try {
+        RequestOpenedOrders(security.second->GetSymbol().GetSymbol());
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to request orders for \"%1%\": \"%2%\".",
+                         *security.second,  // 1
+                         ex.what());        // 2
+      }
       uriSymbolsPath.emplace_back(security.first);
     }
     const auto &depthRequest = boost::make_shared<PublicRequest>(
@@ -453,8 +460,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-        % *price                                                       // 3
-        % qty;                                                         // 4
+#ifdef _DEBUG
+        % (side == ORDER_SIDE_SELL ? *price * 1.1 : *price * 0.9)  // 3
+#else
+        % *price  // 3
+#endif
+        % qty;  // 4
     TradeRequest request("Trade", m_nextNonce++, m_settings,
                          requestParams.str());
     StoreNextNonce(m_nextNonce);
@@ -483,6 +494,46 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     m_nonceStorage.flush();
     AssertEq(sizeof(nextNonce), m_nonceStorage.tellp());
     m_nextNonce = nextNonce;
+  }
+
+  void RequestOpenedOrders(const std::string &symbol) {
+    TradeRequest request("ActiveOrders", m_nextNonce++, m_settings,
+                         "pair=" + NormilizeSymbol(symbol));
+    StoreNextNonce(m_nextNonce);
+    try {
+      const auto orders =
+          boost::get<1>(request.Send(m_tradingSession, GetContext()));
+      MakeServerAnswerDebugDump(orders, *this);
+      for (const auto &orderNode : orders) {
+        const auto &order = orderNode.second;
+        const std::string &orderId = orderNode.first;
+
+        const Qty qty = order.get<double>("amount");
+
+        OrderSide side;
+        const auto &type = order.get<std::string>("type");
+        if (type == "sell") {
+          side = ORDER_SIDE_SELL;
+        } else if (type == "buy") {
+          side = ORDER_SIDE_BUY;
+        } else {
+          GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                           orderId);
+          continue;
+        }
+
+        const auto &time =
+            pt::from_time_t(order.get<time_t>("timestamp_created"));
+
+        UpdateOrder(boost::lexical_cast<OrderId>(orderId), orderId, symbol,
+                    ORDER_STATUS_SUBMITTED, qty, qty,
+                    Price(order.get<double>("rate")), side, TIME_IN_FORCE_GTC,
+                    time, time);
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
+      throw Exception("Failed to request order list");
+    }
   }
 
  private:
