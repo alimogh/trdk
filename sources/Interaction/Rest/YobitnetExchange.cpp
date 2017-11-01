@@ -258,13 +258,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     std::vector<std::string> uriSymbolsPath;
     uriSymbolsPath.reserve(m_securities.size());
     for (const auto &security : m_securities) {
-      try {
-        RequestOpenedOrders(security.second->GetSymbol().GetSymbol());
-      } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to request orders for \"%1%\": \"%2%\".",
-                         *security.second,  // 1
-                         ex.what());        // 2
-      }
       uriSymbolsPath.emplace_back(security.first);
     }
     const auto &depthRequest = boost::make_shared<PublicRequest>(
@@ -307,7 +300,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
  protected:
-  virtual void CreateConnection(const IniSectionRef &) override {
+  virtual void CreateConnection(const IniSectionRef &conf) override {
     auto nextNonce = m_nextNonce;
     {
       std::ifstream nonceStorage(m_settings.nonceStorageFile.string().c_str());
@@ -406,6 +399,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         rights.empty() ? "none" : boost::join(rights, ", "),           // 3
         numberOfTransactions,                                          // 4
         numberOfActiveOrders);                                         // 5
+
+    for (const auto &symbol :
+         conf.GetBase().ReadList("Defaults", "symbol_list", ",", false)) {
+      RequestOpenedOrders(symbol);
+    }
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -469,7 +467,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     TradeRequest request("Trade", m_nextNonce++, m_settings,
                          requestParams.str());
     StoreNextNonce(m_nextNonce);
-
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
@@ -482,8 +479,14 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual void SendCancelOrder(const OrderId &orderId) override {
+    TradeRequest request(
+        "CancelOrder", m_nextNonce++, m_settings,
+        "order_id=" + boost::lexical_cast<std::string>(orderId));
+    StoreNextNonce(m_nextNonce);
+    const auto orders =
+        boost::get<1>(request.Send(m_tradingSession, GetContext()));
+    MakeServerAnswerDebugDump(orders, *this);
   }
 
  private:
@@ -531,8 +534,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                     time, time);
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-      throw Exception("Failed to request order list");
+      GetTsLog().Error("Failed to request order list for \"%1%\": \"%2%\".",
+                       symbol,      // 1
+                       ex.what());  // 2
     }
   }
 
