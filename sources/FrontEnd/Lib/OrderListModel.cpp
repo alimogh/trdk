@@ -25,6 +25,7 @@ namespace mi = boost::multi_index;
 namespace {
 
 enum Column {
+  COLUMN_TIME,
   COLUMN_SYMBOL,
   COLUMN_EXCHANGE,
   COLUMN_STATUS,
@@ -33,7 +34,6 @@ enum Column {
   COLUMN_QTY,
   COLUMN_FILLED_QTY,
   COLUMN_REMAINING_QTY,
-  COLUMN_TIME,
   COLUMN_LAST_TIME,
   COLUMN_TIF,
   COLUMN_TRADING_SYSTEM_ID,
@@ -43,23 +43,22 @@ enum Column {
 
 struct Order {
   OrderId id;
-  QVariant idStr;
-  QVariant time;
+  QDateTime time;
   const Security *security;
-  QVariant symbol;
-  QVariant currency;
+  QString symbol;
+  QString currency;
   const TradingSystem *tradingSystem;
-  QVariant exchangeName;
-  QVariant side;
+  QString exchangeName;
+  QString side;
   Qty qty;
-  QVariant qtyStr;
-  QVariant price;
-  QVariant tif;
-  mutable QVariant status;
-  mutable QVariant filledQty;
-  mutable QVariant remainingQty;
-  mutable QVariant lastTime;
-  mutable QVariant tradingSystemId;
+  QString qtyStr;
+  QString price;
+  QString tif;
+  mutable QString status;
+  mutable QString filledQty;
+  mutable QString remainingQty;
+  mutable QDateTime lastTime;
+  mutable QString tradingSystemId;
 };
 
 struct ById {};
@@ -104,11 +103,10 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                                       const Qty &qty,
                                       const boost::optional<Price> &price,
                                       const TimeInForce &tif) {
-  const auto timeStr = QString::fromStdString(pt::to_simple_string(time));
+  const auto qtime = ConvertToQDateTime(time);
   const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
   const Order order{id,
-                    QString::number(id),
-                    timeStr,
+                    qtime,
                     security,
                     QString::fromStdString(security->GetSymbol().GetSymbol()),
                     QString::fromStdString(ConvertToIso(currency)),
@@ -119,10 +117,10 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                     qtyStr,
                     ConvertPriceToText(price, security->GetPricePrecision()),
                     QString(ConvertToPch(tif)).toUpper(),
-                    QString(ConvertToPch(ORDER_STATUS_SUBMITTED)),
+                    ConvertToPch(ORDER_STATUS_SUBMITTED),
                     ConvertPriceToText(0, security->GetPricePrecision()),
                     qtyStr,
-                    timeStr};
+                    qtime};
   {
     const auto index = static_cast<int>(m_pimpl->m_orders.size());
     beginInsertRows(QModelIndex(), index, index);
@@ -143,11 +141,11 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
   if (it == orders.cend()) {
     return;
   }
-  it->status = QString(ConvertToPch(status));
+  it->status = ConvertToPch(status);
   if (!tradingSystemId.empty()) {
     it->tradingSystemId = QString::fromStdString(tradingSystemId);
   }
-  it->lastTime = QString::fromStdString(pt::to_simple_string(time));
+  it->lastTime = ConvertToQDateTime(time);
   it->filledQty = ConvertQtyToText(it->qty - remainingQty,
                                    it->security->GetPricePrecision());
   it->remainingQty =
@@ -179,11 +177,10 @@ void OrderListModel::OnOrder(const OrderId &id,
   auto it = orders.find(boost::make_tuple(tradingSystem, id));
   if (it == orders.cend()) {
     const Order order{id,
-                      QString::number(id),
-                      QString::fromStdString(pt::to_simple_string(openTime)),
+                      ConvertToQDateTime(openTime),
                       nullptr,
                       QString::fromStdString(symbol),
-                      QVariant(),
+                      QString(),
                       tradingSystem,
                       QString::fromStdString(tradingSystem->GetInstanceName()),
                       QString(ConvertToPch(side)).toUpper(),
@@ -191,10 +188,10 @@ void OrderListModel::OnOrder(const OrderId &id,
                       ConvertQtyToText(qty, precision),
                       ConvertPriceToText(price, precision),
                       QString(ConvertToPch(tif)).toUpper(),
-                      QString(ConvertToPch(status)),
+                      ConvertToPch(status),
                       ConvertPriceToText(qty - remainingQty, precision),
                       ConvertPriceToText(remainingQty, precision),
-                      QString::fromStdString(pt::to_simple_string(updateTime)),
+                      ConvertToQDateTime(updateTime),
                       QString::fromStdString(tradingSystemId)};
     {
       const auto index = static_cast<int>(m_pimpl->m_orders.size());
@@ -206,10 +203,10 @@ void OrderListModel::OnOrder(const OrderId &id,
     if (it->security) {
       precision = it->security->GetPricePrecision();
     }
-    it->status = QString(ConvertToPch(status));
+    it->status = ConvertToPch(status);
     it->filledQty = ConvertPriceToText(qty - remainingQty, precision);
     it->remainingQty = ConvertPriceToText(remainingQty, precision);
-    it->lastTime = QString::fromStdString(pt::to_simple_string(updateTime));
+    it->lastTime = ConvertToQDateTime(updateTime);
     it->tradingSystemId = QString::fromStdString(tradingSystemId);
     {
       const auto &sequnce = m_pimpl->m_orders.get<BySequnce>();
@@ -298,7 +295,7 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_TRADING_SYSTEM_ID:
           return order.tradingSystemId;
         case COLUMN_ID:
-          return order.idStr;
+          return order.id;
       }
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;

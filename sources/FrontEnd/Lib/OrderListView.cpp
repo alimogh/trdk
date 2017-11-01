@@ -16,6 +16,11 @@ using namespace trdk::FrontEnd::Lib;
 OrderListView::OrderListView(Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
   setWindowTitle(tr("Order List"));
+  setSortingEnabled(true);
+  sortByColumn(0, Qt::AscendingOrder);
+  setAlternatingRowColors(true);
+  setSelectionBehavior(QAbstractItemView::SelectRows);
+  setSelectionMode(QAbstractItemView::SingleSelection);
 
   m_contextMenu.addAction(tr("&Cancel"), this, &OrderListView::OnCancelRequest);
 

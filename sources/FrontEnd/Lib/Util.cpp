@@ -71,3 +71,10 @@ QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
   }
   return QString::number(source, 'f', precision);
 }
+
+QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
+  const auto &date = source.date();
+  const auto &time = source.time_of_day();
+  return {{date.year(), date.month().as_number(), date.day()},
+          {time.hours(), time.minutes(), time.seconds()}};
+}

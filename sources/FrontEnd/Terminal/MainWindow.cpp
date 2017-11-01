@@ -13,6 +13,7 @@
 #include "ArbitrageStrategyWindow.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OrderListModel.hpp"
+#include "Lib/SortFilterProxyModel.hpp"
 
 using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Lib;
@@ -25,7 +26,11 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
-  m_orderList.setModel(new OrderListModel(*m_engine, &m_orderList));
+  {
+    auto *model = new SortFilterProxyModel(&m_orderList);
+    model->setSourceModel(new OrderListModel(*m_engine, &m_orderList));
+    m_orderList.setModel(model);
+  }
   m_ui.area->addSubWindow(&m_orderList);
 
   Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered,
