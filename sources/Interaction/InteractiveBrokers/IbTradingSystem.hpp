@@ -209,7 +209,7 @@ class TradingSystem : public trdk::LegacyTradingSystem,
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &&) override;
 
-  virtual void SendCancelOrder(const OrderId &) override;
+  virtual void SendCancelOrderTransaction(const OrderId &) override;
 
  private:
   trdk::OrderId RegOrder(PlacedOrder &&);

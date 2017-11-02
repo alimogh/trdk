@@ -72,7 +72,7 @@ class TradingSystem : public LegacyTradingSystem {
       const trdk::OrderParams &,
       const OrderStatusUpdateSlot &&) override;
 
-  virtual void SendCancelOrder(const OrderId &) override;
+  virtual void SendCancelOrderTransaction(const OrderId &) override;
 
  public:
   virtual void CreateConnection(const Lib::IniSectionRef &) override;

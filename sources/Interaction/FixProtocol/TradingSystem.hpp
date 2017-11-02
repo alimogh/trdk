@@ -69,7 +69,7 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
       const trdk::OrderSide &side,
       const trdk::TimeInForce &tif) override;
 
-  virtual void SendCancelOrder(const OrderId &) override;
+  virtual void SendCancelOrderTransaction(const OrderId &) override;
 
  private:
   Client m_client;

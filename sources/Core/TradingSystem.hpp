@@ -152,6 +152,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
+  std::vector<trdk::OrderId> GetActiveOrderList() const;
+
  public:
   trdk::OrderId SendOrder(
       trdk::Security &,
@@ -192,7 +194,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::TimeInForce &,
       const trdk::TradingSystem::OrderStatusUpdateSlot &&);
 
-  virtual void SendCancelOrder(const trdk::OrderId &) = 0;
+  virtual void SendCancelOrderTransaction(const trdk::OrderId &) = 0;
 
  protected:
   //! Notifies trading system about order state change.
@@ -231,6 +233,11 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            trdk::TradingSystem::TradeInfo &&);
+  //! Notifies trading system about order canceling.
+  /** Method is not thread-safe.
+    */
+  void OnOrderCancel(const trdk::OrderId &,
+                     const std::string &tradingSystemOrderId);
   //! Notifies trading system about order error.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.
@@ -249,17 +256,17 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! General order update notification.
   /** May be used for any order.
     */
-  void UpdateOrder(const trdk::OrderId &,
-                   const std::string &tradingSystemOrderId,
-                   const std::string &symbol,
-                   const trdk::OrderStatus &,
-                   const trdk::Qty &qty,
-                   const trdk::Qty &remainingQty,
-                   const boost::optional<trdk::Price> &,
-                   const trdk::OrderSide &,
-                   const trdk::TimeInForce &,
-                   const boost::posix_time::ptime &openTime,
-                   const boost::posix_time::ptime &updateTime);
+  void OnOrder(const trdk::OrderId &,
+               const std::string &tradingSystemOrderId,
+               const std::string &symbol,
+               const trdk::OrderStatus &,
+               const trdk::Qty &qty,
+               const trdk::Qty &remainingQty,
+               const boost::optional<trdk::Price> &,
+               const trdk::OrderSide &,
+               const trdk::TimeInForce &,
+               const boost::posix_time::ptime &openTime,
+               const boost::posix_time::ptime &updateTime);
 
   trdk::OrderId SendOrderTransactionAndEmulateIoc(
       trdk::Security &,

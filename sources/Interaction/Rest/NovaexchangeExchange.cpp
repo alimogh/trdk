@@ -479,7 +479,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     return *orderId;
   }
 
-  virtual void SendCancelOrder(const OrderId &orderId) override {
+  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     PrivateRequest request("/remote/v2/private/cancelorder/" +
                                boost::lexical_cast<std::string>(orderId) + "/",
                            "cancelorder", m_settings);

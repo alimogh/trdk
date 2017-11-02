@@ -55,6 +55,20 @@ struct Settings {
 
   void Validate() {}
 };
+
+struct Order {
+  OrderId id;
+  std::string tradingSystemOrderId;
+  std::string symbol;
+  OrderStatus status;
+  Qty qty;
+  Qty remainingQty;
+  boost::optional<trdk::Price> price;
+  OrderSide side;
+  TimeInForce tid;
+  pt::ptime openTime;
+  pt::ptime updateTime;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,6 +104,9 @@ class Request : public Rest::Request {
         error << "The server returned an error in response to the request \""
               << GetName() << "\" (" << GetRequest().getURI() << "): ";
         if (message) {
+          if (boost::iequals(*message, "UUID_INVALID")) {
+            throw TradingSystem::OrderIsUnknown(message->c_str());
+          }
           error << "\"" << *message << "\"";
         } else {
           error << "Unknown error";
@@ -245,46 +262,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
     m_pollingTask = boost::make_unique<PollingTask>(
         [this]() {
-          const SecuritiesLock lock(m_securitiesMutex);
-          for (const auto &subscribtion : m_securities) {
-            if (!subscribtion.second.isSubscribed) {
-              continue;
-            }
-            auto &security = *subscribtion.second.security;
-            auto &request = *subscribtion.second.request;
-            const auto &response =
-                request.Send(m_marketDataSession, GetContext());
-            const auto &time = boost::get<0>(response);
-            const auto &delayMeasurement = boost::get<2>(response);
-            try {
-              for (const auto &updateRecord :
-                   boost::get<1>(response).get_child("buy")) {
-                const auto &update = updateRecord.second;
-                security.SetLevel1(
-                    time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                              update.get<double>("Rate")),
-                    Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-                        update.get<double>("Quantity")),
-                    delayMeasurement);
-              }
-              for (const auto &updateRecord :
-                   boost::get<1>(response).get_child("sell")) {
-                const auto &update = updateRecord.second;
-                security.SetLevel1(
-                    time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                              update.get<double>("Rate")),
-                    Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-                        update.get<double>("Quantity")),
-                    delayMeasurement);
-              }
-            } catch (const std::exception &ex) {
-              boost::format error(
-                  "Failed to read order book state for \"%1%\": \"%2%\"");
-              error % security  // 1
-                  % ex.what();  // 2
-              throw MarketDataSource::Error(error.str().c_str());
-            }
-          }
+          UpdateSecurities();
+          UpdateOrders();
         },
         m_settings.pollingInterval, GetMdsLog());
   }
@@ -318,7 +297,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_ASK_QTY));
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "orderbook",
+          "getorderbook",
           "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "&type=both&depth=1");
 
@@ -373,67 +352,189 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+    class CancelOrderRequest : public PrivateRequest {
+     public:
+      typedef PrivateRequest Base;
+
+     public:
+      explicit CancelOrderRequest(const OrderId &orderId,
+                                  const Settings &settings)
+          : Base("cancel",
+                 settings,
+                 "uuid=" + boost::lexical_cast<std::string>(orderId)) {}
+
+      virtual ~CancelOrderRequest() override = default;
+
+     protected:
+      virtual const ptr::ptree &ExtractContent(
+          const ptr::ptree &responseTree) const override {
+        return responseTree;
+      }
+    };
+
+    try {
+      const auto &result = CancelOrderRequest(orderId, m_settings)
+                               .Send(m_tradingSession, GetContext());
+      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    } catch (const OrderIsUnknown &) {
+      GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                       m_timerScope);
+      throw;
+    }
+
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
   }
 
  private:
+  void UpdateOrder(const Order &order, const OrderStatus &status) {
+    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
+            order.qty, order.remainingQty, order.price, order.side, order.tid,
+            order.openTime, order.updateTime);
+  }
+
+  Order UpdateOrder(const ptr::ptree &order) {
+    const auto &orderId = order.get<std::string>("OrderUuid");
+
+    OrderSide side;
+    boost::optional<Price> price;
+    const auto &type = order.get<std::string>("OrderType");
+    if (type == "LIMIT_SELL") {
+      side = ORDER_SIDE_SELL;
+      price = order.get<double>("Limit");
+    } else if (type == "LIMIT_BUY") {
+      side = ORDER_SIDE_BUY;
+      price = order.get<double>("Limit");
+    } else {
+      GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                       orderId);
+      throw TradingSystem::Error("Failed to request order status");
+    }
+
+    const Qty qty = order.get<double>("Quantity");
+    const Qty remainingQty = order.get<double>("QuantityRemaining");
+
+    const auto &openTime =
+        pt::time_from_string(order.get<std::string>("Opened"));
+    const auto &closedField = order.get<std::string>("Closed");
+    pt::ptime updateTime;
+    OrderStatus status;
+    if (!boost::iequals(closedField, "null")) {
+      updateTime = pt::time_from_string(closedField);
+      status =
+          remainingQty == qty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
+    } else {
+      updateTime = openTime;
+      status = order.get<bool>("CancelInitiated")
+                   ? ORDER_STATUS_CANCELLED
+                   : remainingQty == qty ? ORDER_STATUS_SUBMITTED
+                                         : ORDER_STATUS_FILLED_PARTIALLY;
+    }
+
+    const Order result = {boost::lexical_cast<OrderId>(orderId),
+                          orderId,
+                          order.get<std::string>("Exchange"),
+                          std::move(status),
+                          std::move(qty),
+                          std::move(remainingQty),
+                          std::move(price),
+                          std::move(side),
+                          order.get<bool>("ImmediateOrCancel")
+                              ? TIME_IN_FORCE_IOC
+                              : TIME_IN_FORCE_GTC,
+                          std::move(openTime),
+                          std::move(updateTime)};
+    UpdateOrder(result, result.status);
+    return result;
+  }
+
   void RequestOpenedOrders() {
-    PrivateRequest request("getopenorders", m_settings);
-    try {
-      const auto orders =
-          boost::get<1>(request.Send(m_tradingSession, GetContext()));
-      MakeServerAnswerDebugDump(orders, *this);
-      for (const auto &orderNode : orders) {
-        const auto &order = orderNode.second;
-
-        const auto &orderId = order.get<std::string>("OrderUuid");
-
-        OrderSide side;
-        boost::optional<Price> price;
-        const auto &type = order.get<std::string>("OrderType");
-        if (type == "LIMIT_SELL") {
-          side = ORDER_SIDE_SELL;
-          price = order.get<double>("Price");
-        } else if (type == "LIMIT_BUY") {
-          side = ORDER_SIDE_BUY;
-          price = order.get<double>("Price");
-        } else {
-          GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                           orderId);
-          continue;
+    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    {
+      PrivateRequest request("getopenorders", m_settings);
+      try {
+        const auto orders =
+            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+        MakeServerAnswerDebugDump(orders, *this);
+        for (const auto &order : orders) {
+          const Order notifiedOrder = UpdateOrder(order.second);
+          m_orders.erase(notifiedOrder.id);
+          if (notifiedOrder.status != ORDER_STATUS_CANCELLED) {
+            const auto id = notifiedOrder.id;
+            notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
+          }
         }
-
-        const Qty qty = order.get<double>("Quantity");
-        const Qty remainingQty = order.get<double>("QuantityRemaining");
-
-        const auto &openTime =
-            pt::time_from_string(order.get<std::string>("Opened"));
-        const auto &closedField = order.get<std::string>("Closed");
-        pt::ptime updateTime;
-        OrderStatus status;
-        if (!boost::iequals(closedField, "null")) {
-          updateTime = pt::time_from_string(closedField);
-          status = remainingQty == qty ? ORDER_STATUS_CANCELLED
-                                       : ORDER_STATUS_FILLED;
-        } else {
-          updateTime = openTime;
-          status = order.get<bool>("CancelInitiated")
-                       ? ORDER_STATUS_CANCELLED
-                       : remainingQty == qty ? ORDER_STATUS_SUBMITTED
-                                             : ORDER_STATUS_FILLED_PARTIALLY;
-        }
-
-        UpdateOrder(boost::lexical_cast<OrderId>(orderId), orderId,
-                    order.get<std::string>("Exchange"), status, qty,
-                    remainingQty, price, side,
-                    order.get<bool>("ImmediateOrCancel") ? TIME_IN_FORCE_IOC
-                                                         : TIME_IN_FORCE_GTC,
-                    openTime, updateTime);
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
+        throw Exception("Failed to request order list");
       }
-    } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-      throw Exception("Failed to request order list");
+    }
+    for (const auto &canceledOrder : m_orders) {
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+    }
+    m_orders.swap(notifiedOrderOrders);
+  }
+
+  void UpdateSecurities() {
+    const SecuritiesLock lock(m_securitiesMutex);
+    for (const auto &subscribtion : m_securities) {
+      if (!subscribtion.second.isSubscribed) {
+        continue;
+      }
+      auto &security = *subscribtion.second.security;
+      auto &request = *subscribtion.second.request;
+      const auto &response = request.Send(m_marketDataSession, GetContext());
+      const auto &time = boost::get<0>(response);
+      const auto &delayMeasurement = boost::get<2>(response);
+      try {
+        for (const auto &updateRecord :
+             boost::get<1>(response).get_child("buy")) {
+          const auto &update = updateRecord.second;
+          security.SetLevel1(time,
+                             Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                                 update.get<double>("Rate")),
+                             Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+                                 update.get<double>("Quantity")),
+                             delayMeasurement);
+        }
+        for (const auto &updateRecord :
+             boost::get<1>(response).get_child("sell")) {
+          const auto &update = updateRecord.second;
+          security.SetLevel1(time,
+                             Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                                 update.get<double>("Rate")),
+                             Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+                                 update.get<double>("Quantity")),
+                             delayMeasurement);
+        }
+      } catch (const std::exception &ex) {
+        boost::format error(
+            "Failed to read order book state for \"%1%\": \"%2%\"");
+        error % security  // 1
+            % ex.what();  // 2
+        throw MarketDataSource::Error(error.str().c_str());
+      }
+    }
+  }
+
+  void UpdateOrders() {
+    for (const OrderId &orderId : GetActiveOrderList()) {
+      PrivateRequest request(
+          "getorder", m_settings,
+          "uuid=" + boost::lexical_cast<std::string>(orderId));
+      try {
+        UpdateOrder(
+            boost::get<1>(request.Send(m_marketDataSession, GetContext())));
+      } catch (const OrderIsUnknown &ex) {
+        GetTsLog().Warn("Failed to request state for order %1%: \"%2%\".",
+                        orderId, ex.what());
+        OnOrderCancel(orderId, boost::lexical_cast<std::string>(orderId));
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
+                         orderId, ex.what());
+        throw Exception("Failed to request order state");
+      }
     }
   }
 
@@ -447,7 +548,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
+  trdk::Timer::Scope m_timerScope;
+
   std::unique_ptr<PollingTask> m_pollingTask;
+
+  boost::unordered_map<OrderId, Order> m_orders;
 };
 }
 

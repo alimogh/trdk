@@ -114,26 +114,6 @@ class GdaxRequest : public Request {
   virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) = 0;
 };
 
-class BookGdaxRequest : public GdaxRequest {
- public:
-  typedef GdaxRequest Base;
-
- public:
-  explicit BookGdaxRequest(const std::string &uri,
-                           const std::string &name,
-                           const std::string &method,
-                           const Settings &settings)
-      : Base(uri, name, method, settings) {}
-
-  virtual ~BookGdaxRequest() override = default;
-
- protected:
-  virtual const ptr::ptree &ExtractContent(
-      const ptr::ptree &responseTree) override {
-    return responseTree;
-  }
-};
-
 std::string NormilizeSymbol(const std::string &source) {
   return boost::replace_first_copy(source, "_", "-");
 }
@@ -275,8 +255,28 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
+
     {
-      const auto request = boost::make_shared<BookGdaxRequest>(
+      class BookRequest : public GdaxRequest {
+       public:
+        typedef GdaxRequest Base;
+
+       public:
+        explicit BookRequest(const std::string &uri,
+                             const std::string &name,
+                             const std::string &method,
+                             const Settings &settings)
+            : Base(uri, name, method, settings) {}
+
+        virtual ~BookRequest() override = default;
+
+       protected:
+        virtual const ptr::ptree &ExtractContent(
+            const ptr::ptree &responseTree) override {
+          return responseTree;
+        }
+      };
+      const auto request = boost::make_shared<BookRequest>(
           "/products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "/book/",
           "book", net::HTTPRequest::HTTP_GET, m_settings);
@@ -317,7 +317,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 
-  virtual void SendCancelOrder(const OrderId &) override {
+  virtual void SendCancelOrderTransaction(const OrderId &) override {
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 

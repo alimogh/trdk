@@ -501,7 +501,7 @@ OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
   return id;
 }
 
-void Test::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+void Test::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   const auto &now = GetContext().GetCurrentTime();
   auto execTime = now + m_pimpl->ChooseExecutionDelay();
   {

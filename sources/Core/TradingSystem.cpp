@@ -372,6 +372,18 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
   throw MethodIsNotImplementedException("Account Cash Balance not implemented");
 }
 
+std::vector<OrderId> TradingSystem::GetActiveOrderList() const {
+  std::vector<OrderId> result;
+  {
+    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    result.reserve(m_pimpl->m_activeOrders.size());
+    for (const auto &order : m_pimpl->m_activeOrders) {
+      result.emplace_back(order.first);
+    }
+  }
+  return result;
+}
+
 void TradingSystem::Connect(const IniSectionRef &conf) {
   if (IsConnected()) {
     return;
@@ -430,8 +442,8 @@ OrderId TradingSystem::SendOrder(Security &security,
     GetTradingLog().Write(
         "{'orderSendError': {'reason': '%1%', 'operationId': %2%}}",
         [&ex, &operationId](TradingRecord &record) {
-          record % ex.what()  // 2
-              % operationId;  // 3
+          record % ex.what()  // 1
+              % operationId;  // 2
         });
     GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
@@ -493,10 +505,34 @@ OrderId TradingSystem::SendOrderTransactionAndEmulateIoc(
   return orderId;
 }
 
-void TradingSystem::CancelOrder(const OrderId &order) {
-  GetTradingLog().Write("{'orderCancel': {'id': %1%}}",
-                        [&order](TradingRecord &record) { record % order; });
-  SendCancelOrder(order);
+void TradingSystem::CancelOrder(const OrderId &orderId) {
+  GetTradingLog().Write(
+      "{'orderCancel': {'id': %1%}}",
+      [&orderId](TradingRecord &record) { record % orderId; });
+  try {
+    SendCancelOrderTransaction(orderId);
+  } catch (const std::exception &ex) {
+    GetTradingLog().Write(
+        "{'orderCancelSendError': {'id': %1%, 'reason': '%2%'}}",
+        [&orderId, &ex](TradingRecord &record) {
+          record % orderId  // 1
+              % ex.what();  // 2
+        });
+    GetLog().Warn(
+        "Error while sending order cancel transaction for order %1%: \"%2%\".",
+        orderId,     // 1
+        ex.what());  // 2
+    throw;
+  } catch (...) {
+    GetTradingLog().Write(
+        "{'orderCancelSendError': {'id': %1%, 'reason': 'Unknown exception'}}",
+        [&orderId](TradingRecord &record) { record % orderId; });
+    GetLog().Error(
+        "Unknown error while sending order cancel transaction for order %1%.",
+        orderId);
+    AssertFailNoException();
+    throw;
+  }
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
@@ -535,6 +571,13 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                remainingQty, boost::none, std::move(trade));
 }
 
+void TradingSystem::OnOrderCancel(const OrderId &orderId,
+                                  const std::string &tradingSystemOrderId) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                               ORDER_STATUS_CANCELLED, boost::none, boost::none,
+                               boost::none);
+}
+
 void TradingSystem::OnOrderError(const OrderId &orderId,
                                  const std::string &tradingSystemOrderId,
                                  const std::string &&error) {
@@ -563,17 +606,17 @@ void TradingSystem::OnOrderReject(const OrderId &orderId,
                                boost::none);
 }
 
-void TradingSystem::UpdateOrder(const OrderId &orderId,
-                                const std::string &tradingSystemOrderId,
-                                const std::string &symbol,
-                                const OrderStatus &status,
-                                const Qty &qty,
-                                const Qty &remainingQty,
-                                const boost::optional<Price> &price,
-                                const OrderSide &side,
-                                const TimeInForce &tif,
-                                const pt::ptime &openTime,
-                                const pt::ptime &updateTime) {
+void TradingSystem::OnOrder(const OrderId &orderId,
+                            const std::string &tradingSystemOrderId,
+                            const std::string &symbol,
+                            const OrderStatus &status,
+                            const Qty &qty,
+                            const Qty &remainingQty,
+                            const boost::optional<Price> &price,
+                            const OrderSide &side,
+                            const TimeInForce &tif,
+                            const pt::ptime &openTime,
+                            const pt::ptime &updateTime) {
   {
     const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);

@@ -126,7 +126,7 @@ boost::optional<ContractExpiration> ib::TradingSystem::FindContractExpiration(
   return result;
 }
 
-void ib::TradingSystem::SendCancelOrder(const trdk::OrderId &orderId) {
+void ib::TradingSystem::SendCancelOrderTransaction(const trdk::OrderId &orderId) {
   m_client->CancelOrder(orderId);
 }
 

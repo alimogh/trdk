@@ -83,7 +83,7 @@ OrderId fix::TradingSystem::SendOrderTransaction(
   return message.GetSequenceNumber();
 }
 
-void fix::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   m_client.Send(out::OrderCancelRequest(orderId, GetStandardOutgoingHeader()));
 }
 

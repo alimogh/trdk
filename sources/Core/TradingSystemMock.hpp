@@ -64,7 +64,7 @@ class TradingSystem : public trdk::TradingSystem {
                              const trdk::OrderSide &,
                              const trdk::TimeInForce &));
 
-  MOCK_METHOD1(SendCancelOrder, void(const OrderId &));
+  MOCK_METHOD1(SendCancelOrderTransaction, void(const OrderId &));
 };
 }
 }
