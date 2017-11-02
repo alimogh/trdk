@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Api.h"
+#include "Fwd.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +84,11 @@ struct OrderParams {
     */
   const trdk::Lib::ContractExpiration *expiration;
 
-  explicit OrderParams() : expiration(nullptr) {}
+  //! Trading system must try to work with position started by specified order
+  //! or used by specified order.
+  const trdk::TransactionContext *position;
+
+  explicit OrderParams() : expiration(nullptr), position(nullptr) {}
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
                                                 const trdk::OrderParams &);

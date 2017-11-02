@@ -31,3 +31,4 @@
 #include "Core/Security.hpp"
 #include "Core/Timer.hpp"
 #include "Core/TradingSystem.hpp"
+#include "Core/TransactionContext.hpp"

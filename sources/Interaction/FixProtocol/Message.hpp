@@ -125,9 +125,12 @@ class Message : public FixProtocol::Message {
   ExecType ReadExecType() const;
   //! Tag 151.
   Qty ReadLeavesQty() const;
+  //! Tag 721.
+  std::string ReadPosMaintRptId() const;
 
  protected:
   std::string FindAndReadStringFromSoh(int32_t tagMatch) const;
+  std::string FindAndReadString(int32_t tagMatch) const;
   template <typename Result, typename TagMatch>
   Result FindAndReadInt(const TagMatch &) const;
   template <typename Result, typename TagMatch>

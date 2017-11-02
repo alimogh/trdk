@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Core/Module.hpp"
-
 namespace trdk {
 namespace Interaction {
 namespace FixProtocol {

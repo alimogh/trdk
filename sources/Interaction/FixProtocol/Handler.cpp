@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Handler.hpp"
-#include "Core/TradingLog.hpp"
 #include "IncomingMessages.hpp"
 #include "OutgoingMessages.hpp"
 #include "Settings.hpp"

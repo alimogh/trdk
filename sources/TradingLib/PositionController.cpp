@@ -31,15 +31,12 @@ class PositionController::Implementation : private boost::noncopyable {
   ids::random_generator m_generateUuid;
 
   Strategy &m_strategy;
-  TradingSystem *m_tradingSystem;
 
   std::unique_ptr<PositionReport> m_report;
 
  public:
-  explicit Implementation(PositionController &self,
-                          Strategy &strategy,
-                          TradingSystem *tradingSystem)
-      : m_self(self), m_strategy(strategy), m_tradingSystem(tradingSystem) {}
+  explicit Implementation(PositionController &self, Strategy &strategy)
+      : m_self(self), m_strategy(strategy) {}
 
   PositionReport &GetReport() {
     if (!m_report) {
@@ -51,12 +48,7 @@ class PositionController::Implementation : private boost::noncopyable {
 };
 
 PositionController::PositionController(Strategy &strategy)
-    : m_pimpl(std::make_unique<Implementation>(*this, strategy, nullptr)) {}
-
-PositionController::PositionController(Strategy &strategy,
-                                       TradingSystem &tradingSystem)
-    : m_pimpl(
-          std::make_unique<Implementation>(*this, strategy, &tradingSystem)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
 
 PositionController::~PositionController() = default;
 
@@ -75,11 +67,6 @@ const PositionReport &PositionController::GetReport() const {
 
 ids::uuid PositionController::GenerateNewOperationId() const {
   return m_pimpl->m_generateUuid();
-}
-TradingSystem &PositionController::GetTradingSystem(const Security &security) {
-  return m_pimpl->m_tradingSystem
-             ? *m_pimpl->m_tradingSystem
-             : GetStrategy().GetTradingSystem(security.GetSource().GetIndex());
 }
 
 trdk::Position &PositionController::OpenPosition(
@@ -288,8 +275,8 @@ boost::shared_ptr<Position> PositionController::CreatePositionObject(
     const TimeMeasurement::Milestones &delayMeasurement) {
   const auto &result = boost::make_shared<PositionType>(
       operationContext, GetStrategy(), GenerateNewOperationId(), 1,
-      GetTradingSystem(security), security, security.GetSymbol().GetCurrency(),
-      qty, price, delayMeasurement);
+      operationContext->GetTradingSystem(GetStrategy(), security), security,
+      security.GetSymbol().GetCurrency(), qty, price, delayMeasurement);
   return result;
 }
 

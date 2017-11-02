@@ -25,9 +25,9 @@ namespace pt = boost::posix_time;
 
 class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
-  std::vector<boost::shared_ptr<PositionController>> m_controllers;
+  PositionController m_controller;
 
-  explicit Implementation(MultibrokerStrategy &) {}
+  explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}
 };
 
 MultibrokerStrategy::MultibrokerStrategy(Context &context,
@@ -51,15 +51,10 @@ void MultibrokerStrategy::OpenPosition(
         "Failed to start new position as current strategy instance already "
         "handles position");
   }
-  AssertEq(0, m_pimpl->m_controllers.size());
-  m_pimpl->m_controllers.clear();
-  m_pimpl->m_controllers.reserve(operations.size());
   for (size_t i = 0; i < std::min(GetContext().GetNumberOfTradingSystems(),
                                   operations.size());
        ++i) {
-    m_pimpl->m_controllers.emplace_back(boost::make_shared<PositionController>(
-        *this, GetContext().GetTradingSystem(i, GetTradingMode())));
-    m_pimpl->m_controllers.back()->OpenPosition(
+    m_pimpl->m_controller.OpenPosition(
         boost::make_shared<OperationContext>(std::move(operations[i])),
         security, delayMeasurement);
   }
@@ -71,19 +66,11 @@ void MultibrokerStrategy::OnLevel1Tick(Security &,
                                        const Milestones &) {}
 
 void MultibrokerStrategy::OnPositionUpdate(Position &position) {
-  AssertGt(m_pimpl->m_controllers.size(),
-           position.GetTradingSystem().GetIndex());
-  if (m_pimpl->m_controllers.size() <= position.GetTradingSystem().GetIndex()) {
-    return;
-  }
-  m_pimpl->m_controllers[position.GetTradingSystem().GetIndex()]
-      ->OnPositionUpdate(position);
+  m_pimpl->m_controller.OnPositionUpdate(position);
 }
 
 void MultibrokerStrategy::OnPostionsCloseRequest() {
-  for (auto &controller : m_pimpl->m_controllers) {
-    controller->OnPostionsCloseRequest();
-  }
+  m_pimpl->m_controller.OnPostionsCloseRequest();
 }
 ////////////////////////////////////////////////////////////////////////////////
 

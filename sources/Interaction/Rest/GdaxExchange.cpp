@@ -289,13 +289,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual OrderId SendOrderTransaction(trdk::Security &security,
-                                       const Currency &currency,
-                                       const Qty &qty,
-                                       const boost::optional<Price> &price,
-                                       const OrderParams &params,
-                                       const OrderSide &side,
-                                       const TimeInForce &tif) override {
+  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+      trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderParams &params,
+      const OrderSide &side,
+      const TimeInForce &tif) override {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (tif) {
       case TIME_IN_FORCE_IOC:

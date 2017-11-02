@@ -138,6 +138,7 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   if (!settings.isEnabled) {
     return;
   }
+  auto &startegy = *m_strategies[strategyIndex];
 
   Price price;
   {
@@ -158,8 +159,14 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   std::vector<OperationContext> operations;
   operations.reserve(m_lots.size());
   for (const auto &lot : m_lots) {
+    if (operations.size() >=
+        m_engine.GetContext().GetNumberOfTradingSystems()) {
+      break;
+    }
+
     const auto qty = settings.lotMultiplier * lot;
-    operations.emplace_back(isLong, qty, price);
+    operations.emplace_back(isLong, qty, price,
+                            startegy.GetTradingSystem(operations.size()));
     auto &operation = operations.back();
 
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
@@ -185,11 +192,11 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   }
 
   try {
-    m_strategies[strategyIndex]->Invoke<MultibrokerStrategy>(
+    startegy.Invoke<MultibrokerStrategy>(
         [this, &settings, &operations,
-         &delayMeasurement](MultibrokerStrategy &strategy) {
-          strategy.OpenPosition(std::move(operations),
-                                *m_currentTradingSecurity, delayMeasurement);
+         &delayMeasurement](MultibrokerStrategy &multibroker) {
+          multibroker.OpenPosition(std::move(operations),
+                                   *m_currentTradingSecurity, delayMeasurement);
         });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to send order"),

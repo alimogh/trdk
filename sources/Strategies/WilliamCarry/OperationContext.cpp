@@ -30,6 +30,7 @@ class OperationContext::Implementation : private boost::noncopyable {
   const bool m_isLong;
   const Qty m_qty;
   boost::shared_ptr<OrderPolicy> m_orderPolicy;
+  TradingSystem &m_tradingSystem;
 
   std::vector<
       std::pair<boost::shared_ptr<const StopLoss::Params>, pt::time_duration>>
@@ -38,16 +39,22 @@ class OperationContext::Implementation : private boost::noncopyable {
       m_takeProfitStopLimits;
   pt::time_duration m_stopTime;
 
-  explicit Implementation(bool isLong, const Qty &qty, const Price &price)
+  explicit Implementation(bool isLong,
+                          const Qty &qty,
+                          const Price &price,
+                          TradingSystem &tradingSystem)
       : m_isLong(isLong),
         m_qty(qty),
-        m_orderPolicy(boost::make_shared<OrderPolicy>(price)) {}
+        m_orderPolicy(boost::make_shared<OrderPolicy>(price)),
+        m_tradingSystem(tradingSystem) {}
 };
 
 OperationContext::OperationContext(bool isLong,
                                    const Qty &qty,
-                                   const Price &price)
-    : m_pimpl(boost::make_unique<Implementation>(isLong, qty, price)) {}
+                                   const Price &price,
+                                   TradingSystem &tradingSystem)
+    : m_pimpl(boost::make_unique<Implementation>(
+          isLong, qty, price, tradingSystem)) {}
 
 OperationContext::OperationContext(OperationContext &&) = default;
 
@@ -105,4 +112,8 @@ void OperationContext::AddStopLoss(const Price &maxPriceChange,
                                    const pt::time_duration &startDelay) {
   m_pimpl->m_stopLosses.emplace_back(
       boost::make_shared<StopLoss::Params>(maxPriceChange), startDelay);
+}
+
+TradingSystem &OperationContext::GetTradingSystem(Strategy &, Security &) {
+  return m_pimpl->m_tradingSystem;
 }

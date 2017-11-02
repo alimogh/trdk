@@ -18,3 +18,10 @@
 
 #include "Common/NetworkStreamClient.hpp"
 #include "Common/NetworkStreamClientService.hpp"
+
+#include "Core/MarketDataSource.hpp"
+#include "Core/Module.hpp"
+#include "Core/Security.hpp"
+#include "Core/TradingLog.hpp"
+#include "Core/TradingSystem.hpp"
+#include "Core/TransactionContext.hpp"

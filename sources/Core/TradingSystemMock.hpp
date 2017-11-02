@@ -13,6 +13,7 @@
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "TradingSystem.hpp"
+#include "TransactionContext.hpp"
 
 namespace trdk {
 namespace Tests {
@@ -37,9 +38,9 @@ class TradingSystem : public trdk::TradingSystem {
 
   MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
 
-  MOCK_METHOD10(
-      SendOrder,
-      trdk::OrderId(trdk::Security &,
+  MOCK_METHOD10(SendOrder,
+                boost::shared_ptr<const trdk::TransactionContext>(
+                    trdk::Security &,
                     const trdk::Lib::Currency &,
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
@@ -56,13 +57,14 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
 
   MOCK_METHOD7(SendOrderTransaction,
-               trdk::OrderId(trdk::Security &,
-                             const trdk::Lib::Currency &,
-                             const trdk::Qty &,
-                             const boost::optional<trdk::Price> &,
-                             const trdk::OrderParams &,
-                             const trdk::OrderSide &,
-                             const trdk::TimeInForce &));
+               std::unique_ptr<trdk::TransactionContext>(
+                   trdk::Security &,
+                   const trdk::Lib::Currency &,
+                   const trdk::Qty &,
+                   const boost::optional<trdk::Price> &,
+                   const trdk::OrderParams &,
+                   const trdk::OrderSide &,
+                   const trdk::TimeInForce &));
 
   MOCK_METHOD1(SendCancelOrderTransaction, void(const OrderId &));
 };
