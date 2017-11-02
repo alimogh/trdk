@@ -30,6 +30,11 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
     auto *model = new SortFilterProxyModel(&m_orderList);
     model->setSourceModel(new OrderListModel(*m_engine, &m_orderList));
     m_orderList.setModel(model);
+    Verify(connect(model, &QAbstractItemModel::rowsInserted,
+                   [this](const QModelIndex &index, int, int) {
+                     m_orderList.sortByColumn(0, Qt::DescendingOrder);
+                     m_orderList.scrollTo(index);
+                   }));
   }
   m_ui.area->addSubWindow(&m_orderList);
 
