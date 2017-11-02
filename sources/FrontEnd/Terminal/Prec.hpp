@@ -26,5 +26,6 @@
 #include <boost/uuid/uuid_generators.hpp>
 
 #include "Lib/Adapters.hpp"
+#include "Lib/Types.hpp"
 #include "Lib/Util.hpp"
 #include "Lib/Fwd.hpp"

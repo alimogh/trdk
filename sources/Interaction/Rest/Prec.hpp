@@ -24,3 +24,10 @@
 
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"
+
+#include "Core/Context.hpp"
+#include "Core/EventsLog.hpp"
+#include "Core/MarketDataSource.hpp"
+#include "Core/Security.hpp"
+#include "Core/Timer.hpp"
+#include "Core/TradingSystem.hpp"

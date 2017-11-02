@@ -57,6 +57,8 @@ class TRDK_CORE_API AsyncLogRecord {
 
     PT_CLOSE_REASON,
 
+    PT_TIME_IN_FORCE,
+
     numberOfParamTypes
 
   };
@@ -69,12 +71,12 @@ class TRDK_CORE_API AsyncLogRecord {
  public:
   //! Schedules delayed formatting.
   /** Stores params for log record until it will be really written.
-          * WARNING! Pointer to C-string and all other not POD types must be
-          * available all time while module is active! Methods stores only
-          * pointers, not values.
-          * @sa trdk::AsyncLog::AsyncLogRecord::operator %
-          * @sa trdk::AsyncLog::WaitForFlush
-          */
+    * WARNING! Pointer to C-string and all other not POD types must be available
+    * all time while module is active! Methods stores only pointers, not values.
+    *
+    * @sa trdk::AsyncLog::AsyncLogRecord::operator %
+    * @sa trdk::AsyncLog::WaitForFlush
+    */
   template <typename... Params>
   void Format(const Params &... params) {
     SubFormat(params...);
@@ -82,12 +84,12 @@ class TRDK_CORE_API AsyncLogRecord {
 
   //! Schedules delayed formatting for one parameter.
   /** Stores params for log record until it will be really written.
-          * WARNING! Pointer to C-string and all other not POD types must be
-          * available all time while module is active! Methods stores only
-          * pointers, not values.
-          * @sa trdk::AsyncLog::AsyncLogRecord::Format
-          * @sa trdk::AsyncLog::WaitForFlush
-          */
+    * WARNING! Pointer to C-string and all other not POD types must be available
+    * all time while module is active! Methods stores only pointers, not values.
+    *
+    * @sa trdk::AsyncLog::AsyncLogRecord::Format
+    * @sa trdk::AsyncLog::WaitForFlush
+    */
   template <typename Param>
   AsyncLogRecord &operator%(const Param &param) {
     SubFormat(param);
@@ -131,7 +133,7 @@ class TRDK_CORE_API AsyncLogRecord {
         }
       }
 
-      static_assert(numberOfParamTypes == 23, "Parameter type list changed.");
+      static_assert(numberOfParamTypes == 24, "Parameter type list changed.");
       switch (type) {
         case PT_INT8:
           WriteToDumpStream(boost::any_cast<int8_t>(val), os);
@@ -227,6 +229,11 @@ class TRDK_CORE_API AsyncLogRecord {
                             os);
           break;
 
+        case PT_TIME_IN_FORCE:
+          WriteToDumpStream(boost::any_cast<const trdk::TimeInForce &>(val),
+                            os);
+          break;
+
         default:
           AssertEq(PT_UINT64, type);
       }
@@ -296,6 +303,10 @@ class TRDK_CORE_API AsyncLogRecord {
 
   void StoreParam(const trdk::CloseReason &closeReason) {
     StoreTypedParam(PT_CLOSE_REASON, closeReason);
+  }
+
+  void StoreParam(const trdk::TimeInForce &tif) {
+    StoreTypedParam(PT_TIME_IN_FORCE, tif);
   }
 
   template <typename T>

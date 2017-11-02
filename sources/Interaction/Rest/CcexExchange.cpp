@@ -11,12 +11,11 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -56,70 +55,19 @@ struct Settings {
 
   void Validate() {}
 };
-}
 
-////////////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-class CcexRequest : public Request {
- public:
-  typedef Request Base;
-
- public:
-  explicit CcexRequest(const std::string &uri,
-                       const std::string &message,
-                       const std::string &method,
-                       const Settings &settings,
-                       const std::string &uriParams = std::string())
-      : Base(uri,
-             message,
-             method,
-             settings.apiKey,
-             settings.apiSecret,
-             uriParams) {}
-
-  virtual ~CcexRequest() override = default;
-
- public:
-  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
-    auto result = Base::Send(session, context);
-    auto &responseTree = boost::get<1>(result);
-
-    const auto &status = responseTree.get_optional<std::string>("success");
-    if (!status || *status != "true") {
-      const auto &message = responseTree.get_optional<std::string>("message");
-      std::ostringstream error;
-      error << "The server returned an error in response to the request \""
-            << GetName() << "\" (" << GetRequest().getURI() << "): ";
-      if (message) {
-        error << "\"" << *message << "\"";
-      } else {
-        error << "Unknown error";
-      }
-      error << " (status: ";
-      if (status) {
-        error << "\"" << *status << "\"";
-      } else {
-        error << "unknown";
-      }
-      error << ")";
-      throw Exception(error.str().c_str());
-    }
-
-    const auto &contentTree = responseTree.get_child_optional("result");
-    if (!contentTree) {
-      boost::format error(
-          "The server did not return response to the request \"%1%\"");
-      error % GetName();
-      throw Exception(error.str().c_str());
-    }
-
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             std::move(*contentTree),
-                             std::move(boost::get<2>(result)));
-  }
+struct Order {
+  OrderId id;
+  std::string tradingSystemOrderId;
+  std::string symbol;
+  OrderStatus status;
+  Qty qty;
+  Qty remainingQty;
+  boost::optional<trdk::Price> price;
+  OrderSide side;
+  TimeInForce tid;
+  pt::ptime openTime;
+  pt::ptime updateTime;
 };
 }
 
@@ -127,6 +75,120 @@ class CcexRequest : public Request {
 
 namespace {
 
+class Request : public Rest::Request {
+ public:
+  typedef Rest::Request Base;
+
+ public:
+  explicit Request(const std::string &uri,
+                   const std::string &name,
+                   const std::string &uriParams = std::string())
+      : Base(uri,
+             name,
+             net::HTTPRequest::HTTP_GET,
+             AppendUriParams("a=" + name, uriParams)) {}
+
+  virtual ~Request() override = default;
+
+ public:
+  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
+      net::HTTPClientSession &session, const Context &context) override {
+    auto result = Base::Send(session, context);
+    const auto &responseTree = boost::get<1>(result);
+
+    {
+      const auto &status = responseTree.get_optional<std::string>("success");
+      if (!status || *status != "true") {
+        const auto &message = responseTree.get_optional<std::string>("message");
+        std::ostringstream error;
+        error << "The server returned an error in response to the request \""
+              << GetName() << "\" (" << GetRequest().getURI() << "): ";
+        if (message) {
+          if (boost::iequals(*message, "UUID_INVALID")) {
+            throw TradingSystem::OrderIsUnknown(message->c_str());
+          }
+          error << "\"" << *message << "\"";
+        } else {
+          error << "Unknown error";
+        }
+        error << " (status: ";
+        if (status) {
+          error << "\"" << *status << "\"";
+        } else {
+          error << "unknown";
+        }
+        error << ")";
+        throw Exception(error.str().c_str());
+      }
+    }
+
+    return boost::make_tuple(std::move(boost::get<0>(result)),
+                             std::move(ExtractContent(responseTree)),
+                             std::move(boost::get<2>(result)));
+  }
+
+ protected:
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) const {
+    const auto &result = responseTree.get_child_optional("result");
+    if (!result) {
+      boost::format error(
+          "The server did not return response to the request \"%1%\"");
+      error % GetName();
+      throw Exception(error.str().c_str());
+    }
+    return *result;
+  }
+};
+
+class PublicRequest : public Request {
+ public:
+  typedef Request Base;
+
+ public:
+  explicit PublicRequest(const std::string &name,
+                         const std::string &uriParams = std::string())
+      : Base("/t/api_pub.html", name, uriParams) {}
+};
+
+class PrivateRequest : public Request {
+ public:
+  typedef Request Base;
+
+ public:
+  explicit PrivateRequest(const std::string &name,
+                          const Settings &settings,
+                          const std::string &uriParams = std::string())
+      : Base("/t/api.html",
+             name,
+             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+        m_apiSecret(settings.apiSecret) {}
+
+  virtual ~PrivateRequest() override = default;
+
+ protected:
+  virtual void PreprareRequest(const net::HTTPClientSession &session,
+                               net::HTTPRequest &request) const override {
+    using namespace trdk::Lib::Crypto;
+    const auto &digest =
+        CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
+                                 session.getHost() + GetRequest().getURI(),
+                             m_apiSecret);
+    request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+  }
+
+ private:
+  const std::string m_apiSecret;
+};
+
+std::string NormilizeSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "_", "-");
+}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
 class CcexExchange : public TradingSystem, public MarketDataSource {
  private:
   typedef boost::mutex SecuritiesMutex;
@@ -134,7 +196,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<CcexRequest> request;
+    boost::shared_ptr<Request> request;
     bool isSubscribed;
   };
 
@@ -150,8 +212,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_session("c-cex.com") {
-    m_session.setKeepAlive(true);
+        m_marketDataSession("c-cex.com"),
+        m_tradingSession(m_marketDataSession.getHost()) {
+    m_marketDataSession.setKeepAlive(true);
+    m_tradingSession.setKeepAlive(true);
   }
 
   virtual ~CcexExchange() override = default;
@@ -176,7 +240,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -198,163 +262,297 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
     m_pollingTask = boost::make_unique<PollingTask>(
         [this]() {
-          const SecuritiesLock lock(m_securitiesMutex);
-          for (const auto &subscribtion : m_securities) {
-            if (!subscribtion.second.isSubscribed) {
-              continue;
-            }
-            auto &security = *subscribtion.second.security;
-            auto &request = *subscribtion.second.request;
-            const auto &response = request.Send(m_session, GetContext());
-            const auto &time = boost::get<0>(response);
-            const auto &delayMeasurement = boost::get<2>(response);
-            try {
-              for (const auto &updateRecord :
-                   boost::get<1>(response).get_child("buy")) {
-                const auto &update = updateRecord.second;
-                security.SetLevel1(
-                    time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                              update.get<double>("Rate")),
-                    Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
-                        update.get<double>("Quantity")),
-                    delayMeasurement);
-              }
-              for (const auto &updateRecord :
-                   boost::get<1>(response).get_child("sell")) {
-                const auto &update = updateRecord.second;
-                security.SetLevel1(
-                    time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                              update.get<double>("Rate")),
-                    Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
-                        update.get<double>("Quantity")),
-                    delayMeasurement);
-              }
-            } catch (const std::exception &ex) {
-              boost::format error(
-                  "Failed to read order book state for \"%1%\": \"%2%\"");
-              error % security  // 1
-                  % ex.what();  // 2
-              throw MarketDataSource::Error(error.str().c_str());
-            }
-          }
+          UpdateSecurities();
+          UpdateOrders();
         },
         m_settings.pollingInterval, GetMdsLog());
   }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    try {
+      RequestOpenedOrders();
+    } catch (const std::exception &ex) {
+      GetTsLog().Error(ex.what());
+    }
     m_isConnected = true;
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
 
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
+    {
+      const auto request = boost::make_shared<PublicRequest>(
+          "getorderbook",
+          "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+              "&type=both&depth=1");
+
+      const SecuritiesLock lock(m_securitiesMutex);
+      m_securities.emplace(symbol, SecuritySubscribtion{result, request})
+          .first->second.security;
+    }
+    return *result;
+  }
+
+  virtual OrderId SendOrderTransaction(trdk::Security &security,
+                                       const Currency &currency,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const OrderParams &params,
+                                       const OrderSide &side,
+                                       const TimeInForce &tif) override {
+    static_assert(numberOfTimeInForces == 5, "List changed.");
+    switch (tif) {
+      case TIME_IN_FORCE_IOC:
+        return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                                 params, side);
+      case TIME_IN_FORCE_GTC:
+        break;
+      default:
+        throw TradingSystem::Error("Order time-in-force type is not supported");
+    }
+    if (currency != security.GetSymbol().GetCurrency()) {
+      throw TradingSystem::Error(
+          "Trading system supports only security quote currency");
+    }
+    if (!price) {
+      throw TradingSystem::Error("Market order is not supported");
+    }
+
+    boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())   // 1
+        % qty                                                           // 2
+        % (side == ORDER_SIDE_SELL ? (*price * 1.1) : (*price * 0.9));  // 3
+    PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
+                           m_settings, requestParams.str());
+
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+
+    try {
+      return boost::get<1>(result).get<OrderId>("uuid");
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to read order transaction reply: \"%1%\"");
+      error % ex.what();
+      throw TradingSystem::Error(error.str().c_str());
+    }
+  }
+
+  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+    class CancelOrderRequest : public PrivateRequest {
+     public:
+      typedef PrivateRequest Base;
+
+     public:
+      explicit CancelOrderRequest(const OrderId &orderId,
+                                  const Settings &settings)
+          : Base("cancel",
+                 settings,
+                 "uuid=" + boost::lexical_cast<std::string>(orderId)) {}
+
+      virtual ~CancelOrderRequest() override = default;
+
+     protected:
+      virtual const ptr::ptree &ExtractContent(
+          const ptr::ptree &responseTree) const override {
+        return responseTree;
+      }
+    };
+
+    try {
+      const auto &result = CancelOrderRequest(orderId, m_settings)
+                               .Send(m_tradingSession, GetContext());
+      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    } catch (const OrderIsUnknown &) {
+      GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                       m_timerScope);
+      throw;
+    }
+
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
+  }
+
+ private:
+  void UpdateOrder(const Order &order, const OrderStatus &status) {
+    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
+            order.qty, order.remainingQty, order.price, order.side, order.tid,
+            order.openTime, order.updateTime);
+  }
+
+  Order UpdateOrder(const ptr::ptree &order) {
+    const auto &orderId = order.get<std::string>("OrderUuid");
+
+    OrderSide side;
+    boost::optional<Price> price;
+    const auto &type = order.get<std::string>("OrderType");
+    if (type == "LIMIT_SELL") {
+      side = ORDER_SIDE_SELL;
+      price = order.get<double>("Limit");
+    } else if (type == "LIMIT_BUY") {
+      side = ORDER_SIDE_BUY;
+      price = order.get<double>("Limit");
+    } else {
+      GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                       orderId);
+      throw TradingSystem::Error("Failed to request order status");
+    }
+
+    const Qty qty = order.get<double>("Quantity");
+    const Qty remainingQty = order.get<double>("QuantityRemaining");
+
+    const auto &openTime =
+        pt::time_from_string(order.get<std::string>("Opened"));
+    const auto &closedField = order.get<std::string>("Closed");
+    pt::ptime updateTime;
+    OrderStatus status;
+    if (!boost::iequals(closedField, "null")) {
+      updateTime = pt::time_from_string(closedField);
+      status =
+          remainingQty == qty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
+    } else {
+      updateTime = openTime;
+      status = order.get<bool>("CancelInitiated")
+                   ? ORDER_STATUS_CANCELLED
+                   : remainingQty == qty ? ORDER_STATUS_SUBMITTED
+                                         : ORDER_STATUS_FILLED_PARTIALLY;
+    }
+
+    const Order result = {boost::lexical_cast<OrderId>(orderId),
+                          orderId,
+                          order.get<std::string>("Exchange"),
+                          std::move(status),
+                          std::move(qty),
+                          std::move(remainingQty),
+                          std::move(price),
+                          std::move(side),
+                          order.get<bool>("ImmediateOrCancel")
+                              ? TIME_IN_FORCE_IOC
+                              : TIME_IN_FORCE_GTC,
+                          std::move(openTime),
+                          std::move(updateTime)};
+    UpdateOrder(result, result.status);
+    return result;
+  }
+
+  void RequestOpenedOrders() {
+    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    {
+      PrivateRequest request("getopenorders", m_settings);
+      try {
+        const auto orders =
+            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+        MakeServerAnswerDebugDump(orders, *this);
+        for (const auto &order : orders) {
+          const Order notifiedOrder = UpdateOrder(order.second);
+          m_orders.erase(notifiedOrder.id);
+          if (notifiedOrder.status != ORDER_STATUS_CANCELLED) {
+            const auto id = notifiedOrder.id;
+            notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
+          }
+        }
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
+        throw Exception("Failed to request order list");
+      }
+    }
+    for (const auto &canceledOrder : m_orders) {
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+    }
+    m_orders.swap(notifiedOrderOrders);
+  }
+
+  void UpdateSecurities() {
     const SecuritiesLock lock(m_securitiesMutex);
-
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
-
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<CcexRequest>(
-                            "/t/api_pub.html", "orderbook",
-                            net::HTTPRequest::HTTP_GET, m_settings,
-                            "a=getorderbook&market=" + boost::join(subs, "-") +
-                                "&type=both&depth=1")})
-                .first->second.security;
+    for (const auto &subscribtion : m_securities) {
+      if (!subscribtion.second.isSubscribed) {
+        continue;
+      }
+      auto &security = *subscribtion.second.security;
+      auto &request = *subscribtion.second.request;
+      const auto &response = request.Send(m_marketDataSession, GetContext());
+      const auto &time = boost::get<0>(response);
+      const auto &delayMeasurement = boost::get<2>(response);
+      try {
+        for (const auto &updateRecord :
+             boost::get<1>(response).get_child("buy")) {
+          const auto &update = updateRecord.second;
+          security.SetLevel1(time,
+                             Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                                 update.get<double>("Rate")),
+                             Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
+                                 update.get<double>("Quantity")),
+                             delayMeasurement);
+        }
+        for (const auto &updateRecord :
+             boost::get<1>(response).get_child("sell")) {
+          const auto &update = updateRecord.second;
+          security.SetLevel1(time,
+                             Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+                                 update.get<double>("Rate")),
+                             Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(
+                                 update.get<double>("Quantity")),
+                             delayMeasurement);
+        }
+      } catch (const std::exception &ex) {
+        boost::format error(
+            "Failed to read order book state for \"%1%\": \"%2%\"");
+        error % security  // 1
+            % ex.what();  // 2
+        throw MarketDataSource::Error(error.str().c_str());
+      }
+    }
   }
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const Currency &,
-                                        const Qty &,
-                                        const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSell(trdk::Security &,
-                           const Currency &,
-                           const Qty &,
-                           const Price &,
-                           const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const Currency &,
-                                              const Qty &,
-                                              const Price &,
-                                              const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const Currency &,
-                                       const Qty &,
-                                       const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuy(trdk::Security &,
-                          const Currency &,
-                          const Qty &,
-                          const Price &,
-                          const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const Currency &,
-                                             const Qty &,
-                                             const Price &,
-                                             const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  void UpdateOrders() {
+    for (const OrderId &orderId : GetActiveOrderList()) {
+      PrivateRequest request(
+          "getorder", m_settings,
+          "uuid=" + boost::lexical_cast<std::string>(orderId));
+      try {
+        UpdateOrder(
+            boost::get<1>(request.Send(m_marketDataSession, GetContext())));
+      } catch (const OrderIsUnknown &ex) {
+        GetTsLog().Warn("Failed to request state for order %1%: \"%2%\".",
+                        orderId, ex.what());
+        OnOrderCancel(orderId, boost::lexical_cast<std::string>(orderId));
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
+                         orderId, ex.what());
+        throw Exception("Failed to request order state");
+      }
+    }
   }
 
  private:
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_session;
+  net::HTTPSClientSession m_marketDataSession;
+  net::HTTPSClientSession m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
+  trdk::Timer::Scope m_timerScope;
+
   std::unique_ptr<PollingTask> m_pollingTask;
+
+  boost::unordered_map<OrderId, Order> m_orders;
 };
 }
 

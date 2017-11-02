@@ -25,27 +25,32 @@ int main(int argc, char *argv[]) {
 
   try {
     application.setApplicationName(TRDK_NAME);
+    application.setOrganizationDomain(TRDK_DOMAIN);
+
     LoadStyle(application);
 
     auto engine = boost::make_unique<Engine>(
         GetExeFilePath().branch_path() / "etc" / "Brutus" / "default.ini",
         nullptr);
+
+    MainWindow mainWindow(std::move(engine), nullptr);
+    mainWindow.show();
+
     for (;;) {
       try {
-        engine->Start();
+        mainWindow.GetEngine().Start();
         break;
       } catch (const std::exception &ex) {
         if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
                                   QString("%1.").arg(ex.what()),
                                   QMessageBox::Abort | QMessageBox::Retry) !=
             QMessageBox::Retry) {
-          break;
+          return 1;
         }
       }
     }
 
-    MainWindow mainWindow(std::move(engine), nullptr);
-    mainWindow.show();
+    mainWindow.CreateNewArbitrageStrategy(boost::none);
 
     return application.exec();
   } catch (const std::exception &ex) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 14:24:58
+ *   Created: 2017/10/30 22:56:12
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -14,19 +14,16 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class Security : public trdk::Security {
- public:
-  typedef trdk::Security Base;
-
- public:
-  explicit Security(Context &,
-                    const Lib::Symbol &,
-                    MarketDataSource &,
-                    const SupportedLevel1Types &);
-
- public:
-  using Base::SetLevel1;
-};
+inline void MakeServerAnswerDebugDump(const boost::property_tree::ptree &answer,
+                                      TradingSystem &ts) {
+#ifdef DEV_VER
+  std::stringstream ss;
+  boost::property_tree::json_parser::write_json(ss, answer);
+  ts.GetLog().Debug(ss.str().c_str());
+#else
+  Lib::UseUnused(answer, ts);
+#endif
+}
 }
 }
 }

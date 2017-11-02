@@ -306,8 +306,6 @@ class TRDK_CORE_API Position
   trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &);
   trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &,
                                         const trdk::OrderParams &);
-  trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel();
-  trdk::OrderId OpenAtMarketPriceImmediatelyOrCancel(const trdk::OrderParams &);
 
  public:
   trdk::OrderId CloseAtMarketPrice();
@@ -321,9 +319,6 @@ class TRDK_CORE_API Position
   trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &);
   trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &,
                                          const trdk::OrderParams &);
-  trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel();
-  trdk::OrderId CloseAtMarketPriceImmediatelyOrCancel(
-      const trdk::OrderParams &);
 
  public:
   //! Cancels all active orders.
@@ -353,8 +348,6 @@ class TRDK_CORE_API Position
                                const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoOpenImmediatelyOrCancel(
       const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) = 0;
 
   virtual trdk::OrderId DoCloseAtMarketPrice(const trdk::Qty &qty,
                                              const trdk::OrderParams &) = 0;
@@ -363,8 +356,6 @@ class TRDK_CORE_API Position
                                 const trdk::OrderParams &) = 0;
   virtual trdk::OrderId DoCloseImmediatelyOrCancel(
       const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) = 0;
 
  protected:
   void UpdateOpening(const trdk::OrderId &,
@@ -441,8 +432,6 @@ class TRDK_CORE_API LongPosition : public Position {
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) override;
 
   virtual trdk::OrderId DoCloseAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
@@ -453,8 +442,6 @@ class TRDK_CORE_API LongPosition : public Position {
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -507,8 +494,6 @@ class TRDK_CORE_API ShortPosition : public Position {
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpenAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) override;
 
   virtual trdk::OrderId DoCloseAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
@@ -519,8 +504,6 @@ class TRDK_CORE_API ShortPosition : public Position {
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoCloseAtMarketPriceImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::OrderParams &) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

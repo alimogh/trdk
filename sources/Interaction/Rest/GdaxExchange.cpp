@@ -11,8 +11,6 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
@@ -96,16 +94,16 @@ class GdaxRequest : public Request {
 
  public:
   explicit GdaxRequest(const std::string &uri,
-                       const std::string &message,
+                       const std::string &name,
                        const std::string &method,
-                       const Settings &settings)
-      : Base(uri, message, method, settings.apiKey, settings.apiSecret) {}
+                       const Settings &)
+      : Base(uri, name, method, std::string()) {}
 
   virtual ~GdaxRequest() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     const auto &result = Base::Send(session, context);
     return boost::make_tuple(std::move(boost::get<0>(result)),
                              ExtractContent(boost::get<1>(result)),
@@ -116,25 +114,9 @@ class GdaxRequest : public Request {
   virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) = 0;
 };
 
-class BookGdaxRequest : public GdaxRequest {
- public:
-  typedef GdaxRequest Base;
-
- public:
-  explicit BookGdaxRequest(const std::string &uri,
-                           const std::string &message,
-                           const std::string &method,
-                           const Settings &settings)
-      : Base(uri, message, method, settings) {}
-
-  virtual ~BookGdaxRequest() override = default;
-
- protected:
-  virtual const ptr::ptree &ExtractContent(
-      const ptr::ptree &responseTree) override {
-    return responseTree;
-  }
-};
+std::string NormilizeSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "_", "-");
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -194,7 +176,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -259,97 +241,83 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
 
-    const SecuritiesLock lock(m_securitiesMutex);
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
 
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
+    {
+      class BookRequest : public GdaxRequest {
+       public:
+        typedef GdaxRequest Base;
 
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<BookGdaxRequest>(
-                            "/products/" + boost::join(subs, "-") + "/book/",
-                            "book", net::HTTPRequest::HTTP_GET, m_settings)})
-                .first->second.security;
+       public:
+        explicit BookRequest(const std::string &uri,
+                             const std::string &name,
+                             const std::string &method,
+                             const Settings &settings)
+            : Base(uri, name, method, settings) {}
+
+        virtual ~BookRequest() override = default;
+
+       protected:
+        virtual const ptr::ptree &ExtractContent(
+            const ptr::ptree &responseTree) override {
+          return responseTree;
+        }
+      };
+      const auto request = boost::make_shared<BookRequest>(
+          "/products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+              "/book/",
+          "book", net::HTTPRequest::HTTP_GET, m_settings);
+
+      const SecuritiesLock lock(m_securitiesMutex);
+      Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
+                 .second);
+    }
+
+    return *result;
   }
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const Currency &,
-                                        const Qty &,
-                                        const OrderParams &) override {
+  virtual OrderId SendOrderTransaction(trdk::Security &security,
+                                       const Currency &currency,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const OrderParams &params,
+                                       const OrderSide &side,
+                                       const TimeInForce &tif) override {
+    static_assert(numberOfTimeInForces == 5, "List changed.");
+    switch (tif) {
+      case TIME_IN_FORCE_IOC:
+        return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                                 params, side);
+      case TIME_IN_FORCE_GTC:
+        break;
+      default:
+        throw TradingSystem::Error("Order time-in-force type is not supported");
+    }
+    if (currency != security.GetSymbol().GetCurrency()) {
+      throw TradingSystem::Error(
+          "Trading system supports only security quote currency");
+    }
+    if (!price) {
+      throw TradingSystem::Error("Market order is not supported");
+    }
+
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 
-  virtual OrderId SendSell(trdk::Security &,
-                           const Currency &,
-                           const Qty &,
-                           const Price &,
-                           const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const Currency &,
-                                              const Qty &,
-                                              const Price &,
-                                              const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const Currency &,
-                                       const Qty &,
-                                       const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuy(trdk::Security &,
-                          const Currency &,
-                          const Qty &,
-                          const Price &,
-                          const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const Currency &,
-                                             const Qty &,
-                                             const Price &,
-                                             const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual void SendCancelOrder(const OrderId &) override {
+  virtual void SendCancelOrderTransaction(const OrderId &) override {
     throw MethodIsNotImplementedException("Methods is not supported");
   }
 

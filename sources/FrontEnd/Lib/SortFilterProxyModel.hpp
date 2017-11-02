@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 14:24:58
+ *   Created: 2017/11/01 21:42:33
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,23 +9,26 @@
  ******************************************************************************/
 
 #pragma once
+#include "Api.h"
 
 namespace trdk {
-namespace Interaction {
-namespace Rest {
+namespace FrontEnd {
+namespace Lib {
 
-class Security : public trdk::Security {
- public:
-  typedef trdk::Security Base;
-
- public:
-  explicit Security(Context &,
-                    const Lib::Symbol &,
-                    MarketDataSource &,
-                    const SupportedLevel1Types &);
+class TRDK_FRONTEND_LIB_API SortFilterProxyModel
+    : public QSortFilterProxyModel {
+  Q_OBJECT
 
  public:
-  using Base::SetLevel1;
+  typedef QSortFilterProxyModel Base;
+
+ public:
+  explicit SortFilterProxyModel(QObject *parent) : Base(parent) {}
+  virtual ~SortFilterProxyModel() override = default;
+
+ protected:
+  virtual bool lessThan(const QModelIndex &,
+                        const QModelIndex &) const override;
 };
 }
 }

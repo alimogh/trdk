@@ -334,6 +334,7 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Rest.def" />

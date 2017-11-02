@@ -20,9 +20,7 @@ class Request {
       const std::string &uri,
       const std::string &name,
       const std::string &method,
-      const std::string &apiKey,
-      const std::string &apiSecret,
-      const std::string &uriParams = std::string(),
+      const std::string &uriParams,
       const std::string &version = Poco::Net::HTTPMessage::HTTP_1_1);
   virtual ~Request() = default;
 
@@ -33,17 +31,22 @@ class Request {
   virtual boost::tuple<boost::posix_time::ptime,
                        boost::property_tree::ptree,
                        Lib::TimeMeasurement::Milestones>
-  Send(Poco::Net::HTTPSClientSession &, const Context &);
+  Send(Poco::Net::HTTPClientSession &, const Context &);
 
  protected:
+  static void AppendUriParams(const std::string &newParams,
+                              std::string &result);
+  static std::string AppendUriParams(const std::string &newParams,
+                                     const std::string &result);
+
   const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
+  const std::string &GetUriParams() const { return m_uriParams; }
+  virtual void CreateBody(const Poco::Net::HTTPClientSession &,
+                          std::string &result) const;
+  virtual void PreprareRequest(const Poco::Net::HTTPClientSession &,
+                               Poco::Net::HTTPRequest &) const {}
 
  private:
-  std::string CreateBody() const;
-
- private:
-  const std::string &m_apiKey;
-  const std::string &m_apiSecret;
   const std::string m_uri;
   const std::string m_uriParams;
   std::unique_ptr<Poco::Net::HTTPRequest> m_request;

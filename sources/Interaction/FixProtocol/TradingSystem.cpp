@@ -51,79 +51,39 @@ void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
   GetLog().Info("Connected.");
 }
 
-OrderId fix::TradingSystem::SendSellAtMarketPrice(trdk::Security &,
-                                                  const Currency &,
-                                                  const Qty &,
-                                                  const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
-}
-
-OrderId fix::TradingSystem::SendSell(trdk::Security &security,
-                                     const Currency &currency,
-                                     const Qty &qty,
-                                     const Price &price,
-                                     const OrderParams &) {
-  if (currency != security.GetSymbol().GetCurrency()) {
-    throw Error("Trading system supports only security quote currency");
+OrderId fix::TradingSystem::SendOrderTransaction(
+    trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderParams &params,
+    const OrderSide &side,
+    const TimeInForce &tif) {
+  static_assert(numberOfTimeInForces == 5, "List changed.");
+  switch (tif) {
+    case TIME_IN_FORCE_IOC:
+      return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                               params, side);
+    case TIME_IN_FORCE_GTC:
+      break;
+    default:
+      throw TradingSystem::Error("Order time-in-force type is not supported");
   }
-  const out::NewOrderSingle message(security, ORDER_SIDE_SELL, qty, price,
+  if (currency != security.GetSymbol().GetCurrency()) {
+    throw TradingSystem::Error(
+        "Trading system supports only security quote currency");
+  }
+  if (!price) {
+    throw TradingSystem::Error("Market order is not supported");
+  }
+
+  const out::NewOrderSingle message(security, side, qty, *price,
                                     GetStandardOutgoingHeader());
   m_client.Send(message);
   return message.GetSequenceNumber();
 }
 
-OrderId fix::TradingSystem::SendSellImmediatelyOrCancel(
-    trdk::Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params) {
-  return SendSellAndEmulateImmediatelyOrCancel(security, currency, qty, price,
-                                               params);
-}
-
-OrderId fix::TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
-}
-
-OrderId fix::TradingSystem::SendBuyAtMarketPrice(trdk::Security &,
-                                                 const Currency &,
-                                                 const Qty &,
-                                                 const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
-}
-
-OrderId fix::TradingSystem::SendBuy(trdk::Security &security,
-                                    const Currency &currency,
-                                    const Qty &qty,
-                                    const Price &price,
-                                    const OrderParams &) {
-  if (currency != security.GetSymbol().GetCurrency()) {
-    throw Error("Trading system supports only security quote currency");
-  }
-  const out::NewOrderSingle message(security, ORDER_SIDE_BUY, qty, price,
-                                    GetStandardOutgoingHeader());
-  m_client.Send(message);
-  return message.GetSequenceNumber();
-}
-
-OrderId fix::TradingSystem::SendBuyImmediatelyOrCancel(
-    trdk::Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params) {
-  return SendBuyAndEmulateImmediatelyOrCancel(security, currency, qty, price,
-                                              params);
-}
-
-OrderId fix::TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    trdk::Security &, const Currency &, const Qty &, const OrderParams &) {
-  throw MethodIsNotImplementedException("Methods is not supported");
-}
-
-void fix::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   m_client.Send(out::OrderCancelRequest(orderId, GetStandardOutgoingHeader()));
 }
 

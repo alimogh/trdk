@@ -9,12 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/TradingSystem.hpp"
 #include "App.hpp"
 #include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -95,28 +94,38 @@ void ReadTopOfBook(const pt::ptime &time,
   }
 }
 #pragma warning(pop)
+
+std::string NormilizeSymbol(const std::string &source) {
+  std::vector<std::string> subs;
+  boost::split(subs, source, boost::is_any_of("_"));
+  if (subs.size() != 2) {
+    return source;
+  }
+  subs[0].swap(subs[1]);
+  return boost::join(subs, "_");
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-class NovaexchangeRequest : public Request {
+class Request : public Rest::Request {
  public:
-  typedef Request Base;
+  typedef Rest::Request Base;
 
  public:
-  explicit NovaexchangeRequest(const std::string &uri,
-                               const std::string &message,
-                               const std::string &method,
-                               const Settings &settings)
-      : Base(uri, message, method, settings.apiKey, settings.apiSecret) {}
+  explicit Request(const std::string &uri,
+                   const std::string &name,
+                   const std::string &method,
+                   const std::string &uriParams = std::string())
+      : Base(uri, name, method, uriParams) {}
 
-  virtual ~NovaexchangeRequest() override = default;
+  virtual ~Request() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPSClientSession &session, const Context &context) override {
+      net::HTTPClientSession &session, const Context &context) override {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
@@ -126,7 +135,8 @@ class NovaexchangeRequest : public Request {
   }
 
  protected:
-  virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) {
+  virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &responseTree) const {
     const auto &result = responseTree.get_child_optional(GetName());
     if (!result) {
       boost::format error(
@@ -161,22 +171,68 @@ class NovaexchangeRequest : public Request {
   }
 };
 
-class OpenOrdersNovaexchangeRequest : public NovaexchangeRequest {
+class PublicRequest : public Request {
  public:
-  typedef NovaexchangeRequest Base;
+  typedef Request Base;
 
  public:
-  explicit OpenOrdersNovaexchangeRequest(const std::string &uri,
-                                         const std::string &message,
-                                         const std::string &method,
-                                         const Settings &settings)
-      : Base(uri, message, method, settings) {}
+  explicit PublicRequest(const std::string &uri,
+                         const std::string &name,
+                         const std::string &uriParams = std::string())
+      : Base(uri, name, net::HTTPRequest::HTTP_GET, uriParams) {}
+};
 
-  virtual ~OpenOrdersNovaexchangeRequest() override = default;
+class PrivateRequest : public Request {
+ public:
+  typedef Request Base;
+
+ public:
+  explicit PrivateRequest(const std::string &uri,
+                          const std::string &name,
+                          const Settings &settings,
+                          const std::string &uriParams = std::string())
+      : Base(uri,
+             name,
+             net::HTTPRequest::HTTP_POST,
+             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+        m_apiSecret(settings.apiSecret) {}
+
+  virtual ~PrivateRequest() override = default;
+
+ protected:
+  virtual void CreateBody(const net::HTTPClientSession &session,
+                          std::string &result) const override {
+    if (!result.empty()) {
+      result += '&';
+    }
+    result += "signature=";
+    {
+      using namespace trdk::Lib::Crypto;
+      const auto &digest =
+          CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
+                                   session.getHost() + GetRequest().getURI(),
+                               m_apiSecret);
+      result += Base64Coder(false).Encode(&digest[0], digest.size());
+    }
+    Base::CreateBody(session, result);
+  }
+
+ private:
+  const std::string m_apiSecret;
+};
+
+class OpenOrdersRequest : public PublicRequest {
+ public:
+  typedef PublicRequest Base;
+
+ public:
+  explicit OpenOrdersRequest(const std::string &uri) : Base(uri, "orders") {}
+
+  virtual ~OpenOrdersRequest() override = default;
 
  protected:
   virtual const ptr::ptree &ExtractContent(
-      const ptr::ptree &responseTree) override {
+      const ptr::ptree &responseTree) const override {
     return responseTree;
   }
 };
@@ -192,7 +248,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<NovaexchangeRequest> request;
+    boost::shared_ptr<Request> request;
     bool isSubscribed;
   };
 
@@ -208,12 +264,10 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_session("novaexchange.com"),
-        m_getBalancesRequest("/remote/v2/private/getbalances/",
-                             "balances",
-                             net::HTTPRequest::HTTP_POST,
-                             m_settings) {
-    m_session.setKeepAlive(true);
+        m_marketDataSession("novaexchange.com"),
+        m_tradingSession(m_marketDataSession.getHost()) {
+    m_marketDataSession.setKeepAlive(true);
+    m_tradingSession.setKeepAlive(true);
   }
 
   virtual ~NovaexchangeExchange() override = default;
@@ -238,7 +292,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetMdsLog().Info("Creating connection...");
+    GetTsLog().Info("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -266,7 +320,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             }
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
-            const auto &response = request.Send(m_session, GetContext());
+            const auto &response =
+                request.Send(m_marketDataSession, GetContext());
             const auto &time = boost::get<0>(response);
             const auto &delayMeasurement = boost::get<2>(response);
             const auto &update = boost::get<1>(response);
@@ -287,15 +342,19 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    PrivateRequest request("/remote/v2/private/getbalances/", "balances",
+                           m_settings);
     try {
-      const auto &response = m_getBalancesRequest.Send(m_session, GetContext());
+      const auto &response = request.Send(m_marketDataSession, GetContext());
+      MakeServerAnswerDebugDump(boost::get<1>(response), *this);
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
           continue;
         }
         GetTsLog().Info(
-            "%1% (%2%) balance: %3% (amount: %4%, trades: %5%, locked: %6%).",
+            "%1% (%2%) balance: %3% (amount: %4%, trades: %5%, locked: "
+            "%6%).",
             currency.second.get<std::string>("currencyname"),  // 1
             currency.second.get<std::string>("currency"),      // 2
             totalAmount,                                       // 3
@@ -304,9 +363,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             currency.second.get<double>("amount_lockbox"));    // 6
       }
     } catch (const std::exception &ex) {
-      boost::format error("Failed to read server balance list: \"%1%\"");
-      error % ex.what();
-      throw TradingSystem::ConnectError(error.str().c_str());
+      GetTsLog().Error("Failed to read server balance list: \"%1%\".",
+                       ex.what());
     }
     m_isConnected = true;
   }
@@ -314,112 +372,146 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
     {
+      const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
       if (it != m_securities.cend()) {
         return *it->second.security;
       }
     }
-    const SecuritiesLock lock(m_securitiesMutex);
 
-    std::vector<std::string> subs;
-    boost::split(subs, symbol.GetSymbol(), boost::is_any_of("_"));
-    subs[0].swap(subs[1]);
+    const auto result = boost::make_shared<Rest::Security>(
+        GetContext(), symbol, *this,
+        Rest::Security::SupportedLevel1Types()
+            .set(LEVEL1_TICK_BID_PRICE)
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_ASK_QTY));
+    {
+      const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
+          "/remote/v2/market/openorders/" +
+          NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/");
 
-    return *m_securities
-                .emplace(
-                    symbol,
-                    SecuritySubscribtion{
-                        boost::make_shared<Rest::Security>(
-                            GetContext(), symbol, *this,
-                            Rest::Security::SupportedLevel1Types()
-                                .set(LEVEL1_TICK_BID_PRICE)
-                                .set(LEVEL1_TICK_BID_QTY)
-                                .set(LEVEL1_TICK_ASK_PRICE)
-                                .set(LEVEL1_TICK_ASK_QTY)),
-                        boost::make_shared<OpenOrdersNovaexchangeRequest>(
-                            "/remote/v2/market/openorders/" +
-                                boost::join(subs, "_") + "/BOTH/",
-                            "orders", net::HTTPRequest::HTTP_POST, m_settings)})
-                .first->second.security;
+      const SecuritiesLock lock(m_securitiesMutex);
+      Verify(m_securities
+                 .emplace(
+                     symbol,
+                     SecuritySubscribtion{result, std::move(marketDataRequest)})
+                 .second);
+    }
+
+    return *result;
   }
 
-  virtual OrderId SendSellAtMarketPrice(trdk::Security &,
-                                        const Currency &,
-                                        const Qty &,
-                                        const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual OrderId SendOrderTransaction(trdk::Security &security,
+                                       const Currency &currency,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const OrderParams &params,
+                                       const OrderSide &side,
+                                       const TimeInForce &tif) override {
+    static_assert(numberOfTimeInForces == 5, "List changed.");
+    switch (tif) {
+      case TIME_IN_FORCE_IOC:
+        return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
+                                                 params, side);
+      case TIME_IN_FORCE_GTC:
+        break;
+      default:
+        throw TradingSystem::Error("Order time-in-force type is not supported");
+    }
+    if (currency != security.GetSymbol().GetCurrency()) {
+      throw TradingSystem::Error(
+          "Trading system supports only security quote currency");
+    }
+    if (!price) {
+      throw TradingSystem::Error("Market order is not supported");
+    }
+
+    boost::format requestParams(
+        "tradetype=BUY&tradeamount=%1$.8f&tradeprice=%2$.8f&tradebase=0");
+    requestParams % qty  // 1
+        % *price;        // 2
+    PrivateRequest request(
+        "/remote/v2/private/trade/" +
+            NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
+        "tradeitems", m_settings, requestParams.str());
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+
+    boost::optional<OrderId> orderId;
+    std::vector<TradeInfo> trades;
+    for (const auto &node : boost::get<1>(result)) {
+      const auto &item = node.second;
+      try {
+        const auto &type = item.get<std::string>("type");
+        if (boost::iequals(type, "trade")) {
+          trades.emplace_back(TradeInfo{
+              item.get<double>("price"),
+              item.get<double>("fromamount") - item.get<double>("toamount")});
+        } else if (boost::iequals(type, "created")) {
+          Assert(!orderId);
+          orderId = item.get<OrderId>("orderid");
+          GetContext().GetTimer().Schedule(
+              [this, orderId, qty] {
+                OnOrderStatusUpdate(*orderId,
+                                    boost::lexical_cast<std::string>(*orderId),
+                                    ORDER_STATUS_SUBMITTED, qty);
+              },
+              m_timerScope);
+        }
+      } catch (const std::exception &ex) {
+        boost::format error("Failed to read order transaction reply: \"%1%\"");
+        error % ex.what();
+        throw TradingSystem::Error(error.str().c_str());
+      }
+    }
+
+    if (!orderId) {
+      throw TradingSystem::Error("Exchange answer is empty");
+    }
+
+    if (!trades.empty()) {
+      GetContext().GetTimer().Schedule(
+          boost::bind(&NovaexchangeExchange::OnTradesInfo, this, *orderId, qty,
+                      trades),
+          m_timerScope);
+    }
+    return *orderId;
   }
 
-  virtual OrderId SendSell(trdk::Security &,
-                           const Currency &,
-                           const Qty &,
-                           const Price &,
-                           const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+    PrivateRequest request("/remote/v2/private/cancelorder/" +
+                               boost::lexical_cast<std::string>(orderId) + "/",
+                           "cancelorder", m_settings);
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
   }
 
-  virtual OrderId SendSellImmediatelyOrCancel(trdk::Security &,
-                                              const Currency &,
-                                              const Qty &,
-                                              const Price &,
-                                              const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendSellAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const Currency &,
-                                       const Qty &,
-                                       const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuy(trdk::Security &,
-                          const Currency &,
-                          const Qty &,
-                          const Price &,
-                          const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyImmediatelyOrCancel(trdk::Security &,
-                                             const Currency &,
-                                             const Qty &,
-                                             const Price &,
-                                             const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual OrderId SendBuyAtMarketPriceImmediatelyOrCancel(
-      trdk::Security &,
-      const Currency &,
-      const Qty &,
-      const OrderParams &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
-  }
-
-  virtual void SendCancelOrder(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  void OnTradesInfo(const OrderId &orderId,
+                    Qty &remainingQty,
+                    std::vector<TradeInfo> &trades) {
+    const auto &tradingSystemId = boost::lexical_cast<std::string>(orderId);
+    for (auto &trade : trades) {
+      remainingQty -= trade.qty;
+      OnOrderStatusUpdate(orderId, tradingSystemId,
+                          remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
+                                           : ORDER_STATUS_FILLED,
+                          remainingQty, std::move(trade));
+    }
   }
 
  private:
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_session;
-  NovaexchangeRequest m_getBalancesRequest;
+  net::HTTPSClientSession m_marketDataSession;
+  net::HTTPSClientSession m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
+  trdk::Timer::Scope m_timerScope;
 };
 }
 

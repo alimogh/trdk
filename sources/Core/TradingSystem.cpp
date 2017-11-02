@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "DropCopy.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Timer.hpp"
@@ -17,6 +18,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::Lib::TimeMeasurement;
 
 namespace pt = boost::posix_time;
 
@@ -29,25 +31,11 @@ TradingSystem::OrderParamsError::OrderParamsError(const char *what,
                                                   const OrderParams &) noexcept
     : Error(what) {}
 
-TradingSystem::SendingError::SendingError(const char *what) noexcept
-    : Error(what) {}
-
 TradingSystem::OrderIsUnknown::OrderIsUnknown(const char *what) noexcept
     : Error(what) {}
 
-TradingSystem::UnknownOrderCancelError::UnknownOrderCancelError(
-    const char *what) noexcept
-    : OrderIsUnknown(what) {}
-
 TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
     const char *what) noexcept
-    : Error(what) {}
-
-TradingSystem::UnknownAccountError::UnknownAccountError(
-    const char *what) noexcept
-    : Error(what) {}
-
-TradingSystem::PositionError::PositionError(const char *what) noexcept
     : Error(what) {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,15 +54,35 @@ std::string FormatStringId(const std::string &instanceName,
   return result;
 }
 
+template <trdk::Lib::Concurrency::Profile profile>
+struct ActiveOrderConcurrencyPolicy {
+  static_assert(profile == trdk::Lib::Concurrency::PROFILE_RELAX,
+                "Wrong concurrency profile");
+  typedef boost::mutex Mutex;
+  typedef Mutex::scoped_lock Lock;
+};
+template <>
+struct ActiveOrderConcurrencyPolicy<trdk::Lib::Concurrency::PROFILE_HFT> {
+  typedef trdk::Lib::Concurrency::SpinMutex Mutex;
+  typedef Mutex::ScopedLock Lock;
+};
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Mutex
+    ActiveOrderMutex;
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Lock
+    ActiveOrderLock;
+
 struct ActiveOrder {
   TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
   Qty remainingQty;
-  std::unique_ptr<Timer::Scope> timerScope;
+  OrderStatus status;
+  std::unique_ptr<trdk::Timer::Scope> timerScope;
 };
 }
 
 class TradingSystem::Implementation : private boost::noncopyable {
  public:
+  TradingSystem &m_self;
+
   const TradingMode m_mode;
 
   const size_t m_index;
@@ -89,14 +97,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   boost::atomic_size_t m_lastOperationId;
 
+  ActiveOrderMutex m_activeOrdersMutex;
   boost::unordered_map<OrderId, ActiveOrder> m_activeOrders;
   std::unique_ptr<Timer::Scope> m_lastOrderTimerScope;
 
-  explicit Implementation(const TradingMode &mode,
+  explicit Implementation(TradingSystem &self,
+                          const TradingMode &mode,
                           size_t index,
                           Context &context,
                           const std::string &instanceName)
-      : m_mode(mode),
+      : m_self(self),
+        m_mode(mode),
         m_index(index),
         m_context(context),
         m_instanceName(instanceName),
@@ -115,21 +126,28 @@ class TradingSystem::Implementation : private boost::noncopyable {
     }
   }
 
-  void LogNewOrder(const char *orderType,
-                   size_t operationId,
+  void LogNewOrder(size_t operationId,
                    Security &security,
                    const Currency &currency,
                    const Qty &qty,
-                   const Price &price) {
-    m_tradingLog.Write("%1%\t%2%\t%3%\t%4%\tprice=%5%\tqty=%6%",
-                       [&](TradingRecord &record) {
-                         record % orderType  // 1
-                             % operationId   // 2
-                             % security      // 3
-                             % currency      // 4
-                             % price         // 6
-                             % qty;          // 5
-                       });
+                   const boost::optional<Price> &orderPrice,
+                   const Price &actualPrice,
+                   const OrderSide &side,
+                   const TimeInForce &tif) {
+    m_tradingLog.Write(
+        "{'newOrder': {'operationId': %1%, 'side': '%2%', 'security': '%3%', "
+        "'currency': '%4%', 'type': '%5%', 'price': %6$.8f, 'qty': %7$.8f"
+        ", 'tif': '%8%'}}",
+        [&](TradingRecord &record) {
+          record % operationId                                       // 1
+              % side                                                 // 2
+              % security                                             // 3
+              % currency                                             // 4
+              % (orderPrice ? ORDER_TYPE_LIMIT : ORDER_TYPE_MARKET)  // 5
+              % actualPrice                                          // 6
+              % qty                                                  // 7
+              % tif;                                                 // 8
+        });
   }
   void LogOrderUpdate(size_t operationId,
                       const OrderId &orderId,
@@ -139,108 +157,50 @@ class TradingSystem::Implementation : private boost::noncopyable {
                       const boost::optional<Volume> &commission,
                       const TradeInfo *trade) {
     m_tradingLog.Write(
-        "ORDER STATUS\t%1%\t%2%\tid=%3%/%4%\tremaining=%5%"
-        "\tcomm=%6%\ttrade-id=%7%\ttrade-qty=%8%\ttrade-price=%9%",
+        "{'orderStatus': {'status': '%1%', 'remainingQty': %2$.8f, "
+        "'operationId': %3%, 'id': %4%, 'tsId': '%5%', 'commission': %6$.8f}}",
         [&](TradingRecord &record) {
-          record % operationId        // 1
-              % orderStatus           // 2
-              % orderId               // 3
-              % tradingSystemOrderId  // 4
-              % remainingQty;         // 5
+          record % orderStatus         // 1
+              % remainingQty           // 2
+              % operationId            // 3
+              % orderId                // 4
+              % tradingSystemOrderId;  // 5
           if (commission) {
-            record % *commission;  // 6
+            record % *commission;
           } else {
-            record % '-';  // 6
-          }
-          if (trade) {
-            if (trade->id) {
-              record % *trade->id;  // 7
-            } else {
-              record % '-';  // 7
-            }
-            record % trade->qty  // 8
-                % trade->price;  // 9
-          } else {
-            record % '-'  // 7
-                % '-'     // 8
-                % '-';    // 9
+            record % "NaN";
           }
         });
+    if (trade) {
+      m_tradingLog.Write(
+          "{'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}",
+          [&trade](TradingRecord &record) {
+            if (trade->id) {
+              record % *trade->id;  // 1
+            } else {
+              record % "";  // 1
+            }
+            record % trade->qty  // 2
+                % trade->price;  // 3
+          });
+    }
   }
 
-  void ValidateNewOrder(const Qty &qty, const OrderParams &params) {
-    if (params.displaySize && *params.displaySize > qty) {
-      throw OrderParamsError(
-          "Order display size can't be greater then order size", qty, params);
-    }
-
-    if (params.goodInSeconds && params.goodTillTime) {
-      throw OrderParamsError(
-          "Good Next Seconds and Good Till Time can't be used at"
-          " the same time",
-          qty, params);
-    }
-  }
-
-  void ValidateNewIocOrder(const Qty &qty, const OrderParams &params) {
-    if (params.goodInSeconds || params.goodTillTime) {
-      throw OrderParamsError(
-          "Good Next Seconds and Good Till Time can't be used for"
-          " Immediate Or Cancel (IOC) order",
-          qty, params);
-    }
-
-    ValidateNewOrder(qty, params);
-  }
-
-  RiskControlOperationId CheckNewBuyOrder(
-      RiskControlScope &riskControlScope,
-      Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const Price &price,
-      const OrderParams &params,
-      const TimeMeasurement::Milestones &timeMeasurement) {
-    ValidateNewOrder(qty, params);
+  RiskControlOperationId CheckNewBuyOrder(RiskControlScope &riskControlScope,
+                                          Security &security,
+                                          const Currency &currency,
+                                          const Qty &qty,
+                                          const Price &price,
+                                          const Milestones &delaysMeasurement) {
     return m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
-        riskControlScope, security, currency, qty, price, timeMeasurement);
+        riskControlScope, security, currency, qty, price, delaysMeasurement);
   }
-
-  RiskControlOperationId CheckNewBuyIocOrder(
-      RiskControlScope &riskControlScope,
-      Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const Price &price,
-      const OrderParams &params,
-      const TimeMeasurement::Milestones &timeMeasurement) {
-    ValidateNewIocOrder(qty, params);
-    return m_context.GetRiskControl(m_mode).CheckNewBuyOrder(
-        riskControlScope, security, currency, qty, price, timeMeasurement);
-  }
-
-  RiskControlOperationId CheckNewSellOrder(
-      RiskControlScope &riskControlScope,
-      Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const Price &price,
-      const OrderParams &params,
-      const TimeMeasurement::Milestones &timeMeasurement) {
-    ValidateNewOrder(qty, params);
-    return m_context.GetRiskControl(m_mode).CheckNewSellOrder(
-        riskControlScope, security, currency, qty, price, timeMeasurement);
-  }
-
-  RiskControlOperationId CheckNewSellIocOrder(
-      RiskControlScope &riskControlScope,
-      Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const Price &price,
-      const OrderParams &params,
-      const TimeMeasurement::Milestones &timeMeasurement) {
-    ValidateNewIocOrder(qty, params);
+  RiskControlOperationId CheckNewSellOrder(RiskControlScope &riskControlScope,
+                                           Security &security,
+                                           const Currency &currency,
+                                           const Qty &qty,
+                                           const Price &price,
+                                           const Milestones &timeMeasurement) {
     return m_context.GetRiskControl(m_mode).CheckNewSellOrder(
         riskControlScope, security, currency, qty, price, timeMeasurement);
   }
@@ -253,7 +213,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                        const Price &orderPrice,
                        const Qty &remainingQty,
                        const TradeInfo *trade,
-                       const TimeMeasurement::Milestones &timeMeasurement) {
+                       const Milestones &timeMeasurement) {
     m_context.GetRiskControl(m_mode).ConfirmBuyOrder(
         riskControlOperationId, riskControlScope, orderStatus, security,
         currency, orderPrice, remainingQty, trade, timeMeasurement);
@@ -267,7 +227,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                         const Price &orderPrice,
                         const Qty &remainingQty,
                         const TradeInfo *trade,
-                        const TimeMeasurement::Milestones &timeMeasurement) {
+                        const Milestones &timeMeasurement) {
     m_context.GetRiskControl(m_mode).ConfirmSellOrder(
         operationId, riskControlScope, orderStatus, security, currency,
         orderPrice, remainingQty, trade, timeMeasurement);
@@ -276,8 +236,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void RegisterCallback(const OrderId &orderId,
                         const OrderStatusUpdateSlot &&callback,
                         const Qty &qty) {
-    auto result =
-        m_activeOrders.emplace(orderId, ActiveOrder{std::move(callback), qty});
+    auto result = m_activeOrders.emplace(
+        orderId, ActiveOrder{std::move(callback), qty, ORDER_STATUS_SENT});
     if (!result.second) {
       m_log.Error("Order ID %1% is not unique.", orderId);
       throw Error("Order ID %1% is not unique");
@@ -294,6 +254,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
                            const boost::optional<Qty> &remainingQty,
                            const boost::optional<Volume> &commission,
                            boost::optional<TradeInfo> &&tradeInfo) {
+    const auto &time = m_context.GetCurrentTime();
+    const ActiveOrderLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -301,6 +263,37 @@ class TradingSystem::Implementation : private boost::noncopyable {
           orderId);
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
+    }
+    OnOrderStatusUpdate(orderId, tradingSystemOrderId, status, remainingQty,
+                        commission, std::move(tradeInfo), time, it);
+  }
+
+  void OnOrderStatusUpdate(
+      const OrderId &orderId,
+      const std::string &tradingSystemOrderId,
+      OrderStatus status,
+      const boost::optional<Qty> &remainingQty,
+      const boost::optional<Volume> &commission,
+      boost::optional<TradeInfo> &&tradeInfo,
+      const pt::ptime &time,
+      const boost::unordered_map<OrderId, ActiveOrder>::iterator &it) {
+    static_assert(numberOfOrderStatuses == 8, "List changed.");
+    switch (status) {
+      case ORDER_STATUS_SENT:
+      case ORDER_STATUS_SUBMITTED:
+        switch (it->second.status) {
+          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_FILLED_PARTIALLY:
+            status = it->second.status;
+            break;
+          default:
+            it->second.status = status;
+            break;
+        }
+        break;
+      default:
+        it->second.status = status;
+        break;
     }
 
     if (remainingQty) {
@@ -317,6 +310,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
     it->second.statusUpdateSignal(orderId, tradingSystemOrderId, status,
                                   it->second.remainingQty, commission,
                                   tradeInfo ? &*tradeInfo : nullptr);
+
+    m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
+      dropCopy.CopyOrderStatus(orderId, tradingSystemOrderId, m_self, time,
+                               status, it->second.remainingQty);
+      if (tradeInfo) {
+        dropCopy.CopyTrade(time, tradeInfo->id, orderId, m_self,
+                           tradeInfo->price, tradeInfo->qty);
+      }
+    });
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
@@ -336,7 +338,7 @@ TradingSystem::TradingSystem(const TradingMode &mode,
                              Context &context,
                              const std::string &instanceName)
     : m_pimpl(boost::make_unique<Implementation>(
-          mode, index, context, instanceName)) {}
+          *this, mode, index, context, instanceName)) {}
 
 TradingSystem::~TradingSystem() = default;
 
@@ -370,6 +372,18 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
   throw MethodIsNotImplementedException("Account Cash Balance not implemented");
 }
 
+std::vector<OrderId> TradingSystem::GetActiveOrderList() const {
+  std::vector<OrderId> result;
+  {
+    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    result.reserve(m_pimpl->m_activeOrders.size());
+    for (const auto &order : m_pimpl->m_activeOrders) {
+      result.emplace_back(order.first);
+    }
+  }
+  return result;
+}
+
 void TradingSystem::Connect(const IniSectionRef &conf) {
   if (IsConnected()) {
     return;
@@ -377,530 +391,151 @@ void TradingSystem::Connect(const IniSectionRef &conf) {
   CreateConnection(conf);
 }
 
-OrderId TradingSystem::SellAtMarketPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto &supposedPrice = security.GetBidPrice();
-
+OrderId TradingSystem::SendOrder(Security &security,
+                                 const Currency &currency,
+                                 const Qty &qty,
+                                 const boost::optional<Price> &price,
+                                 const OrderParams &params,
+                                 const OrderStatusUpdateSlot &callback,
+                                 RiskControlScope &riskControlScope,
+                                 const OrderSide &side,
+                                 const TimeInForce &tif,
+                                 const Milestones &delaysMeasurement) {
   const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("SELL MKT GTC", operationId, security, currency, qty,
-                       supposedPrice);
+  const Price &actualPrice = price ? *price
+                                   : side == ORDER_SIDE_BUY
+                                         ? security.GetAskPrice()
+                                         : security.GetBidPrice();
+  m_pimpl->LogNewOrder(operationId, security, currency, qty, price, actualPrice,
+                       side, tif);
 
   const auto riskControlOperationId =
-      m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
-                                 supposedPrice, params, timeMeasurement);
+      side == ORDER_SIDE_BUY
+          ? m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
+                                      actualPrice, delaysMeasurement)
+          : m_pimpl->CheckNewSellOrder(riskControlScope, security, currency,
+                                       qty, actualPrice, delaysMeasurement);
 
   try {
-    return SendSellAtMarketPrice(
-        security, currency, qty, params,
-        [&, operationId, riskControlOperationId, currency, supposedPrice,
-         timeMeasurement, callback](
+    return SendOrderTransaction(
+        security, currency, qty, price, params, side, tif,
+        [this, operationId, &riskControlScope, riskControlOperationId,
+         &security, currency, actualPrice, delaysMeasurement, callback, side](
             const OrderId &orderId, const std::string &tradingSystemOrderId,
             const OrderStatus &orderStatus, const Qty &remainingQty,
             const boost::optional<Volume> &commission, const TradeInfo *trade) {
           m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
                                   orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmSellOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
+          side == ORDER_SIDE_BUY
+              ? m_pimpl->ConfirmBuyOrder(riskControlOperationId,
+                                         riskControlScope, orderStatus,
+                                         security, currency, actualPrice,
+                                         remainingQty, trade, delaysMeasurement)
+              : m_pimpl->ConfirmSellOrder(
+                    riskControlOperationId, riskControlScope, orderStatus,
+                    security, currency, actualPrice, remainingQty, trade,
+                    delaysMeasurement);
           callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
                    commission, trade);
         });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
+  } catch (const std::exception &ex) {
+    GetTradingLog().Write(
+        "{'orderSendError': {'reason': '%1%', 'operationId': %2%}}",
+        [&ex, &operationId](TradingRecord &record) {
+          record % ex.what()  // 1
+              % operationId;  // 2
+        });
+    GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
-                              supposedPrice, qty, nullptr, timeMeasurement);
+                              actualPrice, qty, nullptr, delaysMeasurement);
     throw;
-  }
-}
-
-OrderId TradingSystem::Sell(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("SELL LMT GTC", operationId, security, currency, qty,
-                       price);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewSellOrder(riskControlScope, security, currency, qty,
-                                 price, params, timeMeasurement);
-
-  try {
-    return SendSell(
-        security, currency, qty, price, params,
-        [&, operationId, riskControlOperationId, currency, price,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
-                                    orderStatus, security, currency, price,
-                                    remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
   } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
-                              ORDER_STATUS_ERROR, security, currency, price,
-                              qty, nullptr, timeMeasurement);
-    throw;
-  }
-}
-
-OrderId TradingSystem::SellImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("SELL LMT IOC", operationId, security, currency, qty,
-                       price);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewSellIocOrder(riskControlScope, security, currency, qty,
-                                    price, params, timeMeasurement);
-
-  try {
-    return SendSellImmediatelyOrCancel(
-        security, currency, qty, price, params,
-        [&, operationId, riskControlOperationId, currency, price,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
-                                    orderStatus, security, currency, price,
-                                    remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
+    GetTradingLog().Write(
+        "{'orderSendError': {'reason': 'Unknown exception', 'operationId': "
+        "%1%}}",
+        [&operationId](TradingRecord &record) {
+          record % operationId;  // 1
         });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
-                              ORDER_STATUS_ERROR, security, currency, price,
-                              qty, nullptr, timeMeasurement);
-    throw;
-  }
-}
-
-OrderId TradingSystem::SellAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto &supposedPrice = security.GetBidPrice();
-
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("SELL MKT IOC", operationId, security, currency, qty,
-                       supposedPrice);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewSellIocOrder(riskControlScope, security, currency, qty,
-                                    supposedPrice, params, timeMeasurement);
-
-  try {
-    return SendSellAtMarketPriceImmediatelyOrCancel(
-        security, currency, qty, params,
-        [&, operationId, riskControlOperationId, currency, supposedPrice,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmSellOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
+    GetLog().Error("Unknown error while sending order transaction.");
+    AssertFailNoException();
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
-                              supposedPrice, qty, nullptr, timeMeasurement);
+                              actualPrice, qty, nullptr, delaysMeasurement);
     throw;
   }
 }
 
-OrderId TradingSystem::BuyAtMarketPrice(
+OrderId TradingSystem::SendOrderTransaction(
     Security &security,
     const Currency &currency,
     const Qty &qty,
+    const boost::optional<Price> &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto &supposedPrice = security.GetAskPrice();
-
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("BUY MKT GTC", operationId, security, currency, qty,
-                       supposedPrice);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
-                                supposedPrice, params, timeMeasurement);
-
-  try {
-    return SendBuyAtMarketPrice(
-        security, currency, qty, params,
-        [&, operationId, riskControlOperationId, currency, supposedPrice,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmBuyOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                             ORDER_STATUS_ERROR, security, currency,
-                             supposedPrice, qty, nullptr, timeMeasurement);
-    throw;
-  }
+    const OrderSide &side,
+    const TimeInForce &tif,
+    const OrderStatusUpdateSlot &&callback) {
+  const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+  const auto &time = GetContext().GetCurrentTime();
+  const auto &orderId =
+      SendOrderTransaction(security, currency, qty, price, params, side, tif);
+  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopySubmittedOrder(orderId, time, security, currency, *this, side,
+                                qty, price, tif);
+  });
+  return orderId;
 }
 
-OrderId TradingSystem::Buy(Security &security,
-                           const Currency &currency,
-                           const Qty &qty,
-                           const Price &price,
-                           const OrderParams &params,
-                           const OrderStatusUpdateSlot &callback,
-                           RiskControlScope &riskControlScope,
-                           const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("BUY LMT GTC", operationId, security, currency, qty,
-                       price);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewBuyOrder(riskControlScope, security, currency, qty,
-                                price, params, timeMeasurement);
-
-  try {
-    return SendBuy(
-        security, currency, qty, price, params,
-        [&, operationId, riskControlOperationId, currency, price,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                                   orderStatus, security, currency, price,
-                                   remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                             ORDER_STATUS_ERROR, security, currency, price, qty,
-                             nullptr, timeMeasurement);
-    throw;
-  }
-}
-
-OrderId TradingSystem::BuyImmediatelyOrCancel(
+OrderId TradingSystem::SendOrderTransactionAndEmulateIoc(
     Security &security,
     const Currency &currency,
     const Qty &qty,
-    const Price &price,
+    const boost::optional<Price> &price,
     const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("BUY LMT IOC", operationId, security, currency, qty,
-                       price);
+    const OrderSide &side) {
+  const auto &orderId = SendOrderTransaction(security, currency, qty, price,
+                                             params, side, TIME_IN_FORCE_GTC);
+  Assert(!m_pimpl->m_lastOrderTimerScope);
+  m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>(orderId);
+  GetContext().GetTimer().Schedule(
+      params.goodInTime ? *params.goodInTime : pt::milliseconds(300),
+      [this, orderId] { CancelOrder(orderId); },
+      *m_pimpl->m_lastOrderTimerScope);
+  return orderId;
+}
 
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewBuyIocOrder(riskControlScope, security, currency, qty,
-                                   price, params, timeMeasurement);
-
+void TradingSystem::CancelOrder(const OrderId &orderId) {
+  GetTradingLog().Write(
+      "{'orderCancel': {'id': %1%}}",
+      [&orderId](TradingRecord &record) { record % orderId; });
   try {
-    return SendBuyImmediatelyOrCancel(
-        security, currency, qty, price, params,
-        [&, operationId, riskControlOperationId, currency, price,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                                   orderStatus, security, currency, price,
-                                   remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
+    SendCancelOrderTransaction(orderId);
+  } catch (const std::exception &ex) {
+    GetTradingLog().Write(
+        "{'orderCancelSendError': {'id': %1%, 'reason': '%2%'}}",
+        [&orderId, &ex](TradingRecord &record) {
+          record % orderId  // 1
+              % ex.what();  // 2
         });
+    GetLog().Warn(
+        "Error while sending order cancel transaction for order %1%: \"%2%\".",
+        orderId,     // 1
+        ex.what());  // 2
+    throw;
   } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                             ORDER_STATUS_ERROR, security, currency, price, qty,
-                             nullptr, timeMeasurement);
+    GetTradingLog().Write(
+        "{'orderCancelSendError': {'id': %1%, 'reason': 'Unknown exception'}}",
+        [&orderId](TradingRecord &record) { record % orderId; });
+    GetLog().Error(
+        "Unknown error while sending order cancel transaction for order %1%.",
+        orderId);
+    AssertFailNoException();
     throw;
   }
-}
-
-OrderId TradingSystem::BuyAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &callback,
-    RiskControlScope &riskControlScope,
-    const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto &supposedPrice = security.GetAskPrice();
-
-  const auto operationId = ++m_pimpl->m_lastOperationId;
-  m_pimpl->LogNewOrder("BUY MKT IOC", operationId, security, currency, qty,
-                       supposedPrice);
-
-  const auto riskControlOperationId =
-      m_pimpl->CheckNewBuyIocOrder(riskControlScope, security, currency, qty,
-                                   supposedPrice, params, timeMeasurement);
-
-  try {
-    return SendBuyAtMarketPriceImmediatelyOrCancel(
-        security, currency, qty, params,
-        [&, operationId, riskControlOperationId, currency, supposedPrice,
-         timeMeasurement, callback](
-            const OrderId &orderId, const std::string &tradingSystemOrderId,
-            const OrderStatus &orderStatus, const Qty &remainingQty,
-            const boost::optional<Volume> &commission, const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(operationId, orderId, tradingSystemOrderId,
-                                  orderStatus, remainingQty, commission, trade);
-          m_pimpl->ConfirmBuyOrder(
-              riskControlOperationId, riskControlScope, orderStatus, security,
-              currency, supposedPrice, remainingQty, trade, timeMeasurement);
-          callback(orderId, tradingSystemOrderId, orderStatus, remainingQty,
-                   commission, trade);
-        });
-  } catch (...) {
-    try {
-      throw;
-    } catch (const std::exception &ex) {
-      GetLog().Warn("Error while sending order: \"%1%\".", ex.what());
-    } catch (...) {
-      GetLog().Error("Unknown error while sending order.");
-    }
-    m_pimpl->ConfirmBuyOrder(riskControlOperationId, riskControlScope,
-                             ORDER_STATUS_ERROR, security, currency,
-                             supposedPrice, qty, nullptr, timeMeasurement);
-    throw;
-  }
-}
-
-void TradingSystem::CancelOrder(const OrderId &order) {
-  GetTradingLog().Write("CANCEL ORDER\t%1%",
-                        [&](TradingRecord &record) { record % order; });
-  SendCancelOrder(order);
-}
-
-void TradingSystem::Test() {
-  throw MethodIsNotImplementedException(
-      "Trading system does not support testing");
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
-
-OrderId TradingSystem::SendSellAtMarketPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId = SendSellAtMarketPrice(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendSell(Security &security,
-                                const Currency &currency,
-                                const Qty &qty,
-                                const Price &price,
-                                const OrderParams &params,
-                                const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId = SendSell(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendSellImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId =
-      SendSellImmediatelyOrCancel(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId =
-      SendSellAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendBuyAtMarketPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId = SendBuyAtMarketPrice(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendBuy(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const TradingSystem::OrderStatusUpdateSlot &&callback) {
-  const auto &orderId = SendBuy(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendBuyImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId =
-      SendBuyImmediatelyOrCancel(security, currency, qty, price, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
-
-OrderId TradingSystem::SendSellAndEmulateImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params) {
-  const auto &orderId = SendSell(security, currency, qty, price, params);
-  Assert(!m_pimpl->m_lastOrderTimerScope);
-  m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>(orderId);
-  GetContext().GetTimer().Schedule(pt::milliseconds(300),
-                                   [this, orderId] { CancelOrder(orderId); },
-                                   *m_pimpl->m_lastOrderTimerScope);
-  return orderId;
-}
-
-OrderId TradingSystem::SendBuyAndEmulateImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params) {
-  const auto &orderId = SendBuy(security, currency, qty, price, params);
-  Assert(!m_pimpl->m_lastOrderTimerScope);
-  m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>(orderId);
-  GetContext().GetTimer().Schedule(pt::milliseconds(300),
-                                   [this, orderId] { CancelOrder(orderId); },
-                                   *m_pimpl->m_lastOrderTimerScope);
-  return orderId;
-}
-
-OrderId TradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&callback) {
-  const auto &orderId =
-      SendBuyAtMarketPriceImmediatelyOrCancel(security, currency, qty, params);
-  m_pimpl->RegisterCallback(orderId, std::move(callback), qty);
-  return orderId;
-}
 
 void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                         const std::string &tradingSystemOrderId,
@@ -936,10 +571,17 @@ void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
                                remainingQty, boost::none, std::move(trade));
 }
 
+void TradingSystem::OnOrderCancel(const OrderId &orderId,
+                                  const std::string &tradingSystemOrderId) {
+  m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
+                               ORDER_STATUS_CANCELLED, boost::none, boost::none,
+                               boost::none);
+}
+
 void TradingSystem::OnOrderError(const OrderId &orderId,
                                  const std::string &tradingSystemOrderId,
                                  const std::string &&error) {
-  GetTradingLog().Write("ORDER ERROR\tid=%1%\treason=%2%",
+  GetTradingLog().Write("{'orderError': {'id': %1%, 'reason': '%2%'}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % error;      // 2
@@ -954,7 +596,7 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
 void TradingSystem::OnOrderReject(const OrderId &orderId,
                                   const std::string &tradingSystemOrderId,
                                   const std::string &&reason) {
-  GetTradingLog().Write("ORDER REJECT\tid=%1%\treason=%2%",
+  GetTradingLog().Write("{'orderReject': {'id': %1%, 'reason': '%2%'}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % reason;     // 2
@@ -962,6 +604,34 @@ void TradingSystem::OnOrderReject(const OrderId &orderId,
   m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId,
                                ORDER_STATUS_REJECTED, boost::none, boost::none,
                                boost::none);
+}
+
+void TradingSystem::OnOrder(const OrderId &orderId,
+                            const std::string &tradingSystemOrderId,
+                            const std::string &symbol,
+                            const OrderStatus &status,
+                            const Qty &qty,
+                            const Qty &remainingQty,
+                            const boost::optional<Price> &price,
+                            const OrderSide &side,
+                            const TimeInForce &tif,
+                            const pt::ptime &openTime,
+                            const pt::ptime &updateTime) {
+  {
+    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    const auto &it = m_pimpl->m_activeOrders.find(orderId);
+    if (it != m_pimpl->m_activeOrders.cend()) {
+      m_pimpl->OnOrderStatusUpdate(orderId, tradingSystemOrderId, status,
+                                   remainingQty, boost::none, boost::none,
+                                   updateTime, it);
+      return;
+    }
+  }
+  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+    dropCopy.CopyOrder(orderId, tradingSystemOrderId, *this, symbol, status,
+                       qty, remainingQty, price, side, tif, openTime,
+                       updateTime);
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -972,92 +642,66 @@ LegacyTradingSystem::LegacyTradingSystem(const TradingMode &tradingMode,
                                          const std::string &instanceName)
     : TradingSystem(tradingMode, index, context, instanceName) {}
 
-LegacyTradingSystem::~LegacyTradingSystem() = default;
-
-OrderId LegacyTradingSystem::SendSellAtMarketPrice(Security &,
-                                                   const Currency &,
-                                                   const Qty &,
-                                                   const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
+OrderId LegacyTradingSystem::SendOrderTransaction(
+    Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderParams &params,
+    const OrderSide &side,
+    const TimeInForce &tif,
+    const OrderStatusUpdateSlot &&callback) {
+  if (side == ORDER_SIDE_BUY) {
+    if (price) {
+      switch (tif) {
+        case TIME_IN_FORCE_GTC:
+          return SendBuy(security, currency, qty, *price, params,
+                         std::move(callback));
+        case TIME_IN_FORCE_IOC:
+          return SendBuyImmediatelyOrCancel(security, currency, qty, *price,
+                                            params, std::move(callback));
+      }
+    } else {
+      switch (tif) {
+        case TIME_IN_FORCE_GTC:
+          return SendBuyAtMarketPrice(security, currency, qty, params,
+                                      std::move(callback));
+      }
+    }
+  } else {
+    if (price) {
+      switch (tif) {
+        case TIME_IN_FORCE_GTC:
+          return SendSell(security, currency, qty, *price, params,
+                          std::move(callback));
+        case TIME_IN_FORCE_IOC:
+          return SendSellImmediatelyOrCancel(security, currency, qty, *price,
+                                             params, std::move(callback));
+      }
+    } else {
+      switch (tif) {
+        case TIME_IN_FORCE_GTC:
+          return SendSellAtMarketPrice(security, currency, qty, params,
+                                       std::move(callback));
+      }
+    }
+  }
+  AssertFail("Legacy trading system can not support all order types.");
+  throw Error("Unsupported order type");
 }
 
-OrderId LegacyTradingSystem::SendSell(Security &,
-                                      const Currency &,
-                                      const Qty &,
-                                      const Price &,
-                                      const OrderParams &) {
+OrderId LegacyTradingSystem::SendOrderTransaction(
+    Security &,
+    const Currency &,
+    const Qty &,
+    const boost::optional<Price> &,
+    const OrderParams &,
+    const OrderSide &,
+    const TimeInForce &) {
   AssertFail(
       "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendSellImmediatelyOrCancel(Security &,
-                                                         const Currency &,
-                                                         const Qty &,
-                                                         const Price &,
-                                                         const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendSellAtMarketPriceImmediatelyOrCancel(
-    Security &, const Currency &, const Qty &, const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendBuyAtMarketPrice(Security &,
-                                                  const Currency &,
-                                                  const Qty &,
-                                                  const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendBuy(Security &,
-                                     const Currency &,
-                                     const Qty &,
-                                     const Price &,
-                                     const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendBuyImmediatelyOrCancel(Security &,
-                                                        const Currency &,
-                                                        const Qty &,
-                                                        const Price &,
-                                                        const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
-      "callback argument.");
-  throw Error("Internal error of legacy trading system implementation");
-}
-
-OrderId LegacyTradingSystem::SendBuyAtMarketPriceImmediatelyOrCancel(
-    Security &, const Currency &, const Qty &, const OrderParams &) {
-  AssertFail(
-      "Internal error of legacy trading system implementation: this method "
-      "never should be called, as legacy trading system use own methods with "
+      "never should be called, as legacy trading system uses own methods "
+      "with "
       "callback argument.");
   throw Error("Internal error of legacy trading system implementation");
 }

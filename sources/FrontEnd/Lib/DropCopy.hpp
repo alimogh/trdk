@@ -27,6 +27,34 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
  signals:
   void PriceUpdate(const Security *);
 
+  void OrderSubmitted(const trdk::OrderId &,
+                      const boost::posix_time::ptime &,
+                      const trdk::Security *,
+                      const trdk::Lib::Currency &,
+                      const trdk::TradingSystem *,
+                      const trdk::OrderSide &,
+                      const trdk::Qty &,
+                      const boost::optional<trdk::Price> &,
+                      const trdk::TimeInForce &);
+  void OrderUpdated(const trdk::OrderId &,
+                    const std::string &tradingSystemId,
+                    const trdk::TradingSystem *,
+                    const boost::posix_time::ptime &,
+                    const trdk::OrderStatus &,
+                    const trdk::Qty &remainingQty);
+  void Order(const trdk::OrderId &,
+             const std::string &tradingSystemOrderId,
+             const trdk::TradingSystem *,
+             const std::string &symbol,
+             const trdk::OrderStatus &,
+             const trdk::Qty &qty,
+             const trdk::Qty &remainingQty,
+             const boost::optional<trdk::Price> &,
+             const trdk::OrderSide &,
+             const trdk::TimeInForce &,
+             const boost::posix_time::ptime &openTime,
+             const boost::posix_time::ptime &updateTime);
+
  public:
   //! Tries to flush buffered Drop Copy data.
   /** The method doesn't guarantee to store all records, it just initiates
@@ -48,36 +76,41 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
       const boost::uuids::uuid &type,
       const boost::uuids::uuid &id) override;
 
-  virtual void CopyOrder(const boost::uuids::uuid &id,
-                         const std::string *tradingSystemId,
-                         const boost::posix_time::ptime &orderTime,
-                         const boost::posix_time::ptime *executionTime,
-                         const trdk::OrderStatus &,
-                         const boost::uuids::uuid &operationId,
-                         const int64_t *subOperationId,
-                         const trdk::Security &,
+  virtual void CopySubmittedOrder(const trdk::OrderId &,
+                                  const boost::posix_time::ptime &,
+                                  const trdk::Security &,
+                                  const trdk::Lib::Currency &,
+                                  const trdk::TradingSystem &,
+                                  const trdk::OrderSide &,
+                                  const trdk::Qty &,
+                                  const boost::optional<trdk::Price> &,
+                                  const trdk::TimeInForce &) override;
+  virtual void CopyOrderStatus(const trdk::OrderId &,
+                               const std::string &tradingSystemId,
+                               const trdk::TradingSystem &,
+                               const boost::posix_time::ptime &,
+                               const trdk::OrderStatus &,
+                               const trdk::Qty &remainingQty) override;
+  virtual void CopyOrder(const trdk::OrderId &,
+                         const std::string &tradingSystemOrderId,
                          const trdk::TradingSystem &,
+                         const std::string &symbol,
+                         const trdk::OrderStatus &,
+                         const trdk::Qty &qty,
+                         const trdk::Qty &remainingQty,
+                         const boost::optional<trdk::Price> &,
                          const trdk::OrderSide &,
-                         const trdk::Qty &qty,
-                         const trdk::Price *price,
-                         const trdk::TimeInForce *,
-                         const trdk::Lib::Currency &,
-                         const trdk::Qty *minQty,
-                         const trdk::Qty &executedQty,
-                         const trdk::Price *bestBidPrice,
-                         const trdk::Qty *bestBidQty,
-                         const trdk::Price *bestAskPrice,
-                         const trdk::Qty *bestAskQty) override;
+                         const trdk::TimeInForce &,
+                         const boost::posix_time::ptime &openTime,
+                         const boost::posix_time::ptime &updateTime) override;
 
-  virtual void CopyTrade(const boost::posix_time::ptime &,
-                         const std::string &tradingSystemTradeId,
-                         const boost::uuids::uuid &orderId,
-                         const trdk::Price &price,
-                         const trdk::Qty &qty,
-                         const trdk::Price &bestBidPrice,
-                         const trdk::Qty &bestBidQty,
-                         const trdk::Price &bestAskPrice,
-                         const trdk::Qty &bestAskQty) override;
+  virtual void CopyTrade(
+      const boost::posix_time::ptime &,
+      const boost::optional<std::string> &tradingSystemTradeId,
+      const trdk::OrderId &,
+      const trdk::TradingSystem &,
+      const trdk::Price &,
+      const trdk::Qty &) override;
 
   virtual void ReportOperationStart(const trdk::Strategy &,
                                     const boost::uuids::uuid &id,

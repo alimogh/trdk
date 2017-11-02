@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Lib/OrderListView.hpp"
 #include "ui_MainWindow.h"
 
 namespace trdk {
@@ -22,14 +23,17 @@ class MainWindow : public QMainWindow {
   explicit MainWindow(std::unique_ptr<Lib::Engine> &&, QWidget *parent);
   ~MainWindow() override;
 
+ public:
+  Lib::Engine &GetEngine() { return *m_engine; }
+
  public slots:
   void CreateNewArbitrageStrategy(
       const boost::optional<QString> &defaultSymbol);
-  void CreateNewOrderView();
 
  private:
   std::unique_ptr<Lib::Engine> m_engine;
   Ui::MainWindow m_ui;
+  Lib::OrderListView m_orderList;
 };
 }
 }
