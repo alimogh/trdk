@@ -527,12 +527,20 @@ void MultiBrokerWidget::SaveSettings() {
             "targets/2/delay",
             strategySettings.target2->delay.total_microseconds());
       }
-      if (strategySettings.stopLoss2) {
-        settingsStorage.setValue("stop-loses/2/pips",
-                                 strategySettings.stopLoss2->pips);
-        settingsStorage.setValue(
-            "stop-loses/2/delay",
-            strategySettings.stopLoss2->delay.total_microseconds());
+      {
+        settingsStorage.setValue("stop-loses/2/enabled",
+                                 strategySettings.stopLoss2 ? true : false);
+        if (strategySettings.stopLoss2) {
+          settingsStorage.setValue("stop-loses/2/pips",
+                                   strategySettings.stopLoss2->pips);
+          settingsStorage.setValue(
+              "stop-loses/2/delay",
+              strategySettings.stopLoss2->delay.total_microseconds());
+        }
+      }
+      {
+        settingsStorage.setValue("stop-loses/3/enabled",
+                                 strategySettings.stopLoss3 ? true : false);
         if (strategySettings.stopLoss3) {
           settingsStorage.setValue("stop-loses/3/pips",
                                    strategySettings.stopLoss3->pips);
@@ -541,7 +549,6 @@ void MultiBrokerWidget::SaveSettings() {
               "stop-loses/3/delay",
               strategySettings.stopLoss3->delay.total_microseconds());
         }
-        settingsStorage.endGroup();
       }
       for (size_t brokerI = 0; brokerI < 5; ++brokerI) {
         const bool isEnabled = strategySettings.brokers.size() > brokerI &&
@@ -590,6 +597,19 @@ void MultiBrokerWidget::LoadSettings() {
           settingsStorage.value("targets/1/delay", 1000 * 1000).toULongLong());
       strategySettings.numberOfStepsToTarget =
           settingsStorage.value("number of steps to target", 1).toUInt();
+      if (settingsStorage.value("stop-loses/2/enabled").toBool()) {
+        strategySettings.stopLoss2 = StrategySettings::Target{
+            settingsStorage.value("stop-loses/2/pips").toUInt(),
+            pt::microseconds(
+                settingsStorage.value("stop-loses/2/delay").toInt())};
+      }
+      if (settingsStorage.value("stop-loses/3/enabled").toBool()) {
+        strategySettings.stopLoss3 = StrategySettings::Target{
+            settingsStorage.value("stop-loses/3/pips").toUInt(),
+            pt::microseconds(
+                settingsStorage.value("stop-loses/3/delay").toInt())};
+      }
+
       for (size_t brokerI = 0; brokerI < 5; ++brokerI) {
         const bool isEnabled =
             settingsStorage.value(QString("broker/%1").arg(brokerI + 1))

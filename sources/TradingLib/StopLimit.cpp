@@ -31,14 +31,16 @@ const char *TakeProfitStopLimit::GetName() const { return "stop limit"; }
 
 void TakeProfitStopLimit::Report(const Position &position,
                                  ModuleTradingLog &log) const {
-  log.Write("%1%\tattach\tprice=%2$.8f\ttime=%3%\tclose-vol-ratio=%4%\tpos=%5%",
-            [this, &position](TradingRecord &record) {
-              record % GetName()                                     // 1
-                  % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
-                  % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
-                  % m_params->GetVolumeToCloseRatio()                // 4
-                  % position.GetId();                                // 5
-            });
+  log.Write(
+      "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f, 'time': "
+      "'%3%', 'closeVolRatio: %4$.8f}, 'position': '%5%'}",
+      [this, &position](TradingRecord &record) {
+        record % GetName()                                     // 1
+            % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
+            % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
+            % m_params->GetVolumeToCloseRatio()                // 4
+            % position.GetId();                                // 5
+      });
 }
 
 void TakeProfitStopLimit::Run() {

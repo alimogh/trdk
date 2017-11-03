@@ -70,8 +70,8 @@ const tl::OrderPolicy &OperationContext::GetCloseOrderPolicy() const {
 
 void OperationContext::Setup(Position &position) const {
   for (const auto &params : m_pimpl->m_stopLosses) {
-    position.AttachAlgo(std::make_unique<StopLoss>(params.first, position,
-                                                   m_pimpl->m_orderPolicy));
+    position.AttachAlgo(std::make_unique<StopLoss>(
+        params.first, params.second, position, m_pimpl->m_orderPolicy));
   }
   for (const auto &params : m_pimpl->m_takeProfitStopLimits) {
     position.AttachAlgo(std::make_unique<TakeProfitStopLimit>(
