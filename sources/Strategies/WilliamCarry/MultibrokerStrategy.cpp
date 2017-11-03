@@ -51,12 +51,10 @@ void MultibrokerStrategy::OpenPosition(
         "Failed to start new position as current strategy instance already "
         "handles position");
   }
-  for (size_t i = 0; i < std::min(GetContext().GetNumberOfTradingSystems(),
-                                  operations.size());
-       ++i) {
+  for (OperationContext &operation : operations) {
     m_pimpl->m_controller.OpenPosition(
-        boost::make_shared<OperationContext>(std::move(operations[i])),
-        security, delayMeasurement);
+        boost::make_shared<OperationContext>(std::move(operation)), security,
+        delayMeasurement);
   }
 }
 

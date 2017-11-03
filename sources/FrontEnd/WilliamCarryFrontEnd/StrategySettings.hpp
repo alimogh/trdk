@@ -31,6 +31,8 @@ struct StrategySettings {
 
   boost::optional<Target> stopLoss2;
   boost::optional<Target> stopLoss3;
+
+  std::vector<bool> brokers;
 };
 }
 }
