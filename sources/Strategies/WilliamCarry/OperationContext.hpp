@@ -23,7 +23,10 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   typedef trdk::PositionOperationContext Base;
 
  public:
-  explicit OperationContext(bool isLong, const Qty &, const Price &price);
+  explicit OperationContext(bool isLong,
+                            const Qty &,
+                            const Price &price,
+                            TradingSystem &tradingSystem);
   OperationContext(OperationContext &&);
   virtual ~OperationContext() override;
 
@@ -37,6 +40,8 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
                    const boost::posix_time::time_duration &startDelay);
 
  public:
+  virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
+                                                trdk::Security &) override;
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual void Setup(Position &) const override;

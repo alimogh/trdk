@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/21 04:58:55
+ *   Created: 2017/11/01 22:42:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -12,27 +12,12 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace WilliamCarry {
+namespace Lib {
 
-enum { NUMBER_OF_STRATEGIES = 4 };
-
-struct StrategySettings {
-  struct Target {
-    size_t pips;
-    boost::posix_time::time_duration delay;
-  };
-
-  bool isEnabled;
-  unsigned int lotMultiplier;
-
-  Target target1;
-  size_t numberOfStepsToTarget;
-  boost::optional<Target> target2;
-
-  boost::optional<Target> stopLoss2;
-  boost::optional<Target> stopLoss3;
-
-  std::vector<bool> brokers;
+enum ItemDataRole {
+  ITEM_DATA_ROLE_ITEM_ID = Qt::UserRole,
+  ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX,
+  ITEM_DATA_ROLE_TRADING_MODE,
 };
 }
 }

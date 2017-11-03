@@ -150,6 +150,9 @@ class NewOrderSingle : public SecurityMessage {
   virtual ~NewOrderSingle() override = default;
 
  public:
+  void SetPosMaintRptId(const std::string &);
+
+ public:
   virtual std::vector<char> Export(unsigned char soh) const override;
 
  protected:
@@ -160,7 +163,8 @@ class NewOrderSingle : public SecurityMessage {
   const std::string m_qty;
   const std::string m_price;
   const std::string m_transactTime;
-  const size_t m_customContentSize;
+  size_t m_customContentSize;
+  std::string m_posMaintRptId;
 };
 
 class OrderCancelRequest : public Message {

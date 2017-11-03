@@ -29,7 +29,7 @@
    <item>
     <widget class="QToolBox" name="strategiesPages">
      <property name="currentIndex">
-      <number>3</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="strategy1Page">
       <property name="geometry">
@@ -238,6 +238,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -257,6 +260,9 @@
               </property>
               <property name="singleStep">
                <number>1</number>
+              </property>
+              <property name="value">
+               <number>120</number>
               </property>
              </widget>
             </item>
@@ -305,6 +311,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -330,6 +339,9 @@
               </property>
               <property name="singleStep">
                <number>1</number>
+              </property>
+              <property name="value">
+               <number>240</number>
               </property>
              </widget>
             </item>
@@ -385,6 +397,9 @@
             <property name="maximum">
              <number>100000</number>
             </property>
+            <property name="value">
+             <number>1000</number>
+            </property>
            </widget>
           </item>
           <item row="0" column="2">
@@ -433,7 +448,7 @@
              <number>100000</number>
             </property>
             <property name="value">
-             <number>1</number>
+             <number>1000</number>
             </property>
            </widget>
           </item>
@@ -489,6 +504,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>15</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -522,7 +540,7 @@
              <number>100000</number>
             </property>
             <property name="value">
-             <number>1</number>
+             <number>500</number>
             </property>
            </widget>
           </item>
@@ -577,6 +595,9 @@
               </property>
               <property name="maximum">
                <number>100000</number>
+              </property>
+              <property name="value">
+               <number>60</number>
               </property>
              </widget>
             </item>
@@ -871,6 +892,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -887,6 +911,12 @@
               </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="value">
+               <number>120</number>
+              </property>
+              <property name="displayIntegerBase">
+               <number>10</number>
               </property>
              </widget>
             </item>
@@ -935,6 +965,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -957,6 +990,12 @@
               </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="singleStep">
+               <number>1</number>
+              </property>
+              <property name="value">
+               <number>240</number>
               </property>
              </widget>
             </item>
@@ -1012,6 +1051,9 @@
             <property name="maximum">
              <number>100000</number>
             </property>
+            <property name="value">
+             <number>1000</number>
+            </property>
            </widget>
           </item>
           <item row="0" column="2">
@@ -1058,6 +1100,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>1000</number>
             </property>
            </widget>
           </item>
@@ -1113,6 +1158,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>15</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1144,6 +1192,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>500</number>
             </property>
            </widget>
           </item>
@@ -1198,6 +1249,9 @@
               </property>
               <property name="maximum">
                <number>100000</number>
+              </property>
+              <property name="value">
+               <number>60</number>
               </property>
              </widget>
             </item>
@@ -1487,6 +1541,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1503,6 +1560,9 @@
               </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="value">
+               <number>120</number>
               </property>
              </widget>
             </item>
@@ -1551,6 +1611,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1573,6 +1636,9 @@
               </property>
               <property name="maximum">
                <number>10000</number>
+              </property>
+              <property name="value">
+               <number>240</number>
               </property>
              </widget>
             </item>
@@ -1628,6 +1694,9 @@
             <property name="maximum">
              <number>100000</number>
             </property>
+            <property name="value">
+             <number>1000</number>
+            </property>
            </widget>
           </item>
           <item row="0" column="2">
@@ -1674,6 +1743,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>1000</number>
             </property>
            </widget>
           </item>
@@ -1729,6 +1801,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>15</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -1760,6 +1835,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>500</number>
             </property>
            </widget>
           </item>
@@ -1814,6 +1892,9 @@
               </property>
               <property name="maximum">
                <number>100000</number>
+              </property>
+              <property name="value">
+               <number>60</number>
               </property>
              </widget>
             </item>
@@ -2103,6 +2184,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -2121,7 +2205,7 @@
                <number>10000</number>
               </property>
               <property name="value">
-               <number>1</number>
+               <number>120</number>
               </property>
              </widget>
             </item>
@@ -2170,6 +2254,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -2194,7 +2281,7 @@
                <number>10000</number>
               </property>
               <property name="value">
-               <number>1</number>
+               <number>240</number>
               </property>
              </widget>
             </item>
@@ -2250,6 +2337,9 @@
             <property name="maximum">
              <number>100000</number>
             </property>
+            <property name="value">
+             <number>1000</number>
+            </property>
            </widget>
           </item>
           <item row="0" column="2">
@@ -2296,6 +2386,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>1000</number>
             </property>
            </widget>
           </item>
@@ -2351,6 +2444,9 @@
               <property name="maximum">
                <number>100000</number>
               </property>
+              <property name="value">
+               <number>15</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -2382,6 +2478,9 @@
             </property>
             <property name="maximum">
              <number>100000</number>
+            </property>
+            <property name="value">
+             <number>500</number>
             </property>
            </widget>
           </item>
@@ -2436,6 +2535,9 @@
               </property>
               <property name="maximum">
                <number>100000</number>
+              </property>
+              <property name="value">
+               <number>60</number>
               </property>
              </widget>
             </item>

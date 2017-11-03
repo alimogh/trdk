@@ -408,6 +408,7 @@
     <ClInclude Include="ModuleSecurityList.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="Consumer.hpp" />
+    <ClInclude Include="TransactionContext.hpp" />
     <ClInclude Include="PositionOperationContext.hpp" />
     <ClInclude Include="PriceBook.hpp" />
     <ClInclude Include="SecurityMock.hpp" />

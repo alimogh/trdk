@@ -138,6 +138,7 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   if (!settings.isEnabled) {
     return;
   }
+  auto &startegy = *m_strategies[strategyIndex];
 
   Price price;
   {
@@ -157,9 +158,18 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
 
   std::vector<OperationContext> operations;
   operations.reserve(m_lots.size());
-  for (const auto &lot : m_lots) {
+  for (size_t i = 0; i < m_lots.size(); ++i) {
+    AssertGt(settings.brokers.size(), i);
+    if (i >= settings.brokers.size() ||
+        i >= m_engine.GetContext().GetNumberOfTradingSystems()) {
+      break;
+    } else if (!settings.brokers[i]) {
+      continue;
+    }
+
+    const auto &lot = m_lots[i];
     const auto qty = settings.lotMultiplier * lot;
-    operations.emplace_back(isLong, qty, price);
+    operations.emplace_back(isLong, qty, price, startegy.GetTradingSystem(i));
     auto &operation = operations.back();
 
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
@@ -185,11 +195,11 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   }
 
   try {
-    m_strategies[strategyIndex]->Invoke<MultibrokerStrategy>(
+    startegy.Invoke<MultibrokerStrategy>(
         [this, &settings, &operations,
-         &delayMeasurement](MultibrokerStrategy &strategy) {
-          strategy.OpenPosition(std::move(operations),
-                                *m_currentTradingSecurity, delayMeasurement);
+         &delayMeasurement](MultibrokerStrategy &multibroker) {
+          multibroker.OpenPosition(std::move(operations),
+                                   *m_currentTradingSecurity, delayMeasurement);
         });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to send order"),
@@ -480,9 +490,14 @@ void MultiBrokerWidget::SetMarketDataSecurity(Security *security) {
   }
 }
 
+namespace {
+const size_t settingsFormatVersion = 1;
+}
+
 void MultiBrokerWidget::SaveSettings() {
   QSettings settingsStorage;
   settingsStorage.clear();
+  settingsStorage.setValue("version", settingsFormatVersion);
   {
     settingsStorage.beginGroup("General");
     size_t i = 0;
@@ -512,12 +527,20 @@ void MultiBrokerWidget::SaveSettings() {
             "targets/2/delay",
             strategySettings.target2->delay.total_microseconds());
       }
-      if (strategySettings.stopLoss2) {
-        settingsStorage.setValue("stop-loses/2/pips",
-                                 strategySettings.stopLoss2->pips);
-        settingsStorage.setValue(
-            "stop-loses/2/delay",
-            strategySettings.stopLoss2->delay.total_microseconds());
+      {
+        settingsStorage.setValue("stop-loses/2/enabled",
+                                 strategySettings.stopLoss2 ? true : false);
+        if (strategySettings.stopLoss2) {
+          settingsStorage.setValue("stop-loses/2/pips",
+                                   strategySettings.stopLoss2->pips);
+          settingsStorage.setValue(
+              "stop-loses/2/delay",
+              strategySettings.stopLoss2->delay.total_microseconds());
+        }
+      }
+      {
+        settingsStorage.setValue("stop-loses/3/enabled",
+                                 strategySettings.stopLoss3 ? true : false);
         if (strategySettings.stopLoss3) {
           settingsStorage.setValue("stop-loses/3/pips",
                                    strategySettings.stopLoss3->pips);
@@ -526,7 +549,12 @@ void MultiBrokerWidget::SaveSettings() {
               "stop-loses/3/delay",
               strategySettings.stopLoss3->delay.total_microseconds());
         }
-        settingsStorage.endGroup();
+      }
+      for (size_t brokerI = 0; brokerI < 5; ++brokerI) {
+        const bool isEnabled = strategySettings.brokers.size() > brokerI &&
+                               strategySettings.brokers[brokerI];
+        settingsStorage.setValue(QString("broker/%1").arg(brokerI + 1),
+                                 isEnabled);
       }
       settingsStorage.endGroup();
     }
@@ -535,6 +563,16 @@ void MultiBrokerWidget::SaveSettings() {
 
 void MultiBrokerWidget::LoadSettings() {
   QSettings settingsStorage;
+  if (settingsStorage.value("version").toUInt() != settingsFormatVersion) {
+    QMessageBox::warning(this, tr("Settings loading"),
+                         tr("Settings storage has changed format version. "
+                            "Please set settings again."),
+                         QMessageBox::Ok);
+    ShowGeneralSetup();
+    ShowStrategySetupDialog();
+    ShowTimersSetupDialog();
+    return;
+  }
   {
     settingsStorage.beginGroup("General");
     size_t i = 0;
@@ -559,6 +597,25 @@ void MultiBrokerWidget::LoadSettings() {
           settingsStorage.value("targets/1/delay", 1000 * 1000).toULongLong());
       strategySettings.numberOfStepsToTarget =
           settingsStorage.value("number of steps to target", 1).toUInt();
+      if (settingsStorage.value("stop-loses/2/enabled").toBool()) {
+        strategySettings.stopLoss2 = StrategySettings::Target{
+            settingsStorage.value("stop-loses/2/pips").toUInt(),
+            pt::microseconds(
+                settingsStorage.value("stop-loses/2/delay").toInt())};
+      }
+      if (settingsStorage.value("stop-loses/3/enabled").toBool()) {
+        strategySettings.stopLoss3 = StrategySettings::Target{
+            settingsStorage.value("stop-loses/3/pips").toUInt(),
+            pt::microseconds(
+                settingsStorage.value("stop-loses/3/delay").toInt())};
+      }
+
+      for (size_t brokerI = 0; brokerI < 5; ++brokerI) {
+        const bool isEnabled =
+            settingsStorage.value(QString("broker/%1").arg(brokerI + 1))
+                .toBool();
+        strategySettings.brokers.emplace_back(isEnabled);
+      }
       settingsStorage.endGroup();
     }
     settingsStorage.endGroup();

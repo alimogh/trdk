@@ -36,6 +36,9 @@ void SecurityListModel::OnStateChanged(bool isStarted) {
 
 void SecurityListModel::UpdatePrice(const Security *security) {
   const auto &index = GetSecurityIndex(*security);
+  if (index < 0) {
+    return;
+  }
   dataChanged(createIndex(index, COLUMN_BID_PRICE),
               createIndex(index, COLUMN_LAST_TIME), {Qt::DisplayRole});
 }
@@ -78,6 +81,9 @@ int SecurityListModel::GetSecurityIndex(const Security &security) const {
   const auto &it =
       std::find(m_securities.cbegin(), m_securities.cend(), &security);
   if (it == m_securities.cend()) {
+    if (m_securities.empty()) {
+      return -1;
+    }
     throw LogicError("Unknown security");
   }
   return static_cast<int>(std::distance(m_securities.cbegin(), it));

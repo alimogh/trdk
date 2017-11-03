@@ -87,7 +87,11 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
       break;
     }
     case SECURITY_TYPE_FOR:
-      return 6;
+      if (boost::iends_with(symbol.GetSymbol(), "JPY")) {
+        return 3;
+      } else {
+        return 5;
+      }
     case SECURITY_TYPE_OPTIONS:
       if (symbol.GetSymbol() == "AAPL") {
         return 2;

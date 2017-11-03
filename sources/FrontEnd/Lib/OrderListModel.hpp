@@ -55,6 +55,18 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
                       const boost::posix_time::ptime &,
                       const trdk::OrderStatus &,
                       const trdk::Qty &remainingQty);
+  void OnOrder(const trdk::OrderId &,
+               const std::string &tradingSystemOrderId,
+               const trdk::TradingSystem *,
+               const std::string &symbol,
+               const trdk::OrderStatus &,
+               const trdk::Qty &qty,
+               const trdk::Qty &remainingQty,
+               const boost::optional<trdk::Price> &,
+               const trdk::OrderSide &,
+               const trdk::TimeInForce &,
+               const boost::posix_time::ptime &openTime,
+               const boost::posix_time::ptime &updateTime);
 
  private:
   class Implementation;

@@ -15,6 +15,7 @@
 #include "Settings.hpp"
 #include "Strategy.hpp"
 #include "TradingLog.hpp"
+#include "TransactionContext.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
@@ -24,13 +25,6 @@ using namespace trdk::TradingLib;
 namespace pt = boost::posix_time;
 namespace uuids = boost::uuids;
 namespace sig = boost::signals2;
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-const OrderParams defaultOrderParams;
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -76,7 +70,7 @@ class Position::Implementation : private boost::noncopyable {
     const boost::optional<Price> price;
     const Qty qty;
 
-    OrderId id;
+    boost::shared_ptr<const TransactionContext> transactionContext;
 
     Qty executedQty;
 
@@ -90,7 +84,6 @@ class Position::Implementation : private boost::noncopyable {
           isCanceled(false),
           price(std::move(price)),
           qty(qty),
-          id(0),
           executedQty(0),
           commission(0) {}
   };
@@ -179,6 +172,8 @@ class Position::Implementation : private boost::noncopyable {
 
   std::vector<boost::shared_ptr<Algo>> m_algos;
 
+  OrderParams m_defaultOrderParams;
+
   explicit Implementation(
       Position &position,
       const boost::shared_ptr<PositionOperationContext> &operationContext,
@@ -228,11 +223,13 @@ class Position::Implementation : private boost::noncopyable {
     Assert(m_close.time.is_not_a_date_time());
 
     Order &order = m_open.orders.back();
-    AssertGe(order.id, orderId);
     AssertGe(order.qty, remainingQty);
     AssertLe(order.qty, m_planedQty);
     Assert(order.isActive);
-    if (order.id != orderId) {
+    if (!order.transactionContext ||
+        order.transactionContext->GetOrderId() != orderId) {
+      Assert(order.transactionContext);
+      AssertEq(order.transactionContext->GetOrderId(), orderId);
       throw Exception("Unknown open order ID");
     }
 
@@ -264,6 +261,9 @@ class Position::Implementation : private boost::noncopyable {
         }
         AssertEq(order.executedQty + trade->qty + remainingQty, order.qty);
         m_open.OnNewTrade(*trade, trade->price);
+        if (!m_defaultOrderParams.position) {
+          m_defaultOrderParams.position = &*order.transactionContext;
+        }
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
         order.isActive = remainingQty > 0;
         break;
@@ -316,9 +316,11 @@ class Position::Implementation : private boost::noncopyable {
     AssertLt(0, order.qty);
     AssertGe(order.qty, remainingQty);
     AssertLe(order.executedQty, order.qty);
-    AssertEq(order.id, orderId);
     Assert(order.isActive);
-    if (order.id != orderId) {
+    if (!order.transactionContext ||
+        order.transactionContext->GetOrderId() != orderId) {
+      Assert(order.transactionContext);
+      AssertEq(order.transactionContext->GetOrderId(), orderId);
       throw Exception("Unknown open order ID");
     }
 
@@ -466,14 +468,14 @@ class Position::Implementation : private boost::noncopyable {
           } else {
             record % '-' % '-';  // 8, 9
           }
-          record % m_self.GetCurrency()        // 10
-              % m_self.GetPlanedQty()          // 11
-              % m_self.GetOpenedQty()          // 12
-              % m_security.GetBidPriceValue()  // 13
-              % m_security.GetAskPriceValue()  // 14
-              % m_operationId                  // 15
-              % order.id                       // 16
-              % tsOrderId;                     // 17 and last
+          record % m_self.GetCurrency()                 // 10
+              % m_self.GetPlanedQty()                   // 11
+              % m_self.GetOpenedQty()                   // 12
+              % m_security.GetBidPriceValue()           // 13
+              % m_security.GetAskPriceValue()           // 14
+              % m_operationId                           // 15
+              % order.transactionContext->GetOrderId()  // 16
+              % tsOrderId;                              // 17 and last
         });
   }
 
@@ -541,15 +543,15 @@ class Position::Implementation : private boost::noncopyable {
           } else {
             record % '-' % '-';  // 9, 10
           }
-          record % m_self.GetCurrency()        // 11
-              % m_self.GetOpenedQty()          // 12
-              % m_self.GetClosedQty()          // 13
-              % m_self.GetActiveQty()          // 14
-              % m_security.GetBidPriceValue()  // 15
-              % m_security.GetAskPriceValue()  // 16
-              % m_operationId                  // 17
-              % order.id                       // 18
-              % tsOrderId;                     // 19 and last
+          record % m_self.GetCurrency()                 // 11
+              % m_self.GetOpenedQty()                   // 12
+              % m_self.GetClosedQty()                   // 13
+              % m_self.GetActiveQty()                   // 14
+              % m_security.GetBidPriceValue()           // 15
+              % m_security.GetAskPriceValue()           // 16
+              % m_operationId                           // 17
+              % order.transactionContext->GetOrderId()  // 18
+              % tsOrderId;                              // 19 and last
         });
   }
 
@@ -618,9 +620,9 @@ class Position::Implementation : private boost::noncopyable {
   }
 
   template <typename OpenImpl>
-  OrderId Open(const OpenImpl &openImpl,
-               const OrderParams &orderParams,
-               boost::optional<Price> &&price) {
+  const TransactionContext &Open(const OpenImpl &openImpl,
+                                 const OrderParams &orderParams,
+                                 boost::optional<Price> &&price) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
 
     if (!m_security.IsOnline()) {
@@ -655,12 +657,13 @@ class Position::Implementation : private boost::noncopyable {
         m_expiration = m_security.GetExpiration();
         OrderParams additionalOrderParams(orderParams);
         additionalOrderParams.expiration = &*m_expiration;
-        order.id = openImpl(qty, additionalOrderParams);
+        order.transactionContext = openImpl(qty, additionalOrderParams);
       } else {
-        order.id = openImpl(qty, orderParams);
+        order.transactionContext = openImpl(qty, orderParams);
       }
+      Assert(order.transactionContext);
 
-      ReportOpeningStart("sent", order.id);
+      ReportOpeningStart("sent", order.transactionContext->GetOrderId());
 
       m_isRegistered = true;  // supporting prev. logic
                               // (when was m_strategy = nullptr),
@@ -678,14 +681,14 @@ class Position::Implementation : private boost::noncopyable {
       throw;
     }
 
-    return order.id;
+    return *order.transactionContext;
   }
 
   template <typename CloseImpl>
-  OrderId Close(const CloseImpl &closeImpl,
-                boost::optional<Price> &&price,
-                const Qty &maxQty,
-                const OrderParams &orderParams) {
+  const TransactionContext &Close(const CloseImpl &closeImpl,
+                                  boost::optional<Price> &&price,
+                                  const Qty &maxQty,
+                                  const OrderParams &orderParams) {
     AssertNe(CLOSE_REASON_NONE, m_closeReason);
 
     const auto now = m_strategy.GetContext().GetCurrentTime();
@@ -719,19 +722,21 @@ class Position::Implementation : private boost::noncopyable {
       if (m_expiration && !orderParams.expiration) {
         OrderParams additionalOrderParams(orderParams);
         additionalOrderParams.expiration = &*m_expiration;
-        order.id = closeImpl(order.qty, additionalOrderParams);
+        order.transactionContext = closeImpl(order.qty, additionalOrderParams);
       } else {
-        order.id = closeImpl(order.qty, orderParams);
+        order.transactionContext = closeImpl(order.qty, orderParams);
       }
+      Assert(order.transactionContext);
 
-      ReportClosingStart("sent", order.id, maxQty);
+      ReportClosingStart("sent", order.transactionContext->GetOrderId(),
+                         maxQty);
 
     } catch (...) {
       m_close.orders.pop_back();
       throw;
     }
 
-    return order.id;
+    return *order.transactionContext;
   }
 
   template <typename Orders>
@@ -752,9 +757,9 @@ class Position::Implementation : private boost::noncopyable {
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 3
               % m_tradingSystem.GetMode()                            // 4
               % m_operationId                                        // 5
-              % order.id;                                            // 6
+              % order.transactionContext->GetOrderId();              // 6
         });
-    m_tradingSystem.CancelOrder(order.id);
+    m_tradingSystem.CancelOrder(order.transactionContext->GetOrderId());
     order.isCanceled = true;
     return true;
   }
@@ -1224,11 +1229,12 @@ void Position::RestoreOpenState(const trdk::Price &openPrice) {
   m_pimpl->RestoreOpenState(openPrice);
 }
 
-OrderId Position::OpenAtMarketPrice() {
-  return OpenAtMarketPrice(defaultOrderParams);
+const TransactionContext &Position::OpenAtMarketPrice() {
+  return OpenAtMarketPrice(m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
+const TransactionContext &Position::OpenAtMarketPrice(
+    const OrderParams &params) {
   return m_pimpl->Open(
       [this](const Qty &qty, const OrderParams &params) {
         return DoOpenAtMarketPrice(qty, params);
@@ -1236,11 +1242,12 @@ OrderId Position::OpenAtMarketPrice(const OrderParams &params) {
       params, boost::none);
 }
 
-OrderId Position::Open(const Price &price) {
-  return Open(price, defaultOrderParams);
+const TransactionContext &Position::Open(const Price &price) {
+  return Open(price, m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::Open(const Price &price, const OrderParams &params) {
+const TransactionContext &Position::Open(const Price &price,
+                                         const OrderParams &params) {
   return m_pimpl->Open(
       [this, &price](const Qty &qty, const OrderParams &params) {
         return DoOpen(qty, price, params);
@@ -1248,12 +1255,13 @@ OrderId Position::Open(const Price &price, const OrderParams &params) {
       params, price);
 }
 
-OrderId Position::OpenImmediatelyOrCancel(const Price &price) {
-  return OpenImmediatelyOrCancel(price, defaultOrderParams);
+const TransactionContext &Position::OpenImmediatelyOrCancel(
+    const Price &price) {
+  return OpenImmediatelyOrCancel(price, m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::OpenImmediatelyOrCancel(const Price &price,
-                                          const OrderParams &params) {
+const TransactionContext &Position::OpenImmediatelyOrCancel(
+    const Price &price, const OrderParams &params) {
   return m_pimpl->Open(
       [this, price](const Qty &qty, const OrderParams &params) {
         return DoOpenImmediatelyOrCancel(qty, price, params);
@@ -1261,11 +1269,12 @@ OrderId Position::OpenImmediatelyOrCancel(const Price &price,
       params, price);
 }
 
-OrderId Position::CloseAtMarketPrice() {
-  return CloseAtMarketPrice(defaultOrderParams);
+const TransactionContext &Position::CloseAtMarketPrice() {
+  return CloseAtMarketPrice(m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::CloseAtMarketPrice(const OrderParams &params) {
+const TransactionContext &Position::CloseAtMarketPrice(
+    const OrderParams &params) {
   return m_pimpl->Close(
       [this](const Qty &qty, const OrderParams &params) {
         return DoCloseAtMarketPrice(qty, params);
@@ -1273,21 +1282,23 @@ OrderId Position::CloseAtMarketPrice(const OrderParams &params) {
       boost::none, GetActiveQty(), params);
 }
 
-OrderId Position::Close(const Price &price) {
-  return Close(price, GetActiveQty(), defaultOrderParams);
+const TransactionContext &Position::Close(const Price &price) {
+  return Close(price, GetActiveQty(), m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::Close(const Price &price, const Qty &maxQty) {
-  return Close(price, maxQty, defaultOrderParams);
+const TransactionContext &Position::Close(const Price &price,
+                                          const Qty &maxQty) {
+  return Close(price, maxQty, m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::Close(const Price &price, const OrderParams &params) {
+const TransactionContext &Position::Close(const Price &price,
+                                          const OrderParams &params) {
   return Close(price, GetActiveQty(), params);
 }
 
-OrderId Position::Close(const Price &price,
-                        const Qty &maxQty,
-                        const OrderParams &params) {
+const TransactionContext &Position::Close(const Price &price,
+                                          const Qty &maxQty,
+                                          const OrderParams &params) {
   return m_pimpl->Close(
       [this, &price](const Qty &qty, const OrderParams &params) {
         return DoClose(qty, price, params);
@@ -1295,12 +1306,13 @@ OrderId Position::Close(const Price &price,
       price, maxQty, params);
 }
 
-OrderId Position::CloseImmediatelyOrCancel(const Price &price) {
-  return CloseImmediatelyOrCancel(price, defaultOrderParams);
+const TransactionContext &Position::CloseImmediatelyOrCancel(
+    const Price &price) {
+  return CloseImmediatelyOrCancel(price, m_pimpl->m_defaultOrderParams);
 }
 
-OrderId Position::CloseImmediatelyOrCancel(const Price &price,
-                                           const OrderParams &params) {
+const TransactionContext &Position::CloseImmediatelyOrCancel(
+    const Price &price, const OrderParams &params) {
   return m_pimpl->Close(
       [this, price](const Qty &qty, const OrderParams &params) {
         return DoCloseImmediatelyOrCancel(qty, price, params);
@@ -1460,8 +1472,8 @@ Price LongPosition::GetMarketCloseOppositePrice() const {
   return GetSecurity().GetAskPrice();
 }
 
-OrderId LongPosition::DoOpenAtMarketPrice(const Qty &qty,
-                                          const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> LongPosition::DoOpenAtMarketPrice(
+    const Qty &qty, const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1472,9 +1484,8 @@ OrderId LongPosition::DoOpenAtMarketPrice(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoOpen(const Qty &qty,
-                             const Price &price,
-                             const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> LongPosition::DoOpen(
+    const Qty &qty, const Price &price, const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1485,9 +1496,10 @@ OrderId LongPosition::DoOpen(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
-                                                const Price &price,
-                                                const OrderParams &params) {
+boost::shared_ptr<const TransactionContext>
+LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
+                                        const Price &price,
+                                        const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1498,8 +1510,8 @@ OrderId LongPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoCloseAtMarketPrice(const Qty &qty,
-                                           const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> LongPosition::DoCloseAtMarketPrice(
+    const Qty &qty, const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1510,9 +1522,8 @@ OrderId LongPosition::DoCloseAtMarketPrice(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoClose(const Qty &qty,
-                              const Price &price,
-                              const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> LongPosition::DoClose(
+    const Qty &qty, const Price &price, const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1524,9 +1535,10 @@ OrderId LongPosition::DoClose(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId LongPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
-                                                 const Price &price,
-                                                 const OrderParams &params) {
+boost::shared_ptr<const TransactionContext>
+LongPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
+                                         const Price &price,
+                                         const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
   AssertLt(0, qty);
@@ -1663,8 +1675,8 @@ Price ShortPosition::GetMarketCloseOppositePrice() const {
   return GetSecurity().GetBidPrice();
 }
 
-OrderId ShortPosition::DoOpenAtMarketPrice(const Qty &qty,
-                                           const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> ShortPosition::DoOpenAtMarketPrice(
+    const Qty &qty, const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1675,9 +1687,8 @@ OrderId ShortPosition::DoOpenAtMarketPrice(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoOpen(const Qty &qty,
-                              const Price &price,
-                              const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> ShortPosition::DoOpen(
+    const Qty &qty, const Price &price, const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1688,9 +1699,10 @@ OrderId ShortPosition::DoOpen(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
-                                                 const Price &price,
-                                                 const OrderParams &params) {
+boost::shared_ptr<const TransactionContext>
+ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
+                                         const Price &price,
+                                         const OrderParams &params) {
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1701,8 +1713,8 @@ OrderId ShortPosition::DoOpenImmediatelyOrCancel(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoCloseAtMarketPrice(const Qty &qty,
-                                            const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> ShortPosition::DoCloseAtMarketPrice(
+    const Qty &qty, const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
@@ -1713,9 +1725,8 @@ OrderId ShortPosition::DoCloseAtMarketPrice(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoClose(const Qty &qty,
-                               const Price &price,
-                               const OrderParams &params) {
+boost::shared_ptr<const TransactionContext> ShortPosition::DoClose(
+    const Qty &qty, const Price &price, const OrderParams &params) {
   return GetTradingSystem().SendOrder(
       GetSecurity(), GetCurrency(), qty, price, params,
       boost::bind(&ShortPosition::UpdateClosing, shared_from_this(), _1, _2, _3,
@@ -1724,9 +1735,10 @@ OrderId ShortPosition::DoClose(const Qty &qty,
       GetTimeMeasurement());
 }
 
-OrderId ShortPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
-                                                  const Price &price,
-                                                  const OrderParams &params) {
+boost::shared_ptr<const TransactionContext>
+ShortPosition::DoCloseImmediatelyOrCancel(const Qty &qty,
+                                          const Price &price,
+                                          const OrderParams &params) {
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(

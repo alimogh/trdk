@@ -24,10 +24,18 @@ size_t ResolveFixId(const std::string &symbol) {
     return 1;
   } else if (symbol == "GBPUSD") {
     return 2;
-  } else if (symbol == "JPYEUR") {
+  } else if (symbol == "EURJPY") {
     return 3;
   } else if (symbol == "USDJPY") {
     return 4;
+  } else if (symbol == "AUDUSD") {
+    return 5;
+  } else if (symbol == "USDCHF") {
+    return 6;
+  } else if (symbol == "GBPJPY") {
+    return 7;
+  } else if (symbol == "USDCAD") {
+    return 8;
   } else {
     boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
     error % symbol;

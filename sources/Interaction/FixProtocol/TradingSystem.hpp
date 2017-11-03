@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Core/TradingSystem.hpp"
 #include "Client.hpp"
 #include "Handler.hpp"
 
@@ -60,7 +59,7 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
-  virtual OrderId SendOrderTransaction(
+  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const trdk::Lib::Currency &currency,
       const trdk::Qty &qty,
@@ -69,7 +68,7 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
       const trdk::OrderSide &side,
       const trdk::TimeInForce &tif) override;
 
-  virtual void SendCancelOrder(const OrderId &) override;
+  virtual void SendCancelOrderTransaction(const OrderId &) override;
 
  private:
   Client m_client;

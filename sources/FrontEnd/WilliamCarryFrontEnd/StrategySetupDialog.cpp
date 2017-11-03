@@ -84,6 +84,12 @@ void StrategySetupDialog::Fields::Import(const StrategySettings &source) {
     stopLossStage3Pips->setValue(static_cast<int>(source.stopLoss3->pips));
     stopLossStage3Time->setValue(source.stopLoss3->delay.total_seconds());
   }
+
+  broker1->setChecked(source.brokers.size() > 0 && source.brokers[0]);
+  broker2->setChecked(source.brokers.size() > 1 && source.brokers[1]);
+  broker3->setChecked(source.brokers.size() > 2 && source.brokers[2]);
+  broker4->setChecked(source.brokers.size() > 3 && source.brokers[3]);
+  broker5->setChecked(source.brokers.size() > 4 && source.brokers[4]);
 }
 
 StrategySettings StrategySetupDialog::Fields::Export() const {
@@ -120,6 +126,10 @@ StrategySettings StrategySetupDialog::Fields::Export() const {
         static_cast<size_t>(stopLossStage3Pips->value()),
         pt::seconds(stopLossStage3Time->value())};
   }
+
+  result.brokers = {broker1->isChecked(), broker2->isChecked(),
+                    broker3->isChecked(), broker4->isChecked(),
+                    broker5->isChecked()};
 
   return result;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/21 04:58:55
+ *   Created: 2017/11/01 21:42:33
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,30 +9,26 @@
  ******************************************************************************/
 
 #pragma once
+#include "Api.h"
 
 namespace trdk {
 namespace FrontEnd {
-namespace WilliamCarry {
+namespace Lib {
 
-enum { NUMBER_OF_STRATEGIES = 4 };
+class TRDK_FRONTEND_LIB_API SortFilterProxyModel
+    : public QSortFilterProxyModel {
+  Q_OBJECT
 
-struct StrategySettings {
-  struct Target {
-    size_t pips;
-    boost::posix_time::time_duration delay;
-  };
+ public:
+  typedef QSortFilterProxyModel Base;
 
-  bool isEnabled;
-  unsigned int lotMultiplier;
+ public:
+  explicit SortFilterProxyModel(QObject *parent) : Base(parent) {}
+  virtual ~SortFilterProxyModel() override = default;
 
-  Target target1;
-  size_t numberOfStepsToTarget;
-  boost::optional<Target> target2;
-
-  boost::optional<Target> stopLoss2;
-  boost::optional<Target> stopLoss3;
-
-  std::vector<bool> brokers;
+ protected:
+  virtual bool lessThan(const QModelIndex &,
+                        const QModelIndex &) const override;
 };
 }
 }

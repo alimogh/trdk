@@ -299,26 +299,29 @@ class TRDK_CORE_API Position
   void RestoreOpenState(const trdk::Price &openPrice);
 
  public:
-  trdk::OrderId OpenAtMarketPrice();
-  trdk::OrderId OpenAtMarketPrice(const trdk::OrderParams &);
-  trdk::OrderId Open(const trdk::Price &);
-  trdk::OrderId Open(const trdk::Price &, const trdk::OrderParams &);
-  trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &);
-  trdk::OrderId OpenImmediatelyOrCancel(const trdk::Price &,
-                                        const trdk::OrderParams &);
+  const trdk::TransactionContext &OpenAtMarketPrice();
+  const trdk::TransactionContext &OpenAtMarketPrice(const trdk::OrderParams &);
+  const trdk::TransactionContext &Open(const trdk::Price &);
+  const trdk::TransactionContext &Open(const trdk::Price &,
+                                       const trdk::OrderParams &);
+  const trdk::TransactionContext &OpenImmediatelyOrCancel(const trdk::Price &);
+  const trdk::TransactionContext &OpenImmediatelyOrCancel(
+      const trdk::Price &, const trdk::OrderParams &);
 
  public:
-  trdk::OrderId CloseAtMarketPrice();
-  trdk::OrderId CloseAtMarketPrice(const trdk::OrderParams &);
-  trdk::OrderId Close(const trdk::Price &);
-  trdk::OrderId Close(const trdk::Price &, const trdk::Qty &maxQty);
-  trdk::OrderId Close(const trdk::Price &, const trdk::OrderParams &);
-  trdk::OrderId Close(const trdk::Price &,
-                      const trdk::Qty &maxQty,
-                      const trdk::OrderParams &);
-  trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &);
-  trdk::OrderId CloseImmediatelyOrCancel(const trdk::Price &,
-                                         const trdk::OrderParams &);
+  const trdk::TransactionContext &CloseAtMarketPrice();
+  const trdk::TransactionContext &CloseAtMarketPrice(const trdk::OrderParams &);
+  const trdk::TransactionContext &Close(const trdk::Price &);
+  const trdk::TransactionContext &Close(const trdk::Price &,
+                                        const trdk::Qty &maxQty);
+  const trdk::TransactionContext &Close(const trdk::Price &,
+                                        const trdk::OrderParams &);
+  const trdk::TransactionContext &Close(const trdk::Price &,
+                                        const trdk::Qty &maxQty,
+                                        const trdk::OrderParams &);
+  const trdk::TransactionContext &CloseImmediatelyOrCancel(const trdk::Price &);
+  const trdk::TransactionContext &CloseImmediatelyOrCancel(
+      const trdk::Price &, const trdk::OrderParams &);
 
  public:
   //! Cancels all active orders.
@@ -341,21 +344,23 @@ class TRDK_CORE_API Position
   void RunAlgos();
 
  protected:
-  virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
-                                            const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::Price &,
-                               const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpenAtMarketPrice(
+      const trdk::Qty &qty, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpen(
+      const trdk::Qty &qty, const trdk::Price &, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoOpenImmediatelyOrCancel(const trdk::Qty &,
+                            const trdk::Price &,
+                            const trdk::OrderParams &) = 0;
 
-  virtual trdk::OrderId DoCloseAtMarketPrice(const trdk::Qty &qty,
-                                             const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::Price &,
-                                const trdk::OrderParams &) = 0;
-  virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-      const trdk::Qty &, const trdk::Price &, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoClose(
+      const trdk::Qty &qty, const trdk::Price &, const trdk::OrderParams &) = 0;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseImmediatelyOrCancel(const trdk::Qty &,
+                             const trdk::Price &,
+                             const trdk::OrderParams &) = 0;
 
  protected:
   void UpdateOpening(const trdk::OrderId &,
@@ -423,25 +428,28 @@ class TRDK_CORE_API LongPosition : public Position {
   virtual trdk::Price GetMarketCloseOppositePrice() const override;
 
  protected:
-  virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
-                                            const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::Price &,
-                               const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &) override;
-
-  virtual trdk::OrderId DoCloseAtMarketPrice(
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpenAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::Price &,
-                                const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-      const trdk::Qty &,
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpen(
+      const trdk::Qty &qty,
       const trdk::Price &,
       const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoOpenImmediatelyOrCancel(const trdk::Qty &,
+                            const trdk::Price &,
+                            const trdk::OrderParams &) override;
+
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseAtMarketPrice(const trdk::Qty &qty,
+                       const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoClose(
+      const trdk::Qty &qty,
+      const trdk::Price &,
+      const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseImmediatelyOrCancel(const trdk::Qty &,
+                             const trdk::Price &,
+                             const trdk::OrderParams &) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -485,25 +493,28 @@ class TRDK_CORE_API ShortPosition : public Position {
   virtual trdk::Price GetMarketCloseOppositePrice() const override;
 
  protected:
-  virtual trdk::OrderId DoOpenAtMarketPrice(const trdk::Qty &qty,
-                                            const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpen(const trdk::Qty &qty,
-                               const trdk::Price &,
-                               const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoOpenImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &) override;
-
-  virtual trdk::OrderId DoCloseAtMarketPrice(
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpenAtMarketPrice(
       const trdk::Qty &qty, const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoClose(const trdk::Qty &qty,
-                                const trdk::Price &,
-                                const trdk::OrderParams &) override;
-  virtual trdk::OrderId DoCloseImmediatelyOrCancel(
-      const trdk::Qty &,
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoOpen(
+      const trdk::Qty &qty,
       const trdk::Price &,
       const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoOpenImmediatelyOrCancel(const trdk::Qty &,
+                            const trdk::Price &,
+                            const trdk::OrderParams &) override;
+
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseAtMarketPrice(const trdk::Qty &qty,
+                       const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext> DoClose(
+      const trdk::Qty &qty,
+      const trdk::Price &,
+      const trdk::OrderParams &) override;
+  virtual boost::shared_ptr<const trdk::TransactionContext>
+  DoCloseImmediatelyOrCancel(const trdk::Qty &,
+                             const trdk::Price &,
+                             const trdk::OrderParams &) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -10,9 +10,9 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
-#include "Core/Security.hpp"
 #include "IncomingMessages.hpp"
 #include "OutgoingMessages.hpp"
+#include "TransactionContext.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -51,7 +51,7 @@ void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
   GetLog().Info("Connected.");
 }
 
-OrderId fix::TradingSystem::SendOrderTransaction(
+std::unique_ptr<TransactionContext> fix::TradingSystem::SendOrderTransaction(
     trdk::Security &security,
     const Currency &currency,
     const Qty &qty,
@@ -77,13 +77,20 @@ OrderId fix::TradingSystem::SendOrderTransaction(
     throw TradingSystem::Error("Market order is not supported");
   }
 
-  const out::NewOrderSingle message(security, side, qty, *price,
-                                    GetStandardOutgoingHeader());
+  out::NewOrderSingle message(security, side, qty, *price,
+                              GetStandardOutgoingHeader());
+  if (params.position) {
+    message.SetPosMaintRptId(
+        boost::polymorphic_downcast<const OrderTransactionContext *>(
+            params.position)
+            ->GetPositionId());
+  }
   m_client.Send(message);
-  return message.GetSequenceNumber();
+  return boost::make_unique<OrderTransactionContext>(
+      message.GetSequenceNumber());
 }
 
-void fix::TradingSystem::SendCancelOrder(const OrderId &orderId) {
+void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   m_client.Send(out::OrderCancelRequest(orderId, GetStandardOutgoingHeader()));
 }
 
@@ -132,6 +139,11 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
   const auto &tradingSystemOrderId = message.ReadOrdId();
   const OrderStatus &orderStatus = message.ReadOrdStatus();
   const ExecType &execType = message.ReadExecType();
+  const auto &setPositionId = [&message](
+      TransactionContext &transactionContext) {
+    boost::polymorphic_downcast<OrderTransactionContext *>(&transactionContext)
+        ->SetPositionId(message.ReadPosMaintRptId());
+  };
   try {
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (execType) {
@@ -144,7 +156,8 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
         break;
       case EXEC_TYPE_NEW:
         OnOrderStatusUpdate(orderId, tradingSystemOrderId,
-                            ORDER_STATUS_SUBMITTED, message.ReadLeavesQty());
+                            ORDER_STATUS_SUBMITTED, message.ReadLeavesQty(),
+                            setPositionId);
         break;
       case EXEC_TYPE_CANCELED:
       case EXEC_TYPE_REPLACE:
@@ -162,12 +175,16 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
         message.ResetReadingState();
         TradeInfo trade = {message.ReadAvgPx()};
         OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
-                            message.ReadLeavesQty(), std::move(trade));
+                            message.ReadLeavesQty(), std::move(trade),
+                            setPositionId);
         break;
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
           case ORDER_STATUS_SUBMITTED:
+            OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
+                                message.ReadLeavesQty(), setPositionId);
+            break;
           case ORDER_STATUS_CANCELLED:
             OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
                                 message.ReadLeavesQty());
@@ -177,7 +194,8 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             message.ResetReadingState();
             TradeInfo trade = {message.ReadAvgPx()};
             OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
-                                message.ReadLeavesQty(), std::move(trade));
+                                message.ReadLeavesQty(), std::move(trade),
+                                setPositionId);
             break;
           }
           case ORDER_STATUS_REJECTED:

@@ -24,6 +24,9 @@ ConvertPriceToText(const boost::optional<trdk::Price> &, uint8_t precision);
 TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const trdk::Qty &,
                                                uint8_t precision);
 
+TRDK_FRONTEND_LIB_API QDateTime
+ConvertToQDateTime(const boost::posix_time::ptime &);
+
 class SignalsScopedBlocker {
  public:
   explicit SignalsScopedBlocker(QObject &obj) : m_obj(&obj) {
