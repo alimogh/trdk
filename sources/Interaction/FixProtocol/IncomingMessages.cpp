@@ -786,7 +786,7 @@ ExecType Incoming::Message::ReadExecType() const {
 
 Price Incoming::Message::ReadAvgPx() const {
   // 6=
-  return FindAndReadInt<uint32_t>(static_cast<int16_t>(15670));
+  return FindAndReadDouble<double>(static_cast<int16_t>(15670));
 }
 
 Qty Incoming::Message::ReadLeavesQty() const {
