@@ -21,8 +21,8 @@ struct Advice {
   };
   struct SecuritySignal {
     trdk::Security *security;
-    bool isBidSignaled;
-    bool isAskSignaled;
+    bool isBestBid;
+    bool isBestAsk;
   };
 
   trdk::Security *security;

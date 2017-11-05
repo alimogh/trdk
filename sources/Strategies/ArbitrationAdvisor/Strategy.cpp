@@ -52,7 +52,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Price updatedSecurityBidPrice = std::numeric_limits<double>::quiet_NaN();
     Price updatedSecurityAskPrice = std::numeric_limits<double>::quiet_NaN();
     for (auto &security : allSecurities) {
-      security.isBidSignaled = security.isAskSignaled = false;
+      security.isBestBid = security.isBestAsk = false;
       bids.emplace_back(security.security->GetBidPriceValue(), &security);
       asks.emplace_back(security.security->GetAskPriceValue(), &security);
       if (security.security == &updatedSecurity) {
@@ -90,14 +90,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     for (auto it = bids.begin();
-         it != bids.end() && it->first == bids.front().first; ++it) {
-      Assert(!it->second->isBidSignaled);
-      it->second->isBidSignaled = true;
+         it != bids.cend() && it->first == bids.front().first; ++it) {
+      Assert(!it->second->isBestBid);
+      it->second->isBestBid = true;
     }
     for (auto it = asks.begin();
-         it != asks.end() && it->first == asks.front().first; ++it) {
-      Assert(!it->second->isAskSignaled);
-      it->second->isAskSignaled = true;
+         it != asks.cend() && it->first == asks.front().first; ++it) {
+      Assert(!it->second->isBestAsk);
+      it->second->isBestAsk = true;
     }
 
     m_adviceSignal(
@@ -158,7 +158,7 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
                       m_pimpl->m_symbols[security.GetSymbol()].cend(),
                       [&security](const Advice::SecuritySignal &stored) {
                         return stored.security == &security ||
-                               stored.isBidSignaled || stored.isAskSignaled;
+                               stored.isBestBid || stored.isBestAsk;
                       }) == m_pimpl->m_symbols[security.GetSymbol()].cend());
   m_pimpl->m_symbols[security.GetSymbol()].emplace_back(
       Advice::SecuritySignal{&security});
