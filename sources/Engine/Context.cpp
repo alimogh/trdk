@@ -201,80 +201,89 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
   }
   Assert(m_pimpl->m_modulesDlls.empty());
 
-  // Market data system should be connected before booting as sometimes security
-  // objects can be created without market data source.
-  for (auto &source : m_pimpl->m_marketDataSources) {
-    try {
-      source.marketDataSource->Connect(IniSectionRef(conf, source.section));
-    } catch (const Interactor::ConnectError &ex) {
-      boost::format message("Failed to connect to market data source: \"%1%\"");
-      message % ex;
-      throw Interactor::ConnectError(message.str().c_str());
-    } catch (const Lib::Exception &ex) {
-      GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
-      throw Exception("Failed to make market data connection");
-    }
-  }
-
   // It must be destroyed after state-object, as it state-object has
   // sub-objects from this DLL:
-
   m_pimpl->m_state.reset(new Implementation::State(*this, dropCopy));
+
   try {
-    BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
-                     m_pimpl->m_state->strategies, m_pimpl->m_state->observers,
-                     m_pimpl->m_state->services, m_pimpl->m_modulesDlls);
-  } catch (const Lib::Exception &ex) {
-    GetLog().Error("Failed to init engine context: \"%1%\".", ex);
-    throw Exception("Failed to init engine context");
-  }
-
-  m_pimpl->m_state->ReportState();
-
-  for (auto &tradingSystemsByMode : m_pimpl->m_tradingSystems) {
-    for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
-      if (!tradingSystemRef.tradingSystem) {
-        AssertEq(std::string(), tradingSystemRef.section);
-        continue;
-      }
-      Assert(!tradingSystemRef.section.empty());
-
-      auto &tradingSystem = *tradingSystemRef.tradingSystem;
-      const IniSectionRef confSection(conf, tradingSystemRef.section);
-
+    // Market data system should be connected before booting as sometimes
+    // security objects can be created without market data source.
+    for (auto &source : m_pimpl->m_marketDataSources) {
       try {
-        tradingSystem.Connect(confSection);
+        source.marketDataSource->Connect(IniSectionRef(conf, source.section));
       } catch (const Interactor::ConnectError &ex) {
-        boost::format message("Failed to connect to trading system: \"%1%\"");
+        boost::format message(
+            "Failed to connect to market data source: \"%1%\"");
         message % ex;
         throw Interactor::ConnectError(message.str().c_str());
       } catch (const Lib::Exception &ex) {
-        GetLog().Error("Failed to make trading system connection: \"%1%\".",
-                       ex);
-        throw Exception("Failed to make trading system connection");
+        GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
+        throw Exception("Failed to make market data connection");
       }
     }
-  }
 
-  ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
     try {
-      source.SubscribeToSecurities();
-    } catch (const Interactor::ConnectError &ex) {
-      boost::format message("Failed to make market data subscription: \"%1%\"");
-      message % ex;
-      throw Interactor::ConnectError(message.str().c_str());
+      BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
+                       m_pimpl->m_state->strategies,
+                       m_pimpl->m_state->observers, m_pimpl->m_state->services,
+                       m_pimpl->m_modulesDlls);
     } catch (const Lib::Exception &ex) {
-      GetLog().Error("Failed to make market data subscription: \"%1%\".", ex);
-      throw Exception("Failed to make market data subscription");
+      GetLog().Error("Failed to init engine context: \"%1%\".", ex);
+      throw Exception("Failed to init engine context");
     }
-    return true;
-  });
 
-  OnStarted();
+    m_pimpl->m_state->ReportState();
 
-  m_pimpl->m_state->subscriptionsManager.Activate();
+    for (auto &tradingSystemsByMode : m_pimpl->m_tradingSystems) {
+      for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
+        if (!tradingSystemRef.tradingSystem) {
+          AssertEq(std::string(), tradingSystemRef.section);
+          continue;
+        }
+        Assert(!tradingSystemRef.section.empty());
 
-  RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
+        auto &tradingSystem = *tradingSystemRef.tradingSystem;
+        const IniSectionRef confSection(conf, tradingSystemRef.section);
+
+        try {
+          tradingSystem.Connect(confSection);
+        } catch (const Interactor::ConnectError &ex) {
+          boost::format message("Failed to connect to trading system: \"%1%\"");
+          message % ex;
+          throw Interactor::ConnectError(message.str().c_str());
+        } catch (const Lib::Exception &ex) {
+          GetLog().Error("Failed to make trading system connection: \"%1%\".",
+                         ex);
+          throw Exception("Failed to make trading system connection");
+        }
+      }
+    }
+
+    ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
+      try {
+        source.SubscribeToSecurities();
+      } catch (const Interactor::ConnectError &ex) {
+        boost::format message(
+            "Failed to make market data subscription: \"%1%\"");
+        message % ex;
+        throw Interactor::ConnectError(message.str().c_str());
+      } catch (const Lib::Exception &ex) {
+        GetLog().Error("Failed to make market data subscription: \"%1%\".", ex);
+        throw Exception("Failed to make market data subscription");
+      }
+      return true;
+    });
+
+    OnStarted();
+
+    m_pimpl->m_state->subscriptionsManager.Activate();
+
+    RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
+
+  } catch (...) {
+    m_pimpl->m_state.reset();
+    throw;
+  }
 }
 
 void Engine::Context::Stop(const StopMode &stopMode) {

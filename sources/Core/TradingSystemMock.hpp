@@ -13,6 +13,7 @@
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "TradingSystem.hpp"
+#include "TransactionContext.hpp"
 
 namespace trdk {
 namespace Tests {
@@ -37,129 +38,35 @@ class TradingSystem : public trdk::TradingSystem {
 
   MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
 
-  MOCK_METHOD7(SellAtMarketPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(Sell,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(SellImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD7(SellAtMarketPriceImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-
-  MOCK_METHOD7(BuyAtMarketPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(Buy,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD8(BuyImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
-  MOCK_METHOD7(BuyAtMarketPriceImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       const OrderStatusUpdateSlot &,
-                       trdk::RiskControlScope &,
-                       const trdk::Lib::TimeMeasurement::Milestones &));
+  MOCK_METHOD10(SendOrder,
+                boost::shared_ptr<const trdk::TransactionContext>(
+                    trdk::Security &,
+                    const trdk::Lib::Currency &,
+                    const trdk::Qty &,
+                    const boost::optional<trdk::Price> &,
+                    const trdk::OrderParams &,
+                    const trdk::TradingSystem::OrderStatusUpdateSlot &,
+                    trdk::RiskControlScope &,
+                    const trdk::OrderSide &,
+                    const trdk::TimeInForce &,
+                    const trdk::Lib::TimeMeasurement::Milestones &));
 
   MOCK_METHOD1(CancelOrder, void(const OrderId &));
-
-  MOCK_METHOD0(Test, void());
 
   MOCK_METHOD1(OnSettingsUpdate, void(const trdk::Lib::IniSectionRef &));
   MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
 
-  MOCK_METHOD4(SendSellAtMarketPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD5(SendSell,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD5(SendSellImmediatelyOrCancel,
-               trdk::OrderId(trdk::Security &,
-                             const trdk::Lib::Currency &,
-                             const trdk::Qty &,
-                             const trdk::Price &,
-                             const trdk::OrderParams &));
-  MOCK_METHOD4(SendSellAtMarketPriceImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD4(SendBuyAtMarketPrice,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD5(SendBuy,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD5(SendBuyImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::Price &,
-                       const trdk::OrderParams &));
-  MOCK_METHOD4(SendBuyAtMarketPriceImmediatelyOrCancel,
-               OrderId(trdk::Security &,
-                       const trdk::Lib::Currency &,
-                       const trdk::Qty &,
-                       const trdk::OrderParams &));
+  MOCK_METHOD7(SendOrderTransaction,
+               std::unique_ptr<trdk::TransactionContext>(
+                   trdk::Security &,
+                   const trdk::Lib::Currency &,
+                   const trdk::Qty &,
+                   const boost::optional<trdk::Price> &,
+                   const trdk::OrderParams &,
+                   const trdk::OrderSide &,
+                   const trdk::TimeInForce &));
 
-  MOCK_METHOD1(SendCancelOrder, void(const OrderId &));
+  MOCK_METHOD1(SendCancelOrderTransaction, void(const OrderId &));
 };
 }
 }

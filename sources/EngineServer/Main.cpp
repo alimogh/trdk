@@ -64,6 +64,42 @@ fs::path GetIniFilePath(const char *inputValue) {
 
 namespace {
 
+bool RunService(int argc, const char *argv[]) {
+  if (argc < 3 || !strlen(argv[2])) {
+    std::cerr << "No configuration file specified." << std::endl;
+    return false;
+  }
+
+  pt::time_duration startDelay;
+  if (argc > 3) {
+    auto i = 3;
+    if (strcmp(argv[i], CommandLine::Options::startDelay)) {
+      std::cerr << "Unknown option \"" << argv[i] << "\"." << std::endl;
+      return false;
+    }
+    const auto valueArgIndex = i + 1;
+    if (valueArgIndex >= argc) {
+      std::cerr << "Option " << CommandLine::Options::startDelay
+                << " has no value." << std::endl;
+      return false;
+    }
+    try {
+      const auto value =
+          boost::lexical_cast<unsigned short>(argv[valueArgIndex]);
+      startDelay = pt::seconds(value);
+    } catch (const boost::bad_lexical_cast &ex) {
+      std::cerr << "Failed to read " << CommandLine::Options::startDelay
+                << " value \"" << argv[valueArgIndex] << "\":"
+                << " \"" << ex.what() << "\"." << std::endl;
+      return false;
+    }
+  }
+
+  std::cerr << "Service mode is not supported." << std::endl;
+
+  return false;
+}
+
 bool DebugStrategy(int argc, const char *argv[]) {
   bool result = true;
   boost::optional<trdk::Context::State> state;

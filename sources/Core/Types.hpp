@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Api.h"
+#include "Fwd.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -27,8 +28,6 @@ typedef boost::uint64_t OrderId;
 ////////////////////////////////////////////////////////////////////////////////
 
 //! Order side
-/** https://mbcm.robotdk.com:8443/display/API/Constants
-  */
 enum OrderSide {
   ORDER_SIDE_BUY = 0,
   ORDER_SIDE_BID = ORDER_SIDE_BUY,
@@ -49,64 +48,47 @@ inline std::ostream &operator<<(std::ostream &os, const trdk::OrderSide &side) {
 ////////////////////////////////////////////////////////////////////////////////
 
 //! Time in Force
-/** https://mbcm.robotdk.com:8443/display/API/Constants
-  */
 enum TimeInForce {
   // Good Till Day.
-  TIME_IN_FORCE_DAY = 0,
+  TIME_IN_FORCE_DAY,
   // Good Till Cancel.
-  TIME_IN_FORCE_GTC = 1,
+  TIME_IN_FORCE_GTC,
   // At the Opening.
-  TIME_IN_FORCE_OPG = 2,
+  TIME_IN_FORCE_OPG,
   // Immediate or Cancel.
-  TIME_IN_FORCE_IOC = 3,
+  TIME_IN_FORCE_IOC,
   // Fill or Kill.
-  TIME_IN_FORCE_FOK = 4,
+  TIME_IN_FORCE_FOK,
   numberOfTimeInForces
 };
+
+TRDK_CORE_API const char *ConvertToPch(const trdk::TimeInForce &);
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const trdk::TimeInForce &tif) {
+  return os << trdk::ConvertToPch(tif);
+}
 
 //! Extended order parameters.
 struct OrderParams {
   //! Account.
   boost::optional<std::string> account;
 
-  //! Display size for Iceberg orders.
-  boost::optional<trdk::Qty> displaySize;
-
-  //! Minimum trade quantity. Must be at most the order quantity.
-  /** For cache pair could be in different currency.
+  //! Good in Time.
+  /** The order should be canceled if is not filled after this time.
     */
-  boost::optional<trdk::Qty> minTradeQty;
-
-  //! Good Till Time.
-  /** Absolute value in Coordinated Universal Time (UTC). Incompatible
-    * with goodInSeconds.
-    * @sa trdk::OrderParams::goodInSeconds
-    */
-  boost::optional<boost::posix_time::ptime> goodTillTime;
-  //! Good next N seconds.
-  /** Incompatible with goodTillTime.
-    * @sa trdk::OrderParams::goodTillTime
-    */
-  boost::optional<uintmax_t> goodInSeconds;
-
-  //! Order ID to replace.
-  boost::optional<uintmax_t> orderIdToReplace;
-
-  //! Order sent not by strategy.
-  bool isManualOrder;
-
-  //! Defines order quantity precision.
-  /** If set - order quantity will be rounded to this precision.
-    */
-  boost::optional<uint8_t> qtyPrecision;
+  boost::optional<boost::posix_time::time_duration> goodInTime;
 
   //! Define forced expiration for order contract.
   /** If set - this expiration will be used, not from security object.
     */
   const trdk::Lib::ContractExpiration *expiration;
 
-  explicit OrderParams() : isManualOrder(false), expiration(nullptr) {}
+  //! Trading system must try to work with position started by specified order
+  //! or used by specified order.
+  const trdk::TransactionContext *position;
+
+  explicit OrderParams() : expiration(nullptr), position(nullptr) {}
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
                                                 const trdk::OrderParams &);

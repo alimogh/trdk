@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/15 22:29:44
+ *   Created: 2017/11/01 22:42:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,17 +10,15 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
+namespace trdk {
+namespace FrontEnd {
+namespace Lib {
 
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include <QtWidgets>
-#pragma warning(pop)
-
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-#include <boost/multi_index_container.hpp>
-
-#include "Types.hpp"
+enum ItemDataRole {
+  ITEM_DATA_ROLE_ITEM_ID = Qt::UserRole,
+  ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX,
+  ITEM_DATA_ROLE_TRADING_MODE,
+};
+}
+}
+}

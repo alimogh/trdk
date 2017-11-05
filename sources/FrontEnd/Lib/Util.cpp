@@ -59,9 +59,22 @@ QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
   return QString::number(source, 'f', precision);
 }
 
+QString lib::ConvertPriceToText(const boost::optional<Price> &source,
+                                uint8_t precision) {
+  return ConvertPriceToText(
+      source ? *source : std::numeric_limits<double>::quiet_NaN(), precision);
+}
+
 QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', precision);
+}
+
+QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
+  const auto &date = source.date();
+  const auto &time = source.time_of_day();
+  return {{date.year(), date.month().as_number(), date.day()},
+          {time.hours(), time.minutes(), time.seconds()}};
 }

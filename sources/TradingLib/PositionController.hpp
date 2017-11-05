@@ -18,7 +18,6 @@ namespace TradingLib {
 class PositionController : private boost::noncopyable {
  public:
   explicit PositionController(trdk::Strategy &);
-  explicit PositionController(trdk::Strategy &, trdk::TradingSystem &);
   virtual ~PositionController();
 
  public:
@@ -92,7 +91,6 @@ class PositionController : private boost::noncopyable {
       const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   boost::uuids::uuid GenerateNewOperationId() const;
-  trdk::TradingSystem &GetTradingSystem(const trdk::Security &);
 
  private:
   class Implementation;

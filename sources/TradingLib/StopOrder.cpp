@@ -35,7 +35,7 @@ void StopOrder::OnHit() {
 
     try {
       GetPosition().CancelAllOrders();
-    } catch (const trdk::TradingSystem::UnknownOrderCancelError &ex) {
+    } catch (const trdk::TradingSystem::OrderIsUnknown &ex) {
       GetTradingLog().Write("failed to cancel order");
       GetPosition().GetStrategy().GetLog().Warn(
           "Failed to cancel order: \"%1%\".", ex.what());
@@ -68,7 +68,7 @@ void StopOrder::OnHit() {
     if (isBadOrder) {
       try {
         GetPosition().CancelAllOrders();
-      } catch (const trdk::TradingSystem::UnknownOrderCancelError &ex) {
+      } catch (const trdk::TradingSystem::OrderIsUnknown &ex) {
         GetTradingLog().Write("failed to cancel order");
         GetPosition().GetStrategy().GetLog().Warn(
             "Failed to cancel order: \"%1%\".", ex.what());

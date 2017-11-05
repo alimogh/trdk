@@ -27,6 +27,9 @@ class TRDK_CORE_API PositionOperationContext {
   const PositionOperationContext &operator=(const PositionOperationContext &);
 
  public:
+  virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
+                                                trdk::Security &);
+
   //! Order policy for position opening.
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy() const = 0;
   //! Order policy for position closing.

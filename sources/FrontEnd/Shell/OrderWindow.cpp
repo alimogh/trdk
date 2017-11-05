@@ -203,21 +203,12 @@ void OrderWindow::SendBuyOrder() {
   }
   for (;;) {
     try {
-      if (IsIocOrder()) {
-        tradingSystemMode->BuyImmediatelyOrCancel(
-            *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_ui.price->value(), params,
-            m_engine.GetOrderTradingSystemSlot(),
-            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
-            Milestones());
-      } else {
-        tradingSystemMode->Buy(
-            *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_ui.price->value(), params,
-            m_engine.GetOrderTradingSystemSlot(),
-            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
-            Milestones());
-      }
+      tradingSystemMode->SendOrder(
+          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
+          Price(m_ui.price->value()), params,
+          m_engine.GetOrderTradingSystemSlot(),
+          m_engine.GetRiskControl(tradingSystemMode->GetMode()), ORDER_SIDE_BUY,
+          IsIocOrder() ? TIME_IN_FORCE_IOC : TIME_IN_FORCE_GTC, Milestones());
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(
@@ -242,21 +233,13 @@ void OrderWindow::SendSellOrder() {
   }
   for (;;) {
     try {
-      if (IsIocOrder()) {
-        tradingSystemMode->SellImmediatelyOrCancel(
-            *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_ui.price->value(), params,
-            m_engine.GetOrderTradingSystemSlot(),
-            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
-            Milestones());
-      } else {
-        tradingSystemMode->Sell(
-            *m_security, m_security->GetSymbol().GetCurrency(),
-            m_ui.qty->value(), m_ui.price->value(), params,
-            m_engine.GetOrderTradingSystemSlot(),
-            m_engine.GetRiskControl(tradingSystemMode->GetMode()),
-            Milestones());
-      }
+      tradingSystemMode->SendOrder(
+          *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
+          Price(m_ui.price->value()), params,
+          m_engine.GetOrderTradingSystemSlot(),
+          m_engine.GetRiskControl(tradingSystemMode->GetMode()),
+          ORDER_SIDE_SELL, IsIocOrder() ? TIME_IN_FORCE_IOC : TIME_IN_FORCE_GTC,
+          Milestones());
       break;
     } catch (const std::exception &ex) {
       if (QMessageBox::critical(

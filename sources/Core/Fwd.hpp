@@ -18,6 +18,7 @@ class PriceBook;
 
 class Security;
 
+class TransactionContext;
 class TradingSystem;
 class MarketDataSource;
 

@@ -326,7 +326,7 @@ bool mk::Strategy::ContinueRollOver() {
   if (position.HasActiveOpenOrders()) {
     try {
       position.CancelAllOrders();
-    } catch (const TradingSystem::UnknownOrderCancelError &ex) {
+    } catch (const TradingSystem::OrderIsUnknown &ex) {
       GetLog().Warn("Failed to cancel order: \"%1%\".", ex.what());
     }
     return false;

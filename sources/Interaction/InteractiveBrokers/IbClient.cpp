@@ -704,23 +704,7 @@ void Client::SubscribeToMarketDepthLevel2(ib::Security &security) {
   requests.swap(m_marketDepthLevel2Requests);
 }
 
-void Client::ApplyOrderParams(const OrderParams &params, Order &order) const {
-  if (params.displaySize) {
-    AssertLt(0, *params.displaySize);
-    order.displaySize = ConvertToIbType(*params.displaySize);
-  }
-
-  Assert(!params.goodInSeconds || !params.goodTillTime);
-  if (params.goodTillTime) {
-    FormatOrderDateTime(*params.goodTillTime, order.goodTillDate);
-    order.tif = "GTD";
-  } else if (params.goodInSeconds) {
-    FormatOrderDateTime(m_ts.GetContext().GetCurrentTime() +
-                            pt::seconds(long(*params.goodInSeconds)),
-                        order.goodTillDate);
-    order.tif = "GTD";
-  }
-}
+void Client::ApplyOrderParams(const OrderParams &, Order &) const {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

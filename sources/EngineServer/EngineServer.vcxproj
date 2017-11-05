@@ -311,7 +311,6 @@
     <Link />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="QueueService.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -334,7 +333,6 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Pack.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="QueueService.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">

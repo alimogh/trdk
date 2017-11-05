@@ -51,36 +51,41 @@ class TRDK_CORE_API DropCopy {
       const boost::uuids::uuid &type,
       const boost::uuids::uuid &id) = 0;
 
-  virtual void CopyOrder(const boost::uuids::uuid &id,
-                         const std::string *tradingSystemId,
-                         const boost::posix_time::ptime &orderTime,
-                         const boost::posix_time::ptime *executionTime,
-                         const trdk::OrderStatus &,
-                         const boost::uuids::uuid &operationId,
-                         const int64_t *subOperationId,
-                         const trdk::Security &,
+  virtual void CopySubmittedOrder(const trdk::OrderId &,
+                                  const boost::posix_time::ptime &,
+                                  const trdk::Security &,
+                                  const trdk::Lib::Currency &,
+                                  const trdk::TradingSystem &,
+                                  const trdk::OrderSide &,
+                                  const trdk::Qty &,
+                                  const boost::optional<trdk::Price> &,
+                                  const trdk::TimeInForce &) = 0;
+  virtual void CopyOrderStatus(const trdk::OrderId &,
+                               const std::string &tradingSystemId,
+                               const trdk::TradingSystem &,
+                               const boost::posix_time::ptime &,
+                               const trdk::OrderStatus &,
+                               const trdk::Qty &remainingQty) = 0;
+  virtual void CopyOrder(const trdk::OrderId &,
+                         const std::string &tradingSystemOrderId,
                          const trdk::TradingSystem &,
+                         const std::string &symbol,
+                         const trdk::OrderStatus &,
+                         const trdk::Qty &qty,
+                         const trdk::Qty &remainingQty,
+                         const boost::optional<trdk::Price> &,
                          const trdk::OrderSide &,
-                         const trdk::Qty &qty,
-                         const trdk::Price *price,
-                         const trdk::TimeInForce *,
-                         const trdk::Lib::Currency &,
-                         const trdk::Qty *minQty,
-                         const trdk::Qty &executedQty,
-                         const trdk::Price *bestBidPrice,
-                         const trdk::Qty *bestBidQty,
-                         const trdk::Price *bestAskPrice,
-                         const trdk::Qty *bestAskQty) = 0;
+                         const trdk::TimeInForce &,
+                         const boost::posix_time::ptime &openTime,
+                         const boost::posix_time::ptime &updateTime) = 0;
 
-  virtual void CopyTrade(const boost::posix_time::ptime &,
-                         const std::string &tradingSystemTradeId,
-                         const boost::uuids::uuid &orderId,
-                         const trdk::Price &price,
-                         const trdk::Qty &qty,
-                         const trdk::Price &bestBidPrice,
-                         const trdk::Qty &bestBidQty,
-                         const trdk::Price &bestAskPrice,
-                         const trdk::Qty &bestAskQty) = 0;
+  virtual void CopyTrade(
+      const boost::posix_time::ptime &,
+      const boost::optional<std::string> &tradingSystemTradeId,
+      const trdk::OrderId &,
+      const trdk::TradingSystem &,
+      const trdk::Price &,
+      const trdk::Qty &) = 0;
 
   virtual void ReportOperationStart(const trdk::Strategy &,
                                     const boost::uuids::uuid &id,
@@ -108,25 +113,25 @@ class TRDK_CORE_API DropCopy {
                                 const trdk::Lib::Double &value) = 0;
 
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &,
-                              const trdk::Level1TickValue &) = 0;
+                          const boost::posix_time::ptime &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &,
+                          const trdk::Level1TickValue &) = 0;
   virtual void CopyLevel1(const trdk::Security &,
-                              const boost::posix_time::ptime &,
-                              const std::vector<trdk::Level1TickValue> &) = 0;
+                          const boost::posix_time::ptime &,
+                          const std::vector<trdk::Level1TickValue> &) = 0;
 };
 }
