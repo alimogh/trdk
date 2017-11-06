@@ -23,8 +23,7 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   typedef trdk::PositionOperationContext Base;
 
  public:
-  explicit OperationContext(bool isLong,
-                            const Qty &,
+  explicit OperationContext(const Qty &,
                             const Price &price,
                             TradingSystem &tradingSystem);
   OperationContext(OperationContext &&);
@@ -33,8 +32,7 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
  public:
   void AddTakeProfitStopLimit(
       const Price &maxPriceChange,
-      const boost::posix_time::time_duration &activationTime,
-      const Lib::Double &volumeToCloseRatio);
+      const boost::posix_time::time_duration &activationTime);
   void AddStopLoss(const Price &maxPriceChange);
   void AddStopLoss(const Price &maxPriceChange,
                    const boost::posix_time::time_duration &startDelay);

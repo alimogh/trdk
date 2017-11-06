@@ -33,13 +33,12 @@ void TakeProfitStopLimit::Report(const Position &position,
                                  ModuleTradingLog &log) const {
   log.Write(
       "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f, 'time': "
-      "'%3%', 'closeVolRatio: %4$.8f}, 'position': '%5%'}",
+      "'%3%'}, 'position': '%4%'}",
       [this, &position](TradingRecord &record) {
         record % GetName()                                     // 1
             % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
             % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
-            % m_params->GetVolumeToCloseRatio()                // 4
-            % position.GetId();                                // 5
+            % position.GetId();                                // 4
       });
 }
 

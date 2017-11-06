@@ -105,6 +105,23 @@ void PositionController::ContinuePosition(Position &position) {
   position.GetOperationContext().GetOpenOrderPolicy().Open(position);
 }
 
+bool PositionController::ClosePosition(Position &position,
+                                       const CloseReason &reason) {
+  position.SetCloseReason(reason);
+  if (position.HasActiveOpenOrders()) {
+    try {
+      Verify(position.CancelAllOrders());
+    } catch (const TradingSystem::OrderIsUnknown &ex) {
+      GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
+                                  ex.what());
+      return false;
+    }
+  } else {
+    ClosePosition(position);
+  }
+  return true;
+}
+
 void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.GetOperationContext().GetCloseOrderPolicy().Close(position);
@@ -138,20 +155,8 @@ Position *PositionController::OnSignal(
 
   if (!position) {
     position = &OpenPosition(newOperationContext, security, delayMeasurement);
-  } else {
-    position->SetCloseReason(CLOSE_REASON_SIGNAL);
-    if (position->HasActiveOpenOrders()) {
-      try {
-        Verify(position->CancelAllOrders());
-      } catch (const TradingSystem::OrderIsUnknown &ex) {
-        GetStrategy().GetTradingLog().Write("failed to cancel order");
-        GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
-                                    ex.what());
-        return nullptr;
-      }
-    } else {
-      ClosePosition(*position);
-    }
+  } else if (!ClosePosition(*position, CLOSE_REASON_SIGNAL)) {
+    return nullptr;
   }
 
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
@@ -222,15 +227,16 @@ void PositionController::OnPositionUpdate(Position &position) {
       // Received signal to close...
       AssertLt(0, position.GetActiveQty());
       ClosePosition(position);
-    } else if (position.GetActiveQty() < position.GetPlanedQty()) {
+    } else if (!position.IsFullyOpened()) {
       ContinuePosition(position);
     }
   }
 }
 
 void PositionController::OnPostionsCloseRequest() {
-  throw MethodIsNotImplementedException(
-      "OnPostionsCloseRequest is not implemented");
+  for (auto &position : GetStrategy().GetPositions()) {
+    ClosePosition(position, CLOSE_REASON_REQUEST);
+  }
 }
 
 void PositionController::OnBrokerPositionUpdate(

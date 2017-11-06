@@ -66,7 +66,12 @@ class PositionController : private boost::noncopyable {
       bool isLong,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void ClosePosition(trdk::Position &);
+
+  //! Cancels active open-order, if exists, and closed position.
+  /** @return true, if did some action to close position, if not (for ex.: there
+    *         is no opened position) - false.
+    */
+  bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
 
  protected:
   boost::shared_ptr<Position> CreatePosition(
@@ -78,6 +83,7 @@ class PositionController : private boost::noncopyable {
       const trdk::Lib::TimeMeasurement::Milestones &);
 
   void ContinuePosition(trdk::Position &);
+  void ClosePosition(trdk::Position &);
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
   const PositionReport &GetReport() const;

@@ -20,12 +20,14 @@ using namespace trdk::TradingLib;
 using namespace trdk::Strategies::WilliamCarry;
 
 namespace pt = boost::posix_time;
+namespace sig = boost::signals2;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
   PositionController m_controller;
+  sig::signal<void(bool isLong, bool isActive)> m_positionSignal;
 
   explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}
 };
@@ -45,16 +47,22 @@ MultibrokerStrategy::~MultibrokerStrategy() = default;
 void MultibrokerStrategy::OpenPosition(
     std::vector<OperationContext> &&operations,
     Security &security,
+    bool isLong,
     const Milestones &delayMeasurement) {
+  Assert(!operations.empty());
   if (!GetPositions().IsEmpty()) {
-    throw Exception(
-        "Failed to start new position as current strategy instance already "
-        "handles position");
-  }
-  for (OperationContext &operation : operations) {
-    m_pimpl->m_controller.OpenPosition(
-        boost::make_shared<OperationContext>(std::move(operation)), security,
-        delayMeasurement);
+    if (GetPositions().cbegin()->IsLong() == isLong) {
+      throw Exception(
+          "Failed to start new position as current strategy instance already "
+          "handles position");
+    }
+    m_pimpl->m_controller.OnPostionsCloseRequest();
+  } else {
+    for (OperationContext &operation : operations) {
+      m_pimpl->m_controller.OpenPosition(
+          boost::make_shared<OperationContext>(std::move(operation)), security,
+          isLong, delayMeasurement);
+    }
   }
 }
 
@@ -65,11 +73,25 @@ void MultibrokerStrategy::OnLevel1Tick(Security &,
 
 void MultibrokerStrategy::OnPositionUpdate(Position &position) {
   m_pimpl->m_controller.OnPositionUpdate(position);
+
+  for (const auto &strategyPosition : GetPositions()) {
+    if (!strategyPosition.IsCompleted()) {
+      m_pimpl->m_positionSignal(position.IsLong(), true);
+      return;
+    }
+  }
+  m_pimpl->m_positionSignal(position.IsLong(), false);
 }
 
 void MultibrokerStrategy::OnPostionsCloseRequest() {
   m_pimpl->m_controller.OnPostionsCloseRequest();
 }
+
+sig::scoped_connection MultibrokerStrategy::SubscribeToPositionsUpdates(
+    const boost::function<void(bool isLong, bool isActive)> &slot) const {
+  return m_pimpl->m_positionSignal.connect(slot);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<Strategy> CreateMultibroker(Context &context,

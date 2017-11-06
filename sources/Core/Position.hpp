@@ -116,8 +116,15 @@ class TRDK_CORE_API Position
   void SetCloseReason(const CloseReason &);
   void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE);
 
+  //! Has opened quantity equals or more than planned quantity.
+  /** @sa GetPlanedQty
+    * @sa GetActiveQty
+    * @sa IsOpened
+    */
+  bool IsFullyOpened() const;
   //! Has opened qty and doesn't have active open-orders.
   /** @sa IsClosed
+    * @sa IsFullyOpened
     */
   bool IsOpened() const noexcept;
   //! Closed.

@@ -27,7 +27,6 @@ namespace tl = trdk::TradingLib;
 
 class OperationContext::Implementation : private boost::noncopyable {
  public:
-  const bool m_isLong;
   const Qty m_qty;
   boost::shared_ptr<OrderPolicy> m_orderPolicy;
   TradingSystem &m_tradingSystem;
@@ -39,22 +38,18 @@ class OperationContext::Implementation : private boost::noncopyable {
       m_takeProfitStopLimits;
   pt::time_duration m_stopTime;
 
-  explicit Implementation(bool isLong,
-                          const Qty &qty,
+  explicit Implementation(const Qty &qty,
                           const Price &price,
                           TradingSystem &tradingSystem)
-      : m_isLong(isLong),
-        m_qty(qty),
+      : m_qty(qty),
         m_orderPolicy(boost::make_shared<OrderPolicy>(price)),
         m_tradingSystem(tradingSystem) {}
 };
 
-OperationContext::OperationContext(bool isLong,
-                                   const Qty &qty,
+OperationContext::OperationContext(const Qty &qty,
                                    const Price &price,
                                    TradingSystem &tradingSystem)
-    : m_pimpl(boost::make_unique<Implementation>(
-          isLong, qty, price, tradingSystem)) {}
+    : m_pimpl(boost::make_unique<Implementation>(qty, price, tradingSystem)) {}
 
 OperationContext::OperationContext(OperationContext &&) = default;
 
@@ -79,7 +74,10 @@ void OperationContext::Setup(Position &position) const {
   }
 }
 
-bool OperationContext::IsLong() const { return m_pimpl->m_isLong; }
+bool OperationContext::IsLong() const {
+  throw LogicError(
+      "Mutibroker operation context doesn't provide operation side.");
+}
 
 Qty OperationContext::GetPlannedQty() const { return m_pimpl->m_qty; }
 
@@ -95,12 +93,10 @@ OperationContext::StartInvertedPosition(const Position &) {
 }
 
 void OperationContext::AddTakeProfitStopLimit(
-    const Price &maxPriceChange,
-    const pt::time_duration &activationTime,
-    const Double &volumeToCloseRatio) {
+    const Price &maxPriceChange, const pt::time_duration &activationTime) {
   m_pimpl->m_takeProfitStopLimits.emplace_back(
-      boost::make_shared<TakeProfitStopLimit::Params>(
-          maxPriceChange, activationTime, volumeToCloseRatio));
+      boost::make_shared<TakeProfitStopLimit::Params>(maxPriceChange,
+                                                      activationTime));
 }
 
 void OperationContext::AddStopLoss(const Price &maxPriceChange) {

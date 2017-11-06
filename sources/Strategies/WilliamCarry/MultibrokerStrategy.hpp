@@ -31,7 +31,11 @@ class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
  public:
   void OpenPosition(std::vector<OperationContext> &&,
                     Security &,
+                    bool isLong,
                     const Lib::TimeMeasurement::Milestones &);
+
+  boost::signals2::scoped_connection SubscribeToPositionsUpdates(
+      const boost::function<void(bool isLong, bool isActive)> &) const;
 
  protected:
   virtual void OnLevel1Tick(

@@ -43,7 +43,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
       m_tradingsecurityListWidget(this),
       m_ignoreLockToggling(false),
       m_settings({}),
-      m_lots{1, 1, 1, 1, 1} {
+      m_lots{1, 1, 1, 1, 1},
+      m_timer(this) {
   m_ui.setupUi(this);
 
   m_tradingsecurityListWidget.hide();
@@ -118,6 +119,16 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection));
 
+  Verify(connect(this, &MultiBrokerWidget::PositionChanged, this,
+                 &MultiBrokerWidget::OnPosition, Qt::QueuedConnection));
+
+  {
+    Verify(connect(&m_timer, &QTimer::timeout,
+                   [this]() { SetTime(QTime::currentTime(), *m_ui.time); }));
+    m_timer.start(1000);
+    SetTime(QTime::currentTime(), *m_ui.time);
+  }
+
   LoadSettings();
 }
 
@@ -167,40 +178,46 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
       continue;
     }
 
-    const auto &lot = m_lots[i];
-    const auto qty = settings.lotMultiplier * lot;
-    operations.emplace_back(isLong, qty, price, startegy.GetTradingSystem(i));
-    auto &operation = operations.back();
-
+    auto qty = (settings.lotMultiplier * m_lots[i]) *
+               m_currentTradingSecurity->GetLotSize();
+    if (settings.target2) {
+      qty /= 2;
+    }
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
+    const auto &createPosition = [&]() -> OperationContext {
+      OperationContext result(qty, price, startegy.GetTradingSystem(i));
+      if (settings.stopLoss2) {
+        result.AddStopLoss(pip * settings.stopLoss2->pips,
+                           settings.stopLoss2->delay);
+      }
+      if (settings.stopLoss3) {
+        result.AddStopLoss(pip * settings.stopLoss3->pips,
+                           settings.stopLoss3->delay);
+      }
+      return result;
+    };
 
-    if (!settings.target2) {
+    {
+      OperationContext operation = createPosition();
       operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
-                                       settings.target1.delay, 1.0);
-    } else {
-      operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
-                                       settings.target1.delay, 0.5);
+                                       settings.target1.delay);
+      operations.emplace_back(std::move(operation));
+    }
+    if (settings.target2) {
+      OperationContext operation = createPosition();
       operation.AddTakeProfitStopLimit(pip * settings.target2->pips,
-                                       settings.target2->delay, 0.5);
-    }
-
-    if (settings.stopLoss2) {
-      operation.AddStopLoss(pip * settings.stopLoss2->pips,
-                            settings.stopLoss2->delay);
-    }
-    if (settings.stopLoss3) {
-      operation.AddStopLoss(pip * settings.stopLoss3->pips,
-                            settings.stopLoss3->delay);
+                                       settings.target2->delay);
+      operations.emplace_back(std::move(operation));
     }
   }
 
   try {
-    startegy.Invoke<MultibrokerStrategy>(
-        [this, &settings, &operations,
-         &delayMeasurement](MultibrokerStrategy &multibroker) {
-          multibroker.OpenPosition(std::move(operations),
-                                   *m_currentTradingSecurity, delayMeasurement);
-        });
+    startegy.Invoke<MultibrokerStrategy>([this, &settings, &operations, isLong,
+                                          &delayMeasurement](
+        MultibrokerStrategy &multibroker) {
+      multibroker.OpenPosition(std::move(operations), *m_currentTradingSecurity,
+                               isLong, delayMeasurement);
+    });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to send order"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
@@ -236,11 +253,11 @@ void MultiBrokerWidget::LockSecurity(bool lock) {
   }
 
   Assert(m_currentMarketDataSecurity);
-  const auto &locked = m_lockedSecurityList.emplace(std::make_pair(
-      m_currentMarketDataSecurity,
-      Locked{m_currentMarketDataSecurity->GetLastMarketDataTime(),
-             m_currentMarketDataSecurity->GetBidPriceValue(),
-             m_currentMarketDataSecurity->GetAskPriceValue()}));
+  const auto &locked = m_lockedSecurityList.emplace(
+      std::make_pair(m_currentMarketDataSecurity,
+                     Locked{QTime::currentTime(),
+                            m_currentMarketDataSecurity->GetBidPriceValue(),
+                            m_currentMarketDataSecurity->GetAskPriceValue()}));
   Assert(locked.second);
   SetLockedPrices(locked.first->second, *m_currentMarketDataSecurity);
 }
@@ -254,6 +271,7 @@ TradingSystem *MultiBrokerWidget::GetSelectedTradingSystem() {
 }
 
 void MultiBrokerWidget::Reload() {
+  m_signalConnections.clear();
   m_securityList.clear();
   m_ui.securityList->clear();
   m_tradingsecurityListWidget.clear();
@@ -280,6 +298,16 @@ void MultiBrokerWidget::Reload() {
       ids::string_generator()("646CE7C2-216B-4C2F-A7B8-5B8B45B0EBF4"));
   m_strategies[3] = &m_engine.GetContext().GetSrategy(
       ids::string_generator()("A7ACF9B5-B3FB-4DD8-BA39-CE7DD04D4F2E"));
+
+  for (size_t i = 1; i <= m_strategies.size(); ++i) {
+    m_strategies[i - 1]->Invoke<MultibrokerStrategy>([this, i](
+        MultibrokerStrategy &multibroker) {
+      m_signalConnections.emplace_back(multibroker.SubscribeToPositionsUpdates(
+          [this, i](bool isLong, bool isActive) {
+            emit PositionChanged(i, isLong, isActive);
+          }));
+    });
+  }
 }
 
 void MultiBrokerWidget::ReloadSecurityList() {
@@ -356,53 +384,50 @@ void MultiBrokerWidget::UpdatePrices(const Security *security) {
                   security);
 }
 
-void MultiBrokerWidget::SetCurretPrices(const pt::ptime &time,
+void MultiBrokerWidget::SetCurretPrices(const pt::ptime &,
                                         const Price &bid,
                                         const Price &ask,
                                         const Security *security) {
-  SetPrices(time, *m_ui.time, bid, *m_ui.bid, ask, *m_ui.ask, security);
+  SetPrices(bid, *m_ui.bid, ask, *m_ui.ask, security);
 }
 
 void MultiBrokerWidget::SetLockedPrices(const Locked &locked,
                                         const Security &security) {
-  SetPrices(locked.time, *m_ui.lockedTime, locked.bid, *m_ui.lockedBid,
-            locked.ask, *m_ui.lockedAsk, &security);
+  SetTime(locked.time, *m_ui.lockedTime);
+  SetPrices(locked.bid, *m_ui.lockedBid, locked.ask, *m_ui.lockedAsk,
+            &security);
 }
 void MultiBrokerWidget::ResetLockedPrices(const Security *security) {
-  SetPrices(pt::not_a_date_time, *m_ui.lockedTime,
-            std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedBid,
+  ResetTime(*m_ui.lockedTime);
+  SetPrices(std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedBid,
             std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedAsk,
             security);
 }
 
-void MultiBrokerWidget::SetPrices(const pt::ptime &time,
-                                  QLabel &timeControl,
-                                  const Price &bid,
+void MultiBrokerWidget::SetTime(const QTime &time, QLabel &timeControl) {
+  static const QString format("hh:mm:ss");
+  timeControl.setText(time.toString(format));
+}
+
+void MultiBrokerWidget::ResetTime(QLabel &timeControl) {
+  timeControl.setText("");
+}
+
+void MultiBrokerWidget::SetPrices(const Price &bid,
                                   QLabel &bidControl,
                                   const Price &ask,
                                   QLabel &askControl,
                                   const Security *security) const {
-  if (time != pt::not_a_date_time) {
-    const auto &timeOfDay = time.time_of_day();
-    QString text;
-    text.sprintf("%02d:%02d:%02d", timeOfDay.hours(), timeOfDay.minutes(),
-                 timeOfDay.seconds());
-    timeControl.setText(text);
+  const auto &precision = security ? security->GetPricePrecision() : 5;
+  if (bid.IsNotNan()) {
+    bidControl.setText(QString::number(bid, 'f', precision));
   } else {
-    timeControl.setText(QString());
+    bidControl.setText(QString());
   }
-  {
-    const auto &precision = security ? security->GetPricePrecision() : 5;
-    if (bid.IsNotNan()) {
-      bidControl.setText(QString::number(bid, 'f', precision));
-    } else {
-      bidControl.setText(QString());
-    }
-    if (ask.IsNotNan()) {
-      askControl.setText(QString::number(ask, 'f', precision));
-    } else {
-      askControl.setText(QString());
-    }
+  if (ask.IsNotNan()) {
+    askControl.setText(QString::number(ask, 'f', precision));
+  } else {
+    askControl.setText(QString());
   }
 }
 
@@ -619,6 +644,46 @@ void MultiBrokerWidget::LoadSettings() {
       settingsStorage.endGroup();
     }
     settingsStorage.endGroup();
+  }
+}
+
+void MultiBrokerWidget::OnPosition(size_t strategy,
+                                   bool isLong,
+                                   bool isActive) {
+  const auto &highlight = [isLong, isActive](QPushButton &buy,
+                                             QPushButton &sell) {
+    auto &button = isLong ? buy : sell;
+    button.setEnabled(!isActive);
+    if (isActive) {
+      static const QString style(
+          "background-color: rgb(0, 153, 0);\ncolor: rgb(251, 253, 254);");
+      button.setStyleSheet(style);
+    } else if (isLong) {
+      static const QString style(
+          "background-color: rgb(39, 60, 194); color: rgb(251, 253, 254); ");
+      button.setStyleSheet(style);
+    } else {
+      static const QString style(
+          "background-color: rgb(230, 59, 1);\ncolor: rgb(251, 253, 254);");
+      button.setStyleSheet(style);
+    }
+  };
+  switch (strategy) {
+    case 1:
+      highlight(*m_ui.buy1, *m_ui.sell1);
+      break;
+    case 2:
+      highlight(*m_ui.buy2, *m_ui.sell2);
+      break;
+    case 3:
+      highlight(*m_ui.buy3, *m_ui.sell3);
+      break;
+    case 4:
+      highlight(*m_ui.buy4, *m_ui.sell4);
+      break;
+    default:
+      AssertEq(1, strategy);
+      return;
   }
 }
 
