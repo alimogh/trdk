@@ -73,8 +73,8 @@ trdk::Position &PositionController::OpenPosition(
     const boost::shared_ptr<PositionOperationContext> &operationContext,
     Security &security,
     const Milestones &delayMeasurement) {
-  return OpenPosition(operationContext, security, operationContext->IsLong(),
-                      delayMeasurement);
+  return OpenPosition(operationContext, security,
+                      operationContext->IsLong(security), delayMeasurement);
 }
 
 trdk::Position &PositionController::OpenPosition(
@@ -104,6 +104,8 @@ void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.GetOperationContext().GetOpenOrderPolicy().Open(position);
 }
+
+void PositionController::HoldPosition(Position &) {}
 
 bool PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
@@ -229,6 +231,8 @@ void PositionController::OnPositionUpdate(Position &position) {
       ClosePosition(position);
     } else if (!position.IsFullyOpened()) {
       ContinuePosition(position);
+    } else {
+      HoldPosition(position);
     }
   }
 }

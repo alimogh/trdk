@@ -784,7 +784,7 @@ class DummyPositionOperationContext : public PositionOperationContext {
   virtual void Setup(Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
-  virtual bool IsLong() const override {
+  virtual bool IsLong(const Security &) const override {
     throw LogicError("Position instance does not use operation context");
   }
   virtual Qty GetPlannedQty() const override {

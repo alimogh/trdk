@@ -402,6 +402,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         Rest::Security::SupportedLevel1Types()
             .set(LEVEL1_TICK_BID_PRICE)
             .set(LEVEL1_TICK_ASK_PRICE));
+    result->SetOnline(pt::not_a_date_time, true);
+    result->SetTradingSessionState(pt::not_a_date_time, true);
+
     {
       Verify(
           m_securities
@@ -686,6 +689,16 @@ TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
+}
+
+boost::shared_ptr<MarketDataSource> CreateYobitnetMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<YobitnetExchange>(
+      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
+      instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

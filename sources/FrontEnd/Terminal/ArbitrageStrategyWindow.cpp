@@ -263,7 +263,7 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
 
   result.strategy->Invoke<aa::Strategy>([this](aa::Strategy &advisor) {
     advisor.SetupAdvising(m_ui.highlightLevel->value() / 100);
-    Assert(!advisor.GetAutoTradingMinPriceDifferenceRatio() ? true : false);
+    Assert(!advisor.GetAutoTradingSettings() ? true : false);
   });
 
   result.strategy->Invoke<aa::Strategy>([this, &result](aa::Strategy &advisor) {
@@ -500,17 +500,13 @@ void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
   Assert(tragetIt->security);
   Security &security = *tragetIt->security;
 
-  const auto qty = std::min(
-      side == ORDER_SIDE_BUY ? security.GetAskQty() : security.GetBidQty(),
-      static_cast<Qty>(m_ui.maxQty->value()));
-  const auto price =
-      side == ORDER_SIDE_BUY ? security.GetAskPrice() : security.GetBidPrice();
-
   static const OrderParams params;
   try {
-    tradingSystem->SendOrder(security, security.GetSymbol().GetCurrency(), qty,
-                             price, params,
-                             m_engine.GetOrderTradingSystemSlot(),
+    tradingSystem->SendOrder(security, security.GetSymbol().GetCurrency(),
+                             m_ui.maxQty->value(),
+                             side == ORDER_SIDE_BUY ? security.GetAskPrice()
+                                                    : security.GetBidPrice(),
+                             params, m_engine.GetOrderTradingSystemSlot(),
                              m_engine.GetRiskControl(m_tradingMode), side,
                              TIME_IN_FORCE_GTC, Milestones());
   } catch (const std::exception &ex) {
@@ -521,11 +517,11 @@ void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
 
 bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
   bool result = false;
-  if (!m_instanceData.strategy) {
-    m_instanceData.strategy->Invoke<aa::Strategy>([this, &result](
-        const aa::Strategy &advisor) {
-      result = advisor.GetAutoTradingMinPriceDifferenceRatio() ? true : false;
-    });
+  if (m_instanceData.strategy) {
+    m_instanceData.strategy->Invoke<aa::Strategy>(
+        [this, &result](const aa::Strategy &advisor) {
+          result = advisor.GetAutoTradingSettings() ? true : false;
+        });
   }
   AssertEq(result, m_ui.autoTrade->isChecked());
   return result;
@@ -533,13 +529,14 @@ bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
 
 void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
   Assert(m_instanceData.strategy);
-  m_instanceData.strategy->Invoke<aa::Strategy>([this, activate](
-      aa::Strategy &advisor) {
-    AssertNe(activate,
-             advisor.GetAutoTradingMinPriceDifferenceRatio() ? true : false);
-    activate ? advisor.ActivateAutoTrading(m_ui.autoTradeLevel->value() / 100)
-             : advisor.DeactivateAutoTrading();
-  });
+  m_instanceData.strategy->Invoke<aa::Strategy>(
+      [this, activate](aa::Strategy &advisor) {
+        AssertNe(activate, advisor.GetAutoTradingSettings() ? true : false);
+        activate
+            ? advisor.ActivateAutoTrading(
+                  {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
+            : advisor.DeactivateAutoTrading();
+      });
 }
 
 void ArbitrageStrategyWindow::DeactivateAutoTrading() {
@@ -552,12 +549,13 @@ void ArbitrageStrategyWindow::DeactivateAutoTrading() {
 
 void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
   Assert(m_instanceData.strategy);
-  m_instanceData.strategy->Invoke<aa::Strategy>([level](aa::Strategy &advisor) {
-    if (!advisor.GetAutoTradingMinPriceDifferenceRatio()) {
-      return;
-    }
-    advisor.ActivateAutoTrading(level / 100);
-  });
+  m_instanceData.strategy->Invoke<aa::Strategy>(
+      [this, level](aa::Strategy &advisor) {
+        if (!advisor.GetAutoTradingSettings()) {
+          return;
+        }
+        advisor.ActivateAutoTrading({level / 100, m_ui.maxQty->value()});
+      });
 }
 
 void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {

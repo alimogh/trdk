@@ -137,9 +137,9 @@ class TradingSystem::Implementation : private boost::noncopyable {
                    const OrderSide &side,
                    const TimeInForce &tif) {
     m_tradingLog.Write(
-        "{'newOrder': {'operationId': %1%, 'side': '%2%', 'security': '%3%', "
-        "'currency': '%4%', 'type': '%5%', 'price': %6$.8f, 'qty': %7$.8f"
-        ", 'tif': '%8%'}}",
+        "{'order': {'new': {'operationId': %1%, 'side': '%2%', 'security': "
+        "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6$.8f, 'qty': "
+        "%7$.8f, 'tif': '%8%'}}}",
         [&](TradingRecord &record) {
           record % operationId                                       // 1
               % side                                                 // 2
@@ -159,8 +159,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
                       const boost::optional<Volume> &commission,
                       const TradeInfo *trade) {
     m_tradingLog.Write(
-        "{'orderStatus': {'status': '%1%', 'remainingQty': %2$.8f, "
-        "'operationId': %3%, 'id': %4%, 'tsId': '%5%', 'commission': %6$.8f}}",
+        "{'order': {'status': {'status': '%1%', 'remainingQty': %2$.8f, "
+        "'operationId': %3%, 'id': %4%, 'tsId': '%5%', 'commission': %6$.8f}}}",
         [&](TradingRecord &record) {
           record % orderStatus         // 1
               % remainingQty           // 2
@@ -175,7 +175,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
         });
     if (trade) {
       m_tradingLog.Write(
-          "{'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}",
+          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}}",
           [&trade](TradingRecord &record) {
             if (trade->id) {
               record % *trade->id;  // 1
@@ -454,7 +454,7 @@ boost::shared_ptr<const trdk::TransactionContext> TradingSystem::SendOrder(
         });
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
-        "{'orderSendError': {'reason': '%1%', 'operationId': %2%}}",
+        "{'order': {'sendError': {'reason': '%1%', 'operationId': %2%}}}",
         [&ex, &operationId](TradingRecord &record) {
           record % ex.what()  // 1
               % operationId;  // 2
@@ -466,8 +466,8 @@ boost::shared_ptr<const trdk::TransactionContext> TradingSystem::SendOrder(
     throw;
   } catch (...) {
     GetTradingLog().Write(
-        "{'orderSendError': {'reason': 'Unknown exception', 'operationId': "
-        "%1%}}",
+        "{'order': {'sendError': {'reason': 'Unknown exception', "
+        "'operationId': %1%}}}",
         [&operationId](TradingRecord &record) {
           record % operationId;  // 1
         });
@@ -523,13 +523,13 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
 
 void TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write(
-      "{'orderCancel': {'id': %1%}}",
+      "{'order': {'cancel': {'id': %1%}}}",
       [&orderId](TradingRecord &record) { record % orderId; });
   try {
     SendCancelOrderTransaction(orderId);
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
-        "{'orderCancelSendError': {'id': %1%, 'reason': '%2%'}}",
+        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
         [&orderId, &ex](TradingRecord &record) {
           record % orderId  // 1
               % ex.what();  // 2
@@ -541,7 +541,8 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
     throw;
   } catch (...) {
     GetTradingLog().Write(
-        "{'orderCancelSendError': {'id': %1%, 'reason': 'Unknown exception'}}",
+        "{'order': {'cancelSendError': {'id': %1%, 'reason': 'Unknown "
+        "exception'}}}",
         [&orderId](TradingRecord &record) { record % orderId; });
     GetLog().Error(
         "Unknown error while sending order cancel transaction for order %1%.",
@@ -623,7 +624,7 @@ void TradingSystem::OnOrderCancel(const OrderId &orderId,
 void TradingSystem::OnOrderError(const OrderId &orderId,
                                  const std::string &tradingSystemOrderId,
                                  const std::string &&error) {
-  GetTradingLog().Write("{'orderError': {'id': %1%, 'reason': '%2%'}}",
+  GetTradingLog().Write("{'order': {'error': {'id': %1%, 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % error;      // 2
@@ -642,7 +643,7 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
 void TradingSystem::OnOrderReject(const OrderId &orderId,
                                   const std::string &tradingSystemOrderId,
                                   const std::string &&reason) {
-  GetTradingLog().Write("{'orderReject': {'id': %1%, 'reason': '%2%'}}",
+  GetTradingLog().Write("{'order': {'reject': {'id': %1%, 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % reason;     // 2

@@ -10,13 +10,12 @@
 
 #include "Prec.hpp"
 #include "Strategy.hpp"
-#include "TradingLib/PositionController.hpp"
-#include "Core/TradingLog.hpp"
+#include "OperationContext.hpp"
+#include "PositionController.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
@@ -27,20 +26,26 @@ namespace sig = boost::signals2;
 
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
+  aa::Strategy &m_self;
   PositionController m_controller;
   sig::signal<void(const Advice &)> m_adviceSignal;
 
   Double m_minPriceDifferenceRatioToAdvice;
-  boost::optional<Double> m_minPriceDifferenceRatioToTrade;
+  boost::optional<TradingSettings> m_tradingSettings;
 
   boost::unordered_map<Symbol, std::vector<Advice::SecuritySignal>> m_symbols;
 
+  std::pair<Security *, Security *> m_lastTradeTargets;
+
   explicit Implementation(aa::Strategy &self)
-      : m_controller(self), m_minPriceDifferenceRatioToAdvice(0) {}
+      : m_self(self),
+        m_controller(m_self),
+        m_minPriceDifferenceRatioToAdvice(0),
+        m_lastTradeTargets({}) {}
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<Advice::SecuritySignal> &allSecurities,
-                   const Milestones &) {
+                   const Milestones &delayMeasurement) {
     typedef std::pair<Price, Advice::SecuritySignal *> PriceItem;
 
     std::vector<PriceItem> bids;
@@ -78,15 +83,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     Price spread;
     Double spreadRatio;
-    bool isSignaled;
     if (!bids.empty() && !asks.empty()) {
       spread = bids.front().first - asks.front().first;
       spreadRatio =
           RoundByPrecision((100 / (asks.front().first / spread)) / 100, 100);
-      isSignaled = spreadRatio >= m_minPriceDifferenceRatioToAdvice;
+      if (m_tradingSettings &&
+          spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
+        Trade(*bids.front().second->security, *asks.front().second->security,
+              m_tradingSettings->maxQty, spreadRatio, delayMeasurement);
+      } else {
+        StopTrading(spreadRatio);
+      }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
-      isSignaled = false;
     }
 
     for (auto it = bids.begin();
@@ -107,7 +116,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                {updatedSecurityAskPrice, updatedSecurity.GetAskQtyValue()},
                spread,
                spreadRatio,
-               isSignaled,
+               spreadRatio >= m_minPriceDifferenceRatioToAdvice,
                allSecurities});
   }
 
@@ -116,6 +125,78 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       for (const Advice::SecuritySignal &security : symbol.second) {
         CheckSignal(*security.security, symbol.second, Milestones());
       }
+    }
+  }
+
+  void Trade(Security &sellTarget,
+             Security &buyTarget,
+             const Qty &maxQty,
+             const Double &spreadRatio,
+             const Milestones &delayMeasurement) {
+    if (!m_self.GetPositions().IsEmpty()) {
+      for (auto &strategyPosition : m_self.GetPositions()) {
+        if (&strategyPosition.GetSecurity() != &sellTarget &&
+            &strategyPosition.GetSecurity() != &buyTarget) {
+          m_self.GetTradingLog().Write(
+              "{'trade': {'change': {'sell': {'exchange': '%1%', 'bid': "
+              "%2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': "
+              "%5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f}}",
+              [&](TradingRecord &record) {
+                OperationContext operation(sellTarget, buyTarget, maxQty);
+                record %
+                    boost::cref(operation.GetTradingSystem(m_self, sellTarget)
+                                    .GetInstanceName())  // 1
+                    % sellTarget.GetBidPriceValue()      // 2
+                    % sellTarget.GetAskPriceValue()      // 3
+                    % boost::cref(operation.GetTradingSystem(m_self, buyTarget)
+                                      .GetInstanceName())  // 4
+                    % buyTarget.GetBidPriceValue()         // 5
+                    % buyTarget.GetAskPriceValue()         // 6
+                    % spreadRatio;                         // 7
+              });
+          StopTrading(spreadRatio);
+          return;
+        }
+      }
+      return;
+    }
+    if (m_lastTradeTargets.first == &sellTarget &&
+        m_lastTradeTargets.second == &buyTarget) {
+      return;
+    }
+    auto operation =
+        boost::make_shared<OperationContext>(sellTarget, buyTarget, maxQty);
+    m_self.GetTradingLog().Write(
+        "{'trade': {'new': {'sell': {'exchange': '%1%', 'bid': %2$.8f, 'ask': "
+        "%3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, "
+        "'spread': %7$.3f}}",
+        [&](TradingRecord &record) {
+          record % boost::cref(operation->GetTradingSystem(m_self, sellTarget)
+                                   .GetInstanceName())  // 1
+              % sellTarget.GetBidPriceValue()           // 2
+              % sellTarget.GetAskPriceValue()           // 3
+              % boost::cref(operation->GetTradingSystem(m_self, buyTarget)
+                                .GetInstanceName())  // 4
+              % buyTarget.GetBidPriceValue()         // 5
+              % buyTarget.GetAskPriceValue()         // 6
+              % spreadRatio;                         // 7
+        });
+    m_controller.OpenPosition(operation, sellTarget, delayMeasurement);
+    m_controller.OpenPosition(operation, buyTarget, delayMeasurement);
+    m_lastTradeTargets = {&sellTarget, &buyTarget};
+  }
+
+  void StopTrading(const Double &spreadRatio) {
+    m_lastTradeTargets = {};
+    if (m_self.GetPositions().IsEmpty()) {
+      return;
+    }
+    m_self.GetTradingLog().Write("{'trade': {'stop'}, 'spread': %1$.3f}}",
+                                 [&](TradingRecord &record) {
+                                   record % spreadRatio;  // 1
+                                 });
+    for (Position &position : m_self.GetPositions()) {
+      m_controller.ClosePosition(position, CLOSE_REASON_SIGNAL);
     }
   }
 };
@@ -141,7 +222,7 @@ sig::scoped_connection aa::Strategy::SubscribeToAdvice(
 
 void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
   GetTradingLog().Write(
-      "setup advising\tratio=%1$.8f->%2$.8f",
+      "{'setup': {'advising': {'ratio': '%1$.8f->%2$.8f'}}}",
       [this, &minPriceDifferenceRatio](TradingRecord &record) {
         record % m_pimpl->m_minPriceDifferenceRatioToAdvice  // 1
             % minPriceDifferenceRatio;                       // 2
@@ -164,48 +245,57 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
       Advice::SecuritySignal{&security});
 }
 
-void aa::Strategy::ActivateAutoTrading(const Double &minPriceDifferenceRatio) {
-  if (m_pimpl->m_minPriceDifferenceRatioToTrade) {
+void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
+  bool shouldRechecked = true;
+  if (m_pimpl->m_tradingSettings) {
     GetTradingLog().Write(
-        "setup trading\tratio=%1$.8f->%2$.8f",
-        [this, &minPriceDifferenceRatio](TradingRecord &record) {
-          record % *m_pimpl->m_minPriceDifferenceRatioToTrade  // 1
-              % minPriceDifferenceRatio;                       // 2
+        "{'setup': {'trading': {'ratio': '%1$.8f->%2$.8f', 'maxQty': "
+        "'%3$.8f->%4$.8f}}}",
+        [this, &settings](TradingRecord &record) {
+          record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
+              % settings.minPriceDifferenceRatio                        // 2
+              % m_pimpl->m_tradingSettings->maxQty                      // 3
+              % settings.maxQty;                                        // 4
         });
+    shouldRechecked = m_pimpl->m_tradingSettings->minPriceDifferenceRatio !=
+                      settings.minPriceDifferenceRatio;
   } else {
     GetTradingLog().Write(
-        "setup trading\tratio=none->%1$.8f",
-        [this, &minPriceDifferenceRatio](TradingRecord &record) {
-          record % minPriceDifferenceRatio;  // 1
+        "{'setup': {'trading': {'ratio': 'null->%1$.8f', 'maxQty': "
+        "'null->%2$.8f'}}}",
+        [this, &settings](TradingRecord &record) {
+          record % settings.minPriceDifferenceRatio  // 1
+              % settings.maxQty;                     // 2
         });
   }
-  if (m_pimpl->m_minPriceDifferenceRatioToTrade == minPriceDifferenceRatio) {
-    return;
-  }
-  m_pimpl->m_minPriceDifferenceRatioToTrade == minPriceDifferenceRatio;
+  m_pimpl->m_tradingSettings = std::move(settings);
   m_pimpl->RecheckSignal();
 }
 
-const boost::optional<Double>
-    &aa::Strategy::GetAutoTradingMinPriceDifferenceRatio() const {
-  return m_pimpl->m_minPriceDifferenceRatioToTrade;
+const boost::optional<aa::Strategy::TradingSettings>
+    &aa::Strategy::GetAutoTradingSettings() const {
+  return m_pimpl->m_tradingSettings;
 }
 void aa::Strategy::DeactivateAutoTrading() {
-  if (m_pimpl->m_minPriceDifferenceRatioToTrade) {
-    GetTradingLog().Write("setup trading\tratio=%1$.8f->none",
-                          [this](TradingRecord &record) {
-                            record % *m_pimpl->m_minPriceDifferenceRatioToTrade;
-                          });
+  if (m_pimpl->m_tradingSettings) {
+    GetTradingLog().Write(
+        "{'setup': {'trading': {'ratio': '%1$.8f->null', 'maxQty': "
+        "'%2$.8f->null'}}}",
+        [this](TradingRecord &record) {
+          record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
+              % m_pimpl->m_tradingSettings->maxQty;                     // 2
+        });
   } else {
-    GetTradingLog().Write("setup trading\tratio=none->none");
+    GetTradingLog().Write(
+        "{'setup': {'trading': {'ratio': 'null->null', 'maxQty': "
+        "'null->null'}}}");
   }
-  m_pimpl->m_minPriceDifferenceRatioToTrade = boost::none;
+  m_pimpl->m_tradingSettings = boost::none;
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,
                                   const Milestones &delayMeasurement) {
-  if (m_pimpl->m_adviceSignal.num_slots() == 0 &&
-      !m_pimpl->m_minPriceDifferenceRatioToTrade) {
+  if (m_pimpl->m_adviceSignal.num_slots() == 0 && !m_pimpl->m_tradingSettings) {
     return;
   }
   AssertLt(0, m_pimpl->m_adviceSignal.num_slots());

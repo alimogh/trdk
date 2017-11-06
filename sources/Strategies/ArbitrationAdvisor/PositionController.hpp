@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 14:24:58
+ *   Created: 2017/11/06 00:08:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,23 +11,25 @@
 #pragma once
 
 namespace trdk {
-namespace Interaction {
-namespace Rest {
+namespace Strategies {
+namespace ArbitrageAdvisor {
 
-class Security : public trdk::Security {
+class PositionController : public TradingLib::PositionController {
  public:
-  typedef trdk::Security Base;
-
- public:
-  explicit Security(Context &,
-                    const Lib::Symbol &,
-                    MarketDataSource &,
-                    const SupportedLevel1Types &);
+  typedef TradingLib::PositionController Base;
 
  public:
-  using Base::SetOnline;
-  using Base::SetTradingSessionState;
-  using Base::SetLevel1;
+  explicit PositionController(Strategy &);
+  virtual ~PositionController() override;
+
+ protected:
+  virtual void HoldPosition(Position &) override;
+
+ private:
+  Position &GetOppositePosition(Position &);
+
+ private:
+  std::unique_ptr<Report> m_report;
 };
 }
 }

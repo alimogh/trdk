@@ -20,6 +20,12 @@ namespace ArbitrageAdvisor {
 
 class TRDK_STRATEGY_ARBITRATIONADVISOR_API Strategy : public trdk::Strategy {
  public:
+  struct TradingSettings {
+    trdk::Lib::Double minPriceDifferenceRatio;
+    trdk::Qty maxQty;
+  };
+
+ public:
   typedef trdk::Strategy Base;
 
  public:
@@ -35,9 +41,8 @@ class TRDK_STRATEGY_ARBITRATIONADVISOR_API Strategy : public trdk::Strategy {
  public:
   void SetupAdvising(const Lib::Double &minPriceDifferenceRatio) const;
 
-  void ActivateAutoTrading(const Lib::Double &minPriceDifferenceRatio);
-  const boost::optional<trdk::Lib::Double>
-      &GetAutoTradingMinPriceDifferenceRatio() const;
+  void ActivateAutoTrading(TradingSettings &&);
+  const boost::optional<TradingSettings> &GetAutoTradingSettings() const;
   void DeactivateAutoTrading();
 
  protected:

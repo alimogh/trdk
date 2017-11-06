@@ -53,11 +53,13 @@ class PositionOperationContext : public trdk::PositionOperationContext {
     return *m_orderPolicy;
   }
   virtual void Setup(Position &) const override {}
-  virtual bool IsLong() const override { return *GetIsRising(); }
+  virtual bool IsLong(const Security &) const override {
+    return *GetIsRising();
+  }
   virtual Qty GetPlannedQty() const override { return 10; }
   virtual bool HasCloseSignal(const Position &position) const override {
     const auto &isRising = GetIsRising();
-    return !isRising || IsLong() == position.IsLong();
+    return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
   }
   virtual boost::shared_ptr<trdk::PositionOperationContext>
   StartInvertedPosition(const trdk::Position &) override {

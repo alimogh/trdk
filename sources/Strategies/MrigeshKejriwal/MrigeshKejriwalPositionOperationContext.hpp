@@ -32,7 +32,7 @@ class PositionOperationContext : public trdk::PositionOperationContext {
 
   virtual void Setup(Position &position) const override;
 
-  virtual bool IsLong() const override;
+  virtual bool IsLong(const trdk::Security &) const override;
 
   virtual Qty GetPlannedQty() const override;
 

@@ -44,7 +44,9 @@ void mk::PositionOperationContext::Setup(Position &position) const {
   }
 }
 
-bool mk::PositionOperationContext::IsLong() const { return m_trend.IsRising(); }
+bool mk::PositionOperationContext::IsLong(const Security &) const {
+  return m_trend.IsRising();
+}
 
 Qty mk::PositionOperationContext::GetPlannedQty() const {
   return m_settings.qty;

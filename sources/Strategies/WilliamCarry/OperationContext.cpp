@@ -74,7 +74,7 @@ void OperationContext::Setup(Position &position) const {
   }
 }
 
-bool OperationContext::IsLong() const {
+bool OperationContext::IsLong(const Security &) const {
   throw LogicError(
       "Mutibroker operation context doesn't provide operation side.");
 }

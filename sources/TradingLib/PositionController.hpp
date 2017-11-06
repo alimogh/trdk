@@ -85,6 +85,8 @@ class PositionController : private boost::noncopyable {
   void ContinuePosition(trdk::Position &);
   void ClosePosition(trdk::Position &);
 
+  virtual void HoldPosition(trdk::Position &);
+
   virtual std::unique_ptr<PositionReport> OpenReport() const;
   const PositionReport &GetReport() const;
 

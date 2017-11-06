@@ -304,6 +304,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -318,11 +319,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Report.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Advice.hpp" />
+    <ClInclude Include="OperationContext.hpp" />
+    <ClInclude Include="PositionController.hpp" />
+    <ClInclude Include="Report.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Api.h" />
     <ClInclude Include="Fwd.hpp" />

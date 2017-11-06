@@ -386,6 +386,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
+    result->SetOnline(pt::not_a_date_time, true);
+    result->SetTradingSessionState(pt::not_a_date_time, true);
+
     {
       const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
           "/remote/v2/market/openorders/" +
@@ -529,6 +532,16 @@ TradingSystemAndMarketDataSourceFactoryResult CreateNovaexchange(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
+}
+
+boost::shared_ptr<MarketDataSource> CreateNovaexchangeMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<NovaexchangeExchange>(
+      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
+      instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
