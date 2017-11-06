@@ -332,7 +332,7 @@ bool mk::Strategy::ContinueRollOver() {
     return false;
   }
   position.ResetCloseReason(CLOSE_REASON_ROLLOVER);
-  m_positionController.ClosePosition(position);
+  m_positionController.ClosePosition(position, CLOSE_REASON_ROLLOVER);
 
   return true;
 }
