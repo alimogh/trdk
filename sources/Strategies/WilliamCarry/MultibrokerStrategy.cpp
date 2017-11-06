@@ -45,16 +45,22 @@ MultibrokerStrategy::~MultibrokerStrategy() = default;
 void MultibrokerStrategy::OpenPosition(
     std::vector<OperationContext> &&operations,
     Security &security,
+    bool isLong,
     const Milestones &delayMeasurement) {
+  Assert(!operations.empty());
   if (!GetPositions().IsEmpty()) {
-    throw Exception(
-        "Failed to start new position as current strategy instance already "
-        "handles position");
-  }
-  for (OperationContext &operation : operations) {
-    m_pimpl->m_controller.OpenPosition(
-        boost::make_shared<OperationContext>(std::move(operation)), security,
-        delayMeasurement);
+    if (GetPositions().cbegin()->IsLong() == isLong) {
+      throw Exception(
+          "Failed to start new position as current strategy instance already "
+          "handles position");
+    }
+    m_pimpl->m_controller.OnPostionsCloseRequest();
+  } else {
+    for (OperationContext &operation : operations) {
+      m_pimpl->m_controller.OpenPosition(
+          boost::make_shared<OperationContext>(std::move(operation)), security,
+          isLong, delayMeasurement);
+    }
   }
 }
 

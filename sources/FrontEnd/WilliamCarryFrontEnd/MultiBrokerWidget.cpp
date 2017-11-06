@@ -169,7 +169,7 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
 
     const auto qty = (settings.lotMultiplier * m_lots[i]) *
                      m_currentTradingSecurity->GetLotSize();
-    operations.emplace_back(isLong, qty, price, startegy.GetTradingSystem(i));
+    operations.emplace_back(qty, price, startegy.GetTradingSystem(i));
     auto &operation = operations.back();
 
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
@@ -195,12 +195,12 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
   }
 
   try {
-    startegy.Invoke<MultibrokerStrategy>(
-        [this, &settings, &operations,
-         &delayMeasurement](MultibrokerStrategy &multibroker) {
-          multibroker.OpenPosition(std::move(operations),
-                                   *m_currentTradingSecurity, delayMeasurement);
-        });
+    startegy.Invoke<MultibrokerStrategy>([this, &settings, &operations, isLong,
+                                          &delayMeasurement](
+        MultibrokerStrategy &multibroker) {
+      multibroker.OpenPosition(std::move(operations), *m_currentTradingSecurity,
+                               isLong, delayMeasurement);
+    });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to send order"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
