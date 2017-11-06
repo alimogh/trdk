@@ -228,7 +228,8 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   const trdk::Security::Request &GetRequest() const;
 
  public:
-  size_t GetQuoteSize() const;
+  size_t GetNumberOfItemsPerQty() const;
+  const Qty &GetLotSize() const;
 
   uintmax_t GetPricePrecisionPower() const;
   uint8_t GetPricePrecision() const throw();

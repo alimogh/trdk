@@ -227,7 +227,7 @@ void PositionController::OnPositionUpdate(Position &position) {
       // Received signal to close...
       AssertLt(0, position.GetActiveQty());
       ClosePosition(position);
-    } else if (position.GetActiveQty() < position.GetPlanedQty()) {
+    } else if (!position.IsFullyOpened()) {
       ContinuePosition(position);
     }
   }

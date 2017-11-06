@@ -1785,9 +1785,9 @@ void Client::position(const IBString &account,
           ((!expiryDate && !security->HasExpiration()) ||
            (expiryDate && security->HasExpiration() &&
             expiryDate == security->GetExpiration().GetDate()))) {
-        security->SetBrokerPosition(isLong, size,
-                                    (avgCost / security->GetQuoteSize()) * size,
-                                    !m_isInitialBrokerPositionLoaded);
+        security->SetBrokerPosition(
+            isLong, size, (avgCost / security->GetNumberOfItemsPerQty()) * size,
+            !m_isInitialBrokerPositionLoaded);
         AssertEq(1, ++numberOfSecurities);
 #ifndef BOOST_ENABLE_ASSERT_HANDLER
         break;

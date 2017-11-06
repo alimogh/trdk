@@ -248,9 +248,9 @@ class Position::Implementation : private boost::noncopyable {
         throw Exception("Status can be set only by this object");
       case ORDER_STATUS_SUBMITTED:
         AssertEq(0, order.executedQty);
-        AssertEq(0, m_open.volume);
-        Assert(!trade);
         AssertLt(0, remainingQty);
+        AssertEq(remainingQty, order.qty);
+        Assert(!trade);
         ReportOpeningUpdate(tradingSystemOrderId, orderStatus);
         return;
       case ORDER_STATUS_FILLED:
@@ -340,6 +340,8 @@ class Position::Implementation : private boost::noncopyable {
       case ORDER_STATUS_SUBMITTED:
         AssertEq(0, order.executedQty);
         AssertLt(0, remainingQty);
+        AssertEq(remainingQty, order.qty);
+        Assert(!trade);
         ReportClosingUpdate(tradingSystemOrderId, orderStatus);
         return;
       case ORDER_STATUS_FILLED:
@@ -635,7 +637,7 @@ class Position::Implementation : private boost::noncopyable {
       throw AlreadyStartedError();
     }
 
-    Assert(!m_self.IsOpened());
+    Assert(!m_self.IsFullyOpened());
     Assert(!m_self.IsError());
     Assert(!m_self.IsClosed());
 
@@ -915,6 +917,10 @@ void Position::ResetCloseReason(const CloseReason &newReason) {
   m_pimpl->m_closeReason = newReason;
 }
 
+bool Position::IsFullyOpened() const {
+  return GetActiveQty() >= GetPlanedQty();
+}
+
 bool Position::IsOpened() const noexcept {
   return !HasActiveOpenOrders() && GetOpenedQty() > 0;
 }
@@ -1048,8 +1054,9 @@ const Price &Position::GetLastTradePrice() const {
 }
 
 Volume Position::GetRealizedPnlVolume() const {
-  return RoundByPrecision(GetRealizedPnl() * GetSecurity().GetQuoteSize(),
-                          GetSecurity().GetPricePrecisionPower());
+  return RoundByPrecision(
+      GetRealizedPnl() * GetSecurity().GetNumberOfItemsPerQty(),
+      GetSecurity().GetPricePrecisionPower());
 }
 
 Double Position::GetRealizedPnlPercentage() const {

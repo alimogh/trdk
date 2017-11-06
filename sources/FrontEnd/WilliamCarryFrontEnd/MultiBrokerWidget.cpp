@@ -167,8 +167,8 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
       continue;
     }
 
-    const auto &lot = m_lots[i];
-    const auto qty = settings.lotMultiplier * lot;
+    const auto qty = (settings.lotMultiplier * m_lots[i]) *
+                     m_currentTradingSecurity->GetLotSize();
     operations.emplace_back(isLong, qty, price, startegy.GetTradingSystem(i));
     auto &operation = operations.back();
 
