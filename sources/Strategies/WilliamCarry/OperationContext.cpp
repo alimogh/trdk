@@ -93,12 +93,10 @@ OperationContext::StartInvertedPosition(const Position &) {
 }
 
 void OperationContext::AddTakeProfitStopLimit(
-    const Price &maxPriceChange,
-    const pt::time_duration &activationTime,
-    const Double &volumeToCloseRatio) {
+    const Price &maxPriceChange, const pt::time_duration &activationTime) {
   m_pimpl->m_takeProfitStopLimits.emplace_back(
-      boost::make_shared<TakeProfitStopLimit::Params>(
-          maxPriceChange, activationTime, volumeToCloseRatio));
+      boost::make_shared<TakeProfitStopLimit::Params>(maxPriceChange,
+                                                      activationTime));
 }
 
 void OperationContext::AddStopLoss(const Price &maxPriceChange) {

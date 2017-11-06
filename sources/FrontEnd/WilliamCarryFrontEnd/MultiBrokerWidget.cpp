@@ -178,30 +178,36 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
       continue;
     }
 
-    const auto qty = (settings.lotMultiplier * m_lots[i]) *
-                     m_currentTradingSecurity->GetLotSize();
-    operations.emplace_back(qty, price, startegy.GetTradingSystem(i));
-    auto &operation = operations.back();
-
+    auto qty = (settings.lotMultiplier * m_lots[i]) *
+               m_currentTradingSecurity->GetLotSize();
+    if (settings.target2) {
+      qty /= 2;
+    }
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
+    const auto &createPosition = [&]() -> OperationContext {
+      OperationContext result(qty, price, startegy.GetTradingSystem(i));
+      if (settings.stopLoss2) {
+        result.AddStopLoss(pip * settings.stopLoss2->pips,
+                           settings.stopLoss2->delay);
+      }
+      if (settings.stopLoss3) {
+        result.AddStopLoss(pip * settings.stopLoss3->pips,
+                           settings.stopLoss3->delay);
+      }
+      return result;
+    };
 
-    if (!settings.target2) {
+    {
+      OperationContext operation = createPosition();
       operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
-                                       settings.target1.delay, 1.0);
-    } else {
-      operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
-                                       settings.target1.delay, 0.5);
+                                       settings.target1.delay);
+      operations.emplace_back(std::move(operation));
+    }
+    if (settings.target2) {
+      OperationContext operation = createPosition();
       operation.AddTakeProfitStopLimit(pip * settings.target2->pips,
-                                       settings.target2->delay, 0.5);
-    }
-
-    if (settings.stopLoss2) {
-      operation.AddStopLoss(pip * settings.stopLoss2->pips,
-                            settings.stopLoss2->delay);
-    }
-    if (settings.stopLoss3) {
-      operation.AddStopLoss(pip * settings.stopLoss3->pips,
-                            settings.stopLoss3->delay);
+                                       settings.target2->delay);
+      operations.emplace_back(std::move(operation));
     }
   }
 
