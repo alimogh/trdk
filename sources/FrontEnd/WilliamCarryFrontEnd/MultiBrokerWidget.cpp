@@ -118,6 +118,9 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection));
 
+  Verify(connect(this, &MultiBrokerWidget::PositionChanged, this,
+                 &MultiBrokerWidget::OnPosition, Qt::QueuedConnection));
+
   LoadSettings();
 }
 
@@ -254,6 +257,7 @@ TradingSystem *MultiBrokerWidget::GetSelectedTradingSystem() {
 }
 
 void MultiBrokerWidget::Reload() {
+  m_signalConnections.clear();
   m_securityList.clear();
   m_ui.securityList->clear();
   m_tradingsecurityListWidget.clear();
@@ -280,6 +284,16 @@ void MultiBrokerWidget::Reload() {
       ids::string_generator()("646CE7C2-216B-4C2F-A7B8-5B8B45B0EBF4"));
   m_strategies[3] = &m_engine.GetContext().GetSrategy(
       ids::string_generator()("A7ACF9B5-B3FB-4DD8-BA39-CE7DD04D4F2E"));
+
+  for (size_t i = 1; i <= m_strategies.size(); ++i) {
+    m_strategies[i - 1]->Invoke<MultibrokerStrategy>([this, i](
+        MultibrokerStrategy &multibroker) {
+      m_signalConnections.emplace_back(multibroker.SubscribeToPositionsUpdates(
+          [this, i](bool isLong, bool isActive) {
+            emit PositionChanged(i, isLong, isActive);
+          }));
+    });
+  }
 }
 
 void MultiBrokerWidget::ReloadSecurityList() {
@@ -619,6 +633,46 @@ void MultiBrokerWidget::LoadSettings() {
       settingsStorage.endGroup();
     }
     settingsStorage.endGroup();
+  }
+}
+
+void MultiBrokerWidget::OnPosition(size_t strategy,
+                                   bool isLong,
+                                   bool isActive) {
+  const auto &highlight = [isLong, isActive](QPushButton &buy,
+                                             QPushButton &sell) {
+    auto &button = isLong ? buy : sell;
+    button.setEnabled(!isActive);
+    if (isActive) {
+      static const QString style(
+          "background-color: rgb(0, 153, 0);\ncolor: rgb(251, 253, 254);");
+      button.setStyleSheet(style);
+    } else if (isLong) {
+      static const QString style(
+          "background-color: rgb(39, 60, 194); color: rgb(251, 253, 254); ");
+      button.setStyleSheet(style);
+    } else {
+      static const QString style(
+          "background-color: rgb(230, 59, 1);\ncolor: rgb(251, 253, 254);");
+      button.setStyleSheet(style);
+    }
+  };
+  switch (strategy) {
+    case 1:
+      highlight(*m_ui.buy1, *m_ui.sell1);
+      break;
+    case 2:
+      highlight(*m_ui.buy2, *m_ui.sell2);
+      break;
+    case 3:
+      highlight(*m_ui.buy3, *m_ui.sell3);
+      break;
+    case 4:
+      highlight(*m_ui.buy4, *m_ui.sell4);
+      break;
+    default:
+      AssertEq(1, strategy);
+      return;
   }
 }
 

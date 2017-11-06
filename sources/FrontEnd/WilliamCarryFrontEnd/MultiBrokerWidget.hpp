@@ -42,7 +42,11 @@ class MultiBrokerWidget : public QWidget {
   void ShowGeneralSetup();
   void ShowTimersSetupDialog();
   void ShowTradingSecurityList();
+  void OnPosition(size_t strategy, bool isLong, bool isActive);
   virtual void resizeEvent(QResizeEvent *);
+
+ signals:
+  void PositionChanged(size_t strategy, bool isLong, bool isActive);
 
  private:
   void Reload();
@@ -85,6 +89,7 @@ class MultiBrokerWidget : public QWidget {
   bool m_ignoreLockToggling;
 
   boost::array<Strategy *, NUMBER_OF_STRATEGIES> m_strategies;
+  std::vector<boost::signals2::scoped_connection> m_signalConnections;
   boost::array<StrategySettings, NUMBER_OF_STRATEGIES> m_settings;
   std::vector<trdk::Lib::Double> m_lots;
 };

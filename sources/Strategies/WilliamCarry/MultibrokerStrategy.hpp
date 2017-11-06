@@ -34,6 +34,9 @@ class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
                     bool isLong,
                     const Lib::TimeMeasurement::Milestones &);
 
+  boost::signals2::scoped_connection SubscribeToPositionsUpdates(
+      const boost::function<void(bool isLong, bool isActive)> &) const;
+
  protected:
   virtual void OnLevel1Tick(
       trdk::Security &,
