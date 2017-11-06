@@ -22,7 +22,7 @@ class MultiBrokerWidget : public QWidget {
 
  private:
   struct Locked {
-    boost::posix_time::ptime time;
+    QTime time;
     Price bid;
     Price ask;
   };
@@ -60,9 +60,9 @@ class MultiBrokerWidget : public QWidget {
                        const Security *);
   void SetLockedPrices(const Locked &, const Security &);
   void ResetLockedPrices(const Security *);
-  void SetPrices(const boost::posix_time::ptime &,
-                 QLabel &timeControl,
-                 const Price &bid,
+  void SetTime(const QTime &, QLabel &timeControl);
+  void ResetTime(QLabel &timeControl);
+  void SetPrices(const Price &bid,
                  QLabel &bidControl,
                  const Price &ask,
                  QLabel &askControl,
@@ -92,6 +92,8 @@ class MultiBrokerWidget : public QWidget {
   std::vector<boost::signals2::scoped_connection> m_signalConnections;
   boost::array<StrategySettings, NUMBER_OF_STRATEGIES> m_settings;
   std::vector<trdk::Lib::Double> m_lots;
+
+  QTimer m_timer;
 };
 }
 }

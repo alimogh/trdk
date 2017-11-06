@@ -43,7 +43,8 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
       m_tradingsecurityListWidget(this),
       m_ignoreLockToggling(false),
       m_settings({}),
-      m_lots{1, 1, 1, 1, 1} {
+      m_lots{1, 1, 1, 1, 1},
+      m_timer(this) {
   m_ui.setupUi(this);
 
   m_tradingsecurityListWidget.hide();
@@ -120,6 +121,13 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
 
   Verify(connect(this, &MultiBrokerWidget::PositionChanged, this,
                  &MultiBrokerWidget::OnPosition, Qt::QueuedConnection));
+
+  {
+    Verify(connect(&m_timer, &QTimer::timeout,
+                   [this]() { SetTime(QTime::currentTime(), *m_ui.time); }));
+    m_timer.start(1000);
+    SetTime(QTime::currentTime(), *m_ui.time);
+  }
 
   LoadSettings();
 }
@@ -239,11 +247,11 @@ void MultiBrokerWidget::LockSecurity(bool lock) {
   }
 
   Assert(m_currentMarketDataSecurity);
-  const auto &locked = m_lockedSecurityList.emplace(std::make_pair(
-      m_currentMarketDataSecurity,
-      Locked{m_currentMarketDataSecurity->GetLastMarketDataTime(),
-             m_currentMarketDataSecurity->GetBidPriceValue(),
-             m_currentMarketDataSecurity->GetAskPriceValue()}));
+  const auto &locked = m_lockedSecurityList.emplace(
+      std::make_pair(m_currentMarketDataSecurity,
+                     Locked{QTime::currentTime(),
+                            m_currentMarketDataSecurity->GetBidPriceValue(),
+                            m_currentMarketDataSecurity->GetAskPriceValue()}));
   Assert(locked.second);
   SetLockedPrices(locked.first->second, *m_currentMarketDataSecurity);
 }
@@ -370,53 +378,50 @@ void MultiBrokerWidget::UpdatePrices(const Security *security) {
                   security);
 }
 
-void MultiBrokerWidget::SetCurretPrices(const pt::ptime &time,
+void MultiBrokerWidget::SetCurretPrices(const pt::ptime &,
                                         const Price &bid,
                                         const Price &ask,
                                         const Security *security) {
-  SetPrices(time, *m_ui.time, bid, *m_ui.bid, ask, *m_ui.ask, security);
+  SetPrices(bid, *m_ui.bid, ask, *m_ui.ask, security);
 }
 
 void MultiBrokerWidget::SetLockedPrices(const Locked &locked,
                                         const Security &security) {
-  SetPrices(locked.time, *m_ui.lockedTime, locked.bid, *m_ui.lockedBid,
-            locked.ask, *m_ui.lockedAsk, &security);
+  SetTime(locked.time, *m_ui.lockedTime);
+  SetPrices(locked.bid, *m_ui.lockedBid, locked.ask, *m_ui.lockedAsk,
+            &security);
 }
 void MultiBrokerWidget::ResetLockedPrices(const Security *security) {
-  SetPrices(pt::not_a_date_time, *m_ui.lockedTime,
-            std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedBid,
+  ResetTime(*m_ui.lockedTime);
+  SetPrices(std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedBid,
             std::numeric_limits<double>::quiet_NaN(), *m_ui.lockedAsk,
             security);
 }
 
-void MultiBrokerWidget::SetPrices(const pt::ptime &time,
-                                  QLabel &timeControl,
-                                  const Price &bid,
+void MultiBrokerWidget::SetTime(const QTime &time, QLabel &timeControl) {
+  static const QString format("hh:mm:ss");
+  timeControl.setText(time.toString(format));
+}
+
+void MultiBrokerWidget::ResetTime(QLabel &timeControl) {
+  timeControl.setText("");
+}
+
+void MultiBrokerWidget::SetPrices(const Price &bid,
                                   QLabel &bidControl,
                                   const Price &ask,
                                   QLabel &askControl,
                                   const Security *security) const {
-  if (time != pt::not_a_date_time) {
-    const auto &timeOfDay = time.time_of_day();
-    QString text;
-    text.sprintf("%02d:%02d:%02d", timeOfDay.hours(), timeOfDay.minutes(),
-                 timeOfDay.seconds());
-    timeControl.setText(text);
+  const auto &precision = security ? security->GetPricePrecision() : 5;
+  if (bid.IsNotNan()) {
+    bidControl.setText(QString::number(bid, 'f', precision));
   } else {
-    timeControl.setText(QString());
+    bidControl.setText(QString());
   }
-  {
-    const auto &precision = security ? security->GetPricePrecision() : 5;
-    if (bid.IsNotNan()) {
-      bidControl.setText(QString::number(bid, 'f', precision));
-    } else {
-      bidControl.setText(QString());
-    }
-    if (ask.IsNotNan()) {
-      askControl.setText(QString::number(ask, 'f', precision));
-    } else {
-      askControl.setText(QString());
-    }
+  if (ask.IsNotNan()) {
+    askControl.setText(QString::number(ask, 'f', precision));
+  } else {
+    askControl.setText(QString());
   }
 }
 
