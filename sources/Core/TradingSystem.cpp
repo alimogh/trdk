@@ -628,8 +628,11 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
                           record % orderId  // 1
                               % error;      // 2
                         });
-  GetLog().Warn("Order %1% is rejected with the reason: \"%2%\".", orderId,
-                error);
+  GetLog().Warn(
+      "Operation request for the order %1% is rejected with the reason: "
+      "\"%2%\".",
+      orderId,  // 1
+      error);   // 2
   m_pimpl->OnOrderStatusUpdate(
       orderId, tradingSystemOrderId, ORDER_STATUS_ERROR, boost::none,
       boost::none, boost::none,

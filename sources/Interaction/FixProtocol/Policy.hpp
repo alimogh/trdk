@@ -32,6 +32,8 @@ class Policy : private boost::noncopyable {
     return boost::posix_time::second_clock::universal_time();
   }
 
+  bool IsUnknownOrderIdError(const std::string &errorText);
+
  private:
   const boost::posix_time::time_duration m_utcDiff;
 };

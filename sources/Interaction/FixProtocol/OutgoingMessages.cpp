@@ -310,6 +310,14 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+std::string DoubleLexicalCast(const Double &source) {
+  std::ostringstream ss;
+  ss << std::fixed << source.Get();
+  return ss.str();
+}
+}
+
 NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                const OrderSide &side,
                                const Qty &qty,
@@ -317,8 +325,8 @@ NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                StandardHeader &standardHeader)
     : Base(security, standardHeader),
       m_side(side == ORDER_SIDE_BUY ? '1' : '2'),
-      m_qty(boost::lexical_cast<std::string>(qty)),
-      m_price(boost::lexical_cast<std::string>(price)),
+      m_qty(DoubleLexicalCast(qty)),
+      m_price(DoubleLexicalCast(price)),
       m_transactTime(ConvertToTagValue(
           GetStandardHeader().GetSettings().policy->GetCurrentTime())),
       m_customContentSize(GetSequenceNumberCode().size() +

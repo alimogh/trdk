@@ -12,6 +12,8 @@
 #include "TradingSystem.hpp"
 #include "IncomingMessages.hpp"
 #include "OutgoingMessages.hpp"
+#include "Policy.hpp"
+#include "Settings.hpp"
 #include "TransactionContext.hpp"
 
 using namespace trdk;
@@ -102,8 +104,15 @@ void fix::TradingSystem::OnConnectionRestored() {
 void fix::TradingSystem::OnReject(const in::Reject &message,
                                   Lib::NetworkStreamClient &) {
   const auto &orderId = message.ReadRefSeqNum();
+  const auto &text = message.ReadText();
+  if (GetSettings().policy->IsUnknownOrderIdError(text)) {
+    GetLog().Warn("Received Reject for unknown order %1%: \"%2%\" .",
+                  orderId,  // 1
+                  text);    // 2
+    return;
+  }
   try {
-    OnOrderError(orderId, std::string(), message.ReadText());
+    OnOrderError(orderId, std::string(), std::move(text));
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
     GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
@@ -119,6 +128,13 @@ void fix::TradingSystem::OnBusinessMessageReject(
     const Milestones &) {
   const auto &reason = message.ReadText();
   const auto &orderId = message.ReadBusinessRejectRefId();
+  if (GetSettings().policy->IsUnknownOrderIdError(reason)) {
+    GetLog().Warn(
+        "Received Business Message Reject for unknown order %1%: \"%2%\" .",
+        orderId,  // 1
+        reason);  // 2
+    return;
+  }
   try {
     OnOrderError(orderId, std::string(), std::move(reason));
   } catch (const OrderIsUnknown &ex) {
