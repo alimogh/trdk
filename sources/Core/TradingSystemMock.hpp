@@ -39,7 +39,7 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
 
   MOCK_METHOD10(SendOrder,
-                boost::shared_ptr<const trdk::TransactionContext>(
+                boost::shared_ptr<const trdk::OrderTransactionContext>(
                     trdk::Security &,
                     const trdk::Lib::Currency &,
                     const trdk::Qty &,
@@ -57,7 +57,7 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
 
   MOCK_METHOD7(SendOrderTransaction,
-               std::unique_ptr<trdk::TransactionContext>(
+               std::unique_ptr<trdk::OrderTransactionContext>(
                    trdk::Security &,
                    const trdk::Lib::Currency &,
                    const trdk::Qty &,

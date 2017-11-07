@@ -183,12 +183,10 @@ class Timer::Implementation : private boost::noncopyable {
 };
 
 namespace {
-boost::atomic_uintmax_t lastScopeId(0);
+boost::atomic_size_t lastScopeId(0);
 }
 
 Timer::Scope::Scope() : m_id(lastScopeId++), m_timer(nullptr) {}
-
-Timer::Scope::Scope(const Id &id) : m_id(id), m_timer(nullptr) {}
 
 Timer::Scope::~Scope() { Cancel(); }
 

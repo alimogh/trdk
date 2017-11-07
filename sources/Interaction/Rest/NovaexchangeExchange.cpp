@@ -405,7 +405,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const Currency &currency,
       const Qty &qty,
@@ -457,9 +457,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           orderId = item.get<OrderId>("orderid");
           GetContext().GetTimer().Schedule(
               [this, orderId, qty] {
-                OnOrderStatusUpdate(*orderId,
-                                    boost::lexical_cast<std::string>(*orderId),
-                                    ORDER_STATUS_SUBMITTED, qty);
+                OnOrderStatusUpdate(*orderId, ORDER_STATUS_SUBMITTED, qty);
               },
               m_timerScope);
         }
@@ -480,7 +478,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                       trades),
           m_timerScope);
     }
-    return boost::make_unique<TransactionContext>(std::move(*orderId));
+    return boost::make_unique<OrderTransactionContext>(std::move(*orderId));
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
@@ -494,10 +492,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   void OnTradesInfo(const OrderId &orderId,
                     Qty &remainingQty,
                     std::vector<TradeInfo> &trades) {
-    const auto &tradingSystemId = boost::lexical_cast<std::string>(orderId);
     for (auto &trade : trades) {
       remainingQty -= trade.qty;
-      OnOrderStatusUpdate(orderId, tradingSystemId,
+      OnOrderStatusUpdate(orderId,
                           remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_FILLED,
                           remainingQty, std::move(trade));

@@ -14,12 +14,13 @@ namespace trdk {
 namespace Interaction {
 namespace FixProtocol {
 
-class OrderTransactionContext : public TransactionContext {
+class OrderTransactionContext : public trdk::OrderTransactionContext {
  public:
-  typedef TransactionContext Base;
+  typedef trdk::OrderTransactionContext Base;
 
  public:
-  explicit OrderTransactionContext(size_t id) : Base(id) {}
+  explicit OrderTransactionContext(const MessageSequenceNumber &orderId)
+      : Base(orderId) {}
   virtual ~OrderTransactionContext() = default;
 
  public:

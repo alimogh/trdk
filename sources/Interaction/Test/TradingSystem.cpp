@@ -191,10 +191,9 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     if (!m_self->GetContext().GetSettings().IsReplayMode()) {
       const auto callback = order.callback;
       order.callback = [this, callback](
-          const OrderId &id, const std::string &uuid, const OrderStatus &status,
-          const Qty &remainingQty, const boost::optional<Volume> &commission,
-          const TradeInfo *trade) {
-        callback(id, uuid, status, remainingQty, commission, trade);
+          const OrderId &id, const OrderStatus &status, const Qty &remainingQty,
+          const boost::optional<Volume> &commission, const TradeInfo *trade) {
+        callback(id, status, remainingQty, commission, trade);
       };
     }
 
@@ -313,7 +312,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
   }
 
   bool ExecuteOrder(const Order &order) {
-    const auto &tradingSystemOrderId =
+    const auto &tradeId =
         (boost::format("%1%%2%") % m_orderNumberSuffix % order.id).str();
 
     if (!order.isCanceled) {
@@ -329,11 +328,10 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
       if (isMatched) {
         trade.price = order.isSell ? order.security->GetBidPrice()
                                    : order.security->GetAskPrice();
-        trade.id = tradingSystemOrderId;
+        trade.id = tradeId;
         trade.qty = order.qty;
 
-        order.callback(order.id, tradingSystemOrderId, ORDER_STATUS_FILLED, 0,
-                       boost::none, &trade);
+        order.callback(order.id, ORDER_STATUS_FILLED, 0, boost::none, &trade);
 
         return true;
 
@@ -352,8 +350,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
           order.id);
     }
 
-    order.callback(order.id, tradingSystemOrderId, status, order.qty,
-                   boost::none, nullptr);
+    order.callback(order.id, status, order.qty, boost::none, nullptr);
 
     return true;
   }

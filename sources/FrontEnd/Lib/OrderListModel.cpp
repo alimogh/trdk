@@ -36,13 +36,12 @@ enum Column {
   COLUMN_REMAINING_QTY,
   COLUMN_LAST_TIME,
   COLUMN_TIF,
-  COLUMN_TRADING_SYSTEM_ID,
   COLUMN_ID,
   numberOfColumns
 };
 
 struct Order {
-  OrderId id;
+  QString id;
   QDateTime time;
   const Security *security;
   QString symbol;
@@ -58,11 +57,10 @@ struct Order {
   mutable QString filledQty;
   mutable QString remainingQty;
   mutable QDateTime lastTime;
-  mutable QString tradingSystemId;
 };
 
 struct ById {};
-struct BySequnce {};
+struct BySequence {};
 
 typedef boost::multi_index_container<
     Order,
@@ -72,8 +70,8 @@ typedef boost::multi_index_container<
             mi::composite_key<
                 Order,
                 mi::member<Order, const TradingSystem *, &Order::tradingSystem>,
-                mi::member<Order, OrderId, &Order::id>>>,
-        mi::random_access<mi::tag<BySequnce>>>>
+                mi::member<Order, QString, &Order::id>>>,
+        mi::random_access<mi::tag<BySequence>>>>
     OrderList;
 }
 
@@ -105,7 +103,7 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                                       const TimeInForce &tif) {
   const auto qtime = ConvertToQDateTime(time);
   const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
-  const Order order{id,
+  const Order order{QString::fromStdString(id.GetValue()),
                     qtime,
                     security,
                     QString::fromStdString(security->GetSymbol().GetSymbol()),
@@ -130,37 +128,33 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
 }
 
 void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
-                                    const std::string &tradingSystemId,
                                     const TradingSystem *tradingSystem,
                                     const pt::ptime &time,
                                     const OrderStatus &status,
                                     const Qty &remainingQty) {
   auto &orders = m_pimpl->m_orders.get<ById>();
-  auto it = orders.find(boost::make_tuple(tradingSystem, id));
+  auto it = orders.find(
+      boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
   Assert(it != orders.cend());
   if (it == orders.cend()) {
     return;
   }
   it->status = ConvertToPch(status);
-  if (!tradingSystemId.empty()) {
-    it->tradingSystemId = QString::fromStdString(tradingSystemId);
-  }
   it->lastTime = ConvertToQDateTime(time);
   it->filledQty = ConvertQtyToText(it->qty - remainingQty,
                                    it->security->GetPricePrecision());
   it->remainingQty =
       ConvertQtyToText(remainingQty, it->security->GetPricePrecision());
   {
-    const auto &sequnce = m_pimpl->m_orders.get<BySequnce>();
+    const auto &sequence = m_pimpl->m_orders.get<BySequence>();
     const auto index = static_cast<int>(std::distance(
-        sequnce.cbegin(), m_pimpl->m_orders.project<BySequnce>(it)));
+        sequence.cbegin(), m_pimpl->m_orders.project<BySequence>(it)));
     dataChanged(createIndex(index, 0), createIndex(index, numberOfColumns - 1),
                 {Qt::DisplayRole});
   }
 }
 
 void OrderListModel::OnOrder(const OrderId &id,
-                             const std::string &tradingSystemId,
                              const TradingSystem *tradingSystem,
                              const std::string &symbol,
                              const OrderStatus &status,
@@ -174,9 +168,10 @@ void OrderListModel::OnOrder(const OrderId &id,
   uint8_t precision = 8;
 
   auto &orders = m_pimpl->m_orders.get<ById>();
-  auto it = orders.find(boost::make_tuple(tradingSystem, id));
+  auto it = orders.find(
+      boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
   if (it == orders.cend()) {
-    const Order order{id,
+    const Order order{QString::fromStdString(id.GetValue()),
                       ConvertToQDateTime(openTime),
                       nullptr,
                       QString::fromStdString(symbol),
@@ -191,8 +186,7 @@ void OrderListModel::OnOrder(const OrderId &id,
                       ConvertToPch(status),
                       ConvertPriceToText(qty - remainingQty, precision),
                       ConvertPriceToText(remainingQty, precision),
-                      ConvertToQDateTime(updateTime),
-                      QString::fromStdString(tradingSystemId)};
+                      ConvertToQDateTime(updateTime)};
     {
       const auto index = static_cast<int>(m_pimpl->m_orders.size());
       beginInsertRows(QModelIndex(), index, index);
@@ -207,11 +201,10 @@ void OrderListModel::OnOrder(const OrderId &id,
     it->filledQty = ConvertPriceToText(qty - remainingQty, precision);
     it->remainingQty = ConvertPriceToText(remainingQty, precision);
     it->lastTime = ConvertToQDateTime(updateTime);
-    it->tradingSystemId = QString::fromStdString(tradingSystemId);
     {
-      const auto &sequnce = m_pimpl->m_orders.get<BySequnce>();
+      const auto &sequence = m_pimpl->m_orders.get<BySequence>();
       const auto index = static_cast<int>(std::distance(
-          sequnce.cbegin(), m_pimpl->m_orders.project<BySequnce>(it)));
+          sequence.cbegin(), m_pimpl->m_orders.project<BySequence>(it)));
       dataChanged(createIndex(index, 0),
                   createIndex(index, numberOfColumns - 1), {Qt::DisplayRole});
     }
@@ -224,7 +217,7 @@ QVariant OrderListModel::headerData(int section,
   if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfColumns == 13, "List changed.");
+  static_assert(numberOfColumns == 12, "List changed.");
   switch (section) {
     default:
       return Base::headerData(section, orientation, role);
@@ -250,10 +243,8 @@ QVariant OrderListModel::headerData(int section,
       return tr("Update");
     case COLUMN_TIF:
       return tr("Time in Force");
-    case COLUMN_TRADING_SYSTEM_ID:
-      return tr("ID");
     case COLUMN_ID:
-      return tr("ID Int.");
+      return tr("ID");
   }
 }
 
@@ -264,11 +255,11 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
 
   const auto &recordIndex = static_cast<size_t>(index.row());
   AssertGt(m_pimpl->m_orders.size(), recordIndex);
-  const auto &order = m_pimpl->m_orders.get<BySequnce>()[recordIndex];
+  const auto &order = m_pimpl->m_orders.get<BySequence>()[recordIndex];
 
   switch (role) {
     case Qt::DisplayRole:
-      static_assert(numberOfColumns == 13, "List changed.");
+      static_assert(numberOfColumns == 12, "List changed.");
       switch (index.column()) {
         case COLUMN_SYMBOL:
           return order.symbol;
@@ -292,8 +283,6 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
           return order.lastTime;
         case COLUMN_TIF:
           return order.tif;
-        case COLUMN_TRADING_SYSTEM_ID:
-          return order.tradingSystemId;
         case COLUMN_ID:
           return order.id;
       }

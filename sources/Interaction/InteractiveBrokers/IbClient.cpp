@@ -829,8 +829,7 @@ trdk::OrderId Client::PlaceSellIocOrder(const trdk::Security &security,
 void Client::CancelOrder(trdk::OrderId id) {
   const Lock lock(m_mutex);
   CheckState();
-  AssertLe(0, id);
-  m_client->cancelOrder(::OrderId(id));
+  m_client->cancelOrder(boost::lexical_cast<::OrderId>(id));
   UpdateLastRequestTime();
   m_condition.notify_all();
 }

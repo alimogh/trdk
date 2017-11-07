@@ -41,7 +41,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
         m_configFilePath(path),
         m_dropCopy(m_self.parent()),
         m_orderTradingSystemSlot(boost::bind(
-            &Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5, _6)) {
+            &Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5)) {
     // Just a smoke-check that config is an engine config:
     IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
 
@@ -101,19 +101,16 @@ class lib::Engine::Implementation : private boost::noncopyable {
   }
 
   void OnOrderUpdate(const OrderId &id,
-                     const std::string &tradingSystemOrderId,
                      const OrderStatus &status,
                      const Qty &remainingQty,
                      const boost::optional<Volume> &,
                      const TradingSystem::TradeInfo *tradeInfo) {
     if (!tradeInfo) {
-      emit m_self.Order(static_cast<unsigned int>(id),
-                        QString::fromStdString(tradingSystemOrderId),
-                        int(status), remainingQty);
+      emit m_self.Order(QString::fromStdString(id.GetValue()),
+                        static_cast<int>(status), remainingQty);
     } else {
       emit m_self.Trade(
-          static_cast<unsigned int>(id),
-          QString::fromStdString(tradingSystemOrderId), int(status),
+          QString::fromStdString(id.GetValue()), static_cast<int>(status),
           remainingQty,
           tradeInfo->id ? QString::fromStdString(*tradeInfo->id) : QString(),
           tradeInfo->price, tradeInfo->qty);

@@ -205,7 +205,6 @@ std::string NormilizeSymbol(const std::string &source) {
 
 struct Order {
   OrderId id;
-  std::string tradingSystemOrderId;
   std::string symbol;
   Qty qty;
   boost::optional<trdk::Price> price;
@@ -415,7 +414,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const Currency &currency,
       const Qty &qty,
@@ -444,12 +443,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-#ifdef _DEBUG
-        % (side == ORDER_SIDE_SELL ? *price * 1.1 : *price * 0.9)  // 3
-#else
-        % *price  // 3
-#endif
-        % qty;  // 4
+        % *price                                                       // 3
+        % qty;                                                         // 4
     TradeRequest request("Trade", m_nextNonce++, m_settings,
                          requestParams.str());
     StoreNextNonce(m_nextNonce);
@@ -457,7 +452,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
     try {
-      return boost::make_unique<TransactionContext>(
+      return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("order_id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
@@ -496,9 +491,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
-            order.qty, order.qty, order.price, order.side, order.tid,
-            order.time, order.time);
+    OnOrder(order.id, order.symbol, status, order.qty, order.qty, order.price,
+            order.side, order.tid, order.time, order.time);
   }
 
   void RequestOpenedOrders() {
@@ -519,7 +513,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         MakeServerAnswerDebugDump(orders, *this);
         for (const auto &orderNode : orders) {
           const auto &order = orderNode.second;
-          const std::string &orderId = orderNode.first;
+          const OrderId orderId(orderNode.first);
 
           const Qty qty = order.get<double>("amount");
 
@@ -538,8 +532,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           const auto &time =
               pt::from_time_t(order.get<time_t>("timestamp_created"));
 
-          const Order notifiedOrder = {boost::lexical_cast<OrderId>(orderId),
-                                       orderId,
+          const Order notifiedOrder = {std::move(orderId),
                                        std::move(symbol),
                                        std::move(qty),
                                        Price(order.get<double>("rate")),
@@ -643,10 +636,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             continue;
           }
 
-          OnOrder(orderId, boost::lexical_cast<std::string>(orderId),
-                  boost::to_upper_copy(order.get<std::string>("pair")), status,
-                  qty, remainingQty, Price(order.get<double>("rate")), side,
-                  TIME_IN_FORCE_GTC, time, time);
+          OnOrder(orderId, boost::to_upper_copy(order.get<std::string>("pair")),
+                  status, qty, remainingQty, Price(order.get<double>("rate")),
+                  side, TIME_IN_FORCE_GTC, time, time);
         }
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",

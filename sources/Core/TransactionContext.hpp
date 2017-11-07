@@ -14,20 +14,16 @@
 
 namespace trdk {
 
-class TRDK_CORE_API TransactionContext {
+class TRDK_CORE_API OrderTransactionContext {
  public:
-  explicit TransactionContext(size_t id) : m_id(id) {}
-  virtual ~TransactionContext() = default;
+  explicit OrderTransactionContext(const trdk::OrderId &&orderId)
+      : m_orderId(std::move(orderId)) {}
+  virtual ~OrderTransactionContext() = default;
 
  public:
-  //! Unique internal transaction ID.
-  /** The same as "order ID", but, after refactoring (order ID will be string),
-    * should not be used as order ID. This field should be renamed to "GetId"
-    * and used only for log.
-    */
-  size_t GetOrderId() const { return m_id; }
+  const trdk::OrderId &GetOrderId() const { return m_orderId; }
 
  public:
-  const size_t m_id;
+  const trdk::OrderId m_orderId;
 };
 }

@@ -291,7 +291,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const Currency &currency,
       const Qty &qty,

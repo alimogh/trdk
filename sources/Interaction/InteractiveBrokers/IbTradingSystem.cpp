@@ -126,7 +126,8 @@ boost::optional<ContractExpiration> ib::TradingSystem::FindContractExpiration(
   return result;
 }
 
-void ib::TradingSystem::SendCancelOrderTransaction(const trdk::OrderId &orderId) {
+void ib::TradingSystem::SendCancelOrderTransaction(
+    const trdk::OrderId &orderId) {
   m_client->CancelOrder(orderId);
 }
 
@@ -295,9 +296,8 @@ void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
           pos->UpdateFilled(filled);
           if (callBack) {
             callBackList.emplace_back(
-                [callBack, id, permOrderId, remaining, iocTradeData]() {
-                  callBack(id, boost::lexical_cast<std::string>(permOrderId),
-                           ORDER_STATUS_FILLED_PARTIALLY, remaining,
+                [callBack, id, remaining, iocTradeData]() {
+                  callBack(id, ORDER_STATUS_FILLED_PARTIALLY, remaining,
                            boost::none, &iocTradeData);
                 });
           }
@@ -314,11 +314,10 @@ void ib::TradingSystem::OnOrderStatus(const trdk::OrderId &id,
     return;
   }
   callBackList.emplace_back(
-      [callBack, id, permOrderId, status, remaining, commission, tradeData]() {
+      [callBack, id, status, remaining, commission, tradeData]() {
         const TradeInfo *const tradeDataPtr =
             tradeData.qty != 0 ? &tradeData : nullptr;
-        callBack(id, boost::lexical_cast<std::string>(permOrderId), status,
-                 remaining, commission, tradeDataPtr);
+        callBack(id, status, remaining, commission, tradeDataPtr);
       });
 }
 

@@ -37,13 +37,11 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                       const boost::optional<trdk::Price> &,
                       const trdk::TimeInForce &);
   void OrderUpdated(const trdk::OrderId &,
-                    const std::string &tradingSystemId,
                     const trdk::TradingSystem *,
                     const boost::posix_time::ptime &,
                     const trdk::OrderStatus &,
                     const trdk::Qty &remainingQty);
   void Order(const trdk::OrderId &,
-             const std::string &tradingSystemOrderId,
              const trdk::TradingSystem *,
              const std::string &symbol,
              const trdk::OrderStatus &,
@@ -86,13 +84,11 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                                   const boost::optional<trdk::Price> &,
                                   const trdk::TimeInForce &) override;
   virtual void CopyOrderStatus(const trdk::OrderId &,
-                               const std::string &tradingSystemId,
                                const trdk::TradingSystem &,
                                const boost::posix_time::ptime &,
                                const trdk::OrderStatus &,
                                const trdk::Qty &remainingQty) override;
   virtual void CopyOrder(const trdk::OrderId &,
-                         const std::string &tradingSystemOrderId,
                          const trdk::TradingSystem &,
                          const std::string &symbol,
                          const trdk::OrderStatus &,

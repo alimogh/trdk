@@ -61,13 +61,11 @@ class TRDK_CORE_API DropCopy {
                                   const boost::optional<trdk::Price> &,
                                   const trdk::TimeInForce &) = 0;
   virtual void CopyOrderStatus(const trdk::OrderId &,
-                               const std::string &tradingSystemId,
                                const trdk::TradingSystem &,
                                const boost::posix_time::ptime &,
                                const trdk::OrderStatus &,
                                const trdk::Qty &remainingQty) = 0;
   virtual void CopyOrder(const trdk::OrderId &,
-                         const std::string &tradingSystemOrderId,
                          const trdk::TradingSystem &,
                          const std::string &symbol,
                          const trdk::OrderStatus &,

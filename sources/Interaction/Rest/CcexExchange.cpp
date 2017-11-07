@@ -58,7 +58,6 @@ struct Settings {
 
 struct Order {
   OrderId id;
-  std::string tradingSystemOrderId;
   std::string symbol;
   OrderStatus status;
   Qty qty;
@@ -311,7 +310,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const Currency &currency,
       const Qty &qty,
@@ -348,7 +347,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
     try {
-      return boost::make_unique<TransactionContext>(
+      return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("uuid"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
@@ -394,13 +393,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
-            order.qty, order.remainingQty, order.price, order.side, order.tid,
-            order.openTime, order.updateTime);
+    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
+            order.price, order.side, order.tid, order.openTime,
+            order.updateTime);
   }
 
   Order UpdateOrder(const ptr::ptree &order) {
-    const auto &orderId = order.get<std::string>("OrderUuid");
+    const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;
     boost::optional<Price> price;
@@ -437,8 +436,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                          : ORDER_STATUS_FILLED_PARTIALLY;
     }
 
-    const Order result = {boost::lexical_cast<OrderId>(orderId),
-                          orderId,
+    const Order result = {std::move(orderId),
                           order.get<std::string>("Exchange"),
                           std::move(status),
                           std::move(qty),
@@ -534,7 +532,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       } catch (const OrderIsUnknown &ex) {
         GetTsLog().Warn("Failed to request state for order %1%: \"%2%\".",
                         orderId, ex.what());
-        OnOrderCancel(orderId, boost::lexical_cast<std::string>(orderId));
+        OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
                          orderId, ex.what());

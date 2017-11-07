@@ -13,21 +13,17 @@
 #include "Api.h"
 #include "Fwd.hpp"
 
-////////////////////////////////////////////////////////////////////////////////
-
 namespace trdk {
 
+////////////////////////////////////////////////////////////////////////////////
+
 typedef trdk::Lib::Double Qty;
-
 typedef trdk::Lib::Double Price;
-
 typedef trdk::Lib::Double Volume;
-
-typedef boost::uint64_t OrderId;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//! Order side
+//! Order side.
 enum OrderSide {
   ORDER_SIDE_BUY = 0,
   ORDER_SIDE_BID = ORDER_SIDE_BUY,
@@ -86,7 +82,7 @@ struct OrderParams {
 
   //! Trading system must try to work with position started by specified order
   //! or used by specified order.
-  const trdk::TransactionContext *position;
+  const trdk::OrderTransactionContext *position;
 
   explicit OrderParams() : expiration(nullptr), position(nullptr) {}
 
@@ -290,3 +286,48 @@ typedef std::vector<std::pair<trdk::Lib::Currency, Volume>> FinancialResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+namespace trdk {
+//! Order ID.
+class OrderId {
+ public:
+  OrderId() = default;
+  explicit OrderId(const std::string &value) : m_value(value) {}
+  explicit OrderId(const std::string &&value) : m_value(std::move(value)) {}
+  OrderId(int32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(uint32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(intmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
+  OrderId(uintmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
+
+  bool operator==(const OrderId &rhs) const { return m_value == rhs.m_value; }
+  bool operator!=(const OrderId &rhs) const { return !operator==(rhs); }
+
+  friend std::ostream &operator<<(std::ostream &os,
+                                  const trdk::OrderId &orderId) {
+    return os << orderId.m_value;
+  }
+  friend std::istream &operator>>(std::istream &is, trdk::OrderId &orderId) {
+    return is >> orderId.m_value;
+  }
+
+  const std::string &GetValue() const { return m_value; }
+
+ private:
+  std::string m_value;
+};
+}
+
+namespace stdext {
+
+inline size_t hash_value(const trdk::OrderId &orderId) {
+  return boost::hash_value(orderId.GetValue());
+}
+}
+
+namespace trdk {
+inline size_t hash_value(const trdk::OrderId &orderId) {
+  return stdext::hash_value(orderId);
+}
+}
+
+////////////////////////////////////////////////////////////////////////////////
