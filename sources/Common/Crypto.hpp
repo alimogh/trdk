@@ -14,25 +14,33 @@ namespace trdk {
 namespace Lib {
 namespace Crypto {
 
-class Base64Coder : private boost::noncopyable {
- public:
-  explicit Base64Coder(bool multiline);
-  ~Base64Coder();
-
- public:
-  void Encode(const unsigned char *source, size_t sourceLen, std::ostream &);
-  std::string Encode(const unsigned char *source, size_t sourceLen);
-
- private:
-  BIO *const m_bio;
-};
+namespace Base64 {
+std::string Encode(const unsigned char *source,
+                   size_t sourceLen,
+                   bool multiline);
+std::vector<unsigned char> Decode(const std::string &);
+}
 
 std::string EncodeToHex(const unsigned char *cource, size_t sourceLen);
 
-boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcHmacSha512Digest(
+namespace Hmac {
+boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcSha512Digest(
     const unsigned char *source, size_t sourceLen, const std::string &key);
-boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcHmacSha512Digest(
+boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcSha512Digest(
     const std::string &source, const std::string &key);
+
+boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
+    const unsigned char *source, size_t sourceLen, const std::string &key);
+boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
+    const std::string &source, const std::string &key);
+boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
+    const unsigned char *source,
+    size_t sourceLen,
+    const unsigned char *key,
+    size_t keyLen);
+boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
+    const std::string &source, const unsigned char *key, size_t keyLen);
+}
 }
 }
 }

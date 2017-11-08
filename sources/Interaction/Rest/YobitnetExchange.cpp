@@ -54,7 +54,7 @@ struct Settings {
 
   void Log(ModuleEventsLog &log) {
     log.Info(
-        "API key: \"%1%\". API secret: %2%. Polling Interval: %3%. Initial "
+        "API key: \"%1%\". API secret: %2%. Polling interval: %3%. Initial "
         "nonce: %4%. Nonce storage file: %5%",
         apiKey,                                    // 1
         apiSecret.empty() ? "not set" : "is set",  // 2
@@ -172,14 +172,16 @@ class TradeRequest : public Request {
   }
 
  protected:
-  virtual void PreprareRequest(const net::HTTPClientSession &,
-                               net::HTTPRequest &request) const override {
+  virtual void PrepareRequest(const net::HTTPClientSession &session,
+                              const std::string &body,
+                              net::HTTPRequest &request) const override {
     request.set("Key", m_apiKey);
     {
       using namespace trdk::Lib::Crypto;
-      const auto &digest = CalcHmacSha512Digest(GetUriParams(), m_apiSecret);
+      const auto &digest = Hmac::CalcSha512Digest(GetUriParams(), m_apiSecret);
       request.set("Sign", EncodeToHex(&digest[0], digest.size()));
     }
+    Base::PrepareRequest(session, body, request);
   }
 
   virtual const ptr::ptree &ExtractContent(
@@ -232,7 +234,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_nextNonce(0) {
+        m_nextNonce(0),
+        m_numberOfPulls(0) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -279,6 +282,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         [this, depthRequest]() {
           UpdateSecuritues(*depthRequest);
           UpdateOrders();
+          if (!(++m_numberOfPulls % 20)) {
+            RequestOpenedOrders();
+          }
         },
         m_settings.pollingInterval, GetMdsLog());
   }
@@ -451,6 +457,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
+
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("order_id"));
@@ -509,7 +518,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     try {
       {
         const auto orders =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(orders, *this);
         for (const auto &orderNode : orders) {
           const auto &order = orderNode.second;
@@ -598,7 +607,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       StoreNextNonce(m_nextNonce);
       try {
         const auto response =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(response, *this);
         for (const auto &node : response) {
           const auto &order = node.second;
@@ -663,6 +672,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
+  size_t m_numberOfPulls;
 
   trdk::Timer::Scope m_timerScope;
 };

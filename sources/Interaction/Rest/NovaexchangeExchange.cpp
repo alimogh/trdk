@@ -45,7 +45,7 @@ struct Settings {
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
              pollingInterval);                          // 3
@@ -209,10 +209,10 @@ class PrivateRequest : public Request {
     {
       using namespace trdk::Lib::Crypto;
       const auto &digest =
-          CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
-                                   session.getHost() + GetRequest().getURI(),
-                               m_apiSecret);
-      result += Base64Coder(false).Encode(&digest[0], digest.size());
+          Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                     session.getHost() + GetRequest().getURI(),
+                                 m_apiSecret);
+      result += Base64::Encode(&digest[0], digest.size(), false);
     }
     Base::CreateBody(session, result);
   }

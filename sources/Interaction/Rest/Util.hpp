@@ -14,14 +14,14 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-inline void MakeServerAnswerDebugDump(const boost::property_tree::ptree &answer,
+inline void MakeServerAnswerDebugDump(const boost::property_tree::ptree &tree,
                                       TradingSystem &ts) {
 #ifdef DEV_VER
   std::stringstream ss;
-  boost::property_tree::json_parser::write_json(ss, answer);
-  ts.GetLog().Debug(ss.str().c_str());
+  boost::property_tree::json_parser::write_json(ss, tree, false);
+  ts.GetLog().Debug("Server answer dump: %s", ss.str().c_str());
 #else
-  Lib::UseUnused(answer, ts);
+  Lib::UseUnused(tree, ts);
 #endif
 }
 }

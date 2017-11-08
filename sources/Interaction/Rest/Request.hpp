@@ -26,6 +26,7 @@ class Request {
 
  public:
   const std::string &GetName() const { return m_name; }
+  void SetBody(const std::string &body) { m_body = body; }
 
  public:
   virtual boost::tuple<boost::posix_time::ptime,
@@ -43,14 +44,16 @@ class Request {
   const std::string &GetUriParams() const { return m_uriParams; }
   virtual void CreateBody(const Poco::Net::HTTPClientSession &,
                           std::string &result) const;
-  virtual void PreprareRequest(const Poco::Net::HTTPClientSession &,
-                               Poco::Net::HTTPRequest &) const {}
+  virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                              const std::string &body,
+                              Poco::Net::HTTPRequest &) const;
 
  private:
   const std::string m_uri;
   const std::string m_uriParams;
   std::unique_ptr<Poco::Net::HTTPRequest> m_request;
   const std::string m_name;
+  std::string m_body;
 };
 }
 }

@@ -47,7 +47,8 @@ void OrderListView::CancelSelectedOrders() {
 }
 
 bool OrderListView::CancelOrder(const QModelIndex &item) {
-  const OrderId &orderId = item.data(ITEM_DATA_ROLE_ITEM_ID).toULongLong();
+  const OrderId orderId(
+      item.data(ITEM_DATA_ROLE_ITEM_ID).toString().toStdString());
   const size_t tradingSystemIndex =
       item.data(ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX).toULongLong();
   const TradingMode mode =

@@ -15,10 +15,12 @@
 #include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::Lib::Crypto;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -33,12 +35,14 @@ namespace {
 
 struct Settings {
   std::string apiKey;
-  std::string apiSecret;
+  std::vector<unsigned char> apiSecret;
+  std::string apiPassphrase;
   pt::time_duration pollingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")),
+        apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
+        apiPassphrase(conf.ReadKey("api_passphrase")),
         pollingInterval(pt::milliseconds(
             conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
     Log(log);
@@ -46,10 +50,13 @@ struct Settings {
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
-             apiKey,                                    // 1
-             apiSecret.empty() ? "not set" : "is set",  // 2
-             pollingInterval);                          // 3
+    log.Info(
+        "API key: \"%1%\". API secret: %2%. API passphrase: %3%. Polling "
+        "interval: %4%.",
+        apiKey,                                        // 1
+        apiSecret.empty() ? "not set" : "is set",      // 2
+        apiPassphrase.empty() ? "not set" : "is set",  // 3
+        pollingInterval);                              // 4
   }
 
   void Validate() {}
@@ -88,30 +95,67 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 
 namespace {
 
-class GdaxRequest : public Request {
+class Request : public Rest::Request {
+ public:
+  typedef Rest::Request Base;
+
+ public:
+  explicit Request(const std::string &request,
+                   const std::string &method,
+                   const std::string &uriParams)
+      : Base("/" + request, request, method, uriParams) {}
+
+  virtual ~Request() override = default;
+};
+
+class PublicRequest : public Request {
  public:
   typedef Request Base;
 
  public:
-  explicit GdaxRequest(const std::string &uri,
-                       const std::string &name,
-                       const std::string &method,
-                       const Settings &)
-      : Base(uri, name, method, std::string()) {}
+  explicit PublicRequest(const std::string &request)
+      : Base(request, net::HTTPRequest::HTTP_GET, std::string()) {}
 
-  virtual ~GdaxRequest() override = default;
+  virtual ~PublicRequest() override = default;
+};
+
+class PrivateRequest : public Request {
+ public:
+  typedef Request Base;
 
  public:
-  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPClientSession &session, const Context &context) override {
-    const auto &result = Base::Send(session, context);
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             ExtractContent(boost::get<1>(result)),
-                             std::move(boost::get<2>(result)));
-  }
+  explicit PrivateRequest(const std::string &request,
+                          const std::string &method,
+                          const Settings &settings,
+                          const std::string &uriParams = std::string())
+      : Base(request, method, uriParams), m_settings(settings) {}
+
+  virtual ~PrivateRequest() override = default;
 
  protected:
-  virtual const ptr::ptree &ExtractContent(const ptr::ptree &responseTree) = 0;
+  virtual void PrepareRequest(const net::HTTPClientSession &session,
+                              const std::string &body,
+                              net::HTTPRequest &request) const override {
+    const auto &timestamp = boost::lexical_cast<std::string>(
+        pt::to_time_t(pt::second_clock::universal_time()));
+    {
+      const auto &digest = Hmac::CalcSha256Digest(
+          timestamp + GetRequest().getMethod() + GetRequest().getURI() + body,
+          &m_settings.apiSecret[0], m_settings.apiSecret.size());
+      request.set("CB-ACCESS-SIGN",
+                  Base64::Encode(&digest[0], digest.size(), false));
+    }
+    request.set("CB-ACCESS-TIMESTAMP", timestamp);
+    request.set("CB-ACCESS-KEY", m_settings.apiKey);
+    request.set("CB-ACCESS-PASSPHRASE", m_settings.apiPassphrase);
+    if (!body.empty()) {
+      request.setContentType("application/json");
+    }
+    Base::PrepareRequest(session, body, request);
+  }
+
+ private:
+  const Settings &m_settings;
 };
 
 std::string NormilizeSymbol(const std::string &source) {
@@ -130,8 +174,21 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   struct SecuritySubscribtion {
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<GdaxRequest> request;
+    boost::shared_ptr<Request> request;
     bool isSubscribed;
+  };
+
+  struct Order {
+    OrderId id;
+    boost::optional<trdk::Price> price;
+    Qty qty;
+    Qty remainingQty;
+    std::string symbol;
+    OrderSide side;
+    TimeInForce tif;
+    pt::ptime creationTime;
+    pt::ptime doneTime;
+    OrderStatus status;
   };
 
  public:
@@ -147,9 +204,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
-        m_tradingSession(!conf.ReadBoolKey("sandbox")
-                             ? "api.gdax.com"
-                             : "api-public.sandbox.gdax.com") {
+        m_tradingSession(m_marketDataSession.getHost()),
+        m_orderTransactionRequest(
+            "orders", net::HTTPRequest::HTTP_POST, m_settings),
+        m_orderListRequest("orders",
+                           net::HTTPRequest::HTTP_GET,
+                           m_settings,
+                           "status=open&status=pending"),
+        m_numberOfPulls(0) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -229,12 +291,26 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
               throw MarketDataSource::Error(error.str().c_str());
             }
           }
+          UpdateOrders();
+          if (!(++m_numberOfPulls % 20)) {
+            RequestOpenedOrders();
+          }
         },
         m_settings.pollingInterval, GetMdsLog());
   }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    try {
+      // RequestAccounts();
+    } catch (const std::exception &ex) {
+      GetTsLog().Error(ex.what());
+    }
+    try {
+      RequestOpenedOrders();
+    } catch (const std::exception &ex) {
+      GetTsLog().Error(ex.what());
+    }
     m_isConnected = true;
   }
 
@@ -259,30 +335,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {
-      class BookRequest : public GdaxRequest {
-       public:
-        typedef GdaxRequest Base;
-
-       public:
-        explicit BookRequest(const std::string &uri,
-                             const std::string &name,
-                             const std::string &method,
-                             const Settings &settings)
-            : Base(uri, name, method, settings) {}
-
-        virtual ~BookRequest() override = default;
-
-       protected:
-        virtual const ptr::ptree &ExtractContent(
-            const ptr::ptree &responseTree) override {
-          return responseTree;
-        }
-      };
-      const auto request = boost::make_shared<BookRequest>(
+      const auto request = boost::make_shared<PublicRequest>(
           "/products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
-              "/book/",
-          "book", net::HTTPRequest::HTTP_GET, m_settings);
-
+          "/book/");
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
                  .second);
@@ -317,11 +372,196 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
-    throw MethodIsNotImplementedException("Methods is not supported");
+    {
+      boost::format requestParams(
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
+          "\"size\": \"%4$.8f\"}");
+      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
+          % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
+          % *price                                                // 3
+          % qty;                                                  // 4
+      m_orderTransactionRequest.SetBody(requestParams.str());
+    }
+
+    const auto &result =
+        m_orderTransactionRequest.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+
+    try {
+      return boost::make_unique<OrderTransactionContext>(
+          boost::get<1>(result).get<OrderId>("id"));
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to read order transaction reply: \"%1%\"");
+      error % ex.what();
+      throw TradingSystem::Error(error.str().c_str());
+    }
   }
 
-  virtual void SendCancelOrderTransaction(const OrderId &) override {
-    throw MethodIsNotImplementedException("Methods is not supported");
+  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+    PrivateRequest request("orders/" + orderId.GetValue(),
+                           net::HTTPRequest::HTTP_DELETE, m_settings);
+    try {
+      const auto &result = request.Send(m_tradingSession, GetContext());
+      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    } catch (const OrderIsUnknown &) {
+      throw;
+    }
+  }
+
+ private:
+  void RequestAccounts() {
+    PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings);
+    try {
+      const auto response =
+          boost::get<1>(request.Send(m_tradingSession, GetContext()));
+      MakeServerAnswerDebugDump(response, *this);
+      for (const auto &node : response) {
+        const auto &account = node.second;
+        GetTsLog().Info(
+            "%1% balance: %2$.8f (available: %3$.8f, hold: %4$.8f).",
+            account.get<std::string>("currency"),  // 1
+            account.get<double>("balance"),        // 2
+            account.get<double>("available"),      // 3
+            account.get<double>("hold"));          // 4
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to request accounts: \"%1%\".", ex.what());  // 1
+      throw Exception("Failed to request accounts");
+    }
+  }
+
+  void UpdateOrder(const Order &order, const OrderStatus &status) {
+    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
+            order.price, order.side, order.tif, order.creationTime,
+            order.doneTime);
+  }
+
+  Order UpdateOrder(const ptr::ptree &order) {
+    const auto &orderId = order.get<OrderId>("id");
+
+    OrderSide side;
+    {
+      const auto &sideField = order.get<std::string>("side");
+      if (sideField == "sell") {
+        side = ORDER_SIDE_SELL;
+      } else if (sideField == "buy") {
+        side = ORDER_SIDE_BUY;
+      }
+    }
+
+    boost::optional<Price> price;
+    {
+      const auto &type = order.get<std::string>("type");
+      if (type == "limit" || type == "stop") {
+        price = order.get<double>("price");
+      } else if (type != "market") {
+        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                         orderId);
+        throw TradingSystem::Error("Failed to request order status");
+      }
+    }
+
+    TimeInForce tif;
+    {
+      const auto &tifField = order.get<std::string>("time_in_force");
+      if (tifField == "GTC" || tifField == "GTT") {
+        tif = TIME_IN_FORCE_GTC;
+      } else if (tifField == "IOC") {
+        tif = TIME_IN_FORCE_IOC;
+      } else if (tifField == "FOR") {
+        tif = TIME_IN_FORCE_FOK;
+      } else {
+        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", tifField,
+                         orderId);
+        throw TradingSystem::Error("Failed to request order status");
+      }
+    }
+
+    const Qty qty = order.get<double>("size");
+    const Qty filledQty = order.get<double>("filled_size");
+
+    OrderStatus status;
+    {
+      const auto &statusField = order.get<std::string>("status");
+      if (statusField == "open") {
+        status = filledQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
+                               : ORDER_STATUS_SUBMITTED;
+      } else if (statusField == "pending") {
+        status = ORDER_STATUS_SUBMITTED;
+      } else if (statusField == "done") {
+        status = ORDER_STATUS_FILLED;
+      } else {
+        GetTsLog().Error("Unknown order status \"%1%\" for order %2%.",
+                         statusField, orderId);
+        throw TradingSystem::Error("Failed to request order status");
+      }
+    }
+
+    const auto &time =
+        pt::from_iso_extended_string(order.get<std::string>("created_at"));
+    pt::ptime doneTime;
+    {
+      /*const auto &doneTimeField = order.get_optional<std::string>("done_at");
+      if (doneTimeField) {
+        const std::string &doneTimeFieldValue = ;
+        doneTime = pt::from_iso_extended_string(*doneTimeField);
+      } else */ {
+        doneTime = time;
+      }
+    }
+
+    const Order result = {std::move(orderId),
+                          std::move(price),
+                          std::move(qty),
+                          qty - filledQty,
+                          order.get<std::string>("product_id"),
+                          std::move(side),
+                          std::move(tif),
+                          time,
+                          doneTime,
+                          status};
+    UpdateOrder(result, result.status);
+    return result;
+  }
+
+  void RequestOpenedOrders() {
+    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    try {
+      const auto orders = boost::get<1>(
+          m_orderListRequest.Send(m_marketDataSession, GetContext()));
+      MakeServerAnswerDebugDump(orders, *this);
+      for (const auto &order : orders) {
+        const Order notifiedOrder = UpdateOrder(order.second);
+        m_orders.erase(notifiedOrder.id);
+        if (notifiedOrder.status != ORDER_STATUS_CANCELLED) {
+          const auto id = notifiedOrder.id;
+          notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
+        }
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
+      throw Exception("Failed to request order list");
+    }
+    for (const auto &canceledOrder : m_orders) {
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+    }
+    m_orders.swap(notifiedOrderOrders);
+  }
+
+  void UpdateOrders() {
+    for (const OrderId &orderId : GetActiveOrderList()) {
+      PrivateRequest request("orders/" + orderId.GetValue(),
+                             net::HTTPRequest::HTTP_GET, m_settings);
+      try {
+        const auto result =
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+        MakeServerAnswerDebugDump(result, *this);
+        UpdateOrder(result);
+      } catch (const std::exception &ex) {
+        GetTsLog().Error("Failed to update order list: \"%1%\".", ex.what());
+        throw Exception("Failed to update order list");
+      }
+    }
   }
 
  private:
@@ -335,6 +575,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
+
+  PrivateRequest m_orderTransactionRequest;
+
+  PrivateRequest m_orderListRequest;
+  boost::unordered_map<OrderId, Order> m_orders;
+  size_t m_numberOfPulls;
+
+  trdk::Timer::Scope m_timerScope;
 };
 }
 

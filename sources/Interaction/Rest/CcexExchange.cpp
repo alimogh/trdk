@@ -47,7 +47,7 @@ struct Settings {
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
              pollingInterval);                          // 3
@@ -64,7 +64,7 @@ struct Order {
   Qty remainingQty;
   boost::optional<trdk::Price> price;
   OrderSide side;
-  TimeInForce tid;
+  TimeInForce tif;
   pt::ptime openTime;
   pt::ptime updateTime;
 };
@@ -166,14 +166,16 @@ class PrivateRequest : public Request {
   virtual ~PrivateRequest() override = default;
 
  protected:
-  virtual void PreprareRequest(const net::HTTPClientSession &session,
-                               net::HTTPRequest &request) const override {
+  virtual void PrepareRequest(const net::HTTPClientSession &session,
+                              const std::string &body,
+                              net::HTTPRequest &request) const override {
     using namespace trdk::Lib::Crypto;
     const auto &digest =
-        CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
-                                 session.getHost() + GetRequest().getURI(),
-                             m_apiSecret);
+        Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                   session.getHost() + GetRequest().getURI(),
+                               m_apiSecret);
     request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+    Base::PrepareRequest(session, body, request);
   }
 
  private:
@@ -212,7 +214,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("c-cex.com"),
-        m_tradingSession(m_marketDataSession.getHost()) {
+        m_tradingSession(m_marketDataSession.getHost()),
+        m_numberOfPulls(0) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -263,6 +266,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         [this]() {
           UpdateSecurities();
           UpdateOrders();
+          if (!(++m_numberOfPulls % 20)) {
+            RequestOpenedOrders();
+          }
         },
         m_settings.pollingInterval, GetMdsLog());
   }
@@ -337,14 +343,17 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
 
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
-    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())   // 1
-        % qty                                                           // 2
-        % (side == ORDER_SIDE_SELL ? (*price * 1.1) : (*price * 0.9));  // 3
+    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
+        % qty                                                          // 2
+        % *price;                                                      // 3
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
                            m_settings, requestParams.str());
 
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
 
     try {
       return boost::make_unique<OrderTransactionContext>(
@@ -394,7 +403,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
  private:
   void UpdateOrder(const Order &order, const OrderStatus &status) {
     OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
-            order.price, order.side, order.tid, order.openTime,
+            order.price, order.side, order.tif, order.openTime,
             order.updateTime);
   }
 
@@ -458,7 +467,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       PrivateRequest request("getopenorders", m_settings);
       try {
         const auto orders =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(orders, *this);
         for (const auto &order : orders) {
           const Order notifiedOrder = UpdateOrder(order.second);
@@ -556,6 +565,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
+
+  size_t m_numberOfPulls;
 };
 }
 

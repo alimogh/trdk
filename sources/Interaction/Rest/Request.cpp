@@ -53,9 +53,13 @@ Request::Request(const std::string &uri,
   m_request->set("Connection", "keep-alive");
   m_request->set("DNT", "1");
   if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
-    m_request->setContentType("application/x-www-form-urlencoded");
+    m_request->setContentType("application/json");
   }
 }
+
+void Request::PrepareRequest(const net::HTTPClientSession &,
+                             const std::string &,
+                             net::HTTPRequest &) const {}
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPClientSession &session, const Context &context) {
@@ -67,10 +71,11 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
   }
   m_request->setURI(std::move(uri));
 
-  PreprareRequest(session, *m_request);
-
-  std::string body;
+  std::string body = m_body;
   CreateBody(session, body);
+
+  PrepareRequest(session, body, *m_request);
+
   if (!body.empty()) {
     m_request->setContentLength(body.size());
     session.sendRequest(*m_request) << body;
@@ -85,12 +90,19 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
     net::HTTPResponse response;
     std::istream &responseStream = session.receiveResponse(response);
     if (response.getStatus() != 200) {
+      std::vector<std::string> responseText;
+      while (responseStream) {
+        responseText.resize(responseText.size() + 1);
+        responseStream >> responseText.back();
+      }
       boost::format error(
-          "Request \"%3%\" (%4%) failed with HTTP-error: \"%1%\" (code: %2%)");
-      error % response.getReason()  // 1
-          % response.getStatus()    // 2
-          % m_name                  // 3
-          % m_request->getURI();    // 4
+          "Request \"%4%\" (%5%) failed with HTTP-error: \"%1%\" (\"%2%\", "
+          "code %3%)");
+      error % boost::join(responseText, " ")  // 1
+          % response.getReason()              // 2
+          % response.getStatus()              // 3
+          % m_name                            // 4
+          % m_request->getURI();              // 5
       throw Exception(error.str().c_str());
     }
 
