@@ -27,6 +27,7 @@ using namespace trdk::Interaction::Rest;
 namespace pc = Poco;
 namespace net = pc::Net;
 namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -497,15 +498,20 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    const auto &time =
-        pt::from_iso_extended_string(order.get<std::string>("created_at"));
+    pt::ptime time;
+    {
+      const auto &timeField = order.get<std::string>("created_at");
+      time = {gr::from_string(timeField.substr(0, 10)),
+              pt::duration_from_string(timeField.substr(11, 8))};
+    }
     pt::ptime doneTime;
     {
-      /*const auto &doneTimeField = order.get_optional<std::string>("done_at");
+      const auto &doneTimeField = order.get_optional<std::string>("done_at");
       if (doneTimeField) {
-        const std::string &doneTimeFieldValue = ;
-        doneTime = pt::from_iso_extended_string(*doneTimeField);
-      } else */ {
+        const std::string &value = *doneTimeField;
+        doneTime = {gr::from_string(value.substr(0, 10)),
+                    pt::duration_from_string(value.substr(11, 8))};
+      } else {
         doneTime = time;
       }
     }
