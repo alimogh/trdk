@@ -188,9 +188,13 @@ class TradeRequest : public Request {
       const ptr::ptree &responseTree) const {
     const auto &result = responseTree.get_child_optional("return");
     if (!result) {
+      std::stringstream ss;
+      boost::property_tree::json_parser::write_json(ss, responseTree, false);
       boost::format error(
-          "The server did not return response to the request \"%1%\"");
-      error % GetName();
+          "The server did not return response to the request \"%1%\": "
+          "\"%2%\".");
+      error % GetName()  // 1
+          % ss.str();    // 2
       throw Exception(error.str().c_str());
     }
     return *result;
@@ -457,9 +461,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
-    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                     m_timerScope);
-
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("order_id"));
@@ -480,13 +481,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           boost::get<1>(request.Send(m_tradingSession, GetContext()));
       MakeServerAnswerDebugDump(orders, *this);
     } catch (const OrderIsUnknown &) {
-      GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                       m_timerScope);
       throw;
     }
-
-    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                     m_timerScope);
   }
 
  private:
@@ -673,8 +669,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<OrderId, Order> m_orders;
   size_t m_numberOfPulls;
-
-  trdk::Timer::Scope m_timerScope;
 };
 }
 

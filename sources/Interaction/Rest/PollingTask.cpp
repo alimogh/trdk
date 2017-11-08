@@ -53,7 +53,7 @@ void PollingTask::Run() {
       try {
         m_task();
         numberOfErrors = 0;
-      } catch (const trdk::Lib::Exception &ex) {
+      } catch (const std::exception &ex) {
         ++numberOfErrors;
         m_log.Error("Polling task error: \"%1%\" (%2%).", ex.what(),
                     numberOfErrors);
