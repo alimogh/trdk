@@ -309,6 +309,10 @@ class TRDK_CORE_API AsyncLogRecord {
     StoreTypedParam(PT_TIME_IN_FORCE, tif);
   }
 
+  void StoreParam(const trdk::OrderId &orderId) {
+    StoreTypedParam(PT_STRING, orderId.GetValue());
+  }
+
   template <typename T>
   void StoreParam(const trdk::Lib::Numeric<T> &val) {
     StoreParam(val.Get());

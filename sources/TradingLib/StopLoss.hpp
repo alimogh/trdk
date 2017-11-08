@@ -22,13 +22,21 @@ class StopLossOrder : public trdk::TradingLib::StopOrder {
   explicit StopLossOrder(
       trdk::Position &,
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLossOrder(
+      const boost::posix_time::time_duration &delay,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopLossOrder() override = default;
 
  public:
   virtual void Run() override;
 
  protected:
+  const boost::posix_time::time_duration &GetDelay() const { return m_delay; }
   virtual bool Activate() = 0;
+
+ private:
+  const boost::posix_time::time_duration m_delay;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +91,11 @@ class StopLoss : public trdk::TradingLib::StopLossOrder {
  public:
   explicit StopLoss(
       const boost::shared_ptr<const Params> &,
+      trdk::Position &,
+      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLoss(
+      const boost::shared_ptr<const Params> &,
+      const boost::posix_time::time_duration &delay,
       trdk::Position &,
       const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
   virtual ~StopLoss() override = default;

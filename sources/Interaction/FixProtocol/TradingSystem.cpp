@@ -10,9 +10,11 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
-#include "Core/Security.hpp"
 #include "IncomingMessages.hpp"
 #include "OutgoingMessages.hpp"
+#include "Policy.hpp"
+#include "Settings.hpp"
+#include "TransactionContext.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -51,14 +53,14 @@ void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
   GetLog().Info("Connected.");
 }
 
-OrderId fix::TradingSystem::SendOrderTransaction(
-    trdk::Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const boost::optional<Price> &price,
-    const OrderParams &params,
-    const OrderSide &side,
-    const TimeInForce &tif) {
+std::unique_ptr<trdk::OrderTransactionContext>
+fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
+                                         const Currency &currency,
+                                         const Qty &qty,
+                                         const boost::optional<Price> &price,
+                                         const OrderParams &params,
+                                         const OrderSide &side,
+                                         const TimeInForce &tif) {
   static_assert(numberOfTimeInForces == 5, "List changed.");
   switch (tif) {
     case TIME_IN_FORCE_IOC:
@@ -77,10 +79,17 @@ OrderId fix::TradingSystem::SendOrderTransaction(
     throw TradingSystem::Error("Market order is not supported");
   }
 
-  const out::NewOrderSingle message(security, side, qty, *price,
-                                    GetStandardOutgoingHeader());
+  out::NewOrderSingle message(security, side, qty, *price,
+                              GetStandardOutgoingHeader());
+  if (params.position) {
+    message.SetPosMaintRptId(
+        boost::polymorphic_downcast<const OrderTransactionContext *>(
+            params.position)
+            ->GetPositionId());
+  }
   m_client.Send(message);
-  return message.GetSequenceNumber();
+  return boost::make_unique<fix::OrderTransactionContext>(
+      message.GetSequenceNumber());
 }
 
 void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
@@ -95,8 +104,15 @@ void fix::TradingSystem::OnConnectionRestored() {
 void fix::TradingSystem::OnReject(const in::Reject &message,
                                   Lib::NetworkStreamClient &) {
   const auto &orderId = message.ReadRefSeqNum();
+  const auto &text = message.ReadText();
+  if (GetSettings().policy->IsUnknownOrderIdError(text)) {
+    GetLog().Warn("Received Reject for unknown order %1%: \"%2%\" .",
+                  orderId,  // 1
+                  text);    // 2
+    return;
+  }
   try {
-    OnOrderError(orderId, std::string(), message.ReadText());
+    OnOrderError(orderId, std::move(text));
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
     GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
@@ -112,8 +128,15 @@ void fix::TradingSystem::OnBusinessMessageReject(
     const Milestones &) {
   const auto &reason = message.ReadText();
   const auto &orderId = message.ReadBusinessRejectRefId();
+  if (GetSettings().policy->IsUnknownOrderIdError(reason)) {
+    GetLog().Warn(
+        "Received Business Message Reject for unknown order %1%: \"%2%\" .",
+        orderId,  // 1
+        reason);  // 2
+    return;
+  }
   try {
-    OnOrderError(orderId, std::string(), std::move(reason));
+    OnOrderError(orderId, std::move(reason));
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
     GetLog().Warn(
@@ -129,9 +152,14 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
                                            NetworkStreamClient &,
                                            const Milestones &) {
   const OrderId &orderId = message.ReadClOrdId();
-  const auto &tradingSystemOrderId = message.ReadOrdId();
-  const OrderStatus &orderStatus = message.ReadOrdStatus();
+  OrderStatus orderStatus = message.ReadOrdStatus();
   const ExecType &execType = message.ReadExecType();
+  const auto &setPositionId =
+      [&message](trdk::OrderTransactionContext &transactionContext) {
+        boost::polymorphic_downcast<fix::OrderTransactionContext *>(
+            &transactionContext)
+            ->SetPositionId(message.ReadPosMaintRptId());
+      };
   try {
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (execType) {
@@ -143,50 +171,55 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             orderId);  // 2
         break;
       case EXEC_TYPE_NEW:
-        OnOrderStatusUpdate(orderId, tradingSystemOrderId,
-                            ORDER_STATUS_SUBMITTED, message.ReadLeavesQty());
+        OnOrderStatusUpdate(orderId, ORDER_STATUS_SUBMITTED,
+                            message.ReadLeavesQty(), setPositionId);
         break;
       case EXEC_TYPE_CANCELED:
       case EXEC_TYPE_REPLACE:
-        OnOrderStatusUpdate(orderId, tradingSystemOrderId,
-                            ORDER_STATUS_CANCELLED, message.ReadLeavesQty());
+        OnOrderStatusUpdate(orderId, ORDER_STATUS_CANCELLED,
+                            message.ReadLeavesQty());
         break;
       case EXEC_TYPE_REJECTED:
       case EXEC_TYPE_EXPIRED:
         message.ResetReadingState();
-        OnOrderReject(orderId, tradingSystemOrderId, message.ReadText());
+        OnOrderReject(orderId, message.ReadText());
         break;
       case EXEC_TYPE_TRADE: {
         Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
                orderStatus == ORDER_STATUS_FILLED);
         message.ResetReadingState();
         TradeInfo trade = {message.ReadAvgPx()};
-        OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
-                            message.ReadLeavesQty(), std::move(trade));
+        OnOrderStatusUpdate(orderId, orderStatus,
+                            message.ReadLeavesQty(), std::move(trade),
+                            setPositionId);
         break;
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
           case ORDER_STATUS_SUBMITTED:
+            OnOrderStatusUpdate(orderId, orderStatus,
+                                message.ReadLeavesQty(), setPositionId);
+            break;
           case ORDER_STATUS_CANCELLED:
-            OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
+            OnOrderStatusUpdate(orderId, orderStatus,
                                 message.ReadLeavesQty());
             break;
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY: {
             message.ResetReadingState();
             TradeInfo trade = {message.ReadAvgPx()};
-            OnOrderStatusUpdate(orderId, tradingSystemOrderId, orderStatus,
-                                message.ReadLeavesQty(), std::move(trade));
+            OnOrderStatusUpdate(orderId, orderStatus,
+                                message.ReadLeavesQty(), std::move(trade),
+                                setPositionId);
             break;
           }
           case ORDER_STATUS_REJECTED:
             message.ResetReadingState();
-            OnOrderReject(orderId, tradingSystemOrderId, message.ReadText());
+            OnOrderReject(orderId, message.ReadText());
             break;
           case ORDER_STATUS_ERROR:
             message.ResetReadingState();
-            OnOrderError(orderId, tradingSystemOrderId, message.ReadText());
+            OnOrderError(orderId, message.ReadText());
             break;
         }
     }

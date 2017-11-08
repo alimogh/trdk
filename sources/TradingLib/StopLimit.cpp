@@ -31,14 +31,15 @@ const char *TakeProfitStopLimit::GetName() const { return "stop limit"; }
 
 void TakeProfitStopLimit::Report(const Position &position,
                                  ModuleTradingLog &log) const {
-  log.Write("%1%\tattach\tprice=%2$.8f\ttime=%3%\tclose-vol-ratio=%4%\tpos=%5%",
-            [this, &position](TradingRecord &record) {
-              record % GetName()                                     // 1
-                  % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
-                  % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
-                  % m_params->GetVolumeToCloseRatio()                // 4
-                  % position.GetId();                                // 5
-            });
+  log.Write(
+      "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f, 'time': "
+      "'%3%'}, 'position': '%4%'}",
+      [this, &position](TradingRecord &record) {
+        record % GetName()                                     // 1
+            % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
+            % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
+            % position.GetId();                                // 4
+      });
 }
 
 void TakeProfitStopLimit::Run() {
@@ -69,9 +70,9 @@ bool TakeProfitStopLimit::CheckSignal() {
     const auto &diff = m_params->GetMaxPriceOffsetPerLotToClose();
     if (GetPosition().IsLong()) {
       const auto &controlPrice = openPrice + diff;
-      if (controlPrice >= currentPrice) {
+      if (controlPrice <= currentPrice) {
         GetTradingLog().Write(
-            "%1%\tsignaling by price\tprice=(%2$.8f+%3$.8f=%4$.8f)>=%5$.8f"
+            "%1%\tsignaling by price\tprice=(%2$.8f+%3$.8f=%4$.8f)<=%5$.8f"
             "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
             [&](TradingRecord &record) {
               record % GetName()                                    // 1
@@ -111,9 +112,9 @@ bool TakeProfitStopLimit::CheckSignal() {
     const auto &controlTime = openTime + diff;
     const auto &currentTime =
         GetPosition().GetSecurity().GetContext().GetCurrentTime();
-    if (controlTime >= currentTime) {
+    if (controlTime <= currentTime) {
       GetTradingLog().Write(
-          "%1%\tsignaling by time\tprice=(%2%+%3%=%4%)>=%5%\tbid/ask=%6$.8f/"
+          "%1%\tsignaling by time\tprice=(%2%+%3%=%4%)<=%5%\tbid/ask=%6$.8f/"
           "%7$.8f\tpos=%8%",
           [&](TradingRecord &record) {
             record % GetName()                                    // 1

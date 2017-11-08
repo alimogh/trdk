@@ -56,7 +56,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   };
 
   typedef boost::function<void(const trdk::OrderId &,
-                               const std::string &tradingSystemOrderId,
                                const trdk::OrderStatus &,
                                const trdk::Qty &remainingQty,
                                const boost::optional<trdk::Volume> &commission,
@@ -155,7 +154,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   std::vector<trdk::OrderId> GetActiveOrderList() const;
 
  public:
-  trdk::OrderId SendOrder(
+  boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
@@ -165,7 +164,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::RiskControlScope &,
       const trdk::OrderSide &,
       const trdk::TimeInForce &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
+      const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
 
   void CancelOrder(const trdk::OrderId &);
 
@@ -176,7 +175,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
 
  protected:
-  virtual trdk::OrderId SendOrderTransaction(
+  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
@@ -184,7 +183,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::OrderParams &,
       const trdk::OrderSide &,
       const trdk::TimeInForce &) = 0;
-  virtual trdk::OrderId SendOrderTransaction(
+  virtual boost::shared_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
@@ -202,7 +201,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
-                           const std::string &tradingSystemOrderId,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission,
@@ -212,7 +210,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
-                           const std::string &tradingSystemOrderId,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty);
   //! Notifies trading system about order state change.
@@ -220,7 +217,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
-                           const std::string &tradingSystemOrderId,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission);
@@ -229,35 +225,47 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
-                           const std::string &tradingSystemOrderId,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            trdk::TradingSystem::TradeInfo &&);
+  //! Notifies trading system about order state change.
+  /** Method is not thread-safe.
+    * @throw  OrderIsUnknown  Order handler is not registered.
+    */
+  void OnOrderStatusUpdate(
+      const trdk::OrderId &,
+      const trdk::OrderStatus &,
+      const trdk::Qty &remainingQty,
+      const boost::function<void(trdk::OrderTransactionContext &)> &);
+  //! Notifies trading system about order state change.
+  /** Method is not thread-safe.
+    * @throw  OrderIsUnknown  Order handler is not registered.
+    */
+  void OnOrderStatusUpdate(
+      const trdk::OrderId &,
+      const trdk::OrderStatus &,
+      const trdk::Qty &remainingQty,
+      trdk::TradingSystem::TradeInfo &&,
+      const boost::function<void(trdk::OrderTransactionContext &)> &);
   //! Notifies trading system about order canceling.
   /** Method is not thread-safe.
     */
-  void OnOrderCancel(const trdk::OrderId &,
-                     const std::string &tradingSystemOrderId);
+  void OnOrderCancel(const trdk::OrderId &);
   //! Notifies trading system about order error.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderError(const trdk::OrderId &,
-                    const std::string &tradingSystemOrderId,
-                    const std::string &&error);
+  void OnOrderError(const trdk::OrderId &, const std::string &&error);
   //! Notifies trading system about order reject.
   /** Method is not thread-safe.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderReject(const trdk::OrderId &,
-                     const std::string &tradingSystemOrderId,
-                     const std::string &&reason);
+  void OnOrderReject(const trdk::OrderId &, const std::string &&reason);
 
   //! General order update notification.
   /** May be used for any order.
     */
   void OnOrder(const trdk::OrderId &,
-               const std::string &tradingSystemOrderId,
                const std::string &symbol,
                const trdk::OrderStatus &,
                const trdk::Qty &qty,
@@ -268,13 +276,13 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                const boost::posix_time::ptime &openTime,
                const boost::posix_time::ptime &updateTime);
 
-  trdk::OrderId SendOrderTransactionAndEmulateIoc(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &);
+  std::unique_ptr<trdk::OrderTransactionContext>
+  SendOrderTransactionAndEmulateIoc(trdk::Security &,
+                                    const trdk::Lib::Currency &,
+                                    const trdk::Qty &,
+                                    const boost::optional<trdk::Price> &,
+                                    const trdk::OrderParams &,
+                                    const trdk::OrderSide &);
 
  private:
   class Implementation;
@@ -292,7 +300,7 @@ class TRDK_CORE_API LegacyTradingSystem : public trdk::TradingSystem {
   virtual ~LegacyTradingSystem() override = default;
 
  protected:
-  virtual trdk::OrderId SendOrderTransaction(
+  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
@@ -300,7 +308,7 @@ class TRDK_CORE_API LegacyTradingSystem : public trdk::TradingSystem {
       const trdk::OrderParams &,
       const trdk::OrderSide &,
       const trdk::TimeInForce &) override;
-  virtual trdk::OrderId SendOrderTransaction(
+  virtual boost::shared_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,

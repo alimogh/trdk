@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/09/19 19:24:15
+ *   Created: 2017/11/02 23:26:06
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,18 +10,20 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "Core/Settings.hpp"
 #include "Api.h"
-#include "Fwd.hpp"
-#include <boost/thread/recursive_mutex.hpp>
 
-#include "Common/NetworkStreamClient.hpp"
-#include "Common/NetworkStreamClientService.hpp"
+namespace trdk {
 
-#include "Core/MarketDataSource.hpp"
-#include "Core/Module.hpp"
-#include "Core/Security.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
-#include "Core/TransactionContext.hpp"
+class TRDK_CORE_API OrderTransactionContext {
+ public:
+  explicit OrderTransactionContext(const trdk::OrderId &&orderId)
+      : m_orderId(std::move(orderId)) {}
+  virtual ~OrderTransactionContext() = default;
+
+ public:
+  const trdk::OrderId &GetOrderId() const { return m_orderId; }
+
+ public:
+  const trdk::OrderId m_orderId;
+};
+}

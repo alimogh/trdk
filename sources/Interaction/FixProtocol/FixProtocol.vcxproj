@@ -344,6 +344,7 @@
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Settings.hpp" />
     <ClInclude Include="TradingSystem.hpp" />
+    <ClInclude Include="TransactionContext.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FixProtocol.def" />

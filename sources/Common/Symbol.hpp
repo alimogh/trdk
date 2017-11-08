@@ -131,7 +131,7 @@ namespace stdext {
 
 inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
   return symbol.GetHash();
-};
+}
 }
 
 namespace trdk {
@@ -139,7 +139,7 @@ namespace Lib {
 
 inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
   return stdext::hash_value(symbol);
-};
+}
 }
 }
 

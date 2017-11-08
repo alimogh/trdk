@@ -71,17 +71,14 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
 }
 
 void lib::DropCopy::CopyOrderStatus(const OrderId &id,
-                                    const std::string &tradingSystemId,
                                     const TradingSystem &tradingSystem,
                                     const pt::ptime &time,
                                     const OrderStatus &status,
                                     const Qty &remainingQty) {
-  emit OrderUpdated(id, tradingSystemId, &tradingSystem, time, status,
-                    remainingQty);
+  emit OrderUpdated(id, &tradingSystem, time, status, remainingQty);
 }
 
 void lib::DropCopy::CopyOrder(const OrderId &id,
-                              const std::string &tradingSystemOrderId,
                               const TradingSystem &tradingSystem,
                               const std::string &symbol,
                               const OrderStatus &status,
@@ -92,8 +89,8 @@ void lib::DropCopy::CopyOrder(const OrderId &id,
                               const TimeInForce &tif,
                               const pt::ptime &openTime,
                               const pt::ptime &updateTime) {
-  emit Order(id, tradingSystemOrderId, &tradingSystem, symbol, status, qty,
-             remainingQty, price, side, tif, openTime, updateTime);
+  emit Order(id, &tradingSystem, symbol, status, qty, remainingQty, price, side,
+             tif, openTime, updateTime);
 }
 
 void lib::DropCopy::CopyTrade(const pt::ptime &,

@@ -92,6 +92,12 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
     virtual ~PositionList() = default;
 
    public:
+    Iterator begin() { return GetBegin(); }
+    ConstIterator cbegin() const { return GetBegin(); }
+    Iterator end() { return GetEnd(); }
+    ConstIterator cend() const { return GetEnd(); }
+
+   public:
     virtual size_t GetSize() const = 0;
     virtual bool IsEmpty() const = 0;
 

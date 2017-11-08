@@ -24,7 +24,6 @@ class TRDK_CORE_API Timer {
 
    public:
     Scope();
-    explicit Scope(const Id &);
     Scope(Scope &&) = default;
     ~Scope();
 

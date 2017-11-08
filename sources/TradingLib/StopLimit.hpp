@@ -21,11 +21,10 @@ class TakeProfitStopLimit : public trdk::TradingLib::StopOrder {
    public:
     explicit Params(const trdk::Volume &maxPriceOffsetPerLotToClose,
                     const boost::posix_time::time_duration
-                        &timeOffsetBeforeForcedActivation,
-                    const trdk::Lib::Double &volumeToCloseRatio)
+                        &timeOffsetBeforeForcedActivation)
         : m_maxPriceOffsetPerLotToClose(maxPriceOffsetPerLotToClose),
-          m_timeOffsetBeforeForcedActivation(timeOffsetBeforeForcedActivation),
-          m_volumeToCloseRatio(volumeToCloseRatio) {}
+          m_timeOffsetBeforeForcedActivation(timeOffsetBeforeForcedActivation) {
+    }
 
    public:
     const trdk::Volume &GetMaxPriceOffsetPerLotToClose() const {
@@ -35,14 +34,10 @@ class TakeProfitStopLimit : public trdk::TradingLib::StopOrder {
     GetTimeOffsetBeforeForcedActivation() const {
       return m_timeOffsetBeforeForcedActivation;
     }
-    const trdk::Lib::Double &GetVolumeToCloseRatio() const {
-      return m_volumeToCloseRatio;
-    }
 
    private:
     trdk::Volume m_maxPriceOffsetPerLotToClose;
     boost::posix_time::time_duration m_timeOffsetBeforeForcedActivation;
-    trdk::Lib::Double m_volumeToCloseRatio;
   };
 
  public:

@@ -72,6 +72,8 @@ class ArbitrageStrategyWindow : public QMainWindow {
     TradingSystem *yobitnetTradingSystem;
     TradingSystem *ccexTradingSystem;
     TradingSystem *gdaxTradingSystem;
+    TradingSystem *bestBuyTradingSystem;
+    TradingSystem *bestSellTradingSystem;
   };
 
  public:
@@ -105,7 +107,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
   void LoadSymbols(const boost::optional<QString> &defaultSymbol);
   void SetCurrentSymbol(int symbolIndex);
 
-  void SendOrder(TradingSystem &, const OrderSide &);
+  void SendOrder(const OrderSide &, TradingSystem *);
 
   bool IsAutoTradingActivated() const;
 

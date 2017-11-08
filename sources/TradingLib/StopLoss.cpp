@@ -17,14 +17,25 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
+namespace pt = boost::posix_time;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 StopLossOrder::StopLossOrder(
     Position &position, const boost::shared_ptr<const OrderPolicy> &orderPolicy)
     : StopOrder(position, orderPolicy) {}
 
+StopLossOrder::StopLossOrder(
+    const pt::time_duration &delay,
+    Position &position,
+    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopOrder(position, orderPolicy), m_delay(delay) {}
+
 void StopLossOrder::Run() {
-  if (!GetPosition().IsOpened()) {
+  if (!GetPosition().IsOpened() ||
+      (m_delay != pt::not_a_date_time &&
+       GetPosition().GetOpenTime() + m_delay >
+           GetPosition().GetSecurity().GetContext().GetCurrentTime())) {
     return;
   }
 
@@ -61,12 +72,15 @@ StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
 const char *StopPrice::GetName() const { return "stop price"; }
 
 void StopPrice::Report(const Position &position, ModuleTradingLog &log) const {
-  log.Write("%1%\tattach\tprice=%2$.8f\tpos=%3%",
-            [this, &position](TradingRecord &record) {
-              record % GetName()          // 1
-                  % m_params->GetPrice()  // 2
-                  % position.GetId();     // 3
-            });
+  log.Write(
+      "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f}, 'delayTime': "
+      "'%3%', 'position': '%4%'}",
+      [this, &position](TradingRecord &record) {
+        record % GetName()          // 1
+            % m_params->GetPrice()  // 2
+            % GetDelay()            // 3
+            % position.GetId();     // 4
+      });
 }
 
 bool StopPrice::Activate() {
@@ -108,15 +122,24 @@ StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
                    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
     : StopLossOrder(position, orderPolicy), m_params(params) {}
 
+StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
+                   const boost::posix_time::time_duration &delay,
+                   Position &position,
+                   const boost::shared_ptr<const OrderPolicy> &orderPolicy)
+    : StopLossOrder(delay, position, orderPolicy), m_params(params) {}
+
 const char *StopLoss::GetName() const { return "stop-loss"; }
 
 void StopLoss::Report(const Position &position, ModuleTradingLog &log) const {
-  log.Write("%1%\tattach\tmax-loss=%2$.8f\tpos=%3%",
-            [this, &position](TradingRecord &record) {
-              record % GetName()                  // 1
-                  % m_params->GetMaxLossPerLot()  // 2
-                  % position.GetId();             // 3
-            });
+  log.Write(
+      "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
+      "'delayTime': '%3%', 'position': '%4%'}",
+      [this, &position](TradingRecord &record) {
+        record % GetName()                  // 1
+            % m_params->GetMaxLossPerLot()  // 2
+            % GetDelay()                    // 3
+            % position.GetId();             // 4
+      });
 }
 
 bool StopLoss::Activate() {
@@ -172,12 +195,15 @@ const char *StopLossShare::GetName() const { return "stop-loss share"; }
 
 void StopLossShare::Report(const Position &position,
                            ModuleTradingLog &log) const {
-  log.Write("%1%\tattach\tmax-loss=%2$.8f\tpos=%3%",
-            [this, &position](TradingRecord &record) {
-              record % GetName()                 // 1
-                  % m_params->GetMaxLossShare()  // 2
-                  % GetPosition().GetId();       // 3
-            });
+  log.Write(
+      "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
+      "'delayTime': '%3%', 'position': '%4%'}",
+      [this, &position](TradingRecord &record) {
+        record % GetName()                 // 1
+            % m_params->GetMaxLossShare()  // 2
+            % GetDelay()                   // 3
+            % GetPosition().GetId();       // 4
+      });
 }
 
 bool StopLossShare::Activate() {

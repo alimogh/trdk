@@ -87,7 +87,11 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
       break;
     }
     case SECURITY_TYPE_FOR:
-      return 6;
+      if (boost::iends_with(symbol.GetSymbol(), "JPY")) {
+        return 3;
+      } else {
+        return 5;
+      }
     case SECURITY_TYPE_OPTIONS:
       if (symbol.GetSymbol() == "AAPL") {
         return 2;
@@ -115,7 +119,7 @@ uint8_t GetPrecisionBySymbol(const Symbol &symbol) {
   throw Exception(message.str().c_str());
 }
 
-size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
+size_t GetNumberOfItemsPerQtyBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_STOCK:
       if (symbol.GetSymbol() == "AAPL") {
@@ -165,6 +169,15 @@ size_t GetQuoteSizeBySymbol(const Symbol &symbol) {
   boost::format message("Failed to find quote size for unknown symbol \"%1%\"");
   message % symbol;
   throw Exception(message.str().c_str());
+}
+
+Qty GetLotSizeBySymbol(const Symbol &symbol) {
+  switch (symbol.GetSecurityType()) {
+    case SECURITY_TYPE_FOR:
+      return 100;
+    default:
+      return 1;
+  }
 }
 }
 
@@ -435,7 +448,8 @@ class Security::Implementation : private boost::noncopyable {
 
   const uint8_t m_pricePrecision;
   const uintmax_t m_pricePrecisionPower;
-  const size_t m_quoteSize;
+  const size_t m_numberOfItemsPerQty;
+  const Qty m_lotSize;
 
   mutable SignalTrait<Level1UpdateSlotSignature>::Signal m_level1UpdateSignal;
   mutable SignalTrait<Level1TickSlotSignature>::Signal m_level1TickSignal;
@@ -476,7 +490,8 @@ class Security::Implementation : private boost::noncopyable {
         m_pricePrecision(GetPrecisionBySymbol(symbol)),
         m_pricePrecisionPower(static_cast<decltype(m_pricePrecisionPower)>(
             std::pow(10, m_pricePrecision))),
-        m_quoteSize(GetQuoteSizeBySymbol(symbol)),
+        m_numberOfItemsPerQty(GetNumberOfItemsPerQtyBySymbol(symbol)),
+        m_lotSize(GetLotSizeBySymbol(symbol)),
         m_marketDataTime(0),
         m_numberOfMarketDataUpdates(0),
         m_isLevel1Started(false),
@@ -684,7 +699,11 @@ const MarketDataSource &Security::GetSource() const {
   return m_pimpl->m_source;
 }
 
-size_t Security::GetQuoteSize() const { return m_pimpl->m_quoteSize; }
+size_t Security::GetNumberOfItemsPerQty() const {
+  return m_pimpl->m_numberOfItemsPerQty;
+}
+
+const Qty &Security::GetLotSize() const { return m_pimpl->m_lotSize; }
 
 uintmax_t Security::GetPricePrecisionPower() const {
   return m_pimpl->m_pricePrecisionPower;

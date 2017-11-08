@@ -47,7 +47,7 @@ struct Settings {
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
              pollingInterval);                          // 3
@@ -58,14 +58,13 @@ struct Settings {
 
 struct Order {
   OrderId id;
-  std::string tradingSystemOrderId;
   std::string symbol;
   OrderStatus status;
   Qty qty;
   Qty remainingQty;
   boost::optional<trdk::Price> price;
   OrderSide side;
-  TimeInForce tid;
+  TimeInForce tif;
   pt::ptime openTime;
   pt::ptime updateTime;
 };
@@ -167,14 +166,16 @@ class PrivateRequest : public Request {
   virtual ~PrivateRequest() override = default;
 
  protected:
-  virtual void PreprareRequest(const net::HTTPClientSession &session,
-                               net::HTTPRequest &request) const override {
+  virtual void PrepareRequest(const net::HTTPClientSession &session,
+                              const std::string &body,
+                              net::HTTPRequest &request) const override {
     using namespace trdk::Lib::Crypto;
     const auto &digest =
-        CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
-                                 session.getHost() + GetRequest().getURI(),
-                             m_apiSecret);
+        Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                   session.getHost() + GetRequest().getURI(),
+                               m_apiSecret);
     request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+    Base::PrepareRequest(session, body, request);
   }
 
  private:
@@ -213,7 +214,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("c-cex.com"),
-        m_tradingSession(m_marketDataSession.getHost()) {
+        m_tradingSession(m_marketDataSession.getHost()),
+        m_numberOfPulls(0) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -264,6 +266,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         [this]() {
           UpdateSecurities();
           UpdateOrders();
+          if (!(++m_numberOfPulls % 20)) {
+            RequestOpenedOrders();
+          }
         },
         m_settings.pollingInterval, GetMdsLog());
   }
@@ -295,6 +300,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
+    result->SetOnline(pt::not_a_date_time, true);
+    result->SetTradingSessionState(pt::not_a_date_time, true);
+
     {
       const auto request = boost::make_shared<PublicRequest>(
           "getorderbook",
@@ -308,13 +316,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual OrderId SendOrderTransaction(trdk::Security &security,
-                                       const Currency &currency,
-                                       const Qty &qty,
-                                       const boost::optional<Price> &price,
-                                       const OrderParams &params,
-                                       const OrderSide &side,
-                                       const TimeInForce &tif) override {
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderParams &params,
+      const OrderSide &side,
+      const TimeInForce &tif) override {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (tif) {
       case TIME_IN_FORCE_IOC:
@@ -334,17 +343,21 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
 
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
-    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())   // 1
-        % qty                                                           // 2
-        % (side == ORDER_SIDE_SELL ? (*price * 1.1) : (*price * 0.9));  // 3
+    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
+        % qty                                                          // 2
+        % *price;                                                      // 3
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
                            m_settings, requestParams.str());
 
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
+
     try {
-      return boost::get<1>(result).get<OrderId>("uuid");
+      return boost::make_unique<OrderTransactionContext>(
+          boost::get<1>(result).get<OrderId>("uuid"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();
@@ -389,13 +402,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
-            order.qty, order.remainingQty, order.price, order.side, order.tid,
-            order.openTime, order.updateTime);
+    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
+            order.price, order.side, order.tif, order.openTime,
+            order.updateTime);
   }
 
   Order UpdateOrder(const ptr::ptree &order) {
-    const auto &orderId = order.get<std::string>("OrderUuid");
+    const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;
     boost::optional<Price> price;
@@ -432,8 +445,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                          : ORDER_STATUS_FILLED_PARTIALLY;
     }
 
-    const Order result = {boost::lexical_cast<OrderId>(orderId),
-                          orderId,
+    const Order result = {std::move(orderId),
                           order.get<std::string>("Exchange"),
                           std::move(status),
                           std::move(qty),
@@ -455,7 +467,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       PrivateRequest request("getopenorders", m_settings);
       try {
         const auto orders =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(orders, *this);
         for (const auto &order : orders) {
           const Order notifiedOrder = UpdateOrder(order.second);
@@ -529,7 +541,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       } catch (const OrderIsUnknown &ex) {
         GetTsLog().Warn("Failed to request state for order %1%: \"%2%\".",
                         orderId, ex.what());
-        OnOrderCancel(orderId, boost::lexical_cast<std::string>(orderId));
+        OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
                          orderId, ex.what());
@@ -553,6 +565,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
+
+  size_t m_numberOfPulls;
 };
 }
 
@@ -569,6 +583,16 @@ TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
+}
+
+boost::shared_ptr<MarketDataSource> CreateCcexMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<CcexExchange>(App::GetInstance(), TRADING_MODE_LIVE,
+                                          index, index, context, instanceName,
+                                          configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

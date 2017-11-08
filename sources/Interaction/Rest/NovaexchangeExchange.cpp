@@ -45,7 +45,7 @@ struct Settings {
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling Interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
              pollingInterval);                          // 3
@@ -209,10 +209,10 @@ class PrivateRequest : public Request {
     {
       using namespace trdk::Lib::Crypto;
       const auto &digest =
-          CalcHmacSha512Digest((session.secure() ? "https://" : "http://") +
-                                   session.getHost() + GetRequest().getURI(),
-                               m_apiSecret);
-      result += Base64Coder(false).Encode(&digest[0], digest.size());
+          Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                     session.getHost() + GetRequest().getURI(),
+                                 m_apiSecret);
+      result += Base64::Encode(&digest[0], digest.size(), false);
     }
     Base::CreateBody(session, result);
   }
@@ -386,6 +386,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
+    result->SetOnline(pt::not_a_date_time, true);
+    result->SetTradingSessionState(pt::not_a_date_time, true);
+
     {
       const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
           "/remote/v2/market/openorders/" +
@@ -402,13 +405,14 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual OrderId SendOrderTransaction(trdk::Security &security,
-                                       const Currency &currency,
-                                       const Qty &qty,
-                                       const boost::optional<Price> &price,
-                                       const OrderParams &params,
-                                       const OrderSide &side,
-                                       const TimeInForce &tif) override {
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderParams &params,
+      const OrderSide &side,
+      const TimeInForce &tif) override {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (tif) {
       case TIME_IN_FORCE_IOC:
@@ -453,9 +457,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           orderId = item.get<OrderId>("orderid");
           GetContext().GetTimer().Schedule(
               [this, orderId, qty] {
-                OnOrderStatusUpdate(*orderId,
-                                    boost::lexical_cast<std::string>(*orderId),
-                                    ORDER_STATUS_SUBMITTED, qty);
+                OnOrderStatusUpdate(*orderId, ORDER_STATUS_SUBMITTED, qty);
               },
               m_timerScope);
         }
@@ -476,7 +478,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                       trades),
           m_timerScope);
     }
-    return *orderId;
+    return boost::make_unique<OrderTransactionContext>(std::move(*orderId));
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
@@ -490,10 +492,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   void OnTradesInfo(const OrderId &orderId,
                     Qty &remainingQty,
                     std::vector<TradeInfo> &trades) {
-    const auto &tradingSystemId = boost::lexical_cast<std::string>(orderId);
     for (auto &trade : trades) {
       remainingQty -= trade.qty;
-      OnOrderStatusUpdate(orderId, tradingSystemId,
+      OnOrderStatusUpdate(orderId,
                           remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_FILLED,
                           remainingQty, std::move(trade));
@@ -528,6 +529,16 @@ TradingSystemAndMarketDataSourceFactoryResult CreateNovaexchange(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
+}
+
+boost::shared_ptr<MarketDataSource> CreateNovaexchangeMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<NovaexchangeExchange>(
+      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
+      instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

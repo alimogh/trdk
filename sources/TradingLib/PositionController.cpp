@@ -31,15 +31,12 @@ class PositionController::Implementation : private boost::noncopyable {
   ids::random_generator m_generateUuid;
 
   Strategy &m_strategy;
-  TradingSystem *m_tradingSystem;
 
   std::unique_ptr<PositionReport> m_report;
 
  public:
-  explicit Implementation(PositionController &self,
-                          Strategy &strategy,
-                          TradingSystem *tradingSystem)
-      : m_self(self), m_strategy(strategy), m_tradingSystem(tradingSystem) {}
+  explicit Implementation(PositionController &self, Strategy &strategy)
+      : m_self(self), m_strategy(strategy) {}
 
   PositionReport &GetReport() {
     if (!m_report) {
@@ -51,12 +48,7 @@ class PositionController::Implementation : private boost::noncopyable {
 };
 
 PositionController::PositionController(Strategy &strategy)
-    : m_pimpl(std::make_unique<Implementation>(*this, strategy, nullptr)) {}
-
-PositionController::PositionController(Strategy &strategy,
-                                       TradingSystem &tradingSystem)
-    : m_pimpl(
-          std::make_unique<Implementation>(*this, strategy, &tradingSystem)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
 
 PositionController::~PositionController() = default;
 
@@ -76,18 +68,13 @@ const PositionReport &PositionController::GetReport() const {
 ids::uuid PositionController::GenerateNewOperationId() const {
   return m_pimpl->m_generateUuid();
 }
-TradingSystem &PositionController::GetTradingSystem(const Security &security) {
-  return m_pimpl->m_tradingSystem
-             ? *m_pimpl->m_tradingSystem
-             : GetStrategy().GetTradingSystem(security.GetSource().GetIndex());
-}
 
 trdk::Position &PositionController::OpenPosition(
     const boost::shared_ptr<PositionOperationContext> &operationContext,
     Security &security,
     const Milestones &delayMeasurement) {
-  return OpenPosition(operationContext, security, operationContext->IsLong(),
-                      delayMeasurement);
+  return OpenPosition(operationContext, security,
+                      operationContext->IsLong(security), delayMeasurement);
 }
 
 trdk::Position &PositionController::OpenPosition(
@@ -116,6 +103,25 @@ trdk::Position &PositionController::OpenPosition(
 void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.GetOperationContext().GetOpenOrderPolicy().Open(position);
+}
+
+void PositionController::HoldPosition(Position &) {}
+
+bool PositionController::ClosePosition(Position &position,
+                                       const CloseReason &reason) {
+  position.SetCloseReason(reason);
+  if (position.HasActiveOpenOrders()) {
+    try {
+      Verify(position.CancelAllOrders());
+    } catch (const TradingSystem::OrderIsUnknown &ex) {
+      GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
+                                  ex.what());
+      return false;
+    }
+  } else {
+    ClosePosition(position);
+  }
+  return true;
 }
 
 void PositionController::ClosePosition(Position &position) {
@@ -151,20 +157,8 @@ Position *PositionController::OnSignal(
 
   if (!position) {
     position = &OpenPosition(newOperationContext, security, delayMeasurement);
-  } else {
-    position->SetCloseReason(CLOSE_REASON_SIGNAL);
-    if (position->HasActiveOpenOrders()) {
-      try {
-        Verify(position->CancelAllOrders());
-      } catch (const TradingSystem::OrderIsUnknown &ex) {
-        GetStrategy().GetTradingLog().Write("failed to cancel order");
-        GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
-                                    ex.what());
-        return nullptr;
-      }
-    } else {
-      ClosePosition(*position);
-    }
+  } else if (!ClosePosition(*position, CLOSE_REASON_SIGNAL)) {
+    return nullptr;
   }
 
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_COMPLETE_1);
@@ -235,15 +229,18 @@ void PositionController::OnPositionUpdate(Position &position) {
       // Received signal to close...
       AssertLt(0, position.GetActiveQty());
       ClosePosition(position);
-    } else if (position.GetActiveQty() < position.GetPlanedQty()) {
+    } else if (!position.IsFullyOpened()) {
       ContinuePosition(position);
+    } else {
+      HoldPosition(position);
     }
   }
 }
 
 void PositionController::OnPostionsCloseRequest() {
-  throw MethodIsNotImplementedException(
-      "OnPostionsCloseRequest is not implemented");
+  for (auto &position : GetStrategy().GetPositions()) {
+    ClosePosition(position, CLOSE_REASON_REQUEST);
+  }
 }
 
 void PositionController::OnBrokerPositionUpdate(
@@ -288,8 +285,8 @@ boost::shared_ptr<Position> PositionController::CreatePositionObject(
     const TimeMeasurement::Milestones &delayMeasurement) {
   const auto &result = boost::make_shared<PositionType>(
       operationContext, GetStrategy(), GenerateNewOperationId(), 1,
-      GetTradingSystem(security), security, security.GetSymbol().GetCurrency(),
-      qty, price, delayMeasurement);
+      operationContext->GetTradingSystem(GetStrategy(), security), security,
+      security.GetSymbol().GetCurrency(), qty, price, delayMeasurement);
   return result;
 }
 

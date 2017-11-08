@@ -18,7 +18,6 @@ namespace TradingLib {
 class PositionController : private boost::noncopyable {
  public:
   explicit PositionController(trdk::Strategy &);
-  explicit PositionController(trdk::Strategy &, trdk::TradingSystem &);
   virtual ~PositionController();
 
  public:
@@ -67,7 +66,12 @@ class PositionController : private boost::noncopyable {
       bool isLong,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void ClosePosition(trdk::Position &);
+
+  //! Cancels active open-order, if exists, and closed position.
+  /** @return true, if did some action to close position, if not (for ex.: there
+    *         is no opened position) - false.
+    */
+  bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
 
  protected:
   boost::shared_ptr<Position> CreatePosition(
@@ -79,6 +83,9 @@ class PositionController : private boost::noncopyable {
       const trdk::Lib::TimeMeasurement::Milestones &);
 
   void ContinuePosition(trdk::Position &);
+  void ClosePosition(trdk::Position &);
+
+  virtual void HoldPosition(trdk::Position &);
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
   const PositionReport &GetReport() const;
@@ -92,7 +99,6 @@ class PositionController : private boost::noncopyable {
       const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   boost::uuids::uuid GenerateNewOperationId() const;
-  trdk::TradingSystem &GetTradingSystem(const trdk::Security &);
 
  private:
   class Implementation;

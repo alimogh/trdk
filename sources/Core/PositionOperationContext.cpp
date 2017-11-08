@@ -10,8 +10,17 @@
 
 #include "Prec.hpp"
 #include "PositionOperationContext.hpp"
+#include "Context.hpp"
+#include "MarketDataSource.hpp"
+#include "Security.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
+
+TradingSystem &PositionOperationContext::GetTradingSystem(Strategy &strategy,
+                                                          Security &security) {
+  return strategy.GetTradingSystem(security.GetSource().GetIndex());
+}
 
 void PositionOperationContext::OnCloseReasonChange(const CloseReason &,
                                                    const CloseReason &) {}

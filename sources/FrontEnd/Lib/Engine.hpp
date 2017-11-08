@@ -42,12 +42,8 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   void StateChanged(bool isStarted);
   void Message(const QString &, bool isWarning);
   void LogRecord(const QString &);
-  void Order(unsigned int id,
-             QString tradingSystemOrderId,
-             int,
-             double remainingQty);
-  void Trade(unsigned int orderId,
-             QString tradingSystemOrderId,
+  void Order(QString id, int, double remainingQty);
+  void Trade(QString orderId,
              int,
              double remainingQty,
              QString tradeId,

@@ -13,7 +13,6 @@
 #include "IncomingMessagesFabric.hpp"
 #include "MarketDataSource.hpp"
 #include "Policy.hpp"
-#include "Common/NetworkStreamClient.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -320,7 +319,7 @@ std::string FindAndReadStringTagFromSoh(const TagMatch &tagMatch,
                                         It &source,
                                         const It &end) {
   const auto begin = source;
-  for (; source + sizeof(tagMatch) < end;
+  for (; source + sizeof(tagMatch) + 2 < end;
        source = std::find(source + sizeof(tagMatch), end, SOH)) {
     if (reinterpret_cast<const decltype(tagMatch) &>(*source) == tagMatch) {
       source += sizeof(tagMatch);
@@ -339,6 +338,37 @@ std::string FindAndReadStringTagFromSoh(const TagMatch &tagMatch,
       }
       return result;
     }
+  }
+  throw ProtocolError("Message doesn't have required tag with string value",
+                      &*begin, 0);
+}
+template <typename It, typename TagMatch>
+std::string FindAndReadStringTag(const TagMatch &tagMatch,
+                                 It &source,
+                                 const It &end) {
+  const auto begin = source;
+  for (; source + sizeof(tagMatch) + 2 < end;) {
+    if (reinterpret_cast<const decltype(tagMatch) &>(*source) != tagMatch) {
+      source = std::find(source + sizeof(tagMatch), end, SOH);
+      if (source != end) {
+        ++source;
+      }
+    }
+    source += sizeof(tagMatch);
+    std::string result;
+    for (;; ++source) {
+      if (source == end) {
+        throw ProtocolError("String value buffer doesn't have end",
+                            &*std::prev(source), SOH);
+      }
+      const auto &ch = *source;
+      if (ch == SOH) {
+        ++source;
+        break;
+      }
+      result.push_back(std::move(ch));
+    }
+    return result;
   }
   throw ProtocolError("Message doesn't have required tag with string value",
                       &*begin, 0);
@@ -567,6 +597,25 @@ std::string Incoming::Message::FindAndReadStringFromSoh(
   }
 }
 
+std::string Incoming::Message::FindAndReadString(int32_t tagMatch) const {
+  try {
+    return FindAndReadStringTagFromSoh(tagMatch, GetUnreadBeginRef(), GetEnd());
+  } catch (const ProtocolError &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read a string value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), ex.GetBufferAddress(),
+                        ex.GetExpectedByte());
+  } catch (const std::exception &ex) {
+    // Tag name may be extracted from the tagMatch.
+    boost::format error(
+        "Failed to read a string value from message field: \"%1%\"");
+    error % ex.what();
+    throw ProtocolError(error.str().c_str(), &*GetUnreadBegin(), 0);
+  }
+}
+
 template <typename Result, typename TagMatch>
 Result Incoming::Message::FindAndReadInt(const TagMatch &tagMatch) const {
   try {
@@ -737,12 +786,17 @@ ExecType Incoming::Message::ReadExecType() const {
 
 Price Incoming::Message::ReadAvgPx() const {
   // 6=
-  return FindAndReadInt<uint32_t>(static_cast<int16_t>(15670));
+  return FindAndReadDouble<double>(static_cast<int16_t>(15670));
 }
 
 Qty Incoming::Message::ReadLeavesQty() const {
   // 151=
   return FindAndReadInt<uint32_t>(static_cast<int32_t>(1026635057));
+}
+
+std::string Incoming::Message::ReadPosMaintRptId() const {
+  // 721=
+  return FindAndReadString(static_cast<int32_t>(1026634295));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

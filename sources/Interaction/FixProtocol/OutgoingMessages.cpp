@@ -310,6 +310,14 @@ std::vector<char> MarketDataRequest::Export(unsigned char soh) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+std::string DoubleLexicalCast(const Double &source) {
+  std::ostringstream ss;
+  ss << std::fixed << source.Get();
+  return ss.str();
+}
+}
+
 NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                const OrderSide &side,
                                const Qty &qty,
@@ -317,8 +325,8 @@ NewOrderSingle::NewOrderSingle(const trdk::Security &security,
                                StandardHeader &standardHeader)
     : Base(security, standardHeader),
       m_side(side == ORDER_SIDE_BUY ? '1' : '2'),
-      m_qty(boost::lexical_cast<std::string>(qty)),
-      m_price(boost::lexical_cast<std::string>(price)),
+      m_qty(DoubleLexicalCast(qty)),
+      m_price(DoubleLexicalCast(price)),
       m_transactTime(ConvertToTagValue(
           GetStandardHeader().GetSettings().policy->GetCurrentTime())),
       m_customContentSize(GetSequenceNumberCode().size() +
@@ -377,10 +385,28 @@ std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
+  // PosMaintRptID:
+  if (!m_posMaintRptId.empty()) {
+    const std::string sub("721=" + m_posMaintRptId);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  }
 
   WriteStandardTrailer(result, soh);
 
   return result;
+}
+
+void NewOrderSingle::SetPosMaintRptId(const std::string &posMaintRptId) {
+  Assert(m_posMaintRptId.empty());
+  Assert(!posMaintRptId.empty());
+  if (!m_posMaintRptId.empty()) {
+    m_customContentSize -= m_posMaintRptId.size() - 5;
+  }
+  m_posMaintRptId = posMaintRptId;
+  if (!m_posMaintRptId.empty()) {
+    m_customContentSize += m_posMaintRptId.size() + 5;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

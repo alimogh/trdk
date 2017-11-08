@@ -54,7 +54,7 @@ struct Settings {
 
   void Log(ModuleEventsLog &log) {
     log.Info(
-        "API key: \"%1%\". API secret: %2%. Polling Interval: %3%. Initial "
+        "API key: \"%1%\". API secret: %2%. Polling interval: %3%. Initial "
         "nonce: %4%. Nonce storage file: %5%",
         apiKey,                                    // 1
         apiSecret.empty() ? "not set" : "is set",  // 2
@@ -172,14 +172,16 @@ class TradeRequest : public Request {
   }
 
  protected:
-  virtual void PreprareRequest(const net::HTTPClientSession &,
-                               net::HTTPRequest &request) const override {
+  virtual void PrepareRequest(const net::HTTPClientSession &session,
+                              const std::string &body,
+                              net::HTTPRequest &request) const override {
     request.set("Key", m_apiKey);
     {
       using namespace trdk::Lib::Crypto;
-      const auto &digest = CalcHmacSha512Digest(GetUriParams(), m_apiSecret);
+      const auto &digest = Hmac::CalcSha512Digest(GetUriParams(), m_apiSecret);
       request.set("Sign", EncodeToHex(&digest[0], digest.size()));
     }
+    Base::PrepareRequest(session, body, request);
   }
 
   virtual const ptr::ptree &ExtractContent(
@@ -205,7 +207,6 @@ std::string NormilizeSymbol(const std::string &source) {
 
 struct Order {
   OrderId id;
-  std::string tradingSystemOrderId;
   std::string symbol;
   Qty qty;
   boost::optional<trdk::Price> price;
@@ -233,7 +234,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_nextNonce(0) {
+        m_nextNonce(0),
+        m_numberOfPulls(0) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -280,6 +282,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         [this, depthRequest]() {
           UpdateSecuritues(*depthRequest);
           UpdateOrders();
+          if (!(++m_numberOfPulls % 20)) {
+            RequestOpenedOrders();
+          }
         },
         m_settings.pollingInterval, GetMdsLog());
   }
@@ -402,6 +407,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         Rest::Security::SupportedLevel1Types()
             .set(LEVEL1_TICK_BID_PRICE)
             .set(LEVEL1_TICK_ASK_PRICE));
+    result->SetOnline(pt::not_a_date_time, true);
+    result->SetTradingSessionState(pt::not_a_date_time, true);
+
     {
       Verify(
           m_securities
@@ -412,13 +420,14 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual OrderId SendOrderTransaction(trdk::Security &security,
-                                       const Currency &currency,
-                                       const Qty &qty,
-                                       const boost::optional<Price> &price,
-                                       const OrderParams &params,
-                                       const OrderSide &side,
-                                       const TimeInForce &tif) override {
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderParams &params,
+      const OrderSide &side,
+      const TimeInForce &tif) override {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (tif) {
       case TIME_IN_FORCE_IOC:
@@ -440,20 +449,20 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-#ifdef _DEBUG
-        % (side == ORDER_SIDE_SELL ? *price * 1.1 : *price * 0.9)  // 3
-#else
-        % *price  // 3
-#endif
-        % qty;  // 4
+        % *price                                                       // 3
+        % qty;                                                         // 4
     TradeRequest request("Trade", m_nextNonce++, m_settings,
                          requestParams.str());
     StoreNextNonce(m_nextNonce);
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
+    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
+                                     m_timerScope);
+
     try {
-      return boost::get<1>(result).get<OrderId>("order_id");
+      return boost::make_unique<OrderTransactionContext>(
+          boost::get<1>(result).get<OrderId>("order_id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();
@@ -491,9 +500,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.tradingSystemOrderId, order.symbol, status,
-            order.qty, order.qty, order.price, order.side, order.tid,
-            order.time, order.time);
+    OnOrder(order.id, order.symbol, status, order.qty, order.qty, order.price,
+            order.side, order.tid, order.time, order.time);
   }
 
   void RequestOpenedOrders() {
@@ -510,11 +518,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     try {
       {
         const auto orders =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(orders, *this);
         for (const auto &orderNode : orders) {
           const auto &order = orderNode.second;
-          const std::string &orderId = orderNode.first;
+          const OrderId orderId(orderNode.first);
 
           const Qty qty = order.get<double>("amount");
 
@@ -533,8 +541,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           const auto &time =
               pt::from_time_t(order.get<time_t>("timestamp_created"));
 
-          const Order notifiedOrder = {boost::lexical_cast<OrderId>(orderId),
-                                       orderId,
+          const Order notifiedOrder = {std::move(orderId),
                                        std::move(symbol),
                                        std::move(qty),
                                        Price(order.get<double>("rate")),
@@ -600,7 +607,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       StoreNextNonce(m_nextNonce);
       try {
         const auto response =
-            boost::get<1>(request.Send(m_tradingSession, GetContext()));
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(response, *this);
         for (const auto &node : response) {
           const auto &order = node.second;
@@ -638,10 +645,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             continue;
           }
 
-          OnOrder(orderId, boost::lexical_cast<std::string>(orderId),
-                  boost::to_upper_copy(order.get<std::string>("pair")), status,
-                  qty, remainingQty, Price(order.get<double>("rate")), side,
-                  TIME_IN_FORCE_GTC, time, time);
+          OnOrder(orderId, boost::to_upper_copy(order.get<std::string>("pair")),
+                  status, qty, remainingQty, Price(order.get<double>("rate")),
+                  side, TIME_IN_FORCE_GTC, time, time);
         }
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
@@ -666,6 +672,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
+  size_t m_numberOfPulls;
 
   trdk::Timer::Scope m_timerScope;
 };
@@ -684,6 +691,16 @@ TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
       App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
       context, instanceName, configuration);
   return {result, result};
+}
+
+boost::shared_ptr<MarketDataSource> CreateYobitnetMarketDataSource(
+    size_t index,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &configuration) {
+  return boost::make_shared<YobitnetExchange>(
+      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
+      instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

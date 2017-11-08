@@ -199,6 +199,7 @@ class ExecutionReport : public Message {
   using Base::ReadLeavesQty;
   using Base::ReadAvgPx;
   using Base::ReadText;
+  using Base::ReadPosMaintRptId;
 
  public:
   virtual void Handle(Handler &,
