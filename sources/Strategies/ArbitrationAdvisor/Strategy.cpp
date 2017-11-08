@@ -324,7 +324,7 @@ void aa::Strategy::OnLevel1Update(Security &security,
     m_pimpl->CheckSignal(security, m_pimpl->m_symbols[security.GetSymbol()],
                          delayMeasurement);
   } catch (const Exception &ex) {
-    m_self.GetLog().Error("Failed to check signal: \"%1%\".", ex.what());
+    GetLog().Error("Failed to check signal: \"%1%\".", ex.what());
   }
 }
 
@@ -332,8 +332,7 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const Exception &ex) {
-    m_self.GetLog().Error("Failed to check position update: \"%1%\".",
-                          ex.what());
+    GetLog().Error("Failed to check position update: \"%1%\".", ex.what());
   }
 }
 
