@@ -53,7 +53,7 @@ Request::Request(const std::string &uri,
   m_request->set("Connection", "keep-alive");
   m_request->set("DNT", "1");
   if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
-    m_request->setContentType("application/json");
+    m_request->setContentType("application/x-www-form-urlencoded");
   }
 }
 

@@ -352,9 +352,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
-    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                     m_timerScope);
-
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("uuid"));
@@ -391,13 +388,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                .Send(m_tradingSession, GetContext());
       MakeServerAnswerDebugDump(boost::get<1>(result), *this);
     } catch (const OrderIsUnknown &) {
-      GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                       m_timerScope);
       throw;
     }
-
-    GetContext().GetTimer().Schedule([this] { RequestOpenedOrders(); },
-                                     m_timerScope);
   }
 
  private:
@@ -559,8 +551,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
-
-  trdk::Timer::Scope m_timerScope;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 

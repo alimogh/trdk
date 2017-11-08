@@ -648,9 +648,15 @@ void TradingSystem::OnOrder(const OrderId &orderId,
     const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
+      boost::optional<TradeInfo> trader;
+      switch (status) {
+        case ORDER_STATUS_FILLED:
+        case ORDER_STATUS_FILLED_PARTIALLY:
+          trader = TradeInfo{price ? *price : 0};
+      }
       m_pimpl->OnOrderStatusUpdate(
-          orderId, status, remainingQty, boost::none, boost::none, updateTime,
-          it, boost::function<void(OrderTransactionContext &)>());
+          orderId, status, remainingQty, boost::none, std::move(trader),
+          updateTime, it, boost::function<void(OrderTransactionContext &)>());
       return;
     }
   }

@@ -529,37 +529,57 @@ bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
 
 void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
   Assert(m_instanceData.strategy);
-  m_instanceData.strategy->Invoke<aa::Strategy>(
-      [this, activate](aa::Strategy &advisor) {
-        AssertNe(activate, advisor.GetAutoTradingSettings() ? true : false);
-        activate
-            ? advisor.ActivateAutoTrading(
-                  {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
-            : advisor.DeactivateAutoTrading();
-      });
+  try {
+    m_instanceData.strategy->Invoke<aa::Strategy>(
+        [this, activate](aa::Strategy &advisor) {
+          AssertNe(activate, advisor.GetAutoTradingSettings() ? true : false);
+          activate
+              ? advisor.ActivateAutoTrading(
+                    {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
+              : advisor.DeactivateAutoTrading();
+        });
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to enable auto-trading"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  }
 }
 
 void ArbitrageStrategyWindow::DeactivateAutoTrading() {
   if (!m_instanceData.strategy) {
     return;
   }
-  m_instanceData.strategy->Invoke<aa::Strategy>(
-      [](aa::Strategy &advisor) { advisor.DeactivateAutoTrading(); });
+  try {
+    m_instanceData.strategy->Invoke<aa::Strategy>(
+        [](aa::Strategy &advisor) { advisor.DeactivateAutoTrading(); });
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to disable auto-trading"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  }
 }
 
 void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
   Assert(m_instanceData.strategy);
-  m_instanceData.strategy->Invoke<aa::Strategy>(
-      [this, level](aa::Strategy &advisor) {
-        if (!advisor.GetAutoTradingSettings()) {
-          return;
-        }
-        advisor.ActivateAutoTrading({level / 100, m_ui.maxQty->value()});
-      });
+  try {
+    m_instanceData.strategy->Invoke<aa::Strategy>(
+        [this, level](aa::Strategy &advisor) {
+          if (!advisor.GetAutoTradingSettings()) {
+            return;
+          }
+          advisor.ActivateAutoTrading({level / 100, m_ui.maxQty->value()});
+        });
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to setup auto-trading"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  }
 }
 
 void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {
   Assert(m_instanceData.strategy);
-  m_instanceData.strategy->Invoke<aa::Strategy>(
-      [level](aa::Strategy &advisor) { advisor.SetupAdvising(level / 100); });
+  try {
+    m_instanceData.strategy->Invoke<aa::Strategy>(
+        [level](aa::Strategy &advisor) { advisor.SetupAdvising(level / 100); });
+  } catch (const std::exception &ex) {
+    QMessageBox::critical(this, tr("Failed to setup advice level"),
+                          QString("%1.").arg(ex.what()), QMessageBox::Abort);
+  }
 }
