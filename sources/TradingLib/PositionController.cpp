@@ -126,11 +126,12 @@ bool PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
   position.SetCloseReason(reason);
   if (position.HasActiveOpenOrders()) {
+    if (position.IsCancelling()) {
+      return false;
+    }
     try {
       Verify(position.CancelAllOrders());
-    } catch (const TradingSystem::OrderIsUnknown &ex) {
-      GetStrategy().GetLog().Warn("Failed to cancel order: \"%1%\".",
-                                  ex.what());
+    } catch (const TradingSystem::OrderIsUnknown &) {
       return false;
     }
   } else {

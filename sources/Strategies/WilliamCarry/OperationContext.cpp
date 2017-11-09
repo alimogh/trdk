@@ -174,6 +174,10 @@ void OperationContext::AddStopLoss(const Price &maxPriceChange,
 TradingSystem &OperationContext::GetTradingSystem(Strategy &, Security &) {
   return m_pimpl->m_tradingSystem;
 }
+const TradingSystem &OperationContext::GetTradingSystem(
+    const Strategy &, const Security &) const {
+  return m_pimpl->m_tradingSystem;
+}
 
 bool OperationContext::HasSubOperations() const {
   return m_pimpl->m_takeProfitStopLimits.size() > 1;

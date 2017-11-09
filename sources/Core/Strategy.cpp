@@ -377,6 +377,9 @@ RiskControlScope &Strategy::GetRiskControlScope() {
 TradingSystem &Strategy::GetTradingSystem(size_t index) {
   return GetContext().GetTradingSystem(index, GetTradingMode());
 }
+const TradingSystem &Strategy::GetTradingSystem(size_t index) const {
+  return GetContext().GetTradingSystem(index, GetTradingMode());
+}
 
 void Strategy::OnLevel1Update(Security &security,
                               const TimeMeasurement::Milestones &) {

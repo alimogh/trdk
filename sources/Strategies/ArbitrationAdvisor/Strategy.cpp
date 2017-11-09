@@ -35,13 +35,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   boost::unordered_map<Symbol, std::vector<Advice::SecuritySignal>> m_symbols;
 
-  std::pair<Security *, Security *> m_lastTradeTargets;
+  boost::shared_ptr<OperationContext> m_lastOperation;
 
   explicit Implementation(aa::Strategy &self)
       : m_self(self),
         m_controller(m_self),
-        m_minPriceDifferenceRatioToAdvice(0),
-        m_lastTradeTargets({}) {}
+        m_minPriceDifferenceRatioToAdvice(0) {}
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<Advice::SecuritySignal> &allSecurities,
@@ -129,23 +128,29 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  void Trade(Security &sellTarget,
-             Security &buyTarget,
-             const Qty &maxQty,
-             const Double &spreadRatio,
-             const Milestones &delayMeasurement) {
-    for (auto &strategyPosition : m_self.GetPositions()) {
-      if (strategyPosition.IsCompleted() ||
-          (&strategyPosition.GetSecurity() == &sellTarget ||
-           &strategyPosition.GetSecurity() == &buyTarget)) {
+  bool CheckActualPositions(const Security &sellTarget,
+                            const Security &buyTarget,
+                            const Double &spreadRatio) {
+    size_t numberOfPositionsWithTheSameTargget = 0;
+    for (auto &position : m_self.GetPositions()) {
+      if (position.IsCompleted()) {
         continue;
       }
+
+      const auto &operation =
+          *boost::polymorphic_downcast<const OperationContext *>(
+              &position.GetOperationContext());
+      if (operation.IsSame(sellTarget, buyTarget)) {
+        AssertGe(2, numberOfPositionsWithTheSameTargget);
+        ++numberOfPositionsWithTheSameTargget;
+        continue;
+      }
+
       m_self.GetTradingLog().Write(
-          "{'trade': {'change': {'sell': {'exchange': '%1%', 'bid': "
+          "{'trade': {'signalExpired': {'sell': {'exchange': '%1%', 'bid': "
           "%2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': "
           "%5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f}}",
           [&](TradingRecord &record) {
-            OperationContext operation(sellTarget, buyTarget, maxQty);
             record % boost::cref(operation.GetTradingSystem(m_self, sellTarget)
                                      .GetInstanceName())  // 1
                 % sellTarget.GetBidPriceValue()           // 2
@@ -156,52 +161,59 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 % buyTarget.GetAskPriceValue()         // 6
                 % spreadRatio;                         // 7
           });
-      StopTrading(spreadRatio);
+      m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
+    }
+    AssertGe(2, numberOfPositionsWithTheSameTargget);
+    return numberOfPositionsWithTheSameTargget > 0;
+  }
+
+  void Trade(Security &sellTarget,
+             Security &buyTarget,
+             const Qty &maxQty,
+             const Double &spreadRatio,
+             const Milestones &delayMeasurement) {
+    if (CheckActualPositions(sellTarget, buyTarget, spreadRatio)) {
       return;
     }
-    if (m_lastTradeTargets.first == &sellTarget &&
-        m_lastTradeTargets.second == &buyTarget) {
+
+    if (m_lastOperation && m_lastOperation->IsSame(sellTarget, buyTarget)) {
       return;
     }
-    auto operation =
+
+    m_lastOperation =
         boost::make_shared<OperationContext>(sellTarget, buyTarget, maxQty);
     m_self.GetTradingLog().Write(
         "{'trade': {'new': {'sell': {'exchange': '%1%', 'bid': %2$.8f, 'ask': "
         "%3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, "
         "'spread': %7$.3f}}",
         [&](TradingRecord &record) {
-          record % boost::cref(operation->GetTradingSystem(m_self, sellTarget)
-                                   .GetInstanceName())  // 1
-              % sellTarget.GetBidPriceValue()           // 2
-              % sellTarget.GetAskPriceValue()           // 3
-              % boost::cref(operation->GetTradingSystem(m_self, buyTarget)
+          record %
+              boost::cref(m_lastOperation->GetTradingSystem(m_self, sellTarget)
+                              .GetInstanceName())  // 1
+              % sellTarget.GetBidPriceValue()      // 2
+              % sellTarget.GetAskPriceValue()      // 3
+              % boost::cref(m_lastOperation->GetTradingSystem(m_self, buyTarget)
                                 .GetInstanceName())  // 4
               % buyTarget.GetBidPriceValue()         // 5
               % buyTarget.GetAskPriceValue()         // 6
               % spreadRatio;                         // 7
         });
-    m_lastTradeTargets = {&sellTarget, &buyTarget};
+
+    Position *sellPoisition = nullptr;
     try {
-      m_controller.OpenPosition(operation, sellTarget, delayMeasurement);
-      m_controller.OpenPosition(operation, buyTarget, delayMeasurement);
+      sellPoisition = &m_controller.OpenPosition(m_lastOperation, sellTarget,
+                                                 delayMeasurement);
+      m_controller.OpenPosition(m_lastOperation, buyTarget, delayMeasurement);
     } catch (const std::exception &ex) {
       m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
-      for (Position &position : m_self.GetPositions()) {
-        try {
-          m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
-        } catch (const Exception &ex) {
-          m_self.GetLog().Error("Failed to close position: \"%1%\".",
-                                ex.what());
-          if (!position.IsCompleted()) {
-            position.MarkAsCompleted();
-          }
-        }
+      if (sellPoisition) {
+        m_controller.ClosePosition(*sellPoisition, CLOSE_REASON_OPEN_FAILED);
       }
     }
   }
 
   void StopTrading(const Double &spreadRatio) {
-    m_lastTradeTargets = {};
+    m_lastOperation.reset();
     if (m_self.GetPositions().IsEmpty()) {
       return;
     }
@@ -209,15 +221,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                                  [&](TradingRecord &record) {
                                    record % spreadRatio;  // 1
                                  });
-    for (Position &position : m_self.GetPositions()) {
-      try {
-        m_controller.ClosePosition(position, CLOSE_REASON_SIGNAL);
-      } catch (const Exception &ex) {
-        m_self.GetLog().Error("Failed to close position: \"%1%\".", ex.what());
-        if (!position.IsCompleted()) {
-          position.MarkAsCompleted();
-        }
-      }
+    for (auto &position : m_self.GetPositions()) {
+      m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
   }
 };
@@ -312,7 +317,7 @@ void aa::Strategy::DeactivateAutoTrading() {
         "'null->null'}}}");
   }
   m_pimpl->m_tradingSettings = boost::none;
-  m_pimpl->m_lastTradeTargets = {};
+  m_pimpl->m_lastOperation.reset();
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,

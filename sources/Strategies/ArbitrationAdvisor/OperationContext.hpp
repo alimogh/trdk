@@ -22,6 +22,11 @@ class OperationContext : public PositionOperationContext {
   virtual ~OperationContext() override = default;
 
  public:
+  bool IsSame(const Security &sellTarget, const Security &buyTarget) const {
+    return &m_sellTarget == &sellTarget && &m_buyTarget == &buyTarget;
+  }
+
+ public:
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy()
       const override {
     return m_orderPolicy;

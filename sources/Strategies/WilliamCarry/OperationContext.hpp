@@ -43,6 +43,8 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
                                                 trdk::Security &) override;
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      const trdk::Strategy &, const trdk::Security &) const override;
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual void Setup(Position &) const override;

@@ -22,8 +22,12 @@ class PositionController : public TradingLib::PositionController {
   explicit PositionController(Strategy &);
   virtual ~PositionController() override;
 
+ public:
+  using Base::ClosePosition;
+
  protected:
   virtual void HoldPosition(Position &) override;
+  virtual void ClosePosition(trdk::Position &) override;
 
  private:
   Position &GetOppositePosition(Position &);

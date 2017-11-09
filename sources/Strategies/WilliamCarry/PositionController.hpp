@@ -23,7 +23,7 @@ class PositionController : public TradingLib::PositionController {
   virtual ~PositionController() override = default;
 
  protected:
-  virtual void HoldPosition(trdk::Position &);
+  virtual void HoldPosition(trdk::Position &) override;
 };
 }
 }

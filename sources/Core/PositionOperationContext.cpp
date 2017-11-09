@@ -21,6 +21,10 @@ TradingSystem &PositionOperationContext::GetTradingSystem(Strategy &strategy,
                                                           Security &security) {
   return strategy.GetTradingSystem(security.GetSource().GetIndex());
 }
+const TradingSystem &PositionOperationContext::GetTradingSystem(
+    const Strategy &strategy, const Security &security) const {
+  return strategy.GetTradingSystem(security.GetSource().GetIndex());
+}
 
 void PositionOperationContext::OnCloseReasonChange(const CloseReason &,
                                                    const CloseReason &) {}
