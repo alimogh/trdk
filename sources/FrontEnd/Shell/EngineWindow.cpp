@@ -221,33 +221,25 @@ void EngineWindow::CloseOrderWindow(const Symbol &symbol) {
   m_orderWindows.erase(symbol);
 }
 
-void EngineWindow::OnOrder(unsigned int id,
-                           QString tradingSystemOrderId,
-                           int status,
-                           double remainingQty) {
+void EngineWindow::OnOrder(const QString &id, int status, double remainingQty) {
+  //! @todo Remove.
   std::ostringstream os;
-  os << "Order " << id;
-  if (!tradingSystemOrderId.isEmpty()) {
-    os << " (" << tradingSystemOrderId.toStdString() << ")";
-  }
-  os << ": " << OrderStatus(status) << " (remaining " << remainingQty << ").";
+  os << "Order " << id.toStdString() << ": " << OrderStatus(status)
+     << " (remaining " << remainingQty << ").";
   QMessageBox::information(nullptr, "Order", QString::fromStdString(os.str()));
 }
 
-void EngineWindow::OnTrade(unsigned int orderId,
-                           QString tradingSystemOrderId,
+void EngineWindow::OnTrade(const QString &orderId,
                            int status,
                            double remainingQty,
                            QString tradeId,
                            double tradeQty,
                            double tradePrice) {
+  //! @todo Remove.
   std::ostringstream os;
-  os << "Order " << orderId;
-  if (tradingSystemOrderId.isEmpty()) {
-    os << " (" << tradingSystemOrderId.toStdString() << ")";
-  }
-  os << ": " << OrderStatus(status) << " (remaining " << remainingQty << ").";
-  os << " Trade " << tradeId.toStdString() << " " << tradeQty << " for "
+  os << "Order " << orderId.toStdString() << ": " << OrderStatus(status)
+     << " (remaining " << remainingQty << ")."
+     << " Trade " << tradeId.toStdString() << " " << tradeQty << " for "
      << tradePrice << ".";
   QMessageBox::information(nullptr, "Trade", QString::fromStdString(os.str()));
 }

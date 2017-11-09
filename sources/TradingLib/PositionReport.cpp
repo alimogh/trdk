@@ -32,6 +32,7 @@ void PositionReport::Append(const Position &pos) {
 void PositionReport::Open(std::ofstream &file) {
   Assert(!file.is_open());
   file = m_strategy.OpenDataLog("csv");
+  file << std::fixed;
 }
 
 void PositionReport::PrintHead(std::ostream &os) {
@@ -45,7 +46,7 @@ void PositionReport::PrintHead(std::ostream &os) {
      << ",Position Duration"  // 8
      << ",Type"               // 9
      << ",P&L Volume"         // 10
-     << ",P&L %"              // 11
+     << ",P&L Ratio"          // 11
      << ",Is Profit"          // 12
      << ",Is Loss"            // 13
      << ",Qty"                // 14

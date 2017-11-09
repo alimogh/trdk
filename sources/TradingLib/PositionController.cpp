@@ -73,8 +73,8 @@ trdk::Position &PositionController::OpenPosition(
     const boost::shared_ptr<PositionOperationContext> &operationContext,
     Security &security,
     const Milestones &delayMeasurement) {
-  return OpenPosition(operationContext, security, operationContext->IsLong(),
-                      delayMeasurement);
+  return OpenPosition(operationContext, security,
+                      operationContext->IsLong(security), delayMeasurement);
 }
 
 trdk::Position &PositionController::OpenPosition(
@@ -100,10 +100,27 @@ trdk::Position &PositionController::OpenPosition(
   return *result;
 }
 
+Position &PositionController::RestorePosition(
+    const boost::shared_ptr<PositionOperationContext> &operationContext,
+    Security &security,
+    bool isLong,
+    const Qty &qty,
+    const Price &startPrice,
+    const Price &openPrice,
+    const boost::shared_ptr<const OrderTransactionContext> &openingContext,
+    const Milestones &delayMeasurement) {
+  auto result = CreatePosition(operationContext, isLong, security, qty,
+                               startPrice, delayMeasurement);
+  result->RestoreOpenState(openPrice, openingContext);
+  return *result;
+}
+
 void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.GetOperationContext().GetOpenOrderPolicy().Open(position);
 }
+
+void PositionController::HoldPosition(Position &) {}
 
 bool PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
@@ -125,6 +142,18 @@ bool PositionController::ClosePosition(Position &position,
 void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   position.GetOperationContext().GetCloseOrderPolicy().Close(position);
+}
+
+void PositionController::CloseAllPositions(const CloseReason &reason) {
+  for (auto &position : GetStrategy().GetPositions()) {
+    try {
+      ClosePosition(position, reason);
+    } catch (const std::exception &ex) {
+      GetStrategy().GetLog().Error(
+          "Failed to close position \"%1%\" with reason %2%: \"%2%\".",
+          position.GetId(), reason, ex.what());
+    }
+  }
 }
 
 Position *PositionController::OnSignal(
@@ -229,14 +258,14 @@ void PositionController::OnPositionUpdate(Position &position) {
       ClosePosition(position);
     } else if (!position.IsFullyOpened()) {
       ContinuePosition(position);
+    } else {
+      HoldPosition(position);
     }
   }
 }
 
 void PositionController::OnPostionsCloseRequest() {
-  for (auto &position : GetStrategy().GetPositions()) {
-    ClosePosition(position, CLOSE_REASON_REQUEST);
-  }
+  CloseAllPositions(CLOSE_REASON_REQUEST);
 }
 
 void PositionController::OnBrokerPositionUpdate(
@@ -261,15 +290,14 @@ void PositionController::OnBrokerPositionUpdate(
   const Price price = volume / qty;
   GetStrategy().GetLog().Info(
       "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
-      "%3$.8f) for "
-      "\"%4%\"...",
+      "%3$.8f) for \"%4%\"...",
       qty,                         // 1
       volume,                      // 2
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  CreatePosition(operationContext, isLong, security, qty, price, Milestones())
-      ->RestoreOpenState(price);
+  RestorePosition(operationContext, security, isLong, qty, price, price,
+                  nullptr, Milestones());
 }
 
 template <typename PositionType>

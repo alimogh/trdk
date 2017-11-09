@@ -47,7 +47,8 @@ void OrderListView::CancelSelectedOrders() {
 }
 
 bool OrderListView::CancelOrder(const QModelIndex &item) {
-  const OrderId &orderId = item.data(ITEM_DATA_ROLE_ITEM_ID).toULongLong();
+  const OrderId orderId(
+      item.data(ITEM_DATA_ROLE_ITEM_ID).toString().toStdString());
   const size_t tradingSystemIndex =
       item.data(ITEM_DATA_ROLE_TRADING_SYSTEM_INDEX).toULongLong();
   const TradingMode mode =
@@ -61,14 +62,14 @@ bool OrderListView::CancelOrder(const QModelIndex &item) {
         this, tr("Order cancel"),
         tr("%1 does not have order %1 in the active list.")
             .arg(QString::fromStdString(tradingSystem.GetInstanceName()),  // 1
-                 QString::number(orderId)),                                // 2
+                 QString::fromStdString(orderId.GetValue())),              // 2
         QMessageBox::Cancel);
     return false;
   } catch (const std::exception &ex) {
     QMessageBox::critical(
         this, tr("Order cancel"),
         tr("Failed to cancel order %1 at the exchange %2: \"%3\".")
-            .arg(QString::number(orderId),                                 // 1
+            .arg(QString::fromStdString(orderId.GetValue()),               // 1
                  QString::fromStdString(tradingSystem.GetInstanceName()),  // 2
                  ex.what()),                                               // 3
         QMessageBox::Cancel);

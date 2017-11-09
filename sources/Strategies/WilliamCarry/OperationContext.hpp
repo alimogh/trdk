@@ -37,13 +37,16 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   void AddStopLoss(const Price &maxPriceChange,
                    const boost::posix_time::time_duration &startDelay);
 
+  bool HasSubOperations() const;
+  std::vector<boost::shared_ptr<PositionOperationContext>> StartSubOperations();
+
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
                                                 trdk::Security &) override;
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
   virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
   virtual void Setup(Position &) const override;
-  virtual bool IsLong() const override;
+  virtual bool IsLong(const trdk::Security &) const override;
   virtual Qty GetPlannedQty() const override;
   virtual bool HasCloseSignal(const Position &) const override;
   virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(

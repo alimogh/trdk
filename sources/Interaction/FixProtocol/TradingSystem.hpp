@@ -59,7 +59,7 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
-  virtual std::unique_ptr<TransactionContext> SendOrderTransaction(
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const trdk::Lib::Currency &currency,
       const trdk::Qty &qty,

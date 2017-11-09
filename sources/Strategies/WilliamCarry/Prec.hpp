@@ -11,3 +11,9 @@
 #pragma once
 
 #include "Common/Common.hpp"
+#include "TradingLib/OrderPolicy.hpp"
+#include "TradingLib/PositionController.hpp"
+#include "TradingLib/StopLimit.hpp"
+#include "TradingLib/StopLoss.hpp"
+#include "Core/Position.hpp"
+#include "Core/Strategy.hpp"

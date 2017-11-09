@@ -39,7 +39,7 @@ class TRDK_CORE_API PositionOperationContext {
     */
   virtual void Setup(trdk::Position &) const = 0;
   //! Next new position direction.
-  virtual bool IsLong() const = 0;
+  virtual bool IsLong(const trdk::Security &) const = 0;
   //! Next new position quantity.
   virtual trdk::Qty GetPlannedQty() const = 0;
   //! Returns true if the opened position should be closed as soon as possible.

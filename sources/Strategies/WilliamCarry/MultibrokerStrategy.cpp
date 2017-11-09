@@ -10,13 +10,12 @@
 
 #include "Prec.hpp"
 #include "MultibrokerStrategy.hpp"
-#include "TradingLib/PositionController.hpp"
 #include "OperationContext.hpp"
+#include "PositionController.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
 using namespace trdk::Strategies::WilliamCarry;
 
 namespace pt = boost::posix_time;
@@ -26,7 +25,7 @@ namespace sig = boost::signals2;
 
 class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
-  PositionController m_controller;
+  WilliamCarry::PositionController m_controller;
   sig::signal<void(bool isLong, bool isActive)> m_positionSignal;
 
   explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}

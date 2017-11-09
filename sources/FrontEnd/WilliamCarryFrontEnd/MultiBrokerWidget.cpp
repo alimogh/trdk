@@ -178,37 +178,36 @@ void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
       continue;
     }
 
-    auto qty = (settings.lotMultiplier * m_lots[i]) *
-               m_currentTradingSecurity->GetLotSize();
-    if (settings.target2) {
-      qty /= 2;
-    }
+    const auto qty = (settings.lotMultiplier * m_lots[i]) *
+                     m_currentTradingSecurity->GetLotSize();
     const auto &pip = 1.0 / m_currentTradingSecurity->GetPricePrecisionPower();
-    const auto &createPosition = [&]() -> OperationContext {
-      OperationContext result(qty, price, startegy.GetTradingSystem(i));
-      if (settings.stopLoss2) {
-        result.AddStopLoss(pip * settings.stopLoss2->pips,
-                           settings.stopLoss2->delay);
-      }
-      if (settings.stopLoss3) {
-        result.AddStopLoss(pip * settings.stopLoss3->pips,
-                           settings.stopLoss3->delay);
-      }
-      return result;
-    };
 
-    {
-      OperationContext operation = createPosition();
+    OperationContext operation(qty, price, startegy.GetTradingSystem(i));
+
+    if (!settings.target2) {
+      const auto targetStep =
+          settings.target1.pips / settings.numberOfStepsToTarget;
+      for (size_t stepI = 1; stepI <= settings.numberOfStepsToTarget; ++stepI) {
+        operation.AddTakeProfitStopLimit(pip * (targetStep * stepI),
+                                         settings.target1.delay);
+      }
+    } else {
       operation.AddTakeProfitStopLimit(pip * settings.target1.pips,
                                        settings.target1.delay);
-      operations.emplace_back(std::move(operation));
-    }
-    if (settings.target2) {
-      OperationContext operation = createPosition();
       operation.AddTakeProfitStopLimit(pip * settings.target2->pips,
                                        settings.target2->delay);
-      operations.emplace_back(std::move(operation));
     }
+
+    if (settings.stopLoss2) {
+      operation.AddStopLoss(pip * settings.stopLoss2->pips,
+                            settings.stopLoss2->delay);
+    }
+    if (settings.stopLoss3) {
+      operation.AddStopLoss(pip * settings.stopLoss3->pips,
+                            settings.stopLoss3->delay);
+    }
+
+    operations.emplace_back(std::move(operation));
   }
 
   try {
@@ -622,6 +621,13 @@ void MultiBrokerWidget::LoadSettings() {
           settingsStorage.value("targets/1/delay", 1000 * 1000).toULongLong());
       strategySettings.numberOfStepsToTarget =
           settingsStorage.value("number of steps to target", 1).toUInt();
+      if (settingsStorage.contains("targets/2/pips") &&
+          settingsStorage.contains("targets/2/delay")) {
+        strategySettings.target2 = StrategySettings::Target{
+            settingsStorage.value("targets/2/pips").toULongLong(),
+            pt::microseconds(
+                settingsStorage.value("targets/2/delay").toULongLong())};
+      }
       if (settingsStorage.value("stop-loses/2/enabled").toBool()) {
         strategySettings.stopLoss2 = StrategySettings::Target{
             settingsStorage.value("stop-loses/2/pips").toUInt(),

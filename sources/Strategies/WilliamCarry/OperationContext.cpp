@@ -10,10 +10,6 @@
 
 #include "Prec.hpp"
 #include "OperationContext.hpp"
-#include "TradingLib/StopLimit.hpp"
-#include "TradingLib/StopLoss.hpp"
-#include "Core/Position.hpp"
-#include "Core/Strategy.hpp"
 #include "OrderPolicy.hpp"
 
 using namespace trdk;
@@ -24,6 +20,76 @@ using namespace trdk::Strategies::WilliamCarry;
 namespace pt = boost::posix_time;
 namespace wc = trdk::Strategies::WilliamCarry;
 namespace tl = trdk::TradingLib;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+class SubOperationContext : public PositionOperationContext {
+ public:
+  explicit SubOperationContext(
+      TradingSystem &tradingSystem,
+      const boost::shared_ptr<const TakeProfitStopLimit::Params>
+          &takeProfitStopLimit,
+      const std::vector<std::pair<boost::shared_ptr<const StopLoss::Params>,
+                                  pt::time_duration>> &stopLosses)
+      : m_orderPolicy(boost::make_shared<wc::OrderPolicy::Base>()),
+        m_tradingSystem(tradingSystem),
+        m_takeProfitStopLimit(takeProfitStopLimit),
+        m_stopLosses(stopLosses) {}
+
+  virtual ~SubOperationContext() override = default;
+
+ public:
+  virtual trdk::TradingSystem &GetTradingSystem(Strategy &,
+                                                Security &) override {
+    return m_tradingSystem;
+  }
+
+  virtual const tl::OrderPolicy &GetOpenOrderPolicy() const override {
+    throw LogicError(
+        "Mutibroker operation context doesn't provide open operation policy");
+  }
+  virtual const tl::OrderPolicy &GetCloseOrderPolicy() const override {
+    return *m_orderPolicy;
+  }
+
+  virtual void Setup(Position &position) const override {
+    for (const auto &params : m_stopLosses) {
+      position.AttachAlgo(std::make_unique<StopLoss>(
+          params.first, params.second, position, m_orderPolicy));
+    }
+    position.AttachAlgo(std::make_unique<TakeProfitStopLimit>(
+        m_takeProfitStopLimit, position, m_orderPolicy));
+  }
+
+  virtual bool IsLong(const Security &) const override {
+    throw LogicError(
+        "Mutibroker operation context doesn't provide operation side");
+  }
+
+  virtual Qty GetPlannedQty() const override {
+    throw LogicError(
+        "Mutibroker operation context doesn't provide operation size");
+  }
+
+  virtual bool HasCloseSignal(const Position &) const override { return false; }
+
+  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
+      const Position &) override {
+    return nullptr;
+  }
+
+ private:
+  boost::shared_ptr<tl::OrderPolicy> m_orderPolicy;
+  TradingSystem &m_tradingSystem;
+
+  std::vector<
+      std::pair<boost::shared_ptr<const StopLoss::Params>, pt::time_duration>>
+      m_stopLosses;
+  boost::shared_ptr<const TakeProfitStopLimit::Params> m_takeProfitStopLimit;
+};
+}
+////////////////////////////////////////////////////////////////////////////////
 
 class OperationContext::Implementation : private boost::noncopyable {
  public:
@@ -36,7 +102,6 @@ class OperationContext::Implementation : private boost::noncopyable {
       m_stopLosses;
   std::vector<boost::shared_ptr<const TakeProfitStopLimit::Params>>
       m_takeProfitStopLimits;
-  pt::time_duration m_stopTime;
 
   explicit Implementation(const Qty &qty,
                           const Price &price,
@@ -68,15 +133,11 @@ void OperationContext::Setup(Position &position) const {
     position.AttachAlgo(std::make_unique<StopLoss>(
         params.first, params.second, position, m_pimpl->m_orderPolicy));
   }
-  for (const auto &params : m_pimpl->m_takeProfitStopLimits) {
-    position.AttachAlgo(std::make_unique<TakeProfitStopLimit>(
-        params, position, m_pimpl->m_orderPolicy));
-  }
 }
 
-bool OperationContext::IsLong() const {
+bool OperationContext::IsLong(const Security &) const {
   throw LogicError(
-      "Mutibroker operation context doesn't provide operation side.");
+      "Mutibroker operation context doesn't provide operation side");
 }
 
 Qty OperationContext::GetPlannedQty() const { return m_pimpl->m_qty; }
@@ -113,3 +174,19 @@ void OperationContext::AddStopLoss(const Price &maxPriceChange,
 TradingSystem &OperationContext::GetTradingSystem(Strategy &, Security &) {
   return m_pimpl->m_tradingSystem;
 }
+
+bool OperationContext::HasSubOperations() const {
+  return m_pimpl->m_takeProfitStopLimits.size() > 1;
+}
+std::vector<boost::shared_ptr<PositionOperationContext>>
+OperationContext::StartSubOperations() {
+  std::vector<boost::shared_ptr<PositionOperationContext>> result;
+  result.reserve(m_pimpl->m_takeProfitStopLimits.size());
+  for (const auto &stopLimit : m_pimpl->m_takeProfitStopLimits) {
+    result.emplace_back(boost::make_shared<SubOperationContext>(
+        m_pimpl->m_tradingSystem, stopLimit, m_pimpl->m_stopLosses));
+  }
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////

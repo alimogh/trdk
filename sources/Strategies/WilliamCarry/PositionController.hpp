@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/02 23:26:06
+ *   Created: 2017/11/09 12:20:05
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,20 +10,21 @@
 
 #pragma once
 
-#include "Api.h"
-
 namespace trdk {
+namespace Strategies {
+namespace WilliamCarry {
 
-class TRDK_CORE_API OrderTransactionContext {
+class PositionController : public TradingLib::PositionController {
  public:
-  explicit OrderTransactionContext(const trdk::OrderId &&orderId)
-      : m_orderId(std::move(orderId)) {}
-  virtual ~OrderTransactionContext() = default;
-
- public:
-  const trdk::OrderId &GetOrderId() const { return m_orderId; }
+  typedef TradingLib::PositionController Base;
 
  public:
-  const trdk::OrderId m_orderId;
+  explicit PositionController(trdk::Strategy &);
+  virtual ~PositionController() override = default;
+
+ protected:
+  virtual void HoldPosition(trdk::Position &);
 };
+}
+}
 }

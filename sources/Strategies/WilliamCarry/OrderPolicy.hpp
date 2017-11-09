@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #pragma once
-#include "TradingLib/OrderPolicy.hpp"
 #include "Api.h"
 
 namespace trdk {
