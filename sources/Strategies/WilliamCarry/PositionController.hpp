@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/12 11:06:04
+ *   Created: 2017/11/09 12:20:05
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,10 +10,21 @@
 
 #pragma once
 
-#include "Common/Common.hpp"
-#include "TradingLib/OrderPolicy.hpp"
-#include "TradingLib/PositionController.hpp"
-#include "TradingLib/StopLimit.hpp"
-#include "TradingLib/StopLoss.hpp"
-#include "Core/Position.hpp"
-#include "Core/Strategy.hpp"
+namespace trdk {
+namespace Strategies {
+namespace WilliamCarry {
+
+class PositionController : public TradingLib::PositionController {
+ public:
+  typedef TradingLib::PositionController Base;
+
+ public:
+  explicit PositionController(trdk::Strategy &);
+  virtual ~PositionController() override = default;
+
+ protected:
+  virtual void HoldPosition(trdk::Position &);
+};
+}
+}
+}

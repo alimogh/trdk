@@ -37,6 +37,9 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
   void AddStopLoss(const Price &maxPriceChange,
                    const boost::posix_time::time_duration &startDelay);
 
+  bool HasSubOperations() const;
+  std::vector<boost::shared_ptr<PositionOperationContext>> StartSubOperations();
+
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
                                                 trdk::Security &) override;

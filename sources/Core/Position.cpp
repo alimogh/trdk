@@ -552,7 +552,9 @@ class Position::Implementation : private boost::noncopyable {
   }
 
  public:
-  void RestoreOpenState(const Price &openPrice) {
+  void RestoreOpenState(
+      const Price &openPrice,
+      const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
 
     if (m_self.IsCancelling()) {
@@ -595,11 +597,16 @@ class Position::Implementation : private boost::noncopyable {
     m_open.orders.emplace_back(std::move(now), boost::none, m_planedQty);
     try {
       auto &order = m_open.orders.back();
+      order.transactionContext = openingContext;
       order.isActive = false;
 
       m_open.time = order.time;
       m_open.OnNewTrade(TradingSystem::TradeInfo{openPrice, order.qty},
                         openPrice);
+
+      if (order.transactionContext) {
+        m_defaultOrderParams.position = &*order.transactionContext;
+      }
 
       m_isRegistered = true;  // supporting prev. logic
                               // (when was m_strategy = nullptr),
@@ -978,6 +985,18 @@ void Position::UpdateClosing(const OrderId &orderId,
 
 const pt::ptime &Position::GetOpenTime() const { return m_pimpl->m_open.time; }
 
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetOpeningContext() const {
+  if (m_pimpl->m_open.orders.empty()) {
+    throw Exception("Position has no open-order to have opening context");
+  }
+  const auto &result = m_pimpl->m_open.orders.front().transactionContext;
+  if (!result) {
+    throw Exception("Position has no opening context");
+  }
+  return result;
+}
+
 Qty Position::GetActiveQty() const noexcept {
   AssertGe(GetOpenedQty(), GetClosedQty());
   return GetOpenedQty() - GetClosedQty();
@@ -1222,8 +1241,10 @@ const Price &Position::GetLastCloseTradePrice() const {
   return m_pimpl->m_close.lastTradePrice;
 }
 
-void Position::RestoreOpenState(const trdk::Price &openPrice) {
-  m_pimpl->RestoreOpenState(openPrice);
+void Position::RestoreOpenState(
+    const trdk::Price &openPrice,
+    const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
+  m_pimpl->RestoreOpenState(openPrice, openingContext);
 }
 
 const OrderTransactionContext &Position::OpenAtMarketPrice() {
