@@ -85,8 +85,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Double spreadRatio;
     if (!bids.empty() && !asks.empty()) {
       spread = bids.front().first - asks.front().first;
-      spreadRatio =
-          RoundByPrecision((100 / (asks.front().first / spread)) / 100, 100);
+      spreadRatio = 100 / (asks.front().first / spread);
+      spreadRatio = RoundByPrecision(spreadRatio, 100);
+      spreadRatio /= 100;
       if (m_tradingSettings &&
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
         Trade(*bids.front().second->security, *asks.front().second->security,
