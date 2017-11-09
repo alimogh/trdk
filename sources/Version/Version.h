@@ -3,7 +3,7 @@
 
 #define TRDK_VERSION_RELEASE	1
 #define TRDK_VERSION_BUILD	0
-#define TRDK_VERSION_STATUS	7
+#define TRDK_VERSION_STATUS	8
 
 #define TRDK_VERSION_BRANCH		"WilliamCarry"
 #define TRDK_VERSION_BRANCH_W	L"WilliamCarry"
