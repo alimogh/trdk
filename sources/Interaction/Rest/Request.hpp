@@ -48,6 +48,9 @@ class Request {
                               const std::string &body,
                               Poco::Net::HTTPRequest &) const;
 
+  virtual void CheckResponce(const Poco::Net::HTTPResponse &,
+                             std::istream &) const;
+
  private:
   const std::string m_uri;
   const std::string m_uriParams;

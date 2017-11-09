@@ -89,27 +89,18 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
   try {
     net::HTTPResponse response;
     std::istream &responseStream = session.receiveResponse(response);
-    if (response.getStatus() != 200) {
-      std::vector<std::string> responseText;
-      while (responseStream) {
-        responseText.resize(responseText.size() + 1);
-        responseStream >> responseText.back();
-      }
-      boost::format error(
-          "Request \"%4%\" (%5%) failed with HTTP-error: \"%1%\" (\"%2%\", "
-          "code %3%)");
-      error % boost::join(responseText, " ")  // 1
-          % response.getReason()              // 2
-          % response.getStatus()              // 3
-          % m_name                            // 4
-          % m_request->getURI();              // 5
-      throw Exception(error.str().c_str());
-    }
+    CheckResponce(response, responseStream);
 
     ptr::ptree result;
     try {
       ptr::read_json(responseStream, result);
     } catch (const ptr::ptree_error &ex) {
+      std::istream &responseStreamCopy = session.receiveResponse(response);
+      std::vector<std::string> responseText;
+      while (responseStreamCopy) {
+        responseText.resize(responseText.size() + 1);
+        responseStreamCopy >> responseText.back();
+      }
       boost::format error(
           "Failed to read server response to the request \"%2%\" (%3%): "
           "\"%1%\"");
@@ -138,4 +129,25 @@ void Request::CreateBody(const net::HTTPClientSession &,
     return;
   }
   AppendUriParams(m_uriParams, result);
+}
+
+void Request::CheckResponce(const net::HTTPResponse &response,
+                            std::istream &responseStream) const {
+  if (response.getStatus() == net::HTTPResponse::HTTP_OK) {
+    return;
+  }
+  std::vector<std::string> responseText;
+  while (responseStream) {
+    responseText.resize(responseText.size() + 1);
+    responseStream >> responseText.back();
+  }
+  boost::format error(
+      "Request \"%4%\" (%5%) failed with HTTP-error: \"%1%\" (\"%2%\", code "
+      "%3%)");
+  error % boost::join(responseText, " ")  // 1
+      % response.getReason()              // 2
+      % response.getStatus()              // 3
+      % m_name                            // 4
+      % m_request->getURI();              // 5
+  throw Exception(error.str().c_str());
 }

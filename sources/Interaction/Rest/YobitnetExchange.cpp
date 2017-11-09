@@ -70,6 +70,11 @@ struct Settings {
   }
 };
 
+class InvalidPairException : public Exception {
+ public:
+  explicit InvalidPairException(const char *what) noexcept : Exception(what) {}
+};
+
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
@@ -162,7 +167,9 @@ class TradeRequest : public Request {
         } else {
           error << "Unknown error";
         }
-        throw Exception(error.str().c_str());
+        message && (*message == "invalid pair")
+            ? throw InvalidPairException(error.str().c_str())
+            : throw Exception(error.str().c_str());
       }
     }
 
@@ -223,7 +230,6 @@ struct Order {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-
 class YobitnetExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit YobitnetExchange(const App &,
@@ -475,14 +481,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     TradeRequest request(
         "CancelOrder", m_nextNonce++, m_settings,
         "order_id=" + boost::lexical_cast<std::string>(orderId));
-    try {
-      StoreNextNonce(m_nextNonce);
-      const auto orders =
-          boost::get<1>(request.Send(m_tradingSession, GetContext()));
-      MakeServerAnswerDebugDump(orders, *this);
-    } catch (const OrderIsUnknown &) {
-      throw;
-    }
+    StoreNextNonce(m_nextNonce);
+    const auto orders =
+        boost::get<1>(request.Send(m_tradingSession, GetContext()));
+    MakeServerAnswerDebugDump(orders, *this);
   }
 
  private:
@@ -501,65 +503,112 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void RequestOpenedOrders() {
+    boost::unordered_map<OrderId, Order> newOrders;
+    std::vector<std::string> invalidSymbols;
     for (const auto &symbol : m_settings.defaultSymbols) {
-      RequestOpenedOrders(symbol);
+      try {
+        RequestOpenedOrders(symbol, newOrders, m_orders);
+      } catch (const InvalidPairException &ex) {
+        invalidSymbols.emplace_back(symbol);
+        GetTsLog().Warn(
+            "Failed to request opened order list for \"%1%\": \"%2%\".",
+            symbol,      // 1
+            ex.what());  // 2
+      } catch (const std::exception &ex) {
+        GetTsLog().Error(
+            "Failed to request opened order list for \"%1%\": \"%2%\".",
+            symbol,      // 1
+            ex.what());  // 2
+      }
+    }
+    for (const auto &canceledOrder : m_orders) {
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+    }
+    m_orders.swap(newOrders);
+    for (const auto &symbol : invalidSymbols) {
+      const auto it = std::find(m_settings.defaultSymbols.begin(),
+                                m_settings.defaultSymbols.end(), symbol);
+      Assert(it != m_settings.defaultSymbols.end());
+      if (it == m_settings.defaultSymbols.end()) {
+        continue;
+      }
+      m_settings.defaultSymbols.erase(it);
     }
   }
 
-  void RequestOpenedOrders(const std::string &symbol) {
-    TradeRequest request("ActiveOrders", m_nextNonce++, m_settings,
-                         "pair=" + NormilizeSymbol(symbol));
+  void RequestOpenedOrders(
+      const std::string &symbol,
+      boost::unordered_map<OrderId, Order> &newOrders,
+      boost::unordered_map<OrderId, Order> &notifiedOrders) {
+    class ActiveOrdersRequest : public TradeRequest {
+     public:
+      typedef TradeRequest Base;
+
+     public:
+      explicit ActiveOrdersRequest(const std::string &symbol,
+                                   size_t nonce,
+                                   const Settings &settings)
+          : Base("ActiveOrders",
+                 nonce,
+                 settings,
+                 "pair=" + NormilizeSymbol(symbol)) {}
+
+      virtual ~ActiveOrdersRequest() override = default;
+
+     protected:
+      virtual const ptr::ptree &ExtractContent(
+          const ptr::ptree &responseTree) const {
+        const auto &result = responseTree.get_child_optional("return");
+        if (!result) {
+          static const ptr::ptree dummy;
+          return dummy;
+        }
+        return *result;
+      }
+    };
+
+    ActiveOrdersRequest request(symbol, m_nextNonce++, m_settings);
     StoreNextNonce(m_nextNonce);
-    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
-    try {
-      {
-        const auto orders =
-            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        MakeServerAnswerDebugDump(orders, *this);
-        for (const auto &orderNode : orders) {
-          const auto &order = orderNode.second;
-          const OrderId orderId(orderNode.first);
 
-          const Qty qty = order.get<double>("amount");
+    {
+      const auto orders =
+          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      MakeServerAnswerDebugDump(orders, *this);
+      for (const auto &orderNode : orders) {
+        const auto &order = orderNode.second;
+        const OrderId orderId(orderNode.first);
 
-          OrderSide side;
-          const auto &type = order.get<std::string>("type");
-          if (type == "sell") {
-            side = ORDER_SIDE_SELL;
-          } else if (type == "buy") {
-            side = ORDER_SIDE_BUY;
-          } else {
-            GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                             orderId);
-            continue;
-          }
+        const Qty qty = order.get<double>("amount");
 
-          const auto &time =
-              pt::from_time_t(order.get<time_t>("timestamp_created"));
+        OrderSide side;
+        const auto &type = order.get<std::string>("type");
+        if (type == "sell") {
+          side = ORDER_SIDE_SELL;
+        } else if (type == "buy") {
+          side = ORDER_SIDE_BUY;
+        } else {
+          GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                           orderId);
+          continue;
+        }
 
-          const Order notifiedOrder = {std::move(orderId),
-                                       std::move(symbol),
-                                       std::move(qty),
-                                       Price(order.get<double>("rate")),
-                                       std::move(side),
-                                       TIME_IN_FORCE_GTC,
-                                       time};
-          UpdateOrder(notifiedOrder, ORDER_STATUS_SUBMITTED);
-          m_orders.erase(notifiedOrder.id);
-          {
-            const auto id = notifiedOrder.id;
-            notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
-          }
+        const auto &time =
+            pt::from_time_t(order.get<time_t>("timestamp_created"));
+
+        const Order notifiedOrder = {std::move(orderId),
+                                     std::move(symbol),
+                                     std::move(qty),
+                                     Price(order.get<double>("rate")),
+                                     std::move(side),
+                                     TIME_IN_FORCE_GTC,
+                                     time};
+        UpdateOrder(notifiedOrder, ORDER_STATUS_SUBMITTED);
+        notifiedOrders.erase(notifiedOrder.id);
+        {
+          const auto id = notifiedOrder.id;
+          newOrders.emplace(id, std::move(notifiedOrder));
         }
       }
-      for (const auto &canceledOrder : m_orders) {
-        UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
-      }
-      m_orders.swap(notifiedOrderOrders);
-    } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list for \"%1%\": \"%2%\".",
-                       symbol,      // 1
-                       ex.what());  // 2
     }
   }
 

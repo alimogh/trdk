@@ -107,6 +107,26 @@ class Request : public Rest::Request {
       : Base("/" + request, request, method, uriParams) {}
 
   virtual ~Request() override = default;
+
+ protected:
+  virtual void Request::CheckResponce(
+      const net::HTTPResponse &response,
+      std::istream &responseStream) const override {
+    if (response.getStatus() == net::HTTPResponse::HTTP_OK) {
+      Base::CheckResponce(response, responseStream);
+      return;
+    }
+    try {
+      ptr::ptree result;
+      ptr::read_json(responseStream, result);
+      const auto &message = result.get<std::string>("message");
+      if (message == "Order already done") {
+        throw TradingSystem::OrderIsUnknown(message.c_str());
+      }
+    } catch (const ptr::ptree_error &) {
+      Base::CheckResponce(response, responseStream);
+    }
+  }
 };
 
 class PublicRequest : public Request {
@@ -337,7 +357,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "/products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
+          "products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
           "/book/");
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
@@ -401,12 +421,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     PrivateRequest request("orders/" + orderId.GetValue(),
                            net::HTTPRequest::HTTP_DELETE, m_settings);
-    try {
-      const auto &result = request.Send(m_tradingSession, GetContext());
-      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
-    } catch (const OrderIsUnknown &) {
-      throw;
-    }
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
   }
 
  private:

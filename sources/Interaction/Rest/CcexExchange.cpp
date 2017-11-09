@@ -381,15 +381,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           const ptr::ptree &responseTree) const override {
         return responseTree;
       }
-    };
-
-    try {
-      const auto &result = CancelOrderRequest(orderId, m_settings)
-                               .Send(m_tradingSession, GetContext());
-      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
-    } catch (const OrderIsUnknown &) {
-      throw;
-    }
+    } request(orderId, m_settings);
+    const auto &result = request.Send(m_tradingSession, GetContext());
+    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
   }
 
  private:
