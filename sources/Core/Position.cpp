@@ -584,10 +584,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertEq(0, m_close.lastTradePrice);
     AssertEq(0, m_close.orders.size());
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     if (!m_security.GetSymbol().IsExplicit()) {
@@ -608,11 +608,14 @@ class Position::Implementation : private boost::noncopyable {
         m_defaultOrderParams.position = &*order.transactionContext;
       }
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
+
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       m_open.orders.pop_back();
@@ -645,10 +648,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertGt(m_planedQty, m_open.qty);
     auto qty = m_planedQty - m_open.qty;
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     m_open.orders.emplace_back(std::move(now), std::move(price), qty);
@@ -668,12 +671,14 @@ class Position::Implementation : private boost::noncopyable {
 
       ReportOpeningStart("sent", order.transactionContext->GetOrderId());
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
 
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       try {
