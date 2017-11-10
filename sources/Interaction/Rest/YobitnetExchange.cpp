@@ -167,9 +167,16 @@ class TradeRequest : public Request {
         } else {
           error << "Unknown error";
         }
-        message && (*message == "invalid pair")
-            ? throw InvalidPairException(error.str().c_str())
-            : throw Exception(error.str().c_str());
+        if (message) {
+          if (*message == "invalid pair") {
+            throw InvalidPairException(error.str().c_str());
+          } else if (*message ==
+                     "The given order has already been closed and cannot be "
+                     "cancelled.") {
+            throw TradingSystem::OrderIsUnknown(error.str().c_str());
+          }
+        }
+        throw Exception(error.str().c_str());
       }
     }
 
