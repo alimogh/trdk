@@ -30,7 +30,7 @@ class PositionController : public TradingLib::PositionController {
   virtual void ClosePosition(trdk::Position &) override;
 
  private:
-  Position &GetOppositePosition(Position &);
+  Position *FindOppositePosition(const Position &);
 
  private:
   std::unique_ptr<Report> m_report;

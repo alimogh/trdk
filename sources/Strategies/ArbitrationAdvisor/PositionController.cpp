@@ -32,34 +32,28 @@ void aa::PositionController::HoldPosition(Position &position) {
   // be debugged.
   AssertGe(2, GetStrategy().GetPositions().GetSize());
 
-  Position &oppositePosition = GetOppositePosition(position);
-  if (oppositePosition.IsFullyOpened()) {
+  Position *const oppositePosition = FindOppositePosition(position);
+  if (!oppositePosition || oppositePosition->IsFullyOpened()) {
     // Operation is completed.
     position.MarkAsCompleted();
-    oppositePosition.MarkAsCompleted();
-    m_report->Append(oppositePosition, position);
+    oppositePosition->MarkAsCompleted();
+    //    m_report->Append(oppositePosition, position);
   }
 
   // Waiting until another leg will be completed.
 }
 
-Position &aa::PositionController::GetOppositePosition(Position &position) {
-  AssertLe(2, GetStrategy().GetPositions().GetSize());
-  for (auto &strategyPosition : GetStrategy().GetPositions()) {
-    if (&strategyPosition == &position ||
-        &strategyPosition.GetOperationContext() !=
-            &position.GetOperationContext()) {
+Position *aa::PositionController::FindOppositePosition(
+    const Position &position) {
+  for (auto &result : GetStrategy().GetPositions()) {
+    if (&result == &position ||
+        &result.GetOperationContext() != &position.GetOperationContext()) {
       continue;
     }
-    return strategyPosition;
+    return &result;
   }
   // Opposite position already is closed.
-  position.GetStrategy().GetLog().Error(
-      "Position %1% is active, but opposite is already closed.",
-      position.GetId());
-  throw Lib::LogicError(
-      "Trading logic error: the leg is already closed when another still "
-      "be active");
+  return nullptr;
 }
 
 void PositionController::ClosePosition(Position &position) {

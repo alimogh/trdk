@@ -83,16 +83,20 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Price spread;
     Double spreadRatio;
     if (!bids.empty() && !asks.empty()) {
-      spread = bids.front().first - asks.front().first;
-      spreadRatio = 100 / (asks.front().first / spread);
+      auto &bestBid = bids.front();
+      auto &bestAsk = asks.front();
+      spread = bestBid.first - bestAsk.first;
+      spreadRatio = 100 / (bestAsk.first / spread);
       spreadRatio = RoundByPrecision(spreadRatio, 100);
       spreadRatio /= 100;
+      auto &bestSell = *bestBid.second->security;
+      auto &bestBuy = *bestAsk.second->security;
       if (m_tradingSettings &&
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-        Trade(*bids.front().second->security, *asks.front().second->security,
-              m_tradingSettings->maxQty, spreadRatio, delayMeasurement);
+        Trade(bestSell, bestBuy, m_tradingSettings->maxQty, spreadRatio,
+              delayMeasurement);
       } else {
-        StopTrading(spreadRatio);
+        StopTrading(bestSell, bestBuy, spreadRatio);
       }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
@@ -212,15 +216,32 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  void StopTrading(const Double &spreadRatio) {
+  void StopTrading(const Security &bestBid,
+                   const Security &bestAsk,
+                   const Double &spreadRatio) {
     m_lastOperation.reset();
     if (m_self.GetPositions().IsEmpty()) {
       return;
     }
-    m_self.GetTradingLog().Write("{'trade': {'stop'}, 'spread': %1$.3f}}",
-                                 [&](TradingRecord &record) {
-                                   record % spreadRatio;  // 1
-                                 });
+
+    m_self.GetTradingLog().Write(
+        "{'trade': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, 'ask': "
+        "%3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, "
+        "'spread': %7$.3f}}",
+        [&](TradingRecord &record) {
+          record % boost::cref(
+                       m_self.GetTradingSystem(bestBid.GetSource().GetIndex())
+                           .GetInstanceName())  // 1
+              % bestBid.GetBidPriceValue()      // 2
+              % bestAsk.GetAskPriceValue()      // 3
+              % boost::cref(
+                    m_self.GetTradingSystem(bestAsk.GetSource().GetIndex())
+                        .GetInstanceName())  // 4
+              % bestAsk.GetBidPriceValue()   // 5
+              % bestAsk.GetAskPriceValue()   // 6
+              % spreadRatio;                 // 7
+        });
+
     for (auto &position : m_self.GetPositions()) {
       m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
