@@ -60,7 +60,7 @@ bool OrderListView::CancelOrder(const QModelIndex &item) {
   } catch (const TradingSystem::OrderIsUnknown &) {
     QMessageBox::warning(
         this, tr("Order cancel"),
-        tr("%1 does not have order %1 in the active list.")
+        tr("%1 does not have order in the active list.")
             .arg(QString::fromStdString(tradingSystem.GetInstanceName()),  // 1
                  QString::fromStdString(orderId.GetValue())),              // 2
         QMessageBox::Cancel);
