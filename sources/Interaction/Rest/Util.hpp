@@ -25,6 +25,8 @@ inline void MakeServerAnswerDebugDump(const boost::property_tree::ptree &tree,
   Lib::UseUnused(tree, ts);
 #endif
 }
+
+boost::property_tree::ptree ReadJson(const std::string &);
 }
 }
 }

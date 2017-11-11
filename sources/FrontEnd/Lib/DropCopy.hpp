@@ -160,7 +160,7 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   void SignalPriceUpdate(const Security &);
 
  private:
-  const boost::posix_time::time_duration m_pollingInterval;
+  const boost::posix_time::time_duration m_pullingInterval;
   boost::posix_time::ptime m_lastSignalTime;
 };
 }

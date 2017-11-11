@@ -324,6 +324,7 @@
     </ClCompile>
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Security.cpp" />
+    <ClCompile Include="Util.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="YobitnetExchange.cpp" />
   </ItemGroup>

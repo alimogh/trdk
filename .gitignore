@@ -3,7 +3,10 @@
 *.user
 /sources/ipch
 /sources/.vs
-*.pyc
 /sources/*.opensdf
 /sources/*.sdf
+/sources/*.VC.db
+/sources/*.VC.VC.opendb
 *.aps
+*.pyc
+

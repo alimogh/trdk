@@ -28,11 +28,12 @@ class Request {
   const std::string &GetName() const { return m_name; }
   void SetBody(const std::string &body) { m_body = body; }
 
- public:
   virtual boost::tuple<boost::posix_time::ptime,
                        boost::property_tree::ptree,
                        Lib::TimeMeasurement::Milestones>
   Send(Poco::Net::HTTPClientSession &, const Context &);
+
+  const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
 
  protected:
   static void AppendUriParams(const std::string &newParams,
@@ -40,7 +41,6 @@ class Request {
   static std::string AppendUriParams(const std::string &newParams,
                                      const std::string &result);
 
-  const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
   const std::string &GetUriParams() const { return m_uriParams; }
   virtual void CreateBody(const Poco::Net::HTTPClientSession &,
                           std::string &result) const;
@@ -48,8 +48,8 @@ class Request {
                               const std::string &body,
                               Poco::Net::HTTPRequest &) const;
 
-  virtual void CheckResponce(const Poco::Net::HTTPResponse &,
-                             std::istream &) const;
+  virtual void CheckErrorResponce(const Poco::Net::HTTPResponse &,
+                                  const std::string &responseContent) const;
 
  private:
   const std::string m_uri;

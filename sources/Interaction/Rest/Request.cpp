@@ -88,30 +88,39 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
 
   try {
     net::HTTPResponse response;
+#ifndef DEV_VER
     std::istream &responseStream = session.receiveResponse(response);
-    CheckResponce(response, responseStream);
+#else
+    std::istream &responseStreamSource = session.receiveResponse(response);
+    std::string responseBuffer;
+    pc::StreamCopier::copyToString(responseStreamSource, responseBuffer);
+    std::stringstream responseStream;
+    responseStream.str(responseBuffer);
+#endif
+    if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
+      std::string responseContent;
+      pc::StreamCopier::copyToString(responseStream, responseContent);
+      CheckErrorResponce(response, responseContent);
+      throw LogicError("Failed to check error in the response");
+    }
 
     ptr::ptree result;
     try {
       ptr::read_json(responseStream, result);
     } catch (const ptr::ptree_error &ex) {
-      std::istream &responseStreamCopy = session.receiveResponse(response);
-      std::vector<std::string> responseText;
-      while (responseStreamCopy) {
-        responseText.resize(responseText.size() + 1);
-        responseStreamCopy >> responseText.back();
-      }
       boost::format error(
-          "Failed to read server response to the request \"%2%\" (%3%): "
-          "\"%1%\"");
-      error % ex.what()           // 1
-          % m_name                // 2
-          % m_request->getURI();  // 3
+          "Failed to read server response to the request \"%1%\" (%2%): "
+          "\"%4%\" (%3%)");
+      error % m_name             // 1
+          % m_request->getURI()  // 2
+#ifdef DEV_VER
+          % responseBuffer  // 3
+#endif
+          % ex.what();  // 4
       throw Exception(error.str().c_str());
     }
 
-    return boost::make_tuple(std::move(updateTime), std::move(result),
-                             std::move(delayMeasurement));
+    return {updateTime, result, delayMeasurement};
 
   } catch (const Poco::Exception &ex) {
     boost::format error(
@@ -131,23 +140,16 @@ void Request::CreateBody(const net::HTTPClientSession &,
   AppendUriParams(m_uriParams, result);
 }
 
-void Request::CheckResponce(const net::HTTPResponse &response,
-                            std::istream &responseStream) const {
-  if (response.getStatus() == net::HTTPResponse::HTTP_OK) {
-    return;
-  }
-  std::vector<std::string> responseText;
-  while (responseStream) {
-    responseText.resize(responseText.size() + 1);
-    responseStream >> responseText.back();
-  }
+void Request::CheckErrorResponce(const net::HTTPResponse &response,
+                                 const std::string &responseContent) const {
+  AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   boost::format error(
       "Request \"%4%\" (%5%) failed with HTTP-error: \"%1%\" (\"%2%\", code "
       "%3%)");
-  error % boost::join(responseText, " ")  // 1
-      % response.getReason()              // 2
-      % response.getStatus()              // 3
-      % m_name                            // 4
-      % m_request->getURI();              // 5
+  error % boost::replace_all_copy(responseContent, "\n", " ")  // 1
+      % response.getReason()                                   // 2
+      % response.getStatus()                                   // 3
+      % m_name                                                 // 4
+      % m_request->getURI();                                   // 5
   throw Exception(error.str().c_str());
 }

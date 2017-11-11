@@ -11,6 +11,7 @@
 #pragma once
 
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <Poco/Net/AcceptCertificateHandler.h>
@@ -21,6 +22,10 @@
 #include <Poco/Net/InvalidCertificateHandler.h>
 #include <Poco/Net/PrivateKeyPassphraseHandler.h>
 #include <Poco/Net/SSLManager.h>
+
+#ifdef DEV_VER
+#include <Poco/StreamCopier.h>
+#endif
 
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"

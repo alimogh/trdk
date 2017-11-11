@@ -195,6 +195,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   virtual void SendCancelOrderTransaction(const trdk::OrderId &) = 0;
 
+  virtual void OnTransactionSent(const trdk::OrderId &);
+
  protected:
   //! Notifies trading system about order state change.
   /** Method is not thread-safe.

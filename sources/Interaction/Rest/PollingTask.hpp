@@ -14,28 +14,54 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class PollingTask : private boost::noncopyable {
+class PullingTask : private boost::noncopyable {
  public:
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
 
+ private:
+  struct Task {
+    std::string name;
+    size_t priority;
+    boost::function<bool()> task;
+    size_t frequency;
+    size_t numberOfErrors;
+    size_t skipCount;
+  };
+
  public:
-  explicit PollingTask(const boost::function<void()> &task,
-                       const boost::posix_time::time_duration &pollingInterval,
+  explicit PullingTask(const boost::posix_time::time_duration &pullingInterval,
                        ModuleEventsLog &);
-  ~PollingTask();
+  ~PullingTask();
+
+ public:
+  bool AddTask(const std::string &name,
+               size_t priority,
+               const boost::function<bool()> &task,
+               size_t frequency);
+  void ReplaceTask(const std::string &name,
+                   size_t priority,
+                   const boost::function<bool()> &task,
+                   size_t frequency);
+  void AccelerateNextPulling();
 
  private:
   void Run();
 
+  bool SetTask(const std::string &name,
+               size_t priority,
+               const boost::function<bool()> &task,
+               size_t frequency,
+               bool replace);
+
  private:
   ModuleEventsLog &m_log;
-  const boost::function<void()> m_task;
-  bool m_isStopped;
   Mutex m_mutex;
   boost::condition_variable m_condition;
-  const boost::chrono::microseconds m_pollingInterval;
-  boost::thread m_thread;
+  const boost::chrono::microseconds m_pullingInterval;
+  std::vector<Task> m_tasks;
+  boost::optional<boost::thread> m_thread;
+  boost::atomic_bool m_isAccelerated;
 };
 }
 }

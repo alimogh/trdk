@@ -33,22 +33,22 @@ namespace {
 struct Settings {
   std::string apiKey;
   std::string apiSecret;
-  pt::time_duration pollingInterval;
+  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(conf.ReadKey("api_secret")),
-        pollingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
+        pullingInterval(pt::milliseconds(
+            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Pulling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
-             pollingInterval);                          // 3
+             pullingInterval);                          // 3
   }
 
   void Validate() {}
@@ -129,9 +129,8 @@ class Request : public Rest::Request {
     auto result = Base::Send(session, context);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             ExtractContent(responseTree),
-                             std::move(boost::get<2>(result)));
+    return {boost::get<0>(result), ExtractContent(responseTree),
+            boost::get<2>(result)};
   }
 
  protected:
@@ -265,7 +264,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
-        m_tradingSession(m_marketDataSession.getHost()) {
+        m_tradingSession(m_marketDataSession.getHost()),
+        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -309,10 +309,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    if (m_pollingTask) {
-      return;
-    }
-    m_pollingTask = boost::make_unique<PollingTask>(
+    m_pullingTask.AddTask(
+        "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
             if (!subscribtion.second.isSubscribed) {
@@ -336,8 +334,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
               throw MarketDataSource::Error(error.str().c_str());
             }
           }
+          return true;
         },
-        m_settings.pollingInterval, GetMdsLog());
+        1);
   }
 
  protected:
@@ -511,7 +510,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
-  std::unique_ptr<PollingTask> m_pollingTask;
+  PullingTask m_pullingTask;
   trdk::Timer::Scope m_timerScope;
 };
 }

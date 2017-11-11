@@ -38,26 +38,26 @@ struct Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
-  pt::time_duration pollingInterval;
+  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
         apiPassphrase(conf.ReadKey("api_passphrase")),
-        pollingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
+        pullingInterval(pt::milliseconds(
+            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
     log.Info(
-        "API key: \"%1%\". API secret: %2%. API passphrase: %3%. Polling "
+        "API key: \"%1%\". API secret: %2%. API passphrase: %3%. Pulling "
         "interval: %4%.",
         apiKey,                                        // 1
         apiSecret.empty() ? "not set" : "is set",      // 2
         apiPassphrase.empty() ? "not set" : "is set",  // 3
-        pollingInterval);                              // 4
+        pullingInterval);                              // 4
   }
 
   void Validate() {}
@@ -109,23 +109,20 @@ class Request : public Rest::Request {
   virtual ~Request() override = default;
 
  protected:
-  virtual void Request::CheckResponce(
+  virtual void CheckErrorResponce(
       const net::HTTPResponse &response,
-      std::istream &responseStream) const override {
-    if (response.getStatus() == net::HTTPResponse::HTTP_OK) {
-      Base::CheckResponce(response, responseStream);
-      return;
-    }
+      const std::string &responseContent) const override {
     try {
-      ptr::ptree result;
-      ptr::read_json(responseStream, result);
-      const auto &message = result.get<std::string>("message");
+      const auto &message =
+          ReadJson(responseContent).get<std::string>("message");
       if (message == "Order already done") {
         throw TradingSystem::OrderIsUnknown(message.c_str());
+      } else if (!message.empty()) {
+        throw TradingSystem::Error(message.c_str());
       }
     } catch (const ptr::ptree_error &) {
-      Base::CheckResponce(response, responseStream);
     }
+    Base::CheckErrorResponce(response, responseContent);
   }
 };
 
@@ -226,13 +223,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
+        m_pullingTask(m_settings.pullingInterval, GetMdsLog()),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings),
         m_orderListRequest("orders",
                            net::HTTPRequest::HTTP_GET,
                            m_settings,
-                           "status=open&status=pending"),
-        m_numberOfPulls(0) {
+                           "status=open&status=pending") {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -276,11 +273,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    if (m_pollingTask) {
-      return;
-    }
-    m_pollingTask = boost::make_unique<PollingTask>(
-        [this]() {
+    m_pullingTask.AddTask(
+        "Prices", 1,
+        [this]() -> bool {
           const SecuritiesLock lock(m_securitiesMutex);
           for (const auto &subscribtion : m_securities) {
             if (!subscribtion.second.isSubscribed) {
@@ -312,12 +307,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
               throw MarketDataSource::Error(error.str().c_str());
             }
           }
-          UpdateOrders();
-          if (!(++m_numberOfPulls % 20)) {
-            RequestOpenedOrders();
-          }
+          return true;
         },
-        m_settings.pollingInterval, GetMdsLog());
+        1);
   }
 
  protected:
@@ -327,11 +319,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     } catch (const std::exception &ex) {
       GetTsLog().Error(ex.what());
     }
-    try {
-      RequestOpenedOrders();
-    } catch (const std::exception &ex) {
-      GetTsLog().Error(ex.what());
-    }
+    Verify(m_pullingTask.AddTask("Actual orders", 0,
+                                 [this]() {
+                                   UpdateOrders();
+                                   return true;
+                                 },
+                                 2));
+    Verify(m_pullingTask.AddTask(
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;
   }
 
@@ -423,6 +418,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            net::HTTPRequest::HTTP_DELETE, m_settings);
     const auto &result = request.Send(m_tradingSession, GetContext());
     MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+  }
+
+  virtual void OnTransactionSent(const OrderId &orderId) override {
+    TradingSystem::OnTransactionSent(orderId);
+    m_pullingTask.AccelerateNextPulling();
   }
 
  private:
@@ -546,39 +546,76 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
-  void RequestOpenedOrders() {
+  bool RequestOpenedOrders() {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    const bool isInitial = m_orders.empty();
     try {
       const auto orders = boost::get<1>(
           m_orderListRequest.Send(m_marketDataSession, GetContext()));
       MakeServerAnswerDebugDump(orders, *this);
       for (const auto &order : orders) {
         const Order notifiedOrder = UpdateOrder(order.second);
-        m_orders.erase(notifiedOrder.id);
-        if (notifiedOrder.status != ORDER_STATUS_CANCELLED) {
+        if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
+            (isInitial || m_orders.count(notifiedOrder.id))) {
           const auto id = notifiedOrder.id;
           notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
         }
+        m_orders.erase(notifiedOrder.id);
       }
     } catch (const std::exception &ex) {
       GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
       throw Exception("Failed to request order list");
     }
+
     for (const auto &canceledOrder : m_orders) {
       UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
     }
+
     m_orders.swap(notifiedOrderOrders);
+
+    return !m_orders.empty();
   }
 
   void UpdateOrders() {
+    class OrderStateRequest : public PrivateRequest {
+     public:
+      typedef PrivateRequest Base;
+
+     public:
+      explicit OrderStateRequest(const OrderId &orderId,
+                                 const Settings &settings)
+          : Base("orders/" + orderId.GetValue(),
+                 net::HTTPRequest::HTTP_GET,
+                 settings) {}
+      virtual ~OrderStateRequest() override = default;
+
+     protected:
+      virtual void CheckErrorResponce(
+          const net::HTTPResponse &response,
+          const std::string &responseContent) const {
+        try {
+          const auto &message =
+              ReadJson(responseContent).get<std::string>("message");
+          if (message == "NotFound") {
+            throw TradingSystem::OrderIsUnknown(message.c_str());
+          } else if (!message.empty()) {
+            throw TradingSystem::Error(message.c_str());
+          }
+        } catch (const ptr::ptree_error &) {
+        }
+        Base::CheckErrorResponce(response, responseContent);
+      }
+    };
+
     for (const OrderId &orderId : GetActiveOrderList()) {
-      PrivateRequest request("orders/" + orderId.GetValue(),
-                             net::HTTPRequest::HTTP_GET, m_settings);
+      OrderStateRequest request(orderId, m_settings);
       try {
         const auto result =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         MakeServerAnswerDebugDump(result, *this);
         UpdateOrder(result);
+      } catch (const OrderIsUnknown &) {
+        OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to update order list: \"%1%\".", ex.what());
         throw Exception("Failed to update order list");
@@ -596,13 +633,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
-  std::unique_ptr<PollingTask> m_pollingTask;
+  PullingTask m_pullingTask;
 
   PrivateRequest m_orderTransactionRequest;
 
   PrivateRequest m_orderListRequest;
   boost::unordered_map<OrderId, Order> m_orders;
-  size_t m_numberOfPulls;
 
   trdk::Timer::Scope m_timerScope;
 };
