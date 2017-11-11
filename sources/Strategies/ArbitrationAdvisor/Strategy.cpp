@@ -93,7 +93,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       auto &bestBuy = *bestAsk.second->security;
       if (m_tradingSettings &&
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-        Trade(bestSell, bestBuy, m_tradingSettings->maxQty, spreadRatio,
+        Trade(bestSell, bestBuy, m_tradingSettings->maxQty,
+              bestSell.GetBidPrice(), bestBuy.GetAskPrice(), spreadRatio,
               delayMeasurement);
       } else {
         StopTrading(bestSell, bestBuy, spreadRatio);
@@ -174,6 +175,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void Trade(Security &sellTarget,
              Security &buyTarget,
              const Qty &maxQty,
+             const Price &sellPrice,
+             const Price &buyPrice,
              const Double &spreadRatio,
              const Milestones &delayMeasurement) {
     if (CheckActualPositions(sellTarget, buyTarget, spreadRatio)) {
@@ -184,12 +187,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    m_lastOperation =
-        boost::make_shared<OperationContext>(sellTarget, buyTarget, maxQty);
+    m_lastOperation = boost::make_shared<OperationContext>(
+        sellTarget, buyTarget, maxQty, sellPrice, buyPrice);
     m_self.GetTradingLog().Write(
         "{'trade': {'new': {'sell': {'exchange': '%1%', 'bid': %2$.8f, 'ask': "
-        "%3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, "
-        "'spread': %7$.3f}}",
+        "%3$.8f, 'price': %8$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, "
+        "'ask': %6$.8f}}, 'spread': %7$.3f, 'price': %9$.8f}}",
         [&](TradingRecord &record) {
           record %
               boost::cref(m_lastOperation->GetTradingSystem(m_self, sellTarget)
@@ -200,7 +203,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                                 .GetInstanceName())  // 4
               % buyTarget.GetBidPriceValue()         // 5
               % buyTarget.GetAskPriceValue()         // 6
-              % spreadRatio;                         // 7
+              % spreadRatio                          // 7
+              % sellPrice                            // 8
+              % buyPrice;                            // 9
         });
 
     Position *sellPoisition = nullptr;

@@ -304,6 +304,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
@@ -326,6 +327,7 @@
   <ItemGroup>
     <ClInclude Include="Advice.hpp" />
     <ClInclude Include="OperationContext.hpp" />
+    <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="Report.hpp" />
     <ClInclude Include="Strategy.hpp" />

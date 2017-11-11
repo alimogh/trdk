@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "OrderPolicy.hpp"
+
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
@@ -17,8 +19,13 @@ class OperationContext : public PositionOperationContext {
  public:
   explicit OperationContext(Security &sellTarget,
                             Security &buyTarget,
-                            const Qty &maxQty)
-      : m_sellTarget(sellTarget), m_buyTarget(buyTarget), m_maxQty(maxQty) {}
+                            const Qty &maxQty,
+                            const Price &sellPrice,
+                            const Price &buyPrice)
+      : m_orderPolicy(sellPrice, buyPrice),
+        m_sellTarget(sellTarget),
+        m_buyTarget(buyTarget),
+        m_maxQty(maxQty) {}
   virtual ~OperationContext() override = default;
 
  public:
@@ -56,7 +63,7 @@ class OperationContext : public PositionOperationContext {
   }
 
  private:
-  TradingLib::LimitGtcOrderPolicy m_orderPolicy;
+  OrderPolicy m_orderPolicy;
   Security &m_sellTarget;
   Security &m_buyTarget;
   const Qty m_maxQty;
