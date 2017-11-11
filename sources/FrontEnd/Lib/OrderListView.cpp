@@ -39,7 +39,7 @@ void OrderListView::ShowContextMenu(const QPoint &pos) {
 }
 
 void OrderListView::CancelSelectedOrders() {
-  for (const auto &item : selectedIndexes()) {
+  for (const auto &item : selectionModel()->selectedRows()) {
     if (!CancelOrder(item)) {
       break;
     }
