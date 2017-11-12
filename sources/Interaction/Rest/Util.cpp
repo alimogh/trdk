@@ -26,3 +26,13 @@ ptr::ptree Rest::ReadJson(const std::string &source) {
   ptr::read_json(stream, result);
   return result;
 }
+
+std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
+  std::stringstream ss;
+  boost::property_tree::json_parser::write_json(ss, source, multiline);
+  auto result = ss.str();
+  if (!multiline) {
+    boost::replace_all(result, "\n", " ");
+  }
+  return result;
+}

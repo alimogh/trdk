@@ -101,7 +101,7 @@ void PullingTask::Run() {
     Lock lock(m_mutex);
 
     while (!m_tasks.empty()) {
-      auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
+      const auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
 
       bool isAccelerated = true;
       isAccelerated =

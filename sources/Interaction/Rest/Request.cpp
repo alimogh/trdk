@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Request.hpp"
+#include "FloodControl.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -78,8 +79,10 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
 
   if (!body.empty()) {
     m_request->setContentLength(body.size());
+    GetFloodControl().Check(IsPriority());
     session.sendRequest(*m_request) << body;
   } else {
+    GetFloodControl().Check(IsPriority());
     session.sendRequest(*m_request);
   }
 

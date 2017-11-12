@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
+#include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
@@ -168,6 +169,11 @@ class Request : public Rest::Request {
       throw Exception(error.str().c_str());
     }
   }
+
+  virtual FloodControl &GetFloodControl() override {
+    static DisabledFloodControl result;
+    return result;
+  }
 };
 
 class PublicRequest : public Request {
@@ -179,6 +185,9 @@ class PublicRequest : public Request {
                          const std::string &name,
                          const std::string &uriParams = std::string())
       : Base(uri, name, net::HTTPRequest::HTTP_GET, uriParams) {}
+
+ protected:
+  virtual bool IsPriority() const { return false; }
 };
 
 class PrivateRequest : public Request {
@@ -189,12 +198,14 @@ class PrivateRequest : public Request {
   explicit PrivateRequest(const std::string &uri,
                           const std::string &name,
                           const Settings &settings,
+                          bool isPriority,
                           const std::string &uriParams = std::string())
       : Base(uri,
              name,
              net::HTTPRequest::HTTP_POST,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
-        m_apiSecret(settings.apiSecret) {}
+        m_apiSecret(settings.apiSecret),
+        m_isPriority(isPriority) {}
 
   virtual ~PrivateRequest() override = default;
 
@@ -215,9 +226,11 @@ class PrivateRequest : public Request {
     }
     Base::CreateBody(session, result);
   }
+  virtual bool IsPriority() const { return m_isPriority; }
 
  private:
   const std::string m_apiSecret;
+  const bool m_isPriority;
 };
 
 class OpenOrdersRequest : public PublicRequest {
@@ -342,10 +355,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     PrivateRequest request("/remote/v2/private/getbalances/", "balances",
-                           m_settings);
+                           m_settings, false);
     try {
       const auto &response = request.Send(m_marketDataSession, GetContext());
-      MakeServerAnswerDebugDump(boost::get<1>(response), *this);
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
@@ -437,9 +449,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request(
         "/remote/v2/private/trade/" +
             NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
-        "tradeitems", m_settings, requestParams.str());
+        "tradeitems", m_settings, true, requestParams.str());
     const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
 
     boost::optional<OrderId> orderId;
     std::vector<TradeInfo> trades;
@@ -481,11 +492,10 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    PrivateRequest request("/remote/v2/private/cancelorder/" +
-                               boost::lexical_cast<std::string>(orderId) + "/",
-                           "cancelorder", m_settings);
-    const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    PrivateRequest("/remote/v2/private/cancelorder/" +
+                       boost::lexical_cast<std::string>(orderId) + "/",
+                   "cancelorder", m_settings, true)
+        .Send(m_tradingSession, GetContext());
   }
 
   void OnTradesInfo(const OrderId &orderId,

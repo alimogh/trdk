@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Fwd.hpp"
+
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/property_tree/json_parser.hpp>

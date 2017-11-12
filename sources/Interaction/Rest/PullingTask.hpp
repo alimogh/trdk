@@ -15,11 +15,10 @@ namespace Interaction {
 namespace Rest {
 
 class PullingTask : private boost::noncopyable {
- public:
+ private:
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
 
- private:
   struct Task {
     std::string name;
     size_t priority;

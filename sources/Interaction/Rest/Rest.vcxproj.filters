@@ -44,6 +44,9 @@
     <ClCompile Include="PullingTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FloodControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -65,6 +68,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PullingTask.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FloodControl.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

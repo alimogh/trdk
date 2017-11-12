@@ -12,6 +12,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
+#include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
@@ -124,6 +125,11 @@ class Request : public Rest::Request {
     }
     Base::CheckErrorResponce(response, responseContent);
   }
+
+  virtual FloodControl &GetFloodControl() override {
+    static DisabledFloodControl result;
+    return result;
+  }
 };
 
 class PublicRequest : public Request {
@@ -135,6 +141,9 @@ class PublicRequest : public Request {
       : Base(request, net::HTTPRequest::HTTP_GET, std::string()) {}
 
   virtual ~PublicRequest() override = default;
+
+ protected:
+  virtual bool IsPriority() const { return false; }
 };
 
 class PrivateRequest : public Request {
@@ -145,8 +154,11 @@ class PrivateRequest : public Request {
   explicit PrivateRequest(const std::string &request,
                           const std::string &method,
                           const Settings &settings,
+                          bool isPriority,
                           const std::string &uriParams = std::string())
-      : Base(request, method, uriParams), m_settings(settings) {}
+      : Base(request, method, uriParams),
+        m_settings(settings),
+        m_isPriority(isPriority) {}
 
   virtual ~PrivateRequest() override = default;
 
@@ -172,8 +184,11 @@ class PrivateRequest : public Request {
     Base::PrepareRequest(session, body, request);
   }
 
+  virtual bool IsPriority() const { return m_isPriority; }
+
  private:
   const Settings &m_settings;
+  const bool m_isPriority;
 };
 
 std::string NormilizeSymbol(const std::string &source) {
@@ -225,10 +240,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_tradingSession(m_marketDataSession.getHost()),
         m_pullingTask(m_settings.pullingInterval, GetMdsLog()),
         m_orderTransactionRequest(
-            "orders", net::HTTPRequest::HTTP_POST, m_settings),
+            "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
                            net::HTTPRequest::HTTP_GET,
                            m_settings,
+                           false,
                            "status=open&status=pending") {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
@@ -394,19 +410,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           "\"size\": \"%4$.8f\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
           % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
-#ifdef _DEBUG
-          % (*price * (side == ORDER_SIDE_SELL ? 1.1 : 0.9))  // 3
-#else
-          % *price  // 3
-#endif
-          % qty;  // 4
+          % *price                                                // 3
+          % qty;                                                  // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
 
     const auto &result =
         m_orderTransactionRequest.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
-
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("id"));
@@ -418,10 +428,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    PrivateRequest request("orders/" + orderId.GetValue(),
-                           net::HTTPRequest::HTTP_DELETE, m_settings);
-    const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    PrivateRequest("orders/" + orderId.GetValue(),
+                   net::HTTPRequest::HTTP_DELETE, m_settings, true)
+        .Send(m_tradingSession, GetContext());
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -431,11 +440,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void RequestAccounts() {
-    PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings);
+    PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
+                           false);
     try {
       const auto response =
           boost::get<1>(request.Send(m_tradingSession, GetContext()));
-      MakeServerAnswerDebugDump(response, *this);
       for (const auto &node : response) {
         const auto &account = node.second;
         GetTsLog().Info(
@@ -556,7 +565,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     try {
       const auto orders = boost::get<1>(
           m_orderListRequest.Send(m_marketDataSession, GetContext()));
-      MakeServerAnswerDebugDump(orders, *this);
       for (const auto &order : orders) {
         const Order notifiedOrder = UpdateOrder(order.second);
         if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
@@ -590,7 +598,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                  const Settings &settings)
           : Base("orders/" + orderId.GetValue(),
                  net::HTTPRequest::HTTP_GET,
-                 settings) {}
+                 settings,
+                 false) {}
       virtual ~OrderStateRequest() override = default;
 
      protected:
@@ -614,10 +623,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     for (const OrderId &orderId : GetActiveOrderList()) {
       OrderStateRequest request(orderId, m_settings);
       try {
-        const auto result =
-            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        MakeServerAnswerDebugDump(result, *this);
-        UpdateOrder(result);
+        UpdateOrder(
+            boost::get<1>(request.Send(m_marketDataSession, GetContext())));
       } catch (const OrderIsUnknown &) {
         OnOrderCancel(orderId);
       } catch (const std::exception &ex) {

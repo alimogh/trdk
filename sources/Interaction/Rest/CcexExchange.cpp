@@ -12,6 +12,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
+#include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
@@ -31,6 +32,20 @@ namespace ptr = boost::property_tree;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+struct Endpoint : private boost::noncopyable {
+  const std::string host;
+  MinTimeBetweenRequestsFloodControl floodControl;
+
+  explicit Endpoint(
+      const std::string &host,
+      const boost::posix_time::time_duration &minTimeBetweenRequests)
+      : host(host), floodControl(minTimeBetweenRequests) {}
+};
+Endpoint &GetEndpoint() {
+  static Endpoint result("c-cex.com", pt::seconds(1));
+  return result;
+}
 
 struct Settings {
   std::string apiKey;
@@ -81,11 +96,13 @@ class Request : public Rest::Request {
  public:
   explicit Request(const std::string &uri,
                    const std::string &name,
+                   FloodControl &floodControl,
                    const std::string &uriParams = std::string())
       : Base(uri,
              name,
              net::HTTPRequest::HTTP_GET,
-             AppendUriParams("a=" + name, uriParams)) {}
+             AppendUriParams("a=" + name, uriParams)),
+        m_floodControl(floodControl) {}
 
   virtual ~Request() override = default;
 
@@ -137,6 +154,10 @@ class Request : public Rest::Request {
     }
     return *result;
   }
+  virtual FloodControl &GetFloodControl() override { return m_floodControl; }
+
+ private:
+  FloodControl &m_floodControl;
 };
 
 class PublicRequest : public Request {
@@ -145,8 +166,12 @@ class PublicRequest : public Request {
 
  public:
   explicit PublicRequest(const std::string &name,
+                         FloodControl &floodControl,
                          const std::string &uriParams = std::string())
-      : Base("/t/api_pub.html", name, uriParams) {}
+      : Base("/t/api_pub.html", name, floodControl, uriParams) {}
+
+ protected:
+  virtual bool IsPriority() const { return false; }
 };
 
 class PrivateRequest : public Request {
@@ -156,11 +181,15 @@ class PrivateRequest : public Request {
  public:
   explicit PrivateRequest(const std::string &name,
                           const Settings &settings,
+                          FloodControl &floodControl,
+                          bool isPriority,
                           const std::string &uriParams = std::string())
       : Base("/t/api.html",
              name,
+             floodControl,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
-        m_apiSecret(settings.apiSecret) {}
+        m_apiSecret(settings.apiSecret),
+        m_isPriority(isPriority) {}
 
   virtual ~PrivateRequest() override = default;
 
@@ -177,8 +206,11 @@ class PrivateRequest : public Request {
     Base::PrepareRequest(session, body, request);
   }
 
+  virtual bool IsPriority() const { return m_isPriority; }
+
  private:
   const std::string m_apiSecret;
+  const bool m_isPriority;
 };
 
 std::string NormilizeSymbol(const std::string &source) {
@@ -212,9 +244,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession("c-cex.com"),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()),
-        m_tradingSession(m_marketDataSession.getHost()) {
+        m_endpoint(GetEndpoint()),
+        m_marketDataSession(m_endpoint.host),
+        m_tradingSession(m_endpoint.host),
+        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -298,7 +331,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "getorderbook",
+          "getorderbook", m_endpoint.floodControl,
           "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "&type=both&depth=1");
 
@@ -338,18 +371,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % qty                                                          // 2
-#ifdef _DEBUG
-        % (*price * (side == ORDER_SIDE_SELL ? 1.1 : 0.9));  // 3
-#else
         % *price;  // 3
-#endif
 
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
-                           m_settings, requestParams.str());
+                           m_settings, m_endpoint.floodControl, true,
+                           requestParams.str());
 
     const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
-
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("uuid"));
@@ -367,9 +395,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
      public:
       explicit CancelOrderRequest(const OrderId &orderId,
-                                  const Settings &settings)
+                                  const Settings &settings,
+                                  FloodControl &floodControl)
           : Base("cancel",
                  settings,
+                 floodControl,
+                 true,
                  "uuid=" + boost::lexical_cast<std::string>(orderId)) {}
 
       virtual ~CancelOrderRequest() override = default;
@@ -379,9 +410,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           const ptr::ptree &responseTree) const override {
         return responseTree;
       }
-    } request(orderId, m_settings);
-    const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+    } request(orderId, m_settings, m_endpoint.floodControl);
+    request.Send(m_tradingSession, GetContext());
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -454,11 +484,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
     bool isInitial = m_orders.empty();
     {
-      PrivateRequest request("getopenorders", m_settings);
+      PrivateRequest request("getopenorders", m_settings,
+                             m_endpoint.floodControl, false);
       try {
         const auto orders =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        MakeServerAnswerDebugDump(orders, *this);
         for (const auto &order : orders) {
           const Order notifiedOrder = UpdateOrder(order.second);
           if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
@@ -526,23 +556,32 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   void UpdateOrders() {
     for (const OrderId &orderId : GetActiveOrderList()) {
       PrivateRequest request(
-          "getorder", m_settings,
+          "getorder", m_settings, m_endpoint.floodControl, false,
           "uuid=" + boost::lexical_cast<std::string>(orderId));
+      ptr::ptree response;
       try {
-        const auto orderList =
+        response =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        for (const auto &order : orderList) {
+        for (const auto &order : response) {
           UpdateOrder(order.second);
         }
       } catch (const OrderIsUnknown &ex) {
-        GetTsLog().Warn("Failed to request state for order %1%: \"%2%\" (%3%).",
-                        orderId,                         // 1
-                        ex.what(),                       // 2
-                        request.GetRequest().getURI());  // 3
+        GetTsLog().Warn(
+            "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
+            "response: \"%4%\").",
+            orderId,                            // 1
+            ex.what(),                          // 2
+            request.GetRequest().getURI(),      // 3
+            ConvertToString(response, false));  // 4
         OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
-                         orderId, ex.what());
+        GetTsLog().Error(
+            "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
+            "response: \"%4%\").",
+            orderId,                            // 1
+            ex.what(),                          // 2
+            request.GetRequest().getURI(),      // 3
+            ConvertToString(response, false));  // 4
         throw Exception("Failed to request order state");
       }
     }
@@ -552,6 +591,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
+  Endpoint &m_endpoint;
   net::HTTPSClientSession m_marketDataSession;
   net::HTTPSClientSession m_tradingSession;
 

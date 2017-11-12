@@ -16,6 +16,12 @@ namespace Rest {
 
 class Request {
  public:
+  typedef boost::tuple<boost::posix_time::ptime,
+                       boost::property_tree::ptree,
+                       Lib::TimeMeasurement::Milestones>
+      Response;
+
+ public:
   explicit Request(
       const std::string &uri,
       const std::string &name,
@@ -28,10 +34,7 @@ class Request {
   const std::string &GetName() const { return m_name; }
   void SetBody(const std::string &body) { m_body = body; }
 
-  virtual boost::tuple<boost::posix_time::ptime,
-                       boost::property_tree::ptree,
-                       Lib::TimeMeasurement::Milestones>
-  Send(Poco::Net::HTTPClientSession &, const Context &);
+  virtual Response Send(Poco::Net::HTTPClientSession &, const Context &);
 
   const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
 
@@ -50,6 +53,10 @@ class Request {
 
   virtual void CheckErrorResponce(const Poco::Net::HTTPResponse &,
                                   const std::string &responseContent) const;
+
+  virtual FloodControl &GetFloodControl() = 0;
+
+  virtual bool IsPriority() const = 0;
 
  private:
   const std::string m_uri;
