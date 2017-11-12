@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
-#include "PollingTask.hpp"
+#include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -413,7 +413,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 10));
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -472,8 +472,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-        % *price                                                       // 3
-        % qty;                                                         // 4
+#ifdef _DEBUG
+        % (*price * (side == ORDER_SIDE_SELL ? 1.1 : 0.9))  // 3
+#else
+        % *price  // 3
+#endif
+        % qty;  // 4
     TradeRequest request("Trade", m_nextNonce++, m_settings,
                          requestParams.str());
     StoreNextNonce(m_nextNonce);

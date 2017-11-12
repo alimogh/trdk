@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
-#include "PollingTask.hpp"
+#include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Util.hpp"

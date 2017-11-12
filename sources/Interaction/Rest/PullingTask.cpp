@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "PollingTask.hpp"
+#include "PullingTask.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

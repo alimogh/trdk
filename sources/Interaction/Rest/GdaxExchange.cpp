@@ -12,7 +12,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
-#include "PollingTask.hpp"
+#include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -326,7 +326,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 10));
     m_isConnected = true;
   }
 
@@ -394,8 +394,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           "\"size\": \"%4$.8f\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
           % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
-          % *price                                                // 3
-          % qty;                                                  // 4
+#ifdef _DEBUG
+          % (*price * (side == ORDER_SIDE_SELL ? 1.1 : 0.9))  // 3
+#else
+          % *price  // 3
+#endif
+          % qty;  // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
 

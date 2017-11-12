@@ -12,7 +12,7 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
-#include "PollingTask.hpp"
+#include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -272,7 +272,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask("Opened orders", 100,
-                                 [this] { return RequestOpenedOrders(); }, 30));
+                                 [this] { return RequestOpenedOrders(); }, 10));
     m_isConnected = true;
   }
 
@@ -338,7 +338,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % qty                                                          // 2
-        % *price;                                                      // 3
+#ifdef _DEBUG
+        % (*price * (side == ORDER_SIDE_SELL ? 1.1 : 0.9));  // 3
+#else
+        % *price;  // 3
+#endif
 
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
                            m_settings, requestParams.str());
