@@ -34,5 +34,6 @@ std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
   if (!multiline) {
     boost::replace_all(result, "\n", " ");
   }
+  boost::trim(result);
   return result;
 }

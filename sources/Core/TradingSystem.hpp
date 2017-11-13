@@ -188,6 +188,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const boost::optional<trdk::Price> &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const trdk::OrderSide &,
       const trdk::TimeInForce &,
@@ -199,8 +200,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
  protected:
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
@@ -208,31 +208,27 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                            const trdk::Volume &commission,
                            trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty);
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission);
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
       const trdk::OrderId &,
@@ -240,8 +236,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Qty &remainingQty,
       const boost::function<void(trdk::OrderTransactionContext &)> &);
   //! Notifies trading system about order state change.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
       const trdk::OrderId &,
@@ -250,17 +245,13 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       trdk::TradingSystem::TradeInfo &&,
       const boost::function<void(trdk::OrderTransactionContext &)> &);
   //! Notifies trading system about order canceling.
-  /** Method is not thread-safe.
-    */
   void OnOrderCancel(const trdk::OrderId &);
   //! Notifies trading system about order error.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderError(const trdk::OrderId &, const std::string &&error);
   //! Notifies trading system about order reject.
-  /** Method is not thread-safe.
-    * @throw  OrderIsUnknown  Order handler is not registered.
+  /** @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderReject(const trdk::OrderId &, const std::string &&reason);
 
@@ -315,6 +306,7 @@ class TRDK_CORE_API LegacyTradingSystem : public trdk::TradingSystem {
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const boost::optional<trdk::Price> &,
+      const trdk::Price &,
       const trdk::OrderParams &,
       const trdk::OrderSide &,
       const trdk::TimeInForce &,

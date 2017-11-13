@@ -371,7 +371,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % qty                                                          // 2
-        % *price;  // 3
+        % *price;                                                      // 3
 
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
                            m_settings, m_endpoint.floodControl, true,
@@ -412,6 +412,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
     } request(orderId, m_settings, m_endpoint.floodControl);
     request.Send(m_tradingSession, GetContext());
+    try {
+      OnOrderCancel(orderId);
+    } catch (const OrderIsUnknown &) {
+      if (m_orders.empty()) {
+        throw;
+      }
+    }
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -421,17 +428,20 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
-            order.price, order.side, order.tif, order.openTime,
-            order.updateTime);
+    const auto qtyPrecision = 1000000;
+    OnOrder(order.id, order.symbol, status,
+            RoundByPrecision(order.qty, qtyPrecision),
+            RoundByPrecision(order.remainingQty, qtyPrecision), order.price,
+            order.side, order.tif, order.openTime, order.updateTime);
   }
 
-  Order UpdateOrder(const ptr::ptree &order) {
+  Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
     const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;
     boost::optional<Price> price;
-    const auto &type = order.get<std::string>("OrderType");
+    const auto &type =
+        order.get<std::string>(isActialOrder ? "Type" : "OrderType");
     if (type == "LIMIT_SELL") {
       side = ORDER_SIDE_SELL;
       price = order.get<double>("Limit");
@@ -490,7 +500,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         const auto orders =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         for (const auto &order : orders) {
-          const Order notifiedOrder = UpdateOrder(order.second);
+          const Order notifiedOrder = UpdateOrder(order.second, false);
           if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
               (isInitial || m_orders.count(notifiedOrder.id))) {
             const auto id = notifiedOrder.id;
@@ -563,17 +573,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         response =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
         for (const auto &order : response) {
-          UpdateOrder(order.second);
+          UpdateOrder(order.second, true);
         }
-      } catch (const OrderIsUnknown &ex) {
-        GetTsLog().Warn(
-            "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
-            "response: \"%4%\").",
-            orderId,                            // 1
-            ex.what(),                          // 2
-            request.GetRequest().getURI(),      // 3
-            ConvertToString(response, false));  // 4
-        OnOrderCancel(orderId);
+      } catch (const OrderIsUnknown &) {
+        OnOrderStatusUpdate(orderId, ORDER_STATUS_FILLED, 0, {});
       } catch (const std::exception &ex) {
         GetTsLog().Error(
             "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "

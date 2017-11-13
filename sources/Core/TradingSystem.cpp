@@ -76,8 +76,17 @@ struct ActiveOrder {
   boost::shared_ptr<OrderTransactionContext> transactionContext;
   TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
   Qty remainingQty;
+  Price price;
   OrderStatus status;
+  pt::ptime updateTime;
   std::unique_ptr<trdk::Timer::Scope> timerScope;
+
+  bool IsChanged(const OrderStatus &rhsStatus,
+                 const Qty &rhsRemainingQty,
+                 const pt::ptime &rhsUpdateTime) const {
+    return status != rhsStatus || updateTime != rhsUpdateTime ||
+           remainingQty != rhsRemainingQty;
+  }
 };
 }
 
@@ -232,10 +241,11 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void RegisterCallback(
       const boost::shared_ptr<OrderTransactionContext> &transactionContext,
       const OrderStatusUpdateSlot &&callback,
-      const Qty &qty) {
+      const Qty &qty,
+      const Price &price) {
     auto result = m_activeOrders.emplace(
         transactionContext->GetOrderId(),
-        ActiveOrder{transactionContext, std::move(callback), qty,
+        ActiveOrder{transactionContext, std::move(callback), qty, price,
                     ORDER_STATUS_SENT});
     if (!result.second) {
       m_log.Error("Order ID %1% is not unique.",
@@ -278,63 +288,71 @@ class TradingSystem::Implementation : private boost::noncopyable {
       const pt::ptime &time,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
       const boost::function<void(OrderTransactionContext &)> &callback) {
+    auto &cache = it->second;
+
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_SENT:
       case ORDER_STATUS_SUBMITTED:
-        switch (it->second.status) {
+        switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
-            status = it->second.status;
-            break;
-          default:
-            it->second.status = status;
+            status = cache.status;
             break;
         }
         break;
-      default:
-        it->second.status = status;
-        break;
+    }
+
+    if (tradeInfo && !tradeInfo->price) {
+      tradeInfo->price = cache.price;
     }
 
     if (remainingQty) {
-      AssertGe(it->second.remainingQty, *remainingQty);
+      AssertGe(cache.remainingQty, *remainingQty);
       if (tradeInfo && !tradeInfo->qty) {
-        tradeInfo->qty = it->second.remainingQty - *remainingQty;
+        tradeInfo->qty = cache.remainingQty - *remainingQty;
       }
-      it->second.remainingQty = *remainingQty;
     }
 
     if (callback) {
-      callback(*it->second.transactionContext);
+      callback(*cache.transactionContext);
     }
 
     // Maybe in the future new thread will be required here to avoid deadlocks
     // from callback (when some one will need to call the same trading system
     // from this callback).
-    it->second.statusUpdateSignal(orderId, status, it->second.remainingQty,
-                                  commission,
-                                  tradeInfo ? &*tradeInfo : nullptr);
+    cache.statusUpdateSignal(orderId, status, cache.remainingQty, commission,
+                             tradeInfo ? &*tradeInfo : nullptr);
 
-    m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
-      dropCopy.CopyOrderStatus(orderId, m_self, time, status,
-                               it->second.remainingQty);
-      if (tradeInfo) {
-        dropCopy.CopyTrade(time, tradeInfo->id, orderId, m_self,
-                           tradeInfo->price, tradeInfo->qty);
-      }
-    });
-
+    Qty actualRemainingQty;
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_FILLED:
-        AssertEq(0, it->second.remainingQty);
+        Assert(!remainingQty || *remainingQty == 0);
       case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
       case ORDER_STATUS_ERROR:
         m_activeOrders.erase(it);
         break;
+      default: {
+        cache.status = status;
+        if (remainingQty) {
+          cache.remainingQty = *remainingQty;
+        }
+        cache.updateTime = time;
+        actualRemainingQty = cache.remainingQty;
+        break;
+      }
     }
+
+    m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
+      dropCopy.CopyOrderStatus(orderId, m_self, time, status,
+                               actualRemainingQty);
+      if (tradeInfo) {
+        dropCopy.CopyTrade(time, tradeInfo->id, orderId, m_self,
+                           tradeInfo->price, tradeInfo->qty);
+      }
+    });
   }
 };
 
@@ -420,7 +438,7 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
 
   try {
     return SendOrderTransaction(
-        security, currency, qty, price, params, side, tif,
+        security, currency, qty, price, actualPrice, params, side, tif,
         [this, &riskControlScope, riskControlOperationId, &security, currency,
          actualPrice, delaysMeasurement, callback, side](
             const OrderId &orderId, const OrderStatus &orderStatus,
@@ -464,6 +482,7 @@ boost::shared_ptr<OrderTransactionContext> TradingSystem::SendOrderTransaction(
     const Currency &currency,
     const Qty &qty,
     const boost::optional<Price> &price,
+    const Price &actualPrice,
     const OrderParams &params,
     const OrderSide &side,
     const TimeInForce &tif,
@@ -475,7 +494,7 @@ boost::shared_ptr<OrderTransactionContext> TradingSystem::SendOrderTransaction(
     result =
         SendOrderTransaction(security, currency, qty, price, params, side, tif);
     m_pimpl->LogOrderSent(result->GetOrderId());
-    m_pimpl->RegisterCallback(result, std::move(callback), qty);
+    m_pimpl->RegisterCallback(result, std::move(callback), qty, actualPrice);
     GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
       dropCopy.CopySubmittedOrder(result->GetOrderId(), time, security,
                                   currency, *this, side, qty, price, tif);
@@ -521,7 +540,8 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
               % ex.what();  // 2
         });
     GetLog().Warn(
-        "Error while sending order cancel transaction for order %1%: \"%2%\".",
+        "Error while sending order cancel transaction for order %1%: "
+        "\"%2%\".",
         orderId,     // 1
         ex.what());  // 2
     OnTransactionSent(orderId);
@@ -641,14 +661,17 @@ void TradingSystem::OnOrder(const OrderId &orderId,
     const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
-      boost::optional<TradeInfo> trader;
+      boost::optional<TradeInfo> trade;
       switch (status) {
         case ORDER_STATUS_FILLED:
         case ORDER_STATUS_FILLED_PARTIALLY:
-          trader = TradeInfo{price ? *price : 0};
+          trade = TradeInfo{price ? *price : 0};
+      }
+      if (!trade && !it->second.IsChanged(status, remainingQty, updateTime)) {
+        return;
       }
       m_pimpl->OnOrderStatusUpdate(
-          orderId, status, remainingQty, boost::none, std::move(trader),
+          orderId, status, remainingQty, boost::none, std::move(trade),
           updateTime, it, boost::function<void(OrderTransactionContext &)>());
       return;
     }
@@ -673,6 +696,7 @@ LegacyTradingSystem::SendOrderTransaction(
     const Currency &currency,
     const Qty &qty,
     const boost::optional<Price> &price,
+    const Price &,
     const OrderParams &params,
     const OrderSide &side,
     const TimeInForce &tif,
