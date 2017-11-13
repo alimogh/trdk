@@ -12,6 +12,8 @@
 
 namespace trdk {
 namespace Interaction {
-namespace Rest {}
+namespace Rest {
+class FloodControl;
+}
 }
 }

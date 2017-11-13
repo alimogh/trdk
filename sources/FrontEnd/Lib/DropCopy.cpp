@@ -22,9 +22,9 @@ namespace ids = boost::uuids;
 
 lib::DropCopy::DropCopy(QObject *parent)
     : QObject(parent),
-      m_pollingInterval(pt::milliseconds(500)),
+      m_pullingInterval(pt::milliseconds(500)),
       m_lastSignalTime(pt::microsec_clock::universal_time() -
-                       m_pollingInterval) {
+                       m_pullingInterval) {
   qRegisterMetaType<trdk::OrderId>("trdk::OrderId");
   qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
   qRegisterMetaType<std::string>("std::string");
@@ -160,7 +160,7 @@ void lib::DropCopy::CopyLevel1(const Security &security,
 
 void lib::DropCopy::SignalPriceUpdate(const Security &security) {
   const auto &now = pt::microsec_clock::universal_time();
-  if (m_lastSignalTime + m_pollingInterval > now) {
+  if (m_lastSignalTime + m_pullingInterval > now) {
     return;
   }
   emit PriceUpdate(&security);

@@ -126,6 +126,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   trdk::RiskControlScope &GetRiskControlScope();
 
   trdk::TradingSystem &GetTradingSystem(size_t index);
+  const trdk::TradingSystem &GetTradingSystem(size_t index) const;
 
  public:
   bool IsBlocked(bool isForever = false) const;

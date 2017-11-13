@@ -202,6 +202,11 @@ class TRDK_CORE_API Position
   //! Time of first trade.
   const boost::posix_time::ptime &GetOpenTime() const;
 
+  //! Returns position opening context if exists or throws an exception if
+  //! doesn't have it.
+  const boost::shared_ptr<const trdk::OrderTransactionContext>
+      &GetOpeningContext() const;
+
   trdk::Qty GetActiveQty() const noexcept;
   trdk::Volume GetActiveVolume() const;
 
@@ -301,9 +306,13 @@ class TRDK_CORE_API Position
   //! Restores position in open-state.
   /** Sets position in open state at current strategy, doesn't make any trading
     * actions.
-    * @param[in] openPrice   Position opening price.
+    * @param[in] openPrice      Position opening price.
+    * @param[in] openingContext Position opening context, if exists.
     */
-  void RestoreOpenState(const trdk::Price &openPrice);
+  void RestoreOpenState(
+      const trdk::Price &openPrice,
+      const boost::shared_ptr<const trdk::OrderTransactionContext>
+          &openingContext = nullptr);
 
  public:
   const trdk::OrderTransactionContext &OpenAtMarketPrice();

@@ -403,7 +403,6 @@ void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
   {
     const auto &targetIndex = m_instanceData.targets.get<BySecurity>();
     const auto updateTargeIt = targetIndex.find(advice.security);
-    Assert(updateTargeIt != targetIndex.cend());
     if (updateTargeIt == targetIndex.cend()) {
       return;
     }

@@ -305,9 +305,9 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
+    <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
-    <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -322,16 +322,19 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PullingTask.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Security.cpp" />
+    <ClCompile Include="Util.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="YobitnetExchange.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp" />
+    <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="PollingTask.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="PullingTask.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Util.hpp" />

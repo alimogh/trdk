@@ -12,7 +12,8 @@
 
 #include "Prec.hpp"
 #include "App.hpp"
-#include "PollingTask.hpp"
+#include "FloodControl.hpp"
+#include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -32,25 +33,39 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
+struct Endpoint : private boost::noncopyable {
+  const std::string host;
+  MinTimeBetweenRequestsFloodControl floodControl;
+
+  explicit Endpoint(
+      const std::string &host,
+      const boost::posix_time::time_duration &minTimeBetweenRequests)
+      : host(host), floodControl(minTimeBetweenRequests) {}
+};
+Endpoint &GetEndpoint() {
+  static Endpoint result("c-cex.com", pt::seconds(1));
+  return result;
+}
+
 struct Settings {
   std::string apiKey;
   std::string apiSecret;
-  pt::time_duration pollingInterval;
+  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(conf.ReadKey("api_secret")),
-        pollingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("polling_interval_milliseconds"))) {
+        pullingInterval(pt::milliseconds(
+            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Polling interval: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. Pulling interval: %3%.",
              apiKey,                                    // 1
              apiSecret.empty() ? "not set" : "is set",  // 2
-             pollingInterval);                          // 3
+             pullingInterval);                          // 3
   }
 
   void Validate() {}
@@ -81,11 +96,13 @@ class Request : public Rest::Request {
  public:
   explicit Request(const std::string &uri,
                    const std::string &name,
+                   FloodControl &floodControl,
                    const std::string &uriParams = std::string())
       : Base(uri,
              name,
              net::HTTPRequest::HTTP_GET,
-             AppendUriParams("a=" + name, uriParams)) {}
+             AppendUriParams("a=" + name, uriParams)),
+        m_floodControl(floodControl) {}
 
   virtual ~Request() override = default;
 
@@ -121,9 +138,8 @@ class Request : public Rest::Request {
       }
     }
 
-    return boost::make_tuple(std::move(boost::get<0>(result)),
-                             std::move(ExtractContent(responseTree)),
-                             std::move(boost::get<2>(result)));
+    return {boost::get<0>(result), ExtractContent(responseTree),
+            boost::get<2>(result)};
   }
 
  protected:
@@ -138,6 +154,10 @@ class Request : public Rest::Request {
     }
     return *result;
   }
+  virtual FloodControl &GetFloodControl() override { return m_floodControl; }
+
+ private:
+  FloodControl &m_floodControl;
 };
 
 class PublicRequest : public Request {
@@ -146,8 +166,12 @@ class PublicRequest : public Request {
 
  public:
   explicit PublicRequest(const std::string &name,
+                         FloodControl &floodControl,
                          const std::string &uriParams = std::string())
-      : Base("/t/api_pub.html", name, uriParams) {}
+      : Base("/t/api_pub.html", name, floodControl, uriParams) {}
+
+ protected:
+  virtual bool IsPriority() const { return false; }
 };
 
 class PrivateRequest : public Request {
@@ -157,11 +181,15 @@ class PrivateRequest : public Request {
  public:
   explicit PrivateRequest(const std::string &name,
                           const Settings &settings,
+                          FloodControl &floodControl,
+                          bool isPriority,
                           const std::string &uriParams = std::string())
       : Base("/t/api.html",
              name,
+             floodControl,
              AppendUriParams("apikey=" + settings.apiKey, uriParams)),
-        m_apiSecret(settings.apiSecret) {}
+        m_apiSecret(settings.apiSecret),
+        m_isPriority(isPriority) {}
 
   virtual ~PrivateRequest() override = default;
 
@@ -178,8 +206,11 @@ class PrivateRequest : public Request {
     Base::PrepareRequest(session, body, request);
   }
 
+  virtual bool IsPriority() const { return m_isPriority; }
+
  private:
   const std::string m_apiSecret;
+  const bool m_isPriority;
 };
 
 std::string NormilizeSymbol(const std::string &source) {
@@ -213,9 +244,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(marketDataSourceIndex, context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession("c-cex.com"),
-        m_tradingSession(m_marketDataSession.getHost()),
-        m_numberOfPulls(0) {
+        m_endpoint(GetEndpoint()),
+        m_marketDataSession(m_endpoint.host),
+        m_tradingSession(m_endpoint.host),
+        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -247,39 +279,33 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SubscribeToSecurities() override {
-    {
-      const SecuritiesLock lock(m_securitiesMutex);
-      for (auto &subscribtion : m_securities) {
-        if (subscribtion.second.isSubscribed) {
-          continue;
-        }
-        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
-                         *subscribtion.second.security);
-        subscribtion.second.isSubscribed = true;
+    const SecuritiesLock lock(m_securitiesMutex);
+    for (auto &subscribtion : m_securities) {
+      if (subscribtion.second.isSubscribed) {
+        continue;
       }
+      GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
+                       *subscribtion.second.security);
+      subscribtion.second.isSubscribed = true;
     }
-
-    if (m_pollingTask) {
-      return;
-    }
-    m_pollingTask = boost::make_unique<PollingTask>(
-        [this]() {
-          UpdateSecurities();
-          UpdateOrders();
-          if (!(++m_numberOfPulls % 20)) {
-            RequestOpenedOrders();
-          }
-        },
-        m_settings.pollingInterval, GetMdsLog());
   }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
-    try {
-      RequestOpenedOrders();
-    } catch (const std::exception &ex) {
-      GetTsLog().Error(ex.what());
-    }
+    Verify(m_pullingTask.AddTask("Securities", 1,
+                                 [this] {
+                                   UpdateSecurities();
+                                   return true;
+                                 },
+                                 1));
+    Verify(m_pullingTask.AddTask("Actual orders", 0,
+                                 [this] {
+                                   UpdateOrders();
+                                   return true;
+                                 },
+                                 2));
+    Verify(m_pullingTask.AddTask("Opened orders", 100,
+                                 [this] { return RequestOpenedOrders(); }, 10));
     m_isConnected = true;
   }
 
@@ -305,7 +331,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "getorderbook",
+          "getorderbook", m_endpoint.floodControl,
           "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
               "&type=both&depth=1");
 
@@ -346,12 +372,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % qty                                                          // 2
         % *price;                                                      // 3
+
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
-                           m_settings, requestParams.str());
+                           m_settings, m_endpoint.floodControl, true,
+                           requestParams.str());
 
     const auto &result = request.Send(m_tradingSession, GetContext());
-    MakeServerAnswerDebugDump(boost::get<1>(result), *this);
-
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("uuid"));
@@ -369,9 +395,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
      public:
       explicit CancelOrderRequest(const OrderId &orderId,
-                                  const Settings &settings)
+                                  const Settings &settings,
+                                  FloodControl &floodControl)
           : Base("cancel",
                  settings,
+                 floodControl,
+                 true,
                  "uuid=" + boost::lexical_cast<std::string>(orderId)) {}
 
       virtual ~CancelOrderRequest() override = default;
@@ -381,30 +410,38 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           const ptr::ptree &responseTree) const override {
         return responseTree;
       }
-    };
-
+    } request(orderId, m_settings, m_endpoint.floodControl);
+    request.Send(m_tradingSession, GetContext());
     try {
-      const auto &result = CancelOrderRequest(orderId, m_settings)
-                               .Send(m_tradingSession, GetContext());
-      MakeServerAnswerDebugDump(boost::get<1>(result), *this);
+      OnOrderCancel(orderId);
     } catch (const OrderIsUnknown &) {
-      throw;
+      if (m_orders.empty()) {
+        throw;
+      }
     }
+  }
+
+  virtual void OnTransactionSent(const OrderId &orderId) override {
+    TradingSystem::OnTransactionSent(orderId);
+    m_pullingTask.AccelerateNextPulling();
   }
 
  private:
   void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
-            order.price, order.side, order.tif, order.openTime,
-            order.updateTime);
+    const auto qtyPrecision = 1000000;
+    OnOrder(order.id, order.symbol, status,
+            RoundByPrecision(order.qty, qtyPrecision),
+            RoundByPrecision(order.remainingQty, qtyPrecision), order.price,
+            order.side, order.tif, order.openTime, order.updateTime);
   }
 
-  Order UpdateOrder(const ptr::ptree &order) {
+  Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
     const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;
     boost::optional<Price> price;
-    const auto &type = order.get<std::string>("OrderType");
+    const auto &type =
+        order.get<std::string>(isActialOrder ? "Type" : "OrderType");
     if (type == "LIMIT_SELL") {
       side = ORDER_SIDE_SELL;
       price = order.get<double>("Limit");
@@ -453,21 +490,23 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
-  void RequestOpenedOrders() {
+  bool RequestOpenedOrders() {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    bool isInitial = m_orders.empty();
     {
-      PrivateRequest request("getopenorders", m_settings);
+      PrivateRequest request("getopenorders", m_settings,
+                             m_endpoint.floodControl, false);
       try {
         const auto orders =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        MakeServerAnswerDebugDump(orders, *this);
         for (const auto &order : orders) {
-          const Order notifiedOrder = UpdateOrder(order.second);
-          m_orders.erase(notifiedOrder.id);
-          if (notifiedOrder.status != ORDER_STATUS_CANCELLED) {
+          const Order notifiedOrder = UpdateOrder(order.second, false);
+          if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
+              (isInitial || m_orders.count(notifiedOrder.id))) {
             const auto id = notifiedOrder.id;
             notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
           }
+          m_orders.erase(notifiedOrder.id);
         }
       } catch (const std::exception &ex) {
         GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
@@ -478,6 +517,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
     }
     m_orders.swap(notifiedOrderOrders);
+
+    return !m_orders.empty();
   }
 
   void UpdateSecurities() {
@@ -525,18 +566,25 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   void UpdateOrders() {
     for (const OrderId &orderId : GetActiveOrderList()) {
       PrivateRequest request(
-          "getorder", m_settings,
+          "getorder", m_settings, m_endpoint.floodControl, false,
           "uuid=" + boost::lexical_cast<std::string>(orderId));
+      ptr::ptree response;
       try {
-        UpdateOrder(
-            boost::get<1>(request.Send(m_marketDataSession, GetContext())));
-      } catch (const OrderIsUnknown &ex) {
-        GetTsLog().Warn("Failed to request state for order %1%: \"%2%\".",
-                        orderId, ex.what());
-        OnOrderCancel(orderId);
+        response =
+            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+        for (const auto &order : response) {
+          UpdateOrder(order.second, true);
+        }
+      } catch (const OrderIsUnknown &) {
+        OnOrderStatusUpdate(orderId, ORDER_STATUS_FILLED, 0, {});
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
-                         orderId, ex.what());
+        GetTsLog().Error(
+            "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
+            "response: \"%4%\").",
+            orderId,                            // 1
+            ex.what(),                          // 2
+            request.GetRequest().getURI(),      // 3
+            ConvertToString(response, false));  // 4
         throw Exception("Failed to request order state");
       }
     }
@@ -546,17 +594,16 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
+  Endpoint &m_endpoint;
   net::HTTPSClientSession m_marketDataSession;
   net::HTTPSClientSession m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
-  std::unique_ptr<PollingTask> m_pollingTask;
+  PullingTask m_pullingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
-
-  size_t m_numberOfPulls;
 };
 }
 

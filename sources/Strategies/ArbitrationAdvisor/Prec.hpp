@@ -13,6 +13,7 @@
 #include "Common/Common.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "Core/MarketDataSource.hpp"
 #include "Core/Position.hpp"
 #include "Core/PositionOperationContext.hpp"
 #include "Core/Strategy.hpp"

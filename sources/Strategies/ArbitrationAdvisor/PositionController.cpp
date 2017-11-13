@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "Report.hpp"
+#include "OperationContext.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
@@ -25,35 +25,62 @@ aa::PositionController::PositionController(Strategy &strategy)
 
 aa::PositionController::~PositionController() = default;
 
+void aa::PositionController::OnPositionUpdate(Position &position) {
+  if (position.IsCompleted()) {
+    auto &reportData = boost::polymorphic_cast<OperationContext *>(
+                           &position.GetOperationContext())
+                           ->GetReportData();
+    if (reportData.Add(position)) {
+      m_report->Append(reportData);
+    }
+    return;
+  }
+
+  Base::OnPositionUpdate(position);
+}
+
 void aa::PositionController::HoldPosition(Position &position) {
   Assert(position.IsFullyOpened());
   Assert(!position.HasActiveOrders());
+  // It's normal. Assert maybe removed when strategy and position removing will
+  // be debugged.
   AssertGe(2, GetStrategy().GetPositions().GetSize());
 
-  Position &oppositePosition = GetOppositePosition(position);
-  if (oppositePosition.IsFullyOpened()) {
-    // Operation is completed.
-    position.MarkAsCompleted();
-    oppositePosition.MarkAsCompleted();
-    m_report->Append(oppositePosition, position);
+  Position *const oppositePosition = FindOppositePosition(position);
+  if (oppositePosition && !oppositePosition->IsFullyOpened()) {
+    // Waiting until another leg will be completed.
+    return;
   }
 
-  // Waiting until another leg will be completed.
+  // Operation is completed.
+  position.MarkAsCompleted();
+  if (oppositePosition) {
+    oppositePosition->MarkAsCompleted();
+  }
 }
 
-Position &aa::PositionController::GetOppositePosition(Position &position) {
-  AssertEq(2, GetStrategy().GetPositions().GetSize());
-  for (auto &strategyPosition : GetStrategy().GetPositions()) {
-    if (&strategyPosition == &position) {
+Position *aa::PositionController::FindOppositePosition(
+    const Position &position) {
+  for (auto &result : GetStrategy().GetPositions()) {
+    if (&result == &position ||
+        &result.GetOperationContext() != &position.GetOperationContext()) {
       continue;
     }
-    return strategyPosition;
+    return &result;
   }
   // Opposite position already is closed.
-  position.GetStrategy().GetLog().Error(
-      "Position %1% is active, but opposite is already closed.",
-      position.GetId());
-  throw Lib::LogicError(
-      "Trading logic error: the leg is already closed when another still "
-      "be active");
+  return nullptr;
+}
+
+void PositionController::ClosePosition(Position &position) {
+  Assert(!position.HasActiveOrders());
+  if (position.IsStarted() && !position.IsCompleted()) {
+    GetStrategy().GetLog().Warn(
+        "Unused quantity %1% detected on the \"%2%\" position %3%.",
+        position.GetActiveQty(),  // 1
+        position.GetSecurity(),   // 2
+        position.GetId());        // 3
+    AssertLt(0, position.GetActiveQty());
+    position.MarkAsCompleted();
+  }
 }

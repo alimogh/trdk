@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/06 00:08:39
+ *   Created: 2017/11/10 17:17:22
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,31 +10,27 @@
 
 #pragma once
 
+#pragma once
+
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 
-class PositionController : public TradingLib::PositionController {
+class OrderPolicy : public TradingLib::LimitGtcOrderPolicy {
  public:
-  typedef TradingLib::PositionController Base;
+  typedef LimitGtcOrderPolicy Base;
 
  public:
-  explicit PositionController(Strategy &);
-  virtual ~PositionController() override;
-
- public:
-  virtual void OnPositionUpdate(trdk::Position &) override;
-  using Base::ClosePosition;
+  explicit OrderPolicy(const Price &sellPrice, const Price &buyPrice);
+  virtual ~OrderPolicy() override = default;
 
  protected:
-  virtual void HoldPosition(Position &) override;
-  virtual void ClosePosition(trdk::Position &) override;
+  virtual trdk::Price GetOpenOrderPrice(trdk::Position &) const override;
+  virtual trdk::Price GetCloseOrderPrice(trdk::Position &) const override;
 
  private:
-  Position *FindOppositePosition(const Position &);
-
- private:
-  std::unique_ptr<Report> m_report;
+  const Price m_sellPrice;
+  const Price m_buyPrice;
 };
 }
 }

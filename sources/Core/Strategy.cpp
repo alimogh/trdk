@@ -377,6 +377,9 @@ RiskControlScope &Strategy::GetRiskControlScope() {
 TradingSystem &Strategy::GetTradingSystem(size_t index) {
   return GetContext().GetTradingSystem(index, GetTradingMode());
 }
+const TradingSystem &Strategy::GetTradingSystem(size_t index) const {
+  return GetContext().GetTradingSystem(index, GetTradingMode());
+}
 
 void Strategy::OnLevel1Update(Security &security,
                               const TimeMeasurement::Milestones &) {
@@ -523,7 +526,11 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
     Assert(!position.IsCancelling());
     position.RunAlgos();
     if (!position.IsCancelling()) {
+      const bool wasCompleted = position.IsCompleted();
       OnPositionUpdate(position);
+      if (!wasCompleted && position.IsCompleted()) {
+        OnPositionUpdate(position);
+      }
     }
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "position update");

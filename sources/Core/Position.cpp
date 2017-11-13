@@ -552,7 +552,9 @@ class Position::Implementation : private boost::noncopyable {
   }
 
  public:
-  void RestoreOpenState(const Price &openPrice) {
+  void RestoreOpenState(
+      const Price &openPrice,
+      const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
 
     if (m_self.IsCancelling()) {
@@ -582,10 +584,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertEq(0, m_close.lastTradePrice);
     AssertEq(0, m_close.orders.size());
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     if (!m_security.GetSymbol().IsExplicit()) {
@@ -595,17 +597,25 @@ class Position::Implementation : private boost::noncopyable {
     m_open.orders.emplace_back(std::move(now), boost::none, m_planedQty);
     try {
       auto &order = m_open.orders.back();
+      order.transactionContext = openingContext;
       order.isActive = false;
 
       m_open.time = order.time;
       m_open.OnNewTrade(TradingSystem::TradeInfo{openPrice, order.qty},
                         openPrice);
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (order.transactionContext) {
+        m_defaultOrderParams.position = &*order.transactionContext;
+      }
+
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
+
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       m_open.orders.pop_back();
@@ -638,10 +648,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertGt(m_planedQty, m_open.qty);
     auto qty = m_planedQty - m_open.qty;
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     m_open.orders.emplace_back(std::move(now), std::move(price), qty);
@@ -661,12 +671,14 @@ class Position::Implementation : private boost::noncopyable {
 
       ReportOpeningStart("sent", order.transactionContext->GetOrderId());
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
 
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       try {
@@ -978,6 +990,18 @@ void Position::UpdateClosing(const OrderId &orderId,
 
 const pt::ptime &Position::GetOpenTime() const { return m_pimpl->m_open.time; }
 
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetOpeningContext() const {
+  if (m_pimpl->m_open.orders.empty()) {
+    throw Exception("Position has no open-order to have opening context");
+  }
+  const auto &result = m_pimpl->m_open.orders.front().transactionContext;
+  if (!result) {
+    throw Exception("Position has no opening context");
+  }
+  return result;
+}
+
 Qty Position::GetActiveQty() const noexcept {
   AssertGe(GetOpenedQty(), GetClosedQty());
   return GetOpenedQty() - GetClosedQty();
@@ -1222,8 +1246,10 @@ const Price &Position::GetLastCloseTradePrice() const {
   return m_pimpl->m_close.lastTradePrice;
 }
 
-void Position::RestoreOpenState(const trdk::Price &openPrice) {
-  m_pimpl->RestoreOpenState(openPrice);
+void Position::RestoreOpenState(
+    const trdk::Price &openPrice,
+    const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
+  m_pimpl->RestoreOpenState(openPrice, openingContext);
 }
 
 const OrderTransactionContext &Position::OpenAtMarketPrice() {
