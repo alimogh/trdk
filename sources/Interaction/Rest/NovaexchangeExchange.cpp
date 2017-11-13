@@ -322,7 +322,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask.AddTask(
+    /*m_pullingTask.AddTask(
         "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
@@ -349,7 +349,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        1);
+        1);*/
   }
 
  protected:
