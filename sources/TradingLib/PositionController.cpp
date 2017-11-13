@@ -198,6 +198,12 @@ void PositionController::OnPositionUpdate(Position &position) {
   AssertLt(0, position.GetNumberOfOpenOrders());
 
   if (position.IsCompleted()) {
+    if (position.GetOpenedQty() > 0) {
+      // It seems position is marked as completed for some reason. It's not a
+      // business of the general code.
+      return;
+    }
+
     // No active order, no active qty...
 
     Assert(!position.HasActiveOrders());

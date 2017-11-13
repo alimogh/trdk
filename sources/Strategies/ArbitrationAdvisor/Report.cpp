@@ -15,25 +15,32 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
+namespace pt = boost::posix_time;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 OperationReportData::OperationReportData() : m_size(0) {}
 
 bool OperationReportData::Add(const Position &position) {
-  AssertLe(m_data.size(), m_size);
+  AssertGe(m_data.size(), m_size);
   if (m_data.size() <= m_size) {
     throw LogicError("Too many position to report");
-  } else if (m_size && m_data.front().isLong == position.IsLong()) {
-    throw LogicError("Both position to report have the same side");
+  } else if (m_size) {
+    if (m_data.front().id == position.GetId()) {
+      throw LogicError("Both position to report have the same ID");
+    } else if (m_data.front().isLong == position.IsLong()) {
+      throw LogicError("Both position to report have the same side");
+    }
   }
 
-  m_data[m_size++] = PositionReport{position.GetId(),
-                                    position.IsLong(),
-                                    position.GetOpenStartTime(),
-                                    position.GetOpenTime(),
-                                    position.GetOpenAvgPrice(),
-                                    position.GetCloseAvgPrice(),
-                                    position.GetOpenedQty()};
+  m_data[m_size++] = PositionReport{
+      position.GetId(),
+      position.IsLong(),
+      position.GetOpenStartTime(),
+      position.GetOpenTime(),
+      position.GetOpenedQty() ? position.GetOpenAvgPrice()
+                              : std::numeric_limits<double>::quiet_NaN(),
+      position.GetOpenedQty()};
 
   return m_size >= m_data.size();
 }
@@ -53,7 +60,6 @@ const OperationReportData::PositionReport &OperationReportData::GetBuy() const {
 Report::Report(const trdk::Strategy &strategy) : m_strategy(strategy) {}
 
 void Report::Append(const OperationReportData &data) {
-  // const Position &pos1, const Position &pos2) {
   if (!m_file.is_open()) {
     Open(m_file);
     Assert(m_file.is_open());
@@ -96,33 +102,57 @@ void Report::PrintReport(const OperationReportData::PositionReport &sell,
   Assert(!sell.isLong);
   Assert(sell.isLong);
 
-  const Double spread = sell.openPrice - buy.openPrice;
-  const auto qty = std::min(buy.openedQty, sell.openedQty);
-  const auto buyVol = buy.openPrice * qty;
-  const auto sellVol = sell.openPrice * qty;
-  const auto pnl = sellVol - buyVol;
+  const Double spread = sell.openPrice.IsNotNan() && buy.openPrice.IsNotNan()
+                            ? sell.openPrice - buy.openPrice
+                            : 0;
+  const Qty qty = std::min(buy.openedQty, sell.openedQty);
+  const Volume buyVol = buy.openPrice.IsNotNan() ? buy.openPrice * qty : 0;
+  const Volume sellVol = sell.openPrice.IsNotNan() ? sell.openPrice * qty : 0;
+  const Double pnl = buy.openPrice.IsNotNan() && sell.openPrice.IsNotNan()
+                         ? sellVol - buyVol
+                         : std::numeric_limits<double>::quiet_NaN();
 
   os << std::min(sell.openStartTime.date(), buy.openStartTime.date());  // 1
   os << ',' << ExcelTextField(sell.openStartTime.time_of_day());        // 2
-  os << ',' << ExcelTextField(sell.openTime.time_of_day());             // 3
-  os << ',' << ExcelTextField(buy.openStartTime.time_of_day());         // 4
-  os << ',' << ExcelTextField(buy.openTime.time_of_day());              // 5
+  if (sell.openTime != pt::not_a_date_time) {
+    os << ',' << ExcelTextField(sell.openTime.time_of_day());  // 3
+  } else {
+    os << ',';  // 3
+  }
+  os << ',' << ExcelTextField(buy.openStartTime.time_of_day());  // 4
+  if (buy.openTime != pt::not_a_date_time) {
+    os << ',' << ExcelTextField(buy.openTime.time_of_day());  // 5
+  } else {
+    os << ',';  // 5
+  }
 
   os << std::setprecision(8);
   os << ',' << sell.openedQty;                                   // 6
   os << ',' << buy.openedQty;                                    // 7
   os << ',' << (std::max(sell.openedQty, buy.openedQty) - qty);  // 8
-  os << ',' << sell.openPrice;                                   // 9
-  os << ',' << buy.openPrice;                                    // 10
-  os << ',' << spread;                                           // 11
+  if (sell.openPrice.IsNotNan()) {
+    os << ',' << sell.openPrice;  // 9
+  } else {
+    os << ',';  // 9
+  }
+  if (buy.openPrice.IsNotNan()) {
+    os << ',' << buy.openPrice;  // 10
+  } else {
+    os << ',';  // 10
+  }
+  os << ',' << spread;  // 11
 
   os << std::setprecision(3);
   os << ',' << (100 / (buy.openPrice / spread));  // 12
 
-  os << (pnl > 0 ? ",1,0" : ",0,1");  // 13, 14
+  os << (pnl.IsNotNan() ? pnl > 0 ? ",1,0" : ",0,1" : ",,");  // 13, 14
   os << std::setprecision(8);
-  os << ',' << pnl;                 // 15
-  os << ',' << (sellVol / buyVol);  // 16
+  if (pnl.IsNotNan()) {
+    os << ',' << pnl;                                         // 15
+    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 16
+  } else {
+    os << ",,";  // 15, 16
+  }
 
   os << ',' << sell.id;  // 17
   os << ',' << buy.id;   // 18

@@ -26,8 +26,6 @@ aa::PositionController::PositionController(Strategy &strategy)
 aa::PositionController::~PositionController() = default;
 
 void aa::PositionController::OnPositionUpdate(Position &position) {
-  Base::OnPositionUpdate(position);
-
   if (position.IsCompleted()) {
     auto &reportData = boost::polymorphic_cast<OperationContext *>(
                            &position.GetOperationContext())
@@ -35,7 +33,10 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     if (reportData.Add(position)) {
       m_report->Append(reportData);
     }
+    return;
   }
+
+  Base::OnPositionUpdate(position);
 }
 
 void aa::PositionController::HoldPosition(Position &position) {
@@ -48,6 +49,7 @@ void aa::PositionController::HoldPosition(Position &position) {
   Position *const oppositePosition = FindOppositePosition(position);
   if (oppositePosition && !oppositePosition->IsFullyOpened()) {
     // Waiting until another leg will be completed.
+    return;
   }
 
   // Operation is completed.

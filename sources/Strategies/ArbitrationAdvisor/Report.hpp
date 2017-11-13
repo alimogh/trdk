@@ -24,7 +24,6 @@ struct OperationReportData : private boost::noncopyable {
     boost::posix_time::ptime openStartTime;
     boost::posix_time::ptime openTime;
     Price openPrice;
-    Price closePrice;
     Qty openedQty;
   };
 
