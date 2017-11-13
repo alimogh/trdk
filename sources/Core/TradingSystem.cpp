@@ -307,11 +307,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
       tradeInfo->price = cache.price;
     }
 
+    Qty actualRemainingQty;
     if (remainingQty) {
       AssertGe(cache.remainingQty, *remainingQty);
       if (tradeInfo && !tradeInfo->qty) {
         tradeInfo->qty = cache.remainingQty - *remainingQty;
       }
+      actualRemainingQty = *remainingQty;
+    } else {
+      actualRemainingQty = cache.remainingQty;
     }
 
     if (callback) {
@@ -321,10 +325,9 @@ class TradingSystem::Implementation : private boost::noncopyable {
     // Maybe in the future new thread will be required here to avoid deadlocks
     // from callback (when some one will need to call the same trading system
     // from this callback).
-    cache.statusUpdateSignal(orderId, status, cache.remainingQty, commission,
+    cache.statusUpdateSignal(orderId, status, actualRemainingQty, commission,
                              tradeInfo ? &*tradeInfo : nullptr);
 
-    Qty actualRemainingQty;
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_FILLED:
@@ -340,7 +343,6 @@ class TradingSystem::Implementation : private boost::noncopyable {
           cache.remainingQty = *remainingQty;
         }
         cache.updateTime = time;
-        actualRemainingQty = cache.remainingQty;
         break;
       }
     }

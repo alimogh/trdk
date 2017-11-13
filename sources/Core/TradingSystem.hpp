@@ -47,7 +47,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   //! Trade.
   struct TradeInfo {
-    //! Trade price.
+    //! Trade price. If set as "zero" - will be calculated automatically.
     trdk::Price price;
     //! Trade quantity. If set as "zero" - will be calculated automatically.
     trdk::Qty qty;
