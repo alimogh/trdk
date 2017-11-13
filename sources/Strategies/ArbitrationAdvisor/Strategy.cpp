@@ -93,7 +93,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       auto &bestBuy = *bestAsk.second->security;
       if (m_tradingSettings &&
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-        Trade(bestSell, bestBuy, m_tradingSettings->maxQty,
+        Trade(bestSell, bestBuy,
+              std::min(m_tradingSettings->maxQty,
+                       std::min(bestSell.GetBidQty(), bestBuy.GetAskQty())),
               bestSell.GetBidPrice(), bestBuy.GetAskPrice(), spreadRatio,
               delayMeasurement);
       } else {
@@ -208,15 +210,26 @@ class aa::Strategy::Implementation : private boost::noncopyable {
               % buyPrice;                            // 9
         });
 
-    Position *sellPoisition = nullptr;
+    Position *firstPoisition = nullptr;
     try {
-      sellPoisition = &m_controller.OpenPosition(m_lastOperation, sellTarget,
-                                                 delayMeasurement);
-      m_controller.OpenPosition(m_lastOperation, buyTarget, delayMeasurement);
+      const auto &buyTradingSystemName =
+          m_lastOperation->GetTradingSystem(m_self, buyTarget)
+              .GetInstanceName();
+      if (boost::icontains(buyTradingSystemName, "ccex") ||
+          boost::icontains(buyTradingSystemName, "novaexchange")) {
+        firstPoisition = &m_controller.OpenPosition(m_lastOperation, buyTarget,
+                                                    delayMeasurement);
+        m_controller.OpenPosition(m_lastOperation, sellTarget,
+                                  delayMeasurement);
+      } else {
+        firstPoisition = &m_controller.OpenPosition(m_lastOperation, sellTarget,
+                                                    delayMeasurement);
+        m_controller.OpenPosition(m_lastOperation, buyTarget, delayMeasurement);
+      }
     } catch (const std::exception &ex) {
       m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
-      if (sellPoisition) {
-        m_controller.ClosePosition(*sellPoisition, CLOSE_REASON_OPEN_FAILED);
+      if (firstPoisition) {
+        m_controller.ClosePosition(*firstPoisition, CLOSE_REASON_OPEN_FAILED);
       }
     }
   }
@@ -361,11 +374,7 @@ void aa::Strategy::OnLevel1Update(Security &security,
 }
 
 void aa::Strategy::OnPositionUpdate(Position &position) {
-  try {
-    m_pimpl->m_controller.OnPositionUpdate(position);
-  } catch (const Exception &ex) {
-    GetLog().Error("Failed to check position update: \"%1%\".", ex.what());
-  }
+  m_pimpl->m_controller.OnPositionUpdate(position);
 }
 
 void aa::Strategy::OnPostionsCloseRequest() {
