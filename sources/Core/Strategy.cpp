@@ -528,10 +528,8 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
     if (!position.IsCancelling()) {
       const bool wasCompleted = position.IsCompleted();
       OnPositionUpdate(position);
-      if (wasCompleted != position.IsCompleted()) {
-        Assert(!wasCompleted);
+      if (!wasCompleted && position.IsCompleted()) {
         OnPositionUpdate(position);
-        Assert(position.IsCompleted());
       }
     }
   } catch (const ::trdk::Lib::RiskControlException &ex) {
