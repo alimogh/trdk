@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "Report.hpp"
+#include "OperationContext.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
@@ -25,6 +25,19 @@ aa::PositionController::PositionController(Strategy &strategy)
 
 aa::PositionController::~PositionController() = default;
 
+void aa::PositionController::OnPositionUpdate(Position &position) {
+  Base::OnPositionUpdate(position);
+
+  if (position.IsCompleted()) {
+    auto &reportData = boost::polymorphic_cast<OperationContext *>(
+                           &position.GetOperationContext())
+                           ->GetReportData();
+    if (reportData.Add(position)) {
+      m_report->Append(reportData);
+    }
+  }
+}
+
 void aa::PositionController::HoldPosition(Position &position) {
   Assert(position.IsFullyOpened());
   Assert(!position.HasActiveOrders());
@@ -33,14 +46,15 @@ void aa::PositionController::HoldPosition(Position &position) {
   AssertGe(2, GetStrategy().GetPositions().GetSize());
 
   Position *const oppositePosition = FindOppositePosition(position);
-  if (!oppositePosition || oppositePosition->IsFullyOpened()) {
-    // Operation is completed.
-    position.MarkAsCompleted();
-    oppositePosition->MarkAsCompleted();
-    //    m_report->Append(oppositePosition, position);
+  if (oppositePosition && !oppositePosition->IsFullyOpened()) {
+    // Waiting until another leg will be completed.
   }
 
-  // Waiting until another leg will be completed.
+  // Operation is completed.
+  position.MarkAsCompleted();
+  if (oppositePosition) {
+    oppositePosition->MarkAsCompleted();
+  }
 }
 
 Position *aa::PositionController::FindOppositePosition(

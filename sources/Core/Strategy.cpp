@@ -526,7 +526,13 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
     Assert(!position.IsCancelling());
     position.RunAlgos();
     if (!position.IsCancelling()) {
+      const bool wasCompleted = position.IsCompleted();
       OnPositionUpdate(position);
+      if (wasCompleted != position.IsCompleted()) {
+        Assert(!wasCompleted);
+        OnPositionUpdate(position);
+        Assert(position.IsCompleted());
+      }
     }
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "position update");

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "OrderPolicy.hpp"
+#include "Report.hpp"
 
 namespace trdk {
 namespace Strategies {
@@ -31,6 +32,11 @@ class OperationContext : public PositionOperationContext {
  public:
   bool IsSame(const Security &sellTarget, const Security &buyTarget) const {
     return &m_sellTarget == &sellTarget && &m_buyTarget == &buyTarget;
+  }
+
+  OperationReportData &GetReportData() { return m_reportData; }
+  const OperationReportData &GetReportData() const {
+    return const_cast<OperationContext *>(this)->GetReportData();
   }
 
  public:
@@ -67,6 +73,7 @@ class OperationContext : public PositionOperationContext {
   Security &m_sellTarget;
   Security &m_buyTarget;
   const Qty m_maxQty;
+  OperationReportData m_reportData;
 };
 }
 }
