@@ -42,9 +42,6 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
 void aa::PositionController::HoldPosition(Position &position) {
   Assert(position.IsFullyOpened());
   Assert(!position.HasActiveOrders());
-  // It's normal. Assert maybe removed when strategy and position removing will
-  // be debugged.
-  AssertGe(2, GetStrategy().GetPositions().GetSize());
 
   Position *const oppositePosition = FindOppositePosition(position);
   if (oppositePosition && !oppositePosition->IsFullyOpened()) {

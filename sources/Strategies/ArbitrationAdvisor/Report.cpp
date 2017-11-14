@@ -22,7 +22,7 @@ namespace pt = boost::posix_time;
 OperationReportData::OperationReportData() : m_size(0) {}
 
 bool OperationReportData::Add(const Position &position) {
-  AssertGe(m_data.size(), m_size);
+  AssertGt(m_data.size(), m_size);
   if (m_data.size() <= m_size) {
     throw LogicError("Too many position to report");
   } else if (m_size) {
@@ -100,7 +100,7 @@ void Report::PrintReport(const OperationReportData::PositionReport &sell,
                          const OperationReportData::PositionReport &buy,
                          std::ostream &os) {
   Assert(!sell.isLong);
-  Assert(sell.isLong);
+  Assert(buy.isLong);
 
   const Double spread = sell.openPrice.IsNotNan() && buy.openPrice.IsNotNan()
                             ? sell.openPrice - buy.openPrice
