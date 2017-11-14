@@ -319,23 +319,22 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
-    auto nextNonce = m_nextNonce;
     {
       std::ifstream nonceStorage(m_settings.nonceStorageFile.string().c_str());
       if (!nonceStorage) {
         GetTsLog().Debug("Failed to open %1% to read.",
                          m_settings.nonceStorageFile);
       } else {
-        nonceStorage.read(reinterpret_cast<char *>(&nextNonce),
-                          sizeof(nextNonce));
+        nonceStorage.read(reinterpret_cast<char *>(&m_nextNonce),
+                          sizeof(m_nextNonce));
         GetTsLog().Debug("Restored nonce-value %1% from %2%.",
-                         nextNonce,                     // 1
+                         m_nextNonce,                   // 1
                          m_settings.nonceStorageFile);  // 2
       }
-      if (nextNonce < m_settings.initialNonce) {
+      if (m_nextNonce < m_settings.initialNonce) {
         GetTsLog().Debug("Using initial nonce-value %1%.",
                          m_settings.initialNonce);
-        nextNonce = m_settings.initialNonce;
+        m_nextNonce = m_settings.initialNonce;
       }
       m_nonceStorage =
           std::ofstream(m_settings.nonceStorageFile.string().c_str(),
@@ -353,11 +352,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       size_t numberOfTransactions = 0;
       size_t numberOfActiveOrders = 0;
 
-      TradeRequest request("getInfo", nextNonce++, m_settings, false);
-      StoreNextNonce(nextNonce);
       try {
+        auto nonce = TakeNonce();
+        TradeRequest request("getInfo", nonce.first, m_settings, false);
         const auto response =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+        nonce.second.unlock();
         {
           const auto fundsNode = response.get_child_optional("funds");
           if (fundsNode) {
@@ -407,6 +407,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             "nonce-value storage file %2%.",
             ex.what(),                     // 1
             m_settings.nonceStorageFile);  // 2
+        throw;
       }
 
       GetTsLog().Info(
@@ -486,12 +487,15 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-        % *price  // 3
-        % qty;  // 4
-    TradeRequest request("Trade", m_nextNonce++, m_settings, true,
+        % *price                                                       // 3
+        % qty;                                                         // 4
+
+    auto nonce = TakeNonce();
+    TradeRequest request("Trade", nonce.first, m_settings, true,
                          requestParams.str());
-    StoreNextNonce(m_nextNonce);
     const auto &result = request.Send(m_tradingSession, GetContext());
+    nonce.second.unlock();
+
     try {
       return boost::make_unique<OrderTransactionContext>(
           boost::get<1>(result).get<OrderId>("order_id"));
@@ -503,10 +507,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+    const auto &nonce = TakeNonce();
     TradeRequest request(
-        "CancelOrder", m_nextNonce++, m_settings, true,
+        "CancelOrder", nonce.first, m_settings, true,
         "order_id=" + boost::lexical_cast<std::string>(orderId));
-    StoreNextNonce(m_nextNonce);
     request.Send(m_tradingSession, GetContext());
   }
 
@@ -516,13 +520,15 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
-  void StoreNextNonce(size_t nextNonce) {
+  std::pair<size_t, boost::mutex::scoped_lock> TakeNonce() {
+    boost::mutex::scoped_lock lock(m_nonceMutex);
+    m_nextNonce++;
     m_nonceStorage.seekp(0);
-    m_nonceStorage.write(reinterpret_cast<const char *>(&nextNonce),
-                         sizeof(nextNonce));
+    m_nonceStorage.write(reinterpret_cast<const char *>(&m_nextNonce),
+                         sizeof(m_nextNonce));
     m_nonceStorage.flush();
-    AssertEq(sizeof(nextNonce), m_nonceStorage.tellp());
-    m_nextNonce = nextNonce;
+    AssertEq(sizeof(m_nextNonce), m_nonceStorage.tellp());
+    return std::make_pair(m_nextNonce - 1, std::move(lock));
   }
 
   void UpdateOrder(const Order &order, const OrderStatus &status) {
@@ -598,14 +604,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       }
     };
 
-    ActiveOrdersRequest request(symbol, m_nextNonce++, m_settings);
-    StoreNextNonce(m_nextNonce);
-
     const bool isInitial = notifiedOrders.empty();
+
+    auto nonce = TakeNonce();
+    ActiveOrdersRequest request(symbol, nonce.first, m_settings);
 
     {
       const auto orders =
           boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      nonce.second.unlock();
+
       for (const auto &orderNode : orders) {
         const auto &order = orderNode.second;
         const OrderId orderId(orderNode.first);
@@ -678,13 +686,14 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   void UpdateOrders() {
     for (const OrderId &orderId : GetActiveOrderList()) {
-      TradeRequest request(
-          "OrderInfo", m_nextNonce++, m_settings, false,
-          "order_id=" + boost::lexical_cast<std::string>(orderId));
-      StoreNextNonce(m_nextNonce);
       try {
+        auto nonce = TakeNonce();
+        TradeRequest request(
+            "OrderInfo", nonce.first, m_settings, false,
+            "order_id=" + boost::lexical_cast<std::string>(orderId));
         const auto response =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+        nonce.second.unlock();
         for (const auto &node : response) {
           const auto &order = node.second;
 
@@ -741,6 +750,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   size_t m_nextNonce;
   std::ofstream m_nonceStorage;
+  boost::mutex m_nonceMutex;
 
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
