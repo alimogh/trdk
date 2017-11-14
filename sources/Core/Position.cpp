@@ -804,6 +804,10 @@ class DummyPositionOperationContext : public PositionOperationContext {
     throw LogicError("Position instance does not use operation context");
   }
 };
+
+#ifdef DEV_VER
+boost::atomic_size_t objectsCounter(0);
+#endif
 }
 Position::Position(Strategy &strategy,
                    const uuids::uuid &operationId,
@@ -827,6 +831,13 @@ Position::Position(Strategy &strategy,
           startPrice,
           timeMeasurement)) {
   Assert(!strategy.IsBlocked());
+#ifdef DEV_VER
+  ++objectsCounter;
+  GetStrategy().GetLog().Debug(
+      "New position \"%1%\"/%2% (number of objects: %3%).", GetId(),  // 1
+      m_pimpl->m_subOperationId,                                      // 2
+      objectsCounter);                                                // 3
+#endif
 }
 
 Position::Position(
@@ -852,9 +863,24 @@ Position::Position(
                                                startPrice,
                                                timeMeasurement)) {
   Assert(!strategy.IsBlocked());
+#ifdef DEV_VER
+  ++objectsCounter;
+  GetStrategy().GetLog().Debug(
+      "New position \"%1%\"/%2% (number of active objects: %3%).",
+      GetId(),                    // 1
+      m_pimpl->m_subOperationId,  // 2
+      objectsCounter);            // 3
+#endif
 }
 
+#ifdef DEV_VER
+Position::~Position() {
+  AssertLt(0, objectsCounter);
+  --objectsCounter;
+}
+#else
 Position::~Position() = default;
+#endif
 
 const uuids::uuid &Position::GetId() const { return m_pimpl->m_operationId; }
 
@@ -944,7 +970,11 @@ bool Position::IsCompleted() const noexcept {
 }
 
 void Position::MarkAsCompleted() {
-  Assert(!m_pimpl->m_isMarketAsCompleted);
+  Assert(!IsCompleted());
+  if (IsCompleted()) {
+    // Should not be added to the "delayed list" twice.
+    return;
+  }
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
