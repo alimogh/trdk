@@ -412,13 +412,18 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
     } request(orderId, m_settings, m_endpoint.floodControl);
     request.Send(m_tradingSession, GetContext());
-    try {
-      OnOrderCancel(orderId);
-    } catch (const OrderIsUnknown &) {
-      if (m_orders.empty()) {
-        throw;
-      }
-    }
+
+    GetContext().GetTimer().Schedule(
+        [this, orderId]() {
+          try {
+            OnOrderCancel(orderId);
+          } catch (const OrderIsUnknown &) {
+            if (m_orders.empty()) {
+              throw;
+            }
+          }
+        },
+        m_timerScope);
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -604,6 +609,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   PullingTask m_pullingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
+
+  trdk::Timer::Scope m_timerScope;
 };
 }
 
