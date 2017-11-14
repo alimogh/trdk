@@ -23,14 +23,18 @@ struct OperationReportData : private boost::noncopyable {
     bool isLong;
     boost::posix_time::ptime openStartTime;
     boost::posix_time::ptime openTime;
+    Price openStartPrice;
     Price openPrice;
     Qty openedQty;
+    const TradingSystem *target;
+    CloseReason closeReason;
   };
 
  public:
   OperationReportData();
 
   bool Add(const Position &);
+  bool Add(PositionReport &&);
 
   const PositionReport &GetSell() const;
   const PositionReport &GetBuy() const;
