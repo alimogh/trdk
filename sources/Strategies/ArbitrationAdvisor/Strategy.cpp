@@ -12,6 +12,7 @@
 #include "Strategy.hpp"
 #include "OperationContext.hpp"
 #include "PositionController.hpp"
+#include "Report.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -230,6 +231,20 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
       if (firstPoisition) {
         m_controller.ClosePosition(*firstPoisition, CLOSE_REASON_OPEN_FAILED);
+        m_lastOperation->GetReportData().Add(
+            OperationReportData::PositionReport{
+                {},
+                !firstPoisition->IsLong(),
+                firstPoisition->GetOpenStartTime(),
+                pt::not_a_date_time,
+                firstPoisition->IsLong() ? sellTarget.GetBidPrice()
+                                         : buyTarget.GetAskPrice(),
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
+                firstPoisition->IsLong()
+                    ? &m_lastOperation->GetTradingSystem(m_self, sellTarget)
+                    : &m_lastOperation->GetTradingSystem(m_self, buyTarget),
+                CLOSE_REASON_OPEN_FAILED});
       }
     }
   }

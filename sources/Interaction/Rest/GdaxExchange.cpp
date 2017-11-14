@@ -509,15 +509,17 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     const Qty qty = order.get<double>("size");
     const Qty filledQty = order.get<double>("filled_size");
+    AssertGe(qty, filledQty);
+    const Qty remainingQty = qty - filledQty;
 
     OrderStatus status;
     {
       const auto &statusField = order.get<std::string>("status");
-      if (statusField == "open") {
-        status = filledQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
-                               : ORDER_STATUS_SUBMITTED;
-      } else if (statusField == "pending") {
-        status = ORDER_STATUS_SUBMITTED;
+      if (statusField == "open" || statusField == "pending") {
+        status = filledQty > 0
+                     ? remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
+                                        : ORDER_STATUS_FILLED
+                     : ORDER_STATUS_SUBMITTED;
       } else if (statusField == "done") {
         status = ORDER_STATUS_FILLED;
       } else {
@@ -548,7 +550,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     const Order result = {std::move(orderId),
                           std::move(price),
                           std::move(qty),
-                          qty - filledQty,
+                          remainingQty,
                           order.get<std::string>("product_id"),
                           std::move(side),
                           std::move(tif),

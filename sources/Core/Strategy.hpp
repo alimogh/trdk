@@ -229,7 +229,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   PositionUpdateSlotConnection SubscribeToPositionsUpdates(
       const PositionUpdateSlot &) const;
 
-  void OnPositionMarkedAsCompleted(const Position &);
+  void OnPositionMarkedAsCompleted(Position &);
 
  protected:
   virtual void OnLevel1Update(trdk::Security &,
