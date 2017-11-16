@@ -584,10 +584,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertEq(0, m_close.lastTradePrice);
     AssertEq(0, m_close.orders.size());
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     if (!m_security.GetSymbol().IsExplicit()) {
@@ -608,11 +608,14 @@ class Position::Implementation : private boost::noncopyable {
         m_defaultOrderParams.position = &*order.transactionContext;
       }
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
+
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       m_open.orders.pop_back();
@@ -645,10 +648,10 @@ class Position::Implementation : private boost::noncopyable {
     AssertGt(m_planedQty, m_open.qty);
     auto qty = m_planedQty - m_open.qty;
 
+    bool isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
-      // supporting prev. logic (when was m_strategy = nullptr),
-      // don't know why set flag in other place.
+      isRegistered = true;
     }
 
     m_open.orders.emplace_back(std::move(now), std::move(price), qty);
@@ -668,12 +671,14 @@ class Position::Implementation : private boost::noncopyable {
 
       ReportOpeningStart("sent", order.transactionContext->GetOrderId());
 
-      m_isRegistered = true;  // supporting prev. logic
-                              // (when was m_strategy = nullptr),
-                              // don't know why set flag only here.
+      if (isRegistered) {
+        Assert(!m_isRegistered);
+        m_isRegistered = true;
+      }
 
     } catch (...) {
-      if (m_isRegistered) {
+      if (isRegistered) {
+        Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
       try {
@@ -776,10 +781,12 @@ class DummyPositionOperationContext : public PositionOperationContext {
   virtual ~DummyPositionOperationContext() override = default;
 
  public:
-  virtual const OrderPolicy &GetOpenOrderPolicy() const override {
+  virtual const OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
-  virtual const OrderPolicy &GetCloseOrderPolicy() const override {
+  virtual const OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
   virtual void Setup(Position &) const override {
@@ -799,6 +806,10 @@ class DummyPositionOperationContext : public PositionOperationContext {
     throw LogicError("Position instance does not use operation context");
   }
 };
+
+#ifdef DEV_VER
+boost::atomic_size_t objectsCounter(0);
+#endif
 }
 Position::Position(Strategy &strategy,
                    const uuids::uuid &operationId,
@@ -822,6 +833,13 @@ Position::Position(Strategy &strategy,
           startPrice,
           timeMeasurement)) {
   Assert(!strategy.IsBlocked());
+#ifdef DEV_VER
+  ++objectsCounter;
+  GetStrategy().GetLog().Debug(
+      "New position \"%1%\"/%2% (number of objects: %3%).", GetId(),  // 1
+      m_pimpl->m_subOperationId,                                      // 2
+      objectsCounter);                                                // 3
+#endif
 }
 
 Position::Position(
@@ -847,9 +865,24 @@ Position::Position(
                                                startPrice,
                                                timeMeasurement)) {
   Assert(!strategy.IsBlocked());
+#ifdef DEV_VER
+  ++objectsCounter;
+  GetStrategy().GetLog().Debug(
+      "New position \"%1%\"/%2% (number of active objects: %3%).",
+      GetId(),                    // 1
+      m_pimpl->m_subOperationId,  // 2
+      objectsCounter);            // 3
+#endif
 }
 
+#ifdef DEV_VER
+Position::~Position() {
+  AssertLt(0, objectsCounter);
+  --objectsCounter;
+}
+#else
 Position::~Position() = default;
+#endif
 
 const uuids::uuid &Position::GetId() const { return m_pimpl->m_operationId; }
 
@@ -908,14 +941,15 @@ void Position::SetCloseReason(const CloseReason &newCloseReason) {
   if (m_pimpl->m_closeReason != CLOSE_REASON_NONE) {
     return;
   }
-  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason,
-                                            newCloseReason);
-  m_pimpl->m_closeReason = newCloseReason;
+  if (GetOperationContext().OnCloseReasonChange(*this, newCloseReason)) {
+    m_pimpl->m_closeReason = newCloseReason;
+  }
 }
 
 void Position::ResetCloseReason(const CloseReason &newReason) {
-  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason, newReason);
-  m_pimpl->m_closeReason = newReason;
+  if (GetOperationContext().OnCloseReasonChange(*this, newReason)) {
+    m_pimpl->m_closeReason = newReason;
+  }
 }
 
 bool Position::IsFullyOpened() const {
@@ -939,7 +973,11 @@ bool Position::IsCompleted() const noexcept {
 }
 
 void Position::MarkAsCompleted() {
-  Assert(!m_pimpl->m_isMarketAsCompleted);
+  Assert(!IsCompleted());
+  if (IsCompleted()) {
+    // Should not be added to the "delayed list" twice.
+    return;
+  }
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
@@ -1018,6 +1056,10 @@ Volume Position::GetActiveVolume() const {
 
 const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
+}
+void Position::SetClosedQty(const Qty &newValue) {
+  AssertGe(GetOpenedQty(), newValue);
+  m_pimpl->m_close.qty = newValue;
 }
 
 Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
@@ -1160,7 +1202,8 @@ Price Position::GetOpenAvgPrice() const {
   if (!m_pimpl->m_open.qty) {
     throw Exception("Position has no open price");
   }
-  return m_pimpl->m_open.volume / m_pimpl->m_open.qty;
+  return RoundByPrecision(m_pimpl->m_open.volume / m_pimpl->m_open.qty,
+                          GetSecurity().GetPricePrecisionPower());
 }
 
 const boost::optional<Price> &Position::GetActiveOpenOrderPrice() const {
@@ -1211,7 +1254,8 @@ Price Position::GetCloseAvgPrice() const {
   if (!m_pimpl->m_close.qty) {
     throw Exception("Position has no close price");
   }
-  return m_pimpl->m_close.volume / m_pimpl->m_close.qty;
+  return RoundByPrecision(m_pimpl->m_close.volume / m_pimpl->m_close.qty,
+                          GetSecurity().GetPricePrecisionPower());
 }
 
 const boost::optional<trdk::Price> &Position::GetActiveCloseOrderPrice() const {

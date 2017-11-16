@@ -243,6 +243,7 @@ class TRDK_CORE_API Position
     */
   const trdk::Price &GetLastCloseTradePrice() const;
   const trdk::Qty &GetClosedQty() const noexcept;
+  void SetClosedQty(const trdk::Qty &);
   trdk::Volume GetClosedVolume() const;
   //! Time of last trade.
   const boost::posix_time::ptime &GetCloseTime() const;

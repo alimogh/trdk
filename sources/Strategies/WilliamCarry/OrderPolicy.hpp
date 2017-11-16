@@ -15,14 +15,14 @@ namespace trdk {
 namespace Strategies {
 namespace WilliamCarry {
 
-class TRDK_STRATEGY_WILLIAMCARRY_API OrderPolicy
-    : public TradingLib::LimitIocOrderPolicy {
+class OpenOrderPolicy : public TradingLib::LimitIocOrderPolicy {
  public:
   typedef LimitIocOrderPolicy Base;
 
  public:
-  explicit OrderPolicy(const Price &maxOpenPrice)
+  explicit OpenOrderPolicy(const Price &maxOpenPrice)
       : m_maxOpenPrice(maxOpenPrice) {}
+  virtual ~OpenOrderPolicy() override = default;
 
  protected:
   virtual trdk::Price GetOpenOrderPrice(Position &position) const override {
@@ -33,6 +33,44 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OrderPolicy
 
  private:
   const Price m_maxOpenPrice;
+};
+
+class StopLimitOrderPolicy : public TradingLib::LimitGtcOrderPolicy {
+ public:
+  explicit StopLimitOrderPolicy(const Price &price) : m_price(price) {}
+  virtual ~StopLimitOrderPolicy() override = default;
+
+ protected:
+  virtual trdk::Price GetOpenOrderPrice(Position &) const { return m_price; }
+  virtual trdk::Price GetCloseOrderPrice(Position &) const { return m_price; }
+
+ private:
+  const Price m_price;
+};
+
+class StopLossLimitOrderPolicy : public TradingLib::LimitOrderPolicy {
+ public:
+  explicit StopLossLimitOrderPolicy(const Price &price) : m_price(price) {}
+  virtual ~StopLossLimitOrderPolicy() override = default;
+
+ public:
+  virtual void Open(Position &position) const override {
+    position.Open(GetOpenOrderPrice(position), CreateParams(position));
+  }
+  virtual void Close(Position &position) const override {
+    position.Close(GetCloseOrderPrice(position), CreateParams(position));
+  }
+
+ private:
+  OrderParams CreateParams(const Position &position) const {
+    OrderParams params;
+    params.position = &*position.GetOpeningContext();
+    params.stopPrice = m_price;
+    return params;
+  }
+
+ private:
+  const Price m_price;
 };
 }
 }

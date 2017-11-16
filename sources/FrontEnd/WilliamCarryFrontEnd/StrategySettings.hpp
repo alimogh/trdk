@@ -29,6 +29,7 @@ struct StrategySettings {
   size_t numberOfStepsToTarget;
   boost::optional<Target> target2;
 
+  size_t stopLoss1;
   boost::optional<Target> stopLoss2;
   boost::optional<Target> stopLoss3;
 

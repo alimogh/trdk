@@ -36,6 +36,8 @@ size_t ResolveFixId(const std::string &symbol) {
     return 7;
   } else if (symbol == "USDCAD") {
     return 8;
+  } else if (symbol == "USDNOK") {
+    return 1048;
   } else {
     boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
     error % symbol;

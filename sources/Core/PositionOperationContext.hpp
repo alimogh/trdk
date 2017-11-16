@@ -29,11 +29,15 @@ class TRDK_CORE_API PositionOperationContext {
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
                                                 trdk::Security &);
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      const trdk::Strategy &, const trdk::Security &) const;
 
   //! Order policy for position opening.
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy() const = 0;
+  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const trdk::Position &) const = 0;
   //! Order policy for position closing.
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy() const = 0;
+  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const trdk::Position &) const = 0;
   //! Setups new position.
   /** Place to attach stop-orders and so on.
     */
@@ -45,7 +49,9 @@ class TRDK_CORE_API PositionOperationContext {
   //! Returns true if the opened position should be closed as soon as possible.
   virtual bool HasCloseSignal(const trdk::Position &) const = 0;
   //! Will be called before each closing state changing.
-  virtual void OnCloseReasonChange(const trdk::CloseReason &prevReason,
+  /** @return True, if reason can be changed, false otherwise.
+    */
+  virtual bool OnCloseReasonChange(trdk::Position &,
                                    const trdk::CloseReason &newReason);
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if

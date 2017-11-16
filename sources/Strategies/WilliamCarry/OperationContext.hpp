@@ -38,13 +38,19 @@ class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
                    const boost::posix_time::time_duration &startDelay);
 
   bool HasSubOperations() const;
-  std::vector<boost::shared_ptr<PositionOperationContext>> StartSubOperations();
+  std::pair<std::vector<boost::shared_ptr<PositionOperationContext>>,
+            std::vector<boost::shared_ptr<PositionOperationContext>>>
+  StartSubOperations(Position &rootOperation);
 
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
                                                 trdk::Security &) override;
-  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
-  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
+  virtual const trdk::TradingSystem &GetTradingSystem(
+      const trdk::Strategy &, const trdk::Security &) const override;
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override;
   virtual void Setup(Position &) const override;
   virtual bool IsLong(const trdk::Security &) const override;
   virtual Qty GetPlannedQty() const override;

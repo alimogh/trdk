@@ -22,8 +22,12 @@ class PositionController : public TradingLib::PositionController {
   explicit PositionController(trdk::Strategy &);
   virtual ~PositionController() override = default;
 
+ public:
+  virtual void OnPositionUpdate(Position &) override;
+  virtual void OnPostionsCloseRequest() override;
+
  protected:
-  virtual void HoldPosition(trdk::Position &);
+  virtual void HoldPosition(trdk::Position &) override;
 };
 }
 }

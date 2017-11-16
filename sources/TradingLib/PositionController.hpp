@@ -41,7 +41,7 @@ class PositionController : private boost::noncopyable {
       trdk::Security &security,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
-  void OnPostionsCloseRequest();
+  virtual void OnPostionsCloseRequest();
   void OnBrokerPositionUpdate(
       const boost::shared_ptr<trdk::PositionOperationContext> &,
       trdk::Security &,
@@ -95,7 +95,7 @@ class PositionController : private boost::noncopyable {
       const trdk::Lib::TimeMeasurement::Milestones &);
 
   void ContinuePosition(trdk::Position &);
-  void ClosePosition(trdk::Position &);
+  virtual void ClosePosition(trdk::Position &);
 
   virtual void HoldPosition(trdk::Position &);
 

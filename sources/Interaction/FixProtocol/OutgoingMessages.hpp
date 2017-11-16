@@ -151,6 +151,8 @@ class NewOrderSingle : public SecurityMessage {
 
  public:
   void SetPosMaintRptId(const std::string &);
+  //! Tag 99.
+  void SetStopPx(const trdk::Price &);
 
  public:
   virtual std::vector<char> Export(unsigned char soh) const override;
@@ -165,6 +167,7 @@ class NewOrderSingle : public SecurityMessage {
   const std::string m_transactTime;
   size_t m_customContentSize;
   std::string m_posMaintRptId;
+  std::string m_stopPx;
 };
 
 class OrderCancelRequest : public Message {
