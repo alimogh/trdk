@@ -27,8 +27,10 @@ class PositionOperationContext : public trdk::PositionOperationContext {
   virtual ~PositionOperationContext() override = default;
 
  public:
-  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy() const override;
-  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy() const override;
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override;
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override;
 
   virtual void Setup(Position &position) const override;
 
@@ -38,8 +40,7 @@ class PositionOperationContext : public trdk::PositionOperationContext {
 
   virtual bool HasCloseSignal(const Position &) const;
 
-  virtual void OnCloseReasonChange(const CloseReason &,
-                                   const CloseReason &) override;
+  virtual bool OnCloseReasonChange(Position &, const CloseReason &) override;
 
   virtual boost::shared_ptr<trdk::PositionOperationContext>
   StartInvertedPosition(const trdk::Position &) override;

@@ -73,6 +73,8 @@ void StrategySetupDialog::Fields::Import(const StrategySettings &source) {
       break;
   }
 
+  stopLossStage1Pips->setValue(static_cast<int>(source.stopLoss1));
+
   stopLossStage2Enabled->setChecked(source.stopLoss2 ? true : false);
   if (source.stopLoss2) {
     stopLossStage2Pips->setValue(static_cast<int>(source.stopLoss2->pips));
@@ -115,6 +117,8 @@ StrategySettings StrategySetupDialog::Fields::Export() const {
     Assert(target1->isChecked());
     result.numberOfStepsToTarget = 1;
   }
+
+  result.stopLoss1 = stopLossStage1Pips->value();
 
   if (stopLossStage2Enabled->isChecked()) {
     result.stopLoss2 = StrategySettings::Target{

@@ -369,7 +369,7 @@ std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
   }
   // OrdType:
   {
-    const std::string sub("40=2");
+    const std::string sub(std::string("40=") + (m_stopPx.empty() ? "2" : "3"));
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -380,8 +380,13 @@ std::vector<char> NewOrderSingle::Export(unsigned char soh) const {
     result.emplace_back(soh);
   }
   // Price:
-  {
+  if (m_stopPx.empty()) {
     const std::string sub("44=" + m_price);
+    std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
+    result.emplace_back(soh);
+  } else {
+    // StopPx:
+    const std::string sub("99=" + m_stopPx);
     std::copy(sub.cbegin(), sub.cend(), std::back_inserter(result));
     result.emplace_back(soh);
   }
@@ -406,6 +411,19 @@ void NewOrderSingle::SetPosMaintRptId(const std::string &posMaintRptId) {
   m_posMaintRptId = posMaintRptId;
   if (!m_posMaintRptId.empty()) {
     m_customContentSize += m_posMaintRptId.size() + 5;
+  }
+}
+
+void NewOrderSingle::SetStopPx(const Price &price) {
+  Assert(m_stopPx.empty());
+  if (!m_stopPx.empty()) {
+    m_customContentSize -= m_stopPx.size() + 4;
+    m_customContentSize += m_price.size() + 4;
+  }
+  m_stopPx = DoubleLexicalCast(price);
+  if (!m_stopPx.empty()) {
+    m_customContentSize += m_stopPx.size() + 4;
+    m_customContentSize -= m_price.size() + 4;
   }
 }
 

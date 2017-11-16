@@ -46,10 +46,12 @@ class PositionOperationContext : public trdk::PositionOperationContext {
   virtual ~PositionOperationContext() override = default;
 
  public:
-  virtual const OrderPolicy &GetOpenOrderPolicy() const override {
+  virtual const OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override {
     return *m_orderPolicy;
   }
-  virtual const OrderPolicy &GetCloseOrderPolicy() const override {
+  virtual const OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
     return *m_orderPolicy;
   }
   virtual void Setup(Position &) const override {}

@@ -29,11 +29,13 @@ mk::PositionOperationContext::PositionOperationContext(
   AssertNe(0, m_openSignalPrice);
 }
 
-const OrderPolicy &mk::PositionOperationContext::GetOpenOrderPolicy() const {
+const OrderPolicy &mk::PositionOperationContext::GetOpenOrderPolicy(
+    const Position &) const {
   return *m_settings.orderPolicy;
 }
 
-const OrderPolicy &mk::PositionOperationContext::GetCloseOrderPolicy() const {
+const OrderPolicy &mk::PositionOperationContext::GetCloseOrderPolicy(
+    const Position &) const {
   return *m_settings.orderPolicy;
 }
 
@@ -74,11 +76,13 @@ const Price &mk::PositionOperationContext::GetCloseSignalPrice() const {
   return m_closeSignalPrice;
 }
 
-void mk::PositionOperationContext::OnCloseReasonChange(
-    const CloseReason &, const CloseReason &newReason) {
+bool mk::PositionOperationContext::OnCloseReasonChange(
+    Position &position, const CloseReason &newReason) {
   if (newReason != CLOSE_REASON_SIGNAL) {
     m_closeSignalPrice = 0;
   }
+  return trdk::PositionOperationContext::OnCloseReasonChange(position,
+                                                             newReason);
 }
 
 boost::shared_ptr<trdk::PositionOperationContext>

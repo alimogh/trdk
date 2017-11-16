@@ -41,7 +41,7 @@ class PositionController : private boost::noncopyable {
       trdk::Security &security,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
-  void OnPostionsCloseRequest();
+  virtual void OnPostionsCloseRequest();
   void OnBrokerPositionUpdate(
       const boost::shared_ptr<trdk::PositionOperationContext> &,
       trdk::Security &,

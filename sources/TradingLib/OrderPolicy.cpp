@@ -28,10 +28,10 @@ Price LimitOrderPolicy::GetCloseOrderPrice(Position &position) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 void LimitGtcOrderPolicy::Open(Position &position) const {
-  position.Open(position.GetMarketOpenPrice());
+  position.Open(GetOpenOrderPrice(position));
 }
 void LimitGtcOrderPolicy::Close(Position &position) const {
-  position.Close(position.GetMarketClosePrice());
+  position.Close(GetCloseOrderPrice(position));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
