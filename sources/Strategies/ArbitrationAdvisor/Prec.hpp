@@ -19,3 +19,4 @@
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "Fwd.hpp"
+#include <boost/unordered_set.hpp>

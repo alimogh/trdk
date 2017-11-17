@@ -445,7 +445,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         Rest::Security::SupportedLevel1Types()
             .set(LEVEL1_TICK_BID_PRICE)
             .set(LEVEL1_TICK_ASK_PRICE));
-    result->SetOnline(pt::not_a_date_time, true);
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {
@@ -653,10 +652,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateSecuritues(PublicRequest &depthRequest) {
-    const auto &response = depthRequest.Send(m_marketDataSession, GetContext());
-    const auto &time = boost::get<0>(response);
-    const auto &delayMeasurement = boost::get<2>(response);
     try {
+      const auto &response =
+          depthRequest.Send(m_marketDataSession, GetContext());
+      const auto &time = boost::get<0>(response);
+      const auto &delayMeasurement = boost::get<2>(response);
       for (const auto &updateRecord : boost::get<1>(response)) {
         const auto &symbol = updateRecord.first;
         const auto security = m_securities.find(symbol);
@@ -676,8 +676,17 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             time, std::move(bestBid.first), std::move(bestBid.second),
             std::move(bestAsk.first), std::move(bestAsk.second),
             delayMeasurement);
+        security->second->SetOnline(pt::not_a_date_time, true);
       }
     } catch (const std::exception &ex) {
+      for (auto &security : m_securities) {
+        try {
+          security.second->SetOnline(pt::not_a_date_time, false);
+        } catch (...) {
+          AssertFailNoException();
+          throw;
+        }
+      }
       boost::format error("Failed to read \"depth\": \"%1%\"");
       error % ex.what();
       throw MarketDataSource::Error(error.str().c_str());

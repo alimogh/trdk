@@ -29,8 +29,9 @@ namespace {
 void Report(const Module &module,
             Security &security,
             const char *type) throw() {
-  module.GetLog().Info("Subscribed to %1% from \"%2%\" (source: \"%3%\").",
-                       type, security, security.GetSource().GetInstanceName());
+  module.GetLog().Info("Subscribed to %1% from \"%2%\".",
+                       type,       // 1
+                       security);  // 2
 }
 }
 

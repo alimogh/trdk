@@ -326,7 +326,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
-    result->SetOnline(pt::not_a_date_time, true);
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {
@@ -534,10 +533,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
       auto &security = *subscribtion.second.security;
       auto &request = *subscribtion.second.request;
-      const auto &response = request.Send(m_marketDataSession, GetContext());
-      const auto &time = boost::get<0>(response);
-      const auto &delayMeasurement = boost::get<2>(response);
       try {
+        const auto &response = request.Send(m_marketDataSession, GetContext());
+        const auto &time = boost::get<0>(response);
+        const auto &delayMeasurement = boost::get<2>(response);
         for (const auto &updateRecord :
              boost::get<1>(response).get_child("buy")) {
           const auto &update = updateRecord.second;
@@ -559,12 +558,19 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                              delayMeasurement);
         }
       } catch (const std::exception &ex) {
+        try {
+          security.SetOnline(pt::not_a_date_time, false);
+        } catch (...) {
+          AssertFailNoException();
+          throw;
+        }
         boost::format error(
             "Failed to read order book state for \"%1%\": \"%2%\"");
         error % security  // 1
             % ex.what();  // 2
         throw MarketDataSource::Error(error.str().c_str());
       }
+      security.SetOnline(pt::not_a_date_time, true);
     }
   }
 
