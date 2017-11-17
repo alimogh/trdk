@@ -412,8 +412,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       boost::format requestParams(
-          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
-          "\"size\": \"%4$.8f\"}");
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.6f\", "
+          "\"size\": \"%4$.6f\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
           % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
           % *price                                                // 3
