@@ -348,7 +348,6 @@
     <ClInclude Include="SysError.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="FileSystemChangeNotificator.hpp" />
-    <ClInclude Include="Foreach.hpp" />
     <ClInclude Include="TimeMeasurement.hpp" />
     <ClInclude Include="UseUnused.hpp" />
     <ClInclude Include="Util.hpp" />

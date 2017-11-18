@@ -9,28 +9,23 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ArbitrageStrategyWindow.hpp"
-#include "Core/Context.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
-#include "Strategies/ArbitrationAdvisor/Strategy.hpp"
-#include "Lib/Engine.hpp"
-#include "MainWindow.hpp"
+#include "StrategyWindow.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Terminal;
+using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-const std::string &ArbitrageStrategyWindow::Target::GetSymbol() const {
+const std::string &StrategyWindow::Target::GetSymbol() const {
   return security->GetSymbol().GetSymbol();
 }
-const TradingSystem *ArbitrageStrategyWindow::Target::GetTradingSystem() const {
+const TradingSystem *StrategyWindow::Target::GetTradingSystem() const {
   return &security->GetContext().GetTradingSystem(
       security->GetSource().GetIndex(), tradingMode);
 }
@@ -39,15 +34,12 @@ namespace {
 size_t numberOfNextInstance = 1;
 }
 
-ArbitrageStrategyWindow::ArbitrageStrategyWindow(
-    FrontEnd::Lib::Engine &engine,
-    MainWindow &mainWindow,
-    const boost::optional<QString> &defaultSymbol,
-    QWidget *parent)
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const boost::optional<QString> &defaultSymbol,
+                               QWidget *parent)
     : Base(parent),
       m_tradingMode(TRADING_MODE_LIVE),
       m_instanceNumber(numberOfNextInstance++),
-      m_mainWindow(mainWindow),
       m_engine(engine),
       m_symbol(-1),
       m_instanceData({}) {
@@ -85,19 +77,19 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
-                 this, &ArbitrageStrategyWindow::OnCurrentSymbolChange));
+                 this, &StrategyWindow::OnCurrentSymbolChange));
 
   Verify(connect(m_ui.highlightLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 this, &ArbitrageStrategyWindow::UpdateAdviceLevel));
+                 this, &StrategyWindow::UpdateAdviceLevel));
 
   Verify(connect(m_ui.autoTrade, &QCheckBox::toggled, this,
-                 &ArbitrageStrategyWindow::ToggleAutoTrading));
+                 &StrategyWindow::ToggleAutoTrading));
   Verify(connect(m_ui.autoTradeLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 this, &ArbitrageStrategyWindow::UpdateAutoTradingLevel));
+                 this, &StrategyWindow::UpdateAutoTradingLevel));
 
   Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
     Assert(m_instanceData.novaexchangeTradingSystem);
@@ -142,15 +134,15 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
 
   qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
       "trdk::Strategies::ArbitrageAdvisor::Advice");
-  Verify(connect(this, &ArbitrageStrategyWindow::Advice, this,
-                 &ArbitrageStrategyWindow::TakeAdvice, Qt::QueuedConnection));
+  Verify(connect(this, &StrategyWindow::Advice, this,
+                 &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
 
   LoadSymbols(defaultSymbol);
 
   adjustSize();
 }
 
-ArbitrageStrategyWindow::~ArbitrageStrategyWindow() {
+StrategyWindow::~StrategyWindow() {
   try {
     DeactivateAutoTrading();
   } catch (...) {
@@ -159,7 +151,7 @@ ArbitrageStrategyWindow::~ArbitrageStrategyWindow() {
   }
 }
 
-void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
+void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   if (!IsAutoTradingActivated()) {
     closeEvent->accept();
     return;
@@ -167,8 +159,9 @@ void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   const auto &response = QMessageBox::question(
       this, tr("Strategy closing"),
       tr("Are you sure you want to the close strategy window?\n\nIf strategy "
-         "window will be closed - automatic trading will be "
-         "stopped.\n\nContinue and close strategy window for %1?")
+         "window will be closed - automatic trading will be stopped, all "
+         "automatically opened position will not automatically "
+         "closed.\n\nContinue and close strategy window for %1?")
           .arg(m_ui.symbol->itemText(m_symbol)),
       QMessageBox::Yes | QMessageBox::No);
   if (response == QMessageBox::Yes) {
@@ -178,14 +171,14 @@ void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   }
 }
 
-QSize ArbitrageStrategyWindow::sizeHint() const {
+QSize StrategyWindow::sizeHint() const {
   auto result = Base::sizeHint();
   result.setWidth(static_cast<int>(result.width() * 0.9));
   result.setHeight(static_cast<int>(result.height() * 0.7));
   return result;
 }
 
-void ArbitrageStrategyWindow::LoadSymbols(
+void StrategyWindow::LoadSymbols(
     const boost::optional<QString> &defaultSymbol) {
   {
     IniFile conf(m_engine.GetConfigFilePath());
@@ -203,7 +196,7 @@ void ArbitrageStrategyWindow::LoadSymbols(
   }
 }
 
-void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
+void StrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
   if (m_symbol >= 0) {
     if (m_symbol == newSymbolIndex) {
       return;
@@ -226,7 +219,7 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
           QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
       if (response != QMessageBox::Yes) {
         if (response == QMessageBox::No) {
-          m_mainWindow.CreateNewArbitrageStrategy(symbol);
+          (new StrategyWindow(m_engine, symbol, parentWidget()))->show();
         }
         return;
       }
@@ -237,7 +230,7 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
   SetCurrentSymbol(newSymbolIndex);
 }
 
-void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
+void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
   DeactivateAutoTrading();
 
   const auto &symbol = m_ui.symbol->itemText(symbolIndex).toStdString();
@@ -366,8 +359,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
     });
   }
 
-  m_bestSpreadAbsValue = Lib::PriceAdapter<QLabel>{*m_ui.bestSpreadAbsValue,
-                                                   biggestGetPricePrecision};
+  m_bestSpreadAbsValue =
+      PriceAdapter<QLabel>{*m_ui.bestSpreadAbsValue, biggestGetPricePrecision};
   m_instanceData = std::move(result);
   m_symbol = symbolIndex;
 
@@ -397,7 +390,7 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
   }
 }
 
-void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
+void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
   Assert(advice.security);
 
   {
@@ -478,8 +471,8 @@ void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
   }
 }
 
-void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
-                                        TradingSystem *tradingSystem) {
+void StrategyWindow::SendOrder(const OrderSide &side,
+                               TradingSystem *tradingSystem) {
   if (!tradingSystem) {
     tradingSystem = side == ORDER_SIDE_BUY
                         ? m_instanceData.bestBuyTradingSystem
@@ -514,7 +507,7 @@ void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
   }
 }
 
-bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
+bool StrategyWindow::IsAutoTradingActivated() const {
   bool result = false;
   if (m_instanceData.strategy) {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -526,7 +519,7 @@ bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
   return result;
 }
 
-void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
+void StrategyWindow::ToggleAutoTrading(bool activate) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -543,7 +536,7 @@ void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
   }
 }
 
-void ArbitrageStrategyWindow::DeactivateAutoTrading() {
+void StrategyWindow::DeactivateAutoTrading() {
   if (!m_instanceData.strategy) {
     return;
   }
@@ -556,7 +549,7 @@ void ArbitrageStrategyWindow::DeactivateAutoTrading() {
   }
 }
 
-void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
+void StrategyWindow::UpdateAutoTradingLevel(double level) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -572,7 +565,7 @@ void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
   }
 }
 
-void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {
+void StrategyWindow::UpdateAdviceLevel(double level) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -582,3 +575,12 @@ void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::unique_ptr<QWidget> CreateStrategyWidgets(Engine &engine,
+                                               QWidget *parent) {
+  return boost::make_unique<StrategyWindow>(engine, boost::none, parent);
+}
+
+////////////////////////////////////////////////////////////////////////////////

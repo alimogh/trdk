@@ -47,7 +47,7 @@ class DropCopyRecordFieldMsgpackVisitor : public boost::static_visitor<> {
 
   void operator()(const boost::shared_ptr<const FinancialResult> &record) {
     m_stream.pack_map(PackSizeT(record->size()));
-    foreach (const auto &i, *record) {
+    for (const auto &i : *record) {
       m_stream.pack(Lib::ConvertToIso(i.first));
       m_stream.pack(i.second.Get());
     }

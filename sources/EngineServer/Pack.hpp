@@ -63,7 +63,7 @@ struct pack<trdk::EngineServer::DropCopyRecord> {
       const trdk::EngineServer::DropCopyRecord &record) const {
     stream.pack_map(trdk::EngineServer::Details::PackSizeT(record.size()));
 
-    foreach (const auto &i, record) {
+    for (const auto &i : record) {
       stream.pack(i.first);
 
       using namespace trdk::EngineServer::Details;

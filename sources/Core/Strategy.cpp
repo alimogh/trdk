@@ -731,7 +731,7 @@ void Strategy::ReportStop() {
   static_assert(numberOfStopModes == 3, "Stop mode list changed.");
   switch (GetStopMode()) {
     case STOP_MODE_GRACEFULLY_ORDERS:
-      foreach (const auto &pos, GetPositions()) {
+      for (const auto &pos : GetPositions()) {
         if (pos.HasActiveOrders()) {
           GetLog().Error(
               "Found position %1% with active orders at stop"

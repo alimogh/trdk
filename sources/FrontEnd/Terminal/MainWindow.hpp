@@ -27,13 +27,13 @@ class MainWindow : public QMainWindow {
   Lib::Engine &GetEngine() { return *m_engine; }
 
  public slots:
-  void CreateNewArbitrageStrategy(
-      const boost::optional<QString> &defaultSymbol);
+  void CreateNewArbitrageStrategy();
 
  private:
   std::unique_ptr<Lib::Engine> m_engine;
   Ui::MainWindow m_ui;
   Lib::OrderListView m_orderList;
+  std::vector<std::unique_ptr<trdk::Lib::Dll>> m_moduleDlls;
 };
 }
 }

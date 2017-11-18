@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Ini.hpp"
-#include "Foreach.hpp"
 #include "Util.hpp"
 
 namespace fs = boost::filesystem;
@@ -71,7 +70,7 @@ Ini::SectionList Ini::ReadSectionsList() const {
     std::string line = ReadCurrentLine();
     if (IsSection(line)) {
       TrimSection(line);
-      foreach (const auto &i, result) {
+      for (const auto &i : result) {
         if (boost::iequals(i, line)) {
           throw SectionNotUnique();
         }

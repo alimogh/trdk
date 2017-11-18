@@ -133,7 +133,7 @@ class PriceBookSideGenerator {
     ASSERT_EQ(size, side.GetSize());
 
     size_t i = 0;
-    foreach (const auto &source, m_source) {
+    for (const auto &source : m_source) {
       if (!source.second.isUsed) {
         continue;
       }
@@ -195,7 +195,7 @@ class PriceBookSideGenerator {
         ++count;
         pos->second.isUsed = true;
 
-        foreach (const auto &source, m_source) {
+        for (const auto &source : m_source) {
           if (!source.second.isUsed) {
             continue;
           }
@@ -214,7 +214,7 @@ class PriceBookSideGenerator {
 
   void UpdateQty(Side &side, const trdk::Qty &qty) {
     size_t i = 0;
-    foreach (auto &level, m_source) {
+    for (auto &level : m_source) {
       level.second.qty += qty;
       EXPECT_EQ(++i <= trdk::PriceBook::GetSideMaxSize(),
                 side.Update(level.second.time, level.first, qty));

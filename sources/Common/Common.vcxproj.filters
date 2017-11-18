@@ -88,9 +88,6 @@
     <ClInclude Include="Common.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Foreach.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FileSystemChangeNotificator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

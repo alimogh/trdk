@@ -10,14 +10,14 @@
 
 #pragma once
 
-#include "Strategies/ArbitrationAdvisor/Advice.hpp"
-#include "ui_ArbitrageStrategyWindow.h"
+#include "Advice.hpp"
+#include "ui_StrategyWindow.h"
 
 namespace trdk {
-namespace FrontEnd {
-namespace Terminal {
+namespace Strategies {
+namespace ArbitrageAdvisor {
 
-class ArbitrageStrategyWindow : public QMainWindow {
+class StrategyWindow : public QMainWindow {
   Q_OBJECT
 
  public:
@@ -29,9 +29,9 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
     Security *security;
 
-    mutable Lib::SideAdapter<QLabel> bid;
-    mutable Lib::SideAdapter<QLabel> ask;
-    mutable Lib::TimeAdapter<QLabel> time;
+    mutable FrontEnd::Lib::SideAdapter<QLabel> bid;
+    mutable FrontEnd::Lib::SideAdapter<QLabel> ask;
+    mutable FrontEnd::Lib::TimeAdapter<QLabel> time;
 
     QFrame *bidFrame;
     QFrame *askFrame;
@@ -77,12 +77,10 @@ class ArbitrageStrategyWindow : public QMainWindow {
   };
 
  public:
-  explicit ArbitrageStrategyWindow(
-      Lib::Engine &,
-      MainWindow &mainWindow,
-      const boost::optional<QString> &defaultSymbol,
-      QWidget *parent);
-  virtual ~ArbitrageStrategyWindow() override;
+  explicit StrategyWindow(FrontEnd::Lib::Engine &,
+                          const boost::optional<QString> &defaultSymbol,
+                          QWidget *parent);
+  virtual ~StrategyWindow() override;
 
  public:
   virtual QSize sizeHint() const override;
@@ -115,11 +113,10 @@ class ArbitrageStrategyWindow : public QMainWindow {
   const TradingMode m_tradingMode;
   const size_t m_instanceNumber;
   boost::unordered_map<std::string, boost::uuids::uuid> m_strategiesUuids;
-  MainWindow &m_mainWindow;
-  Ui::ArbitrageStrategyWindow m_ui;
-  Lib::Engine &m_engine;
+  Ui::StrategyWindow m_ui;
+  FrontEnd::Lib::Engine &m_engine;
   int m_symbol;
-  Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
+  FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
   std::vector<QWidget *> m_novaexchangeWidgets;
   std::vector<QWidget *> m_yobitnetWidgets;
   std::vector<QWidget *> m_ccexWidgets;

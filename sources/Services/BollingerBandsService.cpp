@@ -116,7 +116,7 @@ struct StandardDeviationForBb : public accumulator_base {
     const auto &currentMean = rolling_mean(args);
     const auto window = rolling_window_plus1(args).advance_begin(
         is_rolling_window_plus1_full(args));
-    foreach (const auto &i, window) {
+    for (const auto &i : window) {
       const auto diff = i - currentMean;
       result += (diff * diff);
     }

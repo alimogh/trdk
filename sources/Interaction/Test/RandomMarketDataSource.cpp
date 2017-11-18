@@ -78,7 +78,7 @@ void RandomMarketDataSource::NotificationThread() {
           (double(generateTopRandom()) / 100) * (isCorrectionPositive ? 1 : -1);
       ask = bid + (double(generateStepRandom()) / 100);
 
-      foreach (const auto &s, m_securityList) {
+      for (const auto &s : m_securityList) {
         const auto &timeMeasurement =
             GetContext().StartStrategyTimeMeasurement();
 

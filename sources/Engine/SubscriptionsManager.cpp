@@ -42,7 +42,7 @@ SubscriptionsManager::SubscriptionsManager(trdk::Engine::Context &context)
 
 SubscriptionsManager::~SubscriptionsManager() {
   try {
-    foreach (const auto &connection, m_slotConnections) {
+    for (const auto &connection : m_slotConnections) {
       connection.disconnect();
     }
   } catch (...) {
@@ -568,7 +568,7 @@ void SubscriptionsManager::Subscribe(Security &security,
       m_subscribed.insert(&strategy);
     }
     void operator()(Service &service) const {
-      foreach (const auto &serviceSubscriber, service.GetSubscribers()) {
+      for (const auto &serviceSubscriber : service.GetSubscribers()) {
         boost::apply_visitor(*this, serviceSubscriber);
       }
     }
@@ -587,7 +587,7 @@ void SubscriptionsManager::Subscribe(Security &security,
   ServiceSubscriberVisitor serviceSubscriberVisitor(
       m_dispatcher, newSlotConnections, subscribedStrategies);
   try {
-    foreach (const auto &serviceSubscriber, service.GetSubscribers()) {
+    for (const auto &serviceSubscriber : service.GetSubscribers()) {
       boost::apply_visitor(serviceSubscriberVisitor, serviceSubscriber);
     }
     subscribeImpl(security, SubscriberPtrWrapper(service), newSlotConnections);
@@ -595,7 +595,7 @@ void SubscriptionsManager::Subscribe(Security &security,
               std::back_inserter(slotConnections));
   } catch (...) {
     try {
-      foreach (const auto &connection, newSlotConnections) {
+      for (const auto &connection : newSlotConnections) {
         connection.disconnect();
       }
     } catch (...) {

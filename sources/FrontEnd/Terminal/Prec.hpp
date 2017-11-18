@@ -8,24 +8,12 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#include "Common/Common.hpp"
-#include "Engine/Fwd.hpp"
-#include "Fwd.hpp"
-
 #pragma warning(push)
 #pragma warning(disable : 4127)
 #include <QtWidgets>
 #pragma warning(pop)
 
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-
-#include "Lib/Adapters.hpp"
-#include "Lib/Types.hpp"
-#include "Lib/Util.hpp"
+#include "Common/Common.hpp"
+#include "Engine/Fwd.hpp"
+#include "Fwd.hpp"
 #include "Lib/Fwd.hpp"

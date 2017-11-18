@@ -20,20 +20,19 @@ namespace fs = boost::filesystem;
 EngineListModel::EngineListModel(const fs::path &configPathFolderPath,
                                  QWidget *parent)
     : QAbstractItemModel(parent) {
-  foreach (
-      const auto &it,
-      std::make_pair(fs::recursive_directory_iterator(configPathFolderPath),
-                     fs::recursive_directory_iterator())) {
-    if (fs::is_regular_file(it)) {
-      try {
-        m_engines.emplace_back(boost::make_unique<EngineWindow>(
-            configPathFolderPath, fs::relative(it.path(), configPathFolderPath),
-            parent));
-      } catch (const std::exception &ex) {
-        qDebug() << QString("Failed to read engine configuration '%1': '%2'.")
-                        .arg(QString::fromStdString(it.path().string()),
-                             ex.what());
-      }
+  for (const auto &it :
+       fs::recursive_directory_iterator(configPathFolderPath)) {
+    if (!fs::is_regular_file(it)) {
+      continue;
+    }
+    try {
+      m_engines.emplace_back(boost::make_unique<EngineWindow>(
+          configPathFolderPath, fs::relative(it.path(), configPathFolderPath),
+          parent));
+    } catch (const std::exception &ex) {
+      qDebug() << QString("Failed to read engine configuration '%1': '%2'.")
+                      .arg(QString::fromStdString(it.path().string()),
+                           ex.what());
     }
   }
 }

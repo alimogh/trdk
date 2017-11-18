@@ -10,11 +10,12 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
-#include "ArbitrageStrategyWindow.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
+#include "Lib/Util.hpp"
 
+using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
@@ -38,8 +39,8 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   }
   m_ui.area->addSubWindow(&m_orderList);
 
-  Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered,
-                 [this]() { CreateNewArbitrageStrategy(boost::none); }));
+  Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
+                 &MainWindow::CreateNewArbitrageStrategy));
 
   Verify(connect(m_ui.showOrderList, &QAction::triggered, [this]() {
     m_orderList.activateWindow();
@@ -51,14 +52,33 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
   Verify(connect(m_ui.pinToTop, &QAction::triggered,
                  [this](bool pin) { PinToTop(*this, pin); }));
 
+  try {
+    m_moduleDlls.emplace_back(
+        std::make_unique<Dll>("ArbitrationAdvisor", true));
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString("Failed to load module: \"%1\".").arg(ex.what());
+    QMessageBox::critical(this, tr("Failed to load module."), error,
+                          QMessageBox::Ignore);
+    throw;
+  }
+
   m_orderList.showMaximized();
 }
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::CreateNewArbitrageStrategy(
-    const boost::optional<QString> &defaultSymbol) {
-  auto *const window =
-      new ArbitrageStrategyWindow(*m_engine, *this, defaultSymbol, this);
-  window->show();
+void MainWindow::CreateNewArbitrageStrategy() {
+  typedef std::unique_ptr<QWidget>(Factory)(Lib::Engine &, QWidget *);
+  try {
+    m_moduleDlls.back()
+        ->GetFunction<Factory>("CreateStrategyWidgets")(*m_engine, this)
+        .release()
+        ->show();
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString("Failed to load module front-end: \"%1\".").arg(ex.what());
+    QMessageBox::critical(this, tr("Failed to load module."), error,
+                          QMessageBox::Ignore);
+  }
 }
