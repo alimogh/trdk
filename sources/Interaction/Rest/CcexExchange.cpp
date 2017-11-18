@@ -305,7 +305,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask("Opened orders", 100,
-                                 [this] { return RequestOpenedOrders(); }, 10));
+                                 [this] { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;
   }
 
@@ -564,8 +564,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           AssertFailNoException();
           throw;
         }
-        boost::format error(
-            "Failed to read order book state for \"%1%\": \"%2%\"");
+        boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
         error % security  // 1
             % ex.what();  // 2
         throw MarketDataSource::Error(error.str().c_str());

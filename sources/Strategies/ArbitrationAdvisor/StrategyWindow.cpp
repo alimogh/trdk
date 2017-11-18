@@ -48,6 +48,7 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
   m_ui.setupUi(this);
 
+  AddTarget("Bittrex", "bittrex", &InstanceData::bittrexTradingSystem);
   AddTarget("Novaexchange", "novaexchange",
             &InstanceData::novaexchangeTradingSystem);
   AddTarget("Yobit.net", "yobitnet", &InstanceData::yobitnetTradingSystem);

@@ -243,6 +243,20 @@
           </widget>
          </item>
          <item>
+          <widget class="QLabel" name="delimiter">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>/</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QLabel" name="bestSpreadPencentsValue">
            <property name="font">
             <font>

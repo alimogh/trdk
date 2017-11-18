@@ -323,7 +323,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                 throw;
               }
               boost::format error(
-                  "Failed to read order book state for \"%1%\": \"%2%\"");
+                  "Failed to read order book for \"%1%\": \"%2%\"");
               error % security  // 1
                   % ex.what();  // 2
               throw MarketDataSource::Error(error.str().c_str());
@@ -349,7 +349,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 10));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;
   }
 

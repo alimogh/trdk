@@ -8,4 +8,7 @@ EXPORTS
 	CreateCcexMarketDataSource
 	CreateGdax
 	CreateGdaxMarketDataSource
+	CreateBittrexTradingSystem
+	CreateBittrexMarketDataSource
+	CreateBittrex
 	GetTrdkModuleVersionInfoV1

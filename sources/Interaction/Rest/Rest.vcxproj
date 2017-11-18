@@ -304,9 +304,14 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="BittrexRequest.cpp" />
+    <ClCompile Include="BittrexTradingSystem.cpp" />
+    <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="BittrexUtil.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
     <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
+    <ClCompile Include="BittrexMarketDataSource.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -331,12 +336,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.hpp" />
+    <ClInclude Include="BittrexMarketDataSource.hpp" />
+    <ClInclude Include="BittrexRequest.hpp" />
+    <ClInclude Include="BittrexTradingSystem.hpp" />
+    <ClInclude Include="BittrexUtil.hpp" />
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PullingTask.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />
+    <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -428,7 +428,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                  },
                                  2));
     Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 10));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -444,7 +444,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         GetContext(), symbol, *this,
         Rest::Security::SupportedLevel1Types()
             .set(LEVEL1_TICK_BID_PRICE)
-            .set(LEVEL1_TICK_ASK_PRICE));
+            .set(LEVEL1_TICK_BID_QTY)
+            .set(LEVEL1_TICK_ASK_PRICE)
+            .set(LEVEL1_TICK_BID_QTY));
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {

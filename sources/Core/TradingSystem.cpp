@@ -82,10 +82,8 @@ struct ActiveOrder {
   std::unique_ptr<trdk::Timer::Scope> timerScope;
 
   bool IsChanged(const OrderStatus &rhsStatus,
-                 const Qty &rhsRemainingQty,
-                 const pt::ptime &rhsUpdateTime) const {
-    return status != rhsStatus || updateTime != rhsUpdateTime ||
-           remainingQty != rhsRemainingQty;
+                 const Qty &rhsRemainingQty) const {
+    return status != rhsStatus || remainingQty != rhsRemainingQty;
   }
 };
 }
@@ -250,7 +248,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     if (!result.second) {
       m_log.Error("Order ID %1% is not unique.",
                   transactionContext->GetOrderId());
-      throw Error("Order ID %1% is not unique");
+      throw Error("Order ID is not unique");
     }
     Assert(!result.first->second.timerScope);
     if (m_lastOrderTimerScope) {
@@ -663,14 +661,14 @@ void TradingSystem::OnOrder(const OrderId &orderId,
     const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
+      if (!it->second.IsChanged(status, remainingQty)) {
+        return;
+      }
       boost::optional<TradeInfo> trade;
       switch (status) {
         case ORDER_STATUS_FILLED:
         case ORDER_STATUS_FILLED_PARTIALLY:
           trade = TradeInfo{price ? *price : 0};
-      }
-      if (!trade && !it->second.IsChanged(status, remainingQty, updateTime)) {
-        return;
       }
       m_pimpl->OnOrderStatusUpdate(
           orderId, status, remainingQty, boost::none, std::move(trade),

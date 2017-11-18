@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2017/11/16 13:21:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -13,8 +13,23 @@
 namespace trdk {
 namespace Interaction {
 namespace Rest {
-class FloodControl;
-class Security;
+
+struct Settings {
+  boost::posix_time::time_duration pullingInterval;
+
+  explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
+      : pullingInterval(boost::posix_time::milliseconds(
+            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+    Log(log);
+    Validate();
+  }
+
+  void Log(ModuleEventsLog &log) {
+    log.Info("Pulling interval: %1%.", pullingInterval);
+  }
+
+  void Validate() {}
+};
 }
 }
 }

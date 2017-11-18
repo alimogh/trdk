@@ -66,6 +66,7 @@ class StrategyWindow : public QMainWindow {
     Strategy *strategy;
     boost::signals2::scoped_connection adviceConnection;
     TargetList targets;
+    TradingSystem *bittrexTradingSystem;
     TradingSystem *novaexchangeTradingSystem;
     TradingSystem *yobitnetTradingSystem;
     TradingSystem *ccexTradingSystem;
