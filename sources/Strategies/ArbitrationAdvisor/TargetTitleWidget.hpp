@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/22 17:11:54
+ *   Created: 2017/11/19 04:56:19
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,15 +9,30 @@
  ******************************************************************************/
 
 #pragma once
+#include "ui_TargetTitleWidget.h"
 
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
-class Strategy;
-class Report;
-struct Advice;
-struct AdviceSide;
-struct AdviceSecuritySignal;
+
+class TargetTitleWidget : public QWidget {
+  Q_OBJECT
+
+ public:
+  typedef QWidget Base;
+
+ public:
+  explicit TargetTitleWidget(QWidget *parent);
+
+ public:
+  void SetTitle(const QString &);
+  void Update(const Security &);
+  void Update(const Advice &);
+
+ private:
+  Ui::TargetTitleWidget m_ui;
+  FrontEnd::Lib::TimeAdapter<QLabel> m_lastTime;
+};
 }
 }
 }

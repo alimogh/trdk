@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "StrategyWindow.hpp"
+#include "Advice.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
@@ -47,33 +48,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
   m_ui.setupUi(this);
 
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLabel);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLastTime);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBid);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeAsk);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeSell);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBuy);
-
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetLabel);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetLastTime);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBid);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetAsk);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetSell);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBuy);
-
-  m_ccexWidgets.emplace_back(m_ui.ccexLabel);
-  m_ccexWidgets.emplace_back(m_ui.ccexLastTime);
-  m_ccexWidgets.emplace_back(m_ui.ccexBid);
-  m_ccexWidgets.emplace_back(m_ui.ccexAsk);
-  m_ccexWidgets.emplace_back(m_ui.ccexSell);
-  m_ccexWidgets.emplace_back(m_ui.ccexBuy);
-
-  m_gdaxWidgets.emplace_back(m_ui.gdaxLabel);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxLastTime);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBid);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxAsk);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxSell);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBuy);
+  AddTarget("Novaexchange", "novaexchange",
+            &InstanceData::novaexchangeTradingSystem);
+  AddTarget("Yobit.net", "yobitnet", &InstanceData::yobitnetTradingSystem);
+  AddTarget("C-CEX", "ccex", &InstanceData::ccexTradingSystem);
+  AddTarget("GDAX", "gdax", &InstanceData::gdaxTradingSystem);
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
@@ -90,47 +69,6 @@ StrategyWindow::StrategyWindow(Engine &engine,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
                  this, &StrategyWindow::UpdateAutoTradingLevel));
-
-  Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.novaexchangeTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.novaexchangeTradingSystem);
-  }));
-  Verify(connect(m_ui.novaexchangeBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.novaexchangeTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.novaexchangeTradingSystem);
-  }));
-  Verify(connect(m_ui.yobitnetSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.yobitnetTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.yobitnetTradingSystem);
-  }));
-  Verify(connect(m_ui.yobitnetBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.yobitnetTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.yobitnetTradingSystem);
-  }));
-  Verify(connect(m_ui.ccexSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.ccexTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.ccexTradingSystem);
-  }));
-  Verify(connect(m_ui.ccexBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.ccexTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.ccexTradingSystem);
-  }));
-  Verify(connect(m_ui.gdaxSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.gdaxTradingSystem);
-  }));
-  Verify(connect(m_ui.gdaxBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.gdaxTradingSystem);
-  }));
-  Verify(connect(m_ui.bestSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, nullptr);
-  }));
-  Verify(connect(m_ui.bestBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, nullptr);
-  }));
 
   qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
       "trdk::Strategies::ArbitrageAdvisor::Advice");
@@ -149,6 +87,40 @@ StrategyWindow::~StrategyWindow() {
     AssertFailNoException();
     terminate();
   }
+}
+
+void StrategyWindow::AddTarget(
+    const QString &name,
+    const std::string &targetId,
+    TradingSystem *InstanceData::*tradingSystemField) {
+  const auto &it = m_targetWidgets.emplace(
+      boost::to_lower_copy(targetId),
+      boost::make_unique<TargetWidgets>(tradingSystemField, this));
+  Assert(it.second);
+  if (!it.second) {
+    throw LogicError(
+        "Internal logic error: Failed to add the same target twice");
+  }
+  auto &widgets = *it.first->second;
+
+  widgets.title.SetTitle(name);
+
+  {
+    const auto row = static_cast<int>(m_targetWidgets.size());
+    int column = 0;
+    m_ui.targets->addWidget(&widgets.title, row, column++);
+    m_ui.targets->addWidget(&widgets.bid, row, column++);
+    m_ui.targets->addWidget(&widgets.ask, row, column++);
+    m_ui.targets->addWidget(&widgets.actions, row, column++);
+  }
+
+  Verify(connect(&widgets.actions, &TargetActionsWidget::Order,
+                 [this, tradingSystemField](const OrderSide &side) {
+                   TradingSystem *const tradingSystem =
+                       m_instanceData.*tradingSystemField;
+                   Assert(tradingSystem);
+                   SendOrder(side, tradingSystem);
+                 }));
 }
 
 void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
@@ -270,6 +242,7 @@ void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
     auto &tradingSystem = context.GetTradingSystem(i, m_tradingMode);
     const auto &name = tradingSystem.GetInstanceName();
+    const auto &key = boost::to_lower_copy(name);
 
     MarketDataSource *source = nullptr;
     for (size_t k = 0; i < context.GetNumberOfMarketDataSources(); ++k) {
@@ -288,70 +261,23 @@ void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
       continue;
     }
 
-    QLabel *bidPriceWidget;
-    QLabel *bidQtyWidget;
-    QLabel *askPriceWidget;
-    QLabel *askQtyWidget;
-    QLabel *lastTimeWidget;
-    QFrame *bidFrame;
-    QFrame *askFrame;
-    if (boost::iequals(name, "Novaexchange")) {
-      result.novaexchangeTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.novaexchangeBidPrice;
-      bidQtyWidget = m_ui.novaexchangeBidQty;
-      askPriceWidget = m_ui.novaexchangeAskPrice;
-      askQtyWidget = m_ui.novaexchangeAskQty;
-      lastTimeWidget = m_ui.novaexchangeLastTime;
-      bidFrame = m_ui.novaexchangeBid;
-      askFrame = m_ui.novaexchangeAsk;
-    } else if (boost::iequals(name, "Yobitnet")) {
-      result.yobitnetTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.yobitnetBidPrice;
-      bidQtyWidget = m_ui.yobitnetBidQty;
-      askPriceWidget = m_ui.yobitnetAskPrice;
-      askQtyWidget = m_ui.yobitnetAskQty;
-      lastTimeWidget = m_ui.yobitnetLastTime;
-      bidFrame = m_ui.yobitnetBid;
-      askFrame = m_ui.yobitnetAsk;
-    } else if (boost::iequals(name, "Ccex")) {
-      result.ccexTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.ccexBidPrice;
-      bidQtyWidget = m_ui.ccexBidQty;
-      askPriceWidget = m_ui.ccexAskPrice;
-      askQtyWidget = m_ui.ccexAskQty;
-      lastTimeWidget = m_ui.ccexLastTime;
-      bidFrame = m_ui.ccexBid;
-      askFrame = m_ui.ccexAsk;
-    } else if (boost::iequals(name, "Gdax")) {
-      result.gdaxTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.gdaxBidPrice;
-      bidQtyWidget = m_ui.gdaxBidQty;
-      askPriceWidget = m_ui.gdaxAskPrice;
-      askQtyWidget = m_ui.gdaxAskQty;
-      lastTimeWidget = m_ui.gdaxLastTime;
-      bidFrame = m_ui.gdaxBid;
-      askFrame = m_ui.gdaxAsk;
-    } else {
+    const auto &widgets = m_targetWidgets.find(key);
+    if (widgets == m_targetWidgets.cend()) {
       QMessageBox::warning(this, tr("Configuration warning"),
                            tr("Unknown trading system \"%1\".")
                                .arg(QString::fromStdString(name)),
                            QMessageBox::Ignore);
       continue;
     }
+    result.*widgets->second->tradingSystemField = &tradingSystem;
 
     source->ForEachSecurity([&](Security &security) {
       if (security.GetSymbol().GetSymbol() != symbol) {
         return;
       }
-      const Target target = {m_tradingMode,
-                             &security,
-                             SideAdapter<QLabel>{*bidPriceWidget, *bidQtyWidget,
-                                                 security.GetPricePrecision()},
-                             SideAdapter<QLabel>{*askPriceWidget, *askQtyWidget,
-                                                 security.GetPricePrecision()},
-                             TimeAdapter<QLabel>{*lastTimeWidget},
-                             bidFrame,
-                             askFrame};
+      widgets->second->bid.SetPrecision(security.GetPricePrecision());
+      widgets->second->ask.SetPrecision(security.GetPricePrecision());
+      const Target target = {m_tradingMode, &security, &*widgets->second};
       Verify(result.targets.emplace(std::move(target)).second);
       if (biggestGetPricePrecision < security.GetPricePrecision()) {
         biggestGetPricePrecision = security.GetPricePrecision();
@@ -370,23 +296,9 @@ void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
     SignalsScopedBlocker blocker(*m_ui.autoTrade);
     m_ui.autoTrade->setChecked(false);
   }
-  for (auto *const widget : m_novaexchangeWidgets) {
-    widget->setEnabled(m_instanceData.novaexchangeTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_yobitnetWidgets) {
-    widget->setEnabled(m_instanceData.yobitnetTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_ccexWidgets) {
-    widget->setEnabled(m_instanceData.ccexTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_gdaxWidgets) {
-    widget->setEnabled(m_instanceData.gdaxTradingSystem ? true : false);
-  }
+
   for (const auto &target : m_instanceData.targets) {
-    const auto &security = *target.security;
-    target.bid.Set(security.GetBidPriceValue(), security.GetBidQtyValue());
-    target.ask.Set(security.GetAskPriceValue(), security.GetAskQtyValue());
-    target.time.Set(security.GetLastMarketDataTime());
+    target.widgets->Update(*target.security);
   }
 }
 
@@ -399,9 +311,7 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
     if (updateTargeIt == targetIndex.cend()) {
       return;
     }
-    updateTargeIt->time.Set(advice.time);
-    updateTargeIt->bid.Set(advice.bid.price, advice.bid.qty);
-    updateTargeIt->ask.Set(advice.ask.price, advice.ask.qty);
+    updateTargeIt->widgets->Update(advice);
   }
 
   {
@@ -427,46 +337,25 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
 
   {
     const auto &setSideSignal = [this, &advice](
-        bool isBest, Security &security, QFrame &frame,
-        TradingSystem *&bestTradingSystem, const QString &signaledStyle,
-        const QString &highlightedStyle) {
+        TargetSideWidget &sideWidget, bool isBest, Security &security,
+        TradingSystem *&bestTradingSystem) {
+      sideWidget.Highlight(isBest, advice.isSignaled);
       if (isBest) {
-        if (advice.isSignaled) {
-          frame.setStyleSheet(signaledStyle);
-        } else {
-          frame.setStyleSheet(highlightedStyle);
-        }
         bestTradingSystem = &security.GetContext().GetTradingSystem(
             security.GetSource().GetIndex(), m_tradingMode);
-      } else {
-        frame.setStyleSheet(styleSheet());
       }
     };
     const auto &targetIndex = m_instanceData.targets.get<BySecurity>();
-    for (const aa::Advice::SecuritySignal &signal : advice.securitySignals) {
+    for (const auto &signal : advice.securitySignals) {
       const auto signalTargetIt = targetIndex.find(signal.security);
       Assert(signalTargetIt != targetIndex.cend());
       if (signalTargetIt == targetIndex.cend()) {
         continue;
       }
-      {
-        static const QString signaledStyle(
-            "background-color: rgb(230, 59, 1);");
-        static const QString highlightedStyle("color: rgb(230, 59, 1);");
-        setSideSignal(signal.isBestBid, *signal.security,
-                      *signalTargetIt->bidFrame,
-                      m_instanceData.bestSellTradingSystem, signaledStyle,
-                      highlightedStyle);
-      }
-      {
-        static const QString signaledStyle(
-            "background-color: rgb(0, 146, 68);");
-        static const QString highlightedStyle("color: rgb(0, 195, 91);");
-        setSideSignal(signal.isBestAsk, *signal.security,
-                      *signalTargetIt->askFrame,
-                      m_instanceData.bestBuyTradingSystem, signaledStyle,
-                      highlightedStyle);
-      }
+      setSideSignal(signalTargetIt->widgets->bid, signal.isBestBid,
+                    *signal.security, m_instanceData.bestSellTradingSystem);
+      setSideSignal(signalTargetIt->widgets->ask, signal.isBestAsk,
+                    *signal.security, m_instanceData.bestBuyTradingSystem);
     }
   }
 }

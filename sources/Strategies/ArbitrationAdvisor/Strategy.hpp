@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Core/Strategy.hpp"
 #include "Advice.hpp"
 
 namespace trdk {

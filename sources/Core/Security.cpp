@@ -609,21 +609,6 @@ class Security::Implementation : private boost::noncopyable {
   Double CheckAndGetLevel1Value(const Level1 &level1) const {
     const double value = level1[tick];
     if (!IsSet(value)) {
-      Assert(IsSet(value));
-      boost::format message(
-          "Market data value \"%1%\" does not exist for \"%2%\"");
-      message % ConvertToPch(tick) % m_self;
-      throw MarketDataValueDoesNotExist(message.str().c_str());
-    }
-    AssertLe(0, value);
-    return value;
-  }
-
-  template <Level1TickType tick>
-  Double GetLevel1Value(const Level1 &level1) const {
-    const double value = level1[tick];
-    if (!IsSet(value)) {
-      Assert(IsSet(value));
       boost::format message(
           "Market data value \"%1%\" does not exist for \"%2%\"");
       message % ConvertToPch(tick) % m_self;
@@ -830,7 +815,8 @@ Qty Security::GetAskQtyValue() const {
 }
 
 Price Security::GetBidPrice() const {
-  return m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1);
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_BID_PRICE>(
+      m_pimpl->m_level1);
 }
 Price Security::GetBidPriceValue() const {
   return m_pimpl->m_level1[LEVEL1_TICK_BID_PRICE];

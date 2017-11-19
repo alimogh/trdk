@@ -27,7 +27,7 @@ namespace sig = boost::signals2;
 
 namespace {
 
-typedef std::pair<Price, Advice::SecuritySignal *> PriceItem;
+typedef std::pair<Price, AdviceSecuritySignal *> PriceItem;
 
 std::pair<Price, Double> CaclSpread(const Price &bid, const Price &ask) {
   const Price spread = bid - ask;
@@ -53,7 +53,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   Double m_minPriceDifferenceRatioToAdvice;
   boost::optional<TradingSettings> m_tradingSettings;
 
-  boost::unordered_map<Symbol, std::vector<Advice::SecuritySignal>> m_symbols;
+  boost::unordered_map<Symbol, std::vector<AdviceSecuritySignal>> m_symbols;
 
   boost::unordered_set<const Security *> m_errors;
 
@@ -63,7 +63,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_minPriceDifferenceRatioToAdvice(0) {}
 
   void CheckSignal(Security &updatedSecurity,
-                   std::vector<Advice::SecuritySignal> &allSecurities,
+                   std::vector<AdviceSecuritySignal> &allSecurities,
                    const Milestones &delayMeasurement) {
     std::vector<PriceItem> bids;
     std::vector<PriceItem> asks;
@@ -141,7 +141,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   void RecheckSignal() {
     for (auto &symbol : m_symbols) {
-      for (const Advice::SecuritySignal &security : symbol.second) {
+      for (const auto &security : symbol.second) {
         CheckSignal(*security.security, symbol.second, Milestones());
       }
     }
@@ -407,12 +407,12 @@ void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
 void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
   Assert(std::find_if(m_pimpl->m_symbols[security.GetSymbol()].cbegin(),
                       m_pimpl->m_symbols[security.GetSymbol()].cend(),
-                      [&security](const Advice::SecuritySignal &stored) {
+                      [&security](const AdviceSecuritySignal &stored) {
                         return stored.security == &security ||
                                stored.isBestBid || stored.isBestAsk;
                       }) == m_pimpl->m_symbols[security.GetSymbol()].cend());
   m_pimpl->m_symbols[security.GetSymbol()].emplace_back(
-      Advice::SecuritySignal{&security});
+      AdviceSecuritySignal{&security});
 }
 
 void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {

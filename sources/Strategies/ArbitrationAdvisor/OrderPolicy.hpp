@@ -10,8 +10,6 @@
 
 #pragma once
 
-#pragma once
-
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {

@@ -11,6 +11,9 @@
 #pragma once
 
 #include "Advice.hpp"
+#include "TargetActionsWidget.hpp"
+#include "TargetSideWidget.hpp"
+#include "TargetTitleWidget.hpp"
 #include "ui_StrategyWindow.h"
 
 namespace trdk {
@@ -24,17 +27,12 @@ class StrategyWindow : public QMainWindow {
   typedef QMainWindow Base;
 
  private:
+  struct TargetWidgets;
+
   struct Target {
     TradingMode tradingMode;
-
     Security *security;
-
-    mutable FrontEnd::Lib::SideAdapter<QLabel> bid;
-    mutable FrontEnd::Lib::SideAdapter<QLabel> ask;
-    mutable FrontEnd::Lib::TimeAdapter<QLabel> time;
-
-    QFrame *bidFrame;
-    QFrame *askFrame;
+    TargetWidgets *widgets;
 
     const Security *GetSecurityPtr() const { return security; }
     const std::string &GetSymbol() const;
@@ -76,6 +74,29 @@ class StrategyWindow : public QMainWindow {
     TradingSystem *bestSellTradingSystem;
   };
 
+  struct TargetWidgets {
+    TradingSystem *InstanceData::*tradingSystemField;
+    TargetTitleWidget title;
+    TargetBidWidget bid;
+    TargetAskWidget ask;
+    TargetActionsWidget actions;
+
+    explicit TargetWidgets(TradingSystem *InstanceData::*tradingSystemField,
+                           QWidget *parent)
+        : tradingSystemField(tradingSystemField),
+          title(parent),
+          bid(parent),
+          ask(parent),
+          actions(parent) {}
+
+    template <typename Source>
+    void Update(const Source &source) {
+      title.Update(source);
+      bid.Update(source);
+      ask.Update(source);
+    }
+  };
+
  public:
   explicit StrategyWindow(FrontEnd::Lib::Engine &,
                           const boost::optional<QString> &defaultSymbol,
@@ -109,6 +130,10 @@ class StrategyWindow : public QMainWindow {
 
   bool IsAutoTradingActivated() const;
 
+  void AddTarget(const QString &name,
+                 const std::string &targetId,
+                 TradingSystem *InstanceData::*tradingSystemField);
+
  private:
   const TradingMode m_tradingMode;
   const size_t m_instanceNumber;
@@ -117,10 +142,8 @@ class StrategyWindow : public QMainWindow {
   FrontEnd::Lib::Engine &m_engine;
   int m_symbol;
   FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
-  std::vector<QWidget *> m_novaexchangeWidgets;
-  std::vector<QWidget *> m_yobitnetWidgets;
-  std::vector<QWidget *> m_ccexWidgets;
-  std::vector<QWidget *> m_gdaxWidgets;
+  boost::unordered_map<std::string, std::unique_ptr<TargetWidgets>>
+      m_targetWidgets;
   InstanceData m_instanceData;
 };
 }

@@ -93,6 +93,69 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_StrategyWindow.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="TargetTitleWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release DLL\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Release DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug DLL\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Debug DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test DLL\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Test DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TargetTitleWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release DLL\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Release DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug DLL\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Debug DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test DLL\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Test DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TargetActionsWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release DLL\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Release DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug DLL\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Debug DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test DLL\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Test DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TargetSideWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="TargetSideWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TargetActionsWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -122,6 +185,15 @@
     <ClInclude Include="GeneratedFiles\ui_StrategyWindow.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TargetTitleWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TargetActionsWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TargetSideWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ArbitrationAdvisor.rc" />
@@ -135,6 +207,24 @@
     </CustomBuild>
     <CustomBuild Include="StrategyWindow.ui">
       <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetTitleWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetTitleWidget.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetActionsWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetSideWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetActionsWidget.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TargetSideWidget.hpp">
+      <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
