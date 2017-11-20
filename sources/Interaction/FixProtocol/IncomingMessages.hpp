@@ -117,6 +117,24 @@ class Reject : public Message {
                       const Lib::TimeMeasurement::Milestones &) override;
 };
 
+class MarketDataRequestReject : public Message {
+ public:
+  typedef Message Base;
+
+ public:
+  explicit MarketDataRequestReject(const Detail::MessagesParams &&params)
+      : Base(std::move(params)) {}
+  virtual ~MarketDataRequestReject() override = default;
+
+ public:
+  using Base::ReadText;
+
+ public:
+  virtual void Handle(Handler &,
+                      Lib::NetworkStreamClient &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+};
+
 class SecurityMessage : public Message {
  public:
   typedef Message Base;
