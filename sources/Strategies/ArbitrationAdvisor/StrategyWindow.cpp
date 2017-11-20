@@ -49,11 +49,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_ui.setupUi(this);
 
   AddTarget("Bittrex", "bittrex", &InstanceData::bittrexTradingSystem);
-  AddTarget("Novaexchange", "novaexchange",
-            &InstanceData::novaexchangeTradingSystem);
+  //   AddTarget("Novaexchange", "novaexchange",
+  //             &InstanceData::novaexchangeTradingSystem);
   AddTarget("Yobit.net", "yobitnet", &InstanceData::yobitnetTradingSystem);
   AddTarget("C-CEX", "ccex", &InstanceData::ccexTradingSystem);
-  AddTarget("GDAX", "gdax", &InstanceData::gdaxTradingSystem);
+  // AddTarget("GDAX", "gdax", &InstanceData::gdaxTradingSystem);
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
