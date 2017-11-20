@@ -544,6 +544,8 @@ std::unique_ptr<Incoming::Message> Factory::Create(const Iterator &begin,
       return boost::make_unique<ExecutionReport>(std::move(params));
     case MESSAGE_TYPE_ORDER_CANCEL_REJECT:
       return boost::make_unique<OrderCancelReject>(std::move(params));
+    case MESSAGE_TYPE_MARKET_DATA_REQUEST_REJECT:
+      return boost::make_unique<MarketDataRequestReject>(std::move(params));
     default: {
       boost::format message("Message has unknown type '%1%'");
       message % type;
@@ -859,6 +861,14 @@ void Reject::Handle(Handler &handler,
                     NetworkStreamClient &client,
                     const Milestones &) {
   handler.OnReject(*this, client);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void MarketDataRequestReject::Handle(Handler &handler,
+                                     NetworkStreamClient &client,
+                                     const Milestones &) {
+  handler.OnMarketDataRequestReject(*this, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

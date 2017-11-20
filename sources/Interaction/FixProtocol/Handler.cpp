@@ -108,6 +108,15 @@ void Handler::OnReject(const in::Reject &reject, NetworkStreamClient &client) {
   throw ProtocolError("Reject received", &*reject.GetMessageBegin(), 0);
 }
 
+void Handler::OnMarketDataRequestReject(
+    const in::MarketDataRequestReject &reject, NetworkStreamClient &client) {
+  GetLog().Error("%1%Market Data Request Reject received: \"%2%\".",
+                 client.GetLogTag(),  // 1
+                 reject.ReadText());  // 2
+  throw ProtocolError("Market Data Request Reject received",
+                      &*reject.GetMessageBegin(), 0);
+}
+
 void Handler::OnMarketDataSnapshotFullRefresh(
     const in::MarketDataSnapshotFullRefresh &message,
     NetworkStreamClient &,

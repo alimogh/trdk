@@ -61,7 +61,7 @@ void EventsLog::BroadcastCriticalError(const std::string &message) noexcept {
     bool isReported = false;
     {
       const Refs::Lock lock(refs.mutex);
-      foreach (EventsLog *log, refs.logs) {
+      for (EventsLog *log : refs.logs) {
         log->Error(message.c_str());
         isReported = true;
       }

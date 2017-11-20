@@ -1044,7 +1044,7 @@ boost::shared_ptr<RiskControlSymbolContext> RiskControl::CreateSymbolContext(
                       boost::ref(posCache), _1, _2, _3)));
   {
     size_t scopeIndex = 1;
-    foreach (auto &scopeInfo, scopesInfoCache) {
+    for (auto &scopeInfo : scopesInfoCache) {
       m_pimpl->AddScope(scopeIndex, scopeInfo, *result);
       ++scopeIndex;
     }

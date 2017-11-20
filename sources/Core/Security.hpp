@@ -193,6 +193,9 @@ class TRDK_CORE_API Security : public trdk::Instrument {
                     const SupportedLevel1Types &);
   virtual ~Security();
 
+  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
+                                                const trdk::Security &);
+
  public:
   //! Returns Market Data Source object which provides market data for
   //! this security object.
@@ -203,22 +206,13 @@ class TRDK_CORE_API Security : public trdk::Instrument {
  public:
   const trdk::Security::InstanceId &GetInstanceId() const;
 
-  //! Returns true if security is online, trading session is opend and
-  //! security has market data.
-  /** @sa IsOnline
-    * @sa IsTradingSessionOpened
-    */
-  bool IsActive() const;
-
-  //! Returns true if security is online.
-  /** @sa IsActive
-    * @sa IsTradingSessionOpened
+  //! Returns true if security receives market data right now.
+  /** @sa IsTradingSessionOpened
     */
   virtual bool IsOnline() const;
 
   //! Returns true if trading session is active at this moment.
-  /** @sa IsActive
-    * @sa IsOnline
+  /** @sa IsOnline
     */
   virtual bool IsTradingSessionOpened() const;
 
@@ -253,11 +247,6 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   trdk::Qty GetBidQtyValue() const;
 
   trdk::Qty GetTradedVolume() const;
-
-  //! Position size.
-  /** Information from broker, not relevant to trdk::Position.
-    */
-  trdk::Qty GetBrokerPosition() const;
 
   //! Returns next expiration time.
   /** Throws exception if expiration is not provided.
@@ -302,7 +291,11 @@ class TRDK_CORE_API Security : public trdk::Instrument {
       const ServiceEventSlot &) const;
 
  protected:
-  void SetOnline(const boost::posix_time::ptime &, bool isOnline);
+  //! Sets security online and generate event about it.
+  /** @sa IsOnline
+    * @return True, if state is changed, false - if state was the same before.
+    */
+  bool SetOnline(const boost::posix_time::ptime &, bool isOnline);
   void SetTradingSessionState(const boost::posix_time::ptime &, bool isOpened);
   void SwitchTradingSession(const boost::posix_time::ptime &);
 

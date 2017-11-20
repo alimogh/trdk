@@ -20,6 +20,9 @@ namespace WilliamCarry {
 class MultiBrokerWidget : public QWidget {
   Q_OBJECT
 
+ public:
+  typedef QWidget Base;
+
  private:
   struct Locked {
     QTime time;
@@ -33,6 +36,8 @@ class MultiBrokerWidget : public QWidget {
 
  public:
   TradingSystem *GetSelectedTradingSystem();
+
+  virtual QSize sizeHint() const override;
 
  protected slots:
   void LockSecurity(bool lock);
@@ -69,7 +74,6 @@ class MultiBrokerWidget : public QWidget {
                  const Security *) const;
 
   void SetTradingSecurity(Security *);
-  void SetMarketDataSecurity(Security *);
 
   void LoadSettings();
   void SaveSettings();
@@ -80,10 +84,9 @@ class MultiBrokerWidget : public QWidget {
   Lib::Engine &m_engine;
 
   Security *m_currentTradingSecurity;
-  Security *m_currentMarketDataSecurity;
   std::vector<Security *> m_securityList;
 
-  QComboBox m_tradingsecurityListWidget;
+  QComboBox m_tradingSecurityListWidget;
 
   boost::unordered_map<Security *, Locked> m_lockedSecurityList;
   bool m_ignoreLockToggling;

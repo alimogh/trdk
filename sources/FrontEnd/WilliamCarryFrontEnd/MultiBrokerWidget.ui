@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>338</width>
-    <height>403</height>
+    <width>538</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -275,9 +275,15 @@
        </layout>
       </item>
       <item>
-       <layout class="QGridLayout" name="actionsLayout">
+       <layout class="QGridLayout" name="actionsLayout" columnstretch="1,1">
         <item row="4" column="0">
          <widget class="QPushButton" name="closeAll">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -296,28 +302,14 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
-         <widget class="QPushButton" name="currentTradingSecurity">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>11</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="1">
          <widget class="QPushButton" name="sell2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -342,6 +334,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="2" column="0">
          <widget class="QPushButton" name="buy3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -366,6 +364,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="2" column="1">
          <widget class="QPushButton" name="sell3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -390,6 +394,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="3" column="0">
          <widget class="QPushButton" name="buy4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -414,6 +424,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="1">
          <widget class="QPushButton" name="sell1">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -438,6 +454,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="1" column="0">
          <widget class="QPushButton" name="buy2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -462,6 +484,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="0" column="0">
          <widget class="QPushButton" name="buy1">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -486,6 +514,12 @@ color: rgb(251, 253, 254);</string>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="sell4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -507,6 +541,58 @@ color: rgb(251, 253, 254);</string>
            <string>Sell 4</string>
           </property>
          </widget>
+        </item>
+        <item row="4" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+          <property name="spacing">
+           <number>1</number>
+          </property>
+          <item>
+           <widget class="QPushButton" name="currentTradingSecurity">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>11</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="currentTradingSecurityList">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>30</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -646,7 +732,6 @@ color: rgb(251, 253, 254);</string>
   <tabstop>buy4</tabstop>
   <tabstop>sell4</tabstop>
   <tabstop>closeAll</tabstop>
-  <tabstop>currentTradingSecurity</tabstop>
   <tabstop>securityList</tabstop>
   <tabstop>targetList</tabstop>
   <tabstop>showStrategy</tabstop>

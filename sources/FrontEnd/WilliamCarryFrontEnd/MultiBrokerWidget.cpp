@@ -35,20 +35,19 @@ namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 
 MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
-    : QWidget(parent),
+    : Base(parent),
       m_mode(TRADING_MODE_LIVE),
       m_engine(engine),
       m_currentTradingSecurity(nullptr),
-      m_currentMarketDataSecurity(nullptr),
-      m_tradingsecurityListWidget(this),
+      m_tradingSecurityListWidget(this),
       m_ignoreLockToggling(false),
       m_settings({}),
       m_lots{1, 1, 1, 1, 1},
       m_timer(this) {
   m_ui.setupUi(this);
 
-  m_tradingsecurityListWidget.hide();
-  m_tradingsecurityListWidget.raise();
+  m_tradingSecurityListWidget.hide();
+  m_tradingSecurityListWidget.raise();
 
   Verify(connect(m_ui.lock, &QPushButton::toggled, this,
                  &MultiBrokerWidget::LockSecurity));
@@ -71,7 +70,17 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
                  [this]() { OpenPosition(3, false); }));
   Verify(connect(m_ui.closeAll, &QPushButton::clicked,
                  [this]() { CloseAllPositions(); }));
-  Verify(connect(m_ui.currentTradingSecurity, &QPushButton::clicked, this,
+  Verify(connect(m_ui.currentTradingSecurity, &QPushButton::clicked, [this]() {
+    for (int i = 0; i < m_securityList.size(); ++i) {
+      const auto &security = *m_securityList[i];
+      if (m_ui.currentTradingSecurity->text() ==
+          QString::fromStdString(security.GetSymbol().GetSymbol())) {
+        m_ui.securityList->setCurrentRow(i);
+        return;
+      }
+    }
+  }));
+  Verify(connect(m_ui.currentTradingSecurityList, &QToolButton::clicked, this,
                  &MultiBrokerWidget::ShowTradingSecurityList));
 
   Verify(connect(m_ui.showStrategy, &QPushButton::clicked, this,
@@ -85,7 +94,7 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
                  [this](int index) {
                    if (index < 0) {
                      m_ui.securityList->setCurrentRow(-1);
-                     m_tradingsecurityListWidget.setCurrentIndex(-1);
+                     m_tradingSecurityListWidget.setCurrentIndex(-1);
                      return;
                    }
                    ReloadSecurityList();
@@ -93,15 +102,15 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(m_ui.securityList, &QListWidget::currentRowChanged,
                  [this](int index) {
                    if (index < 0) {
-                     SetMarketDataSecurity(nullptr);
+                     SetTradingSecurity(nullptr);
                      return;
                    }
                    AssertGt(m_securityList.size(), index);
-                   SetMarketDataSecurity(&*m_securityList[index]);
+                   SetTradingSecurity(&*m_securityList[index]);
                  }));
 
   Verify(connect(
-      &m_tradingsecurityListWidget,
+      &m_tradingSecurityListWidget,
       static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
       [this](int index) {
         if (index < 0) {
@@ -109,8 +118,9 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
           return;
         }
         AssertGt(m_securityList.size(), index);
-        SetTradingSecurity(&*m_securityList[index]);
-        m_tradingsecurityListWidget.hide();
+        m_ui.currentTradingSecurity->setText(QString::fromStdString(
+            m_securityList[index]->GetSymbol().GetSymbol()));
+        m_tradingSecurityListWidget.hide();
       }));
 
   Verify(connect(&m_engine, &Engine::StateChanged, this,
@@ -130,10 +140,18 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   }
 
   LoadSettings();
+
+  adjustSize();
+}
+
+QSize MultiBrokerWidget::sizeHint() const {
+  auto result = Base::sizeHint();
+  result.setWidth(static_cast<int>(result.width() * 0.7));
+  return result;
 }
 
 void MultiBrokerWidget::resizeEvent(QResizeEvent *) {
-  m_tradingsecurityListWidget.hide();
+  m_tradingSecurityListWidget.hide();
 }
 
 void MultiBrokerWidget::OpenPosition(size_t strategyIndex, bool isLong) {
@@ -250,21 +268,20 @@ void MultiBrokerWidget::LockSecurity(bool lock) {
     return;
   }
   if (!lock) {
-    if (m_currentMarketDataSecurity) {
-      m_lockedSecurityList.erase(m_currentMarketDataSecurity);
+    if (m_currentTradingSecurity) {
+      m_lockedSecurityList.erase(m_currentTradingSecurity);
     }
-    ResetLockedPrices(m_currentMarketDataSecurity);
+    ResetLockedPrices(m_currentTradingSecurity);
     return;
   }
 
-  Assert(m_currentMarketDataSecurity);
-  const auto &locked = m_lockedSecurityList.emplace(
-      std::make_pair(m_currentMarketDataSecurity,
-                     Locked{QTime::currentTime(),
-                            m_currentMarketDataSecurity->GetBidPriceValue(),
-                            m_currentMarketDataSecurity->GetAskPriceValue()}));
+  Assert(m_currentTradingSecurity);
+  const auto &locked = m_lockedSecurityList.emplace(std::make_pair(
+      m_currentTradingSecurity,
+      Locked{QTime::currentTime(), m_currentTradingSecurity->GetBidPriceValue(),
+             m_currentTradingSecurity->GetAskPriceValue()}));
   Assert(locked.second);
-  SetLockedPrices(locked.first->second, *m_currentMarketDataSecurity);
+  SetLockedPrices(locked.first->second, *m_currentTradingSecurity);
 }
 
 TradingSystem *MultiBrokerWidget::GetSelectedTradingSystem() {
@@ -279,7 +296,7 @@ void MultiBrokerWidget::Reload() {
   m_signalConnections.clear();
   m_securityList.clear();
   m_ui.securityList->clear();
-  m_tradingsecurityListWidget.clear();
+  m_tradingSecurityListWidget.clear();
   m_ui.targetList->clear();
   m_lockedSecurityList.clear();
   LockSecurity(false);
@@ -319,7 +336,7 @@ void MultiBrokerWidget::ReloadSecurityList() {
   const auto *const tradingSystem = GetSelectedTradingSystem();
   if (!tradingSystem) {
     m_ui.securityList->clear();
-    m_tradingsecurityListWidget.clear();
+    m_tradingSecurityListWidget.clear();
     return;
   }
 
@@ -328,10 +345,10 @@ void MultiBrokerWidget::ReloadSecurityList() {
   {
     const SignalsScopedBlocker securityListSignalsBlocker(*m_ui.securityList);
     const SignalsScopedBlocker tradingsecurityListSignalsBlocker(
-        m_tradingsecurityListWidget);
+        m_tradingSecurityListWidget);
 
     m_ui.securityList->clear();
-    m_tradingsecurityListWidget.clear();
+    m_tradingSecurityListWidget.clear();
 
     for (size_t i = 0; i < m_engine.GetContext().GetNumberOfMarketDataSources();
          ++i) {
@@ -343,10 +360,10 @@ void MultiBrokerWidget::ReloadSecurityList() {
         m_securityList.emplace_back(&security);
         if (m_currentTradingSecurity &&
             m_currentTradingSecurity->GetSymbol() == security.GetSymbol()) {
-          tradingSecurity = m_tradingsecurityListWidget.count();
+          tradingSecurity = m_tradingSecurityListWidget.count();
         }
-        if (m_currentMarketDataSecurity &&
-            m_currentMarketDataSecurity->GetSymbol() == security.GetSymbol()) {
+        if (m_currentTradingSecurity &&
+            m_currentTradingSecurity->GetSymbol() == security.GetSymbol()) {
           marketDataSecurity = m_ui.securityList->count();
         }
         {
@@ -361,7 +378,7 @@ void MultiBrokerWidget::ReloadSecurityList() {
 #endif
               ;
           m_ui.securityList->addItem(symbol);
-          m_tradingsecurityListWidget.addItem(symbol);
+          m_tradingSecurityListWidget.addItem(symbol);
         }
       });
       break;
@@ -369,7 +386,7 @@ void MultiBrokerWidget::ReloadSecurityList() {
   }
 
   m_ui.securityList->setCurrentRow(marketDataSecurity);
-  m_tradingsecurityListWidget.setCurrentIndex(tradingSecurity);
+  m_tradingSecurityListWidget.setCurrentIndex(tradingSecurity);
   SetTradingSecurity(&*m_securityList[tradingSecurity]);
 }
 
@@ -381,7 +398,7 @@ void MultiBrokerWidget::OnStateChanged(bool isStarted) {
 }
 
 void MultiBrokerWidget::UpdatePrices(const Security *security) {
-  if (m_currentMarketDataSecurity != security) {
+  if (m_currentTradingSecurity != security) {
     return;
   }
   SetCurretPrices(security->GetLastMarketDataTime(),
@@ -463,22 +480,21 @@ void MultiBrokerWidget::ShowTimersSetupDialog() {
 }
 
 void MultiBrokerWidget::ShowTradingSecurityList() {
-  m_tradingsecurityListWidget.move(
-      m_ui.currentTradingSecurity->geometry().topLeft());
-  m_tradingsecurityListWidget.setMinimumWidth(
-      m_ui.currentTradingSecurity->width());
-  m_tradingsecurityListWidget.show();
-  m_tradingsecurityListWidget.showPopup();
-  m_tradingsecurityListWidget.setFocus();
+  m_tradingSecurityListWidget.move(
+      m_ui.currentTradingSecurityList->geometry().topLeft());
+  m_tradingSecurityListWidget.show();
+  m_tradingSecurityListWidget.showPopup();
+  m_tradingSecurityListWidget.setFocus();
 }
 
 void MultiBrokerWidget::SetTradingSecurity(Security *security) {
   m_currentTradingSecurity = security;
 
-  m_ui.currentTradingSecurity->setText(
-      !m_currentTradingSecurity
-          ? QString()
-          : QString::fromStdString(security->GetSymbol().GetSymbol()));
+  if (m_ui.currentTradingSecurity->text().isEmpty() &&
+      m_currentTradingSecurity) {
+    m_ui.currentTradingSecurity->setText(
+        QString::fromStdString(security->GetSymbol().GetSymbol()));
+  }
 
   m_ui.buy1->setEnabled(m_currentTradingSecurity ? true : false);
   m_ui.sell1->setEnabled(m_currentTradingSecurity ? true : false);
@@ -488,31 +504,27 @@ void MultiBrokerWidget::SetTradingSecurity(Security *security) {
   m_ui.sell3->setEnabled(m_currentTradingSecurity ? true : false);
   m_ui.buy4->setEnabled(m_currentTradingSecurity ? true : false);
   m_ui.sell4->setEnabled(m_currentTradingSecurity ? true : false);
-}
 
-void MultiBrokerWidget::SetMarketDataSecurity(Security *security) {
-  m_currentMarketDataSecurity = security;
+  m_ui.lock->setEnabled(m_currentTradingSecurity ? true : false);
 
-  m_ui.lock->setEnabled(m_currentMarketDataSecurity ? true : false);
-
-  if (!m_currentMarketDataSecurity) {
+  if (!m_currentTradingSecurity) {
     m_ui.symbol->setText(QString());
     return;
   }
 
   m_ui.symbol->setText(QString::fromStdString(
-      m_currentMarketDataSecurity->GetSymbol().GetSymbol()));
-  UpdatePrices(m_currentMarketDataSecurity);
+      m_currentTradingSecurity->GetSymbol().GetSymbol()));
+  UpdatePrices(m_currentTradingSecurity);
 
   {
-    const auto &locked = m_lockedSecurityList.find(m_currentMarketDataSecurity);
+    const auto &locked = m_lockedSecurityList.find(m_currentTradingSecurity);
     Assert(!m_ignoreLockToggling);
     m_ignoreLockToggling = true;
     if (locked == m_lockedSecurityList.cend()) {
-      ResetLockedPrices(m_currentMarketDataSecurity);
+      ResetLockedPrices(m_currentTradingSecurity);
       m_ui.lock->setChecked(false);
     } else {
-      SetLockedPrices(locked->second, *m_currentMarketDataSecurity);
+      SetLockedPrices(locked->second, *m_currentTradingSecurity);
       m_ui.lock->setChecked(true);
     }
     Assert(m_ignoreLockToggling);

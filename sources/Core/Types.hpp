@@ -310,8 +310,8 @@ namespace trdk {
 class OrderId {
  public:
   OrderId() = default;
-  explicit OrderId(const std::string &value) : m_value(value) {}
-  explicit OrderId(const std::string &&value) : m_value(std::move(value)) {}
+  OrderId(const std::string &value) : m_value(value) {}
+  OrderId(const std::string &&value) : m_value(std::move(value)) {}
   OrderId(int32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(uint32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(intmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}

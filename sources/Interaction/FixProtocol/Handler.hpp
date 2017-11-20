@@ -42,6 +42,8 @@ class Handler : private boost::noncopyable {
   virtual void OnResendRequest(const Incoming::ResendRequest &,
                                Lib::NetworkStreamClient &);
   virtual void OnReject(const Incoming::Reject &, Lib::NetworkStreamClient &);
+  virtual void OnMarketDataRequestReject(
+      const Incoming::MarketDataRequestReject &, Lib::NetworkStreamClient &);
 
   virtual void OnMarketDataSnapshotFullRefresh(
       const Incoming::MarketDataSnapshotFullRefresh &,

@@ -1,12 +1,4 @@
 /output
-*.suo
-*.user
-/sources/ipch
-/sources/.vs
-/sources/*.opensdf
-/sources/*.sdf
-/sources/*.VC.db
-/sources/*.VC.VC.opendb
 *.aps
 *.pyc
 

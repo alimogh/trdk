@@ -976,8 +976,17 @@ void Position::MarkAsCompleted() {
   Assert(!IsCompleted());
   if (IsCompleted()) {
     // Should not be added to the "delayed list" twice.
+    GetStrategy().GetLog().Error(
+        "Failed to mark position \"%1%\" as \"completed\": position already "
+        "completed (%2%).",
+        GetId(),                                                // 1
+        m_pimpl->m_isMarketAsCompleted ? "forced" : "native");  // 2
     return;
   }
+  GetStrategy().GetTradingLog().Write(
+      "{'position': {'markAsCompleted': {}, 'id': '%1%'}}",
+      [this](TradingRecord &record) { record % GetId(); });
+
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
