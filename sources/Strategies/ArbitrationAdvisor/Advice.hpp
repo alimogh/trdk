@@ -14,28 +14,28 @@ namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 
-struct Advice {
-  struct Side {
-    trdk::Price price;
-    trdk::Price qty;
-  };
-  struct SecuritySignal {
-    trdk::Security *security;
-    bool isBestBid;
-    bool isBestAsk;
-  };
+struct AdviceSide {
+  trdk::Price price;
+  trdk::Price qty;
+};
+struct AdviceSecuritySignal {
+  trdk::Security *security;
+  bool isBestBid;
+  bool isBestAsk;
+};
 
+struct Advice {
   trdk::Security *security;
 
   boost::posix_time::ptime time;
-  Side bid;
-  Side ask;
+  AdviceSide bid;
+  AdviceSide ask;
 
   trdk::Price bestSpreadValue;
   trdk::Lib::Double bestSpreadRatio;
 
   bool isSignaled;
-  std::vector<SecuritySignal> securitySignals;
+  std::vector<AdviceSecuritySignal> securitySignals;
 };
 }
 }

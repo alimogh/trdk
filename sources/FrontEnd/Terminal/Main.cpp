@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    mainWindow.CreateNewArbitrageStrategy(boost::none);
+    mainWindow.CreateNewArbitrageStrategy();
 
     return application.exec();
   } catch (const std::exception &ex) {

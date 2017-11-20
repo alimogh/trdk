@@ -60,7 +60,7 @@ class Service::Implementation : private boost::noncopyable {
                      const Subscriber &subscriberToFind,
                      Path &path) {
       path.push_back(ModuleRef(service));
-      foreach (const auto &subscriber, service.GetSubscribers()) {
+      for (const auto &subscriber : service.GetSubscribers()) {
         if (subscriber == subscriberToFind) {
           path.push_back(subscriber);
           return true;
@@ -101,7 +101,7 @@ class Service::Implementation : private boost::noncopyable {
     }
     Assert(!find.GetPath().empty());
     std::list<std::string> path;
-    foreach (const auto &i, find.GetPath()) {
+    for (const auto &i : find.GetPath()) {
       std::ostringstream oss;
       oss << '"' << boost::apply_visitor(Visitors::GetModule(), i) << '"';
       path.push_back(oss.str());

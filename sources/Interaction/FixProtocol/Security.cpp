@@ -19,7 +19,8 @@ using namespace trdk::Interaction::FixProtocol;
 namespace fix = trdk::Interaction::FixProtocol;
 
 namespace {
-size_t ResolveFixId(const std::string &symbol) {
+size_t ResolveFixId(const std::string &symbol,
+                    const trdk::MarketDataSource &source) {
   if (symbol == "EURUSD") {
     return 1;
   } else if (symbol == "GBPUSD") {
@@ -36,11 +37,16 @@ size_t ResolveFixId(const std::string &symbol) {
     return 7;
   } else if (symbol == "USDCAD") {
     return 8;
-  } else {
-    boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
-    error % symbol;
-    throw Exception(error.str().c_str());
+  } else if (symbol == "USDNOK") {
+    if (boost::iequals(source.GetInstanceName(), "FxPro")) {
+      return 1048;
+    } else if (boost::iequals(source.GetInstanceName(), "IC Markets")) {
+      return 22;
+    }
   }
+  boost::format error("Failed to resolve FIX Symbol ID for \"%1%\"");
+  error % symbol;
+  throw Exception(error.str().c_str());
 }
 }
 
@@ -49,5 +55,5 @@ fix::Security::Security(Context &context,
                         fix::MarketDataSource &source,
                         const SupportedLevel1Types &supportedLevel1Types)
     : Base(context, symbol, source, supportedLevel1Types),
-      m_fixId(ResolveFixId(GetSymbol().GetSymbol())),
+      m_fixId(ResolveFixId(GetSymbol().GetSymbol(), GetSource())),
       m_fixIdCode(boost::lexical_cast<std::string>(m_fixId)) {}

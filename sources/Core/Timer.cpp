@@ -83,7 +83,8 @@ class Timer::Implementation : private boost::noncopyable {
         m_timedTasks.emplace_back(scope.m_id, callback,
                                   m_context.GetCurrentTime() + time);
         m_context.GetTradingLog().Write(
-            "Timer", "scheduling\t%1%\t%2%", [this](TradingRecord &record) {
+            "Timer", "{'timer': {'scheduling': {'time': '%1%', 'scope': %2%}}}",
+            [this](TradingRecord &record) {
               record % m_timedTasks.back().time  // 1
                   % m_timedTasks.back().scope;   // 2
             });
@@ -142,11 +143,12 @@ class Timer::Implementation : private boost::noncopyable {
               continue;
             }
 
-            m_context.GetTradingLog().Write("Timer", "exec\t%1%\t%2%",
-                                            [&it](TradingRecord &record) {
-                                              record % it->time  // 1
-                                                  % it->scope;   // 2
-                                            });
+            m_context.GetTradingLog().Write(
+                "Timer", "{'timer': {'exec': {'time': '%1%', 'scope': %2%}}}",
+                [&it](TradingRecord &record) {
+                  record % it->time  // 1
+                      % it->scope;   // 2
+                });
 
             try {
               it->callback();
@@ -206,7 +208,8 @@ size_t Timer::Scope::Cancel() noexcept {
         }
         ++result;
         m_timer->m_pimpl->m_context.GetTradingLog().Write(
-            "Timer", "cancel\t%1%\t%2%", [&it](TradingRecord &record) {
+            "Timer", "{'timer': {'cancel': {'time': '%1%', 'scope': %2%}}}",
+            [&it](TradingRecord &record) {
               record % it->time  // 1
                   % it->scope;   // 2
             });

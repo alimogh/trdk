@@ -781,10 +781,12 @@ class DummyPositionOperationContext : public PositionOperationContext {
   virtual ~DummyPositionOperationContext() override = default;
 
  public:
-  virtual const OrderPolicy &GetOpenOrderPolicy() const override {
+  virtual const OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
-  virtual const OrderPolicy &GetCloseOrderPolicy() const override {
+  virtual const OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
   virtual void Setup(Position &) const override {
@@ -939,14 +941,15 @@ void Position::SetCloseReason(const CloseReason &newCloseReason) {
   if (m_pimpl->m_closeReason != CLOSE_REASON_NONE) {
     return;
   }
-  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason,
-                                            newCloseReason);
-  m_pimpl->m_closeReason = newCloseReason;
+  if (GetOperationContext().OnCloseReasonChange(*this, newCloseReason)) {
+    m_pimpl->m_closeReason = newCloseReason;
+  }
 }
 
 void Position::ResetCloseReason(const CloseReason &newReason) {
-  GetOperationContext().OnCloseReasonChange(m_pimpl->m_closeReason, newReason);
-  m_pimpl->m_closeReason = newReason;
+  if (GetOperationContext().OnCloseReasonChange(*this, newReason)) {
+    m_pimpl->m_closeReason = newReason;
+  }
 }
 
 bool Position::IsFullyOpened() const {
@@ -973,8 +976,17 @@ void Position::MarkAsCompleted() {
   Assert(!IsCompleted());
   if (IsCompleted()) {
     // Should not be added to the "delayed list" twice.
+    GetStrategy().GetLog().Error(
+        "Failed to mark position \"%1%\" as \"completed\": position already "
+        "completed (%2%).",
+        GetId(),                                                // 1
+        m_pimpl->m_isMarketAsCompleted ? "forced" : "native");  // 2
     return;
   }
+  GetStrategy().GetTradingLog().Write(
+      "{'position': {'markAsCompleted': {}, 'id': '%1%'}}",
+      [this](TradingRecord &record) { record % GetId(); });
+
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }
@@ -1053,6 +1065,10 @@ Volume Position::GetActiveVolume() const {
 
 const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
+}
+void Position::SetClosedQty(const Qty &newValue) {
+  AssertGe(GetOpenedQty(), newValue);
+  m_pimpl->m_close.qty = newValue;
 }
 
 Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
@@ -1195,7 +1211,8 @@ Price Position::GetOpenAvgPrice() const {
   if (!m_pimpl->m_open.qty) {
     throw Exception("Position has no open price");
   }
-  return m_pimpl->m_open.volume / m_pimpl->m_open.qty;
+  return RoundByPrecision(m_pimpl->m_open.volume / m_pimpl->m_open.qty,
+                          GetSecurity().GetPricePrecisionPower());
 }
 
 const boost::optional<Price> &Position::GetActiveOpenOrderPrice() const {
@@ -1246,7 +1263,8 @@ Price Position::GetCloseAvgPrice() const {
   if (!m_pimpl->m_close.qty) {
     throw Exception("Position has no close price");
   }
-  return m_pimpl->m_close.volume / m_pimpl->m_close.qty;
+  return RoundByPrecision(m_pimpl->m_close.volume / m_pimpl->m_close.qty,
+                          GetSecurity().GetPricePrecisionPower());
 }
 
 const boost::optional<trdk::Price> &Position::GetActiveCloseOrderPrice() const {

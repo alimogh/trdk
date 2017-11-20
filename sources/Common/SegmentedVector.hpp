@@ -74,7 +74,9 @@ class SegmentedVector {
 #ifdef DEV_VER
     {
       size_t realSize = 0;
-      foreach (const auto &i, m_storage) { realSize += i->size(); }
+      for (const auto &i : m_storage) {
+        realSize += i->size();
+      }
       AssertEq(realSize, m_size);
     }
 #endif

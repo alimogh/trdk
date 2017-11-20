@@ -22,7 +22,7 @@ OrderListView::OrderListView(Engine &engine, QWidget *parent)
   sortByColumn(0, Qt::AscendingOrder);
   setAlternatingRowColors(true);
   setSelectionBehavior(QAbstractItemView::SelectRows);
-  setSelectionMode(QAbstractItemView::SingleSelection);
+  setSelectionMode(QAbstractItemView::ExtendedSelection);
 
   m_contextMenu.addAction(tr("&Cancel"), this,
                           &OrderListView::CancelSelectedOrders);

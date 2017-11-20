@@ -40,12 +40,12 @@ class OperationContext : public PositionOperationContext {
   }
 
  public:
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy()
-      const override {
+  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override {
     return m_orderPolicy;
   }
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy()
-      const override {
+  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
     return m_orderPolicy;
   }
 

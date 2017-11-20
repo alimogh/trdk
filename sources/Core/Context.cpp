@@ -236,7 +236,7 @@ class StatReport : private boost::noncopyable {
 
     const auto &now = m_context.GetLog().GetTime();
     size_t milestoneIndex = 0;
-    foreach (const auto &stat, accum.GetMilestones()) {
+    for (const auto &stat : accum.GetMilestones()) {
       TimeMeasurementMilestone id =
           static_cast<TimeMeasurementMilestone>(milestoneIndex++);
       if (!stat) {

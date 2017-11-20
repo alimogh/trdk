@@ -15,6 +15,9 @@ namespace Strategies {
 namespace ArbitrageAdvisor {
 class Strategy;
 class Report;
+struct Advice;
+struct AdviceSide;
+struct AdviceSecuritySignal;
 }
 }
 }

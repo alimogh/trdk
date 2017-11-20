@@ -10,12 +10,31 @@
 
 #pragma once
 
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include <QtWidgets>
+#pragma warning(pop)
+
 #include "Common/Common.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Position.hpp"
 #include "Core/PositionOperationContext.hpp"
+#include "Core/Security.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "FrontEnd/Lib/Adapters.hpp"
+#include "FrontEnd/Lib/Engine.hpp"
+#include "FrontEnd/Lib/Types.hpp"
+#include "FrontEnd/Lib/Util.hpp"
+#include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/unordered_set.hpp>
+#include <boost/uuid/uuid_generators.hpp>

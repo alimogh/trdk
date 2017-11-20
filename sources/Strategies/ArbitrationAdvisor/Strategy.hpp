@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include "Core/Strategy.hpp"
 #include "Advice.hpp"
-#include "Api.h"
 
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 
-class TRDK_STRATEGY_ARBITRATIONADVISOR_API Strategy : public trdk::Strategy {
+class Strategy : public trdk::Strategy {
  public:
   struct TradingSettings {
     trdk::Lib::Double minPriceDifferenceRatio;

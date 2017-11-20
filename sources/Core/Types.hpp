@@ -84,6 +84,9 @@ struct OrderParams {
   //! or used by specified order.
   const trdk::OrderTransactionContext *position;
 
+  //! Price that triggers a atop order.
+  boost::optional<trdk::Price> stopPrice;
+
   explicit OrderParams() : expiration(nullptr), position(nullptr) {}
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
@@ -145,6 +148,21 @@ TRDK_CORE_API const char *ConvertToPch(const trdk::CloseReason &);
 inline std::ostream &operator<<(std::ostream &os,
                                 const trdk::CloseReason &closeReason) {
   return os << trdk::ConvertToPch(closeReason);
+}
+
+inline bool IsPassive(const CloseReason &reason) {
+  static_assert(numberOfCloseReasons == 13, "List changed.");
+  switch (reason) {
+    case CLOSE_REASON_NONE:
+    case CLOSE_REASON_SIGNAL:
+    case CLOSE_REASON_TAKE_PROFIT:
+    case CLOSE_REASON_TRAILING_STOP:
+    case CLOSE_REASON_STOP_LOSS:
+    case CLOSE_REASON_STOP_LIMIT:
+      return true;
+    default:
+      return false;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -292,8 +310,8 @@ namespace trdk {
 class OrderId {
  public:
   OrderId() = default;
-  explicit OrderId(const std::string &value) : m_value(value) {}
-  explicit OrderId(const std::string &&value) : m_value(std::move(value)) {}
+  OrderId(const std::string &value) : m_value(value) {}
+  OrderId(const std::string &&value) : m_value(std::move(value)) {}
   OrderId(int32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(uint32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(intmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}

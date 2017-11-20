@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/22 17:11:36
+ *   Created: 2017/11/19 18:24:27
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,14 +10,10 @@
 
 #pragma once
 
-#if defined(_MSC_VER)
-#ifdef TRDK_STRATEGY_ARBITRATIONADVISOR
-#define TRDK_STRATEGY_ARBITRATIONADVISOR_API __declspec(dllexport)
-#else
-#define TRDK_STRATEGY_ARBITRATIONADVISOR_API __declspec(dllimport)
-#endif
-#endif
-
-#if !defined(TRDK_STRATEGY_ARBITRATIONADVISOR_API)
-#define TRDK_STRATEGY_ARBITRATIONADVISOR_API
-#endif
+namespace trdk {
+namespace Interaction {
+namespace Rest {
+std::string NormilizeBittrexSymbol(const std::string &);
+}
+}
+}

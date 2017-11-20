@@ -322,7 +322,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    /*m_pullingTask.AddTask(
+    m_pullingTask.AddTask(
         "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
@@ -331,25 +331,32 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             }
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
-            const auto &response =
-                request.Send(m_marketDataSession, GetContext());
-            const auto &time = boost::get<0>(response);
-            const auto &delayMeasurement = boost::get<2>(response);
-            const auto &update = boost::get<1>(response);
             try {
+              const auto &response =
+                  request.Send(m_marketDataSession, GetContext());
+              const auto &time = boost::get<0>(response);
+              const auto &delayMeasurement = boost::get<2>(response);
+              const auto &update = boost::get<1>(response);
               ReadTopOfBook(time, update.get_child("buyorders"),
                             update.get_child("sellorders"), security,
                             delayMeasurement);
             } catch (const std::exception &ex) {
+              try {
+                security.SetOnline(pt::not_a_date_time, false);
+              } catch (...) {
+                AssertFailNoException();
+                throw;
+              }
               boost::format error(
                   "Failed to read order book for \"%1%\": \"%2%\"");
               error % security % ex.what();
               throw MarketDataSource::Error(error.str().c_str());
             }
+            security.SetOnline(pt::not_a_date_time, true);
           }
           return true;
         },
-        1);*/
+        1);
   }
 
  protected:
@@ -397,7 +404,6 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY)
             .set(LEVEL1_TICK_ASK_PRICE)
             .set(LEVEL1_TICK_ASK_QTY));
-    result->SetOnline(pt::not_a_date_time, true);
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
     {

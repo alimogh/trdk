@@ -36,6 +36,8 @@ class PriceAdapter {
 
   const Value &Get() const { return m_value; }
 
+  void SetPrecision(uint8_t precision) { m_precision = precision; }
+
  protected:
   void SetValue(const Value &value) {
     Assert(m_widget);
@@ -77,6 +79,8 @@ class QtyAdapter {
 
   const Value &Get() const { return m_value; }
 
+  void SetPrecision(uint8_t precision) { m_precision = precision; }
+
  protected:
   void SetValue(const Value &value) {
     Assert(m_widget);
@@ -115,6 +119,11 @@ class SideAdapter {
   QtyAdapter<WidgetType> &GetQty() { return m_price; }
   const QtyAdapter<WidgetType> &GetQty() const {
     return const_cast<SideAdapter *>(this)->GetQty();
+  }
+
+  void SetPrecision(uint8_t precision) {
+    m_price.SetPrecision(precision);
+    m_qty.SetPrecision(precision);
   }
 
  private:

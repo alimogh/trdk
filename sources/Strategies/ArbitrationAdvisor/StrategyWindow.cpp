@@ -9,28 +9,24 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "ArbitrageStrategyWindow.hpp"
-#include "Core/Context.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
-#include "Strategies/ArbitrationAdvisor/Strategy.hpp"
-#include "Lib/Engine.hpp"
-#include "MainWindow.hpp"
+#include "StrategyWindow.hpp"
+#include "Advice.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Terminal;
+using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-const std::string &ArbitrageStrategyWindow::Target::GetSymbol() const {
+const std::string &StrategyWindow::Target::GetSymbol() const {
   return security->GetSymbol().GetSymbol();
 }
-const TradingSystem *ArbitrageStrategyWindow::Target::GetTradingSystem() const {
+const TradingSystem *StrategyWindow::Target::GetTradingSystem() const {
   return &security->GetContext().GetTradingSystem(
       security->GetSource().GetIndex(), tradingMode);
 }
@@ -39,15 +35,12 @@ namespace {
 size_t numberOfNextInstance = 1;
 }
 
-ArbitrageStrategyWindow::ArbitrageStrategyWindow(
-    FrontEnd::Lib::Engine &engine,
-    MainWindow &mainWindow,
-    const boost::optional<QString> &defaultSymbol,
-    QWidget *parent)
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const boost::optional<QString> &defaultSymbol,
+                               QWidget *parent)
     : Base(parent),
       m_tradingMode(TRADING_MODE_LIVE),
       m_instanceNumber(numberOfNextInstance++),
-      m_mainWindow(mainWindow),
       m_engine(engine),
       m_symbol(-1),
       m_instanceData({}) {
@@ -55,102 +48,40 @@ ArbitrageStrategyWindow::ArbitrageStrategyWindow(
 
   m_ui.setupUi(this);
 
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLabel);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeLastTime);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBid);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeAsk);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeSell);
-  m_novaexchangeWidgets.emplace_back(m_ui.novaexchangeBuy);
-
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetLabel);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetLastTime);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBid);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetAsk);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetSell);
-  m_yobitnetWidgets.emplace_back(m_ui.yobitnetBuy);
-
-  m_ccexWidgets.emplace_back(m_ui.ccexLabel);
-  m_ccexWidgets.emplace_back(m_ui.ccexLastTime);
-  m_ccexWidgets.emplace_back(m_ui.ccexBid);
-  m_ccexWidgets.emplace_back(m_ui.ccexAsk);
-  m_ccexWidgets.emplace_back(m_ui.ccexSell);
-  m_ccexWidgets.emplace_back(m_ui.ccexBuy);
-
-  m_gdaxWidgets.emplace_back(m_ui.gdaxLabel);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxLastTime);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBid);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxAsk);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxSell);
-  m_gdaxWidgets.emplace_back(m_ui.gdaxBuy);
+  AddTarget("Bittrex", "bittrex", &InstanceData::bittrexTradingSystem);
+  AddTarget("Novaexchange", "novaexchange",
+            &InstanceData::novaexchangeTradingSystem);
+  AddTarget("Yobit.net", "yobitnet", &InstanceData::yobitnetTradingSystem);
+  AddTarget("C-CEX", "ccex", &InstanceData::ccexTradingSystem);
+  AddTarget("GDAX", "gdax", &InstanceData::gdaxTradingSystem);
 
   Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
                                   &QComboBox::currentIndexChanged),
-                 this, &ArbitrageStrategyWindow::OnCurrentSymbolChange));
+                 this, &StrategyWindow::OnCurrentSymbolChange));
 
   Verify(connect(m_ui.highlightLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 this, &ArbitrageStrategyWindow::UpdateAdviceLevel));
+                 this, &StrategyWindow::UpdateAdviceLevel));
 
   Verify(connect(m_ui.autoTrade, &QCheckBox::toggled, this,
-                 &ArbitrageStrategyWindow::ToggleAutoTrading));
+                 &StrategyWindow::ToggleAutoTrading));
   Verify(connect(m_ui.autoTradeLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 this, &ArbitrageStrategyWindow::UpdateAutoTradingLevel));
-
-  Verify(connect(m_ui.novaexchangeSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.novaexchangeTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.novaexchangeTradingSystem);
-  }));
-  Verify(connect(m_ui.novaexchangeBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.novaexchangeTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.novaexchangeTradingSystem);
-  }));
-  Verify(connect(m_ui.yobitnetSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.yobitnetTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.yobitnetTradingSystem);
-  }));
-  Verify(connect(m_ui.yobitnetBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.yobitnetTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.yobitnetTradingSystem);
-  }));
-  Verify(connect(m_ui.ccexSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.ccexTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.ccexTradingSystem);
-  }));
-  Verify(connect(m_ui.ccexBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.ccexTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.ccexTradingSystem);
-  }));
-  Verify(connect(m_ui.gdaxSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, m_instanceData.gdaxTradingSystem);
-  }));
-  Verify(connect(m_ui.gdaxBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, m_instanceData.gdaxTradingSystem);
-  }));
-  Verify(connect(m_ui.bestSell, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_SELL, nullptr);
-  }));
-  Verify(connect(m_ui.bestBuy, &QPushButton::clicked, [this]() {
-    Assert(m_instanceData.gdaxTradingSystem);
-    SendOrder(ORDER_SIDE_BUY, nullptr);
-  }));
+                 this, &StrategyWindow::UpdateAutoTradingLevel));
 
   qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
       "trdk::Strategies::ArbitrageAdvisor::Advice");
-  Verify(connect(this, &ArbitrageStrategyWindow::Advice, this,
-                 &ArbitrageStrategyWindow::TakeAdvice, Qt::QueuedConnection));
+  Verify(connect(this, &StrategyWindow::Advice, this,
+                 &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
 
   LoadSymbols(defaultSymbol);
 
   adjustSize();
 }
 
-ArbitrageStrategyWindow::~ArbitrageStrategyWindow() {
+StrategyWindow::~StrategyWindow() {
   try {
     DeactivateAutoTrading();
   } catch (...) {
@@ -159,7 +90,41 @@ ArbitrageStrategyWindow::~ArbitrageStrategyWindow() {
   }
 }
 
-void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
+void StrategyWindow::AddTarget(
+    const QString &name,
+    const std::string &targetId,
+    TradingSystem *InstanceData::*tradingSystemField) {
+  const auto &it = m_targetWidgets.emplace(
+      boost::to_lower_copy(targetId),
+      boost::make_unique<TargetWidgets>(tradingSystemField, this));
+  Assert(it.second);
+  if (!it.second) {
+    throw LogicError(
+        "Internal logic error: Failed to add the same target twice");
+  }
+  auto &widgets = *it.first->second;
+
+  widgets.title.SetTitle(name);
+
+  {
+    const auto row = static_cast<int>(m_targetWidgets.size());
+    int column = 0;
+    m_ui.targets->addWidget(&widgets.title, row, column++);
+    m_ui.targets->addWidget(&widgets.bid, row, column++);
+    m_ui.targets->addWidget(&widgets.ask, row, column++);
+    m_ui.targets->addWidget(&widgets.actions, row, column++);
+  }
+
+  Verify(connect(&widgets.actions, &TargetActionsWidget::Order,
+                 [this, tradingSystemField](const OrderSide &side) {
+                   TradingSystem *const tradingSystem =
+                       m_instanceData.*tradingSystemField;
+                   Assert(tradingSystem);
+                   SendOrder(side, tradingSystem);
+                 }));
+}
+
+void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   if (!IsAutoTradingActivated()) {
     closeEvent->accept();
     return;
@@ -167,8 +132,9 @@ void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   const auto &response = QMessageBox::question(
       this, tr("Strategy closing"),
       tr("Are you sure you want to the close strategy window?\n\nIf strategy "
-         "window will be closed - automatic trading will be "
-         "stopped.\n\nContinue and close strategy window for %1?")
+         "window will be closed - automatic trading will be stopped, all "
+         "automatically opened position will not automatically "
+         "closed.\n\nContinue and close strategy window for %1?")
           .arg(m_ui.symbol->itemText(m_symbol)),
       QMessageBox::Yes | QMessageBox::No);
   if (response == QMessageBox::Yes) {
@@ -178,14 +144,14 @@ void ArbitrageStrategyWindow::closeEvent(QCloseEvent *closeEvent) {
   }
 }
 
-QSize ArbitrageStrategyWindow::sizeHint() const {
+QSize StrategyWindow::sizeHint() const {
   auto result = Base::sizeHint();
   result.setWidth(static_cast<int>(result.width() * 0.9));
   result.setHeight(static_cast<int>(result.height() * 0.7));
   return result;
 }
 
-void ArbitrageStrategyWindow::LoadSymbols(
+void StrategyWindow::LoadSymbols(
     const boost::optional<QString> &defaultSymbol) {
   {
     IniFile conf(m_engine.GetConfigFilePath());
@@ -203,7 +169,7 @@ void ArbitrageStrategyWindow::LoadSymbols(
   }
 }
 
-void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
+void StrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
   if (m_symbol >= 0) {
     if (m_symbol == newSymbolIndex) {
       return;
@@ -226,7 +192,7 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
           QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
       if (response != QMessageBox::Yes) {
         if (response == QMessageBox::No) {
-          m_mainWindow.CreateNewArbitrageStrategy(symbol);
+          (new StrategyWindow(m_engine, symbol, parentWidget()))->show();
         }
         return;
       }
@@ -237,7 +203,7 @@ void ArbitrageStrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
   SetCurrentSymbol(newSymbolIndex);
 }
 
-void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
+void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
   DeactivateAutoTrading();
 
   const auto &symbol = m_ui.symbol->itemText(symbolIndex).toStdString();
@@ -277,6 +243,7 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
     auto &tradingSystem = context.GetTradingSystem(i, m_tradingMode);
     const auto &name = tradingSystem.GetInstanceName();
+    const auto &key = boost::to_lower_copy(name);
 
     MarketDataSource *source = nullptr;
     for (size_t k = 0; i < context.GetNumberOfMarketDataSources(); ++k) {
@@ -295,70 +262,23 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
       continue;
     }
 
-    QLabel *bidPriceWidget;
-    QLabel *bidQtyWidget;
-    QLabel *askPriceWidget;
-    QLabel *askQtyWidget;
-    QLabel *lastTimeWidget;
-    QFrame *bidFrame;
-    QFrame *askFrame;
-    if (boost::iequals(name, "Novaexchange")) {
-      result.novaexchangeTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.novaexchangeBidPrice;
-      bidQtyWidget = m_ui.novaexchangeBidQty;
-      askPriceWidget = m_ui.novaexchangeAskPrice;
-      askQtyWidget = m_ui.novaexchangeAskQty;
-      lastTimeWidget = m_ui.novaexchangeLastTime;
-      bidFrame = m_ui.novaexchangeBid;
-      askFrame = m_ui.novaexchangeAsk;
-    } else if (boost::iequals(name, "Yobitnet")) {
-      result.yobitnetTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.yobitnetBidPrice;
-      bidQtyWidget = m_ui.yobitnetBidQty;
-      askPriceWidget = m_ui.yobitnetAskPrice;
-      askQtyWidget = m_ui.yobitnetAskQty;
-      lastTimeWidget = m_ui.yobitnetLastTime;
-      bidFrame = m_ui.yobitnetBid;
-      askFrame = m_ui.yobitnetAsk;
-    } else if (boost::iequals(name, "Ccex")) {
-      result.ccexTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.ccexBidPrice;
-      bidQtyWidget = m_ui.ccexBidQty;
-      askPriceWidget = m_ui.ccexAskPrice;
-      askQtyWidget = m_ui.ccexAskQty;
-      lastTimeWidget = m_ui.ccexLastTime;
-      bidFrame = m_ui.ccexBid;
-      askFrame = m_ui.ccexAsk;
-    } else if (boost::iequals(name, "Gdax")) {
-      result.gdaxTradingSystem = &tradingSystem;
-      bidPriceWidget = m_ui.gdaxBidPrice;
-      bidQtyWidget = m_ui.gdaxBidQty;
-      askPriceWidget = m_ui.gdaxAskPrice;
-      askQtyWidget = m_ui.gdaxAskQty;
-      lastTimeWidget = m_ui.gdaxLastTime;
-      bidFrame = m_ui.gdaxBid;
-      askFrame = m_ui.gdaxAsk;
-    } else {
+    const auto &widgets = m_targetWidgets.find(key);
+    if (widgets == m_targetWidgets.cend()) {
       QMessageBox::warning(this, tr("Configuration warning"),
                            tr("Unknown trading system \"%1\".")
                                .arg(QString::fromStdString(name)),
                            QMessageBox::Ignore);
       continue;
     }
+    result.*widgets->second->tradingSystemField = &tradingSystem;
 
     source->ForEachSecurity([&](Security &security) {
       if (security.GetSymbol().GetSymbol() != symbol) {
         return;
       }
-      const Target target = {m_tradingMode,
-                             &security,
-                             SideAdapter<QLabel>{*bidPriceWidget, *bidQtyWidget,
-                                                 security.GetPricePrecision()},
-                             SideAdapter<QLabel>{*askPriceWidget, *askQtyWidget,
-                                                 security.GetPricePrecision()},
-                             TimeAdapter<QLabel>{*lastTimeWidget},
-                             bidFrame,
-                             askFrame};
+      widgets->second->bid.SetPrecision(security.GetPricePrecision());
+      widgets->second->ask.SetPrecision(security.GetPricePrecision());
+      const Target target = {m_tradingMode, &security, &*widgets->second};
       Verify(result.targets.emplace(std::move(target)).second);
       if (biggestGetPricePrecision < security.GetPricePrecision()) {
         biggestGetPricePrecision = security.GetPricePrecision();
@@ -366,8 +286,8 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
     });
   }
 
-  m_bestSpreadAbsValue = Lib::PriceAdapter<QLabel>{*m_ui.bestSpreadAbsValue,
-                                                   biggestGetPricePrecision};
+  m_bestSpreadAbsValue =
+      PriceAdapter<QLabel>{*m_ui.bestSpreadAbsValue, biggestGetPricePrecision};
   m_instanceData = std::move(result);
   m_symbol = symbolIndex;
 
@@ -377,27 +297,13 @@ void ArbitrageStrategyWindow::SetCurrentSymbol(int symbolIndex) {
     SignalsScopedBlocker blocker(*m_ui.autoTrade);
     m_ui.autoTrade->setChecked(false);
   }
-  for (auto *const widget : m_novaexchangeWidgets) {
-    widget->setEnabled(m_instanceData.novaexchangeTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_yobitnetWidgets) {
-    widget->setEnabled(m_instanceData.yobitnetTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_ccexWidgets) {
-    widget->setEnabled(m_instanceData.ccexTradingSystem ? true : false);
-  }
-  for (auto *const widget : m_gdaxWidgets) {
-    widget->setEnabled(m_instanceData.gdaxTradingSystem ? true : false);
-  }
+
   for (const auto &target : m_instanceData.targets) {
-    const auto &security = *target.security;
-    target.bid.Set(security.GetBidPriceValue(), security.GetBidQtyValue());
-    target.ask.Set(security.GetAskPriceValue(), security.GetAskQtyValue());
-    target.time.Set(security.GetLastMarketDataTime());
+    target.widgets->Update(*target.security);
   }
 }
 
-void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
+void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
   Assert(advice.security);
 
   {
@@ -406,9 +312,7 @@ void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
     if (updateTargeIt == targetIndex.cend()) {
       return;
     }
-    updateTargeIt->time.Set(advice.time);
-    updateTargeIt->bid.Set(advice.bid.price, advice.bid.qty);
-    updateTargeIt->ask.Set(advice.ask.price, advice.ask.qty);
+    updateTargeIt->widgets->Update(advice);
   }
 
   {
@@ -434,52 +338,31 @@ void ArbitrageStrategyWindow::TakeAdvice(const aa::Advice &advice) {
 
   {
     const auto &setSideSignal = [this, &advice](
-        bool isBest, Security &security, QFrame &frame,
-        TradingSystem *&bestTradingSystem, const QString &signaledStyle,
-        const QString &highlightedStyle) {
+        TargetSideWidget &sideWidget, bool isBest, Security &security,
+        TradingSystem *&bestTradingSystem) {
+      sideWidget.Highlight(isBest, advice.isSignaled);
       if (isBest) {
-        if (advice.isSignaled) {
-          frame.setStyleSheet(signaledStyle);
-        } else {
-          frame.setStyleSheet(highlightedStyle);
-        }
         bestTradingSystem = &security.GetContext().GetTradingSystem(
             security.GetSource().GetIndex(), m_tradingMode);
-      } else {
-        frame.setStyleSheet(styleSheet());
       }
     };
     const auto &targetIndex = m_instanceData.targets.get<BySecurity>();
-    for (const aa::Advice::SecuritySignal &signal : advice.securitySignals) {
+    for (const auto &signal : advice.securitySignals) {
       const auto signalTargetIt = targetIndex.find(signal.security);
       Assert(signalTargetIt != targetIndex.cend());
       if (signalTargetIt == targetIndex.cend()) {
         continue;
       }
-      {
-        static const QString signaledStyle(
-            "background-color: rgb(230, 59, 1);");
-        static const QString highlightedStyle("color: rgb(230, 59, 1);");
-        setSideSignal(signal.isBestBid, *signal.security,
-                      *signalTargetIt->bidFrame,
-                      m_instanceData.bestSellTradingSystem, signaledStyle,
-                      highlightedStyle);
-      }
-      {
-        static const QString signaledStyle(
-            "background-color: rgb(0, 146, 68);");
-        static const QString highlightedStyle("color: rgb(0, 195, 91);");
-        setSideSignal(signal.isBestAsk, *signal.security,
-                      *signalTargetIt->askFrame,
-                      m_instanceData.bestBuyTradingSystem, signaledStyle,
-                      highlightedStyle);
-      }
+      setSideSignal(signalTargetIt->widgets->bid, signal.isBestBid,
+                    *signal.security, m_instanceData.bestSellTradingSystem);
+      setSideSignal(signalTargetIt->widgets->ask, signal.isBestAsk,
+                    *signal.security, m_instanceData.bestBuyTradingSystem);
     }
   }
 }
 
-void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
-                                        TradingSystem *tradingSystem) {
+void StrategyWindow::SendOrder(const OrderSide &side,
+                               TradingSystem *tradingSystem) {
   if (!tradingSystem) {
     tradingSystem = side == ORDER_SIDE_BUY
                         ? m_instanceData.bestBuyTradingSystem
@@ -514,7 +397,7 @@ void ArbitrageStrategyWindow::SendOrder(const OrderSide &side,
   }
 }
 
-bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
+bool StrategyWindow::IsAutoTradingActivated() const {
   bool result = false;
   if (m_instanceData.strategy) {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -526,7 +409,7 @@ bool ArbitrageStrategyWindow::IsAutoTradingActivated() const {
   return result;
 }
 
-void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
+void StrategyWindow::ToggleAutoTrading(bool activate) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -543,7 +426,7 @@ void ArbitrageStrategyWindow::ToggleAutoTrading(bool activate) {
   }
 }
 
-void ArbitrageStrategyWindow::DeactivateAutoTrading() {
+void StrategyWindow::DeactivateAutoTrading() {
   if (!m_instanceData.strategy) {
     return;
   }
@@ -556,7 +439,7 @@ void ArbitrageStrategyWindow::DeactivateAutoTrading() {
   }
 }
 
-void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
+void StrategyWindow::UpdateAutoTradingLevel(double level) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -572,7 +455,7 @@ void ArbitrageStrategyWindow::UpdateAutoTradingLevel(double level) {
   }
 }
 
-void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {
+void StrategyWindow::UpdateAdviceLevel(double level) {
   Assert(m_instanceData.strategy);
   try {
     m_instanceData.strategy->Invoke<aa::Strategy>(
@@ -582,3 +465,12 @@ void ArbitrageStrategyWindow::UpdateAdviceLevel(double level) {
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::unique_ptr<QWidget> CreateStrategyWidgets(Engine &engine,
+                                               QWidget *parent) {
+  return boost::make_unique<StrategyWindow>(engine, boost::none, parent);
+}
+
+////////////////////////////////////////////////////////////////////////////////

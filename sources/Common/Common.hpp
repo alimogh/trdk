@@ -41,7 +41,6 @@
 #include "Currency.hpp"
 #include "Dll.hpp"
 #include "Exception.hpp"
-#include "Foreach.hpp"
 #include "Ini.hpp"
 #include "Numeric.hpp"
 #include "Spin.hpp"

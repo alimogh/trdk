@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Foreach.hpp"
 #include <boost/array.hpp>
 #include <boost/chrono.hpp>
 
@@ -230,7 +229,7 @@ class MilestonesStatAccum : public StatAccum {
 
  public:
   bool HasMeasures() const {
-    foreach (const auto &milestone, m_milestones) {
+    for (const auto &milestone : m_milestones) {
       if (milestone.GetSize()) {
         return true;
       }
@@ -241,7 +240,9 @@ class MilestonesStatAccum : public StatAccum {
   const MilestonesStat &GetMilestones() const { return m_milestones; }
 
   void Reset() {
-    foreach (auto &milestone, m_milestones) { milestone.Reset(); }
+    for (auto &milestone : m_milestones) {
+      milestone.Reset();
+    }
   }
 
  private:

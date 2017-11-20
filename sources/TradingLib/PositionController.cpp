@@ -117,32 +117,36 @@ Position &PositionController::RestorePosition(
 
 void PositionController::ContinuePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  position.GetOperationContext().GetOpenOrderPolicy().Open(position);
+  position.GetOperationContext().GetOpenOrderPolicy(position).Open(position);
 }
 
 void PositionController::HoldPosition(Position &) {}
 
 bool PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
-  position.SetCloseReason(reason);
+  IsPassive(reason) ? position.SetCloseReason(reason)
+                    : position.ResetCloseReason(reason);
   if (position.HasActiveOpenOrders()) {
     if (position.IsCancelling()) {
       return false;
     }
     try {
       Verify(position.CancelAllOrders());
+      return true;
     } catch (const TradingSystem::OrderIsUnknown &) {
       return false;
     }
+  } else if (position.HasActiveCloseOrders()) {
+    return false;
   } else {
     ClosePosition(position);
+    return true;
   }
-  return true;
 }
 
 void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  position.GetOperationContext().GetCloseOrderPolicy().Close(position);
+  position.GetOperationContext().GetCloseOrderPolicy(position).Close(position);
 }
 
 void PositionController::CloseAllPositions(const CloseReason &reason) {

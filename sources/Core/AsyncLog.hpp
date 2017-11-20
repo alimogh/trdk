@@ -38,6 +38,7 @@ class TRDK_CORE_API AsyncLogRecord {
 
     PT_CHAR,
     PT_STRING,
+    PT_STRING_REF,
     PT_PCHAR,
 
     PT_TIME,
@@ -133,7 +134,7 @@ class TRDK_CORE_API AsyncLogRecord {
         }
       }
 
-      static_assert(numberOfParamTypes == 24, "Parameter type list changed.");
+      static_assert(numberOfParamTypes == 25, "Parameter type list changed.");
       switch (type) {
         case PT_INT8:
           WriteToDumpStream(boost::any_cast<int8_t>(val), os);
@@ -178,6 +179,13 @@ class TRDK_CORE_API AsyncLogRecord {
         } break;
         case PT_STRING:
           WriteToDumpStream(boost::any_cast<const std::string &>(val), os);
+          break;
+        case PT_STRING_REF:
+          WriteToDumpStream(
+              static_cast<const std::string &>(
+                  boost::any_cast<const boost::reference_wrapper<std::string>>(
+                      val)),
+              os);
           break;
         case PT_PCHAR:
           WriteToDumpStream(boost::any_cast<const char *>(val), os);
@@ -265,6 +273,9 @@ class TRDK_CORE_API AsyncLogRecord {
 
   void StoreParam(char val) { StoreTypedParam(PT_CHAR, val); }
   void StoreParam(const std::string &val) { StoreTypedParam(PT_STRING, val); }
+  void StoreParam(const boost::reference_wrapper<std::string> &val) {
+    StoreTypedParam(PT_STRING_REF, val);
+  }
   void StoreParam(const char *val) { StoreTypedParam(PT_PCHAR, val); }
 
   void StoreParam(const boost::posix_time::ptime &time) {

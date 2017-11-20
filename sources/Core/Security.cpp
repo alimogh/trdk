@@ -174,7 +174,7 @@ size_t GetNumberOfItemsPerQtyBySymbol(const Symbol &symbol) {
 Qty GetLotSizeBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FOR:
-      return 100;
+      return 100000;
     default:
       return 1;
   }
@@ -511,10 +511,6 @@ class Security::Implementation : private boost::noncopyable {
     for (auto &item : m_level1) {
       Unset(item);
     }
-
-    if (m_source.GetContext().GetSettings().IsMarketDataLogEnabled()) {
-      StartMarketDataLog(m_source.GetIndex());
-    }
   }
 
   void CheckMarketDataUpdate(const pt::ptime &time) {
@@ -598,7 +594,7 @@ class Security::Implementation : private boost::noncopyable {
         return false;
       }
     }
-    m_source.GetContext().GetLog().Info("%1% Level 1 started.", m_self);
+    m_source.GetContext().GetLog().Info("\"%1%\" Level 1 started.", m_self);
     m_isLevel1Started = true;
     return true;
   }
@@ -613,21 +609,6 @@ class Security::Implementation : private boost::noncopyable {
   Double CheckAndGetLevel1Value(const Level1 &level1) const {
     const double value = level1[tick];
     if (!IsSet(value)) {
-      Assert(IsSet(value));
-      boost::format message(
-          "Market data value \"%1%\" does not exist for \"%2%\"");
-      message % ConvertToPch(tick) % m_self;
-      throw MarketDataValueDoesNotExist(message.str().c_str());
-    }
-    AssertLe(0, value);
-    return value;
-  }
-
-  template <Level1TickType tick>
-  Double GetLevel1Value(const Level1 &level1) const {
-    const double value = level1[tick];
-    if (!IsSet(value)) {
-      Assert(IsSet(value));
       boost::format message(
           "Market data value \"%1%\" does not exist for \"%2%\"");
       message % ConvertToPch(tick) % m_self;
@@ -677,6 +658,9 @@ Security::Security(Context &context,
                    const SupportedLevel1Types &supportedLevel1Types)
     : Base(context, symbol),
       m_pimpl(new Implementation(*this, source, symbol, supportedLevel1Types)) {
+  if (GetContext().GetSettings().IsMarketDataLogEnabled()) {
+    m_pimpl->StartMarketDataLog(GetSource().GetIndex());
+  }
 }
 
 Security::~Security() = default;
@@ -721,29 +705,22 @@ size_t Security::TakeNumberOfMarketDataUpdates() const {
   return m_pimpl->m_numberOfMarketDataUpdates.exchange(0);
 }
 
-bool Security::IsActive() const {
-  return m_pimpl->m_isOnline && IsTradingSessionOpened() &&
-         m_pimpl->m_isLevel1Started;
-}
-
 bool Security::IsOnline() const { return m_pimpl->m_isOnline; }
 
-void Security::SetOnline(const pt::ptime &time, bool isOnline) {
-  AssertNe(m_pimpl->m_isOnline, isOnline);
+bool Security::SetOnline(const pt::ptime &time, bool isOnline) {
   if (m_pimpl->m_isOnline == isOnline) {
-    return;
+    return false;
   }
-
   GetContext().GetLog().Info(
       "\"%1%\" now is %2% by the event %3%. Last data time: %4%.", *this,
       isOnline ? "online" : "offline", time, GetLastMarketDataTime());
-
   {
     const auto lock = GetSource().GetContext().SyncDispatching();
     m_pimpl->m_isOnline = isOnline;
     m_pimpl->m_serviceEventSignal(
         time, isOnline ? SERVICE_EVENT_ONLINE : SERVICE_EVENT_OFFLINE);
   }
+  return true;
 }
 
 bool Security::IsTradingSessionOpened() const { return m_pimpl->m_isOpened; }
@@ -838,7 +815,8 @@ Qty Security::GetAskQtyValue() const {
 }
 
 Price Security::GetBidPrice() const {
-  return m_pimpl->GetLevel1Value<LEVEL1_TICK_BID_PRICE>(m_pimpl->m_level1);
+  return m_pimpl->CheckAndGetLevel1Value<LEVEL1_TICK_BID_PRICE>(
+      m_pimpl->m_level1);
 }
 Price Security::GetBidPriceValue() const {
   return m_pimpl->m_level1[LEVEL1_TICK_BID_PRICE];
@@ -1279,6 +1257,13 @@ bool Security::SetExpiration(const pt::ptime &time,
 void Security::ContinueContractSwitchingToNextExpiration() {
   Assert(m_pimpl->m_isContractSwitchingActive);
   GetSource().SwitchToNextContract(*this);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::ostream &trdk::operator<<(std::ostream &os, const Security &security) {
+  return os << static_cast<const Security::Base &>(security) << '.'
+            << security.GetSource().GetInstanceName();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

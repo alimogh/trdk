@@ -81,6 +81,9 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
 
   out::NewOrderSingle message(security, side, qty, *price,
                               GetStandardOutgoingHeader());
+  if (params.stopPrice) {
+    message.SetStopPx(*params.stopPrice);
+  }
   if (params.position) {
     message.SetPosMaintRptId(
         boost::polymorphic_downcast<const OrderTransactionContext *>(
@@ -189,28 +192,25 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
                orderStatus == ORDER_STATUS_FILLED);
         message.ResetReadingState();
         TradeInfo trade = {message.ReadAvgPx()};
-        OnOrderStatusUpdate(orderId, orderStatus,
-                            message.ReadLeavesQty(), std::move(trade),
-                            setPositionId);
+        OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
+                            std::move(trade), setPositionId);
         break;
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
           case ORDER_STATUS_SUBMITTED:
-            OnOrderStatusUpdate(orderId, orderStatus,
-                                message.ReadLeavesQty(), setPositionId);
+            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
+                                setPositionId);
             break;
           case ORDER_STATUS_CANCELLED:
-            OnOrderStatusUpdate(orderId, orderStatus,
-                                message.ReadLeavesQty());
+            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty());
             break;
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY: {
             message.ResetReadingState();
             TradeInfo trade = {message.ReadAvgPx()};
-            OnOrderStatusUpdate(orderId, orderStatus,
-                                message.ReadLeavesQty(), std::move(trade),
-                                setPositionId);
+            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
+                                std::move(trade), setPositionId);
             break;
           }
           case ORDER_STATUS_REJECTED:

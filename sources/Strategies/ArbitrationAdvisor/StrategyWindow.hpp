@@ -10,31 +10,29 @@
 
 #pragma once
 
-#include "Strategies/ArbitrationAdvisor/Advice.hpp"
-#include "ui_ArbitrageStrategyWindow.h"
+#include "Advice.hpp"
+#include "TargetActionsWidget.hpp"
+#include "TargetSideWidget.hpp"
+#include "TargetTitleWidget.hpp"
+#include "ui_StrategyWindow.h"
 
 namespace trdk {
-namespace FrontEnd {
-namespace Terminal {
+namespace Strategies {
+namespace ArbitrageAdvisor {
 
-class ArbitrageStrategyWindow : public QMainWindow {
+class StrategyWindow : public QMainWindow {
   Q_OBJECT
 
  public:
   typedef QMainWindow Base;
 
  private:
+  struct TargetWidgets;
+
   struct Target {
     TradingMode tradingMode;
-
     Security *security;
-
-    mutable Lib::SideAdapter<QLabel> bid;
-    mutable Lib::SideAdapter<QLabel> ask;
-    mutable Lib::TimeAdapter<QLabel> time;
-
-    QFrame *bidFrame;
-    QFrame *askFrame;
+    TargetWidgets *widgets;
 
     const Security *GetSecurityPtr() const { return security; }
     const std::string &GetSymbol() const;
@@ -68,6 +66,7 @@ class ArbitrageStrategyWindow : public QMainWindow {
     Strategy *strategy;
     boost::signals2::scoped_connection adviceConnection;
     TargetList targets;
+    TradingSystem *bittrexTradingSystem;
     TradingSystem *novaexchangeTradingSystem;
     TradingSystem *yobitnetTradingSystem;
     TradingSystem *ccexTradingSystem;
@@ -76,13 +75,34 @@ class ArbitrageStrategyWindow : public QMainWindow {
     TradingSystem *bestSellTradingSystem;
   };
 
+  struct TargetWidgets {
+    TradingSystem *InstanceData::*tradingSystemField;
+    TargetTitleWidget title;
+    TargetBidWidget bid;
+    TargetAskWidget ask;
+    TargetActionsWidget actions;
+
+    explicit TargetWidgets(TradingSystem *InstanceData::*tradingSystemField,
+                           QWidget *parent)
+        : tradingSystemField(tradingSystemField),
+          title(parent),
+          bid(parent),
+          ask(parent),
+          actions(parent) {}
+
+    template <typename Source>
+    void Update(const Source &source) {
+      title.Update(source);
+      bid.Update(source);
+      ask.Update(source);
+    }
+  };
+
  public:
-  explicit ArbitrageStrategyWindow(
-      Lib::Engine &,
-      MainWindow &mainWindow,
-      const boost::optional<QString> &defaultSymbol,
-      QWidget *parent);
-  virtual ~ArbitrageStrategyWindow() override;
+  explicit StrategyWindow(FrontEnd::Lib::Engine &,
+                          const boost::optional<QString> &defaultSymbol,
+                          QWidget *parent);
+  virtual ~StrategyWindow() override;
 
  public:
   virtual QSize sizeHint() const override;
@@ -111,19 +131,20 @@ class ArbitrageStrategyWindow : public QMainWindow {
 
   bool IsAutoTradingActivated() const;
 
+  void AddTarget(const QString &name,
+                 const std::string &targetId,
+                 TradingSystem *InstanceData::*tradingSystemField);
+
  private:
   const TradingMode m_tradingMode;
   const size_t m_instanceNumber;
   boost::unordered_map<std::string, boost::uuids::uuid> m_strategiesUuids;
-  MainWindow &m_mainWindow;
-  Ui::ArbitrageStrategyWindow m_ui;
-  Lib::Engine &m_engine;
+  Ui::StrategyWindow m_ui;
+  FrontEnd::Lib::Engine &m_engine;
   int m_symbol;
-  Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
-  std::vector<QWidget *> m_novaexchangeWidgets;
-  std::vector<QWidget *> m_yobitnetWidgets;
-  std::vector<QWidget *> m_ccexWidgets;
-  std::vector<QWidget *> m_gdaxWidgets;
+  FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
+  boost::unordered_map<std::string, std::unique_ptr<TargetWidgets>>
+      m_targetWidgets;
   InstanceData m_instanceData;
 };
 }
