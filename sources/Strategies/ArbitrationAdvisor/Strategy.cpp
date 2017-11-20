@@ -197,8 +197,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     auto &sellTarget = *bids.front().second->security;
     auto &buyTarget = *asks.front().second->security;
 
-    const auto &qty = std::min(
-        maxQty, std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
+    const auto &qty = std::max(
+        std::min(maxQty,
+                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty())),
+        Qty(0.015));
 
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
