@@ -20,6 +20,9 @@ namespace WilliamCarry {
 class MultiBrokerWidget : public QWidget {
   Q_OBJECT
 
+ public:
+  typedef QWidget Base;
+
  private:
   struct Locked {
     QTime time;
@@ -33,6 +36,8 @@ class MultiBrokerWidget : public QWidget {
 
  public:
   TradingSystem *GetSelectedTradingSystem();
+
+  virtual QSize sizeHint() const override;
 
  protected slots:
   void LockSecurity(bool lock);

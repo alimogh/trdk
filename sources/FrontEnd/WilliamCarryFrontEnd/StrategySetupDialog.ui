@@ -83,9 +83,6 @@
               <property name="maximum">
                <number>10000</number>
               </property>
-              <property name="value">
-               <number>10000</number>
-              </property>
              </widget>
             </item>
             <item>
@@ -690,8 +687,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>539</width>
-        <height>531</height>
+        <width>427</width>
+        <height>432</height>
        </rect>
       </property>
       <attribute name="label">
@@ -1339,8 +1336,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>539</width>
-        <height>531</height>
+        <width>427</width>
+        <height>432</height>
        </rect>
       </property>
       <attribute name="label">
@@ -1982,8 +1979,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>539</width>
-        <height>531</height>
+        <width>427</width>
+        <height>432</height>
        </rect>
       </property>
       <attribute name="label">

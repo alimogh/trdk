@@ -557,6 +557,8 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
     AssertFailNoException();
     throw;
   }
+  GetTradingLog().Write("{'order': {'cancelSent': {'id': '%1%'}}}",
+                        [&](TradingRecord &record) { record % orderId; });
   OnTransactionSent(orderId);
 }
 

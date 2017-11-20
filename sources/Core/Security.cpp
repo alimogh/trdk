@@ -174,7 +174,7 @@ size_t GetNumberOfItemsPerQtyBySymbol(const Symbol &symbol) {
 Qty GetLotSizeBySymbol(const Symbol &symbol) {
   switch (symbol.GetSecurityType()) {
     case SECURITY_TYPE_FOR:
-      return 100;
+      return 100000;
     default:
       return 1;
   }

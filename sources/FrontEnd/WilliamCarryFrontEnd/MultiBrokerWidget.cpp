@@ -35,7 +35,7 @@ namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 
 MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
-    : QWidget(parent),
+    : Base(parent),
       m_mode(TRADING_MODE_LIVE),
       m_engine(engine),
       m_currentTradingSecurity(nullptr),
@@ -130,6 +130,14 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   }
 
   LoadSettings();
+
+  adjustSize();
+}
+
+QSize MultiBrokerWidget::sizeHint() const {
+  auto result = Base::sizeHint();
+  result.setWidth(static_cast<int>(result.width() * 0.7));
+  return result;
 }
 
 void MultiBrokerWidget::resizeEvent(QResizeEvent *) {
