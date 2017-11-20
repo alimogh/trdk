@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     LoadStyle(application);
 
     auto engine = boost::make_unique<Engine>(
-        GetExeFilePath().branch_path() / "etc" / "Brutus" / "default.ini",
+        GetExeFilePath().branch_path() / "etc" / "Robot" / "default.ini",
         nullptr);
 
     MainWindow mainWindow(std::move(engine), nullptr);

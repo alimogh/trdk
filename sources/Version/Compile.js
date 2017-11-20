@@ -12,8 +12,8 @@
 //////////////////////////////////////////////////////////////////////////
 // Customization:
 
-var branch = "master"
-var productName	= "Trading Robot Development Kit"
+var branch = "robot"
+var productName	= "Trading Robot"
 var vendorName = "Eugene V. Palchukovsky"
 var domain = "robotdk.com"
 var licenseServiceSubdomain = "licensing"
@@ -26,16 +26,8 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'FrontEnd'
-	, 'Shell'
-	, 'TestTradingSystems'
-	, 'InteractiveBrokers'
 	, 'FixProtocol'
 	, 'Rest'
-	, 'Services'
-	, 'TestStrategy'
-	, 'MrigeshKejriwal'
-	, 'WilliamCarryStrategies'
-	, 'WilliamCarryFrontEnd'
 	, 'ArbitrationAdvisor'
 ]
 

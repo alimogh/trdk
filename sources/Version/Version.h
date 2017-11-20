@@ -3,10 +3,10 @@
 
 #define TRDK_VERSION_RELEASE	1
 #define TRDK_VERSION_BUILD	0
-#define TRDK_VERSION_STATUS	1
+#define TRDK_VERSION_STATUS	0
 
-#define TRDK_VERSION_BRANCH		"master"
-#define TRDK_VERSION_BRANCH_W	L"master"
+#define TRDK_VERSION_BRANCH		"robot"
+#define TRDK_VERSION_BRANCH_W	L"robot"
 
 #define TRDK_VENDOR		"Eugene V. Palchukovsky"
 #define TRDK_VENDOR_W	L"Eugene V. Palchukovsky"
@@ -20,8 +20,8 @@
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN		"licensing"
 #define TRDK_LICENSE_SERVICE_SUBDOMAIN_W	L"licensing"
 
-#define TRDK_NAME	"Trading Robot Development Kit"
-#define TRDK_NAME_W	L"Trading Robot Development Kit"
+#define TRDK_NAME	"Trading Robot"
+#define TRDK_NAME_W	L"Trading Robot"
 
 #define TRDK_COPYRIGHT		"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
 #define TRDK_COPYRIGHT_W	L"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
@@ -30,5 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
-#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "Shell", "TestTradingSystems", "InteractiveBrokers", "FixProtocol", "Rest", "Services", "TestStrategy", "MrigeshKejriwal", "WilliamCarryStrategies", "WilliamCarryFrontEnd", "ArbitrationAdvisor", };
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "FixProtocol", "Rest", "ArbitrationAdvisor", };
 
