@@ -110,7 +110,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
         Trade(bids, asks, m_tradingSettings->maxQty, spreadRatio,
               m_tradingSettings->minPriceDifferenceRatio, delayMeasurement);
-      } else {
+      } else if (spreadRatio <= 0) {
         StopTrading(bestSell, bestBuy, spreadRatio);
       }
     } else {
