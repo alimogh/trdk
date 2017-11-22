@@ -125,9 +125,10 @@ void PullingTask::Run() {
                       task.name,             // 1
                       ex.what(),             // 2
                       task.numberOfErrors);  // 3
-          if (task.numberOfErrors > 3) {
-            task.skipCount *= std::min<size_t>(30, task.numberOfErrors);
-          }
+          //           if (task.numberOfErrors > 3) {
+          //             task.skipCount *= std::min<size_t>(30,
+          //             task.numberOfErrors);
+          //           }
         }
         if (isCompleted) {
           const auto pos = std::distance(m_tasks.begin(), std::prev(it));
