@@ -204,7 +204,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
     {
-      const auto pip = 1.0 / 1000000;
+      const auto pip = 1.0 / 10000000;
       for (;;) {
         const auto nextSellPrice = sellPrice - pip;
         const auto nextBuyPrice = buyPrice + pip;
@@ -234,7 +234,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (CheckActualPositions(sellTarget, buyTarget, spreadRatio)) {
       return;
     }
-    if (m_errors.count(&sellTarget) || m_errors.count(&buyTarget)) {
+    const auto sellTargetBlackListIt = m_errors.find(&sellTarget);
+    const bool isSellTargetInBlackList =
+        sellTargetBlackListIt != m_errors.cend();
+    const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
+    const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
+    if (isSellTargetInBlackList && isBuyTargetInBlackList) {
       m_self.GetTradingLog().Write(
           "{'signal': {'ignored': {'reason': 'black list', 'sell': "
           "{'exchange': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, 'buy': "
@@ -299,8 +304,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         });
 
     const auto &legTargets =
-        boost::icontains(buyTradingSystemName, "ccex") ||
-                boost::icontains(buyTradingSystemName, "novaexchange")
+        isBuyTargetInBlackList || boost::icontains(buyTradingSystemName, "ccex")
             ? std::make_pair(&buyTarget, &sellTarget)
             : std::make_pair(&sellTarget, &buyTarget);
 
@@ -341,6 +345,13 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           !firstLegPosition ? "Second" : "First",
           &disabledTarget == legTargets.first ? *legTargets.second
                                               : *legTargets.first);
+    }
+
+    if (isBuyTargetInBlackList) {
+      m_errors.erase(buyTargetBlackListIt);
+    }
+    if (isSellTargetInBlackList) {
+      m_errors.erase(sellTargetBlackListIt);
     }
   }
 
