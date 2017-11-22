@@ -166,7 +166,11 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::TimeInForce &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
 
-  void CancelOrder(const trdk::OrderId &);
+  //! Cancels active orders.
+  /** @return True, if order is known and cancel-comand suscessfully sent.
+    *         False if order is unknown.
+    */
+  bool CancelOrder(const trdk::OrderId &);
 
  public:
   virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
@@ -201,7 +205,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
  protected:
   //! Notifies trading system about order state change.
   /** @throw  OrderIsUnknown  Order handler is not registered.
-    */
+  */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,

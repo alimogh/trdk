@@ -526,12 +526,21 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   return result;
 }
 
-void TradingSystem::CancelOrder(const OrderId &orderId) {
+bool TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write(
       "{'order': {'cancel': {'id': %1%}}}",
       [&orderId](TradingRecord &record) { record % orderId; });
   try {
     SendCancelOrderTransaction(orderId);
+  } catch (const OrderIsUnknown &ex) {
+    GetTradingLog().Write(
+        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
+        [&orderId, &ex](TradingRecord &record) {
+          record % orderId  // 1
+              % ex.what();  // 2
+        });
+    OnTransactionSent(orderId);
+    return false;
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
         "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
@@ -560,6 +569,7 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write("{'order': {'cancelSent': {'id': '%1%'}}}",
                         [&](TradingRecord &record) { record % orderId; });
   OnTransactionSent(orderId);
+  return true;
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
