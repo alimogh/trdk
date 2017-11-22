@@ -337,10 +337,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
       const auto &disabledTarget =
           *(!firstLegPosition ? legTargets.first : legTargets.second);
-      Verify(m_errors.emplace(legTargets.first).second);
+      m_errors.emplace(legTargets.first);
       m_self.GetLog().Warn(
-          "\"%1%\" security (%2% leg) is disabled by position opening error. "
-          "%3% leg is \"%4%\"",
+          "\"%1%\" security (%2% leg) is added to the black-list by position "
+          "opening error. %3% leg is \"%4%\"",
           disabledTarget, !firstLegPosition ? "first" : "second",
           !firstLegPosition ? "Second" : "First",
           &disabledTarget == legTargets.first ? *legTargets.second
