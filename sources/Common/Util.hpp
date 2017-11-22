@@ -48,7 +48,9 @@ inline bool IsEmpty(const std::wstring &str) { return str.empty(); }
 //////////////////////////////////////////////////////////////////////////
 
 inline double RoundByPrecision(double value, uintmax_t precisionPower) {
-  return boost::math::round(value * precisionPower) / precisionPower;
+  return precisionPower
+             ? boost::math::round(value * precisionPower) / precisionPower
+             : boost::math::round(value);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -338,6 +338,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
+      RequestMarkets();
       // RequestAccounts();
     } catch (const std::exception &ex) {
       GetTsLog().Error(ex.what());
@@ -410,13 +411,24 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
+    const auto &symbol = NormilizeSymbol(security.GetSymbol().GetSymbol());
+
+    double autoActualPrice = *price;
+    {
+      const auto &symbolPrecision = m_precisions.find(symbol);
+      if (symbolPrecision != m_precisions.cend()) {
+        autoActualPrice =
+            RoundByPrecision(autoActualPrice, symbolPrecision->second);
+      }
+    }
+
     {
       boost::format requestParams(
-          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.6f\", "
-          "\"size\": \"%4$.6f\"}");
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
+          "\"size\": \"%4$.8f\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
-          % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
-          % *price                                                // 3
+          % symbol                                                // 2
+          % autoActualPrice                                       // 3
           % qty;                                                  // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
@@ -445,6 +457,33 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
+  void RequestMarkets() {
+    boost::unordered_map<std::string, uintmax_t> precisions;
+    PublicRequest request("products");
+    const auto response =
+        boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+    std::vector<std::string> log;
+    for (const auto &node : response) {
+      const auto &product = node.second;
+      const auto &id = product.get<std::string>("id");
+      const auto &quoteIncrement = product.get<std::string>("quote_increment");
+      const auto dotPos = quoteIncrement.find('.');
+      uintmax_t precision = 0;
+      if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
+        precision = quoteIncrement.size() - dotPos - 1;
+        precision = static_cast<decltype(precision)>(std::pow(10, precision));
+      }
+      Verify(precisions.emplace(std::move(id), precision).second);
+      boost::format logStr("%1% (price step: %2%, precision power: %3%)");
+      logStr % id           // 1
+          % quoteIncrement  // 2
+          % precision;      // 3
+      log.emplace_back(logStr.str());
+    }
+    GetTsLog().Info("Markets: %1%.", boost::join(log, ", "));
+    m_precisions = std::move(precisions);
+  }
+
   void RequestAccounts() {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false);
@@ -660,6 +699,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<OrderId, Order> m_orders;
 
   trdk::Timer::Scope m_timerScope;
+
+  boost::unordered_map<std::string, uintmax_t> m_precisions;
 };
 }
 

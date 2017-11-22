@@ -458,8 +458,9 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
           callback(orderId, orderStatus, remainingQty, commission, trade);
         });
   } catch (const std::exception &ex) {
-    GetTradingLog().Write("{'order': {'sendError': {'reason': '%1%'}}}",
-                          [&ex](TradingRecord &record) { record % ex.what(); });
+    GetTradingLog().Write(
+        "{'order': {'sendError': {'reason': '%1%'}}}",
+        [&ex](TradingRecord &record) { record % std::string(ex.what()); });
     GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
@@ -526,24 +527,33 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   return result;
 }
 
-void TradingSystem::CancelOrder(const OrderId &orderId) {
+bool TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write(
       "{'order': {'cancel': {'id': %1%}}}",
       [&orderId](TradingRecord &record) { record % orderId; });
   try {
     SendCancelOrderTransaction(orderId);
+  } catch (const OrderIsUnknown &ex) {
+    GetTradingLog().Write(
+        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
+        [&orderId, &ex](TradingRecord &record) {
+          record % orderId               // 1
+              % std::string(ex.what());  // 2
+        });
+    OnTransactionSent(orderId);
+    return false;
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
         "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
         [&orderId, &ex](TradingRecord &record) {
-          record % orderId  // 1
-              % ex.what();  // 2
+          record % orderId               // 1
+              % std::string(ex.what());  // 2
         });
     GetLog().Warn(
         "Error while sending order cancel transaction for order %1%: "
         "\"%2%\".",
-        orderId,     // 1
-        ex.what());  // 2
+        orderId,                  // 1
+        std::string(ex.what()));  // 2
     OnTransactionSent(orderId);
     throw;
   } catch (...) {
@@ -560,6 +570,7 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write("{'order': {'cancelSent': {'id': '%1%'}}}",
                         [&](TradingRecord &record) { record % orderId; });
   OnTransactionSent(orderId);
+  return true;
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}

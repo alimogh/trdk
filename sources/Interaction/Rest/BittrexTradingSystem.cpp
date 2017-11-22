@@ -277,6 +277,12 @@ void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
 }
 
 namespace {
+void RestoreCurrency(std::string &currency) {
+  //! Also see symbol normalization.
+  if (currency == "BCC") {
+    currency = "BCH";
+  }
+}
 std::string RestoreSymbol(const std::string &source) {
   std::vector<std::string> subs;
   boost::split(subs, source, boost::is_any_of("-"));
@@ -284,6 +290,8 @@ std::string RestoreSymbol(const std::string &source) {
   if (subs.size() >= 2) {
     subs[0].swap(subs[1]);
   }
+  RestoreCurrency(subs[0]);
+  RestoreCurrency(subs[1]);
   return boost::join(subs, "-");
 }
 pt::ptime ParseTime(std::string &&source) {

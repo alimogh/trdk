@@ -56,11 +56,13 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   boost::unordered_map<Symbol, std::vector<AdviceSecuritySignal>> m_symbols;
 
   boost::unordered_set<const Security *> m_errors;
+  const Security *m_lastError;
 
   explicit Implementation(aa::Strategy &self)
       : m_self(self),
         m_controller(m_self),
-        m_minPriceDifferenceRatioToAdvice(0) {}
+        m_minPriceDifferenceRatioToAdvice(0),
+        m_lastError(nullptr) {}
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
@@ -110,7 +112,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
         Trade(bids, asks, m_tradingSettings->maxQty, spreadRatio,
               m_tradingSettings->minPriceDifferenceRatio, delayMeasurement);
-      } else {
+      } else if (spreadRatio <= 0) {
         StopTrading(bestSell, bestBuy, spreadRatio);
       }
     } else {
@@ -204,7 +206,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
     {
-      const auto pip = 1.0 / 1000000;
+      const auto pip = 1.0 / 10000000;
       for (;;) {
         const auto nextSellPrice = sellPrice - pip;
         const auto nextBuyPrice = buyPrice + pip;
@@ -234,7 +236,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (CheckActualPositions(sellTarget, buyTarget, spreadRatio)) {
       return;
     }
-    if (m_errors.count(&sellTarget) || m_errors.count(&buyTarget)) {
+    const auto sellTargetBlackListIt = m_errors.find(&sellTarget);
+    const bool isSellTargetInBlackList =
+        sellTargetBlackListIt != m_errors.cend();
+    const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
+    const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
+    if (isSellTargetInBlackList && isBuyTargetInBlackList) {
       m_self.GetTradingLog().Write(
           "{'signal': {'ignored': {'reason': 'black list', 'sell': "
           "{'exchange': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, 'buy': "
@@ -271,6 +278,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
+    if (m_lastError == &sellTarget || m_lastError == &buyTarget) {
+      return;
+    }
+
     const auto operation = boost::make_shared<OperationContext>(
         sellTarget, buyTarget, maxQty, sellPrice, buyPrice);
 
@@ -299,8 +310,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         });
 
     const auto &legTargets =
-        boost::icontains(buyTradingSystemName, "ccex") ||
-                boost::icontains(buyTradingSystemName, "novaexchange")
+        isBuyTargetInBlackList ||
+                boost::icontains(buyTradingSystemName, "ccex") ||
+                boost::icontains(buyTradingSystemName, "bittrex")
             ? std::make_pair(&buyTarget, &sellTarget)
             : std::make_pair(&sellTarget, &buyTarget);
 
@@ -331,17 +343,25 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             CLOSE_REASON_OPEN_FAILED});
       }
 
-      const auto &disabledTarget =
-          *(!firstLegPosition ? legTargets.first : legTargets.second);
-      Verify(m_errors.emplace(legTargets.first).second);
+      m_lastError = !firstLegPosition ? legTargets.first : legTargets.second;
+      m_errors.emplace(m_lastError);
       m_self.GetLog().Warn(
-          "\"%1%\" security (%2% leg) is disabled by position opening error. "
-          "%3% leg is \"%4%\"",
-          disabledTarget, !firstLegPosition ? "first" : "second",
+          "\"%1%\" security (%2% leg) is added to the black-list by position "
+          "opening error. %3% leg is \"%4%\"",
+          *m_lastError, !firstLegPosition ? "first" : "second",
           !firstLegPosition ? "Second" : "First",
-          &disabledTarget == legTargets.first ? *legTargets.second
-                                              : *legTargets.first);
+          m_lastError == legTargets.first ? *legTargets.second
+                                          : *legTargets.first);
+      return;
     }
+
+    if (isBuyTargetInBlackList) {
+      m_errors.erase(buyTargetBlackListIt);
+    }
+    if (isSellTargetInBlackList) {
+      m_errors.erase(sellTargetBlackListIt);
+    }
+    m_lastError = nullptr;
   }
 
   void StopTrading(const Security &bestBid,
@@ -350,6 +370,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (m_self.GetPositions().IsEmpty()) {
       return;
     }
+
+    m_lastError = nullptr;
 
     m_self.GetTradingLog().Write(
         "{'signal': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
@@ -462,6 +484,7 @@ void aa::Strategy::DeactivateAutoTrading() {
   }
   m_pimpl->m_tradingSettings = boost::none;
   m_pimpl->m_errors.clear();
+  m_pimpl->m_lastError = nullptr;
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,

@@ -233,7 +233,12 @@ class TradeRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(const std::string &source) {
+std::string NormilizeSymbol(std::string source) {
+  if (boost::starts_with(source, "BCH_")) {
+    source = "BCC" + source.substr(3);
+  } else if (boost::ends_with(source, "_BCH")) {
+    source == source.substr(0, 4) + "BCC";
+  }
   return boost::to_lower_copy(source);
 }
 

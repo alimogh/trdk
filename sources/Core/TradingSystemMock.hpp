@@ -51,7 +51,7 @@ class TradingSystem : public trdk::TradingSystem {
                     const trdk::TimeInForce &,
                     const trdk::Lib::TimeMeasurement::Milestones &));
 
-  MOCK_METHOD1(CancelOrder, void(const OrderId &));
+  MOCK_METHOD1(CancelOrder, bool(const OrderId &));
 
   MOCK_METHOD1(OnSettingsUpdate, void(const trdk::Lib::IniSectionRef &));
   MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
