@@ -204,35 +204,45 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
  protected:
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
-  */
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
+    */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission,
                            trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty);
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission);
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            trdk::TradingSystem::TradeInfo &&);
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
       const trdk::OrderId &,
@@ -240,7 +250,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Qty &remainingQty,
       const boost::function<void(trdk::OrderTransactionContext &)> &);
   //! Notifies trading system about order state change.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
       const trdk::OrderId &,
@@ -251,16 +263,21 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! Notifies trading system about order canceling.
   void OnOrderCancel(const trdk::OrderId &);
   //! Notifies trading system about order error.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderError(const trdk::OrderId &, const std::string &&error);
   //! Notifies trading system about order reject.
-  /** @throw  OrderIsUnknown  Order handler is not registered.
+  /** The method is not thread-safe. Each who will call it should provide
+    * correct sequence of calls or do it from one thread.
+    * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderReject(const trdk::OrderId &, const std::string &&reason);
 
   //! General order update notification.
-  /** May be used for any order.
+  /** May be used for any order. The method is not thread-safe. Each who will
+    * call it should provide correct sequence of calls or do it from one thread.
     */
   void OnOrder(const trdk::OrderId &,
                const std::string &symbol,
