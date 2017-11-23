@@ -124,7 +124,14 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
     return;
   }
   try {
-    OnOrderError(orderId, std::move(text));
+    if (GetSettings().policy->IsBadTradingVolumeError(text)) {
+      GetLog().Error("Received Reject for order %1%: \"%2%\" .",
+                     orderId,  // 1
+                     text);    // 2
+      OnOrderCancel(orderId);
+    } else {
+      OnOrderError(orderId, std::move(text));
+    }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
     GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
@@ -148,7 +155,15 @@ void fix::TradingSystem::OnBusinessMessageReject(
     return;
   }
   try {
-    OnOrderError(orderId, std::move(reason));
+    if (GetSettings().policy->IsBadTradingVolumeError(reason)) {
+      GetLog().Error(
+          "Received Business Message Reject for order %1%: \"%2%\" .",
+          orderId,  // 1
+          reason);  // 2
+      OnOrderCancel(orderId);
+    } else {
+      OnOrderError(orderId, std::move(reason));
+    }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
     GetLog().Warn(
