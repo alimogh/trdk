@@ -123,6 +123,7 @@ MultiBrokerWidget::MultiBrokerWidget(Engine &engine, QWidget *parent)
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &MultiBrokerWidget::UpdatePrices, Qt::QueuedConnection));
 
+  qRegisterMetaType<size_t>("size_t");
   Verify(connect(this, &MultiBrokerWidget::PositionChanged, this,
                  &MultiBrokerWidget::OnPosition, Qt::QueuedConnection));
 
@@ -319,8 +320,10 @@ void MultiBrokerWidget::Reload() {
     m_strategies[i - 1]->Invoke<MultibrokerStrategy>([this, i](
         MultibrokerStrategy &multibroker) {
       m_signalConnections.emplace_back(multibroker.SubscribeToPositionsUpdates(
-          [this, i](bool isLong, bool isActive) {
-            emit PositionChanged(i, isLong, isActive);
+          [this, i](bool isLong, const Security &security,
+                    const TradingSystem &tradingSystem, bool isActive) {
+            emit PositionChanged(i, isLong, &security, &tradingSystem,
+                                 isActive);
           }));
     });
   }
@@ -670,6 +673,8 @@ void MultiBrokerWidget::LoadSettings() {
 
 void MultiBrokerWidget::OnPosition(size_t strategy,
                                    bool isLong,
+                                   const Security *security,
+                                   const TradingSystem *tradingSystem,
                                    bool isActive) {
   const auto &highlight = [isLong, isActive](QPushButton &buy,
                                              QPushButton &sell) {
@@ -705,6 +710,43 @@ void MultiBrokerWidget::OnPosition(size_t strategy,
     default:
       AssertEq(1, strategy);
       return;
+  }
+
+  const auto &tradingSystemName =
+      QString::fromStdString(tradingSystem->GetInstanceName());
+  for (int i = 0; i < m_ui.targetList->count(); ++i) {
+    QListWidgetItem *const item = m_ui.targetList->item(i);
+    Assert(item);
+    if (!item) {
+      continue;
+    }
+    if (!item->text().startsWith(tradingSystemName)) {
+      continue;
+    }
+    if (isActive) {
+      item->setBackgroundColor(QColor(0, 153, 0));
+    } else {
+      item->setBackgroundColor(QColor(35, 38, 41));
+    }
+  }
+
+  const auto &symbol =
+      QString::fromStdString(security->GetSymbol().GetSymbol());
+  for (int i = 0; i < m_ui.securityList->count(); ++i) {
+    QListWidgetItem *const item = m_ui.securityList->item(i);
+    Assert(item);
+    if (!item) {
+      continue;
+    }
+    const auto sss = item->text();
+    if (!item->text().startsWith(symbol)) {
+      continue;
+    }
+    if (isActive) {
+      item->setBackgroundColor(QColor(0, 153, 0));
+    } else {
+      item->setBackgroundColor(QColor(35, 38, 41));
+    }
   }
 }
 

@@ -31,7 +31,9 @@ class MultibrokerStrategy : public Strategy {
                     const Lib::TimeMeasurement::Milestones &);
 
   boost::signals2::scoped_connection SubscribeToPositionsUpdates(
-      const boost::function<void(bool isLong, bool isActive)> &) const;
+      const boost::function<void(
+          bool isLong, const Security &, const TradingSystem &, bool isActive)>
+          &) const;
 
  protected:
   virtual void OnLevel1Tick(
