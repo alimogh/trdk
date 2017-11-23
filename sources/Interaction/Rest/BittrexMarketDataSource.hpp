@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "PullingTask.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -29,7 +28,7 @@ class BittrexMarketDataSource : public MarketDataSource {
                                    Context &context,
                                    const std::string &instanceName,
                                    const Lib::IniSectionRef &);
-  virtual ~BittrexMarketDataSource() override = default;
+  virtual ~BittrexMarketDataSource() override;
 
  public:
   virtual void Connect(const Lib::IniSectionRef &conf) override;
@@ -53,7 +52,7 @@ class BittrexMarketDataSource : public MarketDataSource {
       std::pair<boost::shared_ptr<Rest::Security>, std::unique_ptr<Request>>>
       m_securities;
   Poco::Net::HTTPSClientSession m_session;
-  PullingTask m_task;
+  std::unique_ptr<PullingTask> m_task;
 };
 }
 }

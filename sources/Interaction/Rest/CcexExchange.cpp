@@ -247,12 +247,24 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(m_endpoint.host),
         m_tradingSession(m_endpoint.host),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingInterval, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~CcexExchange() override = default;
+  virtual ~CcexExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -292,20 +304,20 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
-    Verify(m_pullingTask.AddTask("Securities", 1,
-                                 [this] {
-                                   UpdateSecurities();
-                                   return true;
-                                 },
-                                 1));
-    Verify(m_pullingTask.AddTask("Actual orders", 0,
-                                 [this] {
-                                   UpdateOrders();
-                                   return true;
-                                 },
-                                 2));
-    Verify(m_pullingTask.AddTask("Opened orders", 100,
-                                 [this] { return RequestOpenedOrders(); }, 30));
+    Verify(m_pullingTask->AddTask("Securities", 1,
+                                  [this] {
+                                    UpdateSecurities();
+                                    return true;
+                                  },
+                                  1));
+    Verify(m_pullingTask->AddTask("Actual orders", 0,
+                                  [this] {
+                                    UpdateOrders();
+                                    return true;
+                                  },
+                                  2));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this] { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;
   }
 
@@ -427,7 +439,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
     TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask.AccelerateNextPulling();
+    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
@@ -611,7 +623,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
 

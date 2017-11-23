@@ -34,6 +34,15 @@ fix::TradingSystem::TradingSystem(const TradingMode &mode,
       Handler(context, conf, trdk::TradingSystem::GetLog()),
       m_client("Trade", *this) {}
 
+fix::TradingSystem::~TradingSystem() {
+  try {
+    m_client.Stop();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
+}
+
 Context &fix::TradingSystem::GetContext() {
   return trdk::TradingSystem::GetContext();
 }

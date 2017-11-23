@@ -238,7 +238,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()),
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingInterval, GetMdsLog())),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
@@ -250,7 +251,18 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~GdaxExchange() override = default;
+  virtual ~GdaxExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -289,7 +301,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask.AddTask(
+    m_pullingTask->AddTask(
         "Prices", 1,
         [this]() -> bool {
           const SecuritiesLock lock(m_securitiesMutex);
@@ -343,13 +355,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     } catch (const std::exception &ex) {
       GetTsLog().Error(ex.what());
     }
-    Verify(m_pullingTask.AddTask("Actual orders", 0,
-                                 [this]() {
-                                   UpdateOrders();
-                                   return true;
-                                 },
-                                 2));
-    Verify(m_pullingTask.AddTask(
+    Verify(m_pullingTask->AddTask("Actual orders", 0,
+                                  [this]() {
+                                    UpdateOrders();
+                                    return true;
+                                  },
+                                  2));
+    Verify(m_pullingTask->AddTask(
         "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;
   }
@@ -453,7 +465,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
     TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask.AccelerateNextPulling();
+    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
@@ -691,7 +703,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
 
   PrivateRequest m_orderTransactionRequest;
 

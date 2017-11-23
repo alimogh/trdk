@@ -278,12 +278,24 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingInterval, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~NovaexchangeExchange() override = default;
+  virtual ~NovaexchangeExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -322,7 +334,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask.AddTask(
+    m_pullingTask->AddTask(
         "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
@@ -526,7 +538,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
   trdk::Timer::Scope m_timerScope;
 };
 }

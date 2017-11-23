@@ -128,7 +128,10 @@ lib::Engine::Engine(const fs::path &path, QWidget *parent)
   }));
 }
 
-lib::Engine::~Engine() = default;
+lib::Engine::~Engine() {
+  // Fixes second stop by StateChanged-signal.
+  m_pimpl->m_engine.reset();
+}
 
 const fs::path &lib::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;

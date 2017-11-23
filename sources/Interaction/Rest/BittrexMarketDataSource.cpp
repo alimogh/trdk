@@ -12,6 +12,7 @@
 #include "BittrexMarketDataSource.hpp"
 #include "BittrexRequest.hpp"
 #include "BittrexUtil.hpp"
+#include "PullingTask.hpp"
 #include "Security.hpp"
 
 using namespace trdk;
@@ -45,18 +46,31 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     : Base(index, context, instanceName),
       m_settings(conf, GetLog()),
       m_session("bittrex.com"),
-      m_task(m_settings.pullingInterval, GetLog()) {
+      m_task(boost::make_unique<PullingTask>(m_settings.pullingInterval,
+                                             GetLog())) {
   m_session.setKeepAlive(true);
+}
+
+BittrexMarketDataSource::~BittrexMarketDataSource() {
+  try {
+    m_task.reset();
+    // Each object, that implements CreateNewSecurityObject should wait for
+    // log flushing before destroying objects:
+    GetTradingLog().WaitForFlush();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
 }
 
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Info("Creating connection...");
-  Verify(m_task.AddTask("Prices", 1,
-                        [this]() {
-                          RequestActualPrices();
-                          return true;
-                        },
-                        1));
+  Verify(m_task->AddTask("Prices", 1,
+                         [this]() {
+                           RequestActualPrices();
+                           return true;
+                         },
+                         1));
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {

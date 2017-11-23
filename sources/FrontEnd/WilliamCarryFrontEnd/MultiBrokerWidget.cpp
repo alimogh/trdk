@@ -343,8 +343,8 @@ void MultiBrokerWidget::ReloadSecurityList() {
   int tradingSecurity = 0;
   int marketDataSecurity = 0;
   {
-    const SignalsScopedBlocker securityListSignalsBlocker(*m_ui.securityList);
-    const SignalsScopedBlocker tradingsecurityListSignalsBlocker(
+    const QSignalBlocker securityListSignalsBlocker(*m_ui.securityList);
+    const QSignalBlocker tradingsecurityListSignalsBlocker(
         m_tradingSecurityListWidget);
 
     m_ui.securityList->clear();
@@ -719,7 +719,7 @@ void MultiBrokerWidget::OnPosition(size_t strategy,
 ModuleFactoryResult CreateEngineFrontEndWidgets(Engine &engine,
                                                 QWidget *parent) {
   ModuleFactoryResult result;
-  result.emplace_back("Multi Broker",
+  result.emplace_back("Multibroker",
                       boost::make_unique<MultiBrokerWidget>(engine, parent));
   return result;
 }

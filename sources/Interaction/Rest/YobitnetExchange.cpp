@@ -271,12 +271,24 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
         m_nextNonce(0),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingInterval, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~YobitnetExchange() override = default;
+  virtual ~YobitnetExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -314,12 +326,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
     const auto &depthRequest = boost::make_shared<PublicRequest>(
         "/api/3/depth/" + boost::join(uriSymbolsPath, "-"), "Depth", "limit=1");
-    m_pullingTask.ReplaceTask("Prices", 1,
-                              [this, depthRequest]() {
-                                UpdateSecuritues(*depthRequest);
-                                return true;
-                              },
-                              1);
+    m_pullingTask->ReplaceTask("Prices", 1,
+                               [this, depthRequest]() {
+                                 UpdateSecuritues(*depthRequest);
+                                 return true;
+                               },
+                               1);
   }
 
  protected:
@@ -426,13 +438,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           numberOfActiveOrders);                                         // 5
     }
 
-    Verify(m_pullingTask.AddTask("Actual orders", 0,
-                                 [this]() {
-                                   UpdateOrders();
-                                   return true;
-                                 },
-                                 2));
-    Verify(m_pullingTask.AddTask(
+    Verify(m_pullingTask->AddTask("Actual orders", 0,
+                                  [this]() {
+                                    UpdateOrders();
+                                    return true;
+                                  },
+                                  2));
+    Verify(m_pullingTask->AddTask(
         "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
   }
 
@@ -522,7 +534,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
     TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask.AccelerateNextPulling();
+    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
@@ -771,7 +783,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
 };

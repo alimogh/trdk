@@ -156,7 +156,7 @@ void StrategyWindow::LoadSymbols(
   {
     IniFile conf(m_engine.GetConfigFilePath());
     IniSectionRef defaults(conf, "Defaults");
-    const SignalsScopedBlocker blocker(*m_ui.symbol);
+    const QSignalBlocker blocker(*m_ui.symbol);
     for (const std::string &symbol :
          defaults.ReadList("symbol_list", ",", true)) {
       m_ui.symbol->addItem(QString::fromStdString(symbol));
@@ -178,7 +178,7 @@ void StrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
     if (IsAutoTradingActivated()) {
       const QString &symbol = m_ui.symbol->itemText(newSymbolIndex);
 
-      const SignalsScopedBlocker blocker(*m_ui.symbol);
+      const QSignalBlocker blocker(*m_ui.symbol);
       m_ui.symbol->setCurrentIndex(m_symbol);
 
       const auto &response = QMessageBox::question(
@@ -294,7 +294,7 @@ void StrategyWindow::SetCurrentSymbol(int symbolIndex) {
   setWindowTitle(m_ui.symbol->itemText(symbolIndex) + " " + tr("Arbitrage") +
                  " - " + QCoreApplication::applicationName());
   {
-    SignalsScopedBlocker blocker(*m_ui.autoTrade);
+    QSignalBlocker blocker(*m_ui.autoTrade);
     m_ui.autoTrade->setChecked(false);
   }
 

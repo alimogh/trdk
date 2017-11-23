@@ -23,7 +23,7 @@ class MarketDataSource : public trdk::MarketDataSource, public Handler {
                             Context &,
                             const std::string &instanceName,
                             const Lib::IniSectionRef &);
-  virtual ~MarketDataSource() override = default;
+  virtual ~MarketDataSource() override;
 
  public:
   Context &GetContext() override;
