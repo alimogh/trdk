@@ -264,7 +264,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     const auto &time = m_context.GetCurrentTime();
-    const ActiveOrderLock lock(m_activeOrdersMutex);
+    ActiveOrderLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -274,7 +274,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
           "Failed to handle status update for order as order is unknown");
     }
     OnOrderStatusUpdate(orderId, status, remainingQty, commission,
-                        std::move(tradeInfo), time, it, callback);
+                        std::move(tradeInfo), time, it, std::move(lock),
+                        callback);
   }
 
   void OnOrderStatusUpdate(
@@ -285,6 +286,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       boost::optional<TradeInfo> &&tradeInfo,
       const pt::ptime &time,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
+      ActiveOrderLock &&lock,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     auto &cache = it->second;
 
@@ -320,27 +322,34 @@ class TradingSystem::Implementation : private boost::noncopyable {
       callback(*cache.transactionContext);
     }
 
-    // Maybe in the future new thread will be required here to avoid deadlocks
-    // from callback (when some one will need to call the same trading system
-    // from this callback).
-    cache.statusUpdateSignal(orderId, status, actualRemainingQty, commission,
-                             tradeInfo ? &*tradeInfo : nullptr);
-
+    const auto &callSignal =
+        [&](const TradingSystem::OrderStatusUpdateSlot &signal) {
+          signal(orderId, status, actualRemainingQty, commission,
+                 tradeInfo ? &*tradeInfo : nullptr);
+        };
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_FILLED:
         Assert(!remainingQty || *remainingQty == 0);
       case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
-      case ORDER_STATUS_ERROR:
+      case ORDER_STATUS_ERROR: {
+        const auto signal = std::move(cache.statusUpdateSignal);
         m_activeOrders.erase(it);
+        lock.unlock();
+        callSignal(signal);
         break;
+      }
       default: {
         cache.status = status;
         if (remainingQty) {
           cache.remainingQty = *remainingQty;
         }
         cache.updateTime = time;
+        // Maybe better to make is shared_ptr to avoid copying.
+        const auto signal = cache.statusUpdateSignal;
+        lock.unlock();
+        callSignal(signal);
         break;
       }
     }
@@ -458,8 +467,9 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
           callback(orderId, orderStatus, remainingQty, commission, trade);
         });
   } catch (const std::exception &ex) {
-    GetTradingLog().Write("{'order': {'sendError': {'reason': '%1%'}}}",
-                          [&ex](TradingRecord &record) { record % ex.what(); });
+    GetTradingLog().Write(
+        "{'order': {'sendError': {'reason': '%1%'}}}",
+        [&ex](TradingRecord &record) { record % std::string(ex.what()); });
     GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
@@ -526,24 +536,33 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   return result;
 }
 
-void TradingSystem::CancelOrder(const OrderId &orderId) {
+bool TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write(
       "{'order': {'cancel': {'id': %1%}}}",
       [&orderId](TradingRecord &record) { record % orderId; });
   try {
     SendCancelOrderTransaction(orderId);
+  } catch (const OrderIsUnknown &ex) {
+    GetTradingLog().Write(
+        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
+        [&orderId, &ex](TradingRecord &record) {
+          record % orderId               // 1
+              % std::string(ex.what());  // 2
+        });
+    OnTransactionSent(orderId);
+    return false;
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
         "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
         [&orderId, &ex](TradingRecord &record) {
-          record % orderId  // 1
-              % ex.what();  // 2
+          record % orderId               // 1
+              % std::string(ex.what());  // 2
         });
     GetLog().Warn(
         "Error while sending order cancel transaction for order %1%: "
         "\"%2%\".",
-        orderId,     // 1
-        ex.what());  // 2
+        orderId,                  // 1
+        std::string(ex.what()));  // 2
     OnTransactionSent(orderId);
     throw;
   } catch (...) {
@@ -560,6 +579,7 @@ void TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write("{'order': {'cancelSent': {'id': '%1%'}}}",
                         [&](TradingRecord &record) { record % orderId; });
   OnTransactionSent(orderId);
+  return true;
 }
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
@@ -660,7 +680,7 @@ void TradingSystem::OnOrder(const OrderId &orderId,
                             const pt::ptime &openTime,
                             const pt::ptime &updateTime) {
   {
-    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
       if (!it->second.IsChanged(status, remainingQty)) {
@@ -674,7 +694,8 @@ void TradingSystem::OnOrder(const OrderId &orderId,
       }
       m_pimpl->OnOrderStatusUpdate(
           orderId, status, remainingQty, boost::none, std::move(trade),
-          updateTime, it, boost::function<void(OrderTransactionContext &)>());
+          updateTime, it, std::move(lock),
+          boost::function<void(OrderTransactionContext &)>());
       return;
     }
   }

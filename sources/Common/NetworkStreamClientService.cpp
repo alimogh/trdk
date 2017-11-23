@@ -116,21 +116,7 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
           message % m_logTag % ex;
           m_self.LogError(message.str());
           m_self.OnStopByError(message.str());
-          if (m_client) {
-            auto client = m_client;
-            // See OnDisconnect to know why it should be reset here.
-            m_client.reset();
-            client->Stop();
-            lock.unlock();
-            client.reset();
-            lock.lock();
-            Assert(m_isWaitingForClient);
-            m_clientDetorCondition.wait(lock);
-            Assert(!m_isWaitingForClient);
-          } else if (m_isWaitingForClient) {
-            m_clientDetorCondition.wait(lock);
-            Assert(!m_isWaitingForClient);
-          }
+          StopClient(lock);
         } catch (...) {
           AssertFailNoException();
           throw;
@@ -220,6 +206,23 @@ class NetworkStreamClientService::Implementation : private boost::noncopyable {
       throw;
     }
   }
+
+  void StopClient(ClientLock &lock) {
+    if (m_client) {
+      auto client = m_client;
+      // See OnDisconnect to know why it should be reset here.
+      m_client.reset();
+      client->Stop();
+      lock.unlock();
+      client.reset();
+      lock.lock();
+      Assert(m_isWaitingForClient);
+    } else if (!m_isWaitingForClient) {
+      return;
+    }
+    m_clientDetorCondition.wait(lock);
+    Assert(!m_isWaitingForClient);
+  }
 };
 
 NetworkStreamClientService::NetworkStreamClientService(bool isSecure)
@@ -266,6 +269,10 @@ bool NetworkStreamClientService::IsConnected() const {
 }
 
 void NetworkStreamClientService::Stop() {
+  {
+    ClientLock lock(m_pimpl->m_clientMutex);
+    m_pimpl->StopClient(lock);
+  }
   m_pimpl->m_service.stop();
   m_pimpl->m_serviceThreads.join_all();
 }

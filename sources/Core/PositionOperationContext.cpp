@@ -30,3 +30,10 @@ bool PositionOperationContext::OnCloseReasonChange(Position &,
                                                    const CloseReason &) {
   return true;
 }
+
+const PositionOperationContext *PositionOperationContext::GetParent() const {
+  return nullptr;
+}
+PositionOperationContext *PositionOperationContext::GetParent() {
+  return nullptr;
+}

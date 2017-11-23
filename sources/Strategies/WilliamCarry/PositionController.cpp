@@ -16,6 +16,48 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::WilliamCarry;
 
+namespace {
+bool IsRoot(const Position &position) {
+  return position.GetOperationContext().GetParent() ? false : true;
+}
+
+PositionOperationContext &GetRootContext(Position &position) {
+  auto *const result = position.GetOperationContext().GetParent()
+                           ? position.GetOperationContext().GetParent()
+                           : &position.GetOperationContext();
+  Assert(result);
+  if (!result) {
+    throw LogicError("Failed to find positions root");
+  }
+  return *result;
+}
+
+std::vector<Position *> GetRootPositions(Strategy &strategy) {
+  std::vector<Position *> result;
+  for (auto &position : strategy.GetPositions()) {
+    if (IsRoot(position)) {
+      result.emplace_back(&position);
+    }
+  }
+  return result;
+}
+
+template <typename Callback>
+void ForEachChild(Position &anyPosition,
+                  Strategy &strategy,
+                  const Callback &callback) {
+  const auto &rootContext = GetRootContext(anyPosition);
+  for (auto &position : strategy.GetPositions()) {
+    if (IsRoot(position) || &rootContext != &GetRootContext(position)) {
+      continue;
+    }
+    if (!callback(position)) {
+      break;
+    }
+  }
+}
+}
+
 PositionController::PositionController(Strategy &strategy) : Base(strategy) {}
 
 void PositionController::OnPositionUpdate(Position &position) {
@@ -23,30 +65,34 @@ void PositionController::OnPositionUpdate(Position &position) {
 
   if (position.IsCompleted()) {
     bool isCompleted = true;
-    for (const auto &strategyPosition : GetStrategy().GetPositions()) {
-      if (strategyPosition.GetCloseReason() == CLOSE_REASON_STOP_LOSS) {
-        continue;
-      } else if (strategyPosition.GetCloseReason() ==
-                     CLOSE_REASON_TAKE_PROFIT &&
-                 !strategyPosition.IsCompleted()) {
-        isCompleted = false;
-        break;
-      }
-    }
+    ForEachChild(
+        position, GetStrategy(),
+        [&isCompleted](Position &strategyPosition) -> bool {
+          if (strategyPosition.GetCloseReason() == CLOSE_REASON_TAKE_PROFIT &&
+              !strategyPosition.IsCompleted()) {
+            isCompleted = false;
+          }
+          return isCompleted;
+        });
     if (isCompleted) {
-      for (auto &strategyPosition : GetStrategy().GetPositions()) {
-        if (strategyPosition.GetCloseReason() == CLOSE_REASON_STOP_LOSS) {
-          strategyPosition.CancelAllOrders();
-        } else if (!strategyPosition.IsCompleted()) {
-          strategyPosition.MarkAsCompleted();
-        }
-      }
+      ForEachChild(
+          position, GetStrategy(), [](Position &strategyPosition) -> bool {
+            if (strategyPosition.GetCloseReason() == CLOSE_REASON_STOP_LOSS) {
+              if (strategyPosition.HasActiveOrders() &&
+                  !strategyPosition.IsCancelling()) {
+                strategyPosition.CancelAllOrders();
+              }
+            } else if (!strategyPosition.IsCompleted()) {
+              strategyPosition.MarkAsCompleted();
+            }
+            return true;
+          });
     }
     return;
   }
 
   if (position.GetNumberOfCloseOrders()) {
-    if (IsPassive(position.GetCloseReason())) {
+    if (!IsRoot(position)) {
       position.MarkAsCompleted();
     } else {
       ClosePosition(position);
@@ -59,24 +105,15 @@ void PositionController::OnPositionUpdate(Position &position) {
 }
 
 void PositionController::OnPostionsCloseRequest() {
-  {
-    Qty closedQty = 0;
-    Position *rootPosition = nullptr;
-    for (auto &position : GetStrategy().GetPositions()) {
-      if (position.GetCloseReason() == CLOSE_REASON_STOP_LOSS) {
-        continue;
-      } else if (position.GetCloseReason() == CLOSE_REASON_NONE ||
-                 position.GetCloseReason() == CLOSE_REASON_REQUEST) {
-        Assert(!rootPosition);
-        rootPosition = &position;
-      } else {
-        closedQty += position.GetClosedQty();
+  for (auto *const root : GetRootPositions(GetStrategy())) {
+    Qty qty = 0;
+    ForEachChild(*root, GetStrategy(), [&qty](Position &position) {
+      if (position.GetCloseReason() != CLOSE_REASON_STOP_LOSS) {
+        qty += position.GetClosedQty();
       }
-    }
-    Assert(rootPosition);
-    if (rootPosition) {
-      rootPosition->SetClosedQty(closedQty);
-    }
+      return true;
+    });
+    root->SetClosedQty(qty);
   }
   Base::OnPostionsCloseRequest();
 }

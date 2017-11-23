@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #pragma once
-#include "Api.h"
 
 namespace trdk {
 namespace Strategies {

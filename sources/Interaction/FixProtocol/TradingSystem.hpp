@@ -27,7 +27,7 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
                          Context &,
                          const std::string &instanceName,
                          const Lib::IniSectionRef &);
-  virtual ~TradingSystem() override = default;
+  virtual ~TradingSystem() override;
 
  public:
   Context &GetContext() override;

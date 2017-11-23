@@ -21,3 +21,7 @@ Policy::Policy(const trdk::Settings &settings)
 bool Policy::IsUnknownOrderIdError(const std::string &errorText) {
   return boost::starts_with(errorText, "ORDER_NOT_FOUND:");
 }
+
+bool Policy::IsBadTradingVolumeError(const std::string &errorText) {
+  return boost::starts_with(errorText, "TRADING_BAD_VOLUME:");
+}

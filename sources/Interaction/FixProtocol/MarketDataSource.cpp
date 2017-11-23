@@ -33,6 +33,18 @@ fix::MarketDataSource::MarketDataSource(size_t index,
       Handler(context, conf, trdk::MarketDataSource::GetLog()),
       m_client("Prices", *this) {}
 
+fix::MarketDataSource::~MarketDataSource() {
+  try {
+    m_client.Stop();
+    // Each object, that implements CreateNewSecurityObject should wait for
+    // log flushing before destroying objects:
+    GetTradingLog().WaitForFlush();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
+}
+
 Context &fix::MarketDataSource::GetContext() {
   return trdk::MarketDataSource::GetContext();
 }

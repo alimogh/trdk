@@ -47,11 +47,19 @@ class MultiBrokerWidget : public QWidget {
   void ShowGeneralSetup();
   void ShowTimersSetupDialog();
   void ShowTradingSecurityList();
-  void OnPosition(size_t strategy, bool isLong, bool isActive);
+  void OnPosition(size_t strategy,
+                  bool isLong,
+                  const Security *,
+                  const TradingSystem *,
+                  bool isActive);
   virtual void resizeEvent(QResizeEvent *);
 
  signals:
-  void PositionChanged(size_t strategy, bool isLong, bool isActive);
+  void PositionChanged(size_t strategy,
+                       bool isLong,
+                       const Security *,
+                       const TradingSystem *,
+                       bool isActive);
 
  private:
   void Reload();

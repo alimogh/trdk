@@ -28,8 +28,7 @@ var requiredModules = [
 	, 'FrontEnd'
 	, 'Shell'
 	, 'FixProtocol'
-	, 'WilliamCarryStrategies'
-	, 'WilliamCarryFrontEnd'
+	, 'WilliamCarry'
 ]
 
 //////////////////////////////////////////////////////////////////////////

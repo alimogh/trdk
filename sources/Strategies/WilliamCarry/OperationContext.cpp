@@ -26,18 +26,21 @@ namespace tl = trdk::TradingLib;
 namespace {
 class SubOperationContext : public PositionOperationContext {
  public:
-  explicit SubOperationContext(TradingSystem &tradingSystem,
-                               const Price &closePrice)
-      : m_stopLossOrderPolicy(closePrice),
-        m_passiveOrderPolicy(closePrice),
-        m_tradingSystem(tradingSystem) {}
+  explicit SubOperationContext(
+      const boost::shared_ptr<PositionOperationContext> &parent,
+      const Price &closePrice)
+      : m_parent(parent),
+        m_stopLossOrderPolicy(closePrice),
+        m_passiveOrderPolicy(closePrice) {
+    Assert(parent);
+  }
 
   virtual ~SubOperationContext() override = default;
 
  public:
-  virtual trdk::TradingSystem &GetTradingSystem(Strategy &,
-                                                Security &) override {
-    return m_tradingSystem;
+  virtual trdk::TradingSystem &GetTradingSystem(Strategy &strategy,
+                                                Security &security) override {
+    return m_parent->GetTradingSystem(strategy, security);
   }
 
   virtual const tl::OrderPolicy &GetOpenOrderPolicy(
@@ -90,11 +93,16 @@ class SubOperationContext : public PositionOperationContext {
     return PositionOperationContext::OnCloseReasonChange(position, newReason);
   }
 
+  virtual const PositionOperationContext *GetParent() const override {
+    return &*m_parent;
+  }
+  virtual PositionOperationContext *GetParent() override { return &*m_parent; }
+
  private:
+  const boost::shared_ptr<PositionOperationContext> m_parent;
   wc::StopLossLimitOrderPolicy m_stopLossOrderPolicy;
   wc::StopLimitOrderPolicy m_passiveOrderPolicy;
   LimitIocOrderPolicy m_aggressiveOrderPolicy;
-  TradingSystem &m_tradingSystem;
 };
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +209,7 @@ OperationContext::StartSubOperations(Position &rootOperation) {
       priceDiff *= -1;
     }
     result.first.emplace_back(boost::make_shared<SubOperationContext>(
-        m_pimpl->m_tradingSystem, startPrice + priceDiff));
+        shared_from_this(), startPrice + priceDiff));
   }
 
   result.second.reserve(m_pimpl->m_stopLosses.size());
@@ -211,7 +219,7 @@ OperationContext::StartSubOperations(Position &rootOperation) {
       priceDiff *= -1;
     }
     result.second.emplace_back(boost::make_shared<SubOperationContext>(
-        m_pimpl->m_tradingSystem, startPrice + priceDiff));
+        shared_from_this(), startPrice + priceDiff));
   }
 
   return result;

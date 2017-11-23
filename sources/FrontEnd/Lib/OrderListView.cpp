@@ -56,15 +56,16 @@ bool OrderListView::CancelOrder(const QModelIndex &item) {
   TradingSystem &tradingSystem =
       m_engine.GetContext().GetTradingSystem(tradingSystemIndex, mode);
   try {
-    tradingSystem.CancelOrder(orderId);
-  } catch (const TradingSystem::OrderIsUnknown &) {
-    QMessageBox::warning(
-        this, tr("Order cancel"),
-        tr("%1 does not have order in the active list.")
-            .arg(QString::fromStdString(tradingSystem.GetInstanceName()),  // 1
-                 QString::fromStdString(orderId.GetValue())),              // 2
-        QMessageBox::Cancel);
-    return false;
+    if (!tradingSystem.CancelOrder(orderId)) {
+      QMessageBox::warning(
+          this, tr("Order cancel"),
+          tr("%1 does not have order in the active list.")
+              .arg(
+                  QString::fromStdString(tradingSystem.GetInstanceName()),  // 1
+                  QString::fromStdString(orderId.GetValue())),              // 2
+          QMessageBox::Cancel);
+      return false;
+    }
   } catch (const std::exception &ex) {
     QMessageBox::critical(
         this, tr("Order cancel"),

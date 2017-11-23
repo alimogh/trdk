@@ -26,7 +26,9 @@ namespace sig = boost::signals2;
 class MultibrokerStrategy::Implementation : private boost::noncopyable {
  public:
   WilliamCarry::PositionController m_controller;
-  sig::signal<void(bool isLong, bool isActive)> m_positionSignal;
+  sig::signal<void(
+      bool isLong, const Security &, const TradingSystem &, bool isActive)>
+      m_positionSignal;
 
   explicit Implementation(MultibrokerStrategy &self) : m_controller(self) {}
 };
@@ -75,11 +77,15 @@ void MultibrokerStrategy::OnPositionUpdate(Position &position) {
 
   for (const auto &strategyPosition : GetPositions()) {
     if (!strategyPosition.IsCompleted()) {
-      m_pimpl->m_positionSignal(position.IsLong(), true);
+      m_pimpl->m_positionSignal(position.IsLong(), position.GetSecurity(),
+                                position.GetTradingSystem(), true);
       return;
     }
   }
-  m_pimpl->m_positionSignal(position.IsLong(), false);
+  m_pimpl->m_positionSignal(position.IsLong(), position.GetSecurity(),
+                            position.GetTradingSystem(),
+
+                            false);
 }
 
 void MultibrokerStrategy::OnPostionsCloseRequest() {
@@ -87,7 +93,9 @@ void MultibrokerStrategy::OnPostionsCloseRequest() {
 }
 
 sig::scoped_connection MultibrokerStrategy::SubscribeToPositionsUpdates(
-    const boost::function<void(bool isLong, bool isActive)> &slot) const {
+    const boost::function<void(
+        bool isLong, const Security &, const TradingSystem &, bool isActive)>
+        &slot) const {
   return m_pimpl->m_positionSignal.connect(slot);
 }
 

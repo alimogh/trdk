@@ -10,15 +10,11 @@
 
 #pragma once
 
-#include "Core/Strategy.hpp"
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace Strategies {
 namespace WilliamCarry {
 
-class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
+class MultibrokerStrategy : public Strategy {
  public:
   typedef Strategy Base;
 
@@ -35,7 +31,9 @@ class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
                     const Lib::TimeMeasurement::Milestones &);
 
   boost::signals2::scoped_connection SubscribeToPositionsUpdates(
-      const boost::function<void(bool isLong, bool isActive)> &) const;
+      const boost::function<void(
+          bool isLong, const Security &, const TradingSystem &, bool isActive)>
+          &) const;
 
  protected:
   virtual void OnLevel1Tick(
