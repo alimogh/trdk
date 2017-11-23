@@ -10,15 +10,11 @@
 
 #pragma once
 
-#include "Core/PositionOperationContext.hpp"
-#include "Api.h"
-
 namespace trdk {
 namespace Strategies {
 namespace WilliamCarry {
 
-class TRDK_STRATEGY_WILLIAMCARRY_API OperationContext
-    : public trdk::PositionOperationContext {
+class OperationContext : public trdk::PositionOperationContext {
  public:
   typedef trdk::PositionOperationContext Base;
 

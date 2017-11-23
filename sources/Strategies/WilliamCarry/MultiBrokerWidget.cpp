@@ -10,15 +10,9 @@
 
 #include "Prec.hpp"
 #include "MultiBrokerWidget.hpp"
-#include "Core/Context.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
-#include "Strategies/WilliamCarry/MultibrokerStrategy.hpp"
-#include "Strategies/WilliamCarry/OperationContext.hpp"
 #include "GeneralSetupDialog.hpp"
-#include "Lib/DropCopy.hpp"
-#include "Lib/Engine.hpp"
-#include "ShellLib/Module.hpp"
+#include "MultibrokerStrategy.hpp"
+#include "OperationContext.hpp"
 #include "StrategySetupDialog.hpp"
 #include "TimersDialog.hpp"
 

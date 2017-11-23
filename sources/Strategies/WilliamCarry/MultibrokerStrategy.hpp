@@ -10,15 +10,11 @@
 
 #pragma once
 
-#include "Core/Strategy.hpp"
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace Strategies {
 namespace WilliamCarry {
 
-class TRDK_STRATEGY_WILLIAMCARRY_API MultibrokerStrategy : public Strategy {
+class MultibrokerStrategy : public Strategy {
  public:
   typedef Strategy Base;
 

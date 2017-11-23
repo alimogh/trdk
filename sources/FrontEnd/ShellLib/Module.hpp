@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Lib/Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 namespace Shell {

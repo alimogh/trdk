@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "TimersDialog.hpp"
-#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::FrontEnd::WilliamCarry;
