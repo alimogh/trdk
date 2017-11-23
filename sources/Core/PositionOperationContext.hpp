@@ -16,7 +16,8 @@
 namespace trdk {
 
 //! Describes one or more operations with position.
-class TRDK_CORE_API PositionOperationContext {
+class TRDK_CORE_API PositionOperationContext
+    : public boost::enable_shared_from_this<trdk::PositionOperationContext> {
  public:
   PositionOperationContext() = default;
   PositionOperationContext(PositionOperationContext &&) = default;
@@ -38,21 +39,32 @@ class TRDK_CORE_API PositionOperationContext {
   //! Order policy for position closing.
   virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
       const trdk::Position &) const = 0;
+
   //! Setups new position.
   /** Place to attach stop-orders and so on.
     */
   virtual void Setup(trdk::Position &) const = 0;
+
   //! Next new position direction.
   virtual bool IsLong(const trdk::Security &) const = 0;
+
   //! Next new position quantity.
   virtual trdk::Qty GetPlannedQty() const = 0;
+
   //! Returns true if the opened position should be closed as soon as possible.
   virtual bool HasCloseSignal(const trdk::Position &) const = 0;
+
   //! Will be called before each closing state changing.
   /** @return True, if reason can be changed, false otherwise.
     */
   virtual bool OnCloseReasonChange(trdk::Position &,
                                    const trdk::CloseReason &newReason);
+
+  //! Returns parent operation or nullptr if doesn't have parent.
+  virtual const PositionOperationContext *GetParent() const;
+  //! Returns parent operation or nullptr if doesn't have parent.
+  virtual PositionOperationContext *GetParent();
+
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if
     *         the position can be inverted.
