@@ -461,8 +461,8 @@ template <>
 struct ModuleTrait<Strategy> {
   enum { Type = MODULE_TYPE_STRATEGY };
   typedef boost::shared_ptr<Strategy>(Factory)(trdk::Context &,
-                              const std::string &instanceName,
-                              const IniSectionRef &);
+                                               const std::string &instanceName,
+                                               const IniSectionRef &);
   static ModuleType GetType() { return static_cast<ModuleType>(Type); }
   static const char *GetName(bool capital) {
     return capital ? "Strategy" : "strategy";
@@ -1322,24 +1322,33 @@ class ContextStateBootstrapper : private boost::noncopyable {
         if (symbol) {
           m_context.ForEachMarketDataSource([&](MarketDataSource &source)
                                                 -> bool {
-            Security &security = source.GetSecurity(symbol);
-            if (!uniqueInstance) {
-              ForEachModuleInstance(
-                  module,
-                  // bind is a workaround for g++ internal error with lambda:
-                  boost::bind(&ContextStateBootstrapper::
-                                  SubscribeModuleStandaloneInstance<Module>,
-                              this, _1, subscribe, &security),
-                  [&](Module &instance) {
-                    SubscribeModuleSymbolInstance(instance, subscribe,
+            try {
+              Security &security = source.GetSecurity(symbol);
+              if (!uniqueInstance) {
+                ForEachModuleInstance(
+                    module,
+                    // bind is a workaround for g++ internal error with lambda:
+                    boost::bind(&ContextStateBootstrapper::
+                                    SubscribeModuleStandaloneInstance<Module>,
+                                this, _1, subscribe, &security),
+                    [&](Module &instance) {
+                      SubscribeModuleSymbolInstance(instance, subscribe,
+                                                    &security);
+                    });
+              } else if (isUniqueInstanceStandalone) {
+                SubscribeModuleStandaloneInstance(*uniqueInstance, subscribe,
                                                   &security);
-                  });
-            } else if (isUniqueInstanceStandalone) {
-              SubscribeModuleStandaloneInstance(*uniqueInstance, subscribe,
-                                                &security);
-            } else {
-              SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
-                                            &security);
+              } else {
+                SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
+                                              &security);
+              }
+            } catch (
+                const trdk::MarketDataSource::SymbolIsNotSupportedError &ex) {
+              m_context.GetLog().Warn(
+                  "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
+                  symbol,      // 1
+                  source,      // 2
+                  ex.what());  // 3
             }
             return true;
           });

@@ -156,9 +156,6 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     throw Error(error.str().c_str());
   }
 };
-//////////////////////////////////////////////////////////////////////////
-
-MarketDataSource::Error::Error(const char *what) noexcept : Base::Error(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 

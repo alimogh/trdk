@@ -37,9 +37,20 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   typedef trdk::ModuleTradingLog TradingLog;
 
  public:
-  class TRDK_CORE_API Error : public Base::Error {
+  class Error : public Base::Error {
    public:
-    explicit Error(const char *what) noexcept;
+    typedef Base::Error Base;
+
+   public:
+    explicit Error(const char *what) noexcept : Base(what) {}
+  };
+  class SymbolIsNotSupportedError : public Error {
+   public:
+    typedef Error Base;
+
+   public:
+    explicit SymbolIsNotSupportedError(const char *what) noexcept
+        : Base(what) {}
   };
 
  public:

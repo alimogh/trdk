@@ -368,6 +368,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
+    const auto &exchangeSymbol = NormilizeSymbol(symbol.GetSymbol());
+    if (m_products.count(exchangeSymbol) == 0) {
+      boost::format message(
+          "Symbol \"%1%\" is not in the exchange product list");
+      message % exchangeSymbol;
+      throw SymbolIsNotSupportedError(message.str().c_str());
+    }
+
     {
       const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
@@ -387,8 +395,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
-          "/book/");
+          "products/" + exchangeSymbol + "/book/");
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
                  .second);
@@ -427,10 +434,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     double autoActualPrice = *price;
     {
-      const auto &symbolPrecision = m_precisions.find(symbol);
-      if (symbolPrecision != m_precisions.cend()) {
-        autoActualPrice =
-            RoundByPrecision(autoActualPrice, symbolPrecision->second);
+      const auto &product = m_products.find(symbol);
+      if (product != m_products.cend()) {
+        autoActualPrice = RoundByPrecision(autoActualPrice, product->second);
       }
     }
 
@@ -470,7 +476,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void RequestMarkets() {
-    boost::unordered_map<std::string, uintmax_t> precisions;
+    boost::unordered_map<std::string, uintmax_t> products;
     PublicRequest request("products");
     const auto response =
         boost::get<1>(request.Send(m_marketDataSession, GetContext()));
@@ -485,15 +491,15 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         precision = quoteIncrement.size() - dotPos - 1;
         precision = static_cast<decltype(precision)>(std::pow(10, precision));
       }
-      Verify(precisions.emplace(std::move(id), precision).second);
+      Verify(products.emplace(std::move(id), precision).second);
       boost::format logStr("%1% (price step: %2%, precision power: %3%)");
       logStr % id           // 1
           % quoteIncrement  // 2
           % precision;      // 3
       log.emplace_back(logStr.str());
     }
-    GetTsLog().Info("Markets: %1%.", boost::join(log, ", "));
-    m_precisions = std::move(precisions);
+    GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
+    m_products = std::move(products);
   }
 
   void RequestAccounts() {
@@ -712,7 +718,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   trdk::Timer::Scope m_timerScope;
 
-  boost::unordered_map<std::string, uintmax_t> m_precisions;
+  boost::unordered_map<std::string, uintmax_t> m_products;
 };
 }
 

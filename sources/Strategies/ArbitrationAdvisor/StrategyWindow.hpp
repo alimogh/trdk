@@ -62,33 +62,16 @@ class StrategyWindow : public QMainWindow {
                                                     &Target::GetSymbol>>>>>
       TargetList;
 
-  struct InstanceData {
-    Strategy *strategy;
-    boost::signals2::scoped_connection adviceConnection;
-    TargetList targets;
-    TradingSystem *bittrexTradingSystem;
-    TradingSystem *novaexchangeTradingSystem;
-    TradingSystem *yobitnetTradingSystem;
-    TradingSystem *ccexTradingSystem;
-    TradingSystem *gdaxTradingSystem;
-    TradingSystem *bestBuyTradingSystem;
-    TradingSystem *bestSellTradingSystem;
-  };
-
   struct TargetWidgets {
-    TradingSystem *InstanceData::*tradingSystemField;
     TargetTitleWidget title;
     TargetBidWidget bid;
     TargetAskWidget ask;
     TargetActionsWidget actions;
 
-    explicit TargetWidgets(TradingSystem *InstanceData::*tradingSystemField,
-                           QWidget *parent)
-        : tradingSystemField(tradingSystemField),
-          title(parent),
-          bid(parent),
-          ask(parent),
-          actions(parent) {}
+    explicit TargetWidgets(const QString &title, QWidget *parent)
+        : title(parent), bid(parent), ask(parent), actions(parent) {
+      this->title.SetTitle(title);
+    }
 
     template <typename Source>
     void Update(const Source &source) {
@@ -124,28 +107,33 @@ class StrategyWindow : public QMainWindow {
   void Advice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
 
  private:
-  void LoadSymbols(const boost::optional<QString> &defaultSymbol);
-  void SetCurrentSymbol(int symbolIndex);
+  void ConnectSignals();
+  void LoadSymbolList();
+  void InitBySelectedSymbol();
 
   void SendOrder(const OrderSide &, TradingSystem *);
 
   bool IsAutoTradingActivated() const;
 
-  void AddTarget(const QString &name,
-                 const std::string &targetId,
-                 TradingSystem *InstanceData::*tradingSystemField);
+  void AddTargetWidgets(TargetWidgets &);
 
  private:
+  Ui::StrategyWindow m_ui;
+  boost::unordered_map<TradingSystem *, std::unique_ptr<TargetWidgets>>
+      m_targetWidgets;
+  FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
+
+  FrontEnd::Lib::Engine &m_engine;
   const TradingMode m_tradingMode;
   const size_t m_instanceNumber;
-  boost::unordered_map<std::string, boost::uuids::uuid> m_strategiesUuids;
-  Ui::StrategyWindow m_ui;
-  FrontEnd::Lib::Engine &m_engine;
-  int m_symbol;
-  FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
-  boost::unordered_map<std::string, std::unique_ptr<TargetWidgets>>
-      m_targetWidgets;
-  InstanceData m_instanceData;
+  int m_symbolIndex;
+
+  Strategy *m_strategy;
+  boost::signals2::scoped_connection m_adviceConnection;
+
+  TargetList m_targets;
+  TradingSystem *m_bestBuyTradingSystem;
+  TradingSystem *m_bestSellTradingSystem;
 };
 }
 }
