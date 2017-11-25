@@ -23,14 +23,18 @@ OperationReportData::OperationReportData() : m_size(0) {}
 
 bool OperationReportData::Add(const Position &position) {
   return Add(PositionReport{
-      position.GetId(), position.IsLong(), position.GetOpenStartTime(),
-      position.GetOpenTime(), position.GetOpenStartPrice(),
-      position.GetOpenedQty() ? position.GetOpenAvgPrice()
-                              : std::numeric_limits<double>::quiet_NaN(),
-      position.GetOpenedQty(),
+      position.GetId(),              // id
+      position.IsLong(),             // isLong
+      position.GetOpenStartTime(),   // openStartTime
+      position.GetOpenTime(),        // openTime
+      position.GetOpenStartPrice(),  // openStartPrice
+      position.GetOpenedQty()
+          ? position.GetOpenAvgPrice()
+          : std::numeric_limits<double>::quiet_NaN(),  // openPrice
+      position.GetOpenedQty(),                         // openedQty
       &position.GetStrategy().GetTradingSystem(
-          position.GetSecurity().GetSource().GetIndex()),
-      position.GetCloseReason()});
+          position.GetSecurity().GetSource().GetIndex()),  // target
+      position.GetCloseReason()});                         // closeReason
 }
 
 bool OperationReportData::Add(PositionReport &&position) {
@@ -83,8 +87,8 @@ void Report::PrintHead(std::ostream &os) {
      << ",3. Sell Time"
      << ",4. Buy Start Time"
      << ",5. Buy Time"
-     << ",6. Buy Qty"
-     << ",7. Sell Qty"
+     << ",6. Sell Qty"
+     << ",7. Buy Qty"
      << ",8. Unused Qty"
      << ",9. Sell Start Price"
      << ",10. Buy Start Price"
