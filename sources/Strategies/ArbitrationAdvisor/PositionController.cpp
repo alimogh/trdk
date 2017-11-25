@@ -71,12 +71,6 @@ Position *aa::PositionController::FindOppositePosition(
 void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   if (position.IsStarted() && !position.IsCompleted()) {
-    GetStrategy().GetLog().Warn(
-        "Unused quantity %1% detected on the \"%2%\" position %3%/%4%.",
-        position.GetActiveQty(),           // 1
-        position.GetSecurity(),            // 2
-        position.GetOperation()->GetId(),  // 3
-        position.GetSubOperationId());     // 4
     AssertLt(0, position.GetActiveQty());
     position.MarkAsCompleted();
   }

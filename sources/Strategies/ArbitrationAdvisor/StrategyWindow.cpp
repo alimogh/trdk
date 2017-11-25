@@ -155,7 +155,7 @@ void StrategyWindow::InitBySelectedSymbol() {
   const auto &strategyId = generateStrategyId();
   {
     std::ostringstream conf;
-    conf << "[Strategy.Arbitrage" << symbol << m_instanceNumber << "]"
+    conf << "[Strategy.Arbitrage/" << symbol << '/' << m_instanceNumber << "]"
          << std::endl
          << "module = ArbitrationAdvisor" << std::endl
          << "id = " << strategyId << std::endl

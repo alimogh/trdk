@@ -27,8 +27,10 @@ bool OperationReportData::Add(const Position &position) {
       position.GetSubOperationId(),      // subOperation
       position.IsLong(),                 // isLong
       position.GetOpenStartTime(),       // openStartTime
-      position.GetOpenTime(),            // openTime
-      position.GetOpenStartPrice(),      // openStartPrice
+      position.GetOpenTime() != pt::not_a_date_time
+          ? position.GetOpenTime()
+          : position.GetCloseTime(),  // openEndTime
+      position.GetOpenStartPrice(),   // openStartPrice
       position.GetOpenedQty()
           ? position.GetOpenAvgPrice()
           : std::numeric_limits<double>::quiet_NaN(),  // openPrice
@@ -88,32 +90,36 @@ void Report::PrintHead(std::ostream &os) {
   os << "1. Date"
      << ",2. Sell Leg"
      << ",3. Buy Leg"
-     << ",4. Sell Start Time"
-     << ",5. Sell Time"
-     << ",6. Buy Start Time"
-     << ",7. Buy Time"
-     << ",8. Sell Qty"
-     << ",9. Buy Qty"
-     << ",10. Unused Qty"
-     << ",11. Sell Start Price"
-     << ",12. Buy Start Price"
-     << ",13. Sell Price"
-     << ",14. Buy Price"
-     << ",15. Sell Price Diff."
-     << ",16. Buy Price Diff."
-     << ",17. Start Spread"
-     << ",18. Spread"
-     << ",19. Start Spread %"
-     << ",20. Spread %"
-     << ",21. Is Profit"
-     << ",22. Is Loss"
-     << ",23. Sell Cancel Reason"
-     << ",24. Buy Cancel Reason"
-     << ",25. P&L Volume"
-     << ",26. P&L Ratio"
-     << ",27. Sell target"
-     << ",28. Buy target"
-     << ",29. Operation ID" << std::endl;
+     << ",4. Second Leg Delay"
+     << ",5. Sell target"
+     << ",6. Buy target"
+     << ",7. Sell Start Time"
+     << ",8. Sell End Time"
+     << ",9. Buy Start Time"
+     << ",10. Buy End Time"
+     << ",11. Selling Duration"
+     << ",12. Buying Duration"
+     << ",13. Sell Qty"
+     << ",14. Buy Qty"
+     << ",15. Unused Qty"
+     << ",16. Sell Start Price"
+     << ",17. Buy Start Price"
+     << ",18. Sell Price"
+     << ",19. Buy Price"
+     << ",20. Sell Price Diff."
+     << ",21. Buy Price Diff."
+     << ",22. Start Spread"
+     << ",23. Spread"
+     << ",24. Start Spread %"
+     << ",25. Spread %"
+     << ",26. Spread % Diff."
+     << ",27. Is Profit"
+     << ",28. Is Loss"
+     << ",29. Sell Cancel Reason"
+     << ",30. Buy Cancel Reason"
+     << ",31. P&L Volume"
+     << ",32. P&L Ratio"
+     << ",33. Operation ID" << std::endl;
 }
 
 void Report::PrintReport(const OperationReportData::PositionReport &sell,
@@ -138,83 +144,112 @@ void Report::PrintReport(const OperationReportData::PositionReport &sell,
 
   os << std::min(sell.openStartTime.date(), buy.openStartTime.date());  // 1
 
-  os << sell.subOperation;  // 2
-  os << buy.subOperation;   // 3
-
-  os << ',' << ExcelTextField(sell.openStartTime.time_of_day());  // 4
+  os << ',' << sell.subOperation;  // 2
+  os << ',' << buy.subOperation;   // 3
   os << ',';
-  if (sell.openTime != pt::not_a_date_time) {
-    os << ExcelTextField(sell.openTime.time_of_day());  // 5
+  if (sell.openStartTime != pt::not_a_date_time &&
+      buy.openStartTime != pt::not_a_date_time) {
+    os << ExcelTextField(sell.subOperation == 2
+                             ? sell.openStartTime - buy.openStartTime
+                             : buy.openStartTime - sell.openStartTime);  // 4
   }
-  os << ',' << ExcelTextField(buy.openStartTime.time_of_day());  // 6
+
+  os << ',' << sell.target->GetInstanceName();  // 5
+  os << ',' << buy.target->GetInstanceName();   // 6
+
   os << ',';
-  if (buy.openTime != pt::not_a_date_time) {
-    os << ExcelTextField(buy.openTime.time_of_day());  // 7
+  if (sell.openStartTime != pt::not_a_date_time) {
+    os << ExcelTextField(sell.openStartTime.time_of_day());  // 7
+  }
+  os << ',';
+  if (sell.openEndTime != pt::not_a_date_time) {
+    os << ExcelTextField(sell.openEndTime.time_of_day());  // 8
+  }
+
+  os << ',';
+  if (buy.openStartTime != pt::not_a_date_time) {
+    os << ExcelTextField(buy.openStartTime.time_of_day());  // 9
+  }
+  os << ',';
+  if (buy.openEndTime != pt::not_a_date_time) {
+    os << ExcelTextField(buy.openEndTime.time_of_day());  // 10
+  }
+
+  os << ',';
+  if (sell.openEndTime != pt::not_a_date_time &&
+      sell.openStartTime != pt::not_a_date_time) {
+    os << (sell.openEndTime - sell.openStartTime);  // 11
+  }
+  os << ',';
+  if (buy.openEndTime != pt::not_a_date_time &&
+      buy.openStartTime != pt::not_a_date_time) {
+    os << (buy.openEndTime - buy.openStartTime);  // 12
   }
 
   os << std::setprecision(8);
-  os << ',' << sell.openedQty;                                   // 8
-  os << ',' << buy.openedQty;                                    // 9
-  os << ',' << (std::max(sell.openedQty, buy.openedQty) - qty);  // 10
+  os << ',' << sell.openedQty;                                   // 13
+  os << ',' << buy.openedQty;                                    // 14
+  os << ',' << (std::max(sell.openedQty, buy.openedQty) - qty);  // 15
 
-  os << ',' << sell.openStartPrice;  // 11
-  os << ',' << buy.openStartPrice;   // 12
-
-  os << ',';
-  if (sell.openPrice.IsNotNan()) {
-    os << sell.openPrice;  // 13
-  }
-  os << ',';
-  if (buy.openPrice.IsNotNan()) {
-    os << buy.openPrice;  // 14
-  }
+  os << ',' << sell.openStartPrice;  // 16
+  os << ',' << buy.openStartPrice;   // 17
 
   os << ',';
   if (sell.openPrice.IsNotNan()) {
-    os << (sell.openStartPrice - sell.openPrice);  // 15
+    os << sell.openPrice;  // 18
   }
   os << ',';
   if (buy.openPrice.IsNotNan()) {
-    os << (buy.openPrice - buy.openStartPrice);  // 16
+    os << buy.openPrice;  // 19
   }
 
-  os << ',' << startSpread;  // 17
+  os << ',';
+  if (sell.openPrice.IsNotNan()) {
+    os << (sell.openStartPrice - sell.openPrice);  // 20
+  }
+  os << ',';
+  if (buy.openPrice.IsNotNan()) {
+    os << (buy.openPrice - buy.openStartPrice);  // 21
+  }
+
+  os << ',' << startSpread;  // 22
 
   os << ',';
   if (spread.IsNotNan()) {
-    os << spread;  // 18
+    os << spread;  // 23
   }
 
+  const auto startSpreadPercent = (100 / (buy.openStartPrice / startSpread));
   os << std::setprecision(3);
-  os << ',' << (100 / (buy.openStartPrice / startSpread));  // 19
-  os << ',';
+  os << ',' << startSpreadPercent;  // 24
   if (spread.IsNotNan()) {
-    os << (100 / (buy.openPrice / spread));  // 20
-  }
-
-  os << (pnl.IsNotNan() ? pnl > 0 ? ",1,0" : ",0,1" : ",,");  // 21, 22
-
-  os << ',';
-  if (sell.closeReason != CLOSE_REASON_NONE) {
-    os << sell.closeReason;  // 23
-  }
-  os << ',';
-  if (buy.closeReason != CLOSE_REASON_NONE) {
-    os << buy.closeReason;  // 24
-  }
-
-  os << std::setprecision(8);
-  if (pnl.IsNotNan()) {
-    os << ',' << pnl;                                         // 25
-    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 26
+    const auto spreadPercent = (100 / (buy.openPrice / spread));
+    os << ',' << spreadPercent;                  // 25
+    os << ',' << (spread - startSpreadPercent);  // 26
   } else {
     os << ",,";  // 25, 26
   }
 
-  os << ',' << sell.target->GetInstanceName();  // 27
-  os << ',' << buy.target->GetInstanceName();   // 28
+  os << (pnl.IsNotNan() ? pnl > 0 ? ",1,0" : ",0,1" : ",,");  // 27, 28
 
-  os << ',' << sell.operation;  // 29
+  os << ',';
+  if (sell.closeReason != CLOSE_REASON_NONE) {
+    os << sell.closeReason;  // 28
+  }
+  os << ',';
+  if (buy.closeReason != CLOSE_REASON_NONE) {
+    os << buy.closeReason;  // 29
+  }
+
+  os << std::setprecision(8);
+  if (pnl.IsNotNan()) {
+    os << ',' << pnl;                                         // 30
+    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 31
+  } else {
+    os << ",,";  // 30, 31
+  }
+
+  os << ',' << sell.operation;  // 33
 
   os << std::endl;
 }

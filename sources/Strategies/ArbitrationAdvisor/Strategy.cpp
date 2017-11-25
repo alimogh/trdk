@@ -328,7 +328,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_controller.ClosePosition(*firstLegPosition, CLOSE_REASON_OPEN_FAILED);
         operation->GetReportData().Add(OperationReportData::PositionReport{
             operation->GetId(), 2, !firstLegPosition->IsLong(),
-            firstLegPosition->GetOpenStartTime(), pt::not_a_date_time,
+            pt::not_a_date_time, pt::not_a_date_time,
             firstLegPosition->IsLong() ? sellTarget.GetBidPrice()
                                        : buyTarget.GetAskPrice(),
             std::numeric_limits<double>::quiet_NaN(), 0,

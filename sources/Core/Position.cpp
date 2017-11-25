@@ -985,7 +985,8 @@ void Position::MarkAsCompleted() {
         record % GetOperation()->GetId()  // 1
             % GetSubOperationId();        // 2
       });
-
+  AssertEq(m_pimpl->m_close.time, pt::not_a_date_time);
+  m_pimpl->m_close.time = GetSecurity().GetContext().GetCurrentTime();
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
 }

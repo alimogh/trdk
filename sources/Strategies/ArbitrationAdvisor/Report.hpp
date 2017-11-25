@@ -23,7 +23,7 @@ struct OperationReportData : private boost::noncopyable {
     int64_t subOperation;
     bool isLong;
     boost::posix_time::ptime openStartTime;
-    boost::posix_time::ptime openTime;
+    boost::posix_time::ptime openEndTime;
     Price openStartPrice;
     Price openPrice;
     Qty openedQty;
