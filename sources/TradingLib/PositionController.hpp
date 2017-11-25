@@ -74,6 +74,8 @@ class PositionController : private boost::noncopyable {
       int64_t subOperationId,
       trdk::Security &,
       bool isLong,
+      const boost::posix_time::ptime &openStartTime,
+      const boost::posix_time::ptime &openTime,
       const trdk::Qty &,
       const trdk::Price &startPrice,
       const trdk::Price &openPrice,
@@ -105,7 +107,7 @@ class PositionController : private boost::noncopyable {
   virtual void HoldPosition(trdk::Position &);
 
   virtual std::unique_ptr<PositionReport> OpenReport() const;
-  const PositionReport &GetReport() const;
+  PositionReport &GetReport() const;
 
  private:
   template <typename PositionType>

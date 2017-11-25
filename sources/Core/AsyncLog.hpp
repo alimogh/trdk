@@ -437,6 +437,9 @@ class AsyncLog : private boost::noncopyable {
 
    private:
     void TaskMain() {
+#ifdef _DEBUG
+      const Record *lastRecord = nullptr;
+#endif
       try {
         Lock lock(m_queue.mutex);
         m_queue.condition.notify_all();
@@ -449,7 +452,15 @@ class AsyncLog : private boost::noncopyable {
 
           lock.unlock();
           for (const Record &record : buffer) {
+#ifdef _DEBUG
+            lastRecord = &record;
+#endif
+
             m_log.Write(record);
+
+#ifdef _DEBUG
+            lastRecord = nullptr;
+#endif
           }
           buffer.clear();
           lock.lock();

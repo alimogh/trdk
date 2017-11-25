@@ -37,21 +37,21 @@ class TRDK_CORE_API Operation {
 
   //! Order policy for position opening.
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
-      const trdk::Position &) const = 0;
+      const trdk::Position &) const;
   //! Order policy for position closing.
   virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
-      const trdk::Position &) const = 0;
+      const trdk::Position &) const;
 
   //! Setups new position.
   /** Place to attach stop-orders and so on.
     */
-  virtual void Setup(trdk::Position &) const = 0;
+  virtual void Setup(trdk::Position &) const;
 
   //! Next new position direction.
-  virtual bool IsLong(const trdk::Security &) const = 0;
+  virtual bool IsLong(const trdk::Security &) const;
 
   //! Next new position quantity.
-  virtual trdk::Qty GetPlannedQty() const = 0;
+  virtual trdk::Qty GetPlannedQty() const;
 
   //! Returns true if the opened position should be closed as soon as possible.
   virtual bool HasCloseSignal(const trdk::Position &) const;
@@ -63,15 +63,15 @@ class TRDK_CORE_API Operation {
                                    const trdk::CloseReason &newReason);
 
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual const Operation *GetParent() const;
+  virtual boost::shared_ptr<const trdk::Operation> GetParent() const;
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual Operation *GetParent();
+  virtual boost::shared_ptr<trdk::Operation> GetParent();
 
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if
     *         the position can be inverted.
     */
-  virtual boost::shared_ptr<Operation> StartInvertedPosition(
+  virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &);
 
  private:

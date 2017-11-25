@@ -16,7 +16,7 @@ namespace ArbitrageAdvisor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct OperationReportData : private boost::noncopyable {
+struct BusinessOperationReportData : private boost::noncopyable {
  public:
   struct PositionReport {
     boost::uuids::uuid operation;
@@ -32,7 +32,7 @@ struct OperationReportData : private boost::noncopyable {
   };
 
  public:
-  OperationReportData();
+  BusinessOperationReportData();
 
   bool Add(const Position &);
   bool Add(PositionReport &&);
@@ -47,24 +47,41 @@ struct OperationReportData : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Report : private boost::noncopyable {
+class BusinessOperationReport : private boost::noncopyable {
  public:
-  explicit Report(const trdk::Strategy &);
-  virtual ~Report() = default;
+  explicit BusinessOperationReport(const trdk::Strategy &);
+  virtual ~BusinessOperationReport() = default;
 
  public:
-  virtual void Append(const OperationReportData &);
+  virtual void Append(const BusinessOperationReportData &);
 
  protected:
   virtual void Open(std::ofstream &);
   virtual void PrintHead(std::ostream &);
-  virtual void PrintReport(const OperationReportData::PositionReport &sell,
-                           const OperationReportData::PositionReport &buy,
-                           std::ostream &);
+  virtual void PrintReport(
+      const BusinessOperationReportData::PositionReport &sell,
+      const BusinessOperationReportData::PositionReport &buy,
+      std::ostream &);
 
  protected:
   const trdk::Strategy &m_strategy;
   std::ofstream m_file;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class BalanceRestoreOperationReport : public TradingLib::PositionReport {
+ public:
+  typedef TradingLib::PositionReport Base;
+
+ public:
+  explicit BalanceRestoreOperationReport(const trdk::Strategy &);
+  virtual ~BalanceRestoreOperationReport() override = default;
+
+ protected:
+  virtual void Open(std::ofstream &) override;
+  virtual void PrintHead(std::ostream &) override;
+  virtual void PrintReport(const Position &, std::ostream &) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

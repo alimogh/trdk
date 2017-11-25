@@ -125,7 +125,7 @@ void PullingTask::Run() {
           isCompleted = false;
           if (++task.numberOfErrors <= 2) {
             m_log.Error(
-                "%1% task \"%1%\" error: \"%2%\".",
+                "%1% task \"%2%\" error: \"%3%\".",
                 task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
                 task.name,                                                  // 2
                 ex.what());                                                 // 3

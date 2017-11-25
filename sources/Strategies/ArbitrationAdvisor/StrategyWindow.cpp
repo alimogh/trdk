@@ -154,16 +154,22 @@ void StrategyWindow::InitBySelectedSymbol() {
   static ids::random_generator generateStrategyId;
   const auto &strategyId = generateStrategyId();
   {
-    std::ostringstream conf;
-    conf << "[Strategy.Arbitrage/" << symbol << '/' << m_instanceNumber << "]"
-         << std::endl
-         << "module = ArbitrationAdvisor" << std::endl
-         << "id = " << strategyId << std::endl
-         << "is_enabled = true" << std::endl
-         << "trading_mode = live" << std::endl
-         << "title = " << symbol << " Arbitrage" << std::endl
-         << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
-    m_engine.GetContext().Add(IniString(conf.str()));
+    const IniFile conf(m_engine.GetConfigFilePath());
+    const IniSectionRef defaults(conf, "Defaults");
+    std::ostringstream os;
+    os << "[Strategy.Arbitrage/" << symbol << '/' << m_instanceNumber << "]"
+       << std::endl
+       << "module = ArbitrationAdvisor" << std::endl
+       << "id = " << strategyId << std::endl
+       << "is_enabled = true" << std::endl
+       << "trading_mode = live" << std::endl
+       << "title = " << symbol << " Arbitrage" << std::endl
+       << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
+    if (defaults.ReadBoolKey("restore_balances")) {
+      os << "restore_balances = " << defaults.ReadBoolKey("restore_balances")
+         << std::endl;
+    }
+    m_engine.GetContext().Add(IniString(os.str()));
   }
   m_strategy = boost::polymorphic_downcast<aa::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));

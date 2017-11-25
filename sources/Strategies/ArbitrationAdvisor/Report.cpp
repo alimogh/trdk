@@ -19,9 +19,9 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OperationReportData::OperationReportData() : m_size(0) {}
+BusinessOperationReportData::BusinessOperationReportData() : m_size(0) {}
 
-bool OperationReportData::Add(const Position &position) {
+bool BusinessOperationReportData::Add(const Position &position) {
   return Add(PositionReport{
       position.GetOperation()->GetId(),  // operation
       position.GetSubOperationId(),      // subOperation
@@ -40,7 +40,7 @@ bool OperationReportData::Add(const Position &position) {
       position.GetCloseReason()});                         // closeReason
 }
 
-bool OperationReportData::Add(PositionReport &&position) {
+bool BusinessOperationReportData::Add(PositionReport &&position) {
   AssertGt(m_data.size(), m_size);
   if (m_data.size() <= m_size) {
     throw LogicError("Too many position to report");
@@ -57,21 +57,23 @@ bool OperationReportData::Add(PositionReport &&position) {
   return m_size >= m_data.size();
 }
 
-const OperationReportData::PositionReport &OperationReportData::GetSell()
-    const {
+const BusinessOperationReportData::PositionReport &
+BusinessOperationReportData::GetSell() const {
   AssertEq(m_data.size(), m_size);
   return m_data.front().isLong ? m_data.back() : m_data.front();
 }
-const OperationReportData::PositionReport &OperationReportData::GetBuy() const {
+const BusinessOperationReportData::PositionReport &
+BusinessOperationReportData::GetBuy() const {
   AssertEq(m_data.size(), m_size);
   return !m_data.front().isLong ? m_data.back() : m_data.front();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Report::Report(const trdk::Strategy &strategy) : m_strategy(strategy) {}
+BusinessOperationReport::BusinessOperationReport(const trdk::Strategy &strategy)
+    : m_strategy(strategy) {}
 
-void Report::Append(const OperationReportData &data) {
+void BusinessOperationReport::Append(const BusinessOperationReportData &data) {
   if (!m_file.is_open()) {
     Open(m_file);
     Assert(m_file.is_open());
@@ -80,19 +82,19 @@ void Report::Append(const OperationReportData &data) {
   PrintReport(data.GetSell(), data.GetBuy(), m_file);
 }
 
-void Report::Open(std::ofstream &file) {
+void BusinessOperationReport::Open(std::ofstream &file) {
   Assert(!file.is_open());
-  file = m_strategy.OpenDataLog("csv");
+  file = m_strategy.OpenDataLog("csv", "_business");
   file << std::fixed;
 }
 
-void Report::PrintHead(std::ostream &os) {
+void BusinessOperationReport::PrintHead(std::ostream &os) {
   os << "1. Date"
      << ",2. Sell Leg"
      << ",3. Buy Leg"
      << ",4. Second Leg Delay"
-     << ",5. Sell target"
-     << ",6. Buy target"
+     << ",5. Sell exchange"
+     << ",6. Buy exchange"
      << ",7. Sell Start Time"
      << ",8. Sell End Time"
      << ",9. Buy Start Time"
@@ -115,16 +117,15 @@ void Report::PrintHead(std::ostream &os) {
      << ",26. Spread % Diff."
      << ",27. Is Profit"
      << ",28. Is Loss"
-     << ",29. Sell Cancel Reason"
-     << ",30. Buy Cancel Reason"
-     << ",31. P&L Volume"
-     << ",32. P&L Ratio"
-     << ",33. Operation ID" << std::endl;
+     << ",29. P&L Volume"
+     << ",30. P&L Ratio"
+     << ",31. Operation ID" << std::endl;
 }
 
-void Report::PrintReport(const OperationReportData::PositionReport &sell,
-                         const OperationReportData::PositionReport &buy,
-                         std::ostream &os) {
+void BusinessOperationReport::PrintReport(
+    const BusinessOperationReportData::PositionReport &sell,
+    const BusinessOperationReportData::PositionReport &buy,
+    std::ostream &os) {
   Assert(!sell.isLong);
   Assert(buy.isLong);
 
@@ -232,25 +233,94 @@ void Report::PrintReport(const OperationReportData::PositionReport &sell,
 
   os << (pnl.IsNotNan() ? pnl > 0 ? ",1,0" : ",0,1" : ",,");  // 27, 28
 
-  os << ',';
-  if (sell.closeReason != CLOSE_REASON_NONE) {
-    os << sell.closeReason;  // 28
-  }
-  os << ',';
-  if (buy.closeReason != CLOSE_REASON_NONE) {
-    os << buy.closeReason;  // 29
-  }
-
   os << std::setprecision(8);
   if (pnl.IsNotNan()) {
-    os << ',' << pnl;                                         // 30
-    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 31
+    os << ',' << pnl;                                         // 29
+    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 30
   } else {
-    os << ",,";  // 30, 31
+    os << ",,";  // 29, 30
   }
 
-  os << ',' << sell.operation;  // 33
+  os << ',' << sell.operation;  // 31
 
+  os << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+BalanceRestoreOperationReport::BalanceRestoreOperationReport(
+    const trdk::Strategy &strategy)
+    : Base(strategy) {}
+
+void BalanceRestoreOperationReport::Open(std::ofstream &file) {
+  Assert(!file.is_open());
+  file = GetStrategy().OpenDataLog("csv", "_balance");
+  file << std::fixed;
+}
+
+void BalanceRestoreOperationReport::PrintHead(std::ostream &os) {
+  os << "1. Date"
+     << ",2. Open Start Time"
+     << ",3. Open Time"
+     << ",4. Close Start Time"
+     << ",5. Close Time"
+     << ",6. Closing Duration"
+     << ",7. Exchange"
+     << ",8. Parent Leg"
+     << ",9. Type"
+     << ",10. P&L Volume"
+     << ",11. P&L Ratio"
+     << ",12. Is Profit"
+     << ",13. Is Loss"
+     << ",14. Qty"
+     << ",15. Open Price"
+     << ",16. Close Price"
+     << ",17. Parent operation ID"
+     << ",19. Operation ID" << std::endl;
+}
+
+void BalanceRestoreOperationReport::PrintReport(const Position &pos,
+                                                std::ostream &os) {
+  AssertLt(2, pos.GetSubOperationId());
+  os << pos.GetOpenStartTime().date();                                // 1
+  os << ',' << ExcelTextField(pos.GetOpenStartTime().time_of_day());  // 2
+  os << ',' << ExcelTextField(pos.GetOpenTime().time_of_day());       // 3
+  if (pos.IsClosed()) {
+    os << ',' << ExcelTextField(pos.GetCloseStartTime().time_of_day());  // 4
+    os << ',' << ExcelTextField(pos.GetCloseTime().time_of_day());       // 5
+    os << ','
+       << ExcelTextField(pos.GetCloseTime() - pos.GetCloseStartTime());  // 6
+  } else {
+    os << ",,,";  // 6, 7, 8
+  }
+
+  os << ',' << pos.GetTradingSystem().GetInstanceName();  // 7
+  os << ',' << (pos.GetSubOperationId() - 2);             // 8
+
+  os << ',' << pos.GetType();  // 9
+  if (pos.IsClosed()) {
+    os << ',' << pos.GetRealizedPnlVolume();   // 10
+    os << ',' << pos.GetRealizedPnlRatio();    // 11
+    os << (pos.IsProfit() ? ",1,0" : ",0,1");  // 12, 13
+  } else {
+    os << ",,,,";  // 10, 11, 12, 13
+  }
+  os << ',' << pos.GetOpenedQty();     // 14
+  os << ',' << pos.GetOpenAvgPrice();  // 15
+  if (pos.IsClosed()) {
+    os << ',' << pos.GetCloseAvgPrice();  // 16
+  } else {
+    os << ',';  // 16
+  }
+  {
+    const auto &parent = pos.GetOperation()->GetParent();
+    Assert(parent);
+    os << ',';
+    if (parent) {
+      os << parent->GetId();  // 17
+    }
+  }
+  os << ',' << pos.GetOperation()->GetId();  // 18
   os << std::endl;
 }
 

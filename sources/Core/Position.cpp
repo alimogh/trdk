@@ -382,24 +382,26 @@ class Position::Implementation : private boost::noncopyable {
   void ReportOpeningStateRestoration() const noexcept {
     Assert(!m_open.orders.empty());
     m_strategy.GetTradingLog().Write(
-        "order\trestored\t%1%\t%2%\t%3%.%4%"
-        "\tprice=%5$.8f->%6$.8f\t%7%\tqty=%8$.8f\tpos=%9%/%10%",
+        "position\trestored\t%1%\t%2%\t%3%.%4%\topen_start_time=%5%\topen_time="
+        "%6%\tprice=%7$.8f->%8$.8f\t%9%\tqty=%10$.8f\toperation=%11%/%12%",
         [this](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % m_self.GetOpenOrderSide()                         // 1
               % m_security.GetSymbol().GetSymbol().c_str()           // 2
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 3
               % m_tradingSystem.GetMode()                            // 4
-              % m_open.startPrice;                                   // 5
+              % m_self.GetOpenStartPrice()                           // 5
+              % m_self.GetOpenTime()                                 // 6
+              % m_open.startPrice;                                   // 7
           if (order.price) {
-            record % *order.price;  // 6
+            record % *order.price;  // 8
           } else {
-            record % '-';  // 6
+            record % '-';  // 8
           }
-          record % m_self.GetCurrency()  // 7
-              % m_self.GetPlanedQty()    // 8
-              % m_operation->GetId()     // 9
-              % m_subOperationId;        // 10
+          record % m_self.GetCurrency()  // 9
+              % m_self.GetPlanedQty()    // 10
+              % m_operation->GetId()     // 11
+              % m_subOperationId;        // 12
         });
   }
 
@@ -407,10 +409,9 @@ class Position::Implementation : private boost::noncopyable {
                           const boost::optional<OrderId> &id) const noexcept {
     Assert(!m_open.orders.empty());
     m_strategy.GetTradingLog().Write(
-        "order\topen->%1%\t%2%\t%3%\t%4%.%5%"
-        "\tprice=%6$.8f->%7$.8f\t%8%\tqty=%9$.8f"
-        "\tbid/ask=%10$.8f/%11$.8f"
-        "\tpos=%12%/%13%\torder=%14%/-",
+        "position\topen->%1%\t%2%\t%3%\t%4%.%5%\tprice=%6$.8f->%7$.8f\t%8%"
+        "\tqty=%9$.8f\tbid/ask=%10$.8f/%11$.8f\toperation=%12%/"
+        "%13%\torder=%14%/-",
         [this, eventDesc, &id](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % eventDesc                                         // 1
@@ -441,10 +442,10 @@ class Position::Implementation : private boost::noncopyable {
   void ReportOpeningUpdate(const OrderStatus &orderStatus) const noexcept {
     Assert(!m_open.orders.empty());
     m_strategy.GetTradingLog().Write(
-        "order\topen->%1%\t%2%\t%3%"
+        "position\topen->%1%\t%2%\t%3%"
         "\t%4%.%5%\tprice=%6$.8f->%7$.8f->%8$.8f(avg=%9$.8f)\t%10%"
         "\tqty=%11$.8f->%12$.8f\tbid/ask=%13$.8f/%14$.8f"
-        "\tpos=%15%/%16%\torder=%17%",
+        "\toperation=%15%/%16%\torder=%17%",
         [this, &orderStatus](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % orderStatus                                       // 1
@@ -479,10 +480,10 @@ class Position::Implementation : private boost::noncopyable {
                           const boost::optional<OrderId> &id,
                           const Qty &maxQty) const noexcept {
     m_strategy.GetTradingLog().Write(
-        "order\tclose->%1%\t%2%\t%3%\t%4%.%5%"
-        "\tclose-type=%6%\tprice=%7$.8f->%8$.8f\t%9%"
-        "\tmax-qty=%10$.8f\tactive-qty=%11$.8f\tbid/ask=%12$.8f/%13$.8f"
-        "\tpos=%14%/%15%\torder=%16%/-",
+        "position\tclose->%1%\t%2%\t%3%\t%4%.%5%"
+        "\tclose_type=%6%\tprice=%7$.8f->%8$.8f\t%9%"
+        "\tmax_qty=%10$.8f\tactive_qty=%11$.8f\tbid/ask=%12$.8f/%13$.8f"
+        "\toperation=%14%/%15%\torder=%16%/-",
         [&](TradingRecord &record) {
           record % eventDesc                                         // 1
               % m_self.GetCloseOrderSide()                           // 2
@@ -515,10 +516,10 @@ class Position::Implementation : private boost::noncopyable {
   void ReportClosingUpdate(const OrderStatus &orderStatus) const noexcept {
     Assert(!m_close.orders.empty());
     m_strategy.GetTradingLog().Write(
-        "order\tclose->%1%\t%2%\t%3%\t%4%.%5%\t%6%"
+        "position\tclose->%1%\t%2%\t%3%\t%4%.%5%\t%6%"
         "\tprice=%7$.8f->%8$.8f->%9$.8f(avg=%10$.8f)\t%11%"
         "\tqty=%12$.8f-%13$.8f=%14$.8f\tbid/ask=%15$.8f/%16$.8f"
-        "\tpos=%17%/%18%\torder=%19%",
+        "\toperation=%17%/%18%\torder=%19%",
         [this, &orderStatus](TradingRecord &record) {
           const auto &order = m_close.orders.back();
           record % orderStatus                                       // 1
@@ -553,10 +554,10 @@ class Position::Implementation : private boost::noncopyable {
 
  public:
   void RestoreOpenState(
+      const pt::ptime &openStartTime,
+      const pt::ptime &openTime,
       const Price &openPrice,
       const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
-    const auto now = m_strategy.GetContext().GetCurrentTime();
-
     if (m_self.IsCancelling()) {
       throw Exception(
           "Failed to restore open-stat as canceling is not completed");
@@ -594,13 +595,14 @@ class Position::Implementation : private boost::noncopyable {
       m_expiration = m_security.GetExpiration();
     }
 
-    m_open.orders.emplace_back(std::move(now), boost::none, m_planedQty);
+    m_open.orders.emplace_back(std::move(openStartTime), boost::none,
+                               m_planedQty);
     try {
       auto &order = m_open.orders.back();
       order.transactionContext = openingContext;
       order.isActive = false;
 
-      m_open.time = order.time;
+      m_open.time = openTime;
       m_open.OnNewTrade(TradingSystem::TradeInfo{openPrice, order.qty},
                         openPrice);
 
@@ -757,8 +759,8 @@ class Position::Implementation : private boost::noncopyable {
     Assert(order.isActive);
     Assert(!order.isCanceled);
     m_strategy.GetTradingLog().Write(
-        "order\tcancel-all\t%1%-order\t%2%\t%3%\t%4%"
-        "\tpos=%5%/%6%\torder=%7%",
+        "position\tcancel_all\t%1%_order\t%2%\t%3%\t%4%"
+        "\toperation=%5%/%6%\torder=%7%",
         [this, &order, &direction](TradingRecord &record) {
           record % direction                                         // 1
               % m_security.GetSymbol().GetSymbol().c_str()           // 2
@@ -1295,9 +1297,11 @@ const Price &Position::GetLastCloseTradePrice() const {
 }
 
 void Position::RestoreOpenState(
-    const trdk::Price &openPrice,
+    const pt::ptime &openStartTime,
+    const pt::ptime &openTime,
+    const Price &openPrice,
     const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
-  m_pimpl->RestoreOpenState(openPrice, openingContext);
+  m_pimpl->RestoreOpenState(openStartTime, openTime, openPrice, openingContext);
 }
 
 const OrderTransactionContext &Position::OpenAtMarketPrice() {
@@ -1430,7 +1434,7 @@ LongPosition::LongPosition(Strategy &strategy,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%/%8%",
+      "\toperation=%7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1440,6 +1444,14 @@ LongPosition::LongPosition(Strategy &strategy,
             % GetPlanedQty()                                    // 6
             % GetOperation()->GetId()                           // 7
             % GetSubOperationId();                              // 8
+        {
+          const auto &parent = GetOperation()->GetParent();
+          if (parent) {
+            record % parent->GetId();  // 9
+          } else {
+            record % '-';  // 9
+          }
+        }
       });
 }
 
@@ -1461,7 +1473,7 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%/%8%",
+      "\toperation=%7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1471,11 +1483,19 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
             % GetPlanedQty()                                    // 6
             % GetOperation()->GetId()                           // 7
             % GetSubOperationId();                              // 8
+        {
+          const auto &parent = GetOperation()->GetParent();
+          if (parent) {
+            record % parent->GetId();  // 9
+          } else {
+            record % '-';  // 9
+          }
+        }
       });
 }
 
 LongPosition::~LongPosition() {
-  GetStrategy().GetTradingLog().Write("position\tdel\tlong\tpos=%1%/%2%",
+  GetStrategy().GetTradingLog().Write("position\tdel\tlong\toperation=%1%/%2%",
                                       [this](TradingRecord &record) {
                                         record % GetOperation()->GetId()  // 1
                                             % GetSubOperationId();        // 2
@@ -1634,7 +1654,7 @@ ShortPosition::ShortPosition(Strategy &strategy,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%/%8%",
+      "\toperation=%7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1644,6 +1664,14 @@ ShortPosition::ShortPosition(Strategy &strategy,
             % GetPlanedQty()                                    // 6
             % GetOperation()->GetId()                           // 7
             % GetSubOperationId();                              // 8
+        {
+          const auto &parent = GetOperation()->GetParent();
+          if (parent) {
+            record % parent->GetId();  // 9
+          } else {
+            record % '-';  // 9
+          }
+        }
       });
 }
 
@@ -1665,7 +1693,7 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\tpos=%7%/%8%",
+      "\toperation=%7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1675,11 +1703,19 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
             % GetPlanedQty()                                    // 6
             % GetOperation()->GetId()                           // 7
             % GetSubOperationId();                              // 8
+        {
+          const auto &parent = GetOperation()->GetParent();
+          if (parent) {
+            record % parent->GetId();  // 9
+          } else {
+            record % '-';  // 9
+          }
+        }
       });
 }
 
 ShortPosition::~ShortPosition() {
-  GetStrategy().GetTradingLog().Write("position\tdel\tshort\tpos=%1%/%2%",
+  GetStrategy().GetTradingLog().Write("position\tdel\tshort\toperation=%1%/%2%",
                                       [this](TradingRecord &record) {
                                         record % GetOperation()->GetId()  // 1
                                             % GetSubOperationId();        // 2

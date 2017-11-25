@@ -47,7 +47,7 @@ std::pair<Price, Double> CaclSpread(const PriceItem &bestBid,
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
-  PositionController m_controller;
+  std::unique_ptr<PositionController> m_controller;
   sig::signal<void(const Advice &)> m_adviceSignal;
 
   Double m_minPriceDifferenceRatioToAdvice;
@@ -58,11 +58,18 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   boost::unordered_set<const Security *> m_errors;
   const Security *m_lastError;
 
-  explicit Implementation(aa::Strategy &self)
+  explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_controller(m_self),
+        m_controller(
+            !conf.ReadBoolKey("restore_balances", false)
+                ? boost::make_unique<PositionController>(m_self)
+                : boost::make_unique<PositionAndBalanceController>(m_self)),
         m_minPriceDifferenceRatioToAdvice(0),
-        m_lastError(nullptr) {}
+        m_lastError(nullptr) {
+    if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
+      m_self.GetLog().Info("Enabled balances restoration.");
+    }
+  }
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
@@ -152,16 +159,16 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   bool CheckActualPositions(const Security &sellTarget,
                             const Security &buyTarget,
                             const Double &spreadRatio) {
-    size_t numberOfPositionsWithTheSameTargget = 0;
+    size_t numberOfPositionsWithTheSameTarget = 0;
     for (auto &position : m_self.GetPositions()) {
-      if (position.IsCompleted()) {
+      if (!IsBusinessPosition(position) || position.IsCompleted()) {
         continue;
       }
 
       const auto &operation = position.GetTypedOperation<aa::Operation>();
       if (operation.IsSame(sellTarget, buyTarget)) {
-        AssertGe(2, numberOfPositionsWithTheSameTargget);
-        ++numberOfPositionsWithTheSameTargget;
+        AssertGe(2, numberOfPositionsWithTheSameTarget);
+        ++numberOfPositionsWithTheSameTarget;
         continue;
       }
 
@@ -180,10 +187,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 % buyTarget.GetAskPriceValue()         // 6
                 % spreadRatio;                         // 7
           });
-      m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
+      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
-    AssertGe(2, numberOfPositionsWithTheSameTargget);
-    return numberOfPositionsWithTheSameTargget > 0;
+    AssertGe(2, numberOfPositionsWithTheSameTarget);
+    return numberOfPositionsWithTheSameTarget > 0;
   }
 
   void Trade(const std::vector<PriceItem> &bids,
@@ -316,26 +323,28 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     Position *firstLegPosition = nullptr;
     try {
-      firstLegPosition = &m_controller.OpenPosition(
+      firstLegPosition = &m_controller->OpenPosition(
           operation, 1, *legTargets.first, delayMeasurement);
-      m_controller.OpenPosition(operation, 2, *legTargets.second,
-                                delayMeasurement);
+      m_controller->OpenPosition(operation, 2, *legTargets.second,
+                                 delayMeasurement);
     } catch (const std::exception &ex) {
       m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
 
       if (firstLegPosition) {
         Verify(m_errors.emplace(legTargets.second).second);
-        m_controller.ClosePosition(*firstLegPosition, CLOSE_REASON_OPEN_FAILED);
-        operation->GetReportData().Add(OperationReportData::PositionReport{
-            operation->GetId(), 2, !firstLegPosition->IsLong(),
-            pt::not_a_date_time, pt::not_a_date_time,
-            firstLegPosition->IsLong() ? sellTarget.GetBidPrice()
-                                       : buyTarget.GetAskPrice(),
-            std::numeric_limits<double>::quiet_NaN(), 0,
-            firstLegPosition->IsLong()
-                ? &operation->GetTradingSystem(m_self, sellTarget)
-                : &operation->GetTradingSystem(m_self, buyTarget),
-            CLOSE_REASON_OPEN_FAILED});
+        m_controller->ClosePosition(*firstLegPosition,
+                                    CLOSE_REASON_OPEN_FAILED);
+        operation->GetReportData().Add(
+            BusinessOperationReportData::PositionReport{
+                operation->GetId(), 2, !firstLegPosition->IsLong(),
+                pt::not_a_date_time, pt::not_a_date_time,
+                firstLegPosition->IsLong() ? sellTarget.GetBidPrice()
+                                           : buyTarget.GetAskPrice(),
+                std::numeric_limits<double>::quiet_NaN(), 0,
+                firstLegPosition->IsLong()
+                    ? &operation->GetTradingSystem(m_self, sellTarget)
+                    : &operation->GetTradingSystem(m_self, buyTarget),
+                CLOSE_REASON_OPEN_FAILED});
       }
 
       m_lastError = !firstLegPosition ? legTargets.first : legTargets.second;
@@ -362,28 +371,36 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void StopTrading(const Security &bestBid,
                    const Security &bestAsk,
                    const Double &spreadRatio) {
-    if (m_self.GetPositions().IsEmpty()) {
-      return;
-    }
-
     m_lastError = nullptr;
 
-    m_self.GetTradingLog().Write(
-        "{'signal': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
-        "'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': "
-        "%6$.8f}}, 'spread': %7$.3f}}",
-        [&](TradingRecord &record) {
-          record % boost::cref(bestBid.GetSource().GetInstanceName())  // 1
-              % bestBid.GetBidPriceValue()                             // 2
-              % bestAsk.GetAskPriceValue()                             // 3
-              % boost::cref(bestAsk.GetSource().GetInstanceName())     // 4
-              % bestAsk.GetBidPriceValue()                             // 5
-              % bestAsk.GetAskPriceValue()                             // 6
-              % spreadRatio;                                           // 7
-        });
+    bool isReported = false;
 
     for (auto &position : m_self.GetPositions()) {
-      m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
+      if (position.GetCloseReason() != CLOSE_REASON_NONE ||
+          !IsBusinessPosition(position)) {
+        // In the current implementation "not business position" will be closed
+        // immediately after creation.
+        AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
+        continue;
+      }
+      if (!isReported) {
+        m_self.GetTradingLog().Write(
+            "{'signal': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
+            "'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': "
+            "%6$.8f}}, 'spread': %7$.3f}}",
+            [&](TradingRecord &record) {
+              record % boost::cref(bestBid.GetSource().GetInstanceName())  // 1
+                  % bestBid.GetBidPriceValue()                             // 2
+                  % bestAsk.GetAskPriceValue()                             // 3
+                  % boost::cref(bestAsk.GetSource().GetInstanceName())     // 4
+                  % bestAsk.GetBidPriceValue()                             // 5
+                  % bestAsk.GetAskPriceValue()                             // 6
+                  % spreadRatio;                                           // 7
+            });
+        isReported = true;
+      }
+
+      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
   }
 };
@@ -396,7 +413,7 @@ aa::Strategy::Strategy(Context &context,
            "ArbitrageAdvisor",
            instanceName,
            conf),
-      m_pimpl(boost::make_unique<Implementation>(*this)) {}
+      m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 aa::Strategy::~Strategy() = default;
 
@@ -497,11 +514,11 @@ void aa::Strategy::OnLevel1Update(Security &security,
 }
 
 void aa::Strategy::OnPositionUpdate(Position &position) {
-  m_pimpl->m_controller.OnPositionUpdate(position);
+  m_pimpl->m_controller->OnPositionUpdate(position);
 }
 
 void aa::Strategy::OnPostionsCloseRequest() {
-  m_pimpl->m_controller.OnPostionsCloseRequest();
+  m_pimpl->m_controller->OnPostionsCloseRequest();
 }
 ////////////////////////////////////////////////////////////////////////////////
 

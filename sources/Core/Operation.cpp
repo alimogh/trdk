@@ -17,6 +17,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::TradingLib;
 
 namespace uuids = boost::uuids;
 
@@ -48,12 +49,37 @@ const TradingSystem &Operation::GetTradingSystem(
   return strategy.GetTradingSystem(security.GetSource().GetIndex());
 }
 
+const OrderPolicy &Operation::GetOpenOrderPolicy(const Position &) const {
+  throw LogicError(
+      "Position instance does not use operation context to open positions");
+}
+
+const OrderPolicy &Operation::GetCloseOrderPolicy(const Position &) const {
+  throw LogicError(
+      "Position instance does not use operation context to close positions");
+}
+
+void Operation::Setup(Position &) const {}
+
+bool Operation::IsLong(const Security &) const {
+  throw LogicError(
+      "Position instance does not use operation context to get order side");
+}
+
+Qty Operation::GetPlannedQty() const {
+  throw LogicError(
+      "Position instance does not use operation context to calculate position "
+      "planned size");
+}
+
 bool Operation::OnCloseReasonChange(Position &, const CloseReason &) {
   return true;
 }
 
-const Operation *Operation::GetParent() const { return nullptr; }
-Operation *Operation::GetParent() { return nullptr; }
+boost::shared_ptr<const Operation> Operation::GetParent() const {
+  return nullptr;
+}
+boost::shared_ptr<Operation> Operation::GetParent() { return nullptr; }
 
 bool Operation::HasCloseSignal(const Position &) const {
   throw LogicError(

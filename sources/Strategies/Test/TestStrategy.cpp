@@ -54,7 +54,6 @@ class Operation : public trdk::Operation {
       const Position &) const override {
     return *m_orderPolicy;
   }
-  virtual void Setup(Position &) const override {}
   virtual bool IsLong(const Security &) const override {
     return *GetIsRising();
   }

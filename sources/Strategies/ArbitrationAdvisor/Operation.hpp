@@ -16,6 +16,9 @@
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
+
+////////////////////////////////////////////////////////////////////////////////
+
 class Operation : public trdk::Operation {
  public:
   typedef trdk::Operation Base;
@@ -37,8 +40,8 @@ class Operation : public trdk::Operation {
     return &m_sellTarget == &sellTarget && &m_buyTarget == &buyTarget;
   }
 
-  OperationReportData &GetReportData() { return m_reportData; }
-  const OperationReportData &GetReportData() const {
+  BusinessOperationReportData &GetReportData() { return m_reportData; }
+  const BusinessOperationReportData &GetReportData() const {
     return const_cast<Operation *>(this)->GetReportData();
   }
 
@@ -47,12 +50,6 @@ class Operation : public trdk::Operation {
       const Position &) const override {
     return m_orderPolicy;
   }
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
-      const Position &) const override {
-    return m_orderPolicy;
-  }
-
-  virtual void Setup(trdk::Position &) const override {}
 
   virtual bool IsLong(const Security &security) const override {
     Assert(&security == &m_sellTarget || &security == &m_buyTarget);
@@ -66,8 +63,43 @@ class Operation : public trdk::Operation {
   Security &m_sellTarget;
   Security &m_buyTarget;
   const Qty m_maxQty;
-  OperationReportData m_reportData;
+  BusinessOperationReportData m_reportData;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+class BalanceRestoringOperation : public trdk::Operation {
+ public:
+  typedef trdk::Operation Base;
+
+ public:
+  explicit BalanceRestoringOperation(const boost::shared_ptr<Operation> &parent,
+                                     const Price &price)
+      : m_parent(parent), m_orderPolicy(price) {}
+  virtual ~BalanceRestoringOperation() override = default;
+
+ public:
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
+    return m_orderPolicy;
+  }
+  virtual boost::shared_ptr<const Operation> GetParent() const override {
+    return m_parent;
+  }
+  virtual boost::shared_ptr<Operation> GetParent() override { return m_parent; }
+
+  virtual bool HasCloseSignal(const Position &) const { return true; }
+
+  virtual boost::shared_ptr<Operation> StartInvertedPosition(const Position &) {
+    return nullptr;
+  }
+
+ private:
+  const boost::shared_ptr<Operation> m_parent;
+  const TradingLib::LimitPriceGtcOrderPolicy m_orderPolicy;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 }
 }
 }

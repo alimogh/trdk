@@ -24,6 +24,7 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::TradingLib;
 
 namespace ids = boost::uuids;
+namespace pt = boost::posix_time;
 
 class PositionController::Implementation : private boost::noncopyable {
  public:
@@ -60,7 +61,7 @@ std::unique_ptr<PositionReport> PositionController::OpenReport() const {
   return std::make_unique<PositionReport>(GetStrategy());
 }
 
-const PositionReport &PositionController::GetReport() const {
+PositionReport &PositionController::GetReport() const {
   return m_pimpl->GetReport();
 }
 
@@ -103,6 +104,8 @@ Position &PositionController::RestorePosition(
     int64_t subOperationId,
     Security &security,
     bool isLong,
+    const pt::ptime &openStartTime,
+    const pt::ptime &openTime,
     const Qty &qty,
     const Price &startPrice,
     const Price &openPrice,
@@ -110,7 +113,7 @@ Position &PositionController::RestorePosition(
     const Milestones &delayMeasurement) {
   auto result = CreatePosition(operationContext, subOperationId, isLong,
                                security, qty, startPrice, delayMeasurement);
-  result->RestoreOpenState(openPrice, openingContext);
+  result->RestoreOpenState(openStartTime, openTime, openPrice, openingContext);
   return *result;
 }
 
@@ -206,7 +209,7 @@ void PositionController::OnPositionUpdate(Position &position) {
   AssertLt(0, position.GetNumberOfOpenOrders());
 
   if (position.IsCompleted()) {
-    if (position.GetOpenedQty() > 0) {
+    if (position.GetActiveQty() > 0 || position.HasActiveOrders()) {
       // It seems position is marked as completed for some reason. It's not a
       // business of the general code.
       return;
@@ -214,7 +217,6 @@ void PositionController::OnPositionUpdate(Position &position) {
 
     // No active order, no active qty...
 
-    Assert(!position.HasActiveOrders());
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
       m_pimpl->GetReport().Append(position);
@@ -303,6 +305,8 @@ void PositionController::OnBrokerPositionUpdate(
     return;
   }
 
+  const auto &now = security.GetContext().GetCurrentTime();
+
   const Price price = volume / qty;
   GetStrategy().GetLog().Info(
       "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
@@ -312,8 +316,8 @@ void PositionController::OnBrokerPositionUpdate(
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  RestorePosition(operationContext, subOperationId, security, isLong, qty,
-                  price, price, nullptr, Milestones());
+  RestorePosition(operationContext, subOperationId, security, isLong, now, now,
+                  qty, price, price, nullptr, Milestones());
 }
 
 template <typename PositionType>
