@@ -99,9 +99,6 @@
     <ClCompile Include="..\Services\MovingAverageServiceMock.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
-    <ClCompile Include="..\Strategies\MrigeshKejriwal\MrigeshKejriwalStrategyUTest.cpp">
-      <Filter>Unit Tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\Core\TradingSystemMock.cpp">
       <Filter>Mocks</Filter>
     </ClCompile>
@@ -165,42 +162,6 @@
       <Filter>Lib Files</Filter>
     </Library>
     <Library Include="..\..\output\x64\lib\Release Standalone\Services.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug DLL\MrigeshKejriwal_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug Standalone\MrigeshKejriwal_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test DLL\MrigeshKejriwal_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test Standalone\MrigeshKejriwal_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release DLL\MrigeshKejriwal.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Release Standalone\MrigeshKejriwal.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug DLL\MrigeshKejriwal_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug Standalone\MrigeshKejriwal_dbg.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test DLL\MrigeshKejriwal_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test Standalone\MrigeshKejriwal_test.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release DLL\MrigeshKejriwal.lib">
-      <Filter>Lib Files</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release Standalone\MrigeshKejriwal.lib">
       <Filter>Lib Files</Filter>
     </Library>
   </ItemGroup>

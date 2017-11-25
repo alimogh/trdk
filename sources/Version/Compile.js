@@ -33,7 +33,6 @@ var requiredModules = [
 	, 'Rest'
 	, 'Services'
 	, 'TestStrategy'
-	, 'MrigeshKejriwal'
 	, 'ArbitrationAdvisor'
 ]
 
