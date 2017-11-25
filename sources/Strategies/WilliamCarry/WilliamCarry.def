@@ -1,4 +1,0 @@
-EXPORTS
-	CreateEngineFrontEndWidgets
-	CreateMultibroker
-	GetTrdkModuleVersionInfoV1
