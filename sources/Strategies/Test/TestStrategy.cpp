@@ -11,8 +11,8 @@
 #include "Prec.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Position.hpp"
-#include "Core/PositionOperationContext.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "Api.h"
@@ -35,15 +35,15 @@ class TestStrategy;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class PositionOperationContext : public trdk::PositionOperationContext {
+class Operation : public trdk::Operation {
  public:
-  typedef trdk::PositionOperationContext Base;
+  typedef trdk::Operation Base;
 
  public:
-  explicit PositionOperationContext(TestStrategy &strategy)
+  explicit Operation(TestStrategy &strategy)
       : m_strategy(strategy),
         m_orderPolicy(boost::make_shared<LimitGtcOrderPolicy>()) {}
-  virtual ~PositionOperationContext() override = default;
+  virtual ~Operation() override = default;
 
  public:
   virtual const OrderPolicy &GetOpenOrderPolicy(
@@ -63,9 +63,9 @@ class PositionOperationContext : public trdk::PositionOperationContext {
     const auto &isRising = GetIsRising();
     return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
   }
-  virtual boost::shared_ptr<trdk::PositionOperationContext>
-  StartInvertedPosition(const trdk::Position &) override {
-    return boost::make_shared<PositionOperationContext>(m_strategy);
+  virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
+      const trdk::Position &) override {
+    return boost::make_shared<Operation>(m_strategy);
   }
 
  private:
@@ -79,7 +79,7 @@ class PositionOperationContext : public trdk::PositionOperationContext {
 ////////////////////////////////////////////////////////////////////////////////
 
 class TestStrategy : public Strategy {
-  friend class PositionOperationContext;
+  friend class Operation;
 
  public:
   typedef Strategy Super;
@@ -155,12 +155,11 @@ class TestStrategy : public Strategy {
                           [&isRising](TradingRecord &record) {
                             record % (*isRising ? "rising" : "falling");  // 1
                           });
-    m_positionController.OnSignal(m_positionOperationContext, security,
-                                  delayMeasurement);
+    m_positionController.OnSignal(m_operation, 0, security, delayMeasurement);
   }
 
  private:
-  boost::shared_ptr<PositionOperationContext> m_positionOperationContext;
+  boost::shared_ptr<Operation> m_operation;
   PositionController m_positionController;
   intmax_t m_direction;
   Price m_prevPrice;
@@ -168,7 +167,7 @@ class TestStrategy : public Strategy {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::optional<bool> PositionOperationContext::GetIsRising() const {
+boost::optional<bool> Operation::GetIsRising() const {
   return m_strategy.GetIsRising();
 }
 

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "StopLimit.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Position.hpp"
 #include "Core/TradingLog.hpp"
 
@@ -33,12 +34,13 @@ void TakeProfitStopLimit::Report(const Position &position,
                                  ModuleTradingLog &log) const {
   log.Write(
       "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f, 'time': "
-      "'%3%'}, 'position': '%4%'}",
+      "'%3%'}, 'position': '%4%/%5%'}",
       [this, &position](TradingRecord &record) {
         record % GetName()                                     // 1
             % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
             % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
-            % position.GetId();                                // 4
+            % position.GetOperation()->GetId()                 // 4
+            % position.GetSubOperationId();                    // 5
       });
 }
 
@@ -73,7 +75,7 @@ bool TakeProfitStopLimit::CheckSignal() {
       if (controlPrice <= currentPrice) {
         GetTradingLog().Write(
             "%1%\tsignaling by price\tprice=(%2$.8f+%3$.8f=%4$.8f)<=%5$.8f"
-            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
             [&](TradingRecord &record) {
               record % GetName()                                    // 1
                   % openPrice                                       // 2
@@ -82,7 +84,8 @@ bool TakeProfitStopLimit::CheckSignal() {
                   % currentPrice                                    // 5
                   % GetPosition().GetSecurity().GetBidPriceValue()  // 6
                   % GetPosition().GetSecurity().GetAskPriceValue()  // 7
-                  % GetPosition().GetId();                          // 8
+                  % GetPosition().GetOperation()->GetId()           // 8
+                  % GetPosition().GetSubOperationId();              // 9
             });
         return true;
       }
@@ -91,7 +94,7 @@ bool TakeProfitStopLimit::CheckSignal() {
       if (controlPrice <= currentPrice) {
         GetTradingLog().Write(
             "%1%\tsignaling by price\tprice=(%2$.8f-%3$.8f=%4$.8f)>=%5$.8f"
-            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
             [&](TradingRecord &record) {
               record % GetName()                                    // 1
                   % openPrice                                       // 2
@@ -100,7 +103,8 @@ bool TakeProfitStopLimit::CheckSignal() {
                   % currentPrice                                    // 5
                   % GetPosition().GetSecurity().GetBidPriceValue()  // 6
                   % GetPosition().GetSecurity().GetAskPriceValue()  // 7
-                  % GetPosition().GetId();                          // 8
+                  % GetPosition().GetOperation()->GetId()           // 8
+                  % GetPosition().GetSubOperationId();              // 9
               return true;
             });
       }
@@ -115,7 +119,7 @@ bool TakeProfitStopLimit::CheckSignal() {
     if (controlTime <= currentTime) {
       GetTradingLog().Write(
           "%1%\tsignaling by time\tprice=(%2%+%3%=%4%)<=%5%\tbid/ask=%6$.8f/"
-          "%7$.8f\tpos=%8%",
+          "%7$.8f\tpos=%8%/%9%",
           [&](TradingRecord &record) {
             record % GetName()                                    // 1
                 % openTime.time_of_day()                          // 2
@@ -124,7 +128,8 @@ bool TakeProfitStopLimit::CheckSignal() {
                 % currentTime.time_of_day()                       // 5
                 % GetPosition().GetSecurity().GetBidPriceValue()  // 6
                 % GetPosition().GetSecurity().GetAskPriceValue()  // 7
-                % GetPosition().GetId();                          // 8
+                % GetPosition().GetOperation()->GetId()           // 8
+                % GetPosition().GetSubOperationId();              // 9
           });
       return true;
     }

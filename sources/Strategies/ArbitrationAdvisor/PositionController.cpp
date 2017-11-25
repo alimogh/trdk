@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "OperationContext.hpp"
+#include "Operation.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
@@ -27,9 +27,8 @@ aa::PositionController::~PositionController() = default;
 
 void aa::PositionController::OnPositionUpdate(Position &position) {
   if (position.IsCompleted()) {
-    auto &reportData = boost::polymorphic_cast<OperationContext *>(
-                           &position.GetOperationContext())
-                           ->GetReportData();
+    auto &reportData =
+        position.GetTypedOperation<aa::Operation>().GetReportData();
     if (reportData.Add(position)) {
       m_report->Append(reportData);
     }
@@ -60,7 +59,7 @@ Position *aa::PositionController::FindOppositePosition(
     const Position &position) {
   for (auto &result : GetStrategy().GetPositions()) {
     if (&result == &position ||
-        &result.GetOperationContext() != &position.GetOperationContext()) {
+        result.GetOperation() != position.GetOperation()) {
       continue;
     }
     return &result;
@@ -73,10 +72,11 @@ void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
   if (position.IsStarted() && !position.IsCompleted()) {
     GetStrategy().GetLog().Warn(
-        "Unused quantity %1% detected on the \"%2%\" position %3%.",
-        position.GetActiveQty(),  // 1
-        position.GetSecurity(),   // 2
-        position.GetId());        // 3
+        "Unused quantity %1% detected on the \"%2%\" position %3%/%4%.",
+        position.GetActiveQty(),           // 1
+        position.GetSecurity(),            // 2
+        position.GetOperation()->GetId(),  // 3
+        position.GetSubOperationId());     // 4
     AssertLt(0, position.GetActiveQty());
     position.MarkAsCompleted();
   }

@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "StopLoss.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Position.hpp"
 #include "Core/TradingLog.hpp"
 
@@ -74,12 +75,13 @@ const char *StopPrice::GetName() const { return "stop price"; }
 void StopPrice::Report(const Position &position, ModuleTradingLog &log) const {
   log.Write(
       "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f}, 'delayTime': "
-      "'%3%', 'position': '%4%'}",
+      "'%3%', 'position': '%4%/%5%'}",
       [this, &position](TradingRecord &record) {
-        record % GetName()          // 1
-            % m_params->GetPrice()  // 2
-            % GetDelay()            // 3
-            % position.GetId();     // 4
+        record % GetName()                      // 1
+            % m_params->GetPrice()              // 2
+            % GetDelay()                        // 3
+            % position.GetOperation()->GetId()  // 4
+            % position.GetSubOperationId();     // 5
       });
 }
 
@@ -94,7 +96,7 @@ bool StopPrice::Activate() {
   }
 
   GetTradingLog().Write(
-      "%1%\thit\tprice=%2$.8f%3%%4$.8f\tbid/ask=%5$.8f/%6$.8f\tpos=%7%",
+      "%1%\thit\tprice=%2$.8f%3%%4$.8f\tbid/ask=%5$.8f/%6$.8f\tpos=%7%/%8%",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
             % currentPrice                                    // 2
@@ -102,7 +104,8 @@ bool StopPrice::Activate() {
             % m_params->GetPrice()                            // 4
             % GetPosition().GetSecurity().GetBidPriceValue()  // 5
             % GetPosition().GetSecurity().GetAskPriceValue()  // 6
-            % GetPosition().GetId();                          // 7
+            % GetPosition().GetOperation()->GetId()           // 7
+            % GetPosition().GetSubOperationId();              // 8
       });
 
   return true;
@@ -133,12 +136,13 @@ const char *StopLoss::GetName() const { return "stop-loss"; }
 void StopLoss::Report(const Position &position, ModuleTradingLog &log) const {
   log.Write(
       "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
-      "'delayTime': '%3%', 'position': '%4%'}",
+      "'delayTime': '%3%', 'position': '%4%/%5%'}",
       [this, &position](TradingRecord &record) {
-        record % GetName()                  // 1
-            % m_params->GetMaxLossPerLot()  // 2
-            % GetDelay()                    // 3
-            % position.GetId();             // 4
+        record % GetName()                      // 1
+            % m_params->GetMaxLossPerLot()      // 2
+            % GetDelay()                        // 3
+            % position.GetOperation()->GetId()  // 4
+            % position.GetSubOperationId();     // 5
       });
 }
 
@@ -154,7 +158,7 @@ bool StopLoss::Activate() {
   GetTradingLog().Write(
       "%1%\thit"
       "\tplanned-pnl=%2$.8f\tmax-loss=%3$.8f*%4$.8f=%5$.8f"
-      "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+      "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
             % plannedPnl                                      // 2
@@ -163,7 +167,8 @@ bool StopLoss::Activate() {
             % maxLoss                                         // 5
             % GetPosition().GetSecurity().GetBidPriceValue()  // 6
             % GetPosition().GetSecurity().GetAskPriceValue()  // 7
-            % GetPosition().GetId();                          // 8
+            % GetPosition().GetOperation()->GetId()           // 8
+            % GetPosition().GetSubOperationId();              // 9
       });
 
   return true;
@@ -197,12 +202,13 @@ void StopLossShare::Report(const Position &position,
                            ModuleTradingLog &log) const {
   log.Write(
       "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
-      "'delayTime': '%3%', 'position': '%4%'}",
+      "'delayTime': '%3%', 'position': '%4%/%5%'}",
       [this, &position](TradingRecord &record) {
-        record % GetName()                 // 1
-            % m_params->GetMaxLossShare()  // 2
-            % GetDelay()                   // 3
-            % GetPosition().GetId();       // 4
+        record % GetName()                           // 1
+            % m_params->GetMaxLossShare()            // 2
+            % GetDelay()                             // 3
+            % GetPosition().GetOperation()->GetId()  // 4
+            % GetPosition().GetSubOperationId();     // 5
       });
 }
 
@@ -217,7 +223,7 @@ bool StopLossShare::Activate() {
   GetTradingLog().Write(
       "%1%\thit"
       "\tplanned-pnl=%2$.8f\tmax-loss=%3$.8f*%4$.8f=%5$.8f"
-      "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%",
+      "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
             % plannedPnl                                      // 2
@@ -226,7 +232,8 @@ bool StopLossShare::Activate() {
             % maxLoss                                         // 5
             % GetPosition().GetSecurity().GetBidPriceValue()  // 6
             % GetPosition().GetSecurity().GetAskPriceValue()  // 7
-            % GetPosition().GetId();                          // 8
+            % GetPosition().GetOperation()->GetId()           // 8
+            % GetPosition().GetSubOperationId();              // 9
       });
 
   return true;

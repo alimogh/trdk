@@ -53,8 +53,6 @@ class TRDK_CORE_API Position
  public:
   explicit Position(
       trdk::Strategy &,
-      const boost::uuids::uuid &operationId,
-      int64_t subOperationId,
       trdk::TradingSystem &,
       trdk::Security &,
       const trdk::Lib::Currency &,
@@ -62,11 +60,9 @@ class TRDK_CORE_API Position
       const trdk::Price &startPrice,
       const trdk::Lib::TimeMeasurement::Milestones &strategyTimeMeasurement);
   explicit Position(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
-      trdk::Strategy &,
-      const boost::uuids::uuid &operationId,
+      const boost::shared_ptr<trdk::Operation> &,
       int64_t subOperationId,
-      trdk::TradingSystem &,
+      trdk::Strategy &,
       trdk::Security &,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
@@ -77,6 +73,8 @@ class TRDK_CORE_API Position
   virtual ~Position();
 
  public:
+  int64_t GetSubOperationId() const;
+
   //! Attaches algorithm to the position.
   /** Will try to execute algorithm at each price update, but only if position
     * is not in the "canceling state".
@@ -85,10 +83,17 @@ class TRDK_CORE_API Position
     */
   void AttachAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
 
-  trdk::PositionOperationContext &GetOperationContext();
-  const trdk::PositionOperationContext &GetOperationContext() const;
+  const boost::shared_ptr<trdk::Operation> &GetOperation();
+  const boost::shared_ptr<const trdk::Operation> &GetOperation() const;
 
-  const boost::uuids::uuid &GetId() const;
+  template <typename Operation>
+  Operation &GetTypedOperation() {
+    return *boost::polymorphic_downcast<Operation *>(&*GetOperation());
+  }
+  template <typename Operation>
+  const Operation &GetTypedOperation() const {
+    return *boost::polymorphic_downcast<const Operation *>(&*GetOperation());
+  }
 
   bool IsLong() const;
   virtual trdk::Position::Type GetType() const = 0;
@@ -411,25 +416,20 @@ inline std::ostream &operator<<(std::ostream &os,
 class TRDK_CORE_API LongPosition : public Position {
  public:
   explicit LongPosition(trdk::Strategy &,
-                        const boost::uuids::uuid &operationId,
-                        int64_t subOperationId,
                         trdk::TradingSystem &,
                         trdk::Security &,
                         const trdk::Lib::Currency &,
                         const trdk::Qty &,
                         const trdk::Price &startPrice,
                         const trdk::Lib::TimeMeasurement::Milestones &);
-  explicit LongPosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
-      trdk::Strategy &,
-      const boost::uuids::uuid &operationId,
-      int64_t subOperationId,
-      trdk::TradingSystem &,
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+  explicit LongPosition(const boost::shared_ptr<trdk::Operation> &,
+                        int64_t subOperationId,
+                        trdk::Strategy &,
+                        trdk::Security &,
+                        const trdk::Lib::Currency &,
+                        const trdk::Qty &,
+                        const trdk::Price &startPrice,
+                        const trdk::Lib::TimeMeasurement::Milestones &);
   virtual ~LongPosition() override;
 
  public:
@@ -476,25 +476,20 @@ class TRDK_CORE_API LongPosition : public Position {
 class TRDK_CORE_API ShortPosition : public Position {
  public:
   explicit ShortPosition(trdk::Strategy &,
-                         const boost::uuids::uuid &operationId,
-                         int64_t subOperationId,
                          trdk::TradingSystem &,
                          trdk::Security &,
                          const trdk::Lib::Currency &,
                          const trdk::Qty &,
                          const trdk::Price &startPrice,
                          const trdk::Lib::TimeMeasurement::Milestones &);
-  explicit ShortPosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
-      trdk::Strategy &,
-      const boost::uuids::uuid &operationId,
-      int64_t subOperationId,
-      trdk::TradingSystem &,
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+  explicit ShortPosition(const boost::shared_ptr<trdk::Operation> &,
+                         int64_t subOperationId,
+                         trdk::Strategy &,
+                         trdk::Security &,
+                         const trdk::Lib::Currency &,
+                         const trdk::Qty &,
+                         const trdk::Price &startPrice,
+                         const trdk::Lib::TimeMeasurement::Milestones &);
   virtual ~ShortPosition() override;
 
  public:

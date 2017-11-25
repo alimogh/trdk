@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Strategy.hpp"
 #include "DropCopy.hpp"
+#include "Operation.hpp"
 #include "RiskControl.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
@@ -734,9 +735,10 @@ void Strategy::ReportStop() {
       for (const auto &pos : GetPositions()) {
         if (pos.HasActiveOrders()) {
           GetLog().Error(
-              "Found position %1% with active orders at stop"
+              "Found position %1%/%2% with active orders at stop"
               " with mode \"wait for orders before\".",
-              pos.GetId());
+              pos.GetOperation()->GetId(),  // 1
+              pos.GetSubOperationId());     // 2
         }
         Assert(!pos.HasActiveOrders());
       }

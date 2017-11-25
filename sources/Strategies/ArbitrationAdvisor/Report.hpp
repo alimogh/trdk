@@ -19,7 +19,8 @@ namespace ArbitrageAdvisor {
 struct OperationReportData : private boost::noncopyable {
  public:
   struct PositionReport {
-    boost::uuids::uuid id;
+    boost::uuids::uuid operation;
+    int64_t subOperation;
     bool isLong;
     boost::posix_time::ptime openStartTime;
     boost::posix_time::ptime openTime;

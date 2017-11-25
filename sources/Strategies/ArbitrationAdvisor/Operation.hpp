@@ -16,18 +16,21 @@
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
-class OperationContext : public PositionOperationContext {
+class Operation : public trdk::Operation {
  public:
-  explicit OperationContext(Security &sellTarget,
-                            Security &buyTarget,
-                            const Qty &maxQty,
-                            const Price &sellPrice,
-                            const Price &buyPrice)
+  typedef trdk::Operation Base;
+
+ public:
+  explicit Operation(Security &sellTarget,
+                     Security &buyTarget,
+                     const Qty &maxQty,
+                     const Price &sellPrice,
+                     const Price &buyPrice)
       : m_orderPolicy(sellPrice, buyPrice),
         m_sellTarget(sellTarget),
         m_buyTarget(buyTarget),
         m_maxQty(maxQty) {}
-  virtual ~OperationContext() override = default;
+  virtual ~Operation() override = default;
 
  public:
   bool IsSame(const Security &sellTarget, const Security &buyTarget) const {
@@ -36,7 +39,7 @@ class OperationContext : public PositionOperationContext {
 
   OperationReportData &GetReportData() { return m_reportData; }
   const OperationReportData &GetReportData() const {
-    return const_cast<OperationContext *>(this)->GetReportData();
+    return const_cast<Operation *>(this)->GetReportData();
   }
 
  public:
@@ -57,16 +60,6 @@ class OperationContext : public PositionOperationContext {
   }
 
   virtual trdk::Qty GetPlannedQty() const override { return m_maxQty; }
-
-  virtual bool HasCloseSignal(const trdk::Position &) const override {
-    // Not used in this strategy.
-    return false;
-  }
-
-  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
-      const trdk::Position &) override {
-    return nullptr;
-  }
 
  private:
   OrderPolicy m_orderPolicy;

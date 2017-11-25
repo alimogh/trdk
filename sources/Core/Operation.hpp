@@ -16,16 +16,18 @@
 namespace trdk {
 
 //! Describes one or more operations with position.
-class TRDK_CORE_API PositionOperationContext
-    : public boost::enable_shared_from_this<trdk::PositionOperationContext> {
+class TRDK_CORE_API Operation {
  public:
-  PositionOperationContext() = default;
-  PositionOperationContext(PositionOperationContext &&) = default;
-  virtual ~PositionOperationContext() = default;
+  Operation();
+  Operation(Operation &&);
+  virtual ~Operation();
 
  private:
-  PositionOperationContext(const PositionOperationContext &);
-  const PositionOperationContext &operator=(const PositionOperationContext &);
+  Operation(const Operation &);
+  const Operation &operator=(const Operation &);
+
+ public:
+  const boost::uuids::uuid &GetId() const;
 
  public:
   virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
@@ -52,7 +54,7 @@ class TRDK_CORE_API PositionOperationContext
   virtual trdk::Qty GetPlannedQty() const = 0;
 
   //! Returns true if the opened position should be closed as soon as possible.
-  virtual bool HasCloseSignal(const trdk::Position &) const = 0;
+  virtual bool HasCloseSignal(const trdk::Position &) const;
 
   //! Will be called before each closing state changing.
   /** @return True, if reason can be changed, false otherwise.
@@ -61,15 +63,19 @@ class TRDK_CORE_API PositionOperationContext
                                    const trdk::CloseReason &newReason);
 
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual const PositionOperationContext *GetParent() const;
+  virtual const Operation *GetParent() const;
   //! Returns parent operation or nullptr if doesn't have parent.
-  virtual PositionOperationContext *GetParent();
+  virtual Operation *GetParent();
 
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if
     *         the position can be inverted.
     */
-  virtual boost::shared_ptr<PositionOperationContext> StartInvertedPosition(
-      const trdk::Position &) = 0;
+  virtual boost::shared_ptr<Operation> StartInvertedPosition(
+      const trdk::Position &);
+
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 }

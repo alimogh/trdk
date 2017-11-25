@@ -36,38 +36,42 @@ class PositionController : private boost::noncopyable {
     *         started or changed.
     */
   trdk::Position *OnSignal(
-      const boost::shared_ptr<trdk::PositionOperationContext>
-          &newOperationContext,
+      const boost::shared_ptr<trdk::Operation> &newOperationContext,
+      int64_t subOperationId,
       trdk::Security &security,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
   virtual void OnPostionsCloseRequest();
-  void OnBrokerPositionUpdate(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
-      trdk::Security &,
-      bool isLong,
-      const trdk::Qty &,
-      const trdk::Volume &,
-      bool isInitial);
+  void OnBrokerPositionUpdate(const boost::shared_ptr<trdk::Operation> &,
+                              int64_t subOperationId,
+                              trdk::Security &,
+                              bool isLong,
+                              const trdk::Qty &,
+                              const trdk::Volume &,
+                              bool isInitial);
 
  public:
   virtual trdk::Position &OpenPosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       trdk::Security &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &OpenPosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       trdk::Security &,
       bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &OpenPosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       trdk::Security &,
       bool isLong,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual trdk::Position &RestorePosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       trdk::Security &,
       bool isLong,
       const trdk::Qty &,
@@ -87,7 +91,8 @@ class PositionController : private boost::noncopyable {
 
  protected:
   boost::shared_ptr<Position> CreatePosition(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       bool isLong,
       trdk::Security &,
       const trdk::Qty &,
@@ -105,12 +110,12 @@ class PositionController : private boost::noncopyable {
  private:
   template <typename PositionType>
   boost::shared_ptr<trdk::Position> CreatePositionObject(
-      const boost::shared_ptr<trdk::PositionOperationContext> &,
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
       trdk::Security &,
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  boost::uuids::uuid GenerateNewOperationId() const;
 
  private:
   class Implementation;

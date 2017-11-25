@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "Strategy.hpp"
-#include "OperationContext.hpp"
+#include "Operation.hpp"
 #include "PositionController.hpp"
 #include "Report.hpp"
 
@@ -158,9 +158,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         continue;
       }
 
-      const auto &operation =
-          *boost::polymorphic_downcast<const OperationContext *>(
-              &position.GetOperationContext());
+      const auto &operation = position.GetTypedOperation<aa::Operation>();
       if (operation.IsSame(sellTarget, buyTarget)) {
         AssertGe(2, numberOfPositionsWithTheSameTargget);
         ++numberOfPositionsWithTheSameTargget;
@@ -282,7 +280,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto operation = boost::make_shared<OperationContext>(
+    const auto operation = boost::make_shared<Operation>(
         sellTarget, buyTarget, maxQty, sellPrice, buyPrice);
 
     const auto &sellTradingSystemName =
@@ -319,8 +317,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Position *firstLegPosition = nullptr;
     try {
       firstLegPosition = &m_controller.OpenPosition(
-          operation, *legTargets.first, delayMeasurement);
-      m_controller.OpenPosition(operation, *legTargets.second,
+          operation, 1, *legTargets.first, delayMeasurement);
+      m_controller.OpenPosition(operation, 2, *legTargets.second,
                                 delayMeasurement);
     } catch (const std::exception &ex) {
       m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
@@ -329,14 +327,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         Verify(m_errors.emplace(legTargets.second).second);
         m_controller.ClosePosition(*firstLegPosition, CLOSE_REASON_OPEN_FAILED);
         operation->GetReportData().Add(OperationReportData::PositionReport{
-            {},
-            !firstLegPosition->IsLong(),
-            firstLegPosition->GetOpenStartTime(),
-            pt::not_a_date_time,
+            operation->GetId(), 2, !firstLegPosition->IsLong(),
+            firstLegPosition->GetOpenStartTime(), pt::not_a_date_time,
             firstLegPosition->IsLong() ? sellTarget.GetBidPrice()
                                        : buyTarget.GetAskPrice(),
-            std::numeric_limits<double>::quiet_NaN(),
-            std::numeric_limits<double>::quiet_NaN(),
+            std::numeric_limits<double>::quiet_NaN(), 0,
             firstLegPosition->IsLong()
                 ? &operation->GetTradingSystem(m_self, sellTarget)
                 : &operation->GetTradingSystem(m_self, buyTarget),
