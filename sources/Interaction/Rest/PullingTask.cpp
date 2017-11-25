@@ -97,6 +97,7 @@ void PullingTask::AccelerateNextPulling() {
 
 void PullingTask::Run() {
   m_log.Debug("Starting pulling task...");
+
   try {
     Lock lock(m_mutex);
 
@@ -109,33 +110,41 @@ void PullingTask::Run() {
 
       for (auto it = m_tasks.begin(); it != m_tasks.cend();) {
         auto &task = *it++;
+
         if (!isAccelerated && task.skipCount > 0) {
           --task.skipCount;
           continue;
         }
+
         task.skipCount = task.frequency;
+
         bool isCompleted;
         try {
           isCompleted = !task.task();
-          task.numberOfErrors = 0;
         } catch (const std::exception &ex) {
           isCompleted = false;
-          ++task.numberOfErrors;
-          m_log.Error("Pulling task \"%1%\" error: \"%2%\" (%3%).",
-                      task.name,             // 1
-                      ex.what(),             // 2
-                      task.numberOfErrors);  // 3
-          //           if (task.numberOfErrors > 3) {
-          //             task.skipCount *= std::min<size_t>(30,
-          //             task.numberOfErrors);
-          //           }
+          if (++task.numberOfErrors <= 2) {
+            m_log.Error("%1% task \"%1%\" error: \"%2%\".",
+                        task.name,  // 1
+                        ex.what(),  // 2
+                        task.numberOfErrors == 1 ? "Pulling"
+                                                 : "Repeated pulling");  // 3
+          }
+          continue;
         }
+
+        if (task.numberOfErrors > 1) {
+          m_log.Info("Pulling task \"%1%\" restored.", task.name);
+        }
+        task.numberOfErrors = 0;
+
         if (isCompleted) {
           const auto pos = std::distance(m_tasks.begin(), std::prev(it));
           m_tasks.erase(m_tasks.begin() + pos);
           it = m_tasks.begin() + pos;
         }
       }
+
       if (!m_isAccelerated) {
         m_condition.wait_until(lock, nextStartTime);
       }
