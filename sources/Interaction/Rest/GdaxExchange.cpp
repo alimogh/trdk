@@ -350,7 +350,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
-      RequestMarkets();
+      RequestProducts();
       // RequestAccounts();
     } catch (const std::exception &ex) {
       GetTsLog().Error(ex.what());
@@ -430,14 +430,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
-    const auto &symbol = NormilizeSymbol(security.GetSymbol().GetSymbol());
-
-    double autoActualPrice = *price;
-    {
-      const auto &product = m_products.find(symbol);
-      if (product != m_products.cend()) {
-        autoActualPrice = RoundByPrecision(autoActualPrice, product->second);
-      }
+    const auto &product =
+        m_products.find(NormilizeSymbol(security.GetSymbol().GetSymbol()));
+    if (product == m_products.cend()) {
+      throw Exception("Symbol is not supported by exchange");
     }
 
     {
@@ -445,8 +441,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
           "\"size\": \"%4$.8f\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
-          % symbol                                                // 2
-          % autoActualPrice                                       // 3
+          % product->first                                        // 2
+          % RoundByPrecision(*price, product->second)             // 3
           % qty;                                                  // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
@@ -475,7 +471,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
-  void RequestMarkets() {
+  void RequestProducts() {
     boost::unordered_map<std::string, uintmax_t> products;
     PublicRequest request("products");
     const auto response =
@@ -491,7 +487,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         precision = quoteIncrement.size() - dotPos - 1;
         precision = static_cast<decltype(precision)>(std::pow(10, precision));
       }
-      Verify(products.emplace(std::move(id), precision).second);
+      Verify(products.emplace(id, precision).second);
       boost::format logStr("%1% (price step: %2%, precision power: %3%)");
       logStr % id           // 1
           % quoteIncrement  // 2
@@ -585,6 +581,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                      : ORDER_STATUS_SUBMITTED;
       } else if (statusField == "done") {
         status = ORDER_STATUS_FILLED;
+        remainingQty = 0;
       } else {
         GetTsLog().Error("Unknown order status \"%1%\" for order %2%.",
                          statusField, orderId);
