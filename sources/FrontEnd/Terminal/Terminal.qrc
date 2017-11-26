@@ -1,4 +1,5 @@
 <RCC>
-    <qresource prefix="Terminal">
+    <qresource prefix="/Terminal">
+        <file>Resources/splash.png</file>
     </qresource>
 </RCC>

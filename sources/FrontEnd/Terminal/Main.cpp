@@ -17,15 +17,41 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+class SplashScreen : public QSplashScreen {
+ public:
+  SplashScreen() : QSplashScreen(QPixmap(":/Terminal/Resources/splash.png")) {}
+  virtual ~SplashScreen() override = default;
+
+ public:
+  void ShowMessage(const std::string &message) {
+    showMessage(QString::fromStdString(message),
+                Qt::AlignRight | Qt::AlignBottom, QColor(240, 240, 240));
+  }
+
+ protected:
+  virtual void mousePressEvent(QMouseEvent *) override{};
+};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
 
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication application(argc, argv);
 
+  auto splash = boost::make_unique<SplashScreen>();
+  splash->show();
+
   try {
     application.setApplicationName(TRDK_NAME);
     application.setOrganizationDomain(TRDK_DOMAIN);
+    splash->ShowMessage(
+        application.tr("Loading " TRDK_NAME "...").toStdString());
 
     LoadStyle(application);
 
@@ -34,11 +60,12 @@ int main(int argc, char *argv[]) {
         nullptr);
 
     MainWindow mainWindow(std::move(engine), nullptr);
-    mainWindow.show();
 
     for (;;) {
       try {
-        mainWindow.GetEngine().Start();
+        mainWindow.GetEngine().Start([&splash](const std::string &message) {
+          splash->ShowMessage(message);
+        });
         break;
       } catch (const std::exception &ex) {
         if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
@@ -52,6 +79,10 @@ int main(int argc, char *argv[]) {
 
     mainWindow.CreateNewArbitrageStrategy();
 
+    mainWindow.show();
+    splash->finish(&mainWindow);
+    splash.reset();
+
     return application.exec();
   } catch (const std::exception &ex) {
     QMessageBox::critical(nullptr, application.tr("Application fatal error"),
@@ -63,3 +94,5 @@ int main(int argc, char *argv[]) {
   }
   return 1;
 }
+
+////////////////////////////////////////////////////////////////////////////////

@@ -135,7 +135,7 @@ void EngineWindow::Start(bool start) {
   if (start) {
     for (;;) {
       try {
-        m_engine.Start();
+        m_engine.Start([](const std::string &) {});
         break;
       } catch (const std::exception &ex) {
         if (QMessageBox::critical(this, tr("Failed to start engine"),

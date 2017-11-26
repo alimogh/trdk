@@ -191,7 +191,10 @@ Engine::Context::~Context() {
   }
 }
 
-void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
+void Engine::Context::Start(
+    const Lib::Ini &conf,
+    const boost::function<void(const std::string &)> &startProgressCallback,
+    DropCopy *dropCopy) {
   GetLog().Debug("Starting...");
 
   if (m_pimpl->m_isStopped) {
@@ -209,6 +212,11 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
     // Market data system should be connected before booting as sometimes
     // security objects can be created without market data source.
     for (auto &source : m_pimpl->m_marketDataSources) {
+      if (startProgressCallback) {
+        startProgressCallback("Connecting to " +
+                              source.marketDataSource->GetInstanceName() +
+                              " market data source...");
+      }
       try {
         source.marketDataSource->Connect(IniSectionRef(conf, source.section));
       } catch (const Interactor::ConnectError &ex) {
@@ -222,6 +230,9 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
       }
     }
 
+    if (startProgressCallback) {
+      startProgressCallback("Bootstrapping modules...");
+    }
     try {
       BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
                        m_pimpl->m_state->strategies,
@@ -243,6 +254,13 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
         Assert(!tradingSystemRef.section.empty());
 
         auto &tradingSystem = *tradingSystemRef.tradingSystem;
+
+        if (startProgressCallback) {
+          startProgressCallback("Connecting to " +
+                                tradingSystem.GetInstanceName() +
+                                " trading system...");
+        }
+
         const IniSectionRef confSection(conf, tradingSystemRef.section);
 
         try {
@@ -257,6 +275,10 @@ void Engine::Context::Start(const Lib::Ini &conf, DropCopy *dropCopy) {
           throw Exception("Failed to make trading system connection");
         }
       }
+    }
+
+    if (startProgressCallback) {
+      startProgressCallback("Final initialization...");
     }
 
     ForEachMarketDataSource([&](MarketDataSource &source) -> bool {

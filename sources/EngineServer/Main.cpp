@@ -139,6 +139,7 @@ bool DebugStrategy(int argc, const char *argv[]) {
             }
             stateCondition.notify_all();
           },
+          [](const std::string &) {},
           [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); }, params);
     } catch (const trdk::Lib::Exception &ex) {
       std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;

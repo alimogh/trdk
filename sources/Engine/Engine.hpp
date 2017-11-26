@@ -21,13 +21,17 @@ class TRDK_ENGINE_API Engine : private boost::noncopyable {
   explicit Engine(
       const boost::filesystem::path &,
       const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-      const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+      const boost::function<void(const std::string &)> &startProgressCallback,
+      const boost::function<void(trdk::Engine::Context::Log &)>
+          &logStartCallback,
       const boost::unordered_map<std::string, std::string> &params);
   explicit Engine(
       const boost::filesystem::path &,
       const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
       DropCopy &dropCopy,
-      const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+      const boost::function<void(const std::string &)> &startProgressCallback,
+      const boost::function<void(trdk::Engine::Context::Log &)>
+          &logStartCallback,
       const boost::unordered_map<std::string, std::string> &params);
   ~Engine();
 
@@ -46,7 +50,9 @@ class TRDK_ENGINE_API Engine : private boost::noncopyable {
       const boost::filesystem::path &,
       const trdk::Context::StateUpdateSlot &,
       DropCopy *dropCopy,
-      const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+      const boost::function<void(const std::string &)> &startProgressCallback,
+      const boost::function<void(trdk::Engine::Context::Log &)>
+          &logStartCallback,
       const boost::unordered_map<std::string, std::string> &params);
 
  private:

@@ -31,7 +31,10 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   virtual ~Context() override;
 
  public:
-  void Start(const trdk::Lib::Ini &, trdk::DropCopy * = nullptr);
+  void Start(
+      const trdk::Lib::Ini &,
+      const boost::function<void(const std::string &)> &startProgressCallback,
+      trdk::DropCopy * = nullptr);
   void Stop(const trdk::StopMode &);
 
   virtual void Add(const trdk::Lib::Ini &) override;
