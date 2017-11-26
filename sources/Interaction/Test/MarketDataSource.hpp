@@ -23,8 +23,7 @@ class MarketDataSource : public trdk::MarketDataSource {
   typedef trdk::MarketDataSource Base;
 
  public:
-  MarketDataSource(size_t index,
-                   Context &context,
+  MarketDataSource(Context &context,
                    const std::string &instanceName,
                    const Lib::IniSectionRef &);
   virtual ~MarketDataSource() override = default;

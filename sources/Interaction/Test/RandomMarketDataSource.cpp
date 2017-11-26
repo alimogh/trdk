@@ -22,11 +22,10 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Test;
 
-RandomMarketDataSource::RandomMarketDataSource(size_t index,
-                                               Context &context,
+RandomMarketDataSource::RandomMarketDataSource(Context &context,
                                                const std::string &instanceName,
                                                const IniSectionRef &)
-    : Base(index, context, instanceName), m_stopFlag(false) {}
+    : Base(context, instanceName), m_stopFlag(false) {}
 
 RandomMarketDataSource::~RandomMarketDataSource() {
   m_stopFlag = true;
@@ -174,12 +173,11 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
 
 TRDK_INTERACTION_TEST_API
 boost::shared_ptr<MarketDataSource> CreateRandomMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<RandomMarketDataSource>(
-      index, context, instanceName, configuration);
+  return boost::make_shared<RandomMarketDataSource>(context, instanceName,
+                                                    configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

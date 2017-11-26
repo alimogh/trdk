@@ -282,6 +282,7 @@ void StrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
 
   auto &newWindow = *(new StrategyWindow(m_engine, newSymbol, parentWidget()));
   newWindow.setGeometry(geometry());
+  newWindow.adjustSize();
   close();
   newWindow.show();
 }

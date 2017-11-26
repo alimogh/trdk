@@ -23,7 +23,6 @@ class TradingSystem : public LegacyTradingSystem {
 
  public:
   explicit TradingSystem(const trdk::TradingMode &,
-                         size_t index,
                          Context &context,
                          const std::string &instanceName,
                          const Lib::IniSectionRef &);

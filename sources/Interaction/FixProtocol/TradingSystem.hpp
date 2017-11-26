@@ -23,7 +23,6 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
 
  public:
   explicit TradingSystem(const TradingMode &,
-                         size_t index,
                          Context &,
                          const std::string &instanceName,
                          const Lib::IniSectionRef &);

@@ -127,11 +127,10 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
   };
 
  public:
-  explicit CsvTickMarketDataSource(size_t index,
-                                   Context &context,
+  explicit CsvTickMarketDataSource(Context &context,
                                    const std::string &instanceName,
                                    const IniSectionRef &conf)
-      : Base(index, context, instanceName, conf), m_settings(conf) {
+      : Base(context, instanceName, conf), m_settings(conf) {
     m_settings.Log(GetLog());
   }
 
@@ -326,12 +325,11 @@ AssertEq(numberOfLevel1TickTypes,
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_TEST_API boost::shared_ptr<trdk::MarketDataSource>
-CreateCsvTickMarketDataSource(size_t index,
-                              Context &context,
+CreateCsvTickMarketDataSource(Context &context,
                               const std::string &instanceName,
                               const IniSectionRef &configuration) {
-  return boost::make_shared<CsvTickMarketDataSource>(
-      index, context, instanceName, configuration);
+  return boost::make_shared<CsvTickMarketDataSource>(context, instanceName,
+                                                     configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

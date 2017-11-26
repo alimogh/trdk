@@ -19,7 +19,6 @@ namespace trdk {
 
 typedef boost::shared_ptr<trdk::TradingSystem>(TradingSystemFactory)(
     const trdk::TradingMode &,
-    size_t tradingSystemIndex,
     trdk::Context &,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &);
@@ -30,8 +29,6 @@ struct TradingSystemAndMarketDataSourceFactoryResult {
 };
 typedef trdk::TradingSystemAndMarketDataSourceFactoryResult(
     TradingSystemAndMarketDataSourceFactory)(const trdk::TradingMode &,
-                                             size_t tradingSystemIndex,
-                                             size_t marketDataSourceSystemIndex,
                                              trdk::Context &,
                                              const std::string &instanceName,
                                              const trdk::Lib::IniSectionRef &);
@@ -114,7 +111,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
  public:
   explicit TradingSystem(const trdk::TradingMode &,
-                         size_t index,
                          trdk::Context &,
                          const std::string &instanceName);
   virtual ~TradingSystem() override;
@@ -125,6 +121,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
  public:
   const trdk::TradingMode &GetMode() const;
 
+  void AssignIndex(size_t);
   size_t GetIndex() const;
 
   trdk::Context &GetContext();
@@ -308,7 +305,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 class TRDK_CORE_API LegacyTradingSystem : public trdk::TradingSystem {
  public:
   explicit LegacyTradingSystem(const trdk::TradingMode &,
-                               size_t index,
                                trdk::Context &,
                                const std::string &instanceName);
   virtual ~LegacyTradingSystem() override = default;

@@ -26,11 +26,10 @@ namespace out = fix::Outgoing;
 namespace in = fix::Incoming;
 
 fix::TradingSystem::TradingSystem(const TradingMode &mode,
-                                  size_t index,
                                   Context &context,
                                   const std::string &instanceName,
                                   const IniSectionRef &conf)
-    : trdk::TradingSystem(mode, index, context, instanceName),
+    : trdk::TradingSystem(mode, context, instanceName),
       Handler(context, conf, trdk::TradingSystem::GetLog()),
       m_client("Trade", *this) {}
 
@@ -268,12 +267,11 @@ void fix::TradingSystem::OnOrderCancelReject(
 
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const TradingMode &mode,
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<fix::TradingSystem>(
-      mode, index, context, instanceName, configuration);
+      mode, context, instanceName, configuration);
   return result;
 }
 

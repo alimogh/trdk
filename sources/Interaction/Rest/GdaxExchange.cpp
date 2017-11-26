@@ -91,6 +91,11 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
               std::numeric_limits<double>::quiet_NaN())};
 }
 #pragma warning(pop)
+
+struct Product {
+  std::string id;
+  uintmax_t precisionPower;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,8 +196,11 @@ class PrivateRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(const std::string &source) {
+std::string NormilizeProductId(std::string source) {
   return boost::replace_first_copy(source, "_", "-");
+}
+std::string RestoreSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "-", "_");
 }
 }
 
@@ -227,13 +235,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit GdaxExchange(const App &,
                         const TradingMode &mode,
-                        size_t tradingSystemIndex,
-                        size_t marketDataSourceIndex,
                         Context &context,
                         const std::string &instanceName,
                         const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
@@ -351,9 +357,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
       RequestProducts();
-      // RequestAccounts();
+      RequestAccounts();
     } catch (const std::exception &ex) {
-      GetTsLog().Error(ex.what());
+      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
+      throw ConnectError(ex.what());
     }
     Verify(m_pullingTask->AddTask("Actual orders", 0,
                                   [this]() {
@@ -368,20 +375,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
-    const auto &exchangeSymbol = NormilizeSymbol(symbol.GetSymbol());
-    if (m_products.count(exchangeSymbol) == 0) {
+    const auto &product = m_products.find(symbol.GetSymbol());
+    if (product == m_products.cend()) {
       boost::format message(
           "Symbol \"%1%\" is not in the exchange product list");
-      message % exchangeSymbol;
+      message % symbol.GetSymbol();
       throw SymbolIsNotSupportedError(message.str().c_str());
-    }
-
-    {
-      const SecuritiesLock lock(m_securitiesMutex);
-      const auto &it = m_securities.find(symbol);
-      if (it != m_securities.cend()) {
-        return *it->second.security;
-      }
     }
 
     const auto result = boost::make_shared<Rest::Security>(
@@ -395,7 +394,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "products/" + exchangeSymbol + "/book/");
+          "products/" + product->second.id + "/book/");
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
                  .second);
@@ -430,8 +429,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
-    const auto &product =
-        m_products.find(NormilizeSymbol(security.GetSymbol().GetSymbol()));
+    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
     if (product == m_products.cend()) {
       throw Exception("Symbol is not supported by exchange");
     }
@@ -440,10 +438,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       boost::format requestParams(
           "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
           "\"size\": \"%4$.8f\"}");
-      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
-          % product->first                                        // 2
-          % RoundByPrecision(*price, product->second)             // 3
-          % qty;                                                  // 4
+      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")      // 1
+          % product->second.id                                        // 2
+          % RoundByPrecision(*price, product->second.precisionPower)  // 3
+          % qty;                                                      // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
 
@@ -472,26 +470,34 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void RequestProducts() {
-    boost::unordered_map<std::string, uintmax_t> products;
+    boost::unordered_map<std::string, Product> products;
     PublicRequest request("products");
     const auto response =
         boost::get<1>(request.Send(m_marketDataSession, GetContext()));
     std::vector<std::string> log;
     for (const auto &node : response) {
-      const auto &product = node.second;
-      const auto &id = product.get<std::string>("id");
-      const auto &quoteIncrement = product.get<std::string>("quote_increment");
+      const auto &productNode = node.second;
+      Product product = {productNode.get<std::string>("id")};
+      const auto &quoteIncrement =
+          productNode.get<std::string>("quote_increment");
       const auto dotPos = quoteIncrement.find('.');
-      uintmax_t precision = 0;
       if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
-        precision = quoteIncrement.size() - dotPos - 1;
-        precision = static_cast<decltype(precision)>(std::pow(10, precision));
+        product.precisionPower = quoteIncrement.size() - dotPos - 1;
+        product.precisionPower = static_cast<decltype(product.precisionPower)>(
+            std::pow(10, product.precisionPower));
       }
-      Verify(products.emplace(id, precision).second);
-      boost::format logStr("%1% (price step: %2%, precision power: %3%)");
-      logStr % id           // 1
-          % quoteIncrement  // 2
-          % precision;      // 3
+      const auto &symbol = RestoreSymbol(product.id);
+      const auto &productIt =
+          products.emplace(std::move(symbol), std::move(product));
+      if (!productIt.second) {
+        GetTsLog().Error("Product duplicate: \"%1%\"", productIt.first->first);
+        Assert(productIt.second);
+        continue;
+      }
+      boost::format logStr("%1% (ID: \"%2%\", price step: %3%)");
+      logStr % productIt.first->first   // 1
+          % productIt.first->second.id  // 2
+          % quoteIncrement;             // 3
       log.emplace_back(logStr.str());
     }
     GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
@@ -569,7 +575,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     const Qty qty = order.get<double>("size");
     const Qty filledQty = order.get<double>("filled_size");
     AssertGe(qty, filledQty);
-    const Qty remainingQty = qty - filledQty;
+    Qty remainingQty = qty - filledQty;
 
     OrderStatus status;
     {
@@ -715,7 +721,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   trdk::Timer::Scope m_timerScope;
 
-  boost::unordered_map<std::string, uintmax_t> m_products;
+  boost::unordered_map<std::string, Product> m_products;
 };
 }
 
@@ -723,25 +729,20 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<GdaxExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateGdaxMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   return boost::make_shared<GdaxExchange>(App::GetInstance(), TRADING_MODE_LIVE,
-                                          index, index, context, instanceName,
-                                          configuration);
+                                          context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

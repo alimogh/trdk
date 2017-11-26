@@ -83,6 +83,10 @@ struct Order {
   pt::ptime openTime;
   pt::ptime updateTime;
 };
+
+struct Product {
+  std::string id;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -213,8 +217,11 @@ class PrivateRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(const std::string &source) {
+std::string NormilizeProductId(const std::string &source) {
   return boost::replace_first_copy(source, "_", "-");
+}
+std::string RestoreSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "-", "_");
 }
 }
 
@@ -235,13 +242,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit CcexExchange(const App &,
                         const TradingMode &mode,
-                        size_t tradingSystemIndex,
-                        size_t marketDataSourceIndex,
                         Context &context,
                         const std::string &instanceName,
                         const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_endpoint(GetEndpoint()),
@@ -304,6 +309,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    try {
+      RequestProducts();
+    } catch (const std::exception &ex) {
+      throw ConnectError(ex.what());
+    }
+
     Verify(m_pullingTask->AddTask("Securities", 1,
                                   [this] {
                                     UpdateSecurities();
@@ -323,6 +334,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
+    const auto &product = m_products.find(symbol.GetSymbol());
+    if (product == m_products.cend()) {
+      boost::format message(
+          "Symbol \"%1%\" is not in the exchange product list");
+      message % symbol.GetSymbol();
+      throw SymbolIsNotSupportedError(message.str().c_str());
+    }
+
     {
       const SecuritiesLock lock(m_securitiesMutex);
       const auto &it = m_securities.find(symbol);
@@ -343,8 +362,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     {
       const auto request = boost::make_shared<PublicRequest>(
           "getorderbook", m_endpoint.floodControl,
-          "market=" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
-              "&type=both&depth=1");
+          "market=" + product->second.id + "&type=both&depth=1");
 
       const SecuritiesLock lock(m_securitiesMutex);
       m_securities.emplace(symbol, SecuritySubscribtion{result, request})
@@ -379,10 +397,15 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
+    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+    if (product == m_products.cend()) {
+      throw Exception("Symbol is not supported by exchange");
+    }
+
     boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
-    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
-        % qty                                                          // 2
-        % *price;                                                      // 3
+    requestParams % product->second.id  // 1
+        % qty                           // 2
+        % *price;                       // 3
 
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
                            m_settings, m_endpoint.floodControl, true,
@@ -443,6 +466,39 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
+  void RequestProducts() {
+    boost::unordered_map<std::string, Product> products;
+    std::vector<std::string> log;
+    PublicRequest request("getmarkets", m_endpoint.floodControl);
+    try {
+      const auto response =
+          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      for (const auto &node : response) {
+        const auto &data = node.second;
+        Product product = {data.get<std::string>("MarketName")};
+        const auto &symbol = RestoreSymbol(product.id);
+        const auto &productIt =
+            products.emplace(std::move(symbol), std::move(product));
+        if (!productIt.second) {
+          GetTsLog().Error("Product duplicate: \"%1%\"",
+                           productIt.first->first);
+          Assert(productIt.second);
+          continue;
+        }
+        boost::format logStr("%1% (ID: \"%2%\")");
+        logStr % productIt.first->first    // 1
+            % productIt.first->second.id;  // 2
+        log.emplace_back(logStr.str());
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to read supported product list: \"%1%\".",
+                       ex.what());
+      throw Exception(ex.what());
+    }
+    GetTsLog().Info("Pairs: %1%.", boost::join(log, ", "));
+    m_products = std::move(products);
+  }
+
   void UpdateOrder(const Order &order, const OrderStatus &status) {
     const auto qtyPrecision = 1000000;
     OnOrder(order.id, order.symbol, status,
@@ -620,6 +676,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   net::HTTPSClientSession m_marketDataSession;
   net::HTTPSClientSession m_tradingSession;
 
+  boost::unordered_map<std::string, Product> m_products;
+
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
@@ -635,25 +693,20 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<CcexExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateCcexMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   return boost::make_shared<CcexExchange>(App::GetInstance(), TRADING_MODE_LIVE,
-                                          index, index, context, instanceName,
-                                          configuration);
+                                          context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

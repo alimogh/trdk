@@ -19,8 +19,7 @@ namespace FixProtocol {
 
 class MarketDataSource : public trdk::MarketDataSource, public Handler {
  public:
-  explicit MarketDataSource(size_t index,
-                            Context &,
+  explicit MarketDataSource(Context &,
                             const std::string &instanceName,
                             const Lib::IniSectionRef &);
   virtual ~MarketDataSource() override;

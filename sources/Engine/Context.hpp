@@ -34,6 +34,7 @@ class TRDK_ENGINE_API Context : public trdk::Context {
   void Start(
       const trdk::Lib::Ini &,
       const boost::function<void(const std::string &)> &startProgressCallback,
+      const boost::function<bool(const std::string &)> &startErrorCallback,
       trdk::DropCopy * = nullptr);
   void Stop(const trdk::StopMode &);
 

@@ -18,11 +18,10 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Test;
 
-Test::MarketDataSource::MarketDataSource(size_t index,
-                                         Context &context,
+Test::MarketDataSource::MarketDataSource(Context &context,
                                          const std::string &instanceName,
                                          const IniSectionRef &)
-    : Base(index, context, instanceName), m_stopFlag(false) {
+    : Base(context, instanceName), m_stopFlag(false) {
   if (!GetContext().GetSettings().IsReplayMode()) {
     throw Error("Failed to start without Replay Mode");
   }

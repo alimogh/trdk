@@ -96,7 +96,7 @@ void ReadTopOfBook(const pt::ptime &time,
 }
 #pragma warning(pop)
 
-std::string NormilizeSymbol(const std::string &source) {
+std::string NormilizeProductId(const std::string &source) {
   std::vector<std::string> subs;
   boost::split(subs, source, boost::is_any_of("_"));
   if (subs.size() != 2) {
@@ -267,13 +267,11 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit NovaexchangeExchange(const App &,
                                 const TradingMode &mode,
-                                size_t tradingSystemIndex,
-                                size_t marketDataSourceIndex,
                                 Context &context,
                                 const std::string &instanceName,
                                 const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
@@ -421,7 +419,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     {
       const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
           "/remote/v2/market/openorders/" +
-          NormilizeSymbol(result->GetSymbol().GetSymbol()) + "/BOTH/");
+          NormilizeProductId(result->GetSymbol().GetSymbol()) + "/BOTH/");
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -466,7 +464,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         % *price;        // 2
     PrivateRequest request(
         "/remote/v2/private/trade/" +
-            NormilizeSymbol(security.GetSymbol().GetSymbol()) + "/",
+            NormilizeProductId(security.GetSymbol().GetSymbol()) + "/",
         "tradeitems", m_settings, true, requestParams.str());
     const auto &result = request.Send(m_tradingSession, GetContext());
 
@@ -547,25 +545,21 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateNovaexchange(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<NovaexchangeExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateNovaexchangeMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<NovaexchangeExchange>(
-      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
-      instanceName, configuration);
+  return boost::make_shared<NovaexchangeExchange>(App::GetInstance(),
+                                                  TRADING_MODE_LIVE, context,
+                                                  instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

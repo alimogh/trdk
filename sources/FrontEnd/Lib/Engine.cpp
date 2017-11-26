@@ -148,6 +148,13 @@ void lib::Engine::Start(
       GetConfigFilePath(),
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
       m_pimpl->m_dropCopy, startProgressCallback,
+      [this](const std::string &error) {
+        return QMessageBox::critical(
+                   nullptr, tr("Error at engine starting"),
+                   QString::fromStdString(error.substr(0, 512)),
+                   QMessageBox::Retry | QMessageBox::Ignore) ==
+               QMessageBox::Ignore;
+      },
       [this](trdk::Engine::Context::Log &log) {
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));

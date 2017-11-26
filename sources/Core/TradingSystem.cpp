@@ -94,7 +94,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   const TradingMode m_mode;
 
-  const size_t m_index;
+  size_t m_index;
 
   Context &m_context;
 
@@ -110,12 +110,11 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   explicit Implementation(TradingSystem &self,
                           const TradingMode &mode,
-                          size_t index,
                           Context &context,
                           const std::string &instanceName)
       : m_self(self),
         m_mode(mode),
-        m_index(index),
+        m_index(std::numeric_limits<size_t>::max()),
         m_context(context),
         m_instanceName(instanceName),
         m_stringId(FormatStringId(m_instanceName, m_mode)),
@@ -366,17 +365,25 @@ class TradingSystem::Implementation : private boost::noncopyable {
 };
 
 TradingSystem::TradingSystem(const TradingMode &mode,
-                             size_t index,
                              Context &context,
                              const std::string &instanceName)
     : m_pimpl(boost::make_unique<Implementation>(
-          *this, mode, index, context, instanceName)) {}
+          *this, mode, context, instanceName)) {}
 
 TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }
 
-size_t TradingSystem::GetIndex() const { return m_pimpl->m_index; }
+void TradingSystem::AssignIndex(size_t index) {
+  AssertEq(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  AssertNe(std::numeric_limits<size_t>::max(), index);
+  m_pimpl->m_index = index;
+}
+
+size_t TradingSystem::GetIndex() const {
+  AssertNe(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  return m_pimpl->m_index;
+}
 
 Context &TradingSystem::GetContext() { return m_pimpl->m_context; }
 
@@ -708,10 +715,9 @@ void TradingSystem::OnOrder(const OrderId &orderId,
 ////////////////////////////////////////////////////////////////////////////////
 
 LegacyTradingSystem::LegacyTradingSystem(const TradingMode &tradingMode,
-                                         size_t index,
                                          Context &context,
                                          const std::string &instanceName)
-    : TradingSystem(tradingMode, index, context, instanceName) {}
+    : TradingSystem(tradingMode, context, instanceName) {}
 
 boost::shared_ptr<OrderTransactionContext>
 LegacyTradingSystem::SendOrderTransaction(

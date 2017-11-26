@@ -194,6 +194,7 @@ Engine::Context::~Context() {
 void Engine::Context::Start(
     const Lib::Ini &conf,
     const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
     DropCopy *dropCopy) {
   GetLog().Debug("Starting...");
 
@@ -209,30 +210,140 @@ void Engine::Context::Start(
   m_pimpl->m_state.reset(new Implementation::State(*this, dropCopy));
 
   try {
-    // Market data system should be connected before booting as sometimes
-    // security objects can be created without market data source.
-    for (auto &source : m_pimpl->m_marketDataSources) {
-      if (startProgressCallback) {
-        startProgressCallback("Connecting to " +
-                              source.marketDataSource->GetInstanceName() +
-                              " market data source...");
+    {
+      std::set<size_t> errors;
+
+      // Market data system should be connected before booting as sometimes
+      // security objects can be created without market data source.
+      for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
+        auto &source = m_pimpl->m_marketDataSources[i];
+        if (startProgressCallback) {
+          startProgressCallback("Connecting to " +
+                                source.marketDataSource->GetInstanceName() +
+                                " market data source...");
+        }
+        try {
+          source.marketDataSource->Connect(IniSectionRef(conf, source.section));
+        } catch (const Interactor::ConnectError &ex) {
+          boost::format message(
+              "Failed to connect to market data source \"%1%\": \"%2%\"");
+          message % source.marketDataSource->GetInstanceName()  // 1
+              % ex;                                             // 2
+          if (startErrorCallback && startErrorCallback(message.str() + ".")) {
+            GetLog().Debug("Ignoring error: \"%1%\"...", message);
+            Verify(errors.emplace(i).second);
+            continue;
+          } else {
+            throw Interactor::ConnectError(message.str().c_str());
+          }
+        } catch (const Lib::Exception &ex) {
+          GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
+          throw Exception("Failed to make market data connection");
+        }
       }
-      try {
-        source.marketDataSource->Connect(IniSectionRef(conf, source.section));
-      } catch (const Interactor::ConnectError &ex) {
-        boost::format message(
-            "Failed to connect to market data source: \"%1%\"");
-        message % ex;
-        throw Interactor::ConnectError(message.str().c_str());
-      } catch (const Lib::Exception &ex) {
-        GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
-        throw Exception("Failed to make market data connection");
+
+      for (size_t i = 0; i < m_pimpl->m_tradingSystems.size(); ++i) {
+        if (errors.count(i)) {
+          continue;
+        }
+
+        auto &tradingSystemsByMode = m_pimpl->m_tradingSystems[i];
+        for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
+          if (!tradingSystemRef.tradingSystem) {
+            AssertEq(std::string(), tradingSystemRef.section);
+            continue;
+          }
+          Assert(!tradingSystemRef.section.empty());
+
+          auto &tradingSystem = *tradingSystemRef.tradingSystem;
+
+          if (startProgressCallback) {
+            startProgressCallback("Connecting to " +
+                                  tradingSystem.GetInstanceName() +
+                                  " trading system...");
+          }
+
+          const IniSectionRef confSection(conf, tradingSystemRef.section);
+
+          try {
+            tradingSystem.Connect(confSection);
+          } catch (const Interactor::ConnectError &ex) {
+            boost::format message(
+                "Failed to connect to trading system \"%1%\": \"%2%\"");
+            message % tradingSystem.GetInstanceName()  // 1
+                % ex;                                  // 2
+            if (startErrorCallback && startErrorCallback(message.str() + ".")) {
+              GetLog().Debug("Ignoring error: \"%1%\"...", message);
+              Verify(errors.emplace(i).second);
+              break;
+            } else {
+              throw Interactor::ConnectError(message.str().c_str());
+            }
+          } catch (const Lib::Exception &ex) {
+            GetLog().Error("Failed to make trading system connection: \"%1%\".",
+                           ex);
+            throw Exception("Failed to make trading system connection");
+          }
+        }
+
+        if (errors.count(i)) {
+          break;
+        }
+      }
+
+      if (!errors.empty()) {
+        AssertEq(m_pimpl->m_marketDataSources.size(),
+                 m_pimpl->m_tradingSystems.size());
+        {
+          MarketDataSources marketDataSources;
+          for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
+            if (errors.count(i)) {
+              continue;
+            }
+            marketDataSources.emplace_back(
+                std::move(m_pimpl->m_marketDataSources[i]));
+          }
+          m_pimpl->m_marketDataSources = std::move(marketDataSources);
+        }
+        for (const auto &error : boost::adaptors::reverse(errors)) {
+          m_pimpl->m_tradingSystems.erase(m_pimpl->m_tradingSystems.begin() +
+                                          error);
+        }
+        AssertEq(m_pimpl->m_marketDataSources.size(),
+                 m_pimpl->m_tradingSystems.size());
+
+        if (m_pimpl->m_tradingSystems.empty() ||
+            m_pimpl->m_tradingSystems.empty()) {
+          throw Interactor::ConnectError(
+              "Failed to start: All sources failed to connect.");
+        }
+
+        m_pimpl->m_tradingSystems.shrink_to_fit();
+        m_pimpl->m_marketDataSources.shrink_to_fit();
       }
     }
 
     if (startProgressCallback) {
       startProgressCallback("Bootstrapping modules...");
     }
+
+    AssertEq(m_pimpl->m_marketDataSources.size(),
+             m_pimpl->m_tradingSystems.size());
+    for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
+      m_pimpl->m_marketDataSources[i].marketDataSource->AssignIndex(i);
+    }
+    for (size_t i = 0; i < m_pimpl->m_tradingSystems.size(); ++i) {
+      auto &tradingSystemsByMode = m_pimpl->m_tradingSystems[i];
+      for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
+        if (!tradingSystemRef.tradingSystem) {
+          AssertEq(std::string(), tradingSystemRef.section);
+          continue;
+        }
+        Assert(!tradingSystemRef.section.empty());
+        tradingSystemRef.tradingSystem->AssignIndex(i);
+      }
+    }
+
     try {
       BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
                        m_pimpl->m_state->strategies,
@@ -244,38 +355,6 @@ void Engine::Context::Start(
     }
 
     m_pimpl->m_state->ReportState();
-
-    for (auto &tradingSystemsByMode : m_pimpl->m_tradingSystems) {
-      for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
-        if (!tradingSystemRef.tradingSystem) {
-          AssertEq(std::string(), tradingSystemRef.section);
-          continue;
-        }
-        Assert(!tradingSystemRef.section.empty());
-
-        auto &tradingSystem = *tradingSystemRef.tradingSystem;
-
-        if (startProgressCallback) {
-          startProgressCallback("Connecting to " +
-                                tradingSystem.GetInstanceName() +
-                                " trading system...");
-        }
-
-        const IniSectionRef confSection(conf, tradingSystemRef.section);
-
-        try {
-          tradingSystem.Connect(confSection);
-        } catch (const Interactor::ConnectError &ex) {
-          boost::format message("Failed to connect to trading system: \"%1%\"");
-          message % ex;
-          throw Interactor::ConnectError(message.str().c_str());
-        } catch (const Lib::Exception &ex) {
-          GetLog().Error("Failed to make trading system connection: \"%1%\".",
-                         ex);
-          throw Exception("Failed to make trading system connection");
-        }
-      }
-    }
 
     if (startProgressCallback) {
       startProgressCallback("Final initialization...");
@@ -301,7 +380,6 @@ void Engine::Context::Start(
     m_pimpl->m_state->subscriptionsManager.Activate();
 
     RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
-
   } catch (...) {
     m_pimpl->m_state.reset();
     throw;
@@ -508,11 +586,7 @@ void Engine::Context::ForEachMarketDataSource(
 
 void Engine::Context::ForEachMarketDataSource(
     const boost::function<void(MarketDataSource &)> &callback) {
-#ifdef BOOST_ENABLE_ASSERT_HANDLER
-  size_t i = 0;
-#endif
   for (auto &source : m_pimpl->m_marketDataSources) {
-    AssertEq(i++, source.marketDataSource->GetIndex());
     callback(*source.marketDataSource);
   }
 }

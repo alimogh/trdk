@@ -23,8 +23,7 @@ class RandomMarketDataSource : public trdk::MarketDataSource {
   typedef trdk::MarketDataSource Base;
 
  public:
-  explicit RandomMarketDataSource(size_t index,
-                                  Context &context,
+  explicit RandomMarketDataSource(Context &context,
                                   const std::string &instanceName,
                                   const Lib::IniSectionRef &);
   virtual ~RandomMarketDataSource() override;

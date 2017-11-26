@@ -35,11 +35,12 @@ Engine::Engine(
     const fs::path &path,
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
     const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
     const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(path, contextStateUpdateSlot, nullptr, startProgressCallback,
-      logStartCallback, params);
+      startErrorCallback, logStartCallback, params);
 }
 
 Engine::Engine(
@@ -47,11 +48,12 @@ Engine::Engine(
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
     trdk::DropCopy &dropCopy,
     const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
     const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(path, contextStateUpdateSlot, &dropCopy, startProgressCallback,
-      logStartCallback, params);
+      startErrorCallback, logStartCallback, params);
 }
 
 Engine::~Engine() {
@@ -65,6 +67,7 @@ void Engine::Run(
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
     trdk::DropCopy *dropCopy,
     const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
     const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params) {
   Assert(!m_pimpl->m_context);
@@ -141,7 +144,8 @@ void Engine::Run(
       }
     }
 
-    m_pimpl->m_context->Start(ini, startProgressCallback, dropCopy);
+    m_pimpl->m_context->Start(ini, startProgressCallback, startErrorCallback,
+                              dropCopy);
 
   } catch (const trdk::Lib::Exception &ex) {
     if (m_pimpl->m_eventsLog) {

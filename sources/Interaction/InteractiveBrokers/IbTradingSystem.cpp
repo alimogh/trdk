@@ -22,13 +22,11 @@ namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
 
 ib::TradingSystem::TradingSystem(const TradingMode &mode,
-                                 size_t tradingSystemIndex,
-                                 size_t marketDataSourceIndex,
                                  Context &context,
                                  const std::string &instanceName,
                                  const Lib::IniSectionRef &conf)
-    : LegacyTradingSystem(mode, tradingSystemIndex, context, instanceName),
-      trdk::MarketDataSource(marketDataSourceIndex, context, instanceName),
+    : LegacyTradingSystem(mode, context, instanceName),
+      trdk::MarketDataSource(context, instanceName),
       m_isTestSource(conf.ReadBoolKey("test_source", false)) {}
 
 ib::TradingSystem::~TradingSystem() {}

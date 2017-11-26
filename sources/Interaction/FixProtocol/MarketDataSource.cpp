@@ -25,11 +25,10 @@ namespace out = fix::Outgoing;
 namespace gr = boost::gregorian;
 namespace pt = boost::posix_time;
 
-fix::MarketDataSource::MarketDataSource(size_t index,
-                                        Context &context,
+fix::MarketDataSource::MarketDataSource(Context &context,
                                         const std::string &instanceName,
                                         const IniSectionRef &conf)
-    : trdk::MarketDataSource(index, context, instanceName),
+    : trdk::MarketDataSource(context, instanceName),
       Handler(context, conf, trdk::MarketDataSource::GetLog()),
       m_client("Prices", *this) {}
 
@@ -136,11 +135,10 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<fix::MarketDataSource>(index, context, instanceName,
+  return boost::make_shared<fix::MarketDataSource>(context, instanceName,
                                                    configuration);
 }
 

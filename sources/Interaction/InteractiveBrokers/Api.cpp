@@ -18,14 +18,11 @@ TRDK_INTERACTION_INTERACTIVEBROKERS_API
 trdk::TradingSystemAndMarketDataSourceFactoryResult
 CreateTradingSystemAndMarketDataSource(
     const trdk::TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &configuration) {
   const auto &object = boost::make_shared<ib::TradingSystem>(
-      mode, tradingSystemIndex, marketDataSourceIndex, context, instanceName,
-      configuration);
+      mode, context, instanceName, configuration);
   const trdk::TradingSystemAndMarketDataSourceFactoryResult result = {object,
                                                                       object};
   return result;
@@ -34,12 +31,10 @@ CreateTradingSystemAndMarketDataSource(
 TRDK_INTERACTION_INTERACTIVEBROKERS_API
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const trdk::TradingMode &mode,
-    size_t tradingSystemIndex,
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &configuration) {
   const auto &result = boost::make_shared<ib::TradingSystem>(
-      mode, tradingSystemIndex, std::numeric_limits<size_t>::max(), context,
-      instanceName, configuration);
+      mode, context, instanceName, configuration);
   return result;
 }

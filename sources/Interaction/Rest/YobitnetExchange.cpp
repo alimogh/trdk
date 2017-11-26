@@ -105,7 +105,7 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 #pragma warning(pop)
 
 struct Product {
-  std::string symbol;
+  std::string id;
   uintmax_t precisionPower;
 };
 
@@ -238,13 +238,17 @@ class TradeRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(std::string source) {
-  if (boost::starts_with(source, "BCH_")) {
-    source = "BCC" + source.substr(3);
-  } else if (boost::ends_with(source, "_BCH")) {
-    source == source.substr(0, 4) + "BCC";
-  }
+std::string NormilizeProductId(std::string source) {
   return boost::to_lower_copy(source);
+}
+
+std::string NormilizeSymbol(std::string source) {
+  if (boost::starts_with(source, "BCC_")) {
+    source[2] = 'H';
+  } else if (boost::ends_with(source, "_BCC")) {
+    source.back() = 'H';
+  }
+  return source;
 }
 
 struct Order {
@@ -265,13 +269,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit YobitnetExchange(const App &,
                             const TradingMode &mode,
-                            size_t tradingSystemIndex,
-                            size_t marketDataSourceIndex,
                             Context &context,
                             const std::string &instanceName,
                             const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
@@ -369,11 +371,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     try {
       RequestProducts();
+      RequestAccountInfo();
     } catch (const std::exception &ex) {
       GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
       boost::format message(
           "Failed to connect. Please check Yobit.net credential, initial "
-          "nonce-value in settings and/or nonce-value storage file %2%.");
+          "nonce-value in settings and/or nonce-value storage file %1%.");
       message % m_settings.nonceStorageFile;
       throw ConnectError(message.str().c_str());
     }
@@ -390,18 +393,19 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
-    const auto &symbolString = symbol.GetSymbol();
+    const auto &product = m_products.find(symbol.GetSymbol());
+    if (product == m_products.cend()) {
+      boost::format message(
+          "Symbol \"%1%\" is not in the exchange product list");
+      message % symbol.GetSymbol();
+      throw SymbolIsNotSupportedError(message.str().c_str());
+    }
+
     {
-      const auto &it = m_securities.find(symbolString);
+      const auto &it = m_securities.find(product->first);
       if (it != m_securities.cend()) {
         return *it->second;
       }
-    }
-
-    if (m_products.count(symbolString) == 0) {
-      boost::format message("Symbol \"%1%\" is not in the exchange pair list");
-      message % symbolString;
-      throw SymbolIsNotSupportedError(message.str().c_str());
     }
 
     const auto &result = boost::make_shared<Rest::Security>(
@@ -413,7 +417,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY));
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
-    Verify(m_securities.emplace(NormilizeSymbol(symbolString), result).second);
+    Verify(m_securities.emplace(product->second.id, result).second);
 
     return *result;
   }
@@ -450,7 +454,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
-    requestParams % product->second.symbol                          // 1
+    requestParams % product->second.id                              // 1
         % (side == ORDER_SIDE_SELL ? "sell" : "buy")                // 2
         % RoundByPrecision(*price, product->second.precisionPower)  // 3
         % qty;                                                      // 4
@@ -509,17 +513,25 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const auto response =
           boost::get<1>(request.Send(m_marketDataSession, GetContext()));
       for (const auto &node : response.get_child("pairs")) {
-        const auto &symbol = boost::to_upper_copy(node.first);
-        Product product = {NormilizeSymbol(symbol)};
+        const auto &exchangeSymbol = boost::to_upper_copy(node.first);
+        const auto &symbol = NormilizeSymbol(exchangeSymbol);
+        Product product = {NormilizeProductId(exchangeSymbol)};
         const auto &info = node.second;
         const auto &decimalPlaces = info.get<uintmax_t>("decimal_places");
         product.precisionPower =
             static_cast<uintmax_t>(std::pow(10, decimalPlaces));
-        Verify(products.emplace(symbol, product).second);
-        boost::format logStr("%1% (decimal places: %2%, precision power: %3%)");
-        logStr % symbol                // 1
-            % decimalPlaces            // 2
-            % product.precisionPower;  // 3
+        const auto &productIt =
+            products.emplace(std::move(symbol), std::move(product));
+        if (!productIt.second) {
+          GetTsLog().Error("Product duplicate: \"%1%\"",
+                           productIt.first->first);
+          Assert(productIt.second);
+          continue;
+        }
+        boost::format logStr("%1% (ID: \"%2%\", decimal places: %3%)");
+        logStr % productIt.first->first   // 1
+            % productIt.first->second.id  // 2
+            % decimalPlaces;              // 3
         log.emplace_back(logStr.str());
       }
     } catch (const std::exception &ex) {
@@ -611,7 +623,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         continue;
       }
       try {
-        RequestOpenedOrders(product->first, product->second.symbol, newOrders,
+        RequestOpenedOrders(product->first, product->second.id, newOrders,
                             m_orders);
       } catch (const InvalidPairException &ex) {
         invalidSymbols.emplace_back(symbol);
@@ -645,7 +657,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   void RequestOpenedOrders(
       const std::string &symbol,
-      const std::string &normilizedSymbol,
+      const std::string &productId,
       boost::unordered_map<OrderId, Order> &newOrders,
       boost::unordered_map<OrderId, Order> &notifiedOrders) {
     class ActiveOrdersRequest : public TradeRequest {
@@ -660,7 +672,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                  nonce,
                  settings,
                  false,
-                 "pair=" + NormilizeSymbol(symbol)) {}
+                 "pair=" + NormilizeProductId(symbol)) {}
 
       virtual ~ActiveOrdersRequest() override = default;
 
@@ -679,7 +691,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const bool isInitial = notifiedOrders.empty();
 
     auto nonce = TakeNonce();
-    ActiveOrdersRequest request(normilizedSymbol, nonce.first, m_settings);
+    ActiveOrdersRequest request(productId, nonce.first, m_settings);
 
     {
       const auto orders =
@@ -849,25 +861,21 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<YobitnetExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateYobitnetMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<YobitnetExchange>(
-      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
-      instanceName, configuration);
+  return boost::make_shared<YobitnetExchange>(App::GetInstance(),
+                                              TRADING_MODE_LIVE, context,
+                                              instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
