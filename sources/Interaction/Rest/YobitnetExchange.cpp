@@ -35,7 +35,6 @@ namespace {
 struct Settings {
   std::string apiKey;
   std::string apiSecret;
-  pt::time_duration pullingInterval;
   size_t initialNonce;
   fs::path nonceStorageFile;
   std::vector<std::string> defaultSymbols;
@@ -43,8 +42,6 @@ struct Settings {
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(conf.ReadKey("api_secret")),
-        pullingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))),
         initialNonce(conf.ReadTypedKey<size_t>("initial_nonce", 1)),
         nonceStorageFile(conf.ReadFileSystemPath("nonce_storage_file_path")),
         defaultSymbols(
@@ -55,13 +52,12 @@ struct Settings {
 
   void Log(ModuleEventsLog &log) {
     log.Info(
-        "API key: \"%1%\". API secret: %2%. Pulling interval: %3%. Initial "
-        "nonce: %4%. Nonce storage file: %5%",
+        "API key: \"%1%\". API secret: %2%. Initial nonce: %3%. Nonce storage "
+        "file: %4%",
         apiKey,                                    // 1
         apiSecret.empty() ? "not set" : "is set",  // 2
-        pullingInterval,                           // 3
-        initialNonce,                              // 4
-        nonceStorageFile);                         // 5
+        initialNonce,                              // 3
+        nonceStorageFile);                         // 4
   }
 
   void Validate() {
@@ -278,8 +274,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
         m_nextNonce(0),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingInterval, GetMdsLog())) {
+        m_pullingTask(
+            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -338,7 +334,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                  UpdateSecuritues(*depthRequest);
                                  return true;
                                },
-                               1);
+                               10);
   }
 
  protected:
@@ -386,9 +382,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                     UpdateOrders();
                                     return true;
                                   },
-                                  2));
+                                  1));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
   }
 
   virtual trdk::Security &CreateNewSecurityObject(

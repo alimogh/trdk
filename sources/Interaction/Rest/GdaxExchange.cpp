@@ -39,26 +39,20 @@ struct Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
-  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
-        apiPassphrase(conf.ReadKey("api_passphrase")),
-        pullingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+        apiPassphrase(conf.ReadKey("api_passphrase")) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info(
-        "API key: \"%1%\". API secret: %2%. API passphrase: %3%. Pulling "
-        "interval: %4%.",
-        apiKey,                                        // 1
-        apiSecret.empty() ? "not set" : "is set",      // 2
-        apiPassphrase.empty() ? "not set" : "is set",  // 3
-        pullingInterval);                              // 4
+    log.Info("API key: \"%1%\". API secret: %2%. API passphrase: %3%.",
+             apiKey,                                         // 1
+             apiSecret.empty() ? "not set" : "is set",       // 2
+             apiPassphrase.empty() ? "not set" : "is set");  // 3
   }
 
   void Validate() {}
@@ -244,8 +238,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingInterval, GetMdsLog())),
+        m_pullingTask(
+            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
@@ -350,7 +344,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        1);
+        10);
   }
 
  protected:
@@ -367,9 +361,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                     UpdateOrders();
                                     return true;
                                   },
-                                  2));
+                                  1));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
     m_isConnected = true;
   }
 

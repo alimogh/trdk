@@ -50,22 +50,17 @@ Endpoint &GetEndpoint() {
 struct Settings {
   std::string apiKey;
   std::string apiSecret;
-  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")),
-        pullingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+      : apiKey(conf.ReadKey("api_key")), apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. Pulling interval: %3%.",
-             apiKey,                                    // 1
-             apiSecret.empty() ? "not set" : "is set",  // 2
-             pullingInterval);                          // 3
+    log.Info("API key: \"%1%\". API secret: %2%.",
+             apiKey,                                     // 1
+             apiSecret.empty() ? "not set" : "is set");  // 2
   }
 
   void Validate() {}
@@ -252,8 +247,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(m_endpoint.host),
         m_tradingSession(m_endpoint.host),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingInterval, GetMdsLog())) {
+        m_pullingTask(
+            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -320,13 +315,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                     UpdateSecurities();
                                     return true;
                                   },
-                                  1));
+                                  10));
     Verify(m_pullingTask->AddTask("Actual orders", 0,
                                   [this] {
                                     UpdateOrders();
                                     return true;
                                   },
-                                  2));
+                                  1));
     Verify(m_pullingTask->AddTask(
         "Opened orders", 100, [this] { return RequestOpenedOrders(); }, 30));
     m_isConnected = true;

@@ -32,8 +32,7 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session("bittrex.com"),
-      m_task(boost::make_unique<PullingTask>(m_settings.pullingInterval,
-                                             GetLog())) {
+      m_task(boost::make_unique<PullingTask>(pt::seconds(10), GetLog())) {
   m_session.setKeepAlive(true);
 }
 

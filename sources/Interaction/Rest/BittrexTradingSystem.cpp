@@ -201,7 +201,7 @@ BittrexTradingSystem::BittrexTradingSystem(const TradingMode &mode,
       m_isConnected(false),
       m_tradingSession("bittrex.com"),
       m_ordersSession("bittrex.com"),
-      m_pullingTask(m_settings.pullingInterval, GetLog()) {}
+      m_pullingTask(pt::seconds(1), GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(!m_isConnected);
@@ -219,7 +219,7 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
                                  UpdateOrders();
                                  return true;
                                },
-                               2));
+                               1));
 
   m_isConnected = true;
 }
