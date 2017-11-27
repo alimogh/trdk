@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "BittrexTradingSystem.hpp"
 #include "BittrexRequest.hpp"
-#include "BittrexUtil.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -87,11 +86,11 @@ class BittrexTradingSystem::NewOrderRequest : public OrderTransactionRequest {
 
  public:
   explicit NewOrderRequest(const std::string &name,
-                           const std::string &symbol,
+                           const std::string &productId,
                            const Qty &qty,
                            const Price &price,
                            const Settings &settings)
-      : Base(name, CreateUriParams(symbol, qty, price), settings) {}
+      : Base(name, CreateUriParams(productId, qty, price), settings) {}
 
  public:
   OrderId SendOrderTransaction(net::HTTPClientSession &session,
@@ -101,13 +100,13 @@ class BittrexTradingSystem::NewOrderRequest : public OrderTransactionRequest {
   }
 
  private:
-  static std::string CreateUriParams(const std::string &symbol,
+  static std::string CreateUriParams(const std::string &productId,
                                      const Qty &qty,
                                      const Price &price) {
     boost::format result("market=%1%&quantity=%2$.8f&rate=%3$.8f");
-    result % NormilizeBittrexSymbol(symbol)  // 1
-        % qty                                // 2
-        % price;                             // 3
+    result % productId  // 1
+        % qty           // 2
+        % price;        // 3
     return result.str();
   }
 };
@@ -194,35 +193,25 @@ class BittrexTradingSystem::BalanceRequest : public AccountRequest {
 ////////////////////////////////////////////////////////////////////////////////
 
 BittrexTradingSystem::BittrexTradingSystem(const TradingMode &mode,
-                                           size_t index,
                                            Context &context,
                                            const std::string &instanceName,
                                            const IniSectionRef &conf)
-    : Base(mode, index, context, instanceName),
+    : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_isConnected(false),
       m_tradingSession("bittrex.com"),
       m_ordersSession("bittrex.com"),
-      m_pullingTask(m_settings.pullingInterval, GetLog()) {}
+      m_pullingTask(pt::seconds(1), GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(!m_isConnected);
 
   try {
-    const auto responce =
-        BalanceRequest(m_settings).Send(m_tradingSession, GetContext());
-    for (const auto &node : boost::get<1>(responce)) {
-      const auto &balance = node.second;
-      GetLog().Info(
-          "\"%1%\" balance: %2$.8f (available: %3$.8f, pending %4$.8f).",
-          balance.get<std::string>("Currency"),  // 1
-          balance.get<double>("Balance"),        // 2
-          balance.get<double>("Available"),      // 3
-          balance.get<double>("Pending"));       // 4
-    }
+    RequestBalance();
+    m_products =
+        RequestBittrexProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
-    GetLog().Error("Failed to read account balances: \"%1%\".", ex.what());
-    throw;
+    throw ConnectError(ex.what());
   }
 
   Verify(m_pullingTask.AddTask("Actual orders", 0,
@@ -230,7 +219,7 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
                                  UpdateOrders();
                                  return true;
                                },
-                               2));
+                               1));
 
   m_isConnected = true;
 }
@@ -261,19 +250,38 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
     throw TradingSystem::Error("Market order is not supported");
   }
 
-  const auto &symbol = security.GetSymbol().GetSymbol();
+  const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+  if (product == m_products.cend()) {
+    throw Exception("Symbol is not supported by exchange");
+  }
+
+  const auto &id = product->second.id;
   const auto &actualPrice = *price;
 
   return boost::make_unique<OrderTransactionContext>(
       side == ORDER_SIDE_BUY
-          ? BuyOrderRequest(symbol, qty, actualPrice, m_settings)
+          ? BuyOrderRequest(id, qty, actualPrice, m_settings)
                 .SendOrderTransaction(m_tradingSession, GetContext())
-          : SellOrderRequest(symbol, qty, actualPrice, m_settings)
+          : SellOrderRequest(id, qty, actualPrice, m_settings)
                 .SendOrderTransaction(m_tradingSession, GetContext()));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   OrderCancelRequest(orderId, m_settings).Send(m_tradingSession, GetContext());
+}
+
+void BittrexTradingSystem::RequestBalance() {
+  const auto responce =
+      BalanceRequest(m_settings).Send(m_tradingSession, GetContext());
+  for (const auto &node : boost::get<1>(responce)) {
+    const auto &balance = node.second;
+    GetLog().Info(
+        "\"%1%\" balance: %2$.8f (available: %3$.8f, pending %4$.8f).",
+        balance.get<std::string>("Currency"),  // 1
+        balance.get<double>("Balance"),        // 2
+        balance.get<double>("Available"),      // 3
+        balance.get<double>("Pending"));       // 4
+  }
 }
 
 namespace {
@@ -379,12 +387,11 @@ void BittrexTradingSystem::UpdateOrders() {
 
 boost::shared_ptr<trdk::TradingSystem> CreateBittrexTradingSystem(
     const TradingMode &mode,
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<BittrexTradingSystem>(
-      mode, index, context, instanceName, configuration);
+      mode, context, instanceName, configuration);
   return result;
 }
 

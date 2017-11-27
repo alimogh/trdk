@@ -51,7 +51,8 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
              double tradePrice);
 
  public:
-  void Start();
+  void Start(
+      const boost::function<void(const std::string &)> &progressCallback);
   void Stop();
 
  private:

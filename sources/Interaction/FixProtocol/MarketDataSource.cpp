@@ -25,13 +25,24 @@ namespace out = fix::Outgoing;
 namespace gr = boost::gregorian;
 namespace pt = boost::posix_time;
 
-fix::MarketDataSource::MarketDataSource(size_t index,
-                                        Context &context,
+fix::MarketDataSource::MarketDataSource(Context &context,
                                         const std::string &instanceName,
                                         const IniSectionRef &conf)
-    : trdk::MarketDataSource(index, context, instanceName),
+    : trdk::MarketDataSource(context, instanceName),
       Handler(context, conf, trdk::MarketDataSource::GetLog()),
       m_client("Prices", *this) {}
+
+fix::MarketDataSource::~MarketDataSource() {
+  try {
+    m_client.Stop();
+    // Each object, that implements CreateNewSecurityObject should wait for
+    // log flushing before destroying objects:
+    GetTradingLog().WaitForFlush();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
+}
 
 Context &fix::MarketDataSource::GetContext() {
   return trdk::MarketDataSource::GetContext();
@@ -124,11 +135,10 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<fix::MarketDataSource>(index, context, instanceName,
+  return boost::make_shared<fix::MarketDataSource>(context, instanceName,
                                                    configuration);
 }
 

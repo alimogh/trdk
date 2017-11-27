@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TakeProfit.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 
@@ -87,7 +88,7 @@ bool TakeProfit::CheckSignal() {
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f-%7$.8f*%8$.8f=%9$.8f)"
-      "\tbid/ask=%10$.8f/%11$.8f\tpos=%12%",
+      "\tbid/ask=%10$.8f/%11$.8f\tpos=%12%/%13%",
       [&](TradingRecord &record) {
         record % GetName()                            // 1
             % (isSignal ? "signaling" : "trailing");  // 2
@@ -108,7 +109,8 @@ bool TakeProfit::CheckSignal() {
             % profitToClose                                   // 9
             % GetPosition().GetSecurity().GetBidPriceValue()  // 10
             % GetPosition().GetSecurity().GetAskPriceValue()  // 11
-            % GetPosition().GetId();                          // 12
+            % GetPosition().GetOperation()->GetId()           // 12
+            % GetPosition().GetSubOperationId();              // 13
       });
 
   m_minProfit = plannedPnl;
@@ -138,7 +140,7 @@ bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%%6$.8f\tmin-profit=%7$.8f"
-      "\tbid/ask=%8$.8f/%9$.8f\tpos=%10%",
+      "\tbid/ask=%8$.8f/%9$.8f\tpos=%10%/%11%",
       [&](TradingRecord &record) {
         record % GetName() % (isSignal ? "activating" : "accumulating");
         if (m_maxProfit) {
@@ -160,7 +162,8 @@ bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
         }
         record % GetPosition().GetSecurity().GetBidPriceValue() %
             GetPosition().GetSecurity().GetAskPriceValue() %
-            GetPosition().GetId();
+            GetPosition().GetOperation()->GetId()  // 10
+            % GetPosition().GetSubOperationId();   // 11
       });
 
   m_maxProfit = plannedPnl;

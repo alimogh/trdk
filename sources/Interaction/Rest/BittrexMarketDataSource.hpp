@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "PullingTask.hpp"
+#include "BittrexUtil.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -21,15 +21,11 @@ class BittrexMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
- private:
-  class Request;
-
  public:
-  explicit BittrexMarketDataSource(size_t index,
-                                   Context &context,
+  explicit BittrexMarketDataSource(Context &context,
                                    const std::string &instanceName,
                                    const Lib::IniSectionRef &);
-  virtual ~BittrexMarketDataSource() override = default;
+  virtual ~BittrexMarketDataSource() override;
 
  public:
   virtual void Connect(const Lib::IniSectionRef &conf) override;
@@ -48,12 +44,13 @@ class BittrexMarketDataSource : public MarketDataSource {
 
  private:
   const Settings m_settings;
+  boost::unordered_map<std::string, BittrexProduct> m_products;
   boost::mutex m_securitiesLock;
-  std::vector<
-      std::pair<boost::shared_ptr<Rest::Security>, std::unique_ptr<Request>>>
+  std::vector<std::pair<boost::shared_ptr<Rest::Security>,
+                        std::unique_ptr<BittrexPublicRequest>>>
       m_securities;
   Poco::Net::HTTPSClientSession m_session;
-  PullingTask m_task;
+  std::unique_ptr<PullingTask> m_task;
 };
 }
 }

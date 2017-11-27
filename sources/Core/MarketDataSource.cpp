@@ -68,7 +68,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
  public:
   MarketDataSource &m_self;
 
-  const size_t m_index;
+  size_t m_index;
 
   Context &m_context;
 
@@ -95,11 +95,10 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(MarketDataSource &self,
-                          size_t index,
                           Context &context,
                           const std::string &instanceName)
       : m_self(self),
-        m_index(index),
+        m_index(std::numeric_limits<size_t>::max()),
         m_context(context),
         m_instanceName(instanceName),
         m_stringId(FormatStringId(m_instanceName)),
@@ -156,17 +155,12 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     throw Error(error.str().c_str());
   }
 };
-//////////////////////////////////////////////////////////////////////////
-
-MarketDataSource::Error::Error(const char *what) noexcept : Base::Error(what) {}
 
 //////////////////////////////////////////////////////////////////////////
 
-MarketDataSource::MarketDataSource(size_t index,
-                                   Context &context,
+MarketDataSource::MarketDataSource(Context &context,
                                    const std::string &instanceName)
-    : m_pimpl(std::make_unique<Implementation>(
-          *this, index, context, instanceName)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this, context, instanceName)) {}
 
 MarketDataSource::~MarketDataSource() {
   try {
@@ -184,7 +178,16 @@ MarketDataSource::~MarketDataSource() {
   }
 }
 
-size_t MarketDataSource::GetIndex() const { return m_pimpl->m_index; }
+void MarketDataSource::AssignIndex(size_t index) {
+  AssertEq(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  AssertNe(std::numeric_limits<size_t>::max(), index);
+  m_pimpl->m_index = index;
+}
+
+size_t MarketDataSource::GetIndex() const {
+  AssertNe(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  return m_pimpl->m_index;
+}
 
 Context &MarketDataSource::GetContext() { return m_pimpl->m_context; }
 

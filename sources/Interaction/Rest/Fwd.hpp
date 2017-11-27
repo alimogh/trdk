@@ -15,6 +15,8 @@ namespace Interaction {
 namespace Rest {
 class FloodControl;
 class Security;
+class PullingTask;
+class BittrexPublicRequest;
 }
 }
 }

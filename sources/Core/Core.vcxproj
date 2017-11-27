@@ -305,7 +305,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="PositionOperationContext.cpp" />
+    <ClCompile Include="Operation.cpp" />
     <ClCompile Include="PriceBookUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
@@ -408,8 +408,8 @@
     <ClInclude Include="ModuleSecurityList.hpp" />
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="Consumer.hpp" />
+    <ClInclude Include="Operation.hpp" />
     <ClInclude Include="TransactionContext.hpp" />
-    <ClInclude Include="PositionOperationContext.hpp" />
     <ClInclude Include="PriceBook.hpp" />
     <ClInclude Include="SecurityMock.hpp" />
     <ClInclude Include="Service.hpp" />

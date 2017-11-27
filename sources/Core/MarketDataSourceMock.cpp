@@ -17,4 +17,4 @@
 using namespace trdk::Tests;
 
 Mocks::MarketDataSource::MarketDataSource()
-    : trdk::MarketDataSource(0, Dummies::Context::GetInstance(), "0") {}
+    : trdk::MarketDataSource(Dummies::Context::GetInstance(), "0") {}

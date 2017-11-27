@@ -15,18 +15,12 @@ namespace Interaction {
 namespace Rest {
 
 struct Settings {
-  boost::posix_time::time_duration pullingInterval;
-
-  explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
-      : pullingInterval(boost::posix_time::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+  explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &log) {
     Log(log);
     Validate();
   }
 
-  void Log(ModuleEventsLog &log) {
-    log.Info("Pulling interval: %1%.", pullingInterval);
-  }
+  void Log(ModuleEventsLog &) {}
 
   void Validate() {}
 };

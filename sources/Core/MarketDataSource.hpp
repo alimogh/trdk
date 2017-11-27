@@ -22,7 +22,6 @@ namespace trdk {
 /** Result can't be nullptr.
   */
 typedef boost::shared_ptr<trdk::MarketDataSource>(MarketDataSourceFactory)(
-    size_t index,
     trdk::Context &,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &);
@@ -37,15 +36,24 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   typedef trdk::ModuleTradingLog TradingLog;
 
  public:
-  class TRDK_CORE_API Error : public Base::Error {
+  class Error : public Base::Error {
    public:
-    explicit Error(const char *what) noexcept;
+    typedef Base::Error Base;
+
+   public:
+    explicit Error(const char *what) noexcept : Base(what) {}
+  };
+  class SymbolIsNotSupportedError : public Error {
+   public:
+    typedef Error Base;
+
+   public:
+    explicit SymbolIsNotSupportedError(const char *what) noexcept
+        : Base(what) {}
   };
 
  public:
-  explicit MarketDataSource(size_t index,
-                            trdk::Context &,
-                            const std::string &instanceName);
+  explicit MarketDataSource(trdk::Context &, const std::string &instanceName);
   virtual ~MarketDataSource() override;
 
   bool operator==(const MarketDataSource &rhs) const { return this == &rhs; }
@@ -57,6 +65,7 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
                                                 const trdk::MarketDataSource &);
 
  public:
+  void AssignIndex(size_t);
   size_t GetIndex() const;
 
   trdk::Context &GetContext();

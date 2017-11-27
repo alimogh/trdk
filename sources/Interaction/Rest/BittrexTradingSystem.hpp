@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "BittrexUtil.hpp"
 #include "PullingTask.hpp"
 #include "Settings.hpp"
 
@@ -44,7 +45,6 @@ class BittrexTradingSystem : public TradingSystem {
 
  public:
   explicit BittrexTradingSystem(const TradingMode &,
-                                size_t index,
                                 Context &,
                                 const std::string &instanceName,
                                 const Lib::IniSectionRef &);
@@ -68,12 +68,13 @@ class BittrexTradingSystem : public TradingSystem {
   virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
 
  private:
+  void RequestBalance();
   void UpdateOrders();
   void UpdateOrder(const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;
-
+  boost::unordered_map<std::string, BittrexProduct> m_products;
   bool m_isConnected;
   Poco::Net::HTTPSClientSession m_tradingSession;
   Poco::Net::HTTPSClientSession m_ordersSession;

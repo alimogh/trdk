@@ -128,7 +128,10 @@ lib::Engine::Engine(const fs::path &path, QWidget *parent)
   }));
 }
 
-lib::Engine::~Engine() = default;
+lib::Engine::~Engine() {
+  // Fixes second stop by StateChanged-signal.
+  m_pimpl->m_engine.reset();
+}
 
 const fs::path &lib::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;
@@ -136,14 +139,22 @@ const fs::path &lib::Engine::GetConfigFilePath() const {
 
 bool lib::Engine::IsStarted() const { return m_pimpl->m_engine ? true : false; }
 
-void lib::Engine::Start() {
+void lib::Engine::Start(
+    const boost::function<void(const std::string &)> &startProgressCallback) {
   if (m_pimpl->m_engine) {
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
       GetConfigFilePath(),
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
-      m_pimpl->m_dropCopy,
+      m_pimpl->m_dropCopy, startProgressCallback,
+      [this](const std::string &error) {
+        return QMessageBox::critical(
+                   nullptr, tr("Error at engine starting"),
+                   QString::fromStdString(error.substr(0, 512)),
+                   QMessageBox::Retry | QMessageBox::Ignore) ==
+               QMessageBox::Ignore;
+      },
       [this](trdk::Engine::Context::Log &log) {
         m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
             &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));

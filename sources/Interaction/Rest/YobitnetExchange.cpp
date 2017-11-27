@@ -35,7 +35,6 @@ namespace {
 struct Settings {
   std::string apiKey;
   std::string apiSecret;
-  pt::time_duration pullingInterval;
   size_t initialNonce;
   fs::path nonceStorageFile;
   std::vector<std::string> defaultSymbols;
@@ -43,8 +42,6 @@ struct Settings {
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : apiKey(conf.ReadKey("api_key")),
         apiSecret(conf.ReadKey("api_secret")),
-        pullingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))),
         initialNonce(conf.ReadTypedKey<size_t>("initial_nonce", 1)),
         nonceStorageFile(conf.ReadFileSystemPath("nonce_storage_file_path")),
         defaultSymbols(
@@ -55,13 +52,12 @@ struct Settings {
 
   void Log(ModuleEventsLog &log) {
     log.Info(
-        "API key: \"%1%\". API secret: %2%. Pulling interval: %3%. Initial "
-        "nonce: %4%. Nonce storage file: %5%",
+        "API key: \"%1%\". API secret: %2%. Initial nonce: %3%. Nonce storage "
+        "file: %4%",
         apiKey,                                    // 1
         apiSecret.empty() ? "not set" : "is set",  // 2
-        pullingInterval,                           // 3
-        initialNonce,                              // 4
-        nonceStorageFile);                         // 5
+        initialNonce,                              // 3
+        nonceStorageFile);                         // 4
   }
 
   void Validate() {
@@ -103,6 +99,11 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
               std::numeric_limits<double>::quiet_NaN())};
 }
 #pragma warning(pop)
+
+struct Product {
+  std::string id;
+  uintmax_t precisionPower;
+};
 
 class Request : public Rest::Request {
  public:
@@ -233,13 +234,17 @@ class TradeRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(std::string source) {
-  if (boost::starts_with(source, "BCH_")) {
-    source = "BCC" + source.substr(3);
-  } else if (boost::ends_with(source, "_BCH")) {
-    source == source.substr(0, 4) + "BCC";
-  }
+std::string NormilizeProductId(std::string source) {
   return boost::to_lower_copy(source);
+}
+
+std::string NormilizeSymbol(std::string source) {
+  if (boost::starts_with(source, "BCC_")) {
+    source[2] = 'H';
+  } else if (boost::ends_with(source, "_BCC")) {
+    source.back() = 'H';
+  }
+  return source;
 }
 
 struct Order {
@@ -260,23 +265,33 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit YobitnetExchange(const App &,
                             const TradingMode &mode,
-                            size_t tradingSystemIndex,
-                            size_t marketDataSourceIndex,
                             Context &context,
                             const std::string &instanceName,
                             const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
         m_nextNonce(0),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()) {
+        m_pullingTask(
+            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~YobitnetExchange() override = default;
+  virtual ~YobitnetExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -314,12 +329,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
     const auto &depthRequest = boost::make_shared<PublicRequest>(
         "/api/3/depth/" + boost::join(uriSymbolsPath, "-"), "Depth", "limit=1");
-    m_pullingTask.ReplaceTask("Prices", 1,
-                              [this, depthRequest]() {
-                                UpdateSecuritues(*depthRequest);
-                                return true;
-                              },
-                              1);
+    m_pullingTask->ReplaceTask("Prices", 1,
+                               [this, depthRequest]() {
+                                 UpdateSecuritues(*depthRequest);
+                                 return true;
+                               },
+                               10);
   }
 
  protected:
@@ -350,96 +365,40 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    {
-      std::vector<std::string> funds;
-      std::vector<std::string> fundsInclOrders;
-      std::vector<std::string> rights;
-      size_t numberOfTransactions = 0;
-      size_t numberOfActiveOrders = 0;
-
-      try {
-        auto nonce = TakeNonce();
-        TradeRequest request("getInfo", nonce.first, m_settings, false);
-        const auto response =
-            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        nonce.second.unlock();
-        {
-          const auto fundsNode = response.get_child_optional("funds");
-          if (fundsNode) {
-            for (const auto &node : *fundsNode) {
-              funds.emplace_back(node.first + ": " + node.second.data());
-            }
-          }
-        }
-        {
-          const auto &fundsInclOrdersNode =
-              response.get_child_optional("funds_incl_orders");
-          if (fundsInclOrdersNode) {
-            for (const auto &node : *fundsInclOrdersNode) {
-              fundsInclOrders.emplace_back(node.first + ": " +
-                                           node.second.data());
-            }
-          }
-        }
-        {
-          const auto &rightsNode = response.get_child_optional("rights");
-          if (rightsNode) {
-            for (const auto &node : *rightsNode) {
-              rights.emplace_back(node.first + ": " + node.second.data());
-            }
-          }
-        }
-        {
-          const auto &numberOfTransactionsNode =
-              response.get_optional<decltype(numberOfTransactions)>(
-                  "transaction_count");
-          if (numberOfTransactionsNode) {
-            numberOfTransactions = *numberOfTransactionsNode;
-          }
-        }
-        {
-          const auto &numberOfActiveOrdersNode =
-              response.get_optional<decltype(numberOfTransactions)>(
-                  "open_order");
-          if (numberOfActiveOrdersNode) {
-            numberOfActiveOrders = *numberOfActiveOrdersNode;
-          }
-        }
-      } catch (const std::exception &ex) {
-        GetTsLog().Error(
-            "Failed to read general account information: \"%1%\". Please check "
-            "YoBit.Net credential, initial nonce-value in settings and/or "
-            "nonce-value storage file %2%.",
-            ex.what(),                     // 1
-            m_settings.nonceStorageFile);  // 2
-        throw;
-      }
-
-      GetTsLog().Info(
-          "Funds: %1%. Funds incl. order: %2%. Rights: %3%. Number of "
-          "transactions: %4%. Number of active orders: %5%.",
-          funds.empty() ? "none" : boost::join(funds, ", "),  // 1
-          fundsInclOrders.empty() ? "none"
-                                  : boost::join(fundsInclOrders, ", "),  // 2
-          rights.empty() ? "none" : boost::join(rights, ", "),           // 3
-          numberOfTransactions,                                          // 4
-          numberOfActiveOrders);                                         // 5
+    try {
+      RequestProducts();
+      RequestAccountInfo();
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
+      boost::format message(
+          "Failed to connect. Please check Yobit.net credential, initial "
+          "nonce-value in settings and/or nonce-value storage file %1%.");
+      message % m_settings.nonceStorageFile;
+      throw ConnectError(message.str().c_str());
     }
 
-    Verify(m_pullingTask.AddTask("Actual orders", 0,
-                                 [this]() {
-                                   UpdateOrders();
-                                   return true;
-                                 },
-                                 2));
-    Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+    Verify(m_pullingTask->AddTask("Actual orders", 0,
+                                  [this]() {
+                                    UpdateOrders();
+                                    return true;
+                                  },
+                                  1));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
+    const auto &product = m_products.find(symbol.GetSymbol());
+    if (product == m_products.cend()) {
+      boost::format message(
+          "Symbol \"%1%\" is not in the exchange product list");
+      message % symbol.GetSymbol();
+      throw SymbolIsNotSupportedError(message.str().c_str());
+    }
+
     {
-      const auto &it = m_securities.find(symbol.GetSymbol());
+      const auto &it = m_securities.find(product->first);
       if (it != m_securities.cend()) {
         return *it->second;
       }
@@ -454,12 +413,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             .set(LEVEL1_TICK_BID_QTY));
     result->SetTradingSessionState(pt::not_a_date_time, true);
 
-    {
-      Verify(
-          m_securities
-              .emplace(NormilizeSymbol(result->GetSymbol().GetSymbol()), result)
-              .second);
-    }
+    Verify(m_securities.emplace(product->second.id, result).second);
 
     return *result;
   }
@@ -490,11 +444,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
+    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+    if (product == m_products.cend()) {
+      throw Exception("Symbol is not supported by exchange");
+    }
+
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
-    requestParams % NormilizeSymbol(security.GetSymbol().GetSymbol())  // 1
-        % (side == ORDER_SIDE_SELL ? "sell" : "buy")                   // 2
-        % *price                                                       // 3
-        % qty;                                                         // 4
+    requestParams % product->second.id                              // 1
+        % (side == ORDER_SIDE_SELL ? "sell" : "buy")                // 2
+        % RoundByPrecision(*price, product->second.precisionPower)  // 3
+        % qty;                                                      // 4
 
     auto nonce = TakeNonce();
     TradeRequest request("Trade", nonce.first, m_settings, true,
@@ -522,7 +481,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
     TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask.AccelerateNextPulling();
+    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
@@ -542,12 +501,126 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             order.side, order.tid, order.time, order.time);
   }
 
+  void RequestProducts() {
+    boost::unordered_map<std::string, Product> products;
+    std::vector<std::string> log;
+    PublicRequest request("/api/3/info", "Info");
+    try {
+      const auto response =
+          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      for (const auto &node : response.get_child("pairs")) {
+        const auto &exchangeSymbol = boost::to_upper_copy(node.first);
+        const auto &symbol = NormilizeSymbol(exchangeSymbol);
+        Product product = {NormilizeProductId(exchangeSymbol)};
+        const auto &info = node.second;
+        const auto &decimalPlaces = info.get<uintmax_t>("decimal_places");
+        product.precisionPower =
+            static_cast<uintmax_t>(std::pow(10, decimalPlaces));
+        const auto &productIt =
+            products.emplace(std::move(symbol), std::move(product));
+        if (!productIt.second) {
+          GetTsLog().Error("Product duplicate: \"%1%\"",
+                           productIt.first->first);
+          Assert(productIt.second);
+          continue;
+        }
+        boost::format logStr("%1% (ID: \"%2%\", decimal places: %3%)");
+        logStr % productIt.first->first   // 1
+            % productIt.first->second.id  // 2
+            % decimalPlaces;              // 3
+        log.emplace_back(logStr.str());
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to read supported product list: \"%1%\".",
+                       ex.what());
+      throw Exception("Failed to read supported pair list");
+    }
+    GetTsLog().Info("Pairs: %1%.", boost::join(log, ", "));
+    m_products = std::move(products);
+  }
+
+  void RequestAccountInfo() {
+    std::vector<std::string> funds;
+    std::vector<std::string> fundsInclOrders;
+    std::vector<std::string> rights;
+    size_t numberOfTransactions = 0;
+    size_t numberOfActiveOrders = 0;
+
+    try {
+      auto nonce = TakeNonce();
+      TradeRequest request("getInfo", nonce.first, m_settings, false);
+      const auto response =
+          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      nonce.second.unlock();
+      {
+        const auto fundsNode = response.get_child_optional("funds");
+        if (fundsNode) {
+          for (const auto &node : *fundsNode) {
+            funds.emplace_back(node.first + ": " + node.second.data());
+          }
+        }
+      }
+      {
+        const auto &fundsInclOrdersNode =
+            response.get_child_optional("funds_incl_orders");
+        if (fundsInclOrdersNode) {
+          for (const auto &node : *fundsInclOrdersNode) {
+            fundsInclOrders.emplace_back(node.first + ": " +
+                                         node.second.data());
+          }
+        }
+      }
+      {
+        const auto &rightsNode = response.get_child_optional("rights");
+        if (rightsNode) {
+          for (const auto &node : *rightsNode) {
+            rights.emplace_back(node.first + ": " + node.second.data());
+          }
+        }
+      }
+      {
+        const auto &numberOfTransactionsNode =
+            response.get_optional<decltype(numberOfTransactions)>(
+                "transaction_count");
+        if (numberOfTransactionsNode) {
+          numberOfTransactions = *numberOfTransactionsNode;
+        }
+      }
+      {
+        const auto &numberOfActiveOrdersNode =
+            response.get_optional<decltype(numberOfTransactions)>("open_order");
+        if (numberOfActiveOrdersNode) {
+          numberOfActiveOrders = *numberOfActiveOrdersNode;
+        }
+      }
+    } catch (const std::exception &ex) {
+      GetTsLog().Error("Failed to read general account information: \"%1%\".",
+                       ex.what());
+      throw Exception("Failed to read account information");
+    }
+
+    GetTsLog().Info(
+        "Funds: %1%. Funds incl. order: %2%. Rights: %3%. Number of "
+        "transactions: %4%. Number of active orders: %5%.",
+        funds.empty() ? "none" : boost::join(funds, ", "),  // 1
+        fundsInclOrders.empty() ? "none"
+                                : boost::join(fundsInclOrders, ", "),  // 2
+        rights.empty() ? "none" : boost::join(rights, ", "),           // 3
+        numberOfTransactions,                                          // 4
+        numberOfActiveOrders);                                         // 5
+  }
+
   bool RequestOpenedOrders() {
     boost::unordered_map<OrderId, Order> newOrders;
     std::vector<std::string> invalidSymbols;
     for (const auto &symbol : m_settings.defaultSymbols) {
+      const auto &product = m_products.find(symbol);
+      if (product == m_products.cend()) {
+        continue;
+      }
       try {
-        RequestOpenedOrders(symbol, newOrders, m_orders);
+        RequestOpenedOrders(product->first, product->second.id, newOrders,
+                            m_orders);
       } catch (const InvalidPairException &ex) {
         invalidSymbols.emplace_back(symbol);
         GetTsLog().Warn(
@@ -580,6 +653,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   void RequestOpenedOrders(
       const std::string &symbol,
+      const std::string &productId,
       boost::unordered_map<OrderId, Order> &newOrders,
       boost::unordered_map<OrderId, Order> &notifiedOrders) {
     class ActiveOrdersRequest : public TradeRequest {
@@ -594,7 +668,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                  nonce,
                  settings,
                  false,
-                 "pair=" + NormilizeSymbol(symbol)) {}
+                 "pair=" + NormilizeProductId(symbol)) {}
 
       virtual ~ActiveOrdersRequest() override = default;
 
@@ -613,7 +687,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const bool isInitial = notifiedOrders.empty();
 
     auto nonce = TakeNonce();
-    ActiveOrdersRequest request(symbol, nonce.first, m_settings);
+    ActiveOrdersRequest request(productId, nonce.first, m_settings);
 
     {
       const auto orders =
@@ -768,10 +842,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   std::ofstream m_nonceStorage;
   boost::mutex m_nonceMutex;
 
+  boost::unordered_map<std::string, Product> m_products;
+
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
 
   boost::unordered_map<OrderId, Order> m_orders;
 };
@@ -781,25 +857,21 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateYobitnet(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<YobitnetExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateYobitnetMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<YobitnetExchange>(
-      App::GetInstance(), TRADING_MODE_LIVE, index, index, context,
-      instanceName, configuration);
+  return boost::make_shared<YobitnetExchange>(App::GetInstance(),
+                                              TRADING_MODE_LIVE, context,
+                                              instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

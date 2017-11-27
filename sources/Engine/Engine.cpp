@@ -34,20 +34,26 @@ class Engine::Implementation : private boost::noncopyable {
 Engine::Engine(
     const fs::path &path,
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-    const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+    const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
+    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params)
     : m_pimpl(boost::make_unique<Implementation>()) {
-  Run(path, contextStateUpdateSlot, nullptr, onLogStart, params);
+  Run(path, contextStateUpdateSlot, nullptr, startProgressCallback,
+      startErrorCallback, logStartCallback, params);
 }
 
 Engine::Engine(
     const fs::path &path,
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
     trdk::DropCopy &dropCopy,
-    const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+    const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
+    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params)
     : m_pimpl(boost::make_unique<Implementation>()) {
-  Run(path, contextStateUpdateSlot, &dropCopy, onLogStart, params);
+  Run(path, contextStateUpdateSlot, &dropCopy, startProgressCallback,
+      startErrorCallback, logStartCallback, params);
 }
 
 Engine::~Engine() {
@@ -60,13 +66,19 @@ void Engine::Run(
     const fs::path &path,
     const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
     trdk::DropCopy *dropCopy,
-    const boost::function<void(trdk::Engine::Context::Log &)> &onLogStart,
+    const boost::function<void(const std::string &)> &startProgressCallback,
+    const boost::function<bool(const std::string &)> &startErrorCallback,
+    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
     const boost::unordered_map<std::string, std::string> &params) {
   Assert(!m_pimpl->m_context);
   Assert(!m_pimpl->m_eventsLog);
   Assert(!m_pimpl->m_tradingLog);
 
   try {
+    if (startProgressCallback) {
+      startProgressCallback("Reading settings...");
+    }
+
     const IniFile ini(path);
     const trdk::Settings settings(ini, pt::microsec_clock::universal_time());
 
@@ -77,8 +89,8 @@ void Engine::Run(
 
     m_pimpl->m_eventsLog =
         boost::make_unique<trdk::Engine::Context::Log>(settings.GetTimeZone());
-    if (onLogStart) {
-      onLogStart(*m_pimpl->m_eventsLog);
+    if (logStartCallback) {
+      logStartCallback(*m_pimpl->m_eventsLog);
     }
     {
       const auto &logFilePath = settings.GetLogsInstanceDir() / "engine.log";
@@ -94,7 +106,14 @@ void Engine::Run(
     }
     settings.Log(*m_pimpl->m_eventsLog);
 
+    if (startProgressCallback) {
+      startProgressCallback("Verifying modules...");
+    }
     VerifyModules();
+
+    if (startProgressCallback) {
+      startProgressCallback("Starting engine...");
+    }
 
     m_pimpl->m_tradingLog =
         boost::make_unique<trdk::Engine::Context::TradingLog>(
@@ -125,7 +144,8 @@ void Engine::Run(
       }
     }
 
-    m_pimpl->m_context->Start(ini, dropCopy);
+    m_pimpl->m_context->Start(ini, startProgressCallback, startErrorCallback,
+                              dropCopy);
 
   } catch (const trdk::Lib::Exception &ex) {
     if (m_pimpl->m_eventsLog) {

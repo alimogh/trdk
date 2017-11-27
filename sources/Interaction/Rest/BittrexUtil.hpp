@@ -13,7 +13,13 @@
 namespace trdk {
 namespace Interaction {
 namespace Rest {
-std::string NormilizeBittrexSymbol(const std::string &);
+
+struct BittrexProduct {
+  std::string id;
+};
+
+boost::unordered_map<std::string, BittrexProduct> RequestBittrexProductList(
+    Poco::Net::HTTPClientSession &, Context &, ModuleEventsLog &);
 }
 }
 }

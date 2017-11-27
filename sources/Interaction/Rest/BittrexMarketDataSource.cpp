@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "BittrexMarketDataSource.hpp"
 #include "BittrexRequest.hpp"
-#include "BittrexUtil.hpp"
+#include "PullingTask.hpp"
 #include "Security.hpp"
 
 using namespace trdk;
@@ -25,38 +25,44 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexMarketDataSource::Request : public BittrexRequest {
- public:
-  explicit Request(const std::string &name, const std::string &uriParams)
-      : BittrexRequest("/public/" + name, name, uriParams) {}
-  virtual ~Request() override = default;
-
- protected:
-  virtual bool IsPriority() const override { return false; }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
 BittrexMarketDataSource::BittrexMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &conf)
-    : Base(index, context, instanceName),
+    : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session("bittrex.com"),
-      m_task(m_settings.pullingInterval, GetLog()) {
+      m_task(boost::make_unique<PullingTask>(pt::seconds(10), GetLog())) {
   m_session.setKeepAlive(true);
+}
+
+BittrexMarketDataSource::~BittrexMarketDataSource() {
+  try {
+    m_task.reset();
+    // Each object, that implements CreateNewSecurityObject should wait for
+    // log flushing before destroying objects:
+    GetTradingLog().WaitForFlush();
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
 }
 
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Info("Creating connection...");
-  Verify(m_task.AddTask("Prices", 1,
-                        [this]() {
-                          RequestActualPrices();
-                          return true;
-                        },
-                        1));
+  try {
+    m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
+  } catch (const std::exception &ex) {
+    GetLog().Error("Failed to connect: \"%1%\".", ex.what());
+    throw ConnectError(ex.what());
+  }
+
+  Verify(m_task->AddTask("Prices", 1,
+                         [this]() {
+                           RequestActualPrices();
+                           return true;
+                         },
+                         1));
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {
@@ -65,17 +71,27 @@ void BittrexMarketDataSource::SubscribeToSecurities() {
     if (security.second) {
       continue;
     }
-    security.second = std::make_unique<Request>(
-        "getorderbook",
-        "market=" +
-            NormilizeBittrexSymbol(security.first->GetSymbol().GetSymbol()) +
-            "&type=both");
+    const auto &product =
+        m_products.find(security.first->GetSymbol().GetSymbol());
+    Assert(product != m_products.cend());
+    if (product == m_products.cend()) {
+      continue;
+    }
+    security.second = std::make_unique<BittrexPublicRequest>(
+        "getorderbook", "market=" + product->second.id + "&type=both");
     security.first->SetTradingSessionState(pt::not_a_date_time, true);
   }
 }
 
 trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
+  const auto &product = m_products.find(symbol.GetSymbol());
+  if (product == m_products.cend()) {
+    boost::format message("Symbol \"%1%\" is not in the exchange product list");
+    message % symbol.GetSymbol();
+    throw SymbolIsNotSupportedError(message.str().c_str());
+  }
+
   const boost::mutex::scoped_lock lock(m_securitiesLock);
   m_securities.emplace_back(
       boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
@@ -153,12 +169,11 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<BittrexMarketDataSource>(
-      index, context, instanceName, configuration);
+  return boost::make_shared<BittrexMarketDataSource>(context, instanceName,
+                                                     configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

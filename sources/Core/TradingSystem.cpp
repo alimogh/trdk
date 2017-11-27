@@ -94,7 +94,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   const TradingMode m_mode;
 
-  const size_t m_index;
+  size_t m_index;
 
   Context &m_context;
 
@@ -110,12 +110,11 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
   explicit Implementation(TradingSystem &self,
                           const TradingMode &mode,
-                          size_t index,
                           Context &context,
                           const std::string &instanceName)
       : m_self(self),
         m_mode(mode),
-        m_index(index),
+        m_index(std::numeric_limits<size_t>::max()),
         m_context(context),
         m_instanceName(instanceName),
         m_stringId(FormatStringId(m_instanceName, m_mode)),
@@ -264,7 +263,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     const auto &time = m_context.GetCurrentTime();
-    const ActiveOrderLock lock(m_activeOrdersMutex);
+    ActiveOrderLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -274,7 +273,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
           "Failed to handle status update for order as order is unknown");
     }
     OnOrderStatusUpdate(orderId, status, remainingQty, commission,
-                        std::move(tradeInfo), time, it, callback);
+                        std::move(tradeInfo), time, it, std::move(lock),
+                        callback);
   }
 
   void OnOrderStatusUpdate(
@@ -285,6 +285,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       boost::optional<TradeInfo> &&tradeInfo,
       const pt::ptime &time,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
+      ActiveOrderLock &&lock,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     auto &cache = it->second;
 
@@ -320,27 +321,34 @@ class TradingSystem::Implementation : private boost::noncopyable {
       callback(*cache.transactionContext);
     }
 
-    // Maybe in the future new thread will be required here to avoid deadlocks
-    // from callback (when some one will need to call the same trading system
-    // from this callback).
-    cache.statusUpdateSignal(orderId, status, actualRemainingQty, commission,
-                             tradeInfo ? &*tradeInfo : nullptr);
-
+    const auto &callSignal =
+        [&](const TradingSystem::OrderStatusUpdateSlot &signal) {
+          signal(orderId, status, actualRemainingQty, commission,
+                 tradeInfo ? &*tradeInfo : nullptr);
+        };
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_FILLED:
         Assert(!remainingQty || *remainingQty == 0);
       case ORDER_STATUS_CANCELLED:
       case ORDER_STATUS_REJECTED:
-      case ORDER_STATUS_ERROR:
+      case ORDER_STATUS_ERROR: {
+        const auto signal = std::move(cache.statusUpdateSignal);
         m_activeOrders.erase(it);
+        lock.unlock();
+        callSignal(signal);
         break;
+      }
       default: {
         cache.status = status;
         if (remainingQty) {
           cache.remainingQty = *remainingQty;
         }
         cache.updateTime = time;
+        // Maybe better to make is shared_ptr to avoid copying.
+        const auto signal = cache.statusUpdateSignal;
+        lock.unlock();
+        callSignal(signal);
         break;
       }
     }
@@ -357,17 +365,25 @@ class TradingSystem::Implementation : private boost::noncopyable {
 };
 
 TradingSystem::TradingSystem(const TradingMode &mode,
-                             size_t index,
                              Context &context,
                              const std::string &instanceName)
     : m_pimpl(boost::make_unique<Implementation>(
-          *this, mode, index, context, instanceName)) {}
+          *this, mode, context, instanceName)) {}
 
 TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }
 
-size_t TradingSystem::GetIndex() const { return m_pimpl->m_index; }
+void TradingSystem::AssignIndex(size_t index) {
+  AssertEq(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  AssertNe(std::numeric_limits<size_t>::max(), index);
+  m_pimpl->m_index = index;
+}
+
+size_t TradingSystem::GetIndex() const {
+  AssertNe(std::numeric_limits<size_t>::max(), m_pimpl->m_index);
+  return m_pimpl->m_index;
+}
 
 Context &TradingSystem::GetContext() { return m_pimpl->m_context; }
 
@@ -671,7 +687,7 @@ void TradingSystem::OnOrder(const OrderId &orderId,
                             const pt::ptime &openTime,
                             const pt::ptime &updateTime) {
   {
-    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
       if (!it->second.IsChanged(status, remainingQty)) {
@@ -685,7 +701,8 @@ void TradingSystem::OnOrder(const OrderId &orderId,
       }
       m_pimpl->OnOrderStatusUpdate(
           orderId, status, remainingQty, boost::none, std::move(trade),
-          updateTime, it, boost::function<void(OrderTransactionContext &)>());
+          updateTime, it, std::move(lock),
+          boost::function<void(OrderTransactionContext &)>());
       return;
     }
   }
@@ -698,10 +715,9 @@ void TradingSystem::OnOrder(const OrderId &orderId,
 ////////////////////////////////////////////////////////////////////////////////
 
 LegacyTradingSystem::LegacyTradingSystem(const TradingMode &tradingMode,
-                                         size_t index,
                                          Context &context,
                                          const std::string &instanceName)
-    : TradingSystem(tradingMode, index, context, instanceName) {}
+    : TradingSystem(tradingMode, context, instanceName) {}
 
 boost::shared_ptr<OrderTransactionContext>
 LegacyTradingSystem::SendOrderTransaction(

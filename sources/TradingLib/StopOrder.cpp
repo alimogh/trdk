@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "StopOrder.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "OrderPolicy.hpp"
@@ -28,9 +29,11 @@ Module::TradingLog &StopOrder::GetTradingLog() const noexcept {
 
 void StopOrder::OnHit() {
   if (GetPosition().HasActiveOpenOrders()) {
-    GetTradingLog().Write("%1%\tbad open-order\tpos=%2%",
+    GetTradingLog().Write("%1%\tbad open-order\tpos=%2%/%3%",
                           [&](TradingRecord &record) {
-                            record % GetName() % GetPosition().GetId();
+                            record % GetName()                           // 1
+                                % GetPosition().GetOperation()->GetId()  // 2
+                                % GetPosition().GetSubOperationId();     // 3
                           });
 
     try {
@@ -51,7 +54,7 @@ void StopOrder::OnHit() {
                                                : *orderPrice > currentPrice);
     GetTradingLog().Write(
         "%1%\t%2%\t%3%"
-        "\torder-price=%4$.8f\tcurrent-price=%5$.8f\tpos=%6%",
+        "\torder-price=%4$.8f\tcurrent-price=%5$.8f\tpos=%6%/%7%",
         [&](TradingRecord &record) {
           record % GetName()  // 1
               % (isBadOrder ? "canceling bad close-order"
@@ -62,8 +65,9 @@ void StopOrder::OnHit() {
           } else {
             record % "market";  // 4
           }
-          record % currentPrice         // 5
-              % GetPosition().GetId();  // 6
+          record % currentPrice                        // 5
+              % GetPosition().GetOperation()->GetId()  // 6
+              % GetPosition().GetSubOperationId();     // 7
         });
     if (isBadOrder) {
       try {
@@ -76,9 +80,12 @@ void StopOrder::OnHit() {
     }
 
   } else {
-    GetTradingLog().Write("%1%\tclosing\tpos=%2%", [&](TradingRecord &record) {
-      record % GetName() % GetPosition().GetId();
-    });
+    GetTradingLog().Write("%1%\tclosing\tpos=%2%/%3%",
+                          [&](TradingRecord &record) {
+                            record % GetName()                           // 1
+                                % GetPosition().GetOperation()->GetId()  // 2
+                                % GetPosition().GetSubOperationId();     // 3
+                          });
 
     m_orderPolicy->Close(GetPosition());
   }
