@@ -227,7 +227,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     const auto &qty = std::max(
-        std::min(maxQty,
+        std::min(m_tradingSettings->maxQty,
                  std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty())),
         Qty(0.015));
 
