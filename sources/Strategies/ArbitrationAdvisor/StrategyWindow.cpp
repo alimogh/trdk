@@ -165,7 +165,7 @@ void StrategyWindow::InitBySelectedSymbol() {
        << "trading_mode = live" << std::endl
        << "title = " << symbol << " Arbitrage" << std::endl
        << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
-    if (defaults.ReadBoolKey("restore_balances")) {
+    if (defaults.ReadBoolKey("restore_balances", false)) {
       os << "restore_balances = " << defaults.ReadBoolKey("restore_balances")
          << std::endl;
     }
