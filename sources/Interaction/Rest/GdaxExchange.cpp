@@ -639,7 +639,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     } catch (const std::exception &ex) {
       boost::format error("Failed to request order list: \"%1%\"");
       error % ex.what();
-      throw Exception(error.what().c_str());
+      throw Exception(error.str().c_str());
     }
 
     for (const auto &canceledOrder : m_orders) {

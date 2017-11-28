@@ -825,8 +825,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         }
       } catch (const std::exception &ex) {
         boost::format error("Failed to request state for order %1%: \"%2%\"");
-        error % orderId  // 1
-            % ex.what;   // 2
+        error % orderId   // 1
+            % ex.what();  // 2
         throw Exception(error.str().c_str());
       }
     }
