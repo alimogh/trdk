@@ -165,10 +165,15 @@ void StrategyWindow::InitBySelectedSymbol() {
        << "trading_mode = live" << std::endl
        << "title = " << symbol << " Arbitrage" << std::endl
        << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
-    if (defaults.ReadBoolKey("restore_balances", false)) {
-      os << "restore_balances = " << defaults.ReadBoolKey("restore_balances")
-         << std::endl;
-    }
+    const auto &copyKey = [&os, &conf](const char *key) {
+      if (!conf.IsKeyExist("General", key)) {
+        return;
+      }
+      os << key << " = " << conf.ReadKey("General", key) << std::endl;
+    };
+    copyKey("restore_balances");
+    copyKey("trailing_activation_percentage");
+    copyKey("stop_loss_spread_percentage");
     m_engine.GetContext().Add(IniString(os.str()));
   }
   m_strategy = boost::polymorphic_downcast<aa::Strategy *>(
