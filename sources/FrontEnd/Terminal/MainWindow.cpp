@@ -69,12 +69,14 @@ MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
 MainWindow::~MainWindow() = default;
 
 void MainWindow::CreateNewArbitrageStrategy() {
-  typedef std::unique_ptr<QWidget>(Factory)(Lib::Engine &, QWidget *);
   try {
-    m_moduleDlls.back()
-        ->GetFunction<Factory>("CreateStrategyWidgets")(*m_engine, this)
-        .release()
-        ->show();
+    typedef std::unique_ptr<QWidget>(Factory)(Lib::Engine &, QWidget *);
+    auto *const widget =
+        m_moduleDlls.back()
+            ->GetFunction<Factory>("CreateStrategyWidgets")(*m_engine, this)
+            .release();
+    widget->adjustSize();
+    widget->show();
   } catch (const std::exception &ex) {
     const auto &error =
         QString("Failed to load module front-end: \"%1\".").arg(ex.what());

@@ -18,13 +18,11 @@ using namespace trdk::Interaction::Rest;
 
 trdk::TradingSystemAndMarketDataSourceFactoryResult CreateBittrex(
     const trdk::TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &conf) {
-  return {boost::make_shared<BittrexTradingSystem>(mode, tradingSystemIndex,
-                                                   context, instanceName, conf),
-          boost::make_shared<BittrexMarketDataSource>(
-              marketDataSourceIndex, context, instanceName, conf)};
+  return {
+      boost::make_shared<BittrexTradingSystem>(mode, context, instanceName,
+                                               conf),
+      boost::make_shared<BittrexMarketDataSource>(context, instanceName, conf)};
 }

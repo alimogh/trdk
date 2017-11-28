@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "PositionReport.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Security.hpp"
 #include "Core/Strategy.hpp"
 
@@ -57,7 +58,8 @@ void PositionReport::PrintHead(std::ostream &os) {
      << ",Close Price"        // 19
      << ",Close Orders"       // 20
      << ",Close Trades"       // 21
-     << ",ID"                 // 22
+     << ",Operation ID"       // 22
+     << ",Sub-operation ID"   // 23
      << std::endl;
 }
 
@@ -83,6 +85,7 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   os << ',' << pos.GetCloseAvgPrice();        // 19
   os << ',' << pos.GetNumberOfCloseOrders();  // 20
   os << ',' << pos.GetNumberOfCloseTrades();  // 21
-  os << ',' << pos.GetId();                   // 22
+  os << ',' << pos.GetOperation()->GetId();   // 22
+  os << ',' << pos.GetSubOperationId();       // 23
   os << std::endl;
 }

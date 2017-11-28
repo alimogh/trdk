@@ -37,5 +37,6 @@
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Core/Timer.hpp"
+#include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/TransactionContext.hpp"

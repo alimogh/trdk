@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Strategy.hpp"
 #include "DropCopy.hpp"
+#include "Operation.hpp"
 #include "RiskControl.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
@@ -361,8 +362,11 @@ class Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  void FlushDelayed(const Position *eventPosition) {
+  void FlushDelayed(const Position *eventPosition, Lock &lock) {
     while (!m_delayedPositionToForget.empty()) {
+      lock.unlock();
+      boost::this_thread::yield();
+      lock.lock();
       Assert(m_delayedPositionToForget.back());
       auto &delayedPosition = *m_delayedPositionToForget.back();
       m_delayedPositionToForget.pop_back();
@@ -477,7 +481,7 @@ void Strategy::Unregister(Position &position) noexcept {
 
 void Strategy::RaiseLevel1UpdateEvent(
     Security &security, const TimeMeasurement::Milestones &delayMeasurement) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -492,7 +496,7 @@ void Strategy::RaiseLevel1UpdateEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseLevel1TickEvent(
@@ -500,7 +504,7 @@ void Strategy::RaiseLevel1TickEvent(
     const boost::posix_time::ptime &time,
     const Level1TickValue &value,
     const TimeMeasurement::Milestones &delayMeasurement) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -515,14 +519,14 @@ void Strategy::RaiseLevel1TickEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseNewTradeEvent(Security &service,
                                   const boost::posix_time::ptime &time,
                                   const Price &price,
                                   const Qty &qty) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -535,13 +539,13 @@ void Strategy::RaiseNewTradeEvent(Security &service,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(
     const Service &service,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -554,15 +558,15 @@ void Strategy::RaiseServiceDataUpdateEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "service data update");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
   Assert(position.IsStarted());
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   m_pimpl->RaiseSinglePositionUpdateEvent(position);
-  m_pimpl->FlushDelayed(&position);
+  m_pimpl->FlushDelayed(&position, lock);
 }
 
 void Strategy::OnPositionMarkedAsCompleted(Position &position) {
@@ -579,7 +583,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
                                                   Security &security,
                                                   Security::Request &request,
                                                   bool &isSwitched) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -592,7 +596,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
@@ -600,7 +604,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
                                               const Qty &qty,
                                               const Volume &volume,
                                               bool isInitial) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -613,11 +617,11 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -630,14 +634,14 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseBookUpdateTickEvent(
     Security &security,
     const PriceBook &book,
     const TimeMeasurement::Milestones &timeMeasurement) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -651,13 +655,13 @@ void Strategy::RaiseBookUpdateTickEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
                                          Security &security,
                                          const Security::ServiceEvent &event) {
-  const auto lock = LockForOtherThreads();
+  auto lock = LockForOtherThreads();
   AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
@@ -670,7 +674,7 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security service event");
   }
-  m_pimpl->FlushDelayed(nullptr);
+  m_pimpl->FlushDelayed(nullptr, lock);
 }
 
 bool Strategy::IsBlocked(bool isForever) const {
@@ -734,9 +738,10 @@ void Strategy::ReportStop() {
       for (const auto &pos : GetPositions()) {
         if (pos.HasActiveOrders()) {
           GetLog().Error(
-              "Found position %1% with active orders at stop"
+              "Found position %1%/%2% with active orders at stop"
               " with mode \"wait for orders before\".",
-              pos.GetId());
+              pos.GetOperation()->GetId(),  // 1
+              pos.GetSubOperationId());     // 2
         }
         Assert(!pos.HasActiveOrders());
       }

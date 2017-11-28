@@ -10,23 +10,22 @@
 
 #pragma once
 
+#include "PullingSettings.hpp"
+
 namespace trdk {
 namespace Interaction {
 namespace Rest {
 
 struct Settings {
-  boost::posix_time::time_duration pullingInterval;
+  PullingSetttings pullingSetttings;
 
   explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
-      : pullingInterval(boost::posix_time::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+      : pullingSetttings(conf) {
     Log(log);
     Validate();
   }
 
-  void Log(ModuleEventsLog &log) {
-    log.Info("Pulling interval: %1%.", pullingInterval);
-  }
+  void Log(ModuleEventsLog &log) { pullingSetttings.Log(log); }
 
   void Validate() {}
 };

@@ -170,9 +170,6 @@
     <ClInclude Include="Advice.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OperationContext.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PositionController.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -193,6 +190,9 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_TargetSideWidget.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Operation.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

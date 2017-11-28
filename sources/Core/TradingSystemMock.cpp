@@ -16,7 +16,5 @@ using namespace trdk;
 using namespace trdk::Tests;
 
 Mocks::TradingSystem::TradingSystem()
-    : trdk::TradingSystem(numberOfTradingModes,
-                          std::numeric_limits<size_t>::max(),
-                          Dummies::Context::GetInstance(),
-                          "Mock") {}
+    : trdk::TradingSystem(
+          numberOfTradingModes, Dummies::Context::GetInstance(), "Mock") {}

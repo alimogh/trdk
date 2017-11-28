@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TrailingStop.hpp"
+#include "Core/Operation.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 
@@ -98,7 +99,7 @@ bool TrailingStop::CheckSignal() {
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
-      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%",
+      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%/%12%",
       [&](TradingRecord &record) {
         record % GetName()                            // 1
             % (isSignal ? "signaling" : "trailing");  // 2
@@ -118,7 +119,8 @@ bool TrailingStop::CheckSignal() {
             % profitToClose                                   // 8
             % GetPosition().GetSecurity().GetBidPriceValue()  // 9
             % GetPosition().GetSecurity().GetAskPriceValue()  // 10
-            % GetPosition().GetId();                          // 11
+            % GetPosition().GetOperation()->GetId()           // 11
+            % GetPosition().GetSubOperationId();              // 12
       });
 
   m_minProfit = plannedPnl;
@@ -144,7 +146,7 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
-      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%",
+      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%/%12%",
       [&](TradingRecord &record) {
         record % GetName()                                      // 1
             % (m_isActivated ? "activating" : "accumulating");  // 2
@@ -164,7 +166,8 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
             % profitToActivate                                // 8
             % GetPosition().GetSecurity().GetBidPriceValue()  // 9
             % GetPosition().GetSecurity().GetAskPriceValue()  // 10
-            % GetPosition().GetId();                          // 11
+            % GetPosition().GetOperation()->GetId()           // 11
+            % GetPosition().GetSubOperationId();              // 12
       });
 
   m_maxProfit = plannedPnl;

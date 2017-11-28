@@ -16,6 +16,7 @@
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -35,30 +36,25 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
-  pt::time_duration pullingInterval;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")),
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
-        apiPassphrase(conf.ReadKey("api_passphrase")),
-        pullingInterval(pt::milliseconds(
-            conf.ReadTypedKey<long>("pulling_interval_milliseconds"))) {
+        apiPassphrase(conf.ReadKey("api_passphrase")) {
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info(
-        "API key: \"%1%\". API secret: %2%. API passphrase: %3%. Pulling "
-        "interval: %4%.",
-        apiKey,                                        // 1
-        apiSecret.empty() ? "not set" : "is set",      // 2
-        apiPassphrase.empty() ? "not set" : "is set",  // 3
-        pullingInterval);                              // 4
+    log.Info("API key: \"%1%\". API secret: %2%. API passphrase: %3%.",
+             apiKey,                                         // 1
+             apiSecret.empty() ? "not set" : "is set",       // 2
+             apiPassphrase.empty() ? "not set" : "is set");  // 3
   }
 
   void Validate() {}
@@ -91,6 +87,11 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
               std::numeric_limits<double>::quiet_NaN())};
 }
 #pragma warning(pop)
+
+struct Product {
+  std::string id;
+  uintmax_t precisionPower;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,8 +192,11 @@ class PrivateRequest : public Request {
   const bool m_isPriority;
 };
 
-std::string NormilizeSymbol(const std::string &source) {
+std::string NormilizeProductId(std::string source) {
   return boost::replace_first_copy(source, "_", "-");
+}
+std::string RestoreSymbol(const std::string &source) {
+  return boost::replace_first_copy(source, "-", "_");
 }
 }
 
@@ -227,18 +231,17 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  public:
   explicit GdaxExchange(const App &,
                         const TradingMode &mode,
-                        size_t tradingSystemIndex,
-                        size_t marketDataSourceIndex,
                         Context &context,
                         const std::string &instanceName,
                         const IniSectionRef &conf)
-      : TradingSystem(mode, tradingSystemIndex, context, instanceName),
-        MarketDataSource(marketDataSourceIndex, context, instanceName),
+      : TradingSystem(mode, context, instanceName),
+        MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(m_settings.pullingInterval, GetMdsLog()),
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
@@ -250,7 +253,18 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_tradingSession.setKeepAlive(true);
   }
 
-  virtual ~GdaxExchange() override = default;
+  virtual ~GdaxExchange() override {
+    try {
+      m_pullingTask.reset();
+      // Each object, that implements CreateNewSecurityObject should wait for
+      // log flushing before destroying objects:
+      MarketDataSource::GetTradingLog().WaitForFlush();
+      TradingSystem::GetTradingLog().WaitForFlush();
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
 
  public:
   using trdk::TradingSystem::GetContext;
@@ -289,7 +303,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask.AddTask(
+    m_pullingTask->AddTask(
         "Prices", 1,
         [this]() -> bool {
           const SecuritiesLock lock(m_securitiesMutex);
@@ -332,35 +346,39 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        1);
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
   }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
-      // RequestAccounts();
+      RequestProducts();
+      RequestAccounts();
     } catch (const std::exception &ex) {
-      GetTsLog().Error(ex.what());
+      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
+      throw ConnectError(ex.what());
     }
-    Verify(m_pullingTask.AddTask("Actual orders", 0,
-                                 [this]() {
-                                   UpdateOrders();
-                                   return true;
-                                 },
-                                 2));
-    Verify(m_pullingTask.AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 30));
+    Verify(m_pullingTask->AddTask(
+        "Actual orders", 0,
+        [this]() {
+          UpdateOrders();
+          return true;
+        },
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); },
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
     m_isConnected = true;
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
       const Symbol &symbol) override {
-    {
-      const SecuritiesLock lock(m_securitiesMutex);
-      const auto &it = m_securities.find(symbol);
-      if (it != m_securities.cend()) {
-        return *it->second.security;
-      }
+    const auto &product = m_products.find(symbol.GetSymbol());
+    if (product == m_products.cend()) {
+      boost::format message(
+          "Symbol \"%1%\" is not in the exchange product list");
+      message % symbol.GetSymbol();
+      throw SymbolIsNotSupportedError(message.str().c_str());
     }
 
     const auto result = boost::make_shared<Rest::Security>(
@@ -374,8 +392,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "products/" + NormilizeSymbol(result->GetSymbol().GetSymbol()) +
-          "/book/");
+          "products/" + product->second.id + "/book/");
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
                  .second);
@@ -410,14 +427,19 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw TradingSystem::Error("Market order is not supported");
     }
 
+    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+    if (product == m_products.cend()) {
+      throw Exception("Symbol is not supported by exchange");
+    }
+
     {
       boost::format requestParams(
-          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.6f\", "
-          "\"size\": \"%4$.6f\"}");
-      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
-          % NormilizeSymbol(security.GetSymbol().GetSymbol())     // 2
-          % *price                                                // 3
-          % qty;                                                  // 4
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
+          "\"size\": \"%4$.8f\"}");
+      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")      // 1
+          % product->second.id                                        // 2
+          % RoundByPrecision(*price, product->second.precisionPower)  // 3
+          % qty;                                                      // 4
       m_orderTransactionRequest.SetBody(requestParams.str());
     }
 
@@ -441,10 +463,45 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
     TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask.AccelerateNextPulling();
+    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
+  void RequestProducts() {
+    boost::unordered_map<std::string, Product> products;
+    PublicRequest request("products");
+    const auto response =
+        boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+    std::vector<std::string> log;
+    for (const auto &node : response) {
+      const auto &productNode = node.second;
+      Product product = {productNode.get<std::string>("id")};
+      const auto &quoteIncrement =
+          productNode.get<std::string>("quote_increment");
+      const auto dotPos = quoteIncrement.find('.');
+      if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
+        product.precisionPower = quoteIncrement.size() - dotPos - 1;
+        product.precisionPower = static_cast<decltype(product.precisionPower)>(
+            std::pow(10, product.precisionPower));
+      }
+      const auto &symbol = RestoreSymbol(product.id);
+      const auto &productIt =
+          products.emplace(std::move(symbol), std::move(product));
+      if (!productIt.second) {
+        GetTsLog().Error("Product duplicate: \"%1%\"", productIt.first->first);
+        Assert(productIt.second);
+        continue;
+      }
+      boost::format logStr("%1% (ID: \"%2%\", price step: %3%)");
+      logStr % productIt.first->first   // 1
+          % productIt.first->second.id  // 2
+          % quoteIncrement;             // 3
+      log.emplace_back(logStr.str());
+    }
+    GetTsLog().Info("Products: %1%.", boost::join(log, ", "));
+    m_products = std::move(products);
+  }
+
   void RequestAccounts() {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false);
@@ -516,7 +573,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     const Qty qty = order.get<double>("size");
     const Qty filledQty = order.get<double>("filled_size");
     AssertGe(qty, filledQty);
-    const Qty remainingQty = qty - filledQty;
+    Qty remainingQty = qty - filledQty;
 
     OrderStatus status;
     {
@@ -528,6 +585,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                      : ORDER_STATUS_SUBMITTED;
       } else if (statusField == "done") {
         status = ORDER_STATUS_FILLED;
+        remainingQty = 0;
       } else {
         GetTsLog().Error("Unknown order status \"%1%\" for order %2%.",
                          statusField, orderId);
@@ -583,8 +641,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_orders.erase(notifiedOrder.id);
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-      throw Exception("Failed to request order list");
+      boost::format error("Failed to request order list: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
 
     for (const auto &canceledOrder : m_orders) {
@@ -636,8 +695,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       } catch (const OrderIsUnknown &) {
         OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to update order list: \"%1%\".", ex.what());
-        throw Exception("Failed to update order list");
+        boost::format error("Failed to update order list: \"%1%\"");
+        error % ex.what();
+        throw Exception(error.str().c_str());
       }
     }
   }
@@ -652,7 +712,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
 
-  PullingTask m_pullingTask;
+  std::unique_ptr<PullingTask> m_pullingTask;
 
   PrivateRequest m_orderTransactionRequest;
 
@@ -660,6 +720,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<OrderId, Order> m_orders;
 
   trdk::Timer::Scope m_timerScope;
+
+  boost::unordered_map<std::string, Product> m_products;
 };
 }
 
@@ -667,25 +729,20 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
 TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
     const TradingMode &mode,
-    size_t tradingSystemIndex,
-    size_t marketDataSourceIndex,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<GdaxExchange>(
-      App::GetInstance(), mode, tradingSystemIndex, marketDataSourceIndex,
-      context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateGdaxMarketDataSource(
-    size_t index,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   return boost::make_shared<GdaxExchange>(App::GetInstance(), TRADING_MODE_LIVE,
-                                          index, index, context, instanceName,
-                                          configuration);
+                                          context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

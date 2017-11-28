@@ -29,8 +29,7 @@ class PullingTask : private boost::noncopyable {
   };
 
  public:
-  explicit PullingTask(const boost::posix_time::time_duration &pullingInterval,
-                       ModuleEventsLog &);
+  explicit PullingTask(const PullingSetttings &, ModuleEventsLog &);
   ~PullingTask();
 
  public:

@@ -33,6 +33,7 @@ class Policy : private boost::noncopyable {
   }
 
   bool IsUnknownOrderIdError(const std::string &errorText);
+  bool IsBadTradingVolumeError(const std::string &errorText);
 
  private:
   const boost::posix_time::time_duration m_utcDiff;

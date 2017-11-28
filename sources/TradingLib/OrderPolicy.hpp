@@ -40,6 +40,24 @@ class LimitGtcOrderPolicy : public trdk::TradingLib::LimitOrderPolicy {
   virtual void Close(trdk::Position &) const override;
 };
 
+class LimitPriceGtcOrderPolicy : public trdk::TradingLib::LimitGtcOrderPolicy {
+ public:
+  explicit LimitPriceGtcOrderPolicy(const trdk::Price &price)
+      : m_price(price) {}
+  virtual ~LimitPriceGtcOrderPolicy() override = default;
+
+ protected:
+  virtual trdk::Price GetOpenOrderPrice(trdk::Position &) const override {
+    return m_price;
+  }
+  virtual trdk::Price GetCloseOrderPrice(trdk::Position &) const override {
+    return m_price;
+  }
+
+ private:
+  const trdk::Price m_price;
+};
+
 class LimitIocOrderPolicy : public trdk::TradingLib::LimitOrderPolicy {
  public:
   virtual ~LimitIocOrderPolicy() override = default;

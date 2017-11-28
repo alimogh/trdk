@@ -27,6 +27,7 @@ class Heartbeat;
 class TestRequest;
 class ResendRequest;
 class Reject;
+class MarketDataRequestReject;
 class MarketDataSnapshotFullRefresh;
 class MarketDataIncrementalRefresh;
 class BusinessMessageReject;

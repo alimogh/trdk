@@ -16,6 +16,8 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
+////////////////////////////////////////////////////////////////////////////////
+
 class BittrexRequest : public Request {
  public:
   typedef Request Base;
@@ -36,6 +38,21 @@ class BittrexRequest : public Request {
  protected:
   virtual FloodControl &GetFloodControl() override;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+class BittrexPublicRequest : public BittrexRequest {
+ public:
+  explicit BittrexPublicRequest(const std::string &name,
+                                const std::string &uriParams = std::string())
+      : BittrexRequest("/public/" + name, name, uriParams) {}
+  virtual ~BittrexPublicRequest() override = default;
+
+ protected:
+  virtual bool IsPriority() const override { return false; }
+};
+
+////////////////////////////////////////////////////////////////////////////////
 }
 }
 }

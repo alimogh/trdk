@@ -174,8 +174,6 @@ class ContextBootstrapper : private boost::noncopyable {
 
   boost::tuple<DllObjectPtr<TradingSystem>, DllObjectPtr<MarketDataSource>>
   LoadTradingSystemAndMarketDataSource(
-      size_t tradingSystemIndex,
-      size_t marketDataSourceIndex,
       const IniSectionRef &configurationSection,
       const std::string &instanceName,
       const TradingMode &mode) {
@@ -193,16 +191,14 @@ class ContextBootstrapper : private boost::noncopyable {
     try {
       try {
         factoryResult = dll->GetFunction<Factory>(factoryName)(
-            mode, tradingSystemIndex, marketDataSourceIndex, m_context,
-            instanceName, configurationSection);
+            mode, m_context, instanceName, configurationSection);
       } catch (const Dll::DllFuncException &) {
         if (!boost::istarts_with(factoryName,
                                  DefaultValues::Factories::factoryNameStart)) {
           factoryName =
               DefaultValues::Factories::factoryNameStart + factoryName;
           factoryResult = dll->GetFunction<Factory>(factoryName)(
-              mode, tradingSystemIndex, marketDataSourceIndex, m_context,
-              instanceName, configurationSection);
+              mode, m_context, instanceName, configurationSection);
         } else {
           throw;
         }
@@ -232,7 +228,6 @@ class ContextBootstrapper : private boost::noncopyable {
   }
 
   DllObjectPtr<TradingSystem> LoadTradingSystem(
-      size_t index,
       const IniSectionRef &configurationSection,
       const std::string &instanceName,
       const TradingMode &mode) {
@@ -250,14 +245,14 @@ class ContextBootstrapper : private boost::noncopyable {
     try {
       try {
         factoryResult = dll->GetFunction<Factory>(factoryName)(
-            mode, index, m_context, instanceName, configurationSection);
+            mode, m_context, instanceName, configurationSection);
       } catch (const Dll::DllFuncException &) {
         if (!boost::istarts_with(factoryName,
                                  DefaultValues::Factories::factoryNameStart)) {
           factoryName =
               DefaultValues::Factories::factoryNameStart + factoryName;
           factoryResult = dll->GetFunction<Factory>(factoryName)(
-              mode, index, m_context, instanceName, configurationSection);
+              mode, m_context, instanceName, configurationSection);
         } else {
           throw;
         }
@@ -295,16 +290,14 @@ class ContextBootstrapper : private boost::noncopyable {
 
       DllObjectPtr<TradingSystem> tradingSystem;
       if (!hasMarketDataSource) {
-        tradingSystem = LoadTradingSystem(m_tradingSystems.size(),
-                                          IniSectionRef(m_conf, section),
+        tradingSystem = LoadTradingSystem(IniSectionRef(m_conf, section),
                                           instanceName, mode);
         Assert(tradingSystem);
       } else {
         MarketDataSourceHolder marketDataSource = {section};
         boost::tie(tradingSystem, marketDataSource.marketDataSource) =
-            LoadTradingSystemAndMarketDataSource(
-                m_tradingSystems.size(), m_marketDataSources.size(),
-                IniSectionRef(m_conf, section), instanceName, mode);
+            LoadTradingSystemAndMarketDataSource(IniSectionRef(m_conf, section),
+                                                 instanceName, mode);
         Assert(tradingSystem);
         Assert(marketDataSource.marketDataSource);
         m_context.GetLog().Info("Using Trading System as Market Data Source.");
@@ -342,7 +335,6 @@ class ContextBootstrapper : private boost::noncopyable {
 
   //! Loads Market Data Source by conf. section name.
   DllObjectPtr<MarketDataSource> LoadMarketDataSource(
-      size_t index,
       const IniSectionRef &configurationSection,
       const std::string &instanceName) {
     const std::string module = configurationSection.ReadKey(Keys::module);
@@ -359,14 +351,14 @@ class ContextBootstrapper : private boost::noncopyable {
     try {
       try {
         factoryResult = dll->GetFunction<Factory>(factoryName)(
-            index, m_context, instanceName, configurationSection);
+            m_context, instanceName, configurationSection);
       } catch (const Dll::DllFuncException &) {
         if (!boost::istarts_with(factoryName,
                                  DefaultValues::Factories::factoryNameStart)) {
           factoryName =
               DefaultValues::Factories::factoryNameStart + factoryName;
           factoryResult = dll->GetFunction<Factory>(factoryName)(
-              index, m_context, instanceName, configurationSection);
+              m_context, instanceName, configurationSection);
         } else {
           throw;
         }
@@ -400,8 +392,7 @@ class ContextBootstrapper : private boost::noncopyable {
       }
       const MarketDataSourceHolder holder = {
           section,
-          LoadMarketDataSource(m_marketDataSources.size(),
-                               IniSectionRef(m_conf, section), instanceName)};
+          LoadMarketDataSource(IniSectionRef(m_conf, section), instanceName)};
       m_marketDataSources.emplace_back(holder);
     }
 
@@ -461,8 +452,8 @@ template <>
 struct ModuleTrait<Strategy> {
   enum { Type = MODULE_TYPE_STRATEGY };
   typedef boost::shared_ptr<Strategy>(Factory)(trdk::Context &,
-                              const std::string &instanceName,
-                              const IniSectionRef &);
+                                               const std::string &instanceName,
+                                               const IniSectionRef &);
   static ModuleType GetType() { return static_cast<ModuleType>(Type); }
   static const char *GetName(bool capital) {
     return capital ? "Strategy" : "strategy";
@@ -1322,24 +1313,33 @@ class ContextStateBootstrapper : private boost::noncopyable {
         if (symbol) {
           m_context.ForEachMarketDataSource([&](MarketDataSource &source)
                                                 -> bool {
-            Security &security = source.GetSecurity(symbol);
-            if (!uniqueInstance) {
-              ForEachModuleInstance(
-                  module,
-                  // bind is a workaround for g++ internal error with lambda:
-                  boost::bind(&ContextStateBootstrapper::
-                                  SubscribeModuleStandaloneInstance<Module>,
-                              this, _1, subscribe, &security),
-                  [&](Module &instance) {
-                    SubscribeModuleSymbolInstance(instance, subscribe,
+            try {
+              Security &security = source.GetSecurity(symbol);
+              if (!uniqueInstance) {
+                ForEachModuleInstance(
+                    module,
+                    // bind is a workaround for g++ internal error with lambda:
+                    boost::bind(&ContextStateBootstrapper::
+                                    SubscribeModuleStandaloneInstance<Module>,
+                                this, _1, subscribe, &security),
+                    [&](Module &instance) {
+                      SubscribeModuleSymbolInstance(instance, subscribe,
+                                                    &security);
+                    });
+              } else if (isUniqueInstanceStandalone) {
+                SubscribeModuleStandaloneInstance(*uniqueInstance, subscribe,
                                                   &security);
-                  });
-            } else if (isUniqueInstanceStandalone) {
-              SubscribeModuleStandaloneInstance(*uniqueInstance, subscribe,
-                                                &security);
-            } else {
-              SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
-                                            &security);
+              } else {
+                SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
+                                              &security);
+              }
+            } catch (
+                const trdk::MarketDataSource::SymbolIsNotSupportedError &ex) {
+              m_context.GetLog().Warn(
+                  "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
+                  symbol,      // 1
+                  source,      // 2
+                  ex.what());  // 3
             }
             return true;
           });
