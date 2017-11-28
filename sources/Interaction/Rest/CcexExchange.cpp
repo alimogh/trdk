@@ -651,14 +651,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       } catch (const OrderIsUnknown &) {
         OnOrderStatusUpdate(orderId, ORDER_STATUS_FILLED, 0, {});
       } catch (const std::exception &ex) {
-        GetTsLog().Error(
+        boost::format error(
             "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
-            "response: \"%4%\").",
-            orderId,                            // 1
-            ex.what(),                          // 2
-            request.GetRequest().getURI(),      // 3
-            ConvertToString(response, false));  // 4
-        throw Exception("Failed to request order state");
+            "response: \"%4%\")");
+        error % orderId                          // 1
+            % ex.what()                          // 2
+            % request.GetRequest().getURI()      // 3
+            % ConvertToString(response, false);  // 4
+        throw Exception(error.str().c_str());
       }
     }
   }

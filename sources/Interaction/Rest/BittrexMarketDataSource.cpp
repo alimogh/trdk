@@ -38,7 +38,7 @@ BittrexMarketDataSource::BittrexMarketDataSource(
 
 BittrexMarketDataSource::~BittrexMarketDataSource() {
   try {
-    m_task.reset();
+    m_pullingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -57,12 +57,12 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  Verify(m_task->AddTask("Prices", 1,
-                         [this]() {
-                           RequestActualPrices();
-                           return true;
-                         },
-                         1));
+  Verify(m_pullingTask->AddTask("Prices", 1,
+                                [this]() {
+                                  RequestActualPrices();
+                                  return true;
+                                },
+                                1));
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {

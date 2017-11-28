@@ -623,15 +623,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                             m_orders);
       } catch (const InvalidPairException &ex) {
         invalidSymbols.emplace_back(symbol);
-        GetTsLog().Warn(
-            "Failed to request opened order list for \"%1%\": \"%2%\".",
-            symbol,      // 1
-            ex.what());  // 2
-      } catch (const std::exception &ex) {
         GetTsLog().Error(
             "Failed to request opened order list for \"%1%\": \"%2%\".",
             symbol,      // 1
             ex.what());  // 2
+      } catch (const std::exception &ex) {
+        boost::format error(
+            "Failed to request opened order list for \"%1%\": \"%2%\"");
+        error % symbol    // 1
+            % ex.what();  // 2
+        throw Exception(error.str().c_str());
       }
     }
     for (const auto &canceledOrder : m_orders) {
@@ -689,46 +690,44 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     auto nonce = TakeNonce();
     ActiveOrdersRequest request(productId, nonce.first, m_settings);
 
-    {
-      const auto orders =
-          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-      nonce.second.unlock();
+    const auto orders =
+        boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+    nonce.second.unlock();
 
-      for (const auto &orderNode : orders) {
-        const auto &order = orderNode.second;
-        const OrderId orderId(orderNode.first);
+    for (const auto &orderNode : orders) {
+      const auto &order = orderNode.second;
+      const OrderId orderId(orderNode.first);
 
-        const Qty qty = order.get<double>("amount");
+      const Qty qty = order.get<double>("amount");
 
-        OrderSide side;
-        const auto &type = order.get<std::string>("type");
-        if (type == "sell") {
-          side = ORDER_SIDE_SELL;
-        } else if (type == "buy") {
-          side = ORDER_SIDE_BUY;
-        } else {
-          GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                           orderId);
-          continue;
-        }
-
-        const auto &time =
-            pt::from_time_t(order.get<time_t>("timestamp_created"));
-
-        const Order notifiedOrder = {std::move(orderId),
-                                     std::move(symbol),
-                                     std::move(qty),
-                                     Price(order.get<double>("rate")),
-                                     std::move(side),
-                                     TIME_IN_FORCE_GTC,
-                                     time};
-        UpdateOrder(notifiedOrder, ORDER_STATUS_SUBMITTED);
-        if (isInitial || notifiedOrders.count(notifiedOrder.id)) {
-          const auto id = notifiedOrder.id;
-          newOrders.emplace(id, std::move(notifiedOrder));
-        }
-        notifiedOrders.erase(notifiedOrder.id);
+      OrderSide side;
+      const auto &type = order.get<std::string>("type");
+      if (type == "sell") {
+        side = ORDER_SIDE_SELL;
+      } else if (type == "buy") {
+        side = ORDER_SIDE_BUY;
+      } else {
+        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                         orderId);
+        continue;
       }
+
+      const auto &time =
+          pt::from_time_t(order.get<time_t>("timestamp_created"));
+
+      const Order notifiedOrder = {std::move(orderId),
+                                   std::move(symbol),
+                                   std::move(qty),
+                                   Price(order.get<double>("rate")),
+                                   std::move(side),
+                                   TIME_IN_FORCE_GTC,
+                                   time};
+      UpdateOrder(notifiedOrder, ORDER_STATUS_SUBMITTED);
+      if (isInitial || notifiedOrders.count(notifiedOrder.id)) {
+        const auto id = notifiedOrder.id;
+        newOrders.emplace(id, std::move(notifiedOrder));
+      }
+      notifiedOrders.erase(notifiedOrder.id);
     }
   }
 
@@ -825,9 +824,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                   side, TIME_IN_FORCE_GTC, time, time);
         }
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to request state for order %1%: \"%2%\".",
-                         orderId, ex.what());
-        throw Exception("Failed to request order state");
+        boost::format error("Failed to request state for order %1%: \"%2%\"");
+        error % orderId  // 1
+            % ex.what;   // 2
+        throw Exception(error.str().c_str());
       }
     }
   }

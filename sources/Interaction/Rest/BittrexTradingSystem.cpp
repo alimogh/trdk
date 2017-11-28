@@ -377,8 +377,9 @@ void BittrexTradingSystem::UpdateOrders() {
     } catch (const OrderIsUnknown &) {
       OnOrderCancel(orderId);
     } catch (const std::exception &ex) {
-      GetLog().Error("Failed to update order list: \"%1%\".", ex.what());
-      throw Exception("Failed to update order list");
+      boost::format error("Failed to update order list: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
   }
 }

@@ -637,8 +637,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_orders.erase(notifiedOrder.id);
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-      throw Exception("Failed to request order list");
+      boost::format error("Failed to request order list: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.what().c_str());
     }
 
     for (const auto &canceledOrder : m_orders) {
@@ -690,8 +691,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       } catch (const OrderIsUnknown &) {
         OnOrderCancel(orderId);
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to update order list: \"%1%\".", ex.what());
-        throw Exception("Failed to update order list");
+        boost::format error("Failed to update order list: \"%1%\"");
+        error % ex.what();
+        throw Exception(error.str().c_str());
       }
     }
   }

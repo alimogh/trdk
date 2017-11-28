@@ -50,7 +50,7 @@ class BittrexMarketDataSource : public MarketDataSource {
                         std::unique_ptr<BittrexPublicRequest>>>
       m_securities;
   Poco::Net::HTTPSClientSession m_session;
-  std::unique_ptr<PullingTask> m_task;
+  std::unique_ptr<PullingTask> m_pullingTask;
 };
 }
 }
