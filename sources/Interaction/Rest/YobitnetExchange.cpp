@@ -14,6 +14,7 @@
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -32,7 +33,7 @@ namespace fs = boost::filesystem;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
   size_t initialNonce;
@@ -40,7 +41,8 @@ struct Settings {
   std::vector<std::string> defaultSymbols;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")),
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
         apiSecret(conf.ReadKey("api_secret")),
         initialNonce(conf.ReadTypedKey<size_t>("initial_nonce", 1)),
         nonceStorageFile(conf.ReadFileSystemPath("nonce_storage_file_path")),
@@ -274,8 +276,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
         m_nextNonce(0),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -329,12 +331,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
     const auto &depthRequest = boost::make_shared<PublicRequest>(
         "/api/3/depth/" + boost::join(uriSymbolsPath, "-"), "Depth", "limit=1");
-    m_pullingTask->ReplaceTask("Prices", 1,
-                               [this, depthRequest]() {
-                                 UpdateSecuritues(*depthRequest);
-                                 return true;
-                               },
-                               10);
+    m_pullingTask->ReplaceTask(
+        "Prices", 1,
+        [this, depthRequest]() {
+          UpdateSecuritues(*depthRequest);
+          return true;
+        },
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
   }
 
  protected:
@@ -377,14 +380,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(message.str().c_str());
     }
 
-    Verify(m_pullingTask->AddTask("Actual orders", 0,
-                                  [this]() {
-                                    UpdateOrders();
-                                    return true;
-                                  },
-                                  1));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
+        "Actual orders", 0,
+        [this]() {
+          UpdateOrders();
+          return true;
+        },
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); },
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
   }
 
   virtual trdk::Security &CreateNewSecurityObject(

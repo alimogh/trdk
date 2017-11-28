@@ -32,8 +32,8 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session("bittrex.com"),
-      m_pullingTask(
-          boost::make_unique<PullingTask>(pt::seconds(10), GetLog())) {
+      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+                                                    GetLog())) {
   m_session.setKeepAlive(true);
 }
 
@@ -58,12 +58,13 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  Verify(m_pullingTask->AddTask("Prices", 1,
-                                [this]() {
-                                  RequestActualPrices();
-                                  return true;
-                                },
-                                1));
+  Verify(m_pullingTask->AddTask(
+      "Prices", 1,
+      [this]() {
+        RequestActualPrices();
+        return true;
+      },
+      m_settings.pullingSetttings.GetPricesRequestFrequency()));
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {

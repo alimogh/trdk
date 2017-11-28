@@ -16,6 +16,7 @@
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -47,12 +48,14 @@ Endpoint &GetEndpoint() {
   return result;
 }
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")), apiSecret(conf.ReadKey("api_secret")) {
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
+        apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }
@@ -247,8 +250,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(m_endpoint.host),
         m_tradingSession(m_endpoint.host),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -310,20 +313,23 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    Verify(m_pullingTask->AddTask("Securities", 1,
-                                  [this] {
-                                    UpdateSecurities();
-                                    return true;
-                                  },
-                                  10));
-    Verify(m_pullingTask->AddTask("Actual orders", 0,
-                                  [this] {
-                                    UpdateOrders();
-                                    return true;
-                                  },
-                                  1));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this] { return RequestOpenedOrders(); }, 30));
+        "Prices", 1,
+        [this] {
+          UpdateSecurities();
+          return true;
+        },
+        m_settings.pullingSetttings.GetPricesRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Actual orders", 0,
+        [this] {
+          UpdateOrders();
+          return true;
+        },
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this] { return RequestOpenedOrders(); },
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
     m_isConnected = true;
   }
 

@@ -16,6 +16,7 @@
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -35,13 +36,14 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")),
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
         apiPassphrase(conf.ReadKey("api_passphrase")) {
     Log(log);
@@ -238,8 +240,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())),
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
@@ -344,7 +346,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        10);
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
   }
 
  protected:
@@ -356,14 +358,16 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
       throw ConnectError(ex.what());
     }
-    Verify(m_pullingTask->AddTask("Actual orders", 0,
-                                  [this]() {
-                                    UpdateOrders();
-                                    return true;
-                                  },
-                                  1));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
+        "Actual orders", 0,
+        [this]() {
+          UpdateOrders();
+          return true;
+        },
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this]() { return RequestOpenedOrders(); },
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
     m_isConnected = true;
   }
 

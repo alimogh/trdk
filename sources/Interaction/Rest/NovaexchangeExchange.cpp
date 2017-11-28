@@ -14,6 +14,7 @@
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -31,12 +32,14 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")), apiSecret(conf.ReadKey("api_secret")) {
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
+        apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }
@@ -271,8 +274,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -361,7 +364,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        10);
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
   }
 
  protected:

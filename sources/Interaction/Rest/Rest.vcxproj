@@ -327,6 +327,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PullingSettings.cpp" />
     <ClCompile Include="PullingTask.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Security.cpp" />
@@ -343,6 +344,7 @@
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="PullingSettings.hpp" />
     <ClInclude Include="PullingTask.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />

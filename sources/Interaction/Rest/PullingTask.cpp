@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "PullingTask.hpp"
+#include "PullingSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -19,10 +20,11 @@ using namespace trdk::Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ch = boost::chrono;
 
-PullingTask::PullingTask(const pt::time_duration &pullingInterval,
+PullingTask::PullingTask(const PullingSetttings &setttings,
                          ModuleEventsLog &log)
     : m_log(log),
-      m_pullingInterval(ch::microseconds(pullingInterval.total_microseconds())),
+      m_pullingInterval(
+          ch::microseconds(setttings.GetInterval().total_microseconds())),
       m_isAccelerated(false) {}
 
 PullingTask::~PullingTask() {
