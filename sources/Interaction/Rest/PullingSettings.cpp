@@ -18,15 +18,15 @@ using namespace trdk::Interaction::Rest;
 namespace pt = boost::posix_time;
 
 namespace {
-const pt::time_duration &minInterval = pt::seconds(3);
-const size_t defaultPriceRequestFrequency = 5;
+const pt::time_duration &minInterval = pt::microseconds(1);
+const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
-const size_t defaultAllOrdersRequestFrequency = 10;
+const size_t defaultAllOrdersRequestFrequency = 60;
 }
 
 PullingSetttings::PullingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
-          pt::seconds(conf.ReadTypedKey<long>("pulling_interval",
+          pt::seconds(conf.ReadTypedKey<long>("pulling_interval_second",
                                               minInterval.total_seconds())),
           minInterval)),
       m_actualOrdersRequestFrequency(
@@ -37,7 +37,7 @@ PullingSetttings::PullingSetttings(const IniSectionRef &conf)
       m_pricesRequestFrequency(std::max<size_t>(
           conf.ReadTypedKey<size_t>("price_request_frequency",
                                     defaultPriceRequestFrequency),
-          3)) {}
+          1)) {}
 
 void PullingSetttings::Log(ModuleEventsLog &log) const {
   if (m_interval == minInterval &&
