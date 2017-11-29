@@ -131,11 +131,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
       auto &bestSell = *bestBid.second->security;
       auto &bestBuy = *bestAsk.second->security;
-      if (m_tradingSettings &&
-          spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-        Trade(bids, asks, spreadRatio, delayMeasurement);
-      } else if (spreadRatio <= m_stopLossSpreadRatio) {
+      if (spreadRatio <= m_stopLossSpreadRatio) {
         StopTrading(bestSell, bestBuy, spreadRatio);
+      } else if (m_tradingSettings &&
+                 (spreadRatio >= m_tradingSettings->minPriceDifferenceRatio ||
+                  m_bestSpreadRatio)) {
+        Trade(bids, asks, spreadRatio, delayMeasurement);
       }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
