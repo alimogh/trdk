@@ -139,6 +139,18 @@ Symbol::Symbol(const std::string &line,
       if (symbolSubs.size() > 2) {
         throw StringFormatError("Too many fields for cryptocurrency symbol");
       }
+      {
+        std::vector<std::string> baseQuote;
+        boost::split(baseQuote, m_data.symbol, boost::is_any_of("_"));
+        if (baseQuote.size() != 2 || baseQuote[0].empty() ||
+            baseQuote[1].empty()) {
+          throw StringFormatError(
+              "Failed to extract base and quote symbols from cryptocurrency "
+              "symbol");
+        }
+        m_data.baseSymbol = std::move(baseQuote[0]);
+        m_data.quoteSymbol = std::move(baseQuote[1]);
+      }
       currencyIndex = 1;
       break;
     default:
@@ -411,6 +423,20 @@ const Currency &Symbol::GetCurrency() const {
 
 void Symbol::SetCurrency(const Currency &newCurrency) {
   m_data.currency = newCurrency;
+}
+
+const std::string &Symbol::GetBaseSymbol() const {
+  if (m_data.baseSymbol.empty()) {
+    throw Lib::LogicError("Symbol doesn't have base symbol");
+  }
+  return m_data.baseSymbol;
+}
+
+const std::string &Symbol::GetQuoteSymbol() const {
+  if (m_data.quoteSymbol.empty()) {
+    throw Lib::LogicError("Symbol doesn't have quote symbol");
+  }
+  return m_data.quoteSymbol;
 }
 
 const Currency &Symbol::GetFotBaseCurrency() const {

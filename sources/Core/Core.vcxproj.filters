@@ -107,6 +107,9 @@
     <ClCompile Include="Operation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BalancesContainer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Instrument.hpp">
@@ -224,6 +227,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Operation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Balances.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalancesContainer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

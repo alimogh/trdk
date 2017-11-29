@@ -32,12 +32,16 @@ class PullingSetttings {
     return m_allOrdersRequestFrequency;
   }
   size_t GetPricesRequestFrequency() const { return m_pricesRequestFrequency; }
+  size_t GetBalancesRequestFrequency() const {
+    return m_balancesRequestFrequency;
+  }
 
  private:
   boost::posix_time::time_duration m_interval;
   size_t m_actualOrdersRequestFrequency;
   size_t m_allOrdersRequestFrequency;
   size_t m_pricesRequestFrequency;
+  size_t m_balancesRequestFrequency;
 };
 }
 }

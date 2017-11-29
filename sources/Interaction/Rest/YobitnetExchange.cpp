@@ -338,6 +338,49 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           return true;
         },
         m_settings.pullingSetttings.GetPricesRequestFrequency());
+
+    m_pullingTask->AccelerateNextPulling();
+  }
+
+  virtual const Balances &GetBalances() const override { return m_balances; }
+
+  virtual bool CheckOrder(const trdk::Security &security,
+                          const Currency &currency,
+                          const Qty &qty,
+                          const boost::optional<Price> &price,
+                          const OrderSide &side,
+                          bool logError) const override {
+    const auto &symbol = security.GetSymbol();
+    if (symbol.GetQuoteSymbol() == "BTC") {
+      if (price && qty * *price < 0.0001) {
+        if (logError) {
+          GetTsLog().Warn(
+              "Order volume restriction. Should be 0.0001 or more, but "
+              "%1$.8f * %2$.8f = %3$.8f set for \"%4%\" (to %5%).",
+              qty,           // 1
+              *price,        // 2
+              *price * qty,  // 3
+              security,      // 4
+              side);         // 5
+        }
+        return false;
+      }
+      if (symbol.GetSymbol() == "ETH_BTC") {
+        if (qty < 0.005) {
+          if (logError) {
+            GetTsLog().Warn(
+                "Order quantity restriction. Should be 0.005 ETH or more, but "
+                "%1$.8f set for \"%2%\" (to %3%).",
+                qty,       // 1
+                security,  // 2
+                side);     // 3
+          }
+          return false;
+        }
+      }
+    }
+    return TradingSystem::CheckOrder(security, currency, qty, price, side,
+                                     logError);
   }
 
  protected:
@@ -369,15 +412,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     try {
-      RequestProducts();
       RequestAccountInfo();
+      RequestProducts();
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
-      boost::format message(
-          "Failed to connect. Please check Yobit.net credential, initial "
-          "nonce-value in settings and/or nonce-value storage file %1%.");
-      message % m_settings.nonceStorageFile;
-      throw ConnectError(message.str().c_str());
+      throw ConnectError(ex.what());
     }
 
     Verify(m_pullingTask->AddTask(
@@ -388,8 +426,17 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         },
         m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
     Verify(m_pullingTask->AddTask(
+        "Balances", 1,
+        [this]() {
+          RequestBalances();
+          return true;
+        },
+        m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
         "Opened orders", 100, [this]() { return RequestOpenedOrders(); },
         m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
+
+    m_pullingTask->AccelerateNextPulling();
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -536,9 +583,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         log.emplace_back(logStr.str());
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to read supported product list: \"%1%\".",
-                       ex.what());
-      throw Exception("Failed to read supported pair list");
+      boost::format error("Failed to read supported product list: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
     GetTsLog().Info("Pairs: %1%.", boost::join(log, ", "));
     m_products = std::move(products);
@@ -555,13 +602,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       auto nonce = TakeNonce();
       TradeRequest request("getInfo", nonce.first, m_settings, false);
       const auto response =
-          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+          boost::get<1>(request.Send(m_tradingSession, GetContext()));
       nonce.second.unlock();
       {
         const auto fundsNode = response.get_child_optional("funds");
         if (fundsNode) {
           for (const auto &node : *fundsNode) {
             funds.emplace_back(node.first + ": " + node.second.data());
+            m_balances.SetAvailableToTrade(
+                std::move(node.first),
+                boost::lexical_cast<Volume>(node.second.data()));
           }
         }
       }
@@ -599,9 +649,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         }
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to read general account information: \"%1%\".",
-                       ex.what());
-      throw Exception("Failed to read account information");
+      boost::format error(
+          "Failed to read general account information: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
 
     GetTsLog().Info(
@@ -613,6 +664,23 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         rights.empty() ? "none" : boost::join(rights, ", "),           // 3
         numberOfTransactions,                                          // 4
         numberOfActiveOrders);                                         // 5
+  }
+
+  void RequestBalances() {
+    auto nonce = TakeNonce();
+    TradeRequest request("getInfo", nonce.first, m_settings, false);
+    const auto response =
+        boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+    nonce.second.unlock();
+    const auto &fundsNode = response.get_child_optional("funds");
+    if (!fundsNode) {
+      return;
+    }
+    for (const auto &node : *fundsNode) {
+      m_balances.SetAvailableToTrade(
+          std::move(node.first),
+          boost::lexical_cast<Volume>(node.second.data()));
+    }
   }
 
   bool RequestOpenedOrders() {
@@ -851,6 +919,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
+  BalancesContainer m_balances;
 
   std::unique_ptr<PullingTask> m_pullingTask;
 

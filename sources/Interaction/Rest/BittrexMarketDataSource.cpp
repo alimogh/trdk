@@ -54,7 +54,6 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   try {
     m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
-    GetLog().Error("Failed to connect: \"%1%\".", ex.what());
     throw ConnectError(ex.what());
   }
 
@@ -65,6 +64,8 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
         return true;
       },
       m_settings.pullingSetttings.GetPricesRequestFrequency()));
+
+  m_pullingTask->AccelerateNextPulling();
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {
