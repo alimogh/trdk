@@ -227,10 +227,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto &qty =
-        std::min(m_tradingSettings->maxQty,
-                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
-
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
@@ -247,6 +243,24 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         spreadRatio = nextSpread.second;
         sellPrice = nextSellPrice;
         buyPrice = nextBuyPrice;
+      }
+    }
+
+    const auto &qty = std::min(
+        std::min(m_tradingSettings->maxQty,
+                 GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice)),
+        std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
+    if (!qty) {
+      return;
+    }
+    {
+      bool isRestricted =
+          !CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL);
+      if (!CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY)) {
+        isRestricted = true;
+      }
+      if (isRestricted) {
+        return;
       }
     }
 
@@ -272,7 +286,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
     if (isSellTargetInBlackList && isBuyTargetInBlackList) {
       m_self.GetTradingLog().Write(
-          "{'signal': {'ignored': {'reason': 'black list', 'sell': "
+          "{'signal': {'ignored': {'reason': 'blacklist', 'sell': "
           "{'exchange': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, 'buy': "
           "{'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, 'spread': "
           "%7$.3f, 'bestSpread': %8$.3f, 'bestSpreadMax': %9$.3f}}",
@@ -388,8 +402,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       m_lastError = !firstLegPosition ? legTargets.first : legTargets.second;
       m_errors.emplace(m_lastError);
       m_self.GetLog().Warn(
-          "\"%1%\" security (%2% leg) is added to the black-list by position "
-          "opening error. %3% leg is \"%4%\"",
+          "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
+          "%3% leg is \"%4%\"",
           *m_lastError, !firstLegPosition ? "first" : "second",
           !firstLegPosition ? "Second" : "First",
           m_lastError == legTargets.first ? *legTargets.second
@@ -504,6 +518,67 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         });
 
     return isActivated;
+  }
+
+  Qty GetOrderQtyAllowedByBalance(const Security &sell,
+                                  const Security &buy,
+                                  const Price &buyPrice) {
+    const auto &sellBalance =
+        m_self.GetTradingSystem(sell.GetSource().GetIndex())
+            .GetBalances()
+            .FindAvailableToTrade(sell.GetSymbol().GetBaseSymbol());
+    const auto &buyBalance =
+        m_self.GetTradingSystem(buy.GetSource().GetIndex())
+            .GetBalances()
+            .FindAvailableToTrade(buy.GetSymbol().GetQuoteSymbol());
+
+    if (sellBalance && !*sellBalance && m_errors.emplace(&sell).second) {
+      m_self.GetLog().Warn(
+          "\"%1%\" added to the blacklist as funds is insufficient to %2%",
+          sell,              // 1
+          ORDER_SIDE_SELL);  // 2
+    }
+    if (buyBalance && !*buyBalance && m_errors.emplace(&buy).second) {
+      m_self.GetLog().Warn(
+          "\"%1%\" added to the blacklist as funds is insufficient to %2%",
+          buy,              // 1
+          ORDER_SIDE_BUY);  // 2
+    }
+
+    if (sellBalance && buyBalance) {
+      return std::min(*sellBalance, *buyBalance / buyPrice);
+    } else if (sellBalance) {
+      Assert(!buyBalance);
+      return *sellBalance;
+    } else if (buyBalance) {
+      Assert(!sellBalance);
+      return *buyBalance / buyPrice;
+    } else {
+      Assert(!sellBalance);
+      Assert(!buyBalance);
+      return std::numeric_limits<double>::max();
+    }
+  }
+
+  bool CheckOrder(const Security &security,
+                  const Qty &qty,
+                  const Price &price,
+                  const OrderSide &side) {
+    const auto result =
+        m_self.GetTradingSystem(security.GetSource().GetIndex())
+            .CheckOrder(security, security.GetSymbol().GetCurrency(), qty,
+                        price, side, !m_errors.count(&security));
+    if (!result) {
+      if (m_errors.emplace(&security).second) {
+        m_self.GetLog().Warn(
+            "\"%1%\" added to the blacklist by order parameters change fail "
+            "(to "
+            "%2%).",
+            security,  // 1
+            side);     // 2
+      }
+    }
+    return result;
   }
 };
 

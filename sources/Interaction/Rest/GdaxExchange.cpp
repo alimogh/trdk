@@ -347,6 +347,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           return true;
         },
         m_settings.pullingSetttings.GetPricesRequestFrequency());
+
+    m_pullingTask->AccelerateNextPulling();
   }
 
  protected:
@@ -355,7 +357,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       RequestProducts();
       RequestAccounts();
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
       throw ConnectError(ex.what());
     }
     Verify(m_pullingTask->AddTask(
@@ -693,7 +694,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         UpdateOrder(
             boost::get<1>(request.Send(m_marketDataSession, GetContext())));
       } catch (const OrderIsUnknown &) {
-        OnOrderCancel(orderId);
+        OnOrderCancel(GetContext().GetCurrentTime(), orderId);
       } catch (const std::exception &ex) {
         boost::format error("Failed to update order list: \"%1%\"");
         error % ex.what();

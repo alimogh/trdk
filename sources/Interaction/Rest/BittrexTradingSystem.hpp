@@ -53,6 +53,15 @@ class BittrexTradingSystem : public TradingSystem {
  public:
   virtual bool IsConnected() const override { return m_isConnected; }
 
+  virtual const Balances &GetBalances() const override { return m_balances; }
+
+  virtual bool CheckOrder(const trdk::Security &,
+                          const Lib::Currency &,
+                          const Qty &,
+                          const boost::optional<Price> &,
+                          const OrderSide &,
+                          bool logError) const override;
+
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 
@@ -68,16 +77,17 @@ class BittrexTradingSystem : public TradingSystem {
   virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
 
  private:
-  void RequestBalance();
+  void RequestBalances();
   void UpdateOrders();
   void UpdateOrder(const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;
   boost::unordered_map<std::string, BittrexProduct> m_products;
+  BalancesContainer m_balances;
   bool m_isConnected;
   Poco::Net::HTTPSClientSession m_tradingSession;
-  Poco::Net::HTTPSClientSession m_ordersSession;
+  Poco::Net::HTTPSClientSession m_pullingSession;
   PullingTask m_pullingTask;
 };
 }

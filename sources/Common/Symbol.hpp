@@ -99,6 +99,9 @@ class Symbol {
   const trdk::Lib::Currency &GetFotBaseCurrency() const;
   const trdk::Lib::Currency &GetFotQuoteCurrency() const;
 
+  const std::string &GetBaseSymbol() const;
+  const std::string &GetQuoteSymbol() const;
+
   std::string GetAsString() const;
 
  private:
@@ -111,6 +114,9 @@ class Symbol {
     bool isExplicit;
     double strike;
     Right right;
+
+    std::string baseSymbol;
+    std::string quoteSymbol;
 
     trdk::Lib::Currency fotBaseCurrency;
     //! Currency and FOR Quote Currency.

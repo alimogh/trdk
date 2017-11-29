@@ -148,6 +148,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
+  virtual const trdk::Balances &GetBalances() const;
+
   std::vector<trdk::OrderId> GetActiveOrderList() const;
 
  public:
@@ -162,9 +164,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::OrderSide &,
       const trdk::TimeInForce &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
+  virtual bool CheckOrder(const trdk::Security &,
+                          const trdk::Lib::Currency &,
+                          const trdk::Qty &,
+                          const boost::optional<trdk::Price> &,
+                          const trdk::OrderSide &,
+                          bool logError) const;
 
   //! Cancels active orders.
-  /** @return True, if order is known and cancel-comand suscessfully sent.
+  /** @return True, if order is known and cancel-command successfully sent.
     *         False if order is unknown.
     */
   bool CancelOrder(const trdk::OrderId &);
@@ -205,7 +213,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderStatusUpdate(const trdk::OrderId &,
+  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
+                           const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission,
@@ -215,7 +224,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderStatusUpdate(const trdk::OrderId &,
+  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
+                           const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty);
   //! Notifies trading system about order state change.
@@ -223,7 +233,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderStatusUpdate(const trdk::OrderId &,
+  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
+                           const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            const trdk::Volume &commission);
@@ -232,7 +243,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderStatusUpdate(const trdk::OrderId &,
+  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
+                           const trdk::OrderId &,
                            const trdk::OrderStatus &,
                            const trdk::Qty &remainingQty,
                            trdk::TradingSystem::TradeInfo &&);
@@ -242,6 +254,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
+      const boost::posix_time::ptime &,
       const trdk::OrderId &,
       const trdk::OrderStatus &,
       const trdk::Qty &remainingQty,
@@ -252,25 +265,30 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
   void OnOrderStatusUpdate(
+      const boost::posix_time::ptime &,
       const trdk::OrderId &,
       const trdk::OrderStatus &,
       const trdk::Qty &remainingQty,
       trdk::TradingSystem::TradeInfo &&,
       const boost::function<void(trdk::OrderTransactionContext &)> &);
   //! Notifies trading system about order canceling.
-  void OnOrderCancel(const trdk::OrderId &);
+  void OnOrderCancel(const boost::posix_time::ptime &, const trdk::OrderId &);
   //! Notifies trading system about order error.
   /** The method is not thread-safe. Each who will call it should provide
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderError(const trdk::OrderId &, const std::string &&error);
+  void OnOrderError(const boost::posix_time::ptime &,
+                    const trdk::OrderId &,
+                    const std::string &&error);
   //! Notifies trading system about order reject.
   /** The method is not thread-safe. Each who will call it should provide
     * correct sequence of calls or do it from one thread.
     * @throw  OrderIsUnknown  Order handler is not registered.
     */
-  void OnOrderReject(const trdk::OrderId &, const std::string &&reason);
+  void OnOrderReject(const boost::posix_time::ptime &,
+                     const trdk::OrderId &,
+                     const std::string &&reason);
 
   //! General order update notification.
   /** May be used for any order. The method is not thread-safe. Each who will

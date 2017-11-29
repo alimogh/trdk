@@ -64,34 +64,30 @@ bool PullingTask::SetTask(const std::string &name,
                           const boost::function<bool()> &task,
                           size_t frequency,
                           bool replace) {
-  {
-    const Lock lock(m_mutex);
-    AssertNe(m_tasks.empty(), m_thread ? true : false);
+  const Lock lock(m_mutex);
+  AssertNe(m_tasks.empty(), m_thread ? true : false);
 
-    const auto &it =
-        std::find_if(m_tasks.begin(), m_tasks.end(),
-                     [&name](const Task &task) { return task.name == name; });
+  const auto &it =
+      std::find_if(m_tasks.begin(), m_tasks.end(),
+                   [&name](const Task &task) { return task.name == name; });
 
-    if (it != m_tasks.cend()) {
-      if (!replace) {
-        AssertEq(it->priority, priority);
-        return false;
-      }
-      *it = Task{name, priority, task, frequency};
-    } else {
-      m_tasks.emplace_back(Task{name, priority, task, frequency});
+  if (it != m_tasks.cend()) {
+    if (!replace) {
+      AssertEq(it->priority, priority);
+      return false;
     }
-
-    std::sort(m_tasks.begin(), m_tasks.end(), [](const Task &a, const Task &b) {
-      return a.priority < b.priority;
-    });
-
-    if (!m_thread) {
-      m_thread = boost::thread(boost::bind(&PullingTask::Run, this));
-    }
+    *it = Task{name, priority, task, frequency};
+  } else {
+    m_tasks.emplace_back(Task{name, priority, task, frequency});
   }
 
-  AccelerateNextPulling();
+  std::sort(m_tasks.begin(), m_tasks.end(), [](const Task &a, const Task &b) {
+    return a.priority < b.priority;
+  });
+
+  if (!m_thread) {
+    m_thread = boost::thread(boost::bind(&PullingTask::Run, this));
+  }
 
   return true;
 }

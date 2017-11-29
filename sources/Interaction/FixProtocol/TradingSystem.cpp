@@ -127,9 +127,9 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
       GetLog().Error("Received Reject for order %1%: \"%2%\" .",
                      orderId,  // 1
                      text);    // 2
-      OnOrderCancel(orderId);
+      OnOrderCancel(message.GetTime(), orderId);
     } else {
-      OnOrderError(orderId, std::move(text));
+      OnOrderError(message.GetTime(), orderId, std::move(text));
     }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
@@ -159,9 +159,9 @@ void fix::TradingSystem::OnBusinessMessageReject(
           "Received Business Message Reject for order %1%: \"%2%\" .",
           orderId,  // 1
           reason);  // 2
-      OnOrderCancel(orderId);
+      OnOrderCancel(message.GetTime(), orderId);
     } else {
-      OnOrderError(orderId, std::move(reason));
+      OnOrderError(message.GetTime(), orderId, std::move(reason));
     }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
@@ -197,52 +197,55 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             orderId);  // 2
         break;
       case EXEC_TYPE_NEW:
-        OnOrderStatusUpdate(orderId, ORDER_STATUS_SUBMITTED,
+        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_SUBMITTED,
                             message.ReadLeavesQty(), setPositionId);
         break;
       case EXEC_TYPE_CANCELED:
       case EXEC_TYPE_REPLACE:
-        OnOrderStatusUpdate(orderId, ORDER_STATUS_CANCELLED,
+        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_CANCELLED,
                             message.ReadLeavesQty());
         break;
       case EXEC_TYPE_REJECTED:
       case EXEC_TYPE_EXPIRED:
         message.ResetReadingState();
-        OnOrderReject(orderId, message.ReadText());
+        OnOrderReject(message.GetTime(), orderId, message.ReadText());
         break;
       case EXEC_TYPE_TRADE: {
         Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
                orderStatus == ORDER_STATUS_FILLED);
         message.ResetReadingState();
         TradeInfo trade = {message.ReadAvgPx()};
-        OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
-                            std::move(trade), setPositionId);
+        OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
+                            message.ReadLeavesQty(), std::move(trade),
+                            setPositionId);
         break;
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
           case ORDER_STATUS_SUBMITTED:
-            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
-                                setPositionId);
+            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
+                                message.ReadLeavesQty(), setPositionId);
             break;
           case ORDER_STATUS_CANCELLED:
-            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty());
+            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
+                                message.ReadLeavesQty());
             break;
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY: {
             message.ResetReadingState();
             TradeInfo trade = {message.ReadAvgPx()};
-            OnOrderStatusUpdate(orderId, orderStatus, message.ReadLeavesQty(),
-                                std::move(trade), setPositionId);
+            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
+                                message.ReadLeavesQty(), std::move(trade),
+                                setPositionId);
             break;
           }
           case ORDER_STATUS_REJECTED:
             message.ResetReadingState();
-            OnOrderReject(orderId, message.ReadText());
+            OnOrderReject(message.GetTime(), orderId, message.ReadText());
             break;
           case ORDER_STATUS_ERROR:
             message.ResetReadingState();
-            OnOrderError(orderId, message.ReadText());
+            OnOrderError(message.GetTime(), orderId, message.ReadText());
             break;
         }
     }

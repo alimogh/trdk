@@ -365,6 +365,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           return true;
         },
         m_settings.pullingSetttings.GetPricesRequestFrequency());
+
+    m_pullingTask->AccelerateNextPulling();
   }
 
  protected:
@@ -389,8 +391,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             currency.second.get<double>("amount_lockbox"));    // 6
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to read server balance list: \"%1%\".",
-                       ex.what());
+      boost::format error("Failed to read server balance list: \"%1%\"");
+      error % ex.what();
+      throw ConnectError(error.str().c_str());
     }
     m_isConnected = true;
   }
@@ -481,7 +484,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           orderId = item.get<OrderId>("orderid");
           GetContext().GetTimer().Schedule(
               [this, orderId, qty] {
-                OnOrderStatusUpdate(*orderId, ORDER_STATUS_SUBMITTED, qty);
+                OnOrderStatusUpdate(GetContext().GetCurrentTime(), *orderId,
+                                    ORDER_STATUS_SUBMITTED, qty);
               },
               m_timerScope);
         }
@@ -517,7 +521,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                     std::vector<TradeInfo> &trades) {
     for (auto &trade : trades) {
       remainingQty -= trade.qty;
-      OnOrderStatusUpdate(orderId,
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                           remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_FILLED,
                           remainingQty, std::move(trade));

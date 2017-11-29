@@ -19,15 +19,17 @@ namespace pt = boost::posix_time;
 
 namespace {
 const pt::time_duration &minInterval = pt::microseconds(1);
+const pt::time_duration &defailtInterval = pt::seconds(1);
 const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
 const size_t defaultAllOrdersRequestFrequency = 60;
+const size_t defaultBalancesRequestFrequency = 60;
 }
 
 PullingSetttings::PullingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
           pt::seconds(conf.ReadTypedKey<long>("pulling_interval_second",
-                                              minInterval.total_seconds())),
+                                              defailtInterval.total_seconds())),
           minInterval)),
       m_actualOrdersRequestFrequency(
           conf.ReadTypedKey<size_t>("actual_order_request_frequency",
@@ -37,7 +39,9 @@ PullingSetttings::PullingSetttings(const IniSectionRef &conf)
       m_pricesRequestFrequency(std::max<size_t>(
           conf.ReadTypedKey<size_t>("price_request_frequency",
                                     defaultPriceRequestFrequency),
-          1)) {}
+          1)),
+      m_balancesRequestFrequency(conf.ReadTypedKey<size_t>(
+          "balances_request_frequency", defaultBalancesRequestFrequency)) {}
 
 void PullingSetttings::Log(ModuleEventsLog &log) const {
   if (m_interval == minInterval &&
