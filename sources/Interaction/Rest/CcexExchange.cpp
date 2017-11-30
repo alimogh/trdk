@@ -374,6 +374,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         },
         m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
     Verify(m_pullingTask->AddTask(
+        "Balances", 1,
+        [this] {
+          RequestBalances();
+          return true;
+        },
+        m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
         "Opened orders", 100, [this] { return RequestOpenedOrders(); },
         m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
 
