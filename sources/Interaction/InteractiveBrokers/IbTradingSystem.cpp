@@ -36,7 +36,7 @@ void ib::TradingSystem::Connect(const IniSectionRef &settings) {
   if (IsConnected()) {
     return;
   }
-  GetMdsLog().Info("Creating connection...");
+  GetMdsLog().Debug("Creating connection...");
   CreateConnection(settings);
 }
 

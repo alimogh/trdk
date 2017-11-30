@@ -44,17 +44,20 @@ PullingSetttings::PullingSetttings(const IniSectionRef &conf)
           "balances_request_frequency", defaultBalancesRequestFrequency)) {}
 
 void PullingSetttings::Log(ModuleEventsLog &log) const {
-  if (m_interval == minInterval &&
-      m_pricesRequestFrequency == defaultPriceRequestFrequency &&
-      m_actualOrdersRequestFrequency == defaultActualOrdersRequestFrequency &&
-      m_allOrdersRequestFrequency == defaultAllOrdersRequestFrequency) {
+  if (GetInterval() == defailtInterval &&
+      GetPricesRequestFrequency() == defaultPriceRequestFrequency &&
+      GetActualOrdersRequestFrequency() ==
+          defaultActualOrdersRequestFrequency &&
+      GetAllOrdersRequestFrequency() == defaultAllOrdersRequestFrequency &&
+      GetBalancesRequestFrequency() == defaultBalancesRequestFrequency) {
     return;
   }
   log.Info(
       "Pulling settings: interval = %1%, actual orders freq. = %2%, all orders "
-      "freq. = %3%, prices freq. = %4%.",
+      "freq. = %3%, balances freq. = %4%, prices freq. = %5%.",
       GetInterval(),                      // 1
       GetActualOrdersRequestFrequency(),  // 2
       GetAllOrdersRequestFrequency(),     // 3
-      GetPricesRequestFrequency());       // 4
+      GetBalancesRequestFrequency(),      // 4
+      GetPricesRequestFrequency());       // 5
 }

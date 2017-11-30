@@ -15,7 +15,7 @@
 namespace trdk {
 class TRDK_CORE_API BalancesContainer : public trdk::Balances {
  public:
-  BalancesContainer();
+  explicit BalancesContainer(trdk::ModuleEventsLog &);
   virtual ~BalancesContainer() override;
 
  public:
@@ -23,7 +23,7 @@ class TRDK_CORE_API BalancesContainer : public trdk::Balances {
       const std::string &symbol) const override;
 
  public:
-  bool SetAvailableToTrade(const std::string &&symbol, const trdk::Volume &&);
+  void SetAvailableToTrade(const std::string &&symbol, const trdk::Volume &&);
 
  private:
   class Implementation;

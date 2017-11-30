@@ -106,7 +106,7 @@ void Settings::Log(Context::Log &log) const {
   if (m_isReplayMode) {
     log.Info("======================= REPLAY MODE =======================");
   }
-  log.Info(
+  log.Debug(
       "Timezone: %1%. Default currency: %2%. Default security type: %3%."
       " Market data log: %4%. Contract switching before: %5%.",
       m_timeZone->to_posix_string(),                      // 1
