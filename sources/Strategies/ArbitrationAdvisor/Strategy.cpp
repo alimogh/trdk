@@ -62,6 +62,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   boost::unordered_set<const Security *> m_errors;
   const Security *m_lastError;
+  boost::optional<OrderSide> m_lastErrorSide;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
@@ -246,26 +247,66 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     }
 
-    const auto &qty = std::min(
-        std::min(m_tradingSettings->maxQty,
-                 GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice)),
-        std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
-    if (!qty) {
-      ReportIgnored("empty order", sellTarget, buyTarget, spreadRatio,
+    if ((m_lastError == &sellTarget &&
+         (!m_lastErrorSide || *m_lastErrorSide == ORDER_SIDE_SELL)) ||
+        (m_lastError == &buyTarget &&
+         (!m_lastErrorSide || *m_lastErrorSide == ORDER_SIDE_BUY))) {
+      ReportIgnored("last error", sellTarget, buyTarget, spreadRatio,
                     bestSpreadRatio);
       return;
     }
-    {
-      bool isRestricted =
-          !CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL);
-      if (!CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY)) {
-        isRestricted = true;
-      }
-      if (isRestricted) {
-        ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
-                      bestSpreadRatio);
+
+    auto qty =
+        std::min(m_tradingSettings->maxQty,
+                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
+
+    const auto &balance =
+        GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
+    const bool isQtyReducedByBalance = qty > balance.first;
+    if (isQtyReducedByBalance) {
+      Assert(balance.first);
+      m_self.GetTradingLog().Write(
+          "{'signal': {'qtyReduced': {'prev': %1$.8f, 'new': %2$.8f, "
+          "'security': '%3%'}}",
+          [&](TradingRecord &record) {
+            record % qty            // 1
+                % balance.first     // 2
+                % *balance.second;  // 3
+          });
+      if (!balance.first) {
+        m_lastError = balance.second;
+        m_lastErrorSide =
+            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
         return;
       }
+      qty = balance.first;
+    }
+
+    if (!CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL)) {
+      if (isQtyReducedByBalance && balance.second) {
+        m_lastError = balance.second;
+        m_lastErrorSide =
+            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
+      } else {
+        m_lastError = &sellTarget;
+        m_lastErrorSide = ORDER_SIDE_SELL;
+      }
+      ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
+      return;
+    }
+    if (!CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY)) {
+      if (isQtyReducedByBalance && balance.second) {
+        m_lastError = balance.second;
+        m_lastErrorSide =
+            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
+      } else {
+        m_lastError = &buyTarget;
+        m_lastErrorSide = ORDER_SIDE_BUY;
+      }
+      ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
+      return;
     }
 
     Trade(sellTarget, buyTarget, qty, sellPrice, buyPrice, spreadRatio,
@@ -295,12 +336,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
     if (!sellTarget.IsOnline() || !buyTarget.IsOnline()) {
       ReportIgnored("offline", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
-      return;
-    }
-
-    if (m_lastError == &sellTarget || m_lastError == &buyTarget) {
-      ReportIgnored("last error", sellTarget, buyTarget, spreadRatio,
                     bestSpreadRatio);
       return;
     }
@@ -370,6 +405,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
 
       m_lastError = !firstLegPosition ? legTargets.first : legTargets.second;
+      m_lastErrorSide = boost::none;
       m_errors.emplace(m_lastError);
       m_self.GetLog().Warn(
           "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
@@ -388,12 +424,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       m_errors.erase(sellTargetBlackListIt);
     }
     m_lastError = nullptr;
+    m_lastErrorSide = boost::none;
   }
 
   void StopTrading(const Security &bestBid,
                    const Security &bestAsk,
                    const Double &spreadRatio) {
     m_lastError = nullptr;
+    m_lastErrorSide = boost::none;
 
     bool isReported = false;
 
@@ -490,9 +528,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     return isActivated;
   }
 
-  Qty GetOrderQtyAllowedByBalance(const Security &sell,
-                                  const Security &buy,
-                                  const Price &buyPrice) {
+  std::pair<Qty, const Security *> GetOrderQtyAllowedByBalance(
+      const Security &sell, const Security &buy, const Price &buyPrice) {
     const auto &sellBalance =
         m_self.GetTradingSystem(sell.GetSource().GetIndex())
             .GetBalances()
@@ -516,17 +553,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     if (sellBalance && buyBalance) {
-      return std::min(*sellBalance, *buyBalance / buyPrice);
+      const Qty buyBalanceInSellSide = *buyBalance / buyPrice;
+      if (*sellBalance <= buyBalanceInSellSide) {
+        return {*sellBalance, &sell};
+      } else {
+        return {buyBalanceInSellSide, &buy};
+      }
     } else if (sellBalance) {
       Assert(!buyBalance);
-      return *sellBalance;
+      return {*sellBalance, &sell};
     } else if (buyBalance) {
       Assert(!sellBalance);
-      return *buyBalance / buyPrice;
+      return {*buyBalance / buyPrice, &buy};
     } else {
       Assert(!sellBalance);
       Assert(!buyBalance);
-      return std::numeric_limits<double>::max();
+      return {std::numeric_limits<Qty>::max(), nullptr};
     }
   }
 
@@ -660,6 +702,7 @@ void aa::Strategy::DeactivateAutoTrading() {
   m_pimpl->m_tradingSettings = boost::none;
   m_pimpl->m_errors.clear();
   m_pimpl->m_lastError = nullptr;
+  m_pimpl->m_lastErrorSide = boost::none;
   m_pimpl->m_bestSpreadRatio = boost::none;
 }
 

@@ -15,7 +15,7 @@
 namespace trdk {
 class TRDK_CORE_API BalancesContainer : public trdk::Balances {
  public:
-  explicit BalancesContainer(trdk::ModuleEventsLog &);
+  explicit BalancesContainer(trdk::ModuleEventsLog &, trdk::ModuleTradingLog &);
   virtual ~BalancesContainer() override;
 
  public:

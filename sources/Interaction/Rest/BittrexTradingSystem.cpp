@@ -198,7 +198,7 @@ BittrexTradingSystem::BittrexTradingSystem(const TradingMode &mode,
                                            const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_balances(GetLog()),
+      m_balances(GetLog(), GetTradingLog()),
       m_isConnected(false),
       m_tradingSession("bittrex.com"),
       m_pullingSession("bittrex.com"),

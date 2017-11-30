@@ -12,6 +12,7 @@
 #include "BalancesContainer.hpp"
 #include "EventsLog.hpp"
 #include "Security.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -24,15 +25,19 @@ typedef boost::unique_lock<Mutex> WriteLock;
 
 class BalancesContainer::Implementation : private boost::noncopyable {
  public:
-  ModuleEventsLog &m_log;
+  ModuleEventsLog &m_eventsLog;
+  ModuleTradingLog &m_tradingLog;
   Mutex m_mutex;
   boost::unordered_map<std::string, Volume> m_storage;
 
-  explicit Implementation(ModuleEventsLog &log) : m_log(log) {}
+  explicit Implementation(ModuleEventsLog &eventsLog,
+                          ModuleTradingLog &tradingLog)
+      : m_eventsLog(eventsLog), m_tradingLog(tradingLog) {}
 };
 
-BalancesContainer::BalancesContainer(ModuleEventsLog &log)
-    : m_pimpl(boost::make_unique<Implementation>(log)) {}
+BalancesContainer::BalancesContainer(ModuleEventsLog &eventsLog,
+                                     ModuleTradingLog &tradingLog)
+    : m_pimpl(boost::make_unique<Implementation>(eventsLog, tradingLog)) {}
 
 BalancesContainer::~BalancesContainer() = default;
 
@@ -52,6 +57,17 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
   {
     const auto &it = m_pimpl->m_storage.find(symbol);
     if (it != m_pimpl->m_storage.cend()) {
+      const Double delta = balance - it->second;
+      if (!delta) {
+        return;
+      }
+      m_pimpl->m_tradingLog.Write(
+          "{'balance': {'prev': %1$.8f, 'new': %2$.8f, 'delta': %3$.8f}}",
+          [&](TradingRecord &record) {
+            record % it->second  // 1
+                % balance        // 2
+                % delta;         // 3
+          });
       it->second = std::move(balance);
       return;
     }
@@ -61,9 +77,12 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
         m_pimpl->m_storage.emplace(std::move(symbol), std::move(balance));
     Assert(it.second);
     if (it.first->second) {
-      m_pimpl->m_log.Info("\"%1%\" balance: %2$.8f.",
-                          it.first->first,    // 1
-                          it.first->second);  // 2
+      m_pimpl->m_eventsLog.Info("\"%1%\" balance: %2$.8f.",
+                                it.first->first,    // 1
+                                it.first->second);  // 2
+      m_pimpl->m_tradingLog.Write(
+          "{'balance': {'prev': null, 'new': %1$.8f, 'delta': %1$.8f}}",
+          [&](TradingRecord &record) { record % balance; });
     }
   }
 }
