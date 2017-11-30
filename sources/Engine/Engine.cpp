@@ -136,7 +136,7 @@ void Engine::Run(
           error % tradingLogFilePath;
           throw Exception(error.str().c_str());
         }
-        m_pimpl->m_eventsLog->Info("Trading log: %1%.", tradingLogFilePath);
+        m_pimpl->m_eventsLog->Debug("Trading log: %1%.", tradingLogFilePath);
         m_pimpl->m_tradingLog->EnableStream(m_pimpl->m_tradingLogFile,
                                             *m_pimpl->m_context);
       } else {

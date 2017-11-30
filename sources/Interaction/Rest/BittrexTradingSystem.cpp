@@ -198,6 +198,7 @@ BittrexTradingSystem::BittrexTradingSystem(const TradingMode &mode,
                                            const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
+      m_balances(GetLog()),
       m_isConnected(false),
       m_tradingSession("bittrex.com"),
       m_pullingSession("bittrex.com"),
@@ -323,15 +324,8 @@ void BittrexTradingSystem::RequestBalances() {
       BalanceRequest(m_settings).Send(m_pullingSession, GetContext());
   for (const auto &node : boost::get<1>(responce)) {
     const auto &balance = node.second;
-    if (m_balances.SetAvailableToTrade(balance.get<std::string>("Currency"),
-                                       balance.get<Volume>("Available"))) {
-      GetLog().Info(
-          "\"%1%\" balance: %2$.8f (available: %3$.8f, pending %4$.8f).",
-          balance.get<std::string>("Currency"),  // 1
-          balance.get<double>("Balance"),        // 2
-          balance.get<Volume>("Available"),      // 3
-          balance.get<double>("Pending"));       // 4
-    }
+    m_balances.SetAvailableToTrade(balance.get<std::string>("Currency"),
+                                   balance.get<Volume>("Available"));
   }
 }
 

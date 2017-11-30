@@ -50,7 +50,7 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
 }
 
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
-  GetLog().Info("Creating connection...");
+  GetLog().Debug("Creating connection...");
   try {
     m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {

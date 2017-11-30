@@ -313,7 +313,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Info("Creating connection...");
+    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -324,8 +324,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         if (subscribtion.second.isSubscribed) {
           continue;
         }
-        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
-                         *subscribtion.second.security);
+        GetMdsLog().Debug("Starting Market Data subscribtion for \"%1%\"...",
+                          *subscribtion.second.security);
         subscribtion.second.isSubscribed = true;
       }
     }

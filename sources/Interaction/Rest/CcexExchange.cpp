@@ -250,6 +250,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(m_endpoint.host),
         m_tradingSession(m_endpoint.host),
+        m_balances(GetTsLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
@@ -289,7 +290,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Info("Creating connection...");
+    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -299,8 +300,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       if (subscribtion.second.isSubscribed) {
         continue;
       }
-      GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
-                       *subscribtion.second.security);
+      GetMdsLog().Debug("Starting Market Data subscribtion for \"%1%\"...",
+                        *subscribtion.second.security);
       subscribtion.second.isSubscribed = true;
     }
   }
@@ -513,18 +514,15 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void RequestBalances() {
-    PublicRequest request("getbalances", m_endpoint.floodControl);
+    PrivateRequest request("getbalances", m_settings, m_endpoint.floodControl,
+                           false);
     try {
       const auto response =
           boost::get<1>(request.Send(m_marketDataSession, GetContext()));
       for (const auto &node : response) {
         const auto &data = node.second;
-        if (m_balances.SetAvailableToTrade(data.get<std::string>("Currency"),
-                                           data.get<Volume>("Available"))) {
-          GetTsLog().Info("\"%1%\" balance: %2$.8f.",
-                          data.get<std::string>("Currency"),  // 1
-                          data.get<Volume>("Available"));     // 2
-        }
+        m_balances.SetAvailableToTrade(data.get<std::string>("Currency"),
+                                       data.get<Volume>("Available"));
       }
     } catch (const std::exception &ex) {
       boost::format error("Failed to read balance list: \"%1%\"");

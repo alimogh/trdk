@@ -126,8 +126,8 @@ class StatReport : private boost::noncopyable {
     Assert(stream);
 
     const fs::path &path = m_context.GetSettings().GetLogsInstanceDir() / file;
-    m_context.GetLog().Info("Reporting %1% to file %2% with period %3%...",
-                            name, path, m_reportPeriod);
+    m_context.GetLog().Debug("Reporting %1% to file %2% with period %3%...",
+                             name, path, m_reportPeriod);
 
     boost::filesystem::create_directories(path.branch_path());
 

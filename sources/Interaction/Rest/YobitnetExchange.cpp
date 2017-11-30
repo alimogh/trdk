@@ -276,6 +276,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession("yobit.net"),
         m_tradingSession(m_marketDataSession.getHost()),
         m_nextNonce(0),
+        m_balances(GetTsLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
@@ -315,7 +316,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Info("Creating connection...");
+    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -592,8 +593,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void RequestAccountInfo() {
-    std::vector<std::string> funds;
-    std::vector<std::string> fundsInclOrders;
     std::vector<std::string> rights;
     size_t numberOfTransactions = 0;
     size_t numberOfActiveOrders = 0;
@@ -604,24 +603,17 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const auto response =
           boost::get<1>(request.Send(m_tradingSession, GetContext()));
       nonce.second.unlock();
-      {
-        const auto fundsNode = response.get_child_optional("funds");
-        if (fundsNode) {
-          for (const auto &node : *fundsNode) {
-            funds.emplace_back(node.first + ": " + node.second.data());
-            m_balances.SetAvailableToTrade(
-                std::move(node.first),
-                boost::lexical_cast<Volume>(node.second.data()));
-          }
-        }
-      }
+
+      SetBalances(response);
       {
         const auto &fundsInclOrdersNode =
             response.get_child_optional("funds_incl_orders");
         if (fundsInclOrdersNode) {
           for (const auto &node : *fundsInclOrdersNode) {
-            fundsInclOrders.emplace_back(node.first + ": " +
-                                         node.second.data());
+            GetTsLog().Info(
+                "\"%1%\" balance with orders: %2$.8f.",
+                boost::to_upper_copy(node.first),                  // 1
+                boost::lexical_cast<Volume>(node.second.data()));  // 2
           }
         }
       }
@@ -656,14 +648,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     GetTsLog().Info(
-        "Funds: %1%. Funds incl. order: %2%. Rights: %3%. Number of "
-        "transactions: %4%. Number of active orders: %5%.",
-        funds.empty() ? "none" : boost::join(funds, ", "),  // 1
-        fundsInclOrders.empty() ? "none"
-                                : boost::join(fundsInclOrders, ", "),  // 2
-        rights.empty() ? "none" : boost::join(rights, ", "),           // 3
-        numberOfTransactions,                                          // 4
-        numberOfActiveOrders);                                         // 5
+        "Rights: %1%. Number of transactions: %2%. Number of active orders: "
+        "%3%.",
+        rights.empty() ? "none" : boost::join(rights, ", "),  // 1
+        numberOfTransactions,                                 // 2
+        numberOfActiveOrders);                                // 3
   }
 
   void RequestBalances() {
@@ -672,13 +661,17 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto response =
         boost::get<1>(request.Send(m_marketDataSession, GetContext()));
     nonce.second.unlock();
+    SetBalances(response);
+  }
+
+  void SetBalances(const ptr::ptree &response) {
     const auto &fundsNode = response.get_child_optional("funds");
     if (!fundsNode) {
       return;
     }
     for (const auto &node : *fundsNode) {
       m_balances.SetAvailableToTrade(
-          std::move(node.first),
+          boost::to_upper_copy(node.first),
           boost::lexical_cast<Volume>(node.second.data()));
     }
   }

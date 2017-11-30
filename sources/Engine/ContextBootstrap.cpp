@@ -300,7 +300,7 @@ class ContextBootstrapper : private boost::noncopyable {
                                                  instanceName, mode);
         Assert(tradingSystem);
         Assert(marketDataSource.marketDataSource);
-        m_context.GetLog().Info("Using Trading System as Market Data Source.");
+        m_context.GetLog().Debug("Using Trading System as Market Data Source.");
         m_marketDataSources.emplace_back(marketDataSource);
       }
 
@@ -842,11 +842,11 @@ class ContextStateBootstrapper : private boost::noncopyable {
       Assert(module.symbolInstances.find(symbols) ==
              module.symbolInstances.end());
       module.symbolInstances[symbols] = instanceDllPtr;
-      instance->GetLog().Info("Instantiated for security(ies) \"%1%\".",
-                              boost::join(securities, ", "));
+      instance->GetLog().Debug("Instantiated for security(ies) \"%1%\".",
+                               boost::join(securities, ", "));
     } else {
       module.standaloneInstances.push_back(instanceDllPtr);
-      instance->GetLog().Info("Instantiated.");
+      instance->GetLog().Debug("Instantiated.");
     }
     return instance;
   }
@@ -1204,7 +1204,7 @@ class ContextStateBootstrapper : private boost::noncopyable {
             boost::shared_ptr<Service> requredService =
                 createBySymbolSet(instance.first, symbolsStrList);
             requredService->RegisterSubscriber(*instance.second);
-            instance.second->GetLog().Info(
+            instance.second->GetLog().Debug(
                 "Subscribed to \"%1%\" with security(ies) \"%2%\".",
                 *requredService, symbolsStrList);
           }
@@ -1216,13 +1216,13 @@ class ContextStateBootstrapper : private boost::noncopyable {
 
           for (auto &instance : module.standaloneInstances) {
             requredService->RegisterSubscriber(*instance);
-            instance->GetLog().Info(
+            instance->GetLog().Debug(
                 "Subscribed to \"%1%\" with security(ies) \"%2%\".",
                 *requredService, symbolsStrList);
           }
           for (auto &instance : module.symbolInstances) {
             requredService->RegisterSubscriber(*instance.second);
-            instance.second->GetLog().Info(
+            instance.second->GetLog().Debug(
                 "Subscribed to \"%1%\" with security(ies) \"%2%\".",
                 *requredService, symbolsStrList);
           }
