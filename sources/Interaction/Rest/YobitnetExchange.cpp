@@ -863,16 +863,17 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
           OrderStatus status;
           switch (order.get<int>("status")) {
-            case 0:
+            case 0:  // 0 - active
               status = qty != remainingQty ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_SUBMITTED;
               break;
-            case 1:
+            case 1:  // 1 - fulfilled and closed
               status = ORDER_STATUS_FILLED;
               break;
-            case 2:
-            case 3:
-              status = ORDER_STATUS_CANCELLED;
+            case 2:  // 2 - canceled
+            case 3:  // 3 - canceled after partially fulfilled
+              status = qty != remainingQty ? ORDER_STATUS_FILLED
+                                           : ORDER_STATUS_CANCELLED;
               break;
           }
 
