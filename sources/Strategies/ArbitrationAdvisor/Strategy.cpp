@@ -251,6 +251,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                  GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice)),
         std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
     if (!qty) {
+      ReportIgnored("empty order", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
       return;
     }
     {
@@ -260,6 +262,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         isRestricted = true;
       }
       if (isRestricted) {
+        ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
+                      bestSpreadRatio);
         return;
       }
     }
@@ -285,53 +289,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
     const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
     if (isSellTargetInBlackList && isBuyTargetInBlackList) {
-      m_self.GetTradingLog().Write(
-          "{'signal': {'ignored': {'reason': 'blacklist', 'sell': "
-          "{'exchange': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, 'buy': "
-          "{'exchange': '%4%', 'bid': %5$.8f, 'ask': %6$.8f}}, 'spread': "
-          "%7$.3f, 'bestSpread': %8$.3f, 'bestSpreadMax': %9$.3f}}",
-          [&](TradingRecord &record) {
-            record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
-                % sellTarget.GetBidPriceValue()                             // 2
-                % sellTarget.GetAskPriceValue()                             // 3
-                % boost::cref(buyTarget.GetSource().GetInstanceName())      // 4
-                % buyTarget.GetBidPriceValue()                              // 5
-                % buyTarget.GetAskPriceValue()                              // 6
-                % (spreadRatio * 100)                                       // 7
-                % (bestSpreadRatio * 100);                                  // 8
-            if (m_bestSpreadRatio) {
-              record % (*m_bestSpreadRatio * 100);  // 9
-            } else {
-              record % "null";  // 9
-            }
-          });
+      ReportIgnored("blacklist", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
       return;
     }
     if (!sellTarget.IsOnline() || !buyTarget.IsOnline()) {
-      m_self.GetTradingLog().Write(
-          "{'signal': {'ignored': {'reason': 'offline', 'sell': {'exchange': "
-          "'%1%', 'bid': %2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', "
-          "'bid': %5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f, 'bestSpread': "
-          "%8$.3f, 'bestSpreadMax': %9$.3f}}",
-          [&](TradingRecord &record) {
-            record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
-                % sellTarget.GetBidPriceValue()                             // 2
-                % sellTarget.GetAskPriceValue()                             // 3
-                % boost::cref(buyTarget.GetSource().GetInstanceName())      // 4
-                % buyTarget.GetBidPriceValue()                              // 5
-                % buyTarget.GetAskPriceValue()                              // 6
-                % (spreadRatio * 100)                                       // 7
-                % (bestSpreadRatio * 100);                                  // 8
-            if (m_bestSpreadRatio) {
-              record % (*m_bestSpreadRatio * 100);  // 9
-            } else {
-              record % "null";  // 9
-            }
-          });
+      ReportIgnored("offline", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
       return;
     }
 
     if (m_lastError == &sellTarget || m_lastError == &buyTarget) {
+      ReportIgnored("last error", sellTarget, buyTarget, spreadRatio,
+                    bestSpreadRatio);
       return;
     }
 
@@ -564,21 +534,37 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                   const Qty &qty,
                   const Price &price,
                   const OrderSide &side) {
-    const auto result =
-        m_self.GetTradingSystem(security.GetSource().GetIndex())
-            .CheckOrder(security, security.GetSymbol().GetCurrency(), qty,
-                        price, side, !m_errors.count(&security));
-    if (!result) {
-      if (m_errors.emplace(&security).second) {
-        m_self.GetLog().Warn(
-            "\"%1%\" added to the blacklist by order parameters change fail "
-            "(to "
-            "%2%).",
-            security,  // 1
-            side);     // 2
-      }
-    }
-    return result;
+    return m_self.GetTradingSystem(security.GetSource().GetIndex())
+        .CheckOrder(security, security.GetSymbol().GetCurrency(), qty, price,
+                    side, true);
+  }
+
+  void ReportIgnored(const char *reason,
+                     const Security &sellTarget,
+                     const Security &buyTarget,
+                     const Double &spreadRatio,
+                     const Double &bestSpreadRatio) const {
+    m_self.GetTradingLog().Write(
+        "{'signal': {'ignored': {'reason': '%10%', 'sell': {'exchange': '%1%', "
+        "'bid': %2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': "
+        "%5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f, 'bestSpread': %8$.3f, "
+        "'bestSpreadMax': %9$.3f}}",
+        [&](TradingRecord &record) {
+          record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
+              % sellTarget.GetBidPriceValue()                             // 2
+              % sellTarget.GetAskPriceValue()                             // 3
+              % boost::cref(buyTarget.GetSource().GetInstanceName())      // 4
+              % buyTarget.GetBidPriceValue()                              // 5
+              % buyTarget.GetAskPriceValue()                              // 6
+              % (spreadRatio * 100)                                       // 7
+              % (bestSpreadRatio * 100);                                  // 8
+          if (m_bestSpreadRatio) {
+            record % (*m_bestSpreadRatio * 100);  // 9
+          } else {
+            record % "null";  // 9
+          }
+          record % reason;  // 10
+        });
   }
 };
 
