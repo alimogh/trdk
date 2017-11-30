@@ -24,10 +24,7 @@
 #include <Poco/Net/InvalidCertificateHandler.h>
 #include <Poco/Net/PrivateKeyPassphraseHandler.h>
 #include <Poco/Net/SSLManager.h>
-
-#ifdef DEV_VER
 #include <Poco/StreamCopier.h>
-#endif
 
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"
