@@ -58,15 +58,17 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
     const auto &it = m_pimpl->m_storage.find(symbol);
     if (it != m_pimpl->m_storage.cend()) {
       const Double delta = balance - it->second;
-      if (!delta) {
+      if (delta == 0) {
         return;
       }
       m_pimpl->m_tradingLog.Write(
-          "{'balance': {'prev': %1$.8f, 'new': %2$.8f, 'delta': %3$.8f}}",
+          "{'balance': {'symbol': '%1%', 'prev': %2$.8f, 'new': %3$.8f, "
+          "'delta': %4$.8f}}",
           [&](TradingRecord &record) {
-            record % it->second  // 1
-                % balance        // 2
-                % delta;         // 3
+            record % symbol   // 1
+                % it->second  // 2
+                % balance     // 3
+                % delta;      // 4
           });
       it->second = std::move(balance);
       return;
@@ -81,8 +83,12 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
                                 it.first->first,    // 1
                                 it.first->second);  // 2
       m_pimpl->m_tradingLog.Write(
-          "{'balance': {'prev': null, 'new': %1$.8f, 'delta': %1$.8f}}",
-          [&](TradingRecord &record) { record % balance; });
+          "{'balance': {'symbol': '%1%', 'prev': null, 'new': %2$.8f, 'delta': "
+          "%2$.8f}}",
+          [&](TradingRecord &record) {
+            record % it.first->first  // 1
+                % it.first->second;   // 2
+          });
     }
   }
 }
