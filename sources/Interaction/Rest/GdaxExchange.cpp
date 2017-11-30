@@ -240,7 +240,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_balances(GetTsLog()),
+        m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())),
         m_orderTransactionRequest(
@@ -272,6 +272,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   TradingSystem::Log &GetTsLog() const noexcept {
     return TradingSystem::GetLog();
+  }
+  TradingSystem::TradingLog &GetTsTradingLog() const noexcept {
+    return TradingSystem::GetTradingLog();
   }
 
   MarketDataSource::Log &GetMdsLog() const noexcept {

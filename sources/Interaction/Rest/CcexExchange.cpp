@@ -250,7 +250,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(m_endpoint.host),
         m_tradingSession(m_endpoint.host),
-        m_balances(GetTsLog()),
+        m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
@@ -275,6 +275,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   TradingSystem::Log &GetTsLog() const noexcept {
     return TradingSystem::GetLog();
+  }
+  TradingSystem::TradingLog &GetTsTradingLog() const noexcept {
+    return TradingSystem::GetTradingLog();
   }
 
   MarketDataSource::Log &GetMdsLog() const noexcept {
