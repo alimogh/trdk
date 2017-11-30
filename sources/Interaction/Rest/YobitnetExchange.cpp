@@ -187,7 +187,7 @@ class TradeRequest : public Request {
             throw InvalidPairException(error.str().c_str());
           } else if (*message ==
                      "The given order has already been closed and cannot be "
-                     "cancelled.") {
+                     "canceled.") {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
           }
         }

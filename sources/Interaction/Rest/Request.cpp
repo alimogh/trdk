@@ -111,15 +111,22 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
     try {
       ptr::read_json(responseStream, result);
     } catch (const ptr::ptree_error &ex) {
+#ifdef DEV_VER
       boost::format error(
           "Failed to read server response to the request \"%1%\" (%2%): "
           "\"%4%\" (%3%)");
       error % m_name             // 1
           % m_request->getURI()  // 2
-#ifdef DEV_VER
-          % responseBuffer  // 3
+          % responseBuffer       // 3
+          % ex.what();           // 4
+#else
+      boost::format error(
+          "Failed to read server response to the request \"%1%\" (%2%): "
+          "\"%3%\"");
+      error % m_name             // 1
+          % m_request->getURI()  // 2
+          % ex.what();           // 3
 #endif
-          % ex.what();  // 4
       throw Exception(error.str().c_str());
     }
 
