@@ -191,8 +191,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
       m_self.GetTradingLog().Write(
           "{'signal': {'signalExpired': {'sell': {'exchange': '%1%', 'bid': "
-          "%2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, "
-          "'ask': %6$.8f}}, 'spread': %7$.3f, 'bestSpreadMax': %8$.3f}}",
+          "{'price': %2$.8f, 'qty': %9$.8f}, 'ask': {'price': %3$.8f, 'qty': "
+          "%10$.8f}}, 'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, "
+          "'qty': %11$.8f}, 'ask': {'price': %6$.8f, 'qty': %12$.8f}}}, "
+          "'spread': %7$.3f, 'bestSpreadMax': %8$.3f}}",
           [&](TradingRecord &record) {
             record % boost::cref(operation.GetTradingSystem(m_self, sellTarget)
                                      .GetInstanceName())  // 1
@@ -208,6 +210,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             } else {
               record % "null";  // 8
             }
+            record % sellTarget.GetBidQtyValue()  // 9
+                % sellTarget.GetAskQtyValue()     // 10
+                % buyTarget.GetBidQtyValue()      // 11
+                % buyTarget.GetAskQtyValue();     // 12
           });
       m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
@@ -283,26 +289,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     if (!CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL)) {
-      if (isQtyReducedByBalance && balance.second) {
+      if (isQtyReducedByBalance) {
+        Assert(balance.second);
         m_lastError = balance.second;
         m_lastErrorSide =
             balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
-      } else {
-        m_lastError = &sellTarget;
-        m_lastErrorSide = ORDER_SIDE_SELL;
       }
       ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
                     bestSpreadRatio);
       return;
     }
     if (!CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY)) {
-      if (isQtyReducedByBalance && balance.second) {
+      if (isQtyReducedByBalance) {
+        Assert(balance.second);
         m_lastError = balance.second;
         m_lastErrorSide =
             balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
-      } else {
-        m_lastError = &buyTarget;
-        m_lastErrorSide = ORDER_SIDE_BUY;
       }
       ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
                     bestSpreadRatio);
@@ -501,9 +503,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     m_self.GetTradingLog().Write(
         "{'signal': {'%10%': {'bestSpread': {'prev': %7$.3f, 'new' : "
-        "%8$.3f, 'diff': %9$.3f}, 'sell': {'exchange': '%1%', 'bid': "
-        "%2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, "
-        "'ask': %6$.8f}}}}",
+        "%8$.3f, 'diff': %9$.3f}, 'sell': {'exchange': '%1%', 'bid': {'price': "
+        "%2$.8f, 'qty': %11$.8f}, 'ask': {'price': %3$.8f, 'qty': %12$.8f}}, "
+        "'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, 'qty': %13$.8f}, "
+        "'ask': {'price': %6$.8f, 'qty': %14$.8f}}}}}",
         [&](TradingRecord &record) {
           record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
               % sellTarget.GetBidPriceValue()                             // 2
@@ -522,7 +525,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           } else {
             record % "null";  // 9
           }
-          record % signalEvent;  // 10
+          record % signalEvent               // 10
+              % sellTarget.GetBidQtyValue()  // 11
+              % sellTarget.GetAskQtyValue()  // 12
+              % buyTarget.GetBidQtyValue()   // 13
+              % buyTarget.GetAskQtyValue();  // 14
         });
 
     return isActivated;
