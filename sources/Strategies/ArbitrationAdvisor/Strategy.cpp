@@ -47,7 +47,8 @@ std::pair<Price, Double> CaclSpread(const PriceItem &bestBid,
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
-  const Double m_stopLossSpreadRatio;
+  const Double m_operationStopSpreadRatio;
+  const boost::optional<Double> m_lowestSpreadRatio;
   const Double m_trailingActivationRatio;
 
   std::unique_ptr<PositionController> m_controller;
@@ -66,8 +67,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_stopLossSpreadRatio(
-            conf.ReadTypedKey<Double>("stop_loss_spread_percentage", 0) / 100),
+        m_operationStopSpreadRatio(
+            conf.ReadTypedKey<Double>("operation_stop_spread_percentage") /
+            100),
         m_trailingActivationRatio(
             conf.ReadTypedKey<Double>("trailing_activation_percentage", 0) /
             100),
@@ -77,8 +79,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 : boost::make_unique<PositionAndBalanceController>(m_self)),
         m_minPriceDifferenceRatioToAdvice(0),
         m_lastError(nullptr) {
-    m_self.GetLog().Info("Stop-loss spread: %1%%%.",
-                         m_stopLossSpreadRatio * 100);
+    {
+      const char *const key = "lowest_spread_percentage";
+      if (conf.IsKeyExist(key)) {
+        const_cast<boost::optional<Double> &>(m_lowestSpreadRatio) =
+            conf.ReadTypedKey<Double>(key) / 100;
+        m_self.GetLog().Info("Lowest spread: %1%%%.",
+                             *m_lowestSpreadRatio * 100);
+      } else {
+        m_self.GetLog().Info("Lowest spread: not set.");
+      }
+    }
+    m_self.GetLog().Info("Operation stop spread: %1%%%.",
+                         m_operationStopSpreadRatio * 100);
     if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
       m_self.GetLog().Info("Enabled balances restoration.");
     }
@@ -132,7 +145,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
       auto &bestSell = *bestBid.second->security;
       auto &bestBuy = *bestAsk.second->security;
-      if (spreadRatio <= m_stopLossSpreadRatio) {
+      if (spreadRatio <= m_operationStopSpreadRatio) {
         StopTrading(bestSell, bestBuy, spreadRatio);
       } else if (m_tradingSettings &&
                  (spreadRatio >= m_tradingSettings->minPriceDifferenceRatio ||
@@ -239,12 +252,15 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Double spreadRatio = bestSpreadRatio;
     {
       const auto pip = 1.0 / 10000000;
+      const auto &lowestSpreadRatio =
+          m_lowestSpreadRatio ? *m_lowestSpreadRatio
+                              : m_tradingSettings->minPriceDifferenceRatio;
       for (;;) {
         const auto nextSellPrice = sellPrice - pip;
         const auto nextBuyPrice = buyPrice + pip;
         const auto &nextSpread = CaclSpread(nextSellPrice, nextBuyPrice);
         AssertGe(spreadRatio, nextSpread.second);
-        if (nextSpread.second <= m_stopLossSpreadRatio) {
+        if (nextSpread.second <= lowestSpreadRatio) {
           break;
         }
         spreadRatio = nextSpread.second;
