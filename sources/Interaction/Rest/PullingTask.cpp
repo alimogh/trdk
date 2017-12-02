@@ -123,14 +123,24 @@ void PullingTask::Run() {
         bool isCompleted;
         try {
           isCompleted = !task.task();
-        } catch (const std::exception &ex) {
+        } catch (const std::exception &) {
           isCompleted = false;
           if (++task.numberOfErrors <= 2) {
-            m_log.Error(
-                "%1% task \"%2%\" error: \"%3%\".",
-                task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
-                task.name,                                                  // 2
-                ex.what());                                                 // 3
+            try {
+              throw;
+            } catch (const Exception &ex) {
+              m_log.Warn("%1% task \"%2%\" error: \"%3%\".",
+                         task.numberOfErrors == 1 ? "Pulling"
+                                                  : "Repeated pulling",  // 1
+                         task.name,                                      // 2
+                         ex.what());                                     // 3
+            } catch (const std::exception &ex) {
+              m_log.Error("%1% task \"%2%\" error: \"%3%\".",
+                          task.numberOfErrors == 1 ? "Pulling"
+                                                   : "Repeated pulling",  // 1
+                          task.name,                                      // 2
+                          ex.what());                                     // 3
+            }
           }
           continue;
         }
