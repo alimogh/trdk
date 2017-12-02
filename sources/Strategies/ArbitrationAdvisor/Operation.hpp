@@ -48,8 +48,10 @@ class Operation : public trdk::Operation {
  public:
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
       const Position &) const override {
-    return m_orderPolicy;
+    return GetOpenOrderPolicy();
   }
+
+  const OrderPolicy &GetOpenOrderPolicy() const { return m_orderPolicy; }
 
   virtual bool IsLong(const Security &security) const override {
     Assert(&security == &m_sellTarget || &security == &m_buyTarget);

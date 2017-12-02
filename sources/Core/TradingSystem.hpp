@@ -153,6 +153,16 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   std::vector<trdk::OrderId> GetActiveOrderList() const;
 
  public:
+  virtual bool CheckOrder(const trdk::Security &,
+                          const trdk::Lib::Currency &,
+                          const trdk::Qty &,
+                          const boost::optional<trdk::Price> &,
+                          const trdk::OrderSide &,
+                          bool logError) const;
+
+  //! Sends order synchronously.
+  /** @return Order transaction pointer in any case.
+    */
   boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
       trdk::Security &,
       const trdk::Lib::Currency &,
@@ -164,14 +174,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::OrderSide &,
       const trdk::TimeInForce &,
       const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
-  virtual bool CheckOrder(const trdk::Security &,
-                          const trdk::Lib::Currency &,
-                          const trdk::Qty &,
-                          const boost::optional<trdk::Price> &,
-                          const trdk::OrderSide &,
-                          bool logError) const;
 
-  //! Cancels active orders.
+  //! Cancels active order synchronously.
   /** @return True, if order is known and cancel-command successfully sent.
     *         False if order is unknown.
     */

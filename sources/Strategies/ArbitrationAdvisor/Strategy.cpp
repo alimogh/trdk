@@ -47,7 +47,8 @@ std::pair<Price, Double> CaclSpread(const PriceItem &bestBid,
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
-  const Double m_stopLossSpreadRatio;
+  const Double m_operationStopSpreadRatio;
+  const boost::optional<Double> m_lowestSpreadRatio;
   const Double m_trailingActivationRatio;
 
   std::unique_ptr<PositionController> m_controller;
@@ -66,8 +67,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_stopLossSpreadRatio(
-            conf.ReadTypedKey<Double>("stop_loss_spread_percentage", 0) / 100),
+        m_operationStopSpreadRatio(
+            conf.ReadTypedKey<Double>("operation_stop_spread_percentage") /
+            100),
         m_trailingActivationRatio(
             conf.ReadTypedKey<Double>("trailing_activation_percentage", 0) /
             100),
@@ -77,8 +79,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 : boost::make_unique<PositionAndBalanceController>(m_self)),
         m_minPriceDifferenceRatioToAdvice(0),
         m_lastError(nullptr) {
-    m_self.GetLog().Info("Stop-loss spread: %1%%%.",
-                         m_stopLossSpreadRatio * 100);
+    {
+      const char *const key = "lowest_spread_percentage";
+      if (conf.IsKeyExist(key)) {
+        const_cast<boost::optional<Double> &>(m_lowestSpreadRatio) =
+            conf.ReadTypedKey<Double>(key) / 100;
+        m_self.GetLog().Info("Lowest spread: %1%%%.",
+                             *m_lowestSpreadRatio * 100);
+      } else {
+        m_self.GetLog().Info("Lowest spread: not set.");
+      }
+    }
+    m_self.GetLog().Info("Operation stop spread: %1%%%.",
+                         m_operationStopSpreadRatio * 100);
     if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
       m_self.GetLog().Info("Enabled balances restoration.");
     }
@@ -132,7 +145,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
       auto &bestSell = *bestBid.second->security;
       auto &bestBuy = *bestAsk.second->security;
-      if (spreadRatio <= m_stopLossSpreadRatio) {
+      if (spreadRatio <= m_operationStopSpreadRatio) {
         StopTrading(bestSell, bestBuy, spreadRatio);
       } else if (m_tradingSettings &&
                  (spreadRatio >= m_tradingSettings->minPriceDifferenceRatio ||
@@ -239,12 +252,15 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Double spreadRatio = bestSpreadRatio;
     {
       const auto pip = 1.0 / 10000000;
+      const auto &lowestSpreadRatio =
+          m_lowestSpreadRatio ? *m_lowestSpreadRatio
+                              : m_tradingSettings->minPriceDifferenceRatio;
       for (;;) {
         const auto nextSellPrice = sellPrice - pip;
         const auto nextBuyPrice = buyPrice + pip;
         const auto &nextSpread = CaclSpread(nextSellPrice, nextBuyPrice);
         AssertGe(spreadRatio, nextSpread.second);
-        if (nextSpread.second <= m_stopLossSpreadRatio) {
+        if (nextSpread.second <= lowestSpreadRatio) {
           break;
         }
         spreadRatio = nextSpread.second;
@@ -373,49 +389,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           }
         });
 
-    const auto &legTargets =
-        isBuyTargetInBlackList ||
-                boost::icontains(buyTradingSystemName, "ccex") ||
-                boost::icontains(buyTradingSystemName, "bittrex")
-            ? std::make_pair(&buyTarget, &sellTarget)
-            : std::make_pair(&sellTarget, &buyTarget);
-
-    Position *firstLegPosition = nullptr;
-    try {
-      firstLegPosition = &m_controller->OpenPosition(
-          operation, 1, *legTargets.first, delayMeasurement);
-      m_controller->OpenPosition(operation, 2, *legTargets.second,
-                                 delayMeasurement);
-    } catch (const std::exception &ex) {
-      m_self.GetLog().Error("Failed to start trading: \"%1%\".", ex.what());
-
-      if (firstLegPosition) {
-        Verify(m_errors.emplace(legTargets.second).second);
-        m_controller->ClosePosition(*firstLegPosition,
-                                    CLOSE_REASON_OPEN_FAILED);
-        operation->GetReportData().Add(
-            BusinessOperationReportData::PositionReport{
-                operation->GetId(), 2, !firstLegPosition->IsLong(),
-                pt::not_a_date_time, pt::not_a_date_time,
-                firstLegPosition->IsLong() ? sellTarget.GetBidPrice()
-                                           : buyTarget.GetAskPrice(),
-                std::numeric_limits<double>::quiet_NaN(), 0,
-                firstLegPosition->IsLong()
-                    ? &operation->GetTradingSystem(m_self, sellTarget)
-                    : &operation->GetTradingSystem(m_self, buyTarget),
-                CLOSE_REASON_OPEN_FAILED});
+    if (isSellTargetInBlackList || isBuyTargetInBlackList) {
+      if (!OpenPositionSync(sellTarget, buyTarget, operation,
+                            isSellTargetInBlackList, isBuyTargetInBlackList,
+                            delayMeasurement)) {
+        return;
       }
-
-      m_lastError = !firstLegPosition ? legTargets.first : legTargets.second;
-      m_lastErrorSide = boost::none;
-      m_errors.emplace(m_lastError);
-      m_self.GetLog().Warn(
-          "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
-          "%3% leg is \"%4%\"",
-          *m_lastError, !firstLegPosition ? "first" : "second",
-          !firstLegPosition ? "Second" : "First",
-          m_lastError == legTargets.first ? *legTargets.second
-                                          : *legTargets.first);
+    } else if (OpenPositionAsync(sellTarget, buyTarget, operation,
+                                 delayMeasurement)) {
       return;
     }
 
@@ -614,6 +595,134 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           }
           record % reason;  // 10
         });
+  }
+
+  bool OpenPositionSync(Security &sellTarget,
+                        Security &buyTarget,
+                        const boost::shared_ptr<Operation> &operation,
+                        bool isSellTargetInBlackList,
+                        bool isBuyTargetInBlackList,
+                        const Milestones &delayMeasurement) {
+    Assert(isBuyTargetInBlackList || isSellTargetInBlackList);
+
+    const auto &legTargets = isBuyTargetInBlackList
+                                 ? std::make_pair(&buyTarget, &sellTarget)
+                                 : std::make_pair(&sellTarget, &buyTarget);
+
+    Position *firstLeg = nullptr;
+    try {
+      firstLeg = &m_controller->OpenPosition(operation, 1, *legTargets.first,
+                                             delayMeasurement);
+      m_controller->OpenPosition(operation, 2, *legTargets.second,
+                                 delayMeasurement);
+
+      return true;
+
+    } catch (const std::exception &ex) {
+      m_self.GetLog().Error("Failed to start trading (sync): \"%1%\".",
+                            ex.what());
+
+      if (firstLeg) {
+        CloseLegPositionByOperationStartError(*firstLeg, *legTargets.second,
+                                              *operation);
+      }
+
+      m_lastError = !firstLeg ? legTargets.first : legTargets.second;
+      m_lastErrorSide = boost::none;
+      m_errors.emplace(m_lastError);
+      m_self.GetLog().Warn(
+          "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
+          "%3% leg is \"%4%\"",
+          *m_lastError,                    // 1
+          !firstLeg ? "first" : "second",  // 2
+          !firstLeg ? "Second" : "First",  // 3
+          m_lastError == legTargets.first ? *legTargets.second
+                                          : *legTargets.first);  // 4
+    }
+
+    return false;
+  }
+
+  bool OpenPositionAsync(Security &firstLegTarget,
+                         Security &secondLegTarget,
+                         const boost::shared_ptr<Operation> &operation,
+                         const Milestones &delayMeasurement) {
+    const boost::function<Position *(int64_t, Security &)> &openPosition = [&](
+        int64_t leg, Security &target) -> Position * {
+      try {
+        return &m_controller->OpenPosition(operation, leg, target,
+                                           delayMeasurement);
+      } catch (const std::exception ex) {
+        return nullptr;
+      } catch (...) {
+        AssertFailNoException();
+        throw;
+      }
+    };
+
+    auto firstLeg =
+        boost::async(boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
+    auto secondLeg =
+        boost::async(boost::bind(openPosition, 2, boost::ref(secondLegTarget)));
+    if (firstLeg.get() && secondLeg.get()) {
+      return true;
+    }
+
+    m_self.GetLog().Error("Failed to start trading (async).");
+
+    m_lastError = nullptr;
+    m_lastErrorSide = boost::none;
+    if (!firstLeg.get()) {
+      Verify(m_errors.emplace(&firstLegTarget).second);
+    }
+    if (!secondLeg.get()) {
+      Verify(m_errors.emplace(&secondLegTarget).second);
+    }
+
+    if (!firstLeg.get() && !secondLeg.get()) {
+      m_self.GetLog().Warn(
+          "\"%1%\" and \"%2%\" added to the blacklist by position opening "
+          "error.",
+          firstLegTarget,    // 1
+          secondLegTarget);  // 2
+      return false;
+    }
+
+    if (firstLeg.get()) {
+      Assert(!secondLeg.get());
+      m_lastError = &secondLegTarget;
+      CloseLegPositionByOperationStartError(*firstLeg.get(), secondLegTarget,
+                                            *operation);
+    } else {
+      Assert(secondLeg.get());
+      m_lastError = &firstLegTarget;
+      CloseLegPositionByOperationStartError(*secondLeg.get(), firstLegTarget,
+                                            *operation);
+    }
+    m_self.GetLog().Warn(
+        "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
+        "%3% leg is \"%4%\"",
+        *m_lastError,                                         // 1
+        firstLeg.get() ? "second" : "first",                  // 2
+        secondLeg.get() ? "Second" : "First",                 // 3
+        secondLeg.get() ? secondLegTarget : firstLegTarget);  // 4
+
+    return false;
+  }
+
+  void CloseLegPositionByOperationStartError(
+      Position &openedPosition,
+      const Security &failedPositionTarget,
+      Operation &operation) {
+    m_controller->ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
+    operation.GetReportData().Add(BusinessOperationReportData::PositionReport{
+        operation.GetId(), openedPosition.GetSubOperationId() == 1 ? 2 : 1,
+        !openedPosition.IsLong(), pt::not_a_date_time, pt::not_a_date_time,
+        operation.GetOpenOrderPolicy().GetOpenOrderPrice(
+            !openedPosition.IsLong()),
+        std::numeric_limits<double>::quiet_NaN(), 0,
+        &operation.GetTradingSystem(m_self, failedPositionTarget),
+        CLOSE_REASON_OPEN_FAILED});
   }
 };
 
