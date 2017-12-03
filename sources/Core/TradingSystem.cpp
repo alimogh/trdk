@@ -425,6 +425,10 @@ const Balances &TradingSystem::GetBalances() const {
   return result;
 }
 
+Volume TradingSystem::CaclCommission(const Volume &, const Security &) const {
+  return 0;
+}
+
 bool TradingSystem::CheckOrder(const Security &,
                                const Currency &,
                                const Qty &,
