@@ -188,7 +188,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   bool CheckActualPositions(const Security &sellTarget,
                             const Security &buyTarget,
-                            const Double &spreadRatio) {
+                            const Double & /*spreadRatio*/) {
     size_t numberOfPositionsWithTheSameTarget = 0;
     for (auto &position : m_self.GetPositions()) {
       if (!IsBusinessPosition(position) || position.IsCompleted()) {
@@ -202,7 +202,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         continue;
       }
 
-      m_self.GetTradingLog().Write(
+      /*m_self.GetTradingLog().Write(
           "{'signal': {'signalExpired': {'sell': {'exchange': '%1%', 'bid': "
           "{'price': %2$.8f, 'qty': %9$.8f}, 'ask': {'price': %3$.8f, 'qty': "
           "%10$.8f}}, 'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, "
@@ -228,7 +228,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 % buyTarget.GetBidQtyValue()      // 11
                 % buyTarget.GetAskQtyValue();     // 12
           });
-      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
+      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);*/
     }
     AssertGe(2, numberOfPositionsWithTheSameTarget);
     return numberOfPositionsWithTheSameTarget > 0;
