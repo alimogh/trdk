@@ -396,7 +396,7 @@ void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
   if (status == ORDER_STATUS_FILLED) {
     OnOrderStatusUpdate(time, orderId, status, remainingQty,
                         order.get<Volume>("CommissionPaid"),
-                        TradeInfo{order.get<Price>("Price")});
+                        TradeInfo{order.get<Price>("Limit")});
   } else {
     OnOrderStatusUpdate(time, orderId, status, remainingQty);
   }

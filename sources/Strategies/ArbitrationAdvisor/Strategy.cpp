@@ -286,7 +286,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
     const bool isQtyReducedByBalance = qty > balance.first;
     if (isQtyReducedByBalance) {
-      Assert(balance.first);
+      Assert(balance.second);
       m_self.GetTradingLog().Write(
           "{'signal': {'qtyReduced': {'prev': %1$.8f, 'new': %2$.8f, "
           "'security': '%3%'}}",
@@ -522,37 +522,31 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_self.GetTradingSystem(sell.GetSource().GetIndex())
             .GetBalances()
             .FindAvailableToTrade(sell.GetSymbol().GetBaseSymbol());
+    const auto &buyTradingSystem =
+        m_self.GetTradingSystem(buy.GetSource().GetIndex());
     const auto &buyBalance =
-        m_self.GetTradingSystem(buy.GetSource().GetIndex())
-            .GetBalances()
-            .FindAvailableToTrade(buy.GetSymbol().GetQuoteSymbol());
+        buyTradingSystem.GetBalances().FindAvailableToTrade(
+            buy.GetSymbol().GetQuoteSymbol());
 
-    if (sellBalance && !*sellBalance && m_errors.emplace(&sell).second) {
-      m_self.GetLog().Warn(
-          "\"%1%\" added to the blacklist as funds is insufficient to %2%",
-          sell,              // 1
-          ORDER_SIDE_SELL);  // 2
-    }
-    if (buyBalance && !*buyBalance && m_errors.emplace(&buy).second) {
-      m_self.GetLog().Warn(
-          "\"%1%\" added to the blacklist as funds is insufficient to %2%",
-          buy,              // 1
-          ORDER_SIDE_BUY);  // 2
-    }
+    const auto calcByBuyBalance = [&]() -> Qty {
+      Assert(buyBalance);
+      const auto result = *buyBalance / buyPrice;
+      return result - buyTradingSystem.CalcCommission(result, buy);
+    };
 
     if (sellBalance && buyBalance) {
-      const Qty buyBalanceInSellSide = *buyBalance / buyPrice;
-      if (*sellBalance <= buyBalanceInSellSide) {
+      const auto &resultByBayBalance = calcByBuyBalance();
+      if (*sellBalance <= resultByBayBalance) {
         return {*sellBalance, &sell};
       } else {
-        return {buyBalanceInSellSide, &buy};
+        return {resultByBayBalance, &buy};
       }
     } else if (sellBalance) {
       Assert(!buyBalance);
       return {*sellBalance, &sell};
     } else if (buyBalance) {
       Assert(!sellBalance);
-      return {*buyBalance / buyPrice, &buy};
+      return {calcByBuyBalance(), &buy};
     } else {
       Assert(!sellBalance);
       Assert(!buyBalance);
@@ -604,6 +598,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                         bool isBuyTargetInBlackList,
                         const Milestones &delayMeasurement) {
     Assert(isBuyTargetInBlackList || isSellTargetInBlackList);
+    UseUnused(isSellTargetInBlackList);
 
     const auto &legTargets = isBuyTargetInBlackList
                                  ? std::make_pair(&buyTarget, &sellTarget)
@@ -722,7 +717,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             !openedPosition.IsLong()),
         std::numeric_limits<double>::quiet_NaN(), 0,
         &operation.GetTradingSystem(m_self, failedPositionTarget),
-        CLOSE_REASON_OPEN_FAILED});
+        CLOSE_REASON_OPEN_FAILED,
+        operation.GetTradingSystem(m_self, openedPosition.GetSecurity())
+            .CalcCommission(openedPosition.GetOpenedVolume(),
+                            openedPosition.GetSecurity())});
   }
 };
 

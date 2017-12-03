@@ -22,6 +22,8 @@ namespace pt = boost::posix_time;
 BusinessOperationReportData::BusinessOperationReportData() : m_size(0) {}
 
 bool BusinessOperationReportData::Add(const Position &position) {
+  const auto &tradingSystem = position.GetStrategy().GetTradingSystem(
+      position.GetSecurity().GetSource().GetIndex());
   return Add(PositionReport{
       position.GetOperation()->GetId(),  // operation
       position.GetSubOperationId(),      // subOperation
@@ -35,9 +37,10 @@ bool BusinessOperationReportData::Add(const Position &position) {
           ? position.GetOpenAvgPrice()
           : std::numeric_limits<double>::quiet_NaN(),  // openPrice
       position.GetOpenedQty(),                         // openedQty
-      &position.GetStrategy().GetTradingSystem(
-          position.GetSecurity().GetSource().GetIndex()),  // target
-      position.GetCloseReason()});                         // closeReason
+      &tradingSystem,                                  // target
+      position.GetCloseReason(),                       // closeReason
+      tradingSystem.CalcCommission(position.GetOpenedVolume(),
+                                   position.GetSecurity())});  // commission
 }
 
 bool BusinessOperationReportData::Add(PositionReport &&position) {
@@ -119,7 +122,8 @@ void BusinessOperationReport::PrintHead(std::ostream &os) {
      << ",28. Is Loss"
      << ",29. P&L Volume"
      << ",30. P&L Ratio"
-     << ",31. Operation ID" << std::endl;
+     << ",31. Commission"
+     << ",32. Operation ID" << std::endl;
 }
 
 void BusinessOperationReport::PrintReport(
@@ -140,7 +144,7 @@ void BusinessOperationReport::PrintReport(
   const Volume sellVol = sell.openPrice.IsNotNan() ? sell.openPrice * qty : 0;
 
   const Double pnl = buy.openPrice.IsNotNan() && sell.openPrice.IsNotNan()
-                         ? sellVol - buyVol
+                         ? sellVol - buyVol - sell.commissions - buy.commissions
                          : std::numeric_limits<double>::quiet_NaN();
 
   os << std::min(sell.openStartTime.date(), buy.openStartTime.date());  // 1
@@ -235,13 +239,17 @@ void BusinessOperationReport::PrintReport(
 
   os << std::setprecision(8);
   if (pnl.IsNotNan()) {
-    os << ',' << pnl;                                         // 29
-    os << ',' << (buyVol && sellVol ? sellVol / buyVol : 0);  // 30
+    os << ',' << pnl;  // 29
+    os << ',' << (buyVol && sellVol
+                      ? sellVol / (buyVol + sell.commissions + buy.commissions)
+                      : 0);  // 30
   } else {
     os << ",,";  // 29, 30
   }
 
-  os << ',' << sell.operation;  // 31
+  os << ',' << (sell.commissions + buy.commissions);  // 31
+
+  os << ',' << sell.operation;  // 32
 
   os << std::endl;
 }
