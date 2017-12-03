@@ -82,6 +82,8 @@ class BittrexTradingSystem : public TradingSystem {
 
   virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
 
+  virtual void OnTransactionSent(const trdk::OrderId &) override;
+
  private:
   void RequestBalances();
   void UpdateOrders();

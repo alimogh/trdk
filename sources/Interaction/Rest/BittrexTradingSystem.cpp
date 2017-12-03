@@ -319,12 +319,21 @@ void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   OrderCancelRequest(orderId, m_settings).Send(m_tradingSession, GetContext());
 }
 
+void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
+  Base::OnTransactionSent(orderId);
+  m_pullingTask.AccelerateNextPulling();
+}
+
 void BittrexTradingSystem::RequestBalances() {
   const auto responce =
       BalanceRequest(m_settings).Send(m_pullingSession, GetContext());
   for (const auto &node : boost::get<1>(responce)) {
     const auto &balance = node.second;
-    m_balances.SetAvailableToTrade(balance.get<std::string>("Currency"),
+    auto symbol = balance.get<std::string>("Currency");
+    if (symbol == "BCC") {
+      symbol = "BCH";
+    }
+    m_balances.SetAvailableToTrade(std::move(symbol),
                                    balance.get<Volume>("Available"));
   }
 }
