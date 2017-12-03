@@ -680,7 +680,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
     for (const auto &node : *fundsNode) {
       m_balances.SetAvailableToTrade(
-          boost::to_upper_copy(node.first),
+          node.first == "bcc" ? "BCH" : boost::to_upper_copy(node.first),
           boost::lexical_cast<Volume>(node.second.data()));
     }
   }

@@ -82,9 +82,12 @@ struct ActiveOrder {
   pt::ptime updateTime;
   std::unique_ptr<trdk::Timer::Scope> timerScope;
 
-  bool IsChanged(const OrderStatus &rhsStatus,
-                 const Qty &rhsRemainingQty) const {
-    return status != rhsStatus || remainingQty != rhsRemainingQty;
+  bool IsChanged(
+      const OrderStatus &rhsStatus,
+      const boost::optional<Qty> &rhsRemainingQty,
+      const boost::optional<TradingSystem::TradeInfo> &tradeInfo) const {
+    return tradeInfo || status != rhsStatus ||
+           (rhsRemainingQty && remainingQty != *rhsRemainingQty);
   }
 };
 }
@@ -288,6 +291,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
       ActiveOrderLock &&lock,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     auto &cache = it->second;
+
+    if (!cache.IsChanged(status, remainingQty, tradeInfo)) {
+      return;
+    }
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
@@ -726,9 +733,6 @@ void TradingSystem::OnOrder(const OrderId &orderId,
     ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
-      if (!it->second.IsChanged(status, remainingQty)) {
-        return;
-      }
       boost::optional<TradeInfo> trade;
       switch (status) {
         case ORDER_STATUS_FILLED:
