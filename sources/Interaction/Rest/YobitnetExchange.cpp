@@ -348,7 +348,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   virtual const Balances &GetBalances() const override { return m_balances; }
 
-  virtual Volume CaclCommission(const Volume &vol,
+  virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {
     return RoundByPrecision(vol * (0.2 / 100),
                             security.GetPricePrecisionPower());

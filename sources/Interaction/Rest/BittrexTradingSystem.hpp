@@ -55,7 +55,7 @@ class BittrexTradingSystem : public TradingSystem {
 
   virtual const Balances &GetBalances() const override { return m_balances; }
 
-  virtual Volume CaclCommission(const Volume &vol,
+  virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {
     return RoundByPrecision(vol * (0.25 / 100),
                             security.GetPricePrecisionPower());

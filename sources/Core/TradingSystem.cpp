@@ -425,7 +425,7 @@ const Balances &TradingSystem::GetBalances() const {
   return result;
 }
 
-Volume TradingSystem::CaclCommission(const Volume &, const Security &) const {
+Volume TradingSystem::CalcCommission(const Volume &, const Security &) const {
   return 0;
 }
 

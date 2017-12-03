@@ -544,7 +544,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     const auto calcByBuyBalance = [&]() -> Qty {
       Assert(buyBalance);
       const auto result = *buyBalance / buyPrice;
-      return result - buyTradingSystem.CaclCommission(result, buy);
+      return result - buyTradingSystem.CalcCommission(result, buy);
     };
 
     if (sellBalance && buyBalance) {
@@ -730,7 +730,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             !openedPosition.IsLong()),
         std::numeric_limits<double>::quiet_NaN(), 0,
         &operation.GetTradingSystem(m_self, failedPositionTarget),
-        CLOSE_REASON_OPEN_FAILED});
+        CLOSE_REASON_OPEN_FAILED,
+        operation.GetTradingSystem(m_self, openedPosition.GetSecurity())
+            .CalcCommission(openedPosition.GetOpenedVolume(),
+                            openedPosition.GetSecurity())});
   }
 };
 
