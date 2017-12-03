@@ -528,19 +528,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         buyTradingSystem.GetBalances().FindAvailableToTrade(
             buy.GetSymbol().GetQuoteSymbol());
 
-    if (sellBalance && !*sellBalance && m_errors.emplace(&sell).second) {
-      m_self.GetLog().Warn(
-          "\"%1%\" added to the blacklist as funds is insufficient to %2%.",
-          sell,              // 1
-          ORDER_SIDE_SELL);  // 2
-    }
-    if (buyBalance && !*buyBalance && m_errors.emplace(&buy).second) {
-      m_self.GetLog().Warn(
-          "\"%1%\" added to the blacklist as funds is insufficient to %2%.",
-          buy,              // 1
-          ORDER_SIDE_BUY);  // 2
-    }
-
     const auto calcByBuyBalance = [&]() -> Qty {
       Assert(buyBalance);
       const auto result = *buyBalance / buyPrice;
