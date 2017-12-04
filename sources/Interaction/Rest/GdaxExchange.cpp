@@ -355,7 +355,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_pullingTask->AccelerateNextPulling();
   }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {

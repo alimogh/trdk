@@ -309,7 +309,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
   virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {
@@ -570,6 +570,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
+#ifdef DEV_VER
+    GetTsTradingLog().Write(
+        "debug-order-dump\t%1%",
+        [&](TradingRecord &record) { record % ConvertToString(order, false); });
+#endif
+
     const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;

@@ -11,6 +11,9 @@
 #include "Prec.hpp"
 #include "BittrexTradingSystem.hpp"
 #include "BittrexRequest.hpp"
+#ifdef DEV_VER
+#include "Util.hpp"
+#endif
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -350,6 +353,12 @@ pt::ptime ParseTime(std::string &&source) {
 }
 
 void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
+#ifdef DEV_VER
+  GetTradingLog().Write("debug-order-dump\t%1%", [&](TradingRecord &record) {
+    record % ConvertToString(order, false);
+  });
+#endif
+
   const auto &remainingQty = order.get<Qty>("QuantityRemaining");
 
   OrderStatus status;

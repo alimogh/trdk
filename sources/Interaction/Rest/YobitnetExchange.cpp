@@ -346,7 +346,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     m_pullingTask->AccelerateNextPulling();
   }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
   virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {
@@ -842,6 +842,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         for (const auto &node : response) {
           const auto &order = node.second;
 
+#ifdef DEV_VER
+          GetTsTradingLog().Write("debug-order-dump\t%1%",
+                                  [&](TradingRecord &record) {
+                                    record % ConvertToString(order, false);
+                                  });
+#endif
+
           const auto &time =
               pt::from_time_t(order.get<time_t>("timestamp_created"));
 
@@ -851,11 +858,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           OrderStatus status;
           switch (order.get<int>("status")) {
             case 0:  // 0 - active
+            case 1:  // 1 - fulfilled and closed
               status = qty != remainingQty ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_SUBMITTED;
-              break;
-            case 1:  // 1 - fulfilled and closed
-              status = ORDER_STATUS_FILLED;
               break;
             case 2:  // 2 - canceled
             case 3:  // 3 - canceled after partially fulfilled
