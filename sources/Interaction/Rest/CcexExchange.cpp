@@ -570,6 +570,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
+#ifdef DEV_VER
+    GetTsTradingLog().Write(
+        "debug-order-dump\t%1%",
+        [&](TradingRecord &record) { record % ConvertToString(order, false); });
+#endif
+
     const auto &orderId = order.get<OrderId>("OrderUuid");
 
     OrderSide side;
