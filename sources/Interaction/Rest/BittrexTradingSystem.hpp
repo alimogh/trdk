@@ -61,12 +61,12 @@ class BittrexTradingSystem : public TradingSystem {
                             security.GetPricePrecisionPower());
   }
 
-  virtual bool CheckOrder(const trdk::Security &,
-                          const Lib::Currency &,
-                          const Qty &,
-                          const boost::optional<Price> &,
-                          const OrderSide &,
-                          bool logError) const override;
+  virtual boost::optional<OrderCheckError> CheckOrder(
+      const trdk::Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const OrderSide &) const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;

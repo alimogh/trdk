@@ -436,13 +436,13 @@ Volume TradingSystem::CalcCommission(const Volume &, const Security &) const {
   return 0;
 }
 
-bool TradingSystem::CheckOrder(const Security &,
-                               const Currency &,
-                               const Qty &,
-                               const boost::optional<Price> &,
-                               const OrderSide &,
-                               bool) const {
-  return true;
+boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
+    const Security &,
+    const Currency &,
+    const Qty &,
+    const boost::optional<Price> &,
+    const OrderSide &) const {
+  return boost::none;
 }
 
 std::vector<OrderId> TradingSystem::GetActiveOrderList() const {

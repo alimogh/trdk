@@ -109,6 +109,12 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     explicit ConnectionDoesntExistError(const char *what) noexcept;
   };
 
+  struct OrderCheckError {
+    boost::optional<trdk::Qty> qty;
+    boost::optional<trdk::Price> price;
+    boost::optional<trdk::Volume> volume;
+  };
+
  public:
   explicit TradingSystem(const trdk::TradingMode &,
                          trdk::Context &,
@@ -156,12 +162,12 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   std::vector<trdk::OrderId> GetActiveOrderList() const;
 
  public:
-  virtual bool CheckOrder(const trdk::Security &,
-                          const trdk::Lib::Currency &,
-                          const trdk::Qty &,
-                          const boost::optional<trdk::Price> &,
-                          const trdk::OrderSide &,
-                          bool logError) const;
+  virtual boost::optional<trdk::TradingSystem::OrderCheckError> CheckOrder(
+      const trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const boost::optional<trdk::Price> &,
+      const trdk::OrderSide &) const;
 
   //! Sends order synchronously.
   /** @return Order transaction pointer in any case.

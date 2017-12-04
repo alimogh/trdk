@@ -354,43 +354,24 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                             security.GetPricePrecisionPower());
   }
 
-  virtual bool CheckOrder(const trdk::Security &security,
-                          const Currency &currency,
-                          const Qty &qty,
-                          const boost::optional<Price> &price,
-                          const OrderSide &side,
-                          bool logError) const override {
+  virtual boost::optional<OrderCheckError> CheckOrder(
+      const trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderSide &side) const override {
     const auto &symbol = security.GetSymbol();
     if (symbol.GetQuoteSymbol() == "BTC") {
       if (price && qty * *price < 0.0001) {
-        if (logError) {
-          GetTsLog().Warn(
-              "Order volume restriction. Should be 0.0001 or more, but "
-              "%1$.8f * %2$.8f = %3$.8f set for \"%4%\" (to %5%).",
-              qty,           // 1
-              *price,        // 2
-              *price * qty,  // 3
-              security,      // 4
-              side);         // 5
-        }
-        return false;
+        return OrderCheckError{boost::none, boost::none, 0.0001};
       }
       if (symbol.GetSymbol() == "ETH_BTC") {
         if (qty < 0.005) {
-          if (logError) {
-            GetTsLog().Warn(
-                "Order quantity restriction. Should be 0.005 ETH or more, but "
-                "%1$.8f set for \"%2%\" (to %3%).",
-                qty,       // 1
-                security,  // 2
-                side);     // 3
-          }
-          return false;
+          return OrderCheckError{0.005};
         }
       }
     }
-    return TradingSystem::CheckOrder(security, currency, qty, price, side,
-                                     logError);
+    return TradingSystem::CheckOrder(security, currency, qty, price, side);
   }
 
  protected:
