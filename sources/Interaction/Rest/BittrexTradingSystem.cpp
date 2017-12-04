@@ -235,42 +235,24 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   m_isConnected = true;
 }
 
-bool BittrexTradingSystem::CheckOrder(const trdk::Security &security,
-                                      const Currency &currency,
-                                      const Qty &qty,
-                                      const boost::optional<Price> &price,
-                                      const OrderSide &side,
-                                      bool logError) const {
+boost::optional<BittrexTradingSystem::OrderCheckError>
+BittrexTradingSystem::CheckOrder(const trdk::Security &security,
+                                 const Currency &currency,
+                                 const Qty &qty,
+                                 const boost::optional<Price> &price,
+                                 const OrderSide &side) const {
   const auto &symbol = security.GetSymbol();
   if (symbol.GetQuoteSymbol() == "BTC") {
     if (price && qty * *price < 0.001) {
-      if (logError) {
-        GetLog().Warn(
-            "Order volume restriction. Should be 100,000 Satoshis or more, but "
-            "%1$.8f * %2$.8f = %3$.8f set for \"%4%\" (to %5%).",
-            qty,           // 1
-            *price,        // 2
-            *price * qty,  // 3
-            security,      // 4
-            side);         // 5
-      }
-      return false;
+      return OrderCheckError{boost::none, boost::none, 0.001};
     }
     if (symbol.GetSymbol() == "ETH_BTC") {
       if (qty < 0.015) {
-        if (logError) {
-          GetLog().Warn(
-              "Order quantity restriction. Should be 0.015 ETH or more, but "
-              "%1$.8f set for \"%2%\" (to %3%).",
-              qty,       // 1
-              security,  // 2
-              side);     // 3
-        }
-        return false;
+        return OrderCheckError{0.015};
       }
     }
   }
-  return Base::CheckOrder(security, currency, qty, price, side, logError);
+  return Base::CheckOrder(security, currency, qty, price, side);
 }
 
 std::unique_ptr<OrderTransactionContext>

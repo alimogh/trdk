@@ -49,12 +49,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   aa::Strategy &m_self;
   const Double m_operationStopSpreadRatio;
   const boost::optional<Double> m_lowestSpreadRatio;
-  const Double m_trailingActivationRatio;
 
   std::unique_ptr<PositionController> m_controller;
 
   sig::signal<void(const Advice &)> m_adviceSignal;
-  boost::optional<Double> m_bestSpreadRatio;
 
   Double m_minPriceDifferenceRatioToAdvice;
   boost::optional<TradingSettings> m_tradingSettings;
@@ -63,15 +61,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   boost::unordered_set<const Security *> m_errors;
   const Security *m_lastError;
-  boost::optional<OrderSide> m_lastErrorSide;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
         m_operationStopSpreadRatio(
             conf.ReadTypedKey<Double>("operation_stop_spread_percentage") /
-            100),
-        m_trailingActivationRatio(
-            conf.ReadTypedKey<Double>("trailing_activation_percentage", 0) /
             100),
         m_controller(
             !conf.ReadBoolKey("restore_balances", false)
@@ -94,10 +88,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          m_operationStopSpreadRatio * 100);
     if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
       m_self.GetLog().Info("Enabled balances restoration.");
-    }
-    if (m_trailingActivationRatio) {
-      m_self.GetLog().Info("Trailing activation: %1%%%.",
-                           m_trailingActivationRatio * 100);
     }
   }
 
@@ -148,8 +138,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       if (spreadRatio <= m_operationStopSpreadRatio) {
         StopTrading(bestSell, bestBuy, spreadRatio);
       } else if (m_tradingSettings &&
-                 (spreadRatio >= m_tradingSettings->minPriceDifferenceRatio ||
-                  m_bestSpreadRatio)) {
+                 spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
         Trade(bids, asks, spreadRatio, delayMeasurement);
       }
     } else {
@@ -243,10 +232,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     auto &sellTarget = *bids.front().second->security;
     auto &buyTarget = *asks.front().second->security;
 
-    if (!CheckActivation(sellTarget, buyTarget, bestSpreadRatio)) {
-      return;
-    }
-
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
@@ -269,62 +254,57 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     }
 
-    if ((m_lastError == &sellTarget &&
-         (!m_lastErrorSide || *m_lastErrorSide == ORDER_SIDE_SELL)) ||
-        (m_lastError == &buyTarget &&
-         (!m_lastErrorSide || *m_lastErrorSide == ORDER_SIDE_BUY))) {
+    if (m_lastError == &sellTarget || m_lastError == &buyTarget) {
       ReportIgnored("last error", sellTarget, buyTarget, spreadRatio,
                     bestSpreadRatio);
       return;
     }
 
-    auto qty =
-        std::min(m_tradingSettings->maxQty,
-                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty()));
+    const auto qtyPrecisionPower = 1000000;
 
-    const auto &balance =
-        GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
-    const bool isQtyReducedByBalance = qty > balance.first;
-    if (isQtyReducedByBalance) {
-      Assert(balance.second);
-      m_self.GetTradingLog().Write(
-          "{'signal': {'qtyReduced': {'prev': %1$.8f, 'new': %2$.8f, "
-          "'security': '%3%'}}",
-          [&](TradingRecord &record) {
-            record % qty            // 1
-                % balance.first     // 2
-                % *balance.second;  // 3
-          });
-      if (!balance.first) {
-        m_lastError = balance.second;
-        m_lastErrorSide =
-            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
+    auto qty = RoundDownByPrecision(
+        std::min(m_tradingSettings->maxQty,
+                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty())),
+        qtyPrecisionPower);
+
+    {
+      auto balance =
+          GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
+      if (qty > balance.first) {
+        Assert(balance.second);
+        balance.first = RoundDownByPrecision(balance.first, qtyPrecisionPower);
+        AssertLt(qty, balance.first);
+        m_self.GetTradingLog().Write(
+            "{'pre-trade': {'balance reduces qty': {'prev': %1$.8f, 'new': "
+            "%2$.8f, 'security': '%3%'}}",
+            [&](TradingRecord &record) {
+              record % qty            // 1
+                  % balance.first     // 2
+                  % *balance.second;  // 3
+            });
+        if (balance.first == 0) {
+          return;
+        }
+        qty = balance.first;
+      }
+    }
+
+    {
+      const auto &error =
+          CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL);
+      if (error) {
+        ReportOrderCheck(sellTarget, qty, sellPrice, ORDER_SIDE_SELL, *error,
+                         sellTarget, buyTarget, spreadRatio, bestSpreadRatio);
         return;
       }
-      qty = balance.first;
     }
-
-    if (!CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL)) {
-      if (isQtyReducedByBalance) {
-        Assert(balance.second);
-        m_lastError = balance.second;
-        m_lastErrorSide =
-            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
+    {
+      const auto &error = CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY);
+      if (error) {
+        ReportOrderCheck(buyTarget, qty, buyPrice, ORDER_SIDE_BUY, *error,
+                         sellTarget, buyTarget, spreadRatio, bestSpreadRatio);
+        return;
       }
-      ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
-      return;
-    }
-    if (!CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY)) {
-      if (isQtyReducedByBalance) {
-        Assert(balance.second);
-        m_lastError = balance.second;
-        m_lastErrorSide =
-            balance.second == &sellTarget ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
-      }
-      ReportIgnored("order check", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
-      return;
     }
 
     Trade(sellTarget, buyTarget, qty, sellPrice, buyPrice, spreadRatio,
@@ -358,36 +338,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
+    ReportSignal("trade", "trade", sellTarget, buyTarget, spreadRatio,
+                 bestSpreadRatio);
+
     const auto operation = boost::make_shared<Operation>(
         sellTarget, buyTarget, maxQty, sellPrice, buyPrice);
-
-    const auto &sellTradingSystemName =
-        operation->GetTradingSystem(m_self, sellTarget).GetInstanceName();
-    const auto &buyTradingSystemName =
-        operation->GetTradingSystem(m_self, buyTarget).GetInstanceName();
-
-    m_self.GetTradingLog().Write(
-        "{'signal': {'new': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
-        "'ask': %3$.8f, 'price': %8$.8f}, 'buy': {'exchange': '%4%', 'bid': "
-        "%5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f, 'bestSpread': %10$.3f, "
-        "'bestSpreadMax': %11$.3f, 'price': %9$.8f}}",
-        [&](TradingRecord &record) {
-          record % boost::cref(sellTradingSystemName)  // 1
-              % sellTarget.GetBidPriceValue()          // 2
-              % sellTarget.GetAskPriceValue()          // 3
-              % boost::cref(buyTradingSystemName)      // 4
-              % buyTarget.GetBidPriceValue()           // 5
-              % buyTarget.GetAskPriceValue()           // 6
-              % (spreadRatio * 100)                    // 7
-              % sellPrice                              // 8
-              % buyPrice                               // 9
-              % (bestSpreadRatio * 100);               // 10
-          if (m_bestSpreadRatio) {
-            record % (*m_bestSpreadRatio * 100);  // 11
-          } else {
-            record % "null";  // 11
-          }
-        });
 
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
@@ -395,8 +350,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                             delayMeasurement)) {
         return;
       }
-    } else if (OpenPositionAsync(sellTarget, buyTarget, operation,
-                                 delayMeasurement)) {
+    } else if (!OpenPositionAsync(sellTarget, buyTarget, operation,
+                                  delayMeasurement)) {
       return;
     }
 
@@ -407,14 +362,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       m_errors.erase(sellTargetBlackListIt);
     }
     m_lastError = nullptr;
-    m_lastErrorSide = boost::none;
   }
 
   void StopTrading(const Security &bestBid,
                    const Security &bestAsk,
                    const Double &spreadRatio) {
     m_lastError = nullptr;
-    m_lastErrorSide = boost::none;
 
     bool isReported = false;
 
@@ -430,7 +383,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_self.GetTradingLog().Write(
             "{'signal': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
             "'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': "
-            "%6$.8f}}, 'spread': %7$.3f, 'bestSpreadMax': %8$.3f}}",
+            "%6$.8f}}, 'spread': %7$.3f}}",
             [&](TradingRecord &record) {
               record % boost::cref(bestBid.GetSource().GetInstanceName())  // 1
                   % bestBid.GetBidPriceValue()                             // 2
@@ -439,81 +392,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                   % bestAsk.GetBidPriceValue()                             // 5
                   % bestAsk.GetAskPriceValue()                             // 6
                   % (spreadRatio * 100);                                   // 7
-              if (m_bestSpreadRatio) {
-                record % (*m_bestSpreadRatio * 100);  // 8
-              } else {
-                record % "null";  // 8
-              }
             });
         isReported = true;
       }
 
       m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
-
-    m_bestSpreadRatio = boost::none;
-  }
-
-  bool CheckActivation(const Security &sellTarget,
-                       const Security &buyTarget,
-                       const Double &bestSpreadRatio) {
-    if (!m_trailingActivationRatio) {
-      return true;
-    }
-
-    bool isActivated = false;
-    const char *signalEvent;
-    const auto prevBestSreadRatio = m_bestSpreadRatio;
-    boost::optional<Double> diff;
-
-    if (!m_bestSpreadRatio) {
-      m_bestSpreadRatio = bestSpreadRatio;
-      signalEvent = "accumulating";
-    } else {
-      diff = bestSpreadRatio - *m_bestSpreadRatio;
-      if (*diff == 0) {
-        return false;
-      } else if (*diff > 0) {
-        m_bestSpreadRatio = bestSpreadRatio;
-        signalEvent = "accumulating";
-      } else {
-        isActivated = -*diff >= m_trailingActivationRatio;
-        signalEvent = isActivated ? "activating" : "trailing";
-      }
-    }
-
-    m_self.GetTradingLog().Write(
-        "{'signal': {'%10%': {'bestSpread': {'prev': %7$.3f, 'new' : "
-        "%8$.3f, 'diff': %9$.3f}, 'sell': {'exchange': '%1%', 'bid': {'price': "
-        "%2$.8f, 'qty': %11$.8f}, 'ask': {'price': %3$.8f, 'qty': %12$.8f}}, "
-        "'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, 'qty': %13$.8f}, "
-        "'ask': {'price': %6$.8f, 'qty': %14$.8f}}}}}",
-        [&](TradingRecord &record) {
-          record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
-              % sellTarget.GetBidPriceValue()                             // 2
-              % sellTarget.GetAskPriceValue()                             // 3
-              % boost::cref(buyTarget.GetSource().GetInstanceName())      // 4
-              % buyTarget.GetBidPriceValue()                              // 5
-              % buyTarget.GetAskPriceValue();                             // 6
-          if (prevBestSreadRatio) {
-            record % (*prevBestSreadRatio * 100);  // 7
-          } else {
-            record % "null";  // 7
-          }
-          record % (bestSpreadRatio * 100);  // 8
-          if (diff) {
-            record % (*diff * 100);  // 9
-          } else {
-            record % "null";  // 9
-          }
-          record % signalEvent               // 10
-              % sellTarget.GetBidQtyValue()  // 11
-              % sellTarget.GetAskQtyValue()  // 12
-              % buyTarget.GetBidQtyValue()   // 13
-              % buyTarget.GetAskQtyValue();  // 14
-        });
-
-    return isActivated;
   }
 
   std::pair<Qty, const Security *> GetOrderQtyAllowedByBalance(
@@ -554,25 +438,29 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  bool CheckOrder(const Security &security,
-                  const Qty &qty,
-                  const Price &price,
-                  const OrderSide &side) {
+  boost::optional<TradingSystem::OrderCheckError> CheckOrder(
+      const Security &security,
+      const Qty &qty,
+      const Price &price,
+      const OrderSide &side) {
     return m_self.GetTradingSystem(security.GetSource().GetIndex())
         .CheckOrder(security, security.GetSymbol().GetCurrency(), qty, price,
-                    side, true);
+                    side);
   }
 
-  void ReportIgnored(const char *reason,
-                     const Security &sellTarget,
-                     const Security &buyTarget,
-                     const Double &spreadRatio,
-                     const Double &bestSpreadRatio) const {
+  void ReportSignal(const char *type,
+                    const char *reason,
+                    const Security &sellTarget,
+                    const Security &buyTarget,
+                    const Double &spreadRatio,
+                    const Double &bestSpreadRatio,
+                    const std::string &additional = std::string()) const {
     m_self.GetTradingLog().Write(
-        "{'signal': {'ignored': {'reason': '%10%', 'sell': {'exchange': '%1%', "
-        "'bid': %2$.8f, 'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': "
-        "%5$.8f, 'ask': %6$.8f}}, 'spread': %7$.3f, 'bestSpread': %8$.3f, "
-        "'bestSpreadMax': %9$.3f}}",
+        "{'signal': {'%14%': {'reason': '%9%', 'sell': {'exchange': '%1%', "
+        "'bid': {'price': %2$.8f, 'qty': %10$.8f}, 'ask': {'price': %3$.8f, "
+        "'qty': %11$.8f}}, 'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, "
+        "'qty': %12$.8f}, 'ask': {'price': %6$.8f, 'qty': %13$.8f}}}, "
+        "'spread': %7$.3f, 'bestSpread': %8$.3f}%15%}",
         [&](TradingRecord &record) {
           record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
               % sellTarget.GetBidPriceValue()                             // 2
@@ -581,14 +469,62 @@ class aa::Strategy::Implementation : private boost::noncopyable {
               % buyTarget.GetBidPriceValue()                              // 5
               % buyTarget.GetAskPriceValue()                              // 6
               % (spreadRatio * 100)                                       // 7
-              % (bestSpreadRatio * 100);                                  // 8
-          if (m_bestSpreadRatio) {
-            record % (*m_bestSpreadRatio * 100);  // 9
-          } else {
-            record % "null";  // 9
-          }
-          record % reason;  // 10
+              % (bestSpreadRatio * 100)                                   // 8
+              % reason                                                    // 9
+              % sellTarget.GetBidQtyValue()                               // 10
+              % sellTarget.GetAskQtyValue()                               // 11
+              % buyTarget.GetBidQtyValue()                                // 12
+              % buyTarget.GetAskQtyValue()                                // 13
+              % type                                                      // 14
+              % additional;                                               // 15
         });
+  }
+
+  void ReportIgnored(const char *reason,
+                     const Security &sellTarget,
+                     const Security &buyTarget,
+                     const Double &spreadRatio,
+                     const Double &bestSpreadRatio,
+                     const std::string &additional = std::string()) const {
+    ReportSignal("ignored", reason, sellTarget, buyTarget, spreadRatio,
+                 bestSpreadRatio, additional);
+  }
+
+  void ReportOrderCheck(const Security &security,
+                        const Qty &qty,
+                        const Price &price,
+                        const OrderSide &side,
+                        const TradingSystem::OrderCheckError &error,
+                        const Security &sellTarget,
+                        const Security &buyTarget,
+                        const Double &spreadRatio,
+                        const Double &bestSpreadRatio) const {
+    boost::format log(
+        ", 'restriction': {'order': {'security': '%1%', 'side': '%2%', 'qty': "
+        "%3$.8f, 'price': %4$.8f, 'vol': %5$.8f}, 'error': {'qty': %6$.8f, "
+        "'price': %7$.8f, 'vol': %8$.8f}}");
+    log % security        // 1
+        % side            // 2
+        % qty             // 3
+        % price           // 4
+        % (qty * price);  // 5
+    if (error.qty) {
+      log % *error.qty;  // 6
+    } else {
+      log % "null";  // 6
+    }
+    if (error.price) {
+      log % *error.price;  // 7
+    } else {
+      log % "null";  // 7
+    }
+    if (error.volume) {
+      log % *error.volume;  // 8
+    } else {
+      log % "null";  // 8
+    }
+    ReportSignal("ignored", "order check", sellTarget, buyTarget, spreadRatio,
+                 bestSpreadRatio, log.str());
   }
 
   bool OpenPositionSync(Security &sellTarget,
@@ -623,7 +559,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
 
       m_lastError = !firstLeg ? legTargets.first : legTargets.second;
-      m_lastErrorSide = boost::none;
       m_errors.emplace(m_lastError);
       m_self.GetLog().Warn(
           "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
@@ -666,7 +601,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     m_self.GetLog().Error("Failed to start trading (async).");
 
     m_lastError = nullptr;
-    m_lastErrorSide = boost::none;
     if (!firstLeg.get()) {
       Verify(m_errors.emplace(&firstLegTarget).second);
     }
@@ -816,8 +750,6 @@ void aa::Strategy::DeactivateAutoTrading() {
   m_pimpl->m_tradingSettings = boost::none;
   m_pimpl->m_errors.clear();
   m_pimpl->m_lastError = nullptr;
-  m_pimpl->m_lastErrorSide = boost::none;
-  m_pimpl->m_bestSpreadRatio = boost::none;
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,
