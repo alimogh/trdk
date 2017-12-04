@@ -419,7 +419,11 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
 }
 
 const Balances &TradingSystem::GetBalances() const {
-  static const class DummyBalances : public Balances {
+  return const_cast<TradingSystem *>(this)->GetBalancesStorage();
+}
+
+Balances &TradingSystem::GetBalancesStorage() {
+  static class DummyBalances : public Balances {
    public:
     virtual ~DummyBalances() override = default;
 
@@ -428,6 +432,14 @@ const Balances &TradingSystem::GetBalances() const {
         const std::string &) const override {
       return boost::none;
     }
+    virtual void ReduceAvailableToTradeByOrder(const Security &,
+                                               const Qty &,
+                                               const Price &,
+                                               const OrderSide &,
+                                               const TradingSystem &) override {
+
+    }
+
   } result;
   return result;
 }
@@ -486,8 +498,9 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
           : m_pimpl->CheckNewSellOrder(riskControlScope, security, currency,
                                        qty, actualPrice, delaysMeasurement);
 
+  boost::shared_ptr<OrderTransactionContext> result;
   try {
-    return SendOrderTransaction(
+    result = SendOrderTransaction(
         security, currency, qty, price, actualPrice, params, side, tif,
         [this, &riskControlScope, riskControlOperationId, &security, currency,
          actualPrice, delaysMeasurement, callback, side](
@@ -526,6 +539,15 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
                               actualPrice, qty, nullptr, delaysMeasurement);
     throw;
   }
+
+  Assert(result);
+
+  if (price) {
+    GetBalancesStorage().ReduceAvailableToTradeByOrder(security, qty, *price,
+                                                       side, *this);
+  }
+
+  return result;
 }
 
 boost::shared_ptr<OrderTransactionContext> TradingSystem::SendOrderTransaction(

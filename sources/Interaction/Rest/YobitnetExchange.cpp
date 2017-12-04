@@ -346,7 +346,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     m_pullingTask->AccelerateNextPulling();
   }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
   virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {

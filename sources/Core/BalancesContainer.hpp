@@ -25,6 +25,13 @@ class TRDK_CORE_API BalancesContainer : public trdk::Balances {
  public:
   void SetAvailableToTrade(const std::string &&symbol, const trdk::Volume &&);
 
+  virtual void ReduceAvailableToTradeByOrder(
+      const trdk::Security &,
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderSide &,
+      const trdk::TradingSystem &) override;
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

@@ -309,7 +309,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
   virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {

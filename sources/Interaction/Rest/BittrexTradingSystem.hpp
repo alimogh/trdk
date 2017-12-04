@@ -53,7 +53,7 @@ class BittrexTradingSystem : public TradingSystem {
  public:
   virtual bool IsConnected() const override { return m_isConnected; }
 
-  virtual const Balances &GetBalances() const override { return m_balances; }
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
   virtual Volume CalcCommission(const Volume &vol,
                                 const trdk::Security &security) const override {

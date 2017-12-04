@@ -154,7 +154,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
-  virtual const trdk::Balances &GetBalances() const;
+  const trdk::Balances &GetBalances() const;
 
   virtual trdk::Volume CalcCommission(const trdk::Volume &,
                                       const trdk::Security &) const;
@@ -195,6 +195,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
+
+  virtual trdk::Balances &GetBalancesStorage();
 
  protected:
   virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
