@@ -395,10 +395,8 @@ void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
   const auto orderId = order.get<OrderId>("OrderUuid");
   switch (status) {
     case ORDER_STATUS_FILLED:
-    case ORDER_STATUS_FILLED_PARTIALLY:
       OnOrderStatusUpdate(time, orderId, status, remainingQty,
-                          order.get<Volume>("CommissionPaid"),
-                          TradeInfo{order.get<Price>("Limit")});
+                          order.get<Volume>("CommissionPaid"));
       break;
     default:
       OnOrderStatusUpdate(time, orderId, status, remainingQty);

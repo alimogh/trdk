@@ -849,41 +849,38 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                   });
 #endif
 
-          const auto &time =
-              pt::from_time_t(order.get<time_t>("timestamp_created"));
-
-          const Qty qty = order.get<double>("start_amount");
-          const Qty remainingQty = order.get<double>("amount");
+          const auto &remainingQty = order.get<Qty>("amount");
 
           OrderStatus status;
           switch (order.get<int>("status")) {
-            case 0:  // 0 - active
+            case 0: {  // 0 - active
+              const auto &qty = order.get<Qty>("start_amount");
+              AssertGe(qty, remainingQty);
+              status = qty == remainingQty ? ORDER_STATUS_SUBMITTED
+                                           : ORDER_STATUS_FILLED_PARTIALLY;
+              break;
+            }
             case 1:  // 1 - fulfilled and closed
-              status = qty != remainingQty ? ORDER_STATUS_FILLED_PARTIALLY
-                                           : ORDER_STATUS_SUBMITTED;
+            case 3:  // 3 - canceled after partially fulfilled
+              status = ORDER_STATUS_FILLED;
+              AssertEq(0, remainingQty);
               break;
             case 2:  // 2 - canceled
-            case 3:  // 3 - canceled after partially fulfilled
-              status = qty != remainingQty ? ORDER_STATUS_FILLED
-                                           : ORDER_STATUS_CANCELLED;
+              status = ORDER_STATUS_CANCELLED;
+              AssertEq(0, remainingQty);
+              break;
+            default:
+              GetTsLog().Error(
+                  "Unknown order status for order %1% (message: \"%1%\").",
+                  orderId,                         // 1
+                  ConvertToString(order, false));  // 2
+              continue;
               break;
           }
 
-          OrderSide side;
-          const auto &type = order.get<std::string>("type");
-          if (type == "sell") {
-            side = ORDER_SIDE_SELL;
-          } else if (type == "buy") {
-            side = ORDER_SIDE_BUY;
-          } else {
-            GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                             orderId);
-            continue;
-          }
-
-          OnOrder(orderId, boost::to_upper_copy(order.get<std::string>("pair")),
-                  status, qty, remainingQty, Price(order.get<double>("rate")),
-                  side, TIME_IN_FORCE_GTC, time, time);
+          OnOrderStatusUpdate(
+              pt::from_time_t(order.get<time_t>("timestamp_created")), orderId,
+              status, remainingQty);
         }
       } catch (const std::exception &ex) {
         boost::format error("Failed to request state for order %1%: \"%2%\"");
