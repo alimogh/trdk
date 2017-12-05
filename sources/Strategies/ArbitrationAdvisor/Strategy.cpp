@@ -176,8 +176,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   }
 
   bool CheckActualPositions(const Security &sellTarget,
-                            const Security &buyTarget,
-                            const Double & /*spreadRatio*/) {
+                            const Security &buyTarget) {
     size_t numberOfPositionsWithTheSameTarget = 0;
     for (auto &position : m_self.GetPositions()) {
       if (!IsBusinessPosition(position) || position.IsCompleted()) {
@@ -232,6 +231,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     auto &sellTarget = *bids.front().second->security;
     auto &buyTarget = *asks.front().second->security;
 
+    if (CheckActualPositions(sellTarget, buyTarget)) {
+      return;
+    }
+
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
@@ -283,6 +286,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                   % *balance.second;  // 3
             });
         if (balance.first == 0) {
+          ReportIgnored("empty balance", sellTarget, buyTarget, spreadRatio,
+                        bestSpreadRatio);
           return;
         }
         qty = balance.first;
@@ -307,21 +312,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     }
 
-    Trade(sellTarget, buyTarget, qty, sellPrice, buyPrice, spreadRatio,
-          bestSpreadRatio, delayMeasurement);
-  }
-
-  void Trade(Security &sellTarget,
-             Security &buyTarget,
-             const Qty &maxQty,
-             const Price &sellPrice,
-             const Price &buyPrice,
-             const Double &spreadRatio,
-             const Double &bestSpreadRatio,
-             const Milestones &delayMeasurement) {
-    if (CheckActualPositions(sellTarget, buyTarget, spreadRatio)) {
-      return;
-    }
     const auto sellTargetBlackListIt = m_errors.find(&sellTarget);
     const bool isSellTargetInBlackList =
         sellTargetBlackListIt != m_errors.cend();
@@ -338,11 +328,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    ReportSignal("trade", "trade", sellTarget, buyTarget, spreadRatio,
+    ReportSignal("trade", "start", sellTarget, buyTarget, spreadRatio,
                  bestSpreadRatio);
 
     const auto operation = boost::make_shared<Operation>(
-        sellTarget, buyTarget, maxQty, sellPrice, buyPrice);
+        sellTarget, buyTarget, qty, sellPrice, buyPrice);
 
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
