@@ -276,7 +276,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       if (qty > balance.first) {
         Assert(balance.second);
         balance.first = RoundDownByPrecision(balance.first, qtyPrecisionPower);
-        AssertLt(qty, balance.first);
+        AssertGt(qty, balance.first);
         m_self.GetTradingLog().Write(
             "{'pre-trade': {'balance reduces qty': {'prev': %1$.8f, 'new': "
             "%2$.8f, 'security': '%3%'}}",
@@ -446,27 +446,27 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                     const Double &bestSpreadRatio,
                     const std::string &additional = std::string()) const {
     m_self.GetTradingLog().Write(
-        "{'signal': {'%14%': {'reason': '%9%', 'sell': {'exchange': '%1%', "
+        "{'signal': {'%14%': {'reason': '%9%', 'sell': {'security': '%1%', "
         "'bid': {'price': %2$.8f, 'qty': %10$.8f}, 'ask': {'price': %3$.8f, "
-        "'qty': %11$.8f}}, 'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, "
+        "'qty': %11$.8f}}, 'buy': {'security': '%4%', 'bid': {'price': %5$.8f, "
         "'qty': %12$.8f}, 'ask': {'price': %6$.8f, 'qty': %13$.8f}}}, "
-        "'spread': %7$.3f, 'bestSpread': %8$.3f}%15%}",
+        "'spread': {'used': %7$.3f, 'signal': %8$.3f}%15%}}",
         [&](TradingRecord &record) {
-          record % boost::cref(sellTarget.GetSource().GetInstanceName())  // 1
-              % sellTarget.GetBidPriceValue()                             // 2
-              % sellTarget.GetAskPriceValue()                             // 3
-              % boost::cref(buyTarget.GetSource().GetInstanceName())      // 4
-              % buyTarget.GetBidPriceValue()                              // 5
-              % buyTarget.GetAskPriceValue()                              // 6
-              % (spreadRatio * 100)                                       // 7
-              % (bestSpreadRatio * 100)                                   // 8
-              % reason                                                    // 9
-              % sellTarget.GetBidQtyValue()                               // 10
-              % sellTarget.GetAskQtyValue()                               // 11
-              % buyTarget.GetBidQtyValue()                                // 12
-              % buyTarget.GetAskQtyValue()                                // 13
-              % type                                                      // 14
-              % additional;                                               // 15
+          record % sellTarget                  // 1
+              % sellTarget.GetBidPriceValue()  // 2
+              % sellTarget.GetAskPriceValue()  // 3
+              % buyTarget                      // 4
+              % buyTarget.GetBidPriceValue()   // 5
+              % buyTarget.GetAskPriceValue()   // 6
+              % (spreadRatio * 100)            // 7
+              % (bestSpreadRatio * 100)        // 8
+              % reason                         // 9
+              % sellTarget.GetBidQtyValue()    // 10
+              % sellTarget.GetAskQtyValue()    // 11
+              % buyTarget.GetBidQtyValue()     // 12
+              % buyTarget.GetAskQtyValue()     // 13
+              % type                           // 14
+              % additional;                    // 15
         });
   }
 
