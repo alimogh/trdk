@@ -182,41 +182,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       if (!IsBusinessPosition(position) || position.IsCompleted()) {
         continue;
       }
-
       const auto &operation = position.GetTypedOperation<aa::Operation>();
-      if (operation.IsSame(sellTarget, buyTarget)) {
+      if (operation.IsSame(sellTarget, buyTarget) && !operation.IsExpired()) {
         AssertGe(2, numberOfPositionsWithTheSameTarget);
         ++numberOfPositionsWithTheSameTarget;
-        continue;
       }
-
-      /*m_self.GetTradingLog().Write(
-          "{'signal': {'signalExpired': {'sell': {'exchange': '%1%', 'bid': "
-          "{'price': %2$.8f, 'qty': %9$.8f}, 'ask': {'price': %3$.8f, 'qty': "
-          "%10$.8f}}, 'buy': {'exchange': '%4%', 'bid': {'price': %5$.8f, "
-          "'qty': %11$.8f}, 'ask': {'price': %6$.8f, 'qty': %12$.8f}}}, "
-          "'spread': %7$.3f, 'bestSpreadMax': %8$.3f}}",
-          [&](TradingRecord &record) {
-            record % boost::cref(operation.GetTradingSystem(m_self, sellTarget)
-                                     .GetInstanceName())  // 1
-                % sellTarget.GetBidPriceValue()           // 2
-                % sellTarget.GetAskPriceValue()           // 3
-                % boost::cref(operation.GetTradingSystem(m_self, buyTarget)
-                                  .GetInstanceName())  // 4
-                % buyTarget.GetBidPriceValue()         // 5
-                % buyTarget.GetAskPriceValue()         // 6
-                % (spreadRatio * 100);                 // 7
-            if (m_bestSpreadRatio) {
-              record % (*m_bestSpreadRatio * 100);  // 8
-            } else {
-              record % "null";  // 8
-            }
-            record % sellTarget.GetBidQtyValue()  // 9
-                % sellTarget.GetAskQtyValue()     // 10
-                % buyTarget.GetBidQtyValue()      // 11
-                % buyTarget.GetAskQtyValue();     // 12
-          });
-      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);*/
     }
     AssertGe(2, numberOfPositionsWithTheSameTarget);
     return numberOfPositionsWithTheSameTarget > 0;
