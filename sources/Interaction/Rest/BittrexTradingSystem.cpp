@@ -286,7 +286,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   const auto &product = m_products.find(security.GetSymbol().GetSymbol());
   if (product == m_products.cend()) {
-    throw Exception("Symbol is not supported by exchange");
+    throw TradingSystem::Error("Symbol is not supported by exchange");
   }
 
   const auto &id = product->second.id;
@@ -352,7 +352,8 @@ pt::ptime ParseTime(std::string &&source) {
 }
 }
 
-void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
+void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
+                                       const ptr::ptree &order) {
 #ifdef DEV_VER
   GetTradingLog().Write("debug-order-dump\t%1%", [&](TradingRecord &record) {
     record % ConvertToString(order, false);
@@ -362,34 +363,43 @@ void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
   const auto &remainingQty = order.get<Qty>("QuantityRemaining");
 
   OrderStatus status;
-  if (order.get<bool>("CancelInitiated")) {
-    status = ORDER_STATUS_CANCELLED;
-  } else if (order.get<bool>("IsOpen")) {
-    const auto &qty = order.get<Qty>("Quantity");
-    AssertGe(qty, remainingQty);
-    status = remainingQty < qty ? ORDER_STATUS_FILLED_PARTIALLY
-                                : ORDER_STATUS_SUBMITTED;
-  } else {
-    status = ORDER_STATUS_FILLED;
-  }
-
   pt::ptime time;
-  {
-    auto closeTimeField = order.get_optional<std::string>("Opened");
-    if (closeTimeField && !closeTimeField->empty()) {
-      time = ParseTime(std::move(*closeTimeField));
-      if (time == pt::not_a_date_time) {
-        GetLog().Error("Failed to parse order closing time \"%1%\".",
-                       *closeTimeField);
-      }
+  try {
+    if (order.get<bool>("CancelInitiated")) {
+      status = ORDER_STATUS_CANCELLED;
+    } else if (order.get<bool>("IsOpen")) {
+      const auto &qty = order.get<Qty>("Quantity");
+      AssertGe(qty, remainingQty);
+      status = remainingQty < qty ? ORDER_STATUS_FILLED_PARTIALLY
+                                  : ORDER_STATUS_SUBMITTED;
     } else {
-      time = ParseTime(order.get<std::string>("Opened"));
-      if (time == pt::not_a_date_time) {
-        GetLog().Error("Failed to parse order opening time \"%1%\".",
-                       order.get<std::string>("Opened"));
-        return;
+      status = ORDER_STATUS_FILLED;
+    }
+
+    {
+      auto closeTimeField = order.get_optional<std::string>("Opened");
+      if (closeTimeField && !closeTimeField->empty()) {
+        time = ParseTime(std::move(*closeTimeField));
+        if (time == pt::not_a_date_time) {
+          GetLog().Error("Failed to parse order closing time \"%1%\".",
+                         *closeTimeField);
+        }
+      } else {
+        time = ParseTime(order.get<std::string>("Opened"));
+        if (time == pt::not_a_date_time) {
+          GetLog().Error("Failed to parse order opening time \"%1%\".",
+                         order.get<std::string>("Opened"));
+          return;
+        }
       }
     }
+  } catch (const OrderIsUnknown &) {
+    OnOrderCancel(GetContext().GetCurrentTime(), orderId);
+    return;
+  } catch (const std::exception &ex) {
+    boost::format error("Failed to update order list: \"%1%\"");
+    error % ex.what();
+    throw TradingSystem::CommunicationError(error.str().c_str());
   }
 
   OnOrderStatusUpdate(time, order.get<OrderId>("OrderUuid"), status,
@@ -399,15 +409,8 @@ void BittrexTradingSystem::UpdateOrder(const ptr::ptree &order) {
 void BittrexTradingSystem::UpdateOrders() {
   for (const OrderId &orderId : GetActiveOrderList()) {
     OrderStateRequest request(orderId, m_settings);
-    try {
-      UpdateOrder(boost::get<1>(request.Send(m_pullingSession, GetContext())));
-    } catch (const OrderIsUnknown &) {
-      OnOrderCancel(GetContext().GetCurrentTime(), orderId);
-    } catch (const std::exception &ex) {
-      boost::format error("Failed to update order list: \"%1%\"");
-      error % ex.what();
-      throw Exception(error.str().c_str());
-    }
+    UpdateOrder(orderId,
+                boost::get<1>(request.Send(m_pullingSession, GetContext())));
   }
 }
 

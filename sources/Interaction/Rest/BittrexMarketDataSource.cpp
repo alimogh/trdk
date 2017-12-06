@@ -130,7 +130,7 @@ void BittrexMarketDataSource::RequestActualPrices() {
       boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
       error % security  // 1
           % ex.what();  // 2
-      throw MarketDataSource::Error(error.str().c_str());
+      throw CommunicationError(error.str().c_str());
     }
     security.SetOnline(pt::not_a_date_time, true);
   }

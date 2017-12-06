@@ -276,7 +276,6 @@
     <ClCompile Include="EventsLog.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Consumer.cpp" />
-    <ClCompile Include="Interactor.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MarketDataSourceDummy.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>

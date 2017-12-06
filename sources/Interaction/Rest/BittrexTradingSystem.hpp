@@ -87,7 +87,7 @@ class BittrexTradingSystem : public TradingSystem {
  private:
   void RequestBalances();
   void UpdateOrders();
-  void UpdateOrder(const boost::property_tree::ptree &);
+  void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;

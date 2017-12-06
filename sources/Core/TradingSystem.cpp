@@ -307,10 +307,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
     switch (status) {
       case ORDER_STATUS_SENT:
       case ORDER_STATUS_SUBMITTED:
-        Assert(ORDER_STATUS_FILLED, status);
         switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
+            AssertEq(cache.status, status);
             status = cache.status;
             break;
         }
