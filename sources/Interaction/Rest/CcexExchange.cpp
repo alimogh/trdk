@@ -136,7 +136,7 @@ class Request : public Rest::Request {
           error << "unknown";
         }
         error << ")";
-        throw Exception(error.str().c_str());
+        throw Interactor::CommunicationError(error.str().c_str());
       }
     }
 
@@ -152,7 +152,7 @@ class Request : public Rest::Request {
       boost::format error(
           "The server did not return response to the request \"%1%\"");
       error % GetName();
-      throw Exception(error.str().c_str());
+      throw Interactor::CommunicationError(error.str().c_str());
     }
     return *result;
   }
@@ -513,18 +513,27 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   void RequestBalances() {
     PrivateRequest request("getbalances", m_settings, m_endpoint.floodControl,
                            false);
+    ptr::ptree response;
     try {
-      const auto response =
-          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-      for (const auto &node : response) {
-        const auto &data = node.second;
-        m_balances.SetAvailableToTrade(data.get<std::string>("Currency"),
-                                       data.get<Volume>("Available"));
-      }
+      response = boost::get<1>(request.Send(m_marketDataSession, GetContext()));
     } catch (const std::exception &ex) {
-      boost::format error("Failed to read balance list: \"%1%\"");
+      boost::format error("Failed to request balance list: \"%1%\"");
       error % ex.what();
-      throw Exception(error.str().c_str());
+      throw CommunicationError(error.str().c_str());
+    }
+    for (const auto &node : response) {
+      std::string symbol;
+      Volume vol;
+      try {
+        const auto &data = node.second;
+        symbol = data.get<std::string>("Currency");
+        vol = data.get<Volume>("Available");
+      } catch (const std::exception &ex) {
+        boost::format error("Failed to read balance list: \"%1%\"");
+        error % ex.what();
+        throw CommunicationError(error.str().c_str());
+      }
+      m_balances.SetAvailableToTrade(std::move(symbol), std::move(vol));
     }
   }
 
@@ -576,56 +585,65 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         [&](TradingRecord &record) { record % ConvertToString(order, false); });
 #endif
 
-    const auto &orderId = order.get<OrderId>("OrderUuid");
+    Order result;
+    try {
+      const auto &orderId = order.get<OrderId>("OrderUuid");
+      const auto &type =
+          order.get<std::string>(isActialOrder ? "Type" : "OrderType");
 
-    OrderSide side;
-    boost::optional<Price> price;
-    const auto &type =
-        order.get<std::string>(isActialOrder ? "Type" : "OrderType");
-    if (type == "LIMIT_SELL") {
-      side = ORDER_SIDE_SELL;
-      price = order.get<double>("Limit");
-    } else if (type == "LIMIT_BUY") {
-      side = ORDER_SIDE_BUY;
-      price = order.get<double>("Limit");
-    } else {
-      GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                       orderId);
-      throw TradingSystem::Error("Failed to request order status");
+      OrderSide side;
+      boost::optional<Price> price;
+      if (type == "LIMIT_SELL") {
+        side = ORDER_SIDE_SELL;
+        price = order.get<double>("Limit");
+      } else if (type == "LIMIT_BUY") {
+        side = ORDER_SIDE_BUY;
+        price = order.get<double>("Limit");
+      } else {
+        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
+                         orderId);
+        throw TradingSystem::Error("Failed to request order status");
+      }
+
+      const Qty qty = order.get<double>("Quantity");
+      const Qty remainingQty = order.get<double>("QuantityRemaining");
+
+      const auto &openTime =
+          pt::time_from_string(order.get<std::string>("Opened"));
+      const auto &closedField = order.get<std::string>("Closed");
+      pt::ptime updateTime;
+      OrderStatus status;
+      if (!boost::iequals(closedField, "null")) {
+        updateTime = pt::time_from_string(closedField);
+        status =
+            remainingQty == qty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
+      } else {
+        updateTime = openTime;
+        status = order.get<bool>("CancelInitiated")
+                     ? ORDER_STATUS_CANCELLED
+                     : remainingQty == qty ? ORDER_STATUS_SUBMITTED
+                                           : ORDER_STATUS_FILLED_PARTIALLY;
+      }
+
+      result = {std::move(orderId),
+                order.get<std::string>("Exchange"),
+                std::move(status),
+                std::move(qty),
+                std::move(remainingQty),
+                std::move(price),
+                std::move(side),
+                order.get<bool>("ImmediateOrCancel") ? TIME_IN_FORCE_IOC
+                                                     : TIME_IN_FORCE_GTC,
+                std::move(openTime),
+                std::move(updateTime)};
+    } catch (const std::exception &ex) {
+      boost::format error(
+          "Failed to read state for order: \"%1%\" (response: \"%2%\")");
+      error % ex.what()                     // 1
+          % ConvertToString(order, false);  // 2
+      throw CommunicationError(error.str().c_str());
     }
 
-    const Qty qty = order.get<double>("Quantity");
-    const Qty remainingQty = order.get<double>("QuantityRemaining");
-
-    const auto &openTime =
-        pt::time_from_string(order.get<std::string>("Opened"));
-    const auto &closedField = order.get<std::string>("Closed");
-    pt::ptime updateTime;
-    OrderStatus status;
-    if (!boost::iequals(closedField, "null")) {
-      updateTime = pt::time_from_string(closedField);
-      status =
-          remainingQty == qty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
-    } else {
-      updateTime = openTime;
-      status = order.get<bool>("CancelInitiated")
-                   ? ORDER_STATUS_CANCELLED
-                   : remainingQty == qty ? ORDER_STATUS_SUBMITTED
-                                         : ORDER_STATUS_FILLED_PARTIALLY;
-    }
-
-    const Order result = {std::move(orderId),
-                          order.get<std::string>("Exchange"),
-                          std::move(status),
-                          std::move(qty),
-                          std::move(remainingQty),
-                          std::move(price),
-                          std::move(side),
-                          order.get<bool>("ImmediateOrCancel")
-                              ? TIME_IN_FORCE_IOC
-                              : TIME_IN_FORCE_GTC,
-                          std::move(openTime),
-                          std::move(updateTime)};
     UpdateOrder(result, result.status);
     return result;
   }
@@ -649,8 +667,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           m_orders.erase(notifiedOrder.id);
         }
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-        throw Exception("Failed to request order list");
+        boost::format error("Failed to request order list: \"%1%\"");
+        error % ex.what();
+        throw CommunicationError(error.str().c_str());
       }
     }
     for (const auto &canceledOrder : m_orders) {
@@ -703,7 +722,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
         error % security  // 1
             % ex.what();  // 2
-        throw MarketDataSource::Error(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
       security.SetOnline(pt::not_a_date_time, true);
     }
@@ -718,9 +737,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       try {
         response =
             boost::get<1>(request.Send(m_marketDataSession, GetContext()));
-        for (const auto &order : response) {
-          UpdateOrder(order.second, true);
-        }
       } catch (const OrderIsUnknown &) {
         OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                             ORDER_STATUS_FILLED, 0, {});
@@ -732,7 +748,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             % ex.what()                          // 2
             % request.GetRequest().getURI()      // 3
             % ConvertToString(response, false);  // 4
-        throw Exception(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
+      }
+
+      for (const auto &order : response) {
+        UpdateOrder(order.second, true);
       }
     }
   }

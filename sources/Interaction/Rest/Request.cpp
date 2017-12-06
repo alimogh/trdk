@@ -127,7 +127,7 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
           % m_request->getURI()  // 2
           % ex.what();           // 3
 #endif
-      throw Exception(error.str().c_str());
+      throw Interactor::CommunicationError(error.str().c_str());
     }
 
     return {updateTime, result, delayMeasurement};
@@ -161,5 +161,5 @@ void Request::CheckErrorResponce(const net::HTTPResponse &response,
       % response.getStatus()                                   // 3
       % m_name                                                 // 4
       % m_request->getURI();                                   // 5
-  throw Exception(error.str().c_str());
+  throw Interactor::CommunicationError(error.str().c_str());
 }

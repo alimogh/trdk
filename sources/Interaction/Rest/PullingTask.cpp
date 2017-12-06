@@ -128,7 +128,7 @@ void PullingTask::Run() {
           if (++task.numberOfErrors <= 2) {
             try {
               throw;
-            } catch (const Exception &ex) {
+            } catch (const Interactor::CommunicationError &ex) {
               m_log.Warn("%1% task \"%2%\" error: \"%3%\".",
                          task.numberOfErrors == 1 ? "Pulling"
                                                   : "Repeated pulling",  // 1
@@ -143,6 +143,9 @@ void PullingTask::Run() {
             }
           }
           continue;
+        } catch (...) {
+          AssertFailNoException();
+          throw;
         }
 
         if (task.numberOfErrors > 1) {

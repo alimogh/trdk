@@ -46,7 +46,7 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
       error << ")";
       message && (*message == "ORDER_NOT_OPEN")
           ? throw TradingSystem::OrderIsUnknown(error.str().c_str())
-          : throw Exception(error.str().c_str());
+          : throw TradingSystem::CommunicationError(error.str().c_str());
     }
   }
 
@@ -55,7 +55,7 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
     boost::format error(
         "The server did not return response to the request \"%1%\"");
     error % GetName();
-    throw Exception(error.str().c_str());
+    throw TradingSystem::CommunicationError(error.str().c_str());
   }
 
   return {boost::get<0>(result), *resultNode, boost::get<2>(result)};

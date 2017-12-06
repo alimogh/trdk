@@ -53,9 +53,6 @@
     <ClCompile Include="Types.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Interactor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EventsLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

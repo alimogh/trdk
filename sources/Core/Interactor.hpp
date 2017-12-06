@@ -12,20 +12,24 @@
 
 namespace trdk {
 
-class TRDK_CORE_API Interactor : private boost::noncopyable {
+class Interactor : private boost::noncopyable {
  public:
-  class TRDK_CORE_API Error : public trdk::Lib::Exception {
+  class Error : public trdk::Lib::Exception {
    public:
-    explicit Error(const char *what) noexcept;
+    explicit Error(const char *what) noexcept : Exception(what) {}
   };
 
-  class TRDK_CORE_API ConnectError : public Error {
+  class ConnectError : public Error {
    public:
-    ConnectError(const char *what) noexcept;
+    ConnectError(const char *what) noexcept : Error(what) {}
+  };
+
+  class CommunicationError : public Error {
+   public:
+    CommunicationError(const char *what) noexcept : Error(what) {}
   };
 
  public:
-  Interactor();
-  virtual ~Interactor();
+  virtual ~Interactor() = default;
 };
 }
