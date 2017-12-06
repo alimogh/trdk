@@ -849,12 +849,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                   });
 #endif
 
-          const auto &remainingQty = order.get<Qty>("amount");
+          Qty remainingQty = 0;
 
           OrderStatus status;
           switch (order.get<int>("status")) {
             case 0: {  // 0 - active
               const auto &qty = order.get<Qty>("start_amount");
+              remainingQty = order.get<Qty>("amount");
               AssertGe(qty, remainingQty);
               status = qty == remainingQty ? ORDER_STATUS_SUBMITTED
                                            : ORDER_STATUS_FILLED_PARTIALLY;
@@ -863,11 +864,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             case 1:  // 1 - fulfilled and closed
             case 3:  // 3 - canceled after partially fulfilled
               status = ORDER_STATUS_FILLED;
-              AssertEq(0, remainingQty);
               break;
             case 2:  // 2 - canceled
               status = ORDER_STATUS_CANCELLED;
-              AssertEq(0, remainingQty);
               break;
             default:
               GetTsLog().Error(

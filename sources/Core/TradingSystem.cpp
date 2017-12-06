@@ -44,6 +44,9 @@ TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 
 namespace {
 
+const boost::function<void(OrderTransactionContext &)>
+    emptyOrderTransactionContextCallback;
+
 std::string FormatStringId(const std::string &instanceName,
                            const TradingMode &mode) {
   std::string result("TradingSystem");
@@ -304,14 +307,18 @@ class TradingSystem::Implementation : private boost::noncopyable {
     switch (status) {
       case ORDER_STATUS_SENT:
       case ORDER_STATUS_SUBMITTED:
+        Assert(ORDER_STATUS_FILLED, status);
         switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
             status = cache.status;
-            if (!tradeInfo && remainingQty) {
-              tradeInfo = TradeInfo{cache.price};
-            }
             break;
+        }
+        break;
+      case ORDER_STATUS_FILLED:
+      case ORDER_STATUS_FILLED_PARTIALLY:
+        if (!tradeInfo && remainingQty) {
+          tradeInfo = TradeInfo{cache.price};
         }
         break;
     }
@@ -660,35 +667,35 @@ void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
                                         const Qty &remainingQty,
                                         const Volume &commission,
                                         TradeInfo &&trade) {
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, status, remainingQty, std::move(commission),
-      std::move(trade), boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty,
+                               std::move(commission), std::move(trade),
+                               emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
                                         const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty) {
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, status, remainingQty, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
+                               boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
                                         const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         const Volume &commission) {
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, status, remainingQty, commission, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, commission,
+                               boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
                                         const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         TradeInfo &&trade) {
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, status, remainingQty, boost::none, std::move(trade),
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
+                               std::move(trade),
+                               emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderStatusUpdate(
     const pt::ptime &time,
@@ -712,9 +719,9 @@ void TradingSystem::OnOrderStatusUpdate(
 
 void TradingSystem::OnOrderCancel(const pt::ptime &time,
                                   const OrderId &orderId) {
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, ORDER_STATUS_CANCELLED, boost::none, boost::none,
-      boost::none, boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_CANCELLED,
+                               boost::none, boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
 void TradingSystem::OnOrderError(const pt::ptime &time,
@@ -730,9 +737,9 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
       "\"%2%\".",
       orderId,  // 1
       error);   // 2
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, ORDER_STATUS_ERROR, boost::none, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_ERROR, boost::none,
+                               boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
 void TradingSystem::OnOrderReject(const pt::ptime &time,
@@ -743,9 +750,9 @@ void TradingSystem::OnOrderReject(const pt::ptime &time,
                           record % orderId  // 1
                               % reason;     // 2
                         });
-  m_pimpl->OnOrderStatusUpdate(
-      time, orderId, ORDER_STATUS_REJECTED, boost::none, boost::none,
-      boost::none, boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_REJECTED,
+                               boost::none, boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
 void TradingSystem::OnOrder(const OrderId &orderId,
@@ -762,9 +769,9 @@ void TradingSystem::OnOrder(const OrderId &orderId,
     ActiveOrderWriteLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
-      m_pimpl->OnOrderStatusUpdate(updateTime, orderId, status, remainingQty,
-                                   boost::none, boost::none, it,
-                                   std::move(lock), 0);
+      m_pimpl->OnOrderStatusUpdate(
+          updateTime, orderId, status, remainingQty, boost::none, boost::none,
+          it, std::move(lock), emptyOrderTransactionContextCallback);
       return;
     }
   }
