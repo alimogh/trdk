@@ -307,11 +307,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
                             isSellTargetInBlackList, isBuyTargetInBlackList,
-                            delayMeasurement)) {
+                            spreadRatio, bestSpreadRatio, delayMeasurement)) {
         return;
       }
-    } else if (!OpenPositionAsync(sellTarget, buyTarget, operation,
-                                  delayMeasurement)) {
+    } else if (!OpenPositionAsync(sellTarget, buyTarget, operation, spreadRatio,
+                                  bestSpreadRatio, delayMeasurement)) {
       return;
     }
 
@@ -492,6 +492,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                         const boost::shared_ptr<Operation> &operation,
                         bool isSellTargetInBlackList,
                         bool isBuyTargetInBlackList,
+                        const Double &spreadRatio,
+                        const Double &bestSpreadRatio,
                         const Milestones &delayMeasurement) {
     Assert(isBuyTargetInBlackList || isSellTargetInBlackList);
     UseUnused(isSellTargetInBlackList);
@@ -510,6 +512,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return true;
 
     } catch (const std::exception &ex) {
+      ReportSignal("error", "sync", sellTarget, buyTarget, spreadRatio,
+                   bestSpreadRatio);
       m_self.GetLog().Error("Failed to start trading (sync): \"%1%\".",
                             ex.what());
 
@@ -533,9 +537,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     return false;
   }
 
-  bool OpenPositionAsync(Security &firstLegTarget,
-                         Security &secondLegTarget,
+  bool OpenPositionAsync(Security &sellTarget,
+                         Security &buyTarget,
                          const boost::shared_ptr<Operation> &operation,
+                         const Double &spreadRatio,
+                         const Double &bestSpreadRatio,
                          const Milestones &delayMeasurement) {
     const boost::function<Position *(int64_t, Security &)> &openPosition = [&](
         int64_t leg, Security &target) -> Position * {
@@ -550,6 +556,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     };
 
+    auto &firstLegTarget = sellTarget;
+    auto &secondLegTarget = buyTarget;
+
     auto firstLeg =
         boost::async(boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
     auto secondLeg =
@@ -558,6 +567,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return true;
     }
 
+    ReportSignal("error", "async", sellTarget, buyTarget, spreadRatio,
+                 bestSpreadRatio);
     m_self.GetLog().Error("Failed to start trading (async).");
 
     m_lastError = nullptr;
