@@ -29,6 +29,7 @@ struct BusinessOperationReportData : private boost::noncopyable {
     Qty openedQty;
     const TradingSystem *target;
     CloseReason closeReason;
+    Volume commissions;
   };
 
  public:

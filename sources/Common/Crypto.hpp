@@ -18,29 +18,42 @@ namespace Base64 {
 std::string Encode(const unsigned char *source,
                    size_t sourceLen,
                    bool multiline);
+template <typename Source>
+std::string Encode(const Source &source, bool multiline) {
+  return Encode(&source[0], source.size(), multiline);
+}
 std::vector<unsigned char> Decode(const std::string &);
 }
 
 std::string EncodeToHex(const unsigned char *cource, size_t sourceLen);
 
 namespace Hmac {
-boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcSha512Digest(
-    const unsigned char *source, size_t sourceLen, const std::string &key);
-boost::array<unsigned char, SHA512_DIGEST_LENGTH> CalcSha512Digest(
-    const std::string &source, const std::string &key);
+boost::array<unsigned char, 64> CalcSha512Digest(const unsigned char *source,
+                                                 size_t sourceLen,
+                                                 const std::string &key);
+boost::array<unsigned char, 64> CalcSha512Digest(const std::string &source,
+                                                 const std::string &key);
 
-boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
-    const unsigned char *source, size_t sourceLen, const std::string &key);
-boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
-    const std::string &source, const std::string &key);
-boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
-    const unsigned char *source,
-    size_t sourceLen,
-    const unsigned char *key,
-    size_t keyLen);
-boost::array<unsigned char, SHA256_DIGEST_LENGTH> CalcSha256Digest(
-    const std::string &source, const unsigned char *key, size_t keyLen);
+boost::array<unsigned char, 32> CalcSha256Digest(const unsigned char *source,
+                                                 size_t sourceLen,
+                                                 const std::string &key);
+boost::array<unsigned char, 32> CalcSha256Digest(const std::string &source,
+                                                 const std::string &key);
+boost::array<unsigned char, 32> CalcSha256Digest(const unsigned char *source,
+                                                 size_t sourceLen,
+                                                 const unsigned char *key,
+                                                 size_t keyLen);
+boost::array<unsigned char, 32> CalcSha256Digest(const std::string &source,
+                                                 const unsigned char *key,
+                                                 size_t keyLen);
+template <typename Key>
+boost::array<unsigned char, 32> CalcSha256Digest(const std::string &source,
+                                                 const Key key) {
+  return CalcSha256Digest(source, &key[0], key.size());
 }
+}
+
+boost::array<unsigned char, 16> CalcMd5Digest(const std::string &);
 }
 }
 }

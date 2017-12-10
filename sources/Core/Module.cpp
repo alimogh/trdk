@@ -245,7 +245,7 @@ std::ofstream Module::OpenDataLog(const std::string &fileExtension,
     GetLog().Error("Failed to open data log file %1%", path);
     throw Exception("Failed to open data log file");
   } else {
-    GetLog().Info("Data log: %1%.", path);
+    GetLog().Debug("Data log: %1%.", path);
   }
 
   return result;

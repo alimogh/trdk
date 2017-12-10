@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>403</width>
+    <width>398</width>
     <height>138</height>
    </rect>
   </property>
@@ -64,10 +64,10 @@
            <number>6</number>
           </property>
           <property name="minimum">
-           <double>0.001000000000000</double>
+           <double>0.000001000000000</double>
           </property>
           <property name="maximum">
-           <double>10000000.000000000000000</double>
+           <double>100000000.000000000000000</double>
           </property>
           <property name="singleStep">
            <double>0.005000000000000</double>
@@ -86,8 +86,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>40</width>
-          <height>20</height>
+          <width>3</width>
+          <height>0</height>
          </size>
         </property>
        </spacer>
@@ -140,16 +140,16 @@
         <item row="1" column="2">
          <widget class="QDoubleSpinBox" name="autoTradeLevel">
           <property name="minimum">
-           <double>0.010000000000000</double>
+           <double>0.400000000000000</double>
           </property>
           <property name="maximum">
            <double>25.000000000000000</double>
           </property>
           <property name="singleStep">
-           <double>0.500000000000000</double>
+           <double>0.100000000000000</double>
           </property>
           <property name="value">
-           <double>0.500000000000000</double>
+           <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -166,13 +166,13 @@
            <double>-25.000000000000000</double>
           </property>
           <property name="maximum">
-           <double>100.000000000000000</double>
+           <double>25.000000000000000</double>
           </property>
           <property name="singleStep">
-           <double>0.500000000000000</double>
+           <double>0.100000000000000</double>
           </property>
           <property name="value">
-           <double>0.100000000000000</double>
+           <double>1.000000000000000</double>
           </property>
          </widget>
         </item>

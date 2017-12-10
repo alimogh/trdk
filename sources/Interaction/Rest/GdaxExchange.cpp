@@ -11,11 +11,11 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "App.hpp"
 #include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -35,13 +35,14 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")),
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
         apiPassphrase(conf.ReadKey("api_passphrase")) {
     Log(log);
@@ -109,7 +110,7 @@ class Request : public Rest::Request {
   virtual ~Request() override = default;
 
  protected:
-  virtual void CheckErrorResponce(
+  virtual void CheckErrorResponse(
       const net::HTTPResponse &response,
       const std::string &responseContent) const override {
     try {
@@ -122,7 +123,7 @@ class Request : public Rest::Request {
       }
     } catch (const ptr::ptree_error &) {
     }
-    Base::CheckErrorResponce(response, responseContent);
+    Base::CheckErrorResponse(response, responseContent);
   }
 
   virtual FloodControl &GetFloodControl() override {
@@ -238,8 +239,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("api.gdax.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())),
+        m_balances(GetTsLog(), GetTsTradingLog()),
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())),
         m_orderTransactionRequest(
             "orders", net::HTTPRequest::HTTP_POST, m_settings, true),
         m_orderListRequest("orders",
@@ -270,6 +272,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   TradingSystem::Log &GetTsLog() const noexcept {
     return TradingSystem::GetLog();
   }
+  TradingSystem::TradingLog &GetTsTradingLog() const noexcept {
+    return TradingSystem::GetTradingLog();
+  }
 
   MarketDataSource::Log &GetMdsLog() const noexcept {
     return MarketDataSource::GetLog();
@@ -284,7 +289,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Info("Creating connection...");
+    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -295,8 +300,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         if (subscribtion.second.isSubscribed) {
           continue;
         }
-        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
-                         *subscribtion.second.security);
+        GetMdsLog().Debug("Starting Market Data subscribtion for \"%1%\"...",
+                          *subscribtion.second.security);
         subscribtion.second.isSubscribed = true;
       }
     }
@@ -344,26 +349,40 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        10);
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
+
+    m_pullingTask->AccelerateNextPulling();
   }
+
+  virtual Balances &GetBalancesStorage() override { return m_balances; }
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
+      UpdateBalances();
       RequestProducts();
-      RequestAccounts();
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to connect: \"%1%\".", ex.what());
       throw ConnectError(ex.what());
     }
-    Verify(m_pullingTask->AddTask("Actual orders", 0,
-                                  [this]() {
-                                    UpdateOrders();
-                                    return true;
-                                  },
-                                  1));
+
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); }, 45));
+        "Actual orders", 0,
+        [this]() {
+          UpdateOrders();
+          return true;
+        },
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Balances", 1,
+        [this]() {
+          UpdateBalances();
+          return true;
+        },
+        m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+    Verify(m_pullingTask->AddTask(
+        "Opened orders", 100, [this]() { return UpdateOpenedOrders(); },
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
+
     m_isConnected = true;
   }
 
@@ -498,7 +517,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_products = std::move(products);
   }
 
-  void RequestAccounts() {
+  void UpdateBalances() {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false);
     try {
@@ -506,16 +525,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           boost::get<1>(request.Send(m_tradingSession, GetContext()));
       for (const auto &node : response) {
         const auto &account = node.second;
-        GetTsLog().Info(
-            "%1% balance: %2$.8f (available: %3$.8f, hold: %4$.8f).",
-            account.get<std::string>("currency"),  // 1
-            account.get<double>("balance"),        // 2
-            account.get<double>("available"),      // 3
-            account.get<double>("hold"));          // 4
+        m_balances.SetAvailableToTrade(account.get<std::string>("currency"),
+                                       account.get<Volume>("available"));
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request accounts: \"%1%\".", ex.what());  // 1
-      throw Exception("Failed to request accounts");
+      boost::format error("Failed to request accounts: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
   }
 
@@ -621,7 +637,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
-  bool RequestOpenedOrders() {
+  bool UpdateOpenedOrders() {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
     const bool isInitial = m_orders.empty();
     try {
@@ -637,8 +653,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_orders.erase(notifiedOrder.id);
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to request order list: \"%1%\".", ex.what());
-      throw Exception("Failed to request order list");
+      boost::format error("Failed to request order list: \"%1%\"");
+      error % ex.what();
+      throw Exception(error.str().c_str());
     }
 
     for (const auto &canceledOrder : m_orders) {
@@ -665,7 +682,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       virtual ~OrderStateRequest() override = default;
 
      protected:
-      virtual void CheckErrorResponce(
+      virtual void CheckErrorResponse(
           const net::HTTPResponse &response,
           const std::string &responseContent) const {
         try {
@@ -678,7 +695,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
         } catch (const ptr::ptree_error &) {
         }
-        Base::CheckErrorResponce(response, responseContent);
+        Base::CheckErrorResponse(response, responseContent);
       }
     };
 
@@ -688,10 +705,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         UpdateOrder(
             boost::get<1>(request.Send(m_marketDataSession, GetContext())));
       } catch (const OrderIsUnknown &) {
-        OnOrderCancel(orderId);
+        OnOrderCancel(GetContext().GetCurrentTime(), orderId);
       } catch (const std::exception &ex) {
-        GetTsLog().Error("Failed to update order list: \"%1%\".", ex.what());
-        throw Exception("Failed to update order list");
+        boost::format error("Failed to update order list: \"%1%\"");
+        error % ex.what();
+        throw Exception(error.str().c_str());
       }
     }
   }
@@ -705,6 +723,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
+
+  BalancesContainer m_balances;
 
   std::unique_ptr<PullingTask> m_pullingTask;
 

@@ -15,10 +15,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
-namespace pc = Poco;
-namespace net = pc::Net;
-namespace pt = boost::posix_time;
-namespace ptr = boost::property_tree;
+namespace net = Poco::Net;
 
 BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
                                               const Context &context) {
@@ -46,7 +43,7 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
       error << ")";
       message && (*message == "ORDER_NOT_OPEN")
           ? throw TradingSystem::OrderIsUnknown(error.str().c_str())
-          : throw Exception(error.str().c_str());
+          : throw TradingSystem::CommunicationError(error.str().c_str());
     }
   }
 
@@ -55,7 +52,7 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
     boost::format error(
         "The server did not return response to the request \"%1%\"");
     error % GetName();
-    throw Exception(error.str().c_str());
+    throw TradingSystem::CommunicationError(error.str().c_str());
   }
 
   return {boost::get<0>(result), *resultNode, boost::get<2>(result)};

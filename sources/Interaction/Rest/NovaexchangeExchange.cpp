@@ -9,11 +9,11 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "App.hpp"
 #include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
+#include "Settings.hpp"
 #include "Util.hpp"
 
 using namespace trdk;
@@ -31,12 +31,14 @@ namespace ptr = boost::property_tree;
 
 namespace {
 
-struct Settings {
+struct Settings : public Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : apiKey(conf.ReadKey("api_key")), apiSecret(conf.ReadKey("api_secret")) {
+      : Rest::Settings(conf, log),
+        apiKey(conf.ReadKey("api_key")),
+        apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }
@@ -271,8 +273,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession("novaexchange.com"),
         m_tradingSession(m_marketDataSession.getHost()),
-        m_pullingTask(
-            boost::make_unique<PullingTask>(pt::seconds(1), GetMdsLog())) {
+        m_pullingTask(boost::make_unique<PullingTask>(
+            m_settings.pullingSetttings, GetMdsLog())) {
     m_marketDataSession.setKeepAlive(true);
     m_tradingSession.setKeepAlive(true);
   }
@@ -310,7 +312,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Info("Creating connection...");
+    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -321,8 +323,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         if (subscribtion.second.isSubscribed) {
           continue;
         }
-        GetMdsLog().Info("Starting Market Data subscribtion for \"%1%\"...",
-                         *subscribtion.second.security);
+        GetMdsLog().Debug("Starting Market Data subscribtion for \"%1%\"...",
+                          *subscribtion.second.security);
         subscribtion.second.isSubscribed = true;
       }
     }
@@ -361,7 +363,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        10);
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
+
+    m_pullingTask->AccelerateNextPulling();
   }
 
  protected:
@@ -386,8 +390,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             currency.second.get<double>("amount_lockbox"));    // 6
       }
     } catch (const std::exception &ex) {
-      GetTsLog().Error("Failed to read server balance list: \"%1%\".",
-                       ex.what());
+      boost::format error("Failed to read server balance list: \"%1%\"");
+      error % ex.what();
+      throw ConnectError(error.str().c_str());
     }
     m_isConnected = true;
   }
@@ -478,7 +483,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           orderId = item.get<OrderId>("orderid");
           GetContext().GetTimer().Schedule(
               [this, orderId, qty] {
-                OnOrderStatusUpdate(*orderId, ORDER_STATUS_SUBMITTED, qty);
+                OnOrderStatusUpdate(GetContext().GetCurrentTime(), *orderId,
+                                    ORDER_STATUS_SUBMITTED, qty);
               },
               m_timerScope);
         }
@@ -514,7 +520,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                     std::vector<TradeInfo> &trades) {
     for (auto &trade : trades) {
       remainingQty -= trade.qty;
-      OnOrderStatusUpdate(orderId,
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                           remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
                                            : ORDER_STATUS_FILLED,
                           remainingQty, std::move(trade));

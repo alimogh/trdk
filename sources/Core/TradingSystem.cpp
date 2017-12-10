@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "TradingSystem.hpp"
+#include "Balances.hpp"
 #include "DropCopy.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
@@ -43,6 +44,9 @@ TradingSystem::ConnectionDoesntExistError::ConnectionDoesntExistError(
 
 namespace {
 
+const boost::function<void(OrderTransactionContext &)>
+    emptyOrderTransactionContextCallback;
+
 std::string FormatStringId(const std::string &instanceName,
                            const TradingMode &mode) {
   std::string result("TradingSystem");
@@ -59,18 +63,22 @@ template <trdk::Lib::Concurrency::Profile profile>
 struct ActiveOrderConcurrencyPolicy {
   static_assert(profile == trdk::Lib::Concurrency::PROFILE_RELAX,
                 "Wrong concurrency profile");
-  typedef boost::mutex Mutex;
-  typedef Mutex::scoped_lock Lock;
+  typedef boost::shared_mutex Mutex;
+  typedef boost::shared_lock<Mutex> ReadLock;
+  typedef boost::unique_lock<Mutex> WriteLock;
 };
 template <>
 struct ActiveOrderConcurrencyPolicy<trdk::Lib::Concurrency::PROFILE_HFT> {
   typedef trdk::Lib::Concurrency::SpinMutex Mutex;
-  typedef Mutex::ScopedLock Lock;
+  typedef Mutex::ScopedLock WriteLock;
+  typedef Mutex::ScopedLock ReadLock;
 };
 typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Mutex
     ActiveOrderMutex;
-typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::Lock
-    ActiveOrderLock;
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::ReadLock
+    ActiveOrderReadLock;
+typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::WriteLock
+    ActiveOrderWriteLock;
 
 struct ActiveOrder {
   boost::shared_ptr<OrderTransactionContext> transactionContext;
@@ -81,9 +89,12 @@ struct ActiveOrder {
   pt::ptime updateTime;
   std::unique_ptr<trdk::Timer::Scope> timerScope;
 
-  bool IsChanged(const OrderStatus &rhsStatus,
-                 const Qty &rhsRemainingQty) const {
-    return status != rhsStatus || remainingQty != rhsRemainingQty;
+  bool IsChanged(
+      const OrderStatus &rhsStatus,
+      const boost::optional<Qty> &rhsRemainingQty,
+      const boost::optional<TradingSystem::TradeInfo> &tradeInfo) const {
+    return tradeInfo || status != rhsStatus ||
+           (rhsRemainingQty && remainingQty != *rhsRemainingQty);
   }
 };
 }
@@ -175,15 +186,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
         });
     if (trade) {
       m_tradingLog.Write(
-          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}}",
-          [&trade](TradingRecord &record) {
+          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}, "
+          "'id': %4%}}",
+          [&orderId, &trade](TradingRecord &record) {
             if (trade->id) {
               record % *trade->id;  // 1
             } else {
               record % "";  // 1
             }
             record % trade->qty  // 2
-                % trade->price;  // 3
+                % trade->price   // 3
+                % orderId;       // 4
           });
     }
   }
@@ -256,14 +269,14 @@ class TradingSystem::Implementation : private boost::noncopyable {
   }
 
   void OnOrderStatusUpdate(
+      const pt::ptime &time,
       const OrderId &orderId,
       const OrderStatus &status,
       const boost::optional<Qty> &remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::function<void(OrderTransactionContext &)> &callback) {
-    const auto &time = m_context.GetCurrentTime();
-    ActiveOrderLock lock(m_activeOrdersMutex);
+    ActiveOrderWriteLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
       m_log.Warn(
@@ -272,22 +285,25 @@ class TradingSystem::Implementation : private boost::noncopyable {
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
     }
-    OnOrderStatusUpdate(orderId, status, remainingQty, commission,
-                        std::move(tradeInfo), time, it, std::move(lock),
-                        callback);
+    OnOrderStatusUpdate(time, orderId, status, remainingQty, commission,
+                        std::move(tradeInfo), it, std::move(lock), callback);
   }
 
   void OnOrderStatusUpdate(
+      const pt::ptime &time,
       const OrderId &orderId,
       OrderStatus status,
       const boost::optional<Qty> &remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
-      const pt::ptime &time,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
-      ActiveOrderLock &&lock,
+      ActiveOrderWriteLock &&lock,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     auto &cache = it->second;
+
+    if (!cache.IsChanged(status, remainingQty, tradeInfo)) {
+      return;
+    }
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
@@ -296,8 +312,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
         switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
+            AssertEq(cache.status, status);
             status = cache.status;
             break;
+        }
+        break;
+      case ORDER_STATUS_FILLED:
+      case ORDER_STATUS_FILLED_PARTIALLY:
+        if (!tradeInfo && remainingQty) {
+          tradeInfo = TradeInfo{cache.price};
         }
         break;
     }
@@ -411,9 +434,48 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
   throw MethodIsNotImplementedException("Account Cash Balance not implemented");
 }
 
+const Balances &TradingSystem::GetBalances() const {
+  return const_cast<TradingSystem *>(this)->GetBalancesStorage();
+}
+
+Balances &TradingSystem::GetBalancesStorage() {
+  static class DummyBalances : public Balances {
+   public:
+    virtual ~DummyBalances() override = default;
+
+   public:
+    virtual boost::optional<Volume> FindAvailableToTrade(
+        const std::string &) const override {
+      return boost::none;
+    }
+    virtual void ReduceAvailableToTradeByOrder(const Security &,
+                                               const Qty &,
+                                               const Price &,
+                                               const OrderSide &,
+                                               const TradingSystem &) override {
+
+    }
+
+  } result;
+  return result;
+}
+
+Volume TradingSystem::CalcCommission(const Volume &, const Security &) const {
+  return 0;
+}
+
+boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
+    const Security &,
+    const Currency &,
+    const Qty &,
+    const boost::optional<Price> &,
+    const OrderSide &) const {
+  return boost::none;
+}
+
 std::vector<OrderId> TradingSystem::GetActiveOrderList() const {
   std::vector<OrderId> result;
-  const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+  const ActiveOrderReadLock lock(m_pimpl->m_activeOrdersMutex);
   result.reserve(m_pimpl->m_activeOrders.size());
   for (const auto &order : m_pimpl->m_activeOrders) {
     result.emplace_back(order.first);
@@ -452,8 +514,9 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
           : m_pimpl->CheckNewSellOrder(riskControlScope, security, currency,
                                        qty, actualPrice, delaysMeasurement);
 
+  boost::shared_ptr<OrderTransactionContext> result;
   try {
-    return SendOrderTransaction(
+    result = SendOrderTransaction(
         security, currency, qty, price, actualPrice, params, side, tif,
         [this, &riskControlScope, riskControlOperationId, &security, currency,
          actualPrice, delaysMeasurement, callback, side](
@@ -492,6 +555,15 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
                               actualPrice, qty, nullptr, delaysMeasurement);
     throw;
   }
+
+  Assert(result);
+
+  if (price) {
+    GetBalancesStorage().ReduceAvailableToTradeByOrder(security, qty, *price,
+                                                       side, *this);
+  }
+
+  return result;
 }
 
 boost::shared_ptr<OrderTransactionContext> TradingSystem::SendOrderTransaction(
@@ -507,7 +579,7 @@ boost::shared_ptr<OrderTransactionContext> TradingSystem::SendOrderTransaction(
   const auto &time = GetContext().GetCurrentTime();
   boost::shared_ptr<OrderTransactionContext> result;
   {
-    const ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    const ActiveOrderWriteLock lock(m_pimpl->m_activeOrdersMutex);
     result =
         SendOrderTransaction(security, currency, qty, price, params, side, tif);
     m_pimpl->LogOrderSent(result->GetOrderId());
@@ -591,63 +663,71 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
 
 void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
 
-void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
+                                        const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         const Volume &commission,
                                         TradeInfo &&trade) {
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, status, remainingQty, std::move(commission), std::move(trade),
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty,
+                               std::move(commission), std::move(trade),
+                               emptyOrderTransactionContextCallback);
 }
-void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
+                                        const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty) {
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, status, remainingQty, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
+                               boost::none,
+                               emptyOrderTransactionContextCallback);
 }
-void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
+                                        const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         const Volume &commission) {
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, status, remainingQty, commission, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, commission,
+                               boost::none,
+                               emptyOrderTransactionContextCallback);
 }
-void TradingSystem::OnOrderStatusUpdate(const OrderId &orderId,
+void TradingSystem::OnOrderStatusUpdate(const pt::ptime &time,
+                                        const OrderId &orderId,
                                         const OrderStatus &status,
                                         const Qty &remainingQty,
                                         TradeInfo &&trade) {
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, status, remainingQty, boost::none, std::move(trade),
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
+                               std::move(trade),
+                               emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderStatusUpdate(
+    const pt::ptime &time,
     const OrderId &orderId,
     const OrderStatus &status,
     const Qty &remainingQty,
     const boost::function<void(OrderTransactionContext &)> &callback) {
-  m_pimpl->OnOrderStatusUpdate(orderId, status, remainingQty, boost::none,
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
                                boost::none, callback);
 }
 void TradingSystem::OnOrderStatusUpdate(
+    const pt::ptime &time,
     const OrderId &orderId,
     const OrderStatus &status,
     const Qty &remainingQty,
     TradeInfo &&trade,
     const boost::function<void(OrderTransactionContext &)> &callback) {
-  m_pimpl->OnOrderStatusUpdate(orderId, status, remainingQty, boost::none,
+  m_pimpl->OnOrderStatusUpdate(time, orderId, status, remainingQty, boost::none,
                                std::move(trade), callback);
 }
 
-void TradingSystem::OnOrderCancel(const OrderId &orderId) {
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, ORDER_STATUS_CANCELLED, boost::none, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+void TradingSystem::OnOrderCancel(const pt::ptime &time,
+                                  const OrderId &orderId) {
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_CANCELLED,
+                               boost::none, boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
-void TradingSystem::OnOrderError(const OrderId &orderId,
+void TradingSystem::OnOrderError(const pt::ptime &time,
+                                 const OrderId &orderId,
                                  const std::string &&error) {
   GetTradingLog().Write("{'order': {'error': {'id': %1%, 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
@@ -659,21 +739,22 @@ void TradingSystem::OnOrderError(const OrderId &orderId,
       "\"%2%\".",
       orderId,  // 1
       error);   // 2
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, ORDER_STATUS_ERROR, boost::none, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_ERROR, boost::none,
+                               boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
-void TradingSystem::OnOrderReject(const OrderId &orderId,
+void TradingSystem::OnOrderReject(const pt::ptime &time,
+                                  const OrderId &orderId,
                                   const std::string &&reason) {
   GetTradingLog().Write("{'order': {'reject': {'id': %1%, 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % reason;     // 2
                         });
-  m_pimpl->OnOrderStatusUpdate(
-      orderId, ORDER_STATUS_REJECTED, boost::none, boost::none, boost::none,
-      boost::function<void(OrderTransactionContext &)>());
+  m_pimpl->OnOrderStatusUpdate(time, orderId, ORDER_STATUS_REJECTED,
+                               boost::none, boost::none, boost::none,
+                               emptyOrderTransactionContextCallback);
 }
 
 void TradingSystem::OnOrder(const OrderId &orderId,
@@ -687,22 +768,12 @@ void TradingSystem::OnOrder(const OrderId &orderId,
                             const pt::ptime &openTime,
                             const pt::ptime &updateTime) {
   {
-    ActiveOrderLock lock(m_pimpl->m_activeOrdersMutex);
+    ActiveOrderWriteLock lock(m_pimpl->m_activeOrdersMutex);
     const auto &it = m_pimpl->m_activeOrders.find(orderId);
     if (it != m_pimpl->m_activeOrders.cend()) {
-      if (!it->second.IsChanged(status, remainingQty)) {
-        return;
-      }
-      boost::optional<TradeInfo> trade;
-      switch (status) {
-        case ORDER_STATUS_FILLED:
-        case ORDER_STATUS_FILLED_PARTIALLY:
-          trade = TradeInfo{price ? *price : 0};
-      }
       m_pimpl->OnOrderStatusUpdate(
-          orderId, status, remainingQty, boost::none, std::move(trade),
-          updateTime, it, std::move(lock),
-          boost::function<void(OrderTransactionContext &)>());
+          updateTime, orderId, status, remainingQty, boost::none, boost::none,
+          it, std::move(lock), emptyOrderTransactionContextCallback);
       return;
     }
   }

@@ -149,17 +149,17 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
         markedDataSourcesStat.push_back(oss.str());
         commonSecuritiesCount += source.GetActiveSecurityCount();
       });
-      context.GetLog().Info(
+      context.GetLog().Debug(
           "Loaded %1% market data sources with %2% securities: %3%.",
           markedDataSourcesStat.size(), commonSecuritiesCount,
           boost::join(markedDataSourcesStat, ", "));
     }
 
-    context.GetLog().Info("Loaded %1% observers.", observers.size());
-    context.GetLog().Info("Loaded %1% strategies (%2% instances).",
-                          strategies.size(), GetModulesCount(strategies));
-    context.GetLog().Info("Loaded %1% services (%2% instances).",
-                          services.size(), GetModulesCount(services));
+    context.GetLog().Debug("Loaded %1% observers.", observers.size());
+    context.GetLog().Debug("Loaded %1% strategies (%2% instances).",
+                           strategies.size(), GetModulesCount(strategies));
+    context.GetLog().Debug("Loaded %1% services (%2% instances).",
+                           services.size(), GetModulesCount(services));
   }
 
   Strategy &GetSrategy(const ids::uuid &id) {
@@ -230,7 +230,7 @@ void Engine::Context::Start(
           message % source.marketDataSource->GetInstanceName()  // 1
               % ex;                                             // 2
           if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-            GetLog().Debug("Ignoring error: \"%1%\"...", message);
+            GetLog().Warn("Ignoring error: \"%1%\"...", message);
             Verify(errors.emplace(i).second);
             continue;
           } else {
@@ -273,7 +273,7 @@ void Engine::Context::Start(
             message % tradingSystem.GetInstanceName()  // 1
                 % ex;                                  // 2
             if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-              GetLog().Debug("Ignoring error: \"%1%\"...", message);
+              GetLog().Warn("Ignoring error: \"%1%\"...", message);
               Verify(errors.emplace(i).second);
               break;
             } else {
@@ -442,7 +442,7 @@ void Engine::Context::Stop(const StopMode &stopMode) {
 }
 
 void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
-  GetLog().Info("Adding new entities into engine context...");
+  GetLog().Debug("Adding new entities into engine context...");
   m_pimpl->m_state->subscriptionsManager.Suspend();
 
   try {

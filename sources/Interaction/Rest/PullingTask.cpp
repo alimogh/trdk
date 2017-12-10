@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "PullingTask.hpp"
+#include "PullingSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -19,10 +20,11 @@ using namespace trdk::Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ch = boost::chrono;
 
-PullingTask::PullingTask(const pt::time_duration &pullingInterval,
+PullingTask::PullingTask(const PullingSetttings &setttings,
                          ModuleEventsLog &log)
     : m_log(log),
-      m_pullingInterval(ch::microseconds(pullingInterval.total_microseconds())),
+      m_pullingInterval(
+          ch::microseconds(setttings.GetInterval().total_microseconds())),
       m_isAccelerated(false) {}
 
 PullingTask::~PullingTask() {
@@ -62,34 +64,30 @@ bool PullingTask::SetTask(const std::string &name,
                           const boost::function<bool()> &task,
                           size_t frequency,
                           bool replace) {
-  {
-    const Lock lock(m_mutex);
-    AssertNe(m_tasks.empty(), m_thread ? true : false);
+  const Lock lock(m_mutex);
+  AssertNe(m_tasks.empty(), m_thread ? true : false);
 
-    const auto &it =
-        std::find_if(m_tasks.begin(), m_tasks.end(),
-                     [&name](const Task &task) { return task.name == name; });
+  const auto &it =
+      std::find_if(m_tasks.begin(), m_tasks.end(),
+                   [&name](const Task &task) { return task.name == name; });
 
-    if (it != m_tasks.cend()) {
-      if (!replace) {
-        AssertEq(it->priority, priority);
-        return false;
-      }
-      *it = Task{name, priority, task, frequency};
-    } else {
-      m_tasks.emplace_back(Task{name, priority, task, frequency});
+  if (it != m_tasks.cend()) {
+    if (!replace) {
+      AssertEq(it->priority, priority);
+      return false;
     }
-
-    std::sort(m_tasks.begin(), m_tasks.end(), [](const Task &a, const Task &b) {
-      return a.priority < b.priority;
-    });
-
-    if (!m_thread) {
-      m_thread = boost::thread(boost::bind(&PullingTask::Run, this));
-    }
+    *it = Task{name, priority, task, frequency};
+  } else {
+    m_tasks.emplace_back(Task{name, priority, task, frequency});
   }
 
-  AccelerateNextPulling();
+  std::sort(m_tasks.begin(), m_tasks.end(), [](const Task &a, const Task &b) {
+    return a.priority < b.priority;
+  });
+
+  if (!m_thread) {
+    m_thread = boost::thread(boost::bind(&PullingTask::Run, this));
+  }
 
   return true;
 }
@@ -125,16 +123,29 @@ void PullingTask::Run() {
         bool isCompleted;
         try {
           isCompleted = !task.task();
-        } catch (const std::exception &ex) {
+        } catch (const std::exception &) {
           isCompleted = false;
           if (++task.numberOfErrors <= 2) {
-            m_log.Error(
-                "%1% task \"%2%\" error: \"%3%\".",
-                task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
-                task.name,                                                  // 2
-                ex.what());                                                 // 3
+            try {
+              throw;
+            } catch (const Interactor::CommunicationError &ex) {
+              m_log.Warn("%1% task \"%2%\" error: \"%3%\".",
+                         task.numberOfErrors == 1 ? "Pulling"
+                                                  : "Repeated pulling",  // 1
+                         task.name,                                      // 2
+                         ex.what());                                     // 3
+            } catch (const std::exception &ex) {
+              m_log.Error("%1% task \"%2%\" error: \"%3%\".",
+                          task.numberOfErrors == 1 ? "Pulling"
+                                                   : "Repeated pulling",  // 1
+                          task.name,                                      // 2
+                          ex.what());                                     // 3
+            }
           }
           continue;
+        } catch (...) {
+          AssertFailNoException();
+          throw;
         }
 
         if (task.numberOfErrors > 1) {

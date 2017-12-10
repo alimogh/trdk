@@ -43,17 +43,13 @@ Rest::RequestBittrexProductList(net::HTTPClientSession &session,
                                 Context &context,
                                 ModuleEventsLog &log) {
   boost::unordered_map<std::string, BittrexProduct> result;
-
-  std::vector<std::string> logData;
   BittrexPublicRequest request("getmarkets");
   try {
     const auto response = boost::get<1>(request.Send(session, context));
     for (const auto &node : response) {
       const auto &data = node.second;
-
       BittrexProduct product = {data.get<std::string>("MarketName")};
       const auto &symbol = NormilizeSymbol(product.id);
-
       const auto &productIt =
           result.emplace(std::move(symbol), std::move(product));
       if (!productIt.second) {
@@ -61,18 +57,13 @@ Rest::RequestBittrexProductList(net::HTTPClientSession &session,
         Assert(productIt.second);
         continue;
       }
-
-      boost::format logStr("%1% (ID: \"%2%\")");
-      logStr % productIt.first->first    // 1
-          % productIt.first->second.id;  // 2
-      logData.emplace_back(logStr.str());
     }
   } catch (const std::exception &ex) {
     log.Error("Failed to read supported product list: \"%1%\".", ex.what());
     throw Exception(ex.what());
   }
-
-  log.Info("Pairs: %1%.", boost::join(logData, ", "));
-
+  if (result.empty()) {
+    throw Exception("Exchange doesn't have products");
+  }
   return result;
 }

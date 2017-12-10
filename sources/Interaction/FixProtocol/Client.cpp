@@ -80,8 +80,8 @@ class Connection : public NetworkStreamClient {
     SendSynchronously(
         Outgoing::Logon(GetHandler().GetStandardOutgoingHeader()).Export(SOH),
         "Logon");
-    const auto &responceContent = ReceiveSynchronously("Logon", 256);
-    Incoming::Factory::Create(responceContent.cbegin(), responceContent.cend(),
+    const auto &responseContent = ReceiveSynchronously("Logon", 256);
+    Incoming::Factory::Create(responseContent.cbegin(), responseContent.cend(),
                               *GetSettings().policy)
         ->Handle(GetHandler(), *this, Milestones());
     if (!GetHandler().IsAuthorized()) {

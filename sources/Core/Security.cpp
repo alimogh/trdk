@@ -594,7 +594,7 @@ class Security::Implementation : private boost::noncopyable {
         return false;
       }
     }
-    m_source.GetContext().GetLog().Info("\"%1%\" Level 1 started.", m_self);
+    m_source.GetContext().GetLog().Debug("\"%1%\" Level 1 started.", m_self);
     m_isLevel1Started = true;
     return true;
   }
@@ -642,8 +642,8 @@ class Security::Implementation : private boost::noncopyable {
 
     m_marketDataLog.EnableStream(m_marketDataLogFile);
 
-    m_self.GetContext().GetLog().Info("Market data log for \"%1%\": %2%.",
-                                      m_self, path);
+    m_self.GetContext().GetLog().Debug("Market data log for \"%1%\": %2%.",
+                                       m_self, path);
   }
 };
 

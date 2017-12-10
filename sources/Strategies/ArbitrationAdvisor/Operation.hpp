@@ -29,7 +29,8 @@ class Operation : public trdk::Operation {
                      const Qty &maxQty,
                      const Price &sellPrice,
                      const Price &buyPrice)
-      : m_orderPolicy(sellPrice, buyPrice),
+      : m_startTime(sellTarget.GetContext().GetCurrentTime()),
+        m_orderPolicy(sellPrice, buyPrice),
         m_sellTarget(sellTarget),
         m_buyTarget(buyTarget),
         m_maxQty(maxQty) {}
@@ -38,6 +39,10 @@ class Operation : public trdk::Operation {
  public:
   bool IsSame(const Security &sellTarget, const Security &buyTarget) const {
     return &m_sellTarget == &sellTarget && &m_buyTarget == &buyTarget;
+  }
+  bool IsExpired() const {
+    return m_startTime + boost::posix_time::seconds(15) <=
+           m_sellTarget.GetContext().GetCurrentTime();
   }
 
   BusinessOperationReportData &GetReportData() { return m_reportData; }
@@ -48,8 +53,10 @@ class Operation : public trdk::Operation {
  public:
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
       const Position &) const override {
-    return m_orderPolicy;
+    return GetOpenOrderPolicy();
   }
+
+  const OrderPolicy &GetOpenOrderPolicy() const { return m_orderPolicy; }
 
   virtual bool IsLong(const Security &security) const override {
     Assert(&security == &m_sellTarget || &security == &m_buyTarget);
@@ -59,6 +66,7 @@ class Operation : public trdk::Operation {
   virtual trdk::Qty GetPlannedQty() const override { return m_maxQty; }
 
  private:
+  const boost::posix_time::ptime m_startTime;
   OrderPolicy m_orderPolicy;
   Security &m_sellTarget;
   Security &m_buyTarget;

@@ -21,8 +21,8 @@ trdk::TradingSystemAndMarketDataSourceFactoryResult CreateBittrex(
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &conf) {
-  return {
-      boost::make_shared<BittrexTradingSystem>(mode, context, instanceName,
-                                               conf),
-      boost::make_shared<BittrexMarketDataSource>(context, instanceName, conf)};
+  return {boost::make_shared<BittrexTradingSystem>(App::GetInstance(), mode,
+                                                   context, instanceName, conf),
+          boost::make_shared<BittrexMarketDataSource>(
+              App::GetInstance(), context, instanceName, conf)};
 }

@@ -26,19 +26,21 @@ namespace ptr = boost::property_tree;
 ////////////////////////////////////////////////////////////////////////////////
 
 BittrexMarketDataSource::BittrexMarketDataSource(
+    const App &,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session("bittrex.com"),
-      m_task(boost::make_unique<PullingTask>(pt::seconds(10), GetLog())) {
+      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+                                                    GetLog())) {
   m_session.setKeepAlive(true);
 }
 
 BittrexMarketDataSource::~BittrexMarketDataSource() {
   try {
-    m_task.reset();
+    m_pullingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -49,20 +51,22 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
 }
 
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
-  GetLog().Info("Creating connection...");
+  GetLog().Debug("Creating connection...");
   try {
     m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
-    GetLog().Error("Failed to connect: \"%1%\".", ex.what());
     throw ConnectError(ex.what());
   }
 
-  Verify(m_task->AddTask("Prices", 1,
-                         [this]() {
-                           RequestActualPrices();
-                           return true;
-                         },
-                         1));
+  Verify(m_pullingTask->AddTask(
+      "Prices", 1,
+      [this]() {
+        RequestActualPrices();
+        return true;
+      },
+      m_settings.pullingSetttings.GetPricesRequestFrequency()));
+
+  m_pullingTask->AccelerateNextPulling();
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {
@@ -127,7 +131,7 @@ void BittrexMarketDataSource::RequestActualPrices() {
       boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
       error % security  // 1
           % ex.what();  // 2
-      throw MarketDataSource::Error(error.str().c_str());
+      throw CommunicationError(error.str().c_str());
     }
     security.SetOnline(pt::not_a_date_time, true);
   }
@@ -142,9 +146,8 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopPrice(const Source &source) {
   if (source) {
     for (const auto &level : *source) {
       return {
-          Level1TickValue::Create<qtyType>(
-              level.second.get<double>("Quantity")),
-          Level1TickValue::Create<priceType>(level.second.get<double>("Rate"))};
+          Level1TickValue::Create<qtyType>(level.second.get<Qty>("Quantity")),
+          Level1TickValue::Create<priceType>(level.second.get<Price>("Rate"))};
     }
   }
   return {Level1TickValue::Create<priceType>(
@@ -172,8 +175,8 @@ boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<BittrexMarketDataSource>(context, instanceName,
-                                                     configuration);
+  return boost::make_shared<BittrexMarketDataSource>(
+      App::GetInstance(), context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

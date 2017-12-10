@@ -123,3 +123,13 @@ boost::array<unsigned char, SHA256_DIGEST_LENGTH> Hmac::CalcSha256Digest(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+boost::array<unsigned char, MD5_DIGEST_LENGTH> Crypto::CalcMd5Digest(
+    const std::string &source) {
+  boost::array<unsigned char, MD5_DIGEST_LENGTH> result;
+  MD5(reinterpret_cast<const unsigned char *>(source.c_str()), source.size(),
+      &result[0]);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////

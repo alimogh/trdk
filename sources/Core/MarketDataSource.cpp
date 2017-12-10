@@ -232,7 +232,7 @@ Security &MarketDataSource::GetSecurity(const Symbol &symbol) {
       result = &newSecurity;
     }
   }
-  GetLog().Info("Loaded security \"%1%\".", *result);
+  GetLog().Debug("Loaded security \"%1%\".", *result);
   return *result;
 }
 
@@ -257,7 +257,7 @@ Security &MarketDataSource::GetSecurity(const Symbol &symbol,
     Verify(
         securities.list.emplace(std::make_pair(std::move(key), result)).second);
   }
-  GetLog().Info("Loaded security \"%1%\" (%2%).", *result, expiration);
+  GetLog().Debug("Loaded security \"%1%\" (%2%).", *result, expiration);
   return *result;
 }
 

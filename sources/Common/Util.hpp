@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Numeric.hpp"
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -47,10 +48,17 @@ inline bool IsEmpty(const std::wstring &str) { return str.empty(); }
 
 //////////////////////////////////////////////////////////////////////////
 
-inline double RoundByPrecision(double value, uintmax_t precisionPower) {
+inline trdk::Lib::Double RoundByPrecision(double value,
+                                          uintmax_t precisionPower) {
   return precisionPower
              ? boost::math::round(value * precisionPower) / precisionPower
              : boost::math::round(value);
+}
+
+inline trdk::Lib::Double RoundDownByPrecision(double value,
+                                              uintmax_t precisionPower) {
+  return precisionPower ? std::floor(value * precisionPower) / precisionPower
+                        : std::floor(value);
 }
 
 //////////////////////////////////////////////////////////////////////////

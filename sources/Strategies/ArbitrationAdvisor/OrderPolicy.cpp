@@ -18,8 +18,12 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 OrderPolicy::OrderPolicy(const Price &sellPrice, const Price &buyPrice)
     : m_sellPrice(sellPrice), m_buyPrice(buyPrice) {}
 
+Price OrderPolicy::GetOpenOrderPrice(bool isLong) const {
+  return isLong ? m_buyPrice : m_sellPrice;
+}
+
 Price OrderPolicy::GetOpenOrderPrice(Position &position) const {
-  return position.IsLong() ? m_buyPrice : m_sellPrice;
+  return GetOpenOrderPrice(position.IsLong());
 }
 
 Price OrderPolicy::GetCloseOrderPrice(Position &) const {

@@ -493,7 +493,7 @@ void NetworkStreamClient::Stop() {
   m_pimpl->m_io->Close();
 }
 
-bool NetworkStreamClient::CheckResponceSynchronously(
+bool NetworkStreamClient::CheckResponseSynchronously(
     const char *actionName,
     const char *expectedResponse,
     const char *errorResponse) {
@@ -602,7 +602,7 @@ bool NetworkStreamClient::RequestSynchronously(const std::string &message,
                                                const char *expectedResponse,
                                                const char *errorResponse) {
   SendSynchronously(message, requestName);
-  return CheckResponceSynchronously(requestName, expectedResponse,
+  return CheckResponseSynchronously(requestName, expectedResponse,
                                     errorResponse);
 }
 

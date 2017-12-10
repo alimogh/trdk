@@ -16,6 +16,7 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/unordered_set.hpp>
 #include <Poco/Net/AcceptCertificateHandler.h>
 #include <Poco/Net/HTTPMessage.h>
 #include <Poco/Net/HTTPRequest.h>
@@ -24,14 +25,13 @@
 #include <Poco/Net/InvalidCertificateHandler.h>
 #include <Poco/Net/PrivateKeyPassphraseHandler.h>
 #include <Poco/Net/SSLManager.h>
-
-#ifdef DEV_VER
 #include <Poco/StreamCopier.h>
-#endif
+#include <Poco/URI.h>
 
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"
 
+#include "Core/BalancesContainer.hpp"
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -40,3 +40,5 @@
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/TransactionContext.hpp"
+
+#include "App.hpp"
