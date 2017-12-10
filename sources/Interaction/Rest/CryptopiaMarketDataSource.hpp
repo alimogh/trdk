@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/16 12:04:46
+ *   Created: 2017/12/04 16:55:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,23 +10,26 @@
 
 #pragma once
 
-#include "BittrexUtil.hpp"
+#include "CryptopiaUtil.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class BittrexMarketDataSource : public MarketDataSource {
+//! Cryptopia market data source.
+/** @sa https://www.cryptopia.co.nz/Forum/Thread/255
+  */
+class CryptopiaMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
  public:
-  explicit BittrexMarketDataSource(const App &,
-                                   Context &context,
-                                   const std::string &instanceName,
-                                   const Lib::IniSectionRef &);
-  virtual ~BittrexMarketDataSource() override;
+  explicit CryptopiaMarketDataSource(const App &,
+                                     Context &context,
+                                     const std::string &instanceName,
+                                     const Lib::IniSectionRef &);
+  virtual ~CryptopiaMarketDataSource() override;
 
  public:
   virtual void Connect(const Lib::IniSectionRef &conf) override;
@@ -37,7 +40,7 @@ class BittrexMarketDataSource : public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  void RequestActualPrices();
+  void RequestActualPrices(Request &);
   void UpdatePrices(const boost::posix_time::ptime &,
                     const boost::property_tree::ptree &,
                     Rest::Security &,
@@ -45,10 +48,9 @@ class BittrexMarketDataSource : public MarketDataSource {
 
  private:
   const Settings m_settings;
-  boost::unordered_map<std::string, BittrexProduct> m_products;
+  boost::unordered_map<std::string, CryptopiaProduct> m_products;
   boost::mutex m_securitiesLock;
-  std::vector<std::pair<boost::shared_ptr<Rest::Security>,
-                        std::unique_ptr<BittrexPublicRequest>>>
+  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
   Poco::Net::HTTPSClientSession m_session;
   std::unique_ptr<PullingTask> m_pullingTask;

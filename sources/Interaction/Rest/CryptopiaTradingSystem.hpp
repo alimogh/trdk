@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/18 13:15:10
+ *   Created: 2017/12/04 23:40:30
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,10 +8,9 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
-#include "BittrexRequest.hpp"
-#include "BittrexUtil.hpp"
+#include "CryptopiaRequest.hpp"
+#include "CryptopiaUtil.hpp"
+#include "NonceStorage.hpp"
 #include "PullingTask.hpp"
 #include "Settings.hpp"
 
@@ -19,37 +18,42 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class BittrexTradingSystem : public TradingSystem {
+class CryptopiaTradingSystem : public TradingSystem {
  public:
   typedef TradingSystem Base;
 
  private:
-  struct Settings : public Rest::Settings {
-    typedef Rest::Settings Base;
+  typedef boost::mutex OrdersRequestsMutex;
+  typedef OrdersRequestsMutex::scoped_lock OrdersRequestsReadLock;
+  typedef OrdersRequestsMutex::scoped_lock OrdersRequestsWriteLock;
 
+  struct Settings : public Rest::Settings, public NonceStorage::Settings {
     std::string apiKey;
-    std::string apiSecret;
+    std::vector<unsigned char> apiSecret;
+    std::vector<std::string> defaultSymbols;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };
 
   class OrderTransactionRequest;
   class NewOrderRequest;
-  class SellOrderRequest;
-  class BuyOrderRequest;
   class OrderCancelRequest;
-  class OrderStateRequest;
-  class OrderHistoryRequest;
+  class OpenOrdersRequest;
 
-  class PrivateRequest : public BittrexRequest {
+  class PrivateRequest : public CryptopiaRequest {
    public:
-    typedef BittrexRequest Base;
+    typedef CryptopiaRequest Base;
 
    public:
     explicit PrivateRequest(const std::string &name,
-                            const std::string &uriParams,
-                            const Settings &settings);
+                            NonceStorage &nonces,
+                            const Settings &settings,
+                            const std::string &params);
     virtual ~PrivateRequest() override = default;
+
+   public:
+    virtual Response Send(Poco::Net::HTTPClientSession &,
+                          const Context &) override;
 
    protected:
     virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
@@ -58,6 +62,9 @@ class BittrexTradingSystem : public TradingSystem {
 
    private:
     const Settings &m_settings;
+    const std::string m_paramsDigest;
+    NonceStorage &m_nonces;
+    mutable boost::optional<NonceStorage::TakenValue> m_nonce;
   };
 
   class AccountRequest : public PrivateRequest {
@@ -66,9 +73,10 @@ class BittrexTradingSystem : public TradingSystem {
 
    public:
     explicit AccountRequest(const std::string &name,
-                            const std::string &uriParams,
-                            const Settings &settings)
-        : Base(name, uriParams, settings) {}
+                            NonceStorage &nonces,
+                            const Settings &settings,
+                            const std::string &params)
+        : Base(name, nonces, settings, params) {}
     virtual ~AccountRequest() override = default;
 
    protected:
@@ -80,28 +88,25 @@ class BittrexTradingSystem : public TradingSystem {
     typedef AccountRequest Base;
 
    public:
-    explicit BalancesRequest(const Settings &settings)
-        : Base("/account/getbalances", std::string(), settings) {}
+    explicit BalancesRequest(NonceStorage &nonces, const Settings &settings)
+        : Base("GetBalance", nonces, settings, "{}") {}
   };
 
  public:
-  explicit BittrexTradingSystem(const App &,
-                                const TradingMode &,
-                                Context &,
-                                const std::string &instanceName,
-                                const Lib::IniSectionRef &);
-  virtual ~BittrexTradingSystem() override = default;
+  explicit CryptopiaTradingSystem(const App &,
+                                  const TradingMode &,
+                                  Context &,
+                                  const std::string &instanceName,
+                                  const Lib::IniSectionRef &);
+  virtual ~CryptopiaTradingSystem() override = default;
 
  public:
   virtual bool IsConnected() const override { return !m_products.empty(); }
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &vol,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision(vol * (0.25 / 100),
-                            security.GetPricePrecisionPower());
-  }
+  virtual Volume CalcCommission(const Volume &,
+                                const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
       const trdk::Security &,
@@ -128,20 +133,31 @@ class BittrexTradingSystem : public TradingSystem {
 
  private:
   void UpdateBalances();
-  void UpdateOrders();
-  void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
+
+  bool UpdateOrders();
+  OrderId UpdateOrder(const boost::property_tree::ptree &);
+
+  void SubscribeToOrderUpdates(const CryptopiaProductId &);
 
  private:
   Settings m_settings;
-  boost::unordered_map<std::string, BittrexProduct> m_products;
+  NonceStorage m_nonces;
+  boost::unordered_map<std::string, CryptopiaProduct> m_products;
 
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
+
+  OrdersRequestsMutex m_openOrdersRequestMutex;
+  size_t m_openOrdersRequestsVersion;
+  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<OpenOrdersRequest>>
+      m_openOrdersRequests;
 
   Poco::Net::HTTPSClientSession m_tradingSession;
   Poco::Net::HTTPSClientSession m_pullingSession;
 
   PullingTask m_pullingTask;
+
+  Timer::Scope m_timerScope;
 };
 }
 }

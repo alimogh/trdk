@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2017/12/07 15:16:01
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -13,14 +13,19 @@
 namespace trdk {
 namespace Interaction {
 namespace Rest {
-class FloodControl;
-class Security;
 
-class PullingSetttings;
-class PullingTask;
+typedef int CryptopiaProductId;
 
-class Request;
-class BittrexPublicRequest;
+struct CryptopiaProduct {
+  CryptopiaProductId id;
+  Lib::Double feeRatio;
+  std::pair<Qty, Qty> minMaxQty;
+  std::pair<Qty, Qty> minMaxBaseQty;
+  std::pair<Price, Price> minMaxPrice;
+};
+
+boost::unordered_map<std::string, CryptopiaProduct> RequestCryptopiaProductList(
+    Poco::Net::HTTPClientSession &, Context &, ModuleEventsLog &);
 }
 }
 }

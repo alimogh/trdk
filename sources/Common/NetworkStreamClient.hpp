@@ -121,7 +121,7 @@ class NetworkStreamClient
   virtual trdk::Lib::NetworkStreamClientService &GetService();
   virtual const trdk::Lib::NetworkStreamClientService &GetService() const;
 
-  bool CheckResponceSynchronously(const char *actionName,
+  bool CheckResponseSynchronously(const char *actionName,
                                   const char *expectedResponse,
                                   const char *errorResponse = nullptr);
 

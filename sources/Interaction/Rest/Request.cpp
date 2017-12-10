@@ -45,6 +45,7 @@ Request::Request(const std::string &uri,
                  const std::string &name,
                  const std::string &method,
                  const std::string &uriParams,
+                 const std::string &contentType,
                  const std::string &version)
     : m_uri(uri),
       m_uriParams(uriParams),
@@ -54,7 +55,7 @@ Request::Request(const std::string &uri,
   m_request->set("Connection", "keep-alive");
   m_request->set("DNT", "1");
   if (m_request->getMethod() == net::HTTPRequest::HTTP_POST) {
-    m_request->setContentType("application/x-www-form-urlencoded");
+    m_request->setContentType(contentType);
   }
 }
 
@@ -74,15 +75,13 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
 
   std::string body = m_body;
   CreateBody(session, body);
-
   PrepareRequest(session, body, *m_request);
+  m_request->setContentLength(body.size());
 
+  GetFloodControl().Check(IsPriority());
   if (!body.empty()) {
-    m_request->setContentLength(body.size());
-    GetFloodControl().Check(IsPriority());
     session.sendRequest(*m_request) << body;
   } else {
-    GetFloodControl().Check(IsPriority());
     session.sendRequest(*m_request);
   }
 
@@ -103,7 +102,7 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
     if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
       std::string responseContent;
       pc::StreamCopier::copyToString(responseStream, responseContent);
-      CheckErrorResponce(response, responseContent);
+      CheckErrorResponse(response, responseContent);
       throw LogicError("Failed to check error in the response");
     }
 
@@ -150,7 +149,7 @@ void Request::CreateBody(const net::HTTPClientSession &,
   AppendUriParams(m_uriParams, result);
 }
 
-void Request::CheckErrorResponce(const net::HTTPResponse &response,
+void Request::CheckErrorResponse(const net::HTTPResponse &response,
                                  const std::string &responseContent) const {
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   boost::format error(

@@ -11,4 +11,7 @@ EXPORTS
 	CreateBittrexTradingSystem
 	CreateBittrexMarketDataSource
 	CreateBittrex
+	CreateCryptopiaTradingSystem
+	CreateCryptopiaMarketDataSource
+	CreateCryptopia
 	GetTrdkModuleVersionInfoV1

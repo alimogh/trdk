@@ -23,7 +23,7 @@ const pt::time_duration &defailtInterval = pt::seconds(1);
 const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
 const size_t defaultAllOrdersRequestFrequency = 60;
-const size_t defaultBalancesRequestFrequency = 60;
+const size_t defaultBalancesRequestFrequency = 120;
 }
 
 PullingSetttings::PullingSetttings(const IniSectionRef &conf)

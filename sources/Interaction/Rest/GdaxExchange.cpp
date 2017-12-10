@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "App.hpp"
 #include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
@@ -111,7 +110,7 @@ class Request : public Rest::Request {
   virtual ~Request() override = default;
 
  protected:
-  virtual void CheckErrorResponce(
+  virtual void CheckErrorResponse(
       const net::HTTPResponse &response,
       const std::string &responseContent) const override {
     try {
@@ -124,7 +123,7 @@ class Request : public Rest::Request {
       }
     } catch (const ptr::ptree_error &) {
     }
-    Base::CheckErrorResponce(response, responseContent);
+    Base::CheckErrorResponse(response, responseContent);
   }
 
   virtual FloodControl &GetFloodControl() override {
@@ -360,7 +359,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
-      RequestBalances();
+      UpdateBalances();
       RequestProducts();
     } catch (const std::exception &ex) {
       throw ConnectError(ex.what());
@@ -376,12 +375,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     Verify(m_pullingTask->AddTask(
         "Balances", 1,
         [this]() {
-          RequestBalances();
+          UpdateBalances();
           return true;
         },
         m_settings.pullingSetttings.GetBalancesRequestFrequency()));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this]() { return RequestOpenedOrders(); },
+        "Opened orders", 100, [this]() { return UpdateOpenedOrders(); },
         m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
 
     m_isConnected = true;
@@ -518,7 +517,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_products = std::move(products);
   }
 
-  void RequestBalances() {
+  void UpdateBalances() {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false);
     try {
@@ -638,7 +637,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
-  bool RequestOpenedOrders() {
+  bool UpdateOpenedOrders() {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
     const bool isInitial = m_orders.empty();
     try {
@@ -683,7 +682,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       virtual ~OrderStateRequest() override = default;
 
      protected:
-      virtual void CheckErrorResponce(
+      virtual void CheckErrorResponse(
           const net::HTTPResponse &response,
           const std::string &responseContent) const {
         try {
@@ -696,7 +695,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
         } catch (const ptr::ptree_error &) {
         }
-        Base::CheckErrorResponce(response, responseContent);
+        Base::CheckErrorResponse(response, responseContent);
       }
     };
 

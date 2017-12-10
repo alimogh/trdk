@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/18 13:31:13
+ *   Created: 2017/12/08 03:40:20
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,20 +9,20 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexMarketDataSource.hpp"
-#include "BittrexTradingSystem.hpp"
+#include "CryptopiaMarketDataSource.hpp"
+#include "CryptopiaTradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
-trdk::TradingSystemAndMarketDataSourceFactoryResult CreateBittrex(
+trdk::TradingSystemAndMarketDataSourceFactoryResult CreateCryptopia(
     const trdk::TradingMode &mode,
     trdk::Context &context,
     const std::string &instanceName,
     const trdk::Lib::IniSectionRef &conf) {
-  return {boost::make_shared<BittrexTradingSystem>(App::GetInstance(), mode,
-                                                   context, instanceName, conf),
-          boost::make_shared<BittrexMarketDataSource>(
+  return {boost::make_shared<CryptopiaTradingSystem>(
+              App::GetInstance(), mode, context, instanceName, conf),
+          boost::make_shared<CryptopiaMarketDataSource>(
               App::GetInstance(), context, instanceName, conf)};
 }

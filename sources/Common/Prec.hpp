@@ -42,6 +42,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <openssl/md5.h>
 #include <iomanip>
 #include <iostream>
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/18 13:47:22
+ *   Created: 2017/12/07 15:17:43
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -19,19 +19,21 @@ namespace Rest {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexRequest : public Request {
+class CryptopiaRequest : public Request {
  public:
   typedef Request Base;
 
  public:
-  explicit BittrexRequest(const std::string &uri,
-                          const std::string &name,
-                          const std::string &uriParams)
-      : Base("/api/v1.1" + uri,
+  explicit CryptopiaRequest(const std::string &name,
+                            const std::string &uri,
+                            const std::string &method,
+                            const std::string &contentType = std::string())
+      : Base("/api/" + name + "/" + uri,
              name,
-             Poco::Net::HTTPRequest::HTTP_GET,
-             uriParams) {}
-  virtual ~BittrexRequest() override = default;
+             method,
+             std::string(),
+             contentType) {}
+  virtual ~CryptopiaRequest() override = default;
 
  public:
   Response Send(Poco::Net::HTTPClientSession &, const Context &) override;
@@ -42,12 +44,12 @@ class BittrexRequest : public Request {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexPublicRequest : public BittrexRequest {
+class CryptopiaPublicRequest : public CryptopiaRequest {
  public:
-  explicit BittrexPublicRequest(const std::string &name,
-                                const std::string &uriParams = std::string())
-      : BittrexRequest("/public/" + name, name, uriParams) {}
-  virtual ~BittrexPublicRequest() override = default;
+  explicit CryptopiaPublicRequest(const std::string &name,
+                                  const std::string &params = std::string())
+      : CryptopiaRequest(name, params, Poco::Net::HTTPRequest::HTTP_GET) {}
+  virtual ~CryptopiaPublicRequest() override = default;
 
  protected:
   virtual bool IsPriority() const override { return false; }
