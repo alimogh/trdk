@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Prec.hpp"
-#include "App.hpp"
 #include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"
@@ -340,7 +339,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
-      RequestBalances();
+      UpdateBalances();
       RequestProducts();
     } catch (const std::exception &ex) {
       throw ConnectError(ex.what());
@@ -363,12 +362,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     Verify(m_pullingTask->AddTask(
         "Balances", 1,
         [this] {
-          RequestBalances();
+          UpdateBalances();
           return true;
         },
         m_settings.pullingSetttings.GetBalancesRequestFrequency()));
     Verify(m_pullingTask->AddTask(
-        "Opened orders", 100, [this] { return RequestOpenedOrders(); },
+        "Opened orders", 100, [this] { return UpdateOpenedOrders(); },
         m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
 
     m_pullingTask->AccelerateNextPulling();
@@ -510,7 +509,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
-  void RequestBalances() {
+  void UpdateBalances() {
     PrivateRequest request("getbalances", m_settings, m_endpoint.floodControl,
                            false);
     ptr::ptree response;
@@ -539,7 +538,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
-    std::vector<std::string> log;
     PublicRequest request("getmarkets", m_endpoint.floodControl);
     try {
       const auto response =
@@ -556,17 +554,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           Assert(productIt.second);
           continue;
         }
-        boost::format logStr("%1% (ID: \"%2%\")");
-        logStr % productIt.first->first    // 1
-            % productIt.first->second.id;  // 2
-        log.emplace_back(logStr.str());
       }
     } catch (const std::exception &ex) {
       boost::format error("Failed to read supported product list: \"%1%\"");
       error % ex.what();
       throw Exception(error.str().c_str());
     }
-    GetTsLog().Info("Pairs: %1%.", boost::join(log, ", "));
     m_products = std::move(products);
   }
 
@@ -581,7 +574,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
 #ifdef DEV_VER
     GetTsTradingLog().Write(
-        "debug-order-dump\t%1%",
+        "debug-dump-new-order\t%1%",
         [&](TradingRecord &record) { record % ConvertToString(order, false); });
 #endif
 
@@ -648,7 +641,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
-  bool RequestOpenedOrders() {
+  bool UpdateOpenedOrders() {
     boost::unordered_map<OrderId, Order> notifiedOrderOrders;
     bool isInitial = m_orders.empty();
     {

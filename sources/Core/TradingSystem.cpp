@@ -186,15 +186,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
         });
     if (trade) {
       m_tradingLog.Write(
-          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}}}",
-          [&trade](TradingRecord &record) {
+          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}, "
+          "'id': %4%}}",
+          [&orderId, &trade](TradingRecord &record) {
             if (trade->id) {
               record % *trade->id;  // 1
             } else {
               record % "";  // 1
             }
             record % trade->qty  // 2
-                % trade->price;  // 3
+                % trade->price   // 3
+                % orderId;       // 4
           });
     }
   }

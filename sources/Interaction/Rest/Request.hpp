@@ -27,6 +27,7 @@ class Request {
       const std::string &name,
       const std::string &method,
       const std::string &uriParams,
+      const std::string &contentType = "application/x-www-form-urlencoded",
       const std::string &version = Poco::Net::HTTPMessage::HTTP_1_1);
   virtual ~Request() = default;
 
@@ -51,8 +52,9 @@ class Request {
                               const std::string &body,
                               Poco::Net::HTTPRequest &) const;
 
-  virtual void CheckErrorResponce(const Poco::Net::HTTPResponse &,
-                                  const std::string &responseContent) const;
+  virtual void CheckErrorResponse(const Poco::Net::HTTPResponse &,
+                                  const std::string &responseContent,
+                                  size_t attemptNumber) const;
 
   virtual FloodControl &GetFloodControl() = 0;
 

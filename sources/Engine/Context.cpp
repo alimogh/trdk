@@ -230,7 +230,7 @@ void Engine::Context::Start(
           message % source.marketDataSource->GetInstanceName()  // 1
               % ex;                                             // 2
           if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-            GetLog().Debug("Ignoring error: \"%1%\"...", message);
+            GetLog().Warn("Ignoring error: \"%1%\"...", message);
             Verify(errors.emplace(i).second);
             continue;
           } else {
@@ -273,7 +273,7 @@ void Engine::Context::Start(
             message % tradingSystem.GetInstanceName()  // 1
                 % ex;                                  // 2
             if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-              GetLog().Debug("Ignoring error: \"%1%\"...", message);
+              GetLog().Warn("Ignoring error: \"%1%\"...", message);
               Verify(errors.emplace(i).second);
               break;
             } else {

@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "BittrexTradingSystem.hpp"
-#include "BittrexRequest.hpp"
 #ifdef DEV_VER
 #include "Util.hpp"
 #endif
@@ -37,36 +36,25 @@ BittrexTradingSystem::Settings::Settings(const IniSectionRef &conf,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BittrexTradingSystem::PrivateRequest : public BittrexRequest {
- public:
-  typedef BittrexRequest Base;
+BittrexTradingSystem::PrivateRequest::PrivateRequest(
+    const std::string &name,
+    const std::string &uriParams,
+    const Settings &settings)
+    : Base(name, name, AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+      m_settings(settings) {}
 
- public:
-  explicit PrivateRequest(const std::string &name,
-                          const std::string &uriParams,
-                          const Settings &settings)
-      : Base(name,
-             name,
-             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
-        m_settings(settings) {}
-  virtual ~PrivateRequest() override = default;
-
- protected:
-  virtual void PrepareRequest(const net::HTTPClientSession &session,
-                              const std::string &body,
-                              net::HTTPRequest &request) const override {
-    using namespace trdk::Lib::Crypto;
-    const auto &digest =
-        Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
-                                   session.getHost() + GetRequest().getURI(),
-                               m_settings.apiSecret);
-    request.set("apisign", EncodeToHex(&digest[0], digest.size()));
-    Base::PrepareRequest(session, body, request);
-  }
-
- private:
-  const Settings &m_settings;
-};
+void BittrexTradingSystem::PrivateRequest::PrepareRequest(
+    const net::HTTPClientSession &session,
+    const std::string &body,
+    net::HTTPRequest &request) const {
+  using namespace trdk::Lib::Crypto;
+  const auto &digest =
+      Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
+                                 session.getHost() + GetRequest().getURI(),
+                             m_settings.apiSecret);
+  request.set("apisign", EncodeToHex(&digest[0], digest.size()));
+  Base::PrepareRequest(session, body, request);
+}
 
 class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
@@ -138,32 +126,14 @@ class BittrexTradingSystem::BuyOrderRequest : public NewOrderRequest {
       : Base("/market/buylimit", symbol, qty, price, settings) {}
 };
 
-class BittrexTradingSystem::OrderCancelRequest : public PrivateRequest {
+class BittrexTradingSystem::OrderCancelRequest
+    : public OrderTransactionRequest {
  public:
-  typedef PrivateRequest Base;
+  typedef OrderTransactionRequest Base;
 
  public:
   explicit OrderCancelRequest(const OrderId &id, const Settings &settings)
       : Base("/market/cancel", "uuid=" + id.GetValue(), settings) {}
-  virtual ~OrderCancelRequest() override = default;
-
- protected:
-  virtual bool IsPriority() const override { return false; }
-};
-
-class BittrexTradingSystem::AccountRequest : public PrivateRequest {
- public:
-  typedef PrivateRequest Base;
-
- public:
-  explicit AccountRequest(const std::string &name,
-                          const std::string &uriParams,
-                          const Settings &settings)
-      : Base(name, uriParams, settings) {}
-  virtual ~AccountRequest() override = default;
-
- protected:
-  virtual bool IsPriority() const override { return false; }
 };
 
 class BittrexTradingSystem::OrderStateRequest : public AccountRequest {
@@ -184,34 +154,26 @@ class BittrexTradingSystem::OrderHistoryRequest : public AccountRequest {
       : Base("/account/getorderhistory", std::string(), settings) {}
 };
 
-class BittrexTradingSystem::BalanceRequest : public AccountRequest {
- public:
-  typedef AccountRequest Base;
-
- public:
-  explicit BalanceRequest(const Settings &settings)
-      : Base("/account/getbalances", std::string(), settings) {}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexTradingSystem::BittrexTradingSystem(const TradingMode &mode,
+BittrexTradingSystem::BittrexTradingSystem(const App &,
+                                           const TradingMode &mode,
                                            Context &context,
                                            const std::string &instanceName,
                                            const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
-      m_isConnected(false),
+      m_balancesRequest(m_settings),
       m_tradingSession("bittrex.com"),
       m_pullingSession("bittrex.com"),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
-  Assert(!m_isConnected);
+  Assert(!IsConnected());
 
   try {
-    RequestBalances();
+    UpdateBalances();
     m_products =
         RequestBittrexProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
@@ -228,14 +190,12 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   Verify(m_pullingTask.AddTask(
       "Balances", 1,
       [this]() {
-        RequestBalances();
+        UpdateBalances();
         return true;
       },
       m_settings.pullingSetttings.GetBalancesRequestFrequency()));
 
   m_pullingTask.AccelerateNextPulling();
-
-  m_isConnected = true;
 }
 
 boost::optional<BittrexTradingSystem::OrderCheckError>
@@ -309,10 +269,9 @@ void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
   m_pullingTask.AccelerateNextPulling();
 }
 
-void BittrexTradingSystem::RequestBalances() {
-  const auto responce =
-      BalanceRequest(m_settings).Send(m_pullingSession, GetContext());
-  for (const auto &node : boost::get<1>(responce)) {
+void BittrexTradingSystem::UpdateBalances() {
+  const auto response = m_balancesRequest.Send(m_pullingSession, GetContext());
+  for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     auto symbol = balance.get<std::string>("Currency");
     if (symbol == "BCC") {
@@ -355,9 +314,9 @@ pt::ptime ParseTime(std::string &&source) {
 void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
 #ifdef DEV_VER
-  GetTradingLog().Write("debug-order-dump\t%1%", [&](TradingRecord &record) {
-    record % ConvertToString(order, false);
-  });
+  GetTradingLog().Write(
+      "debug-dump-new-order\t%1%",
+      [&](TradingRecord &record) { record % ConvertToString(order, false); });
 #endif
 
   const auto &remainingQty = order.get<Qty>("QuantityRemaining");
@@ -422,7 +381,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateBittrexTradingSystem(
     const std::string &instanceName,
     const IniSectionRef &configuration) {
   const auto &result = boost::make_shared<BittrexTradingSystem>(
-      mode, context, instanceName, configuration);
+      App::GetInstance(), mode, context, instanceName, configuration);
   return result;
 }
 

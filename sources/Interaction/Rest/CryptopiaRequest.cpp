@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/18 20:28:53
+ *   Created: 2017/12/07 20:49:41
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexRequest.hpp"
+#include "CryptopiaRequest.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -17,20 +17,22 @@ using namespace trdk::Interaction::Rest;
 
 namespace net = Poco::Net;
 
-BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
-                                              const Context &context) {
+CryptopiaRequest::Response CryptopiaRequest::Send(
+    net::HTTPClientSession &session, const Context &context) {
   auto result = Base::Send(session, context);
   const auto &responseTree = boost::get<1>(result);
 
   {
-    const auto &status = responseTree.get_optional<bool>("success");
+    const auto &status = responseTree.get_optional<bool>("Success");
     if (!status || !*status) {
-      const auto &message = responseTree.get_optional<std::string>("message");
+      const auto &serverMessage =
+          responseTree.get_optional<std::string>("Message");
+      const auto &serverError = responseTree.get_optional<std::string>("Error");
       std::ostringstream error;
       error << "The server returned an error in response to the request \""
             << GetName() << "\" (" << GetRequest().getURI() << "): ";
-      if (message) {
-        error << "\"" << *message << "\"";
+      if (serverError) {
+        error << "\"" << *serverError << "\"";
       } else {
         error << "Unknown error";
       }
@@ -40,14 +42,20 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
       } else {
         error << "unknown";
       }
+      if (serverMessage) {
+        error << ", message: \"" << *serverMessage << "\"";
+      }
       error << ")";
-      message && (*message == "ORDER_NOT_OPEN")
-          ? throw TradingSystem::OrderIsUnknown(error.str().c_str())
-          : throw TradingSystem::CommunicationError(error.str().c_str());
+      if (serverError && boost::starts_with(*serverError, "Trade #") &&
+          boost::ends_with(*serverError, " does not exist")) {
+        throw TradingSystem::OrderIsUnknown(error.str().c_str());
+      } else {
+        throw TradingSystem::CommunicationError(error.str().c_str());
+      }
     }
   }
 
-  const auto &resultNode = responseTree.get_child_optional("result");
+  const auto &resultNode = responseTree.get_child_optional("Data");
   if (!resultNode) {
     boost::format error(
         "The server did not return response to the request \"%1%\"");
@@ -58,7 +66,7 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session,
   return {boost::get<0>(result), *resultNode, boost::get<2>(result)};
 }
 
-FloodControl &BittrexRequest::GetFloodControl() {
+FloodControl &CryptopiaRequest::GetFloodControl() {
   static DisabledFloodControl result;
   return result;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/16 13:09:05
+ *   Created: 2017/12/07 15:24:26
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "BittrexMarketDataSource.hpp"
-#include "BittrexRequest.hpp"
+#include "CryptopiaMarketDataSource.hpp"
+#include "CryptopiaRequest.hpp"
 #include "PullingTask.hpp"
 #include "Security.hpp"
 
@@ -25,20 +25,20 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexMarketDataSource::BittrexMarketDataSource(
+CryptopiaMarketDataSource::CryptopiaMarketDataSource(
     const App &,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session("bittrex.com"),
+      m_session("www.cryptopia.co.nz"),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
                                                     GetLog())) {
   m_session.setKeepAlive(true);
 }
 
-BittrexMarketDataSource::~BittrexMarketDataSource() {
+CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   try {
     m_pullingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
@@ -50,44 +50,40 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
   }
 }
 
-void BittrexMarketDataSource::Connect(const IniSectionRef &) {
+void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
+    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+}
 
-  Verify(m_pullingTask->AddTask(
+void CryptopiaMarketDataSource::SubscribeToSecurities() {
+  if (m_securities.empty()) {
+    return;
+  }
+
+  std::vector<std::string> uriSymbolsPath;
+  uriSymbolsPath.reserve(m_securities.size());
+  for (const auto &security : m_securities) {
+    uriSymbolsPath.emplace_back(
+        boost::lexical_cast<std::string>(security.first));
+  }
+  const auto &request = boost::make_shared<CryptopiaPublicRequest>(
+      "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1");
+
+  m_pullingTask->ReplaceTask(
       "Prices", 1,
-      [this]() {
-        RequestActualPrices();
+      [this, request]() {
+        RequestActualPrices(*request);
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency()));
-
+      m_settings.pullingSetttings.GetPricesRequestFrequency());
   m_pullingTask->AccelerateNextPulling();
 }
 
-void BittrexMarketDataSource::SubscribeToSecurities() {
-  const boost::mutex::scoped_lock lock(m_securitiesLock);
-  for (auto &security : m_securities) {
-    if (security.second) {
-      continue;
-    }
-    const auto &product =
-        m_products.find(security.first->GetSymbol().GetSymbol());
-    Assert(product != m_products.cend());
-    if (product == m_products.cend()) {
-      continue;
-    }
-    security.second = std::make_unique<BittrexPublicRequest>(
-        "getorderbook", "market=" + product->second.id + "&type=both");
-    security.first->SetTradingSessionState(pt::not_a_date_time, true);
-  }
-}
-
-trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
+trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -96,41 +92,61 @@ trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
     throw SymbolIsNotSupportedError(message.str().c_str());
   }
 
-  const boost::mutex::scoped_lock lock(m_securitiesLock);
-  m_securities.emplace_back(
+  {
+    const auto &it = m_securities.find(product->second.id);
+    if (it != m_securities.cend()) {
+      return *it->second;
+    }
+  }
+
+  const auto &result =
       boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
                                          Rest::Security::SupportedLevel1Types()
                                              .set(LEVEL1_TICK_BID_PRICE)
                                              .set(LEVEL1_TICK_BID_QTY)
                                              .set(LEVEL1_TICK_ASK_PRICE)
-                                             .set(LEVEL1_TICK_ASK_QTY)),
-      nullptr);
-  return *m_securities.back().first;
+                                             .set(LEVEL1_TICK_BID_QTY));
+  result->SetTradingSessionState(pt::not_a_date_time, true);
+
+  Verify(m_securities.emplace(product->second.id, result).second);
+
+  return *result;
 }
 
-void BittrexMarketDataSource::RequestActualPrices() {
-  const boost::mutex::scoped_lock lock(m_securitiesLock);
-  for (const auto &subscribtion : m_securities) {
-    Rest::Security &security = *subscribtion.first;
-    if (!subscribtion.second) {
-      continue;
+void CryptopiaMarketDataSource::RequestActualPrices(Request &request) {
+  try {
+    const auto &response = request.Send(m_session, GetContext());
+    const auto &time = boost::get<0>(response);
+    const auto &delayMeasurement = boost::get<2>(response);
+    for (const auto &record : boost::get<1>(response)) {
+      const auto &pairNode = record.second;
+      const auto security =
+          m_securities.find(pairNode.get<CryptopiaProductId>("TradePairId"));
+      if (security == m_securities.cend()) {
+        GetLog().Error("Received price for unknown product ID \"%1%\".",
+                       pairNode.get<std::string>("TradePairId"));
+        continue;
+      }
+      UpdatePrices(time, pairNode, *security->second, delayMeasurement);
     }
-    Request &request = *subscribtion.second;
-
-    try {
-      const auto &response = request.Send(m_session, GetContext());
-      UpdatePrices(boost::get<0>(response), boost::get<1>(response), security,
-                   boost::get<2>(response));
-    } catch (const std::exception &ex) {
+  } catch (const std::exception &ex) {
+    for (auto &security : m_securities) {
       try {
-        security.SetOnline(pt::not_a_date_time, false);
+        security.second->SetOnline(pt::not_a_date_time, false);
       } catch (...) {
         AssertFailNoException();
         throw;
       }
-      boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
-      error % security  // 1
-          % ex.what();  // 2
+    }
+    boost::format error("Failed to read prices: \"%1%\"");
+    error % ex.what();
+    try {
+      throw;
+    } catch (const CommunicationError &) {
+      throw CommunicationError(error.str().c_str());
+    } catch (const Exception &) {
+      throw Exception(error.str().c_str());
+    } catch (const std::exception &) {
       throw CommunicationError(error.str().c_str());
     }
   }
@@ -146,22 +162,23 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   if (source) {
     for (const auto &level : *source) {
       return std::make_pair(
-          Level1TickValue::Create<qtyType>(level.second.get<Qty>("Quantity")),
-          Level1TickValue::Create<priceType>(level.second.get<Price>("Rate")));
+          Level1TickValue::Create<priceType>(level.second.get<Price>("Price")),
+          Level1TickValue::Create<qtyType>(level.second.get<Qty>("Total")));
     }
   }
   return boost::none;
 }
 #pragma warning(pop)
 }
-void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
-                                           const ptr::ptree &source,
-                                           r::Security &security,
-                                           const Milestones &delayMeasurement) {
+void CryptopiaMarketDataSource::UpdatePrices(
+    const pt::ptime &time,
+    const ptr::ptree &source,
+    r::Security &security,
+    const Milestones &delayMeasurement) {
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-      source.get_child_optional("buy"));
+      source.get_child_optional("Buy"));
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-      source.get_child_optional("sell"));
+      source.get_child_optional("Sell"));
   if (bid && ask) {
     security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
                        delayMeasurement);
@@ -178,11 +195,11 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
+boost::shared_ptr<MarketDataSource> CreateCryptopiaMarketDataSource(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<BittrexMarketDataSource>(
+  return boost::make_shared<CryptopiaMarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }
 

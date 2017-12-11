@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2017/11/30 22:57:19
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -13,14 +13,13 @@
 namespace trdk {
 namespace Interaction {
 namespace Rest {
-class FloodControl;
-class Security;
 
-class PullingSetttings;
-class PullingTask;
+struct PoloniexProduct {
+  std::string id;
+};
 
-class Request;
-class BittrexPublicRequest;
+boost::unordered_map<std::string, PoloniexProduct> RequestPoloniexProductList(
+    Poco::Net::HTTPClientSession &, Context &, ModuleEventsLog &);
 }
 }
 }

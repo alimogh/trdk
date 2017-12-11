@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "App.hpp"
 #include "FloodControl.hpp"
 #include "PullingTask.hpp"
 #include "Request.hpp"

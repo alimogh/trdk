@@ -309,9 +309,15 @@
     <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="BittrexUtil.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
+    <ClCompile Include="CryptopiaMarketDataSource.cpp" />
+    <ClCompile Include="CryptopiaRequest.cpp" />
+    <ClCompile Include="CryptopiaTradingSystem.cpp" />
+    <ClCompile Include="CryptopiaTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="CryptopiaUtil.cpp" />
     <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="BittrexMarketDataSource.cpp" />
+    <ClCompile Include="NonceStorage.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -341,8 +347,13 @@
     <ClInclude Include="BittrexRequest.hpp" />
     <ClInclude Include="BittrexTradingSystem.hpp" />
     <ClInclude Include="BittrexUtil.hpp" />
+    <ClInclude Include="CryptopiaMarketDataSource.hpp" />
+    <ClInclude Include="CryptopiaRequest.hpp" />
+    <ClInclude Include="CryptopiaTradingSystem.hpp" />
+    <ClInclude Include="CryptopiaUtil.hpp" />
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="NonceStorage.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PullingSettings.hpp" />
     <ClInclude Include="PullingTask.hpp" />
