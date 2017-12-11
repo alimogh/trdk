@@ -53,7 +53,8 @@ class Request {
                               Poco::Net::HTTPRequest &) const;
 
   virtual void CheckErrorResponse(const Poco::Net::HTTPResponse &,
-                                  const std::string &responseContent) const;
+                                  const std::string &responseContent,
+                                  size_t attemptNumber) const;
 
   virtual FloodControl &GetFloodControl() = 0;
 

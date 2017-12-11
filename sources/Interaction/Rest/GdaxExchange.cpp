@@ -110,9 +110,9 @@ class Request : public Rest::Request {
   virtual ~Request() override = default;
 
  protected:
-  virtual void CheckErrorResponse(
-      const net::HTTPResponse &response,
-      const std::string &responseContent) const override {
+  virtual void CheckErrorResponse(const net::HTTPResponse &response,
+                                  const std::string &responseContent,
+                                  size_t attemptNumber) const override {
     try {
       const auto &message =
           ReadJson(responseContent).get<std::string>("message");
@@ -123,7 +123,7 @@ class Request : public Rest::Request {
       }
     } catch (const ptr::ptree_error &) {
     }
-    Base::CheckErrorResponse(response, responseContent);
+    Base::CheckErrorResponse(response, responseContent, attemptNumber);
   }
 
   virtual FloodControl &GetFloodControl() override {
@@ -682,9 +682,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       virtual ~OrderStateRequest() override = default;
 
      protected:
-      virtual void CheckErrorResponse(
-          const net::HTTPResponse &response,
-          const std::string &responseContent) const {
+      virtual void CheckErrorResponse(const net::HTTPResponse &response,
+                                      const std::string &responseContent,
+                                      size_t attemptNumber) const {
         try {
           const auto &message =
               ReadJson(responseContent).get<std::string>("message");
@@ -695,7 +695,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
         } catch (const ptr::ptree_error &) {
         }
-        Base::CheckErrorResponse(response, responseContent);
+        Base::CheckErrorResponse(response, responseContent, attemptNumber);
       }
     };
 

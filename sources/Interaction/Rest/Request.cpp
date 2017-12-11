@@ -16,8 +16,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
-namespace pc = Poco;
-namespace net = pc::Net;
+namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -79,65 +78,90 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
   m_request->setContentLength(body.size());
 
   GetFloodControl().Check(IsPriority());
-  if (!body.empty()) {
-    session.sendRequest(*m_request) << body;
-  } else {
-    session.sendRequest(*m_request);
-  }
 
-  const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
-  const auto &updateTime = context.GetCurrentTime();
-
-  try {
-    net::HTTPResponse response;
-#ifndef DEV_VER
-    std::istream &responseStream = session.receiveResponse(response);
-#else
-    std::istream &responseStreamSource = session.receiveResponse(response);
-    std::string responseBuffer;
-    pc::StreamCopier::copyToString(responseStreamSource, responseBuffer);
-    std::stringstream responseStream;
-    responseStream.str(responseBuffer);
-#endif
-    if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
-      std::string responseContent;
-      pc::StreamCopier::copyToString(responseStream, responseContent);
-      CheckErrorResponse(response, responseContent);
-      throw LogicError("Failed to check error in the response");
+  for (size_t attempt = 1;; ++attempt) {
+    try {
+      if (!body.empty()) {
+        session.sendRequest(*m_request) << body;
+      } else {
+        session.sendRequest(*m_request);
+      }
+    } catch (const std::exception &ex) {
+      const auto &getError = [this](const std::exception &ex) -> std::string {
+        boost::format error(
+            "failed to send request \"%1%\" (%2%) to server: \"%3%\"");
+        error % m_name             // 1
+            % m_request->getURI()  // 2
+            % ex.what();           // 3
+        return error.str();
+      };
+      try {
+        throw;
+      } catch (const Poco::TimeoutException &ex) {
+        if (attempt < 3) {
+          continue;
+        }
+        throw Interactor::CommunicationError(getError(ex).c_str());
+      } catch (const Poco::Exception &ex) {
+        throw Interactor::CommunicationError(getError(ex).c_str());
+      } catch (const std::exception &) {
+        throw Exception(getError(ex).c_str());
+      }
     }
 
-    ptr::ptree result;
+    const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
+    const auto &updateTime = context.GetCurrentTime();
+
     try {
-      ptr::read_json(responseStream, result);
-    } catch (const ptr::ptree_error &ex) {
-#ifdef DEV_VER
-      boost::format error(
-          "Failed to read server response to the request \"%1%\" (%2%): "
-          "\"%4%\" (%3%)");
-      error % m_name             // 1
-          % m_request->getURI()  // 2
-          % responseBuffer       // 3
-          % ex.what();           // 4
+      net::HTTPResponse response;
+#ifndef DEV_VER
+      std::istream &responseStream = session.receiveResponse(response);
 #else
+      std::istream &responseStreamSource = session.receiveResponse(response);
+      std::string responseBuffer;
+      Poco::StreamCopier::copyToString(responseStreamSource, responseBuffer);
+      std::stringstream responseStream;
+      responseStream.str(responseBuffer);
+#endif
+      if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
+        std::string responseContent;
+        Poco::StreamCopier::copyToString(responseStream, responseContent);
+        CheckErrorResponse(response, responseContent, attempt);
+        continue;
+      }
+
+      ptr::ptree result;
+      try {
+        ptr::read_json(responseStream, result);
+      } catch (const ptr::ptree_error &ex) {
+#ifdef DEV_VER
+        boost::format error(
+            "Failed to read server response to the request \"%1%\" (%2%): "
+            "\"%4%\" (%3%)");
+        error % m_name             // 1
+            % m_request->getURI()  // 2
+            % responseBuffer       // 3
+            % ex.what();           // 4
+#else
+        boost::format error(
+            "Failed to read server response to the request \"%1%\" (%2%): "
+            "\"%3%\"");
+        error % m_name             // 1
+            % m_request->getURI()  // 2
+            % ex.what();           // 3
+#endif
+        throw Interactor::CommunicationError(error.str().c_str());
+      }
+
+      return {updateTime, result, delayMeasurement};
+    } catch (const Poco::Exception &ex) {
       boost::format error(
-          "Failed to read server response to the request \"%1%\" (%2%): "
-          "\"%3%\"");
+          "System-level error at the request \"%1%\" (%2%): \"%3%\"");
       error % m_name             // 1
           % m_request->getURI()  // 2
           % ex.what();           // 3
-#endif
-      throw Interactor::CommunicationError(error.str().c_str());
+      throw Exception(error.str().c_str());
     }
-
-    return {updateTime, result, delayMeasurement};
-
-  } catch (const Poco::Exception &ex) {
-    boost::format error(
-        "System-level error at the request \"%1%\" (%2%): \"%3%\"");
-    error % m_name             // 1
-        % m_request->getURI()  // 2
-        % ex.what();           // 3
-    throw Exception(error.str().c_str());
   }
 }
 
@@ -150,8 +174,20 @@ void Request::CreateBody(const net::HTTPClientSession &,
 }
 
 void Request::CheckErrorResponse(const net::HTTPResponse &response,
-                                 const std::string &responseContent) const {
+                                 const std::string &responseContent,
+                                 size_t attemptNumber) const {
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
+  if (attemptNumber < 3) {
+    switch (response.getStatus()) {
+      case net::HTTPResponse::HTTP_TEMPORARY_REDIRECT:
+      case net::HTTPResponse::HTTP_REQUEST_TIMEOUT:
+      case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
+      case net::HTTPResponse::HTTP_BAD_GATEWAY:
+      case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
+      case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
+        return;
+    }
+  }
   boost::format error(
       "Request \"%4%\" (%5%) failed with HTTP-error: \"%1%\" (\"%2%\", code "
       "%3%)");
