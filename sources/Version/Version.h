@@ -2,7 +2,7 @@
 #pragma once
 
 #define TRDK_VERSION_RELEASE	1
-#define TRDK_VERSION_BUILD	4
+#define TRDK_VERSION_BUILD	5
 #define TRDK_VERSION_STATUS	1
 
 #define TRDK_VERSION_BRANCH		"robot"
