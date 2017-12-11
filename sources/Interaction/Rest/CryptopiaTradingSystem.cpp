@@ -111,70 +111,6 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
   virtual bool IsPriority() const override { return true; }
 };
 
-class CryptopiaTradingSystem::NewOrderRequest : public OrderTransactionRequest {
- public:
-  typedef OrderTransactionRequest Base;
-
- public:
-  explicit NewOrderRequest(const CryptopiaProductId &productId,
-                           const std::string &side,
-                           const Qty &qty,
-                           const Price &price,
-                           NonceStorage &nonces,
-                           const Settings &settings)
-      : Base("SubmitTrade",
-             nonces,
-             settings,
-             CreateParams(productId, side, qty, price)) {}
-
- private:
-  static std::string CreateParams(const CryptopiaProductId &productId,
-                                  const std::string &side,
-                                  const Qty &qty,
-                                  const Price &price) {
-    boost::format result(
-        "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3$.8f,\"Amount\":%4$"
-        "."
-        "8f}");
-    result % productId  // 1
-        % side          // 2
-        % price         // 3
-        % qty;          // 4
-    return result.str();
-  }
-};
-
-class CryptopiaTradingSystem::OrderCancelRequest
-    : public OrderTransactionRequest {
- public:
-  typedef OrderTransactionRequest Base;
-
- public:
-  explicit OrderCancelRequest(const OrderId &id,
-                              NonceStorage &nonces,
-                              const Settings &settings)
-      : Base("CancelTrade",
-             nonces,
-             settings,
-             "{\"OrderId\":" + boost::lexical_cast<std::string>(id) + "}") {}
-};
-
-class CryptopiaTradingSystem::OpenOrdersRequest : public AccountRequest {
- public:
-  typedef AccountRequest Base;
-
- public:
-  explicit OpenOrdersRequest(const CryptopiaProductId &product,
-                             NonceStorage &nonces,
-                             const Settings &settings)
-      : Base(
-            "GetOpenOrders",
-            nonces,
-            settings,
-            (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") % product)
-                .str()) {}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 
 CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
@@ -294,12 +230,40 @@ CryptopiaTradingSystem::SendOrderTransaction(
   const auto &productId = product->second.id;
   const auto &actualPrice = *price;
 
-  const auto response = boost::get<1>(
-      NewOrderRequest(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell", qty,
-                      actualPrice, m_nonces, m_settings)
-          .Send(m_tradingSession, GetContext()));
+  class NewOrderRequest : public OrderTransactionRequest {
+   public:
+    explicit NewOrderRequest(const CryptopiaProductId &productId,
+                             const std::string &side,
+                             const Qty &qty,
+                             const Price &price,
+                             NonceStorage &nonces,
+                             const Settings &settings)
+        : OrderTransactionRequest("SubmitTrade",
+                                  nonces,
+                                  settings,
+                                  CreateParams(productId, side, qty, price)) {}
+
+   private:
+    static std::string CreateParams(const CryptopiaProductId &productId,
+                                    const std::string &side,
+                                    const Qty &qty,
+                                    const Price &price) {
+      boost::format result(
+          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3$.8f,\"Amount\":%4$"
+          ".8f}");
+      result % productId  // 1
+          % side          // 2
+          % price         // 3
+          % qty;          // 4
+      return result.str();
+    }
+  } request(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell", qty,
+            actualPrice, m_nonces, m_settings);
+
+  const auto response =
+      boost::get<1>(request.Send(m_tradingSession, GetContext()));
 #ifdef DEV_VER
-  GetTradingLog().Write("debug-dump-new-order\t%1%",
+  GetTradingLog().Write("debug-dump-order-status\t%1%",
                         [&response](TradingRecord &record) {
                           record % ConvertToString(response, false);
                         });
@@ -313,8 +277,11 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(
     const OrderId &orderId) {
-  const auto &response = OrderCancelRequest(orderId, m_nonces, m_settings)
-                             .Send(m_tradingSession, GetContext());
+  const auto &response =
+      OrderTransactionRequest(
+          "CancelTrade", m_nonces, m_settings,
+          "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}")
+          .Send(m_tradingSession, GetContext());
   UseUnused(response);
   const auto now = GetContext().GetCurrentTime();
 
@@ -329,7 +296,7 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
 
 #ifdef DEV_VER
   GetTradingLog().Write(
-      "debug-dump-cancel-order\t%1%", [&response](TradingRecord &record) {
+      "debug-dump-order-cancel\t%1%", [&response](TradingRecord &record) {
         record % ConvertToString(boost::get<1>(response), false);
       });
 #endif
@@ -350,7 +317,7 @@ void CryptopiaTradingSystem::UpdateBalances() {
 }
 
 bool CryptopiaTradingSystem::UpdateOrders() {
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<OpenOrdersRequest>>
+  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Request>>
       openOrdersRequests;
   size_t version;
   {
@@ -449,6 +416,20 @@ OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
 
 void CryptopiaTradingSystem::SubscribeToOrderUpdates(
     const CryptopiaProductId &productId) {
+  class OpenOrdersRequest : public AccountRequest {
+   public:
+    explicit OpenOrdersRequest(const CryptopiaProductId &product,
+                               NonceStorage &nonces,
+                               const Settings &settings)
+        : AccountRequest(
+              "GetOpenOrders",
+              nonces,
+              settings,
+              (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") %
+               product)
+                  .str()) {}
+  };
+
   {
     const OrdersRequestsWriteLock lock(m_openOrdersRequestMutex);
     if (!m_openOrdersRequests

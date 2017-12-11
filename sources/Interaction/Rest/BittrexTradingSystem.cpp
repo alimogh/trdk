@@ -71,89 +71,6 @@ class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
   virtual bool IsPriority() const override { return true; }
 };
 
-class BittrexTradingSystem::NewOrderRequest : public OrderTransactionRequest {
- public:
-  typedef OrderTransactionRequest Base;
-
- public:
-  explicit NewOrderRequest(const std::string &name,
-                           const std::string &productId,
-                           const Qty &qty,
-                           const Price &price,
-                           const Settings &settings)
-      : Base(name, CreateUriParams(productId, qty, price), settings) {}
-
- public:
-  OrderId SendOrderTransaction(net::HTTPClientSession &session,
-                               const Context &context) {
-    const auto response = boost::get<1>(Base::Send(session, context));
-    return response.get<std::string>("uuid");
-  }
-
- private:
-  static std::string CreateUriParams(const std::string &productId,
-                                     const Qty &qty,
-                                     const Price &price) {
-    boost::format result("market=%1%&quantity=%2$.8f&rate=%3$.8f");
-    result % productId  // 1
-        % qty           // 2
-        % price;        // 3
-    return result.str();
-  }
-};
-
-class BittrexTradingSystem::SellOrderRequest : public NewOrderRequest {
- public:
-  typedef NewOrderRequest Base;
-
- public:
-  explicit SellOrderRequest(const std::string &symbol,
-                            const Qty &qty,
-                            const Price &price,
-                            const Settings &settings)
-      : Base("/market/selllimit", symbol, qty, price, settings) {}
-};
-
-class BittrexTradingSystem::BuyOrderRequest : public NewOrderRequest {
- public:
-  typedef NewOrderRequest Base;
-
- public:
-  explicit BuyOrderRequest(const std::string &symbol,
-                           const Qty &qty,
-                           const Price &price,
-                           const Settings &settings)
-      : Base("/market/buylimit", symbol, qty, price, settings) {}
-};
-
-class BittrexTradingSystem::OrderCancelRequest
-    : public OrderTransactionRequest {
- public:
-  typedef OrderTransactionRequest Base;
-
- public:
-  explicit OrderCancelRequest(const OrderId &id, const Settings &settings)
-      : Base("/market/cancel", "uuid=" + id.GetValue(), settings) {}
-};
-
-class BittrexTradingSystem::OrderStateRequest : public AccountRequest {
- public:
-  typedef AccountRequest Base;
-
- public:
-  explicit OrderStateRequest(const OrderId &id, const Settings &settings)
-      : Base("/account/getorder", "uuid=" + id.GetValue(), settings) {}
-};
-
-class BittrexTradingSystem::OrderHistoryRequest : public AccountRequest {
- public:
-  typedef AccountRequest Base;
-
- public:
-  explicit OrderHistoryRequest(const Settings &settings)
-      : Base("/account/getorderhistory", std::string(), settings) {}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 
 BittrexTradingSystem::BittrexTradingSystem(const App &,
@@ -249,19 +166,52 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
     throw TradingSystem::Error("Symbol is not supported by exchange");
   }
 
-  const auto &id = product->second.id;
+  const auto &productId = product->second.id;
   const auto &actualPrice = *price;
+
+  class NewOrderRequest : public OrderTransactionRequest {
+   public:
+    explicit NewOrderRequest(const std::string &name,
+                             const std::string &productId,
+                             const Qty &qty,
+                             const Price &price,
+                             const Settings &settings)
+        : OrderTransactionRequest(
+              name, CreateUriParams(productId, qty, price), settings) {}
+
+   public:
+    OrderId SendOrderTransaction(net::HTTPClientSession &session,
+                                 const Context &context) {
+      const auto response = boost::get<1>(Base::Send(session, context));
+      return response.get<std::string>("uuid");
+    }
+
+   private:
+    static std::string CreateUriParams(const std::string &productId,
+                                       const Qty &qty,
+                                       const Price &price) {
+      boost::format result("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+      result % productId  // 1
+          % qty           // 2
+          % price;        // 3
+      return result.str();
+    }
+  };
 
   return boost::make_unique<OrderTransactionContext>(
       side == ORDER_SIDE_BUY
-          ? BuyOrderRequest(id, qty, actualPrice, m_settings)
+          ? NewOrderRequest("/market/buylimit", productId, qty, actualPrice,
+                            m_settings)
                 .SendOrderTransaction(m_tradingSession, GetContext())
-          : SellOrderRequest(id, qty, actualPrice, m_settings)
+          : NewOrderRequest("/market/selllimit", productId, qty, actualPrice,
+                            m_settings)
                 .SendOrderTransaction(m_tradingSession, GetContext()));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
-  OrderCancelRequest(orderId, m_settings).Send(m_tradingSession, GetContext());
+  OrderTransactionRequest("/market/cancel", "uuid=" + orderId.GetValue(),
+                          m_settings)
+      .Send(m_tradingSession, GetContext());
 }
 
 void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
@@ -315,7 +265,7 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
 #ifdef DEV_VER
   GetTradingLog().Write(
-      "debug-dump-new-order\t%1%",
+      "debug-dump-order-status\t%1%",
       [&](TradingRecord &record) { record % ConvertToString(order, false); });
 #endif
 
@@ -367,7 +317,8 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
 
 void BittrexTradingSystem::UpdateOrders() {
   for (const OrderId &orderId : GetActiveOrderList()) {
-    OrderStateRequest request(orderId, m_settings);
+    AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
+                           m_settings);
     UpdateOrder(orderId,
                 boost::get<1>(request.Send(m_pullingSession, GetContext())));
   }

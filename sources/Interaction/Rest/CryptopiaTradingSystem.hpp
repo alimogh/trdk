@@ -36,9 +36,6 @@ class CryptopiaTradingSystem : public TradingSystem {
   };
 
   class OrderTransactionRequest;
-  class NewOrderRequest;
-  class OrderCancelRequest;
-  class OpenOrdersRequest;
 
   class PrivateRequest : public CryptopiaRequest {
    public:
@@ -149,7 +146,7 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   OrdersRequestsMutex m_openOrdersRequestMutex;
   size_t m_openOrdersRequestsVersion;
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<OpenOrdersRequest>>
+  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Request>>
       m_openOrdersRequests;
 
   Poco::Net::HTTPSClientSession m_tradingSession;
