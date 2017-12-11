@@ -269,24 +269,45 @@ CryptopiaTradingSystem::SendOrderTransaction(
                         });
 #endif
 
-  SubscribeToOrderUpdates(productId);
+  auto orderId = response.get<OrderId>("OrderId");
+  if (orderId.GetValue() == "null") {
+    const auto now = GetContext().GetCurrentTime();
+    static size_t virtualOrderId = 1;
+    orderId = "virtual_" + boost::lexical_cast<std::string>(virtualOrderId++);
+    GetContext().GetTimer().Schedule(
+        [this, orderId, now]() {
+          try {
+            OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED, 0);
+          } catch (const OrderIsUnknown &) {
+          }
+        },
+        m_timerScope);
+  } else {
+    SubscribeToOrderUpdates(productId);
+  }
 
-  return boost::make_unique<OrderTransactionContext>(
-      response.get<OrderId>("OrderId"));
+  return boost::make_unique<OrderTransactionContext>(std::move(orderId));
 }
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(
     const OrderId &orderId) {
-  const auto &response =
-      OrderTransactionRequest(
-          "CancelTrade", m_nonces, m_settings,
-          "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}")
-          .Send(m_tradingSession, GetContext());
+  OrderTransactionRequest request(
+      "CancelTrade", m_nonces, m_settings,
+      "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
+
+  CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+  const auto &response = request.Send(m_tradingSession, GetContext());
+  Verify(m_cancelingOrders.emplace(orderId).second);
+  cancelOrderLock.unlock();
+
   UseUnused(response);
   const auto now = GetContext().GetCurrentTime();
 
   GetContext().GetTimer().Schedule(
       [this, orderId, now]() {
+        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+        AssertEq(1, m_cancelingOrders.count(orderId));
+        m_cancelingOrders.erase(orderId);
         try {
           OnOrderCancel(now, orderId);
         } catch (const OrderIsUnknown &) {
@@ -346,8 +367,17 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   for (const auto &activeOrder : GetActiveOrderList()) {
     if (orders.count(activeOrder) == 0) {
-      OnOrderStatusUpdate(GetContext().GetCurrentTime(), activeOrder,
-                          ORDER_STATUS_FILLED, 0);
+      {
+        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+        if (m_cancelingOrders.count(activeOrder)) {
+          continue;
+        }
+      }
+      try {
+        OnOrderStatusUpdate(GetContext().GetCurrentTime(), activeOrder,
+                            ORDER_STATUS_FILLED, 0);
+      } catch (const OrderIsUnknown &) {
+      }
     }
   }
 
