@@ -40,6 +40,40 @@ std::pair<Price, Double> CaclSpread(const PriceItem &bestBid,
                                     const PriceItem &bestAsk) {
   return CaclSpread(bestBid.first, bestAsk.first);
 }
+
+class SignalSession : private boost::noncopyable {
+ public:
+  Qty TakeQty(const Security &target, bool isSell, const Qty &originalQty) {
+    auto &storage = !isSell ? m_usedQtyToBuy : m_usedQtyToSell;
+    const auto &it = storage.find(&target);
+    if (it == storage.cend()) {
+      Verify(storage.emplace(&target, originalQty).second);
+      return originalQty;
+    }
+    const auto result = originalQty > it->second ? originalQty - it->second : 0;
+    it->second += result;
+    return result;
+  }
+
+  void ReturnQty(const Security &target,
+                 bool isSell,
+                 const Qty &takenQty,
+                 const Qty &usedQty) {
+    AssertGe(takenQty, usedQty);
+    auto &storage = !isSell ? m_usedQtyToBuy : m_usedQtyToSell;
+    const auto &it = storage.find(&target);
+    Assert(it != storage.cend());
+    if (it != storage.cend()) {
+      return;
+    }
+    AssertGe(it->second, takenQty - usedQty);
+    it->second -= takenQty - usedQty;
+  }
+
+ private:
+  boost::unordered_map<const Security *, Qty> m_usedQtyToBuy;
+  boost::unordered_map<const Security *, Qty> m_usedQtyToSell;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,12 +131,13 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void Signal(Security &sellTarget,
               Security &buyTarget,
               const Double &spreadRatio,
+              SignalSession &session,
               const Milestones &delayMeasurement) {
     if (spreadRatio <= m_operationStopSpreadRatio) {
       StopTrading(sellTarget, buyTarget, spreadRatio);
     } else if (m_tradingSettings &&
                spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-      Trade(sellTarget, buyTarget, spreadRatio, delayMeasurement);
+      Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
     }
   }
 
@@ -153,8 +188,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto &bestAsk = asks.front();
       boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
       if (!m_isCrossMode) {
+        SignalSession session;
         Signal(*bestBid.second->security, *bestAsk.second->security,
-               spreadRatio, delayMeasurement);
+               spreadRatio, session, delayMeasurement);
       }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
@@ -221,8 +257,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return std::fabsl(lhs.spreadRatio) > std::fabsl(rhs.spreadRatio);
     });
 
+    SignalSession session;
     for (const auto &signal : signalSet) {
-      Signal(*signal.sellTarget, *signal.buyTarget, signal.spreadRatio,
+      Signal(*signal.sellTarget, *signal.buyTarget, signal.spreadRatio, session,
              delayMeasurement);
     }
   }
@@ -255,6 +292,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void Trade(Security &sellTarget,
              Security &buyTarget,
              const Double &bestSpreadRatio,
+             SignalSession &signalSession,
              const Milestones &delayMeasurement) {
     if (CheckActualPositions(sellTarget, buyTarget)) {
       return;
@@ -284,10 +322,40 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     const auto qtyPrecisionPower = 1000000;
 
-    auto qty = RoundDownByPrecision(
-        std::min(m_tradingSettings->maxQty,
-                 std::min(sellTarget.GetBidQty(), buyTarget.GetAskQty())),
-        qtyPrecisionPower);
+    struct Qtys : private boost::noncopyable {
+      SignalSession *session;
+      Security &sellTarget;
+      Security &buyTarget;
+      Qty sellQty;
+      Qty buyQty;
+
+      explicit Qtys(Security &sellTarget,
+                    Security &buyTarget,
+                    SignalSession &session)
+          : sellTarget(sellTarget),
+            buyTarget(buyTarget),
+            sellQty(sellTarget.GetBidQty()),
+            buyQty(buyTarget.GetAskQty()),
+            session(&session) {
+        sellQty = session.TakeQty(sellTarget, true, sellQty);
+        buyQty = session.TakeQty(buyTarget, false, buyQty);
+      }
+      ~Qtys() { Return(0); }
+
+      void Return(const Qty &used) {
+        if (!session) {
+          return;
+        }
+        session->ReturnQty(sellTarget, true, sellQty, used);
+        session->ReturnQty(buyTarget, false, buyQty, used);
+        session = nullptr;
+      }
+    } qtys(sellTarget, buyTarget, signalSession);
+
+    auto qty =
+        RoundDownByPrecision(std::min(m_tradingSettings->maxQty,
+                                      std::min(qtys.sellQty, qtys.buyQty)),
+                             qtyPrecisionPower);
 
     {
       auto balance =
@@ -352,6 +420,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     const auto operation = boost::make_shared<Operation>(
         sellTarget, buyTarget, qty, sellPrice, buyPrice);
+
+    qtys.Return(qty);
 
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
