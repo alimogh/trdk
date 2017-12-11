@@ -49,6 +49,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   aa::Strategy &m_self;
   const Double m_operationStopSpreadRatio;
   const boost::optional<Double> m_lowestSpreadRatio;
+  const bool m_isCrossMode;
 
   std::unique_ptr<PositionController> m_controller;
 
@@ -60,7 +61,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   boost::unordered_map<Symbol, std::vector<AdviceSecuritySignal>> m_symbols;
 
   boost::unordered_set<const Security *> m_errors;
-  const Security *m_lastError;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
@@ -72,7 +72,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                 ? boost::make_unique<PositionController>(m_self)
                 : boost::make_unique<PositionAndBalanceController>(m_self)),
         m_minPriceDifferenceRatioToAdvice(0),
-        m_lastError(nullptr) {
+        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)) {
     {
       const char *const key = "lowest_spread_percentage";
       if (conf.IsKeyExist(key)) {
@@ -89,11 +89,30 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
       m_self.GetLog().Info("Enabled balances restoration.");
     }
+    if (m_isCrossMode) {
+      m_self.GetLog().Info("Cross-arbitrage mode enabled.");
+    }
+  }
+
+  void Signal(Security &sellTarget,
+              Security &buyTarget,
+              const Double &spreadRatio,
+              const Milestones &delayMeasurement) {
+    if (spreadRatio <= m_operationStopSpreadRatio) {
+      StopTrading(sellTarget, buyTarget, spreadRatio);
+    } else if (m_tradingSettings &&
+               spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
+      Trade(sellTarget, buyTarget, spreadRatio, delayMeasurement);
+    }
   }
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
                    const Milestones &delayMeasurement) {
+    if (m_isCrossMode) {
+      CheckCrossSignals(allSecurities, delayMeasurement);
+    }
+
     std::vector<PriceItem> bids;
     std::vector<PriceItem> asks;
 
@@ -133,13 +152,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto &bestBid = bids.front();
       const auto &bestAsk = asks.front();
       boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
-      auto &bestSell = *bestBid.second->security;
-      auto &bestBuy = *bestAsk.second->security;
-      if (spreadRatio <= m_operationStopSpreadRatio) {
-        StopTrading(bestSell, bestBuy, spreadRatio);
-      } else if (m_tradingSettings &&
-                 spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-        Trade(bids, asks, spreadRatio, delayMeasurement);
+      if (!m_isCrossMode) {
+        Signal(*bestBid.second->security, *bestAsk.second->security,
+               spreadRatio, delayMeasurement);
       }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
@@ -167,6 +182,51 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                allSecurities});
   }
 
+  void CheckCrossSignals(std::vector<AdviceSecuritySignal> &allSecurities,
+                         const Milestones &delayMeasurement) {
+    Assert(m_isCrossMode);
+
+    struct SignalData {
+      Double spreadRatio;
+      Security *sellTarget;
+      Security *buyTarget;
+
+      explicit SignalData(Security &sellTarget, Security &buyTarget)
+          : spreadRatio(CaclSpread(sellTarget.GetBidPriceValue(),
+                                   buyTarget.GetAskPriceValue())
+                            .second),
+            sellTarget(&sellTarget),
+            buyTarget(&buyTarget) {
+        Assert(this->sellTarget != this->buyTarget);
+      }
+    };
+    std::vector<SignalData> signalSet;
+    signalSet.reserve(allSecurities.size() * allSecurities.size());
+
+    for (auto &sellTarget : allSecurities) {
+      if (!sellTarget.security->IsOnline()) {
+        continue;
+      }
+      for (auto &buyTarget : allSecurities) {
+        if (&sellTarget == &buyTarget || !buyTarget.security->IsOnline()) {
+          continue;
+        }
+        Assert(sellTarget.security != buyTarget.security);
+        signalSet.emplace_back(*sellTarget.security, *buyTarget.security);
+      }
+    }
+
+    std::sort(signalSet.begin(), signalSet.end(), [](const SignalData &lhs,
+                                                     const SignalData &rhs) {
+      return std::fabsl(lhs.spreadRatio) > std::fabsl(rhs.spreadRatio);
+    });
+
+    for (const auto &signal : signalSet) {
+      Signal(*signal.sellTarget, *signal.buyTarget, signal.spreadRatio,
+             delayMeasurement);
+    }
+  }
+
   void RecheckSignal() {
     for (auto &symbol : m_symbols) {
       for (const auto &security : symbol.second) {
@@ -192,15 +252,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     return numberOfPositionsWithTheSameTarget > 0;
   }
 
-  void Trade(const std::vector<PriceItem> &bids,
-             const std::vector<PriceItem> &asks,
+  void Trade(Security &sellTarget,
+             Security &buyTarget,
              const Double &bestSpreadRatio,
              const Milestones &delayMeasurement) {
-    Assert(!bids.empty());
-    Assert(!asks.empty());
-    auto &sellTarget = *bids.front().second->security;
-    auto &buyTarget = *asks.front().second->security;
-
     if (CheckActualPositions(sellTarget, buyTarget)) {
       return;
     }
@@ -225,12 +280,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         sellPrice = nextSellPrice;
         buyPrice = nextBuyPrice;
       }
-    }
-
-    if (m_lastError == &sellTarget || m_lastError == &buyTarget) {
-      ReportIgnored("last error", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
-      return;
     }
 
     const auto qtyPrecisionPower = 1000000;
@@ -321,13 +370,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (isSellTargetInBlackList) {
       m_errors.erase(sellTargetBlackListIt);
     }
-    m_lastError = nullptr;
   }
 
-  void StopTrading(const Security &bestBid,
-                   const Security &bestAsk,
+  void StopTrading(const Security &sellTarget,
+                   const Security &buyTarget,
                    const Double &spreadRatio) {
-    m_lastError = nullptr;
+    if (!sellTarget.IsOnline() || !buyTarget.IsOnline()) {
+      return;
+    }
 
     bool isReported = false;
 
@@ -345,13 +395,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             "'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': "
             "%6$.8f}}, 'spread': %7$.3f}}",
             [&](TradingRecord &record) {
-              record % boost::cref(bestBid.GetSource().GetInstanceName())  // 1
-                  % bestBid.GetBidPriceValue()                             // 2
-                  % bestAsk.GetAskPriceValue()                             // 3
-                  % boost::cref(bestAsk.GetSource().GetInstanceName())     // 4
-                  % bestAsk.GetBidPriceValue()                             // 5
-                  % bestAsk.GetAskPriceValue()                             // 6
-                  % (spreadRatio * 100);                                   // 7
+              record %
+                  boost::cref(sellTarget.GetSource().GetInstanceName())   // 1
+                  % sellTarget.GetBidPriceValue()                         // 2
+                  % buyTarget.GetAskPriceValue()                          // 3
+                  % boost::cref(buyTarget.GetSource().GetInstanceName())  // 4
+                  % buyTarget.GetBidPriceValue()                          // 5
+                  % buyTarget.GetAskPriceValue()                          // 6
+                  % (spreadRatio * 100);                                  // 7
             });
         isReported = true;
       }
@@ -522,16 +573,17 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                                               *operation);
       }
 
-      m_lastError = !firstLeg ? legTargets.first : legTargets.second;
-      m_errors.emplace(m_lastError);
+      const auto &errorLeg =
+          *(!firstLeg ? legTargets.first : legTargets.second);
+      m_errors.emplace(&errorLeg);
       m_self.GetLog().Warn(
           "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
           "%3% leg is \"%4%\"",
-          *m_lastError,                    // 1
+          errorLeg,                        // 1
           !firstLeg ? "first" : "second",  // 2
           !firstLeg ? "Second" : "First",  // 3
-          m_lastError == legTargets.first ? *legTargets.second
-                                          : *legTargets.first);  // 4
+          &errorLeg == legTargets.first ? *legTargets.second
+                                        : *legTargets.first);  // 4
     }
 
     return false;
@@ -571,7 +623,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                  bestSpreadRatio);
     m_self.GetLog().Error("Failed to start trading (async).");
 
-    m_lastError = nullptr;
     if (!firstLeg.get()) {
       Verify(m_errors.emplace(&firstLegTarget).second);
     }
@@ -588,21 +639,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       return false;
     }
 
+    const Security *errorLeg;
     if (firstLeg.get()) {
       Assert(!secondLeg.get());
-      m_lastError = &secondLegTarget;
+      errorLeg = &secondLegTarget;
       CloseLegPositionByOperationStartError(*firstLeg.get(), secondLegTarget,
                                             *operation);
     } else {
       Assert(secondLeg.get());
-      m_lastError = &firstLegTarget;
+      errorLeg = &firstLegTarget;
       CloseLegPositionByOperationStartError(*secondLeg.get(), firstLegTarget,
                                             *operation);
     }
     m_self.GetLog().Warn(
         "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
         "%3% leg is \"%4%\"",
-        *m_lastError,                                         // 1
+        *errorLeg,                                            // 1
         firstLeg.get() ? "second" : "first",                  // 2
         secondLeg.get() ? "Second" : "First",                 // 3
         secondLeg.get() ? secondLegTarget : firstLegTarget);  // 4
@@ -720,7 +772,6 @@ void aa::Strategy::DeactivateAutoTrading() {
   }
   m_pimpl->m_tradingSettings = boost::none;
   m_pimpl->m_errors.clear();
-  m_pimpl->m_lastError = nullptr;
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,
