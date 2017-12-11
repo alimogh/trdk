@@ -70,7 +70,7 @@ class InvalidPairException : public Exception {
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
-std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
+boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopOfBook(
     const ptr::ptree &source) {
   for (const auto &lines : source) {
     double price;
@@ -81,17 +81,14 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
         ++i;
       } else {
         AssertEq(1, i);
-        return {
+        return std::make_pair(
             Level1TickValue::Create<priceType>(std::move(price)),
-            Level1TickValue::Create<qtyType>(val.second.get_value<double>())};
+            Level1TickValue::Create<qtyType>(val.second.get_value<double>()));
       }
     }
     break;
   }
-  return {Level1TickValue::Create<priceType>(
-              std::numeric_limits<double>::quiet_NaN()),
-          Level1TickValue::Create<qtyType>(
-              std::numeric_limits<double>::quiet_NaN())};
+  return boost::none;
 }
 #pragma warning(pop)
 
@@ -758,11 +755,21 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         const auto &bestBid =
             ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
                 data.get_child("bids"));
-        security->second->SetLevel1(
-            time, std::move(bestBid.first), std::move(bestBid.second),
-            std::move(bestAsk.first), std::move(bestAsk.second),
-            delayMeasurement);
-        security->second->SetOnline(pt::not_a_date_time, true);
+        if (bestAsk && bestBid) {
+          security->second->SetLevel1(time, bestBid->first, bestBid->second,
+                                      bestAsk->first, bestAsk->second,
+                                      delayMeasurement);
+          security->second->SetOnline(pt::not_a_date_time, true);
+        } else {
+          security->second->SetOnline(pt::not_a_date_time, false);
+          if (bestBid) {
+            security->second->SetLevel1(time, bestBid->first, bestBid->second,
+                                        delayMeasurement);
+          } else if (bestAsk) {
+            security->second->SetLevel1(time, bestAsk->first, bestAsk->second,
+                                        delayMeasurement);
+          }
+        }
       }
     } catch (const std::exception &ex) {
       for (auto &security : m_securities) {

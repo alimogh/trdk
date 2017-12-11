@@ -133,7 +133,6 @@ void BittrexMarketDataSource::RequestActualPrices() {
           % ex.what();  // 2
       throw CommunicationError(error.str().c_str());
     }
-    security.SetOnline(pt::not_a_date_time, true);
   }
 }
 
@@ -142,18 +141,16 @@ namespace {
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType, typename Source>
-std::pair<Level1TickValue, Level1TickValue> ReadTopPrice(const Source &source) {
+boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
+    const Source &source) {
   if (source) {
     for (const auto &level : *source) {
-      return {
+      return std::make_pair(
           Level1TickValue::Create<qtyType>(level.second.get<Qty>("Quantity")),
-          Level1TickValue::Create<priceType>(level.second.get<Price>("Rate"))};
+          Level1TickValue::Create<priceType>(level.second.get<Price>("Rate")));
     }
   }
-  return {Level1TickValue::Create<priceType>(
-              std::numeric_limits<double>::quiet_NaN()),
-          Level1TickValue::Create<qtyType>(
-              std::numeric_limits<double>::quiet_NaN())};
+  return boost::none;
 }
 #pragma warning(pop)
 }
@@ -165,8 +162,18 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
       source.get_child_optional("buy"));
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("sell"));
-  security.SetLevel1(time, bid.first, bid.second, ask.first, ask.second,
-                     delayMeasurement);
+  if (bid && ask) {
+    security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
+                       delayMeasurement);
+    security.SetOnline(pt::not_a_date_time, true);
+  } else {
+    security.SetOnline(pt::not_a_date_time, false);
+    if (bid) {
+      security.SetLevel1(time, bid->first, bid->second, delayMeasurement);
+    } else if (ask) {
+      security.SetLevel1(time, ask->first, ask->second, delayMeasurement);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
