@@ -20,20 +20,22 @@ namespace Terminal {
 class MainWindow : public QMainWindow {
   Q_OBJECT
  public:
-  explicit MainWindow(std::unique_ptr<Lib::Engine> &&, QWidget *parent);
+  explicit MainWindow(Lib::Engine &,
+                      std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
+                      QWidget *parent);
   ~MainWindow() override;
 
  public:
-  Lib::Engine &GetEngine() { return *m_engine; }
+  Lib::Engine &GetEngine() { return m_engine; }
 
  public slots:
   void CreateNewArbitrageStrategy();
 
  private:
-  std::unique_ptr<Lib::Engine> m_engine;
+  Lib::Engine &m_engine;
   Ui::MainWindow m_ui;
   Lib::OrderListView m_orderList;
-  std::vector<std::unique_ptr<trdk::Lib::Dll>> m_moduleDlls;
+  std::vector<std::unique_ptr<trdk::Lib::Dll>> &m_moduleDlls;
 };
 }
 }

@@ -20,16 +20,19 @@ using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
-MainWindow::MainWindow(std::unique_ptr<Engine> &&engine, QWidget *parent)
+MainWindow::MainWindow(Engine &engine,
+                       std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
+                       QWidget *parent)
     : QMainWindow(parent),
-      m_engine(std::move(engine)),
-      m_orderList(*m_engine, this) {
+      m_engine(engine),
+      m_orderList(m_engine, this),
+      m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
   {
     auto *model = new SortFilterProxyModel(&m_orderList);
-    model->setSourceModel(new OrderListModel(*m_engine, &m_orderList));
+    model->setSourceModel(new OrderListModel(m_engine, &m_orderList));
     m_orderList.setModel(model);
     Verify(connect(model, &QAbstractItemModel::rowsInserted,
                    [this](const QModelIndex &index, int, int) {
@@ -73,7 +76,7 @@ void MainWindow::CreateNewArbitrageStrategy() {
     typedef std::unique_ptr<QWidget>(Factory)(Lib::Engine &, QWidget *);
     auto *const widget =
         m_moduleDlls.back()
-            ->GetFunction<Factory>("CreateStrategyWidgets")(*m_engine, this)
+            ->GetFunction<Factory>("CreateStrategyWidgets")(m_engine, this)
             .release();
     widget->adjustSize();
     widget->show();

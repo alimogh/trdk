@@ -27,6 +27,9 @@ class CryptopiaTradingSystem : public TradingSystem {
   typedef OrdersRequestsMutex::scoped_lock OrdersRequestsReadLock;
   typedef OrdersRequestsMutex::scoped_lock OrdersRequestsWriteLock;
 
+  typedef boost::mutex CancelOrderMutex;
+  typedef OrdersRequestsMutex::scoped_lock CancelOrderLock;
+
   struct Settings : public Rest::Settings, public NonceStorage::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
@@ -36,9 +39,6 @@ class CryptopiaTradingSystem : public TradingSystem {
   };
 
   class OrderTransactionRequest;
-  class NewOrderRequest;
-  class OrderCancelRequest;
-  class OpenOrdersRequest;
 
   class PrivateRequest : public CryptopiaRequest {
    public:
@@ -149,8 +149,11 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   OrdersRequestsMutex m_openOrdersRequestMutex;
   size_t m_openOrdersRequestsVersion;
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<OpenOrdersRequest>>
+  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Request>>
       m_openOrdersRequests;
+
+  CancelOrderMutex m_cancelOrderMutex;
+  boost::unordered_set<OrderId> m_cancelingOrders;
 
   Poco::Net::HTTPSClientSession m_tradingSession;
   Poco::Net::HTTPSClientSession m_pullingSession;
