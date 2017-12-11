@@ -34,12 +34,6 @@ class BittrexTradingSystem : public TradingSystem {
   };
 
   class OrderTransactionRequest;
-  class NewOrderRequest;
-  class SellOrderRequest;
-  class BuyOrderRequest;
-  class OrderCancelRequest;
-  class OrderStateRequest;
-  class OrderHistoryRequest;
 
   class PrivateRequest : public BittrexRequest {
    public:

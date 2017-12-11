@@ -175,6 +175,7 @@ void StrategyWindow::InitBySelectedSymbol() {
     copyKey("trailing_activation_percentage");
     copyKey("lowest_spread_percentage");
     copyKey("operation_stop_spread_percentage");
+    copyKey("cross_arbitrage_mode");
     m_engine.GetContext().Add(IniString(os.str()));
   }
   m_strategy = boost::polymorphic_downcast<aa::Strategy *>(

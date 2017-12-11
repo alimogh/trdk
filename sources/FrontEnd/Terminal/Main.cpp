@@ -55,11 +55,12 @@ int main(int argc, char *argv[]) {
 
     LoadStyle(application);
 
-    auto engine = boost::make_unique<Engine>(
+    Engine engine(
         GetExeFilePath().branch_path() / "etc" / "Robot" / "default.ini",
         nullptr);
+    std::vector<std::unique_ptr<trdk::Lib::Dll>> moduleDlls;
 
-    MainWindow mainWindow(std::move(engine), nullptr);
+    MainWindow mainWindow(engine, moduleDlls, nullptr);
 
     for (;;) {
       try {
