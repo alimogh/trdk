@@ -411,7 +411,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     {
-      const auto &it = m_securities.find(product->first);
+      const auto &it = m_securities.find(product->second.id);
       if (it != m_securities.cend()) {
         return *it->second;
       }
