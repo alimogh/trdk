@@ -46,7 +46,12 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
         error << ", message: \"" << *serverMessage << "\"";
       }
       error << ")";
-      throw TradingSystem::CommunicationError(error.str().c_str());
+      if (serverError && boost::starts_with(*serverError, "Trade #") &&
+          boost::ends_with(*serverError, " does not exist")) {
+        throw TradingSystem::OrderIsUnknown(error.str().c_str());
+      } else {
+        throw TradingSystem::CommunicationError(error.str().c_str());
+      }
     }
   }
 

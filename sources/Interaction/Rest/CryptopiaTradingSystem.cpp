@@ -292,8 +292,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
   }
 
   const auto &productId = product->second.id;
-  const auto &actualPrice =
-      side == ORDER_SIDE_BUY ? (*price * 0.9) : (*price * 1.1);
+  const auto &actualPrice = *price;
 
   const auto response = boost::get<1>(
       NewOrderRequest(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell", qty,
@@ -356,7 +355,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   size_t version;
   {
     const OrdersRequestsReadLock lock(m_openOrdersRequestMutex);
-    if (!m_openOrdersRequests.empty()) {
+    if (m_openOrdersRequests.empty()) {
       return false;
     }
     openOrdersRequests = m_openOrdersRequests;
