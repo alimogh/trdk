@@ -192,9 +192,9 @@ void BusinessOperationReport::PrintReport(
   }
 
   os << std::setprecision(8);
-  os << ',' << sell.openedQty;         // 13
-  os << ',' << buy.openedQty;          // 14
-  os << ',' << (buy.openedQty - qty);  // 15
+  os << ',' << sell.openedQty;                    // 13
+  os << ',' << buy.openedQty;                     // 14
+  os << ',' << (buy.openedQty - sell.openedQty);  // 15
 
   os << ',' << sell.openStartPrice;  // 16
   os << ',' << buy.openStartPrice;   // 17
