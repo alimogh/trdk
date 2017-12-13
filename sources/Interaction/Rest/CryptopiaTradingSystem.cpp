@@ -57,12 +57,23 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
 CryptopiaTradingSystem::PrivateRequest::Response
 CryptopiaTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session,
                                              const Context &context) {
+  Assert(!m_nonce);
+  m_nonce.emplace(m_nonces.TakeNonce());
+
+  const struct NonceScope {
+    boost::optional<NonceStorage::TakenValue> &nonce;
+
+    ~NonceScope() {
+      Assert(nonce);
+      nonce = boost::none;
+    }
+  } nonceScope = {m_nonce};
+
   const auto result = Base::Send(session, context);
+
   Assert(m_nonce);
-  if (m_nonce) {
-    m_nonce->Use();
-    m_nonce = boost::none;
-  }
+  m_nonce->Use();
+
   return result;
 }
 
@@ -70,8 +81,7 @@ void CryptopiaTradingSystem::PrivateRequest::PrepareRequest(
     const net::HTTPClientSession &session,
     const std::string &body,
     net::HTTPRequest &request) const {
-  Assert(!m_nonce);
-  m_nonce.emplace(m_nonces.TakeNonce());
+  Assert(m_nonce);
   const auto &nonce = boost::lexical_cast<std::string>(m_nonce->Get());
 
   auto signatureSource = m_settings.apiKey + "POST";
