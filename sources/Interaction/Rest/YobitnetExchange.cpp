@@ -494,11 +494,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
-  void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.symbol, status, order.qty, order.qty, order.price,
-            order.side, order.tid, order.time, order.time);
-  }
-
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("/api/3/info", "Info");

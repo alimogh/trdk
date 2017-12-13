@@ -310,7 +310,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         const auto nextSellPrice = sellPrice - pip;
         const auto nextBuyPrice = buyPrice + pip;
         const auto &nextSpread = CaclSpread(nextSellPrice, nextBuyPrice);
-        AssertGe(spreadRatio, nextSpread.second);
         if (nextSpread.second <= lowestSpreadRatio) {
           break;
         }
@@ -683,9 +682,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     auto firstLeg =
         boost::async(boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
-    auto secondLeg =
-        boost::async(boost::bind(openPosition, 2, boost::ref(secondLegTarget)));
-    if (firstLeg.get() && secondLeg.get()) {
+    auto secondLeg = openPosition(2, secondLegTarget);
+    if (firstLeg.get() && secondLeg) {
       return true;
     }
 
@@ -696,11 +694,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (!firstLeg.get()) {
       Verify(m_errors.emplace(&firstLegTarget).second);
     }
-    if (!secondLeg.get()) {
+    if (!secondLeg) {
       Verify(m_errors.emplace(&secondLegTarget).second);
     }
 
-    if (!firstLeg.get() && !secondLeg.get()) {
+    if (!firstLeg.get() && !secondLeg) {
       m_self.GetLog().Warn(
           "\"%1%\" and \"%2%\" added to the blacklist by position opening "
           "error.",
@@ -711,23 +709,23 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     const Security *errorLeg;
     if (firstLeg.get()) {
-      Assert(!secondLeg.get());
+      Assert(!secondLeg);
       errorLeg = &secondLegTarget;
       CloseLegPositionByOperationStartError(*firstLeg.get(), secondLegTarget,
                                             *operation);
     } else {
-      Assert(secondLeg.get());
+      Assert(secondLeg);
       errorLeg = &firstLegTarget;
-      CloseLegPositionByOperationStartError(*secondLeg.get(), firstLegTarget,
+      CloseLegPositionByOperationStartError(*secondLeg, firstLegTarget,
                                             *operation);
     }
     m_self.GetLog().Warn(
         "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
         "%3% leg is \"%4%\"",
-        *errorLeg,                                            // 1
-        firstLeg.get() ? "second" : "first",                  // 2
-        secondLeg.get() ? "Second" : "First",                 // 3
-        secondLeg.get() ? secondLegTarget : firstLegTarget);  // 4
+        *errorLeg,                                      // 1
+        firstLeg.get() ? "second" : "first",            // 2
+        secondLeg ? "Second" : "First",                 // 3
+        secondLeg ? secondLegTarget : firstLegTarget);  // 4
 
     return false;
   }
