@@ -272,7 +272,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       const pt::ptime &time,
       const OrderId &orderId,
       const OrderStatus &status,
-      const boost::optional<Qty> &remainingQty,
+      boost::optional<Qty> &&remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::function<void(OrderTransactionContext &)> &callback) {
@@ -285,15 +285,16 @@ class TradingSystem::Implementation : private boost::noncopyable {
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
     }
-    OnOrderStatusUpdate(time, orderId, status, remainingQty, commission,
-                        std::move(tradeInfo), it, std::move(lock), callback);
+    OnOrderStatusUpdate(time, orderId, status, std::move(remainingQty),
+                        commission, std::move(tradeInfo), it, std::move(lock),
+                        callback);
   }
 
   void OnOrderStatusUpdate(
       const pt::ptime &time,
       const OrderId &orderId,
       OrderStatus status,
-      const boost::optional<Qty> &remainingQty,
+      boost::optional<Qty> &&remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
@@ -303,6 +304,31 @@ class TradingSystem::Implementation : private boost::noncopyable {
 
     if (!cache.IsChanged(status, remainingQty, tradeInfo)) {
       return;
+    }
+
+    if (remainingQty) {
+      if (cache.remainingQty > *remainingQty) {
+        static_assert(numberOfOrderStatuses == 8, "List changed.");
+        switch (status) {
+          case ORDER_STATUS_SENT:
+          case ORDER_STATUS_SUBMITTED:
+            AssertEq(ORDER_STATUS_FILLED_PARTIALLY, status);
+            status = ORDER_STATUS_FILLED_PARTIALLY;
+            break;
+          case ORDER_STATUS_CANCELLED:
+          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_REJECTED:
+          case ORDER_STATUS_ERROR:
+            AssertEq(0, *remainingQty);
+            remainingQty = 0;
+            break;
+          case ORDER_STATUS_FILLED_PARTIALLY:
+            break;
+        }
+      } else if (cache.remainingQty < *remainingQty) {
+        AssertGe(cache.remainingQty, *remainingQty);
+        remainingQty = cache.remainingQty;
+      }
     }
 
     static_assert(numberOfOrderStatuses == 8, "List changed.");
@@ -453,7 +479,6 @@ Balances &TradingSystem::GetBalancesStorage() {
                                                const Price &,
                                                const OrderSide &,
                                                const TradingSystem &) override {
-
     }
 
   } result;
