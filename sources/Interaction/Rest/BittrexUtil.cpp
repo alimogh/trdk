@@ -24,10 +24,6 @@ std::string NormilizeSymbol(std::string source) {
   } else if (boost::ends_with(source, "-BCC")) {
     source.back() = 'H';
   }
-  if (boost::ends_with(source, "-BTC") || !boost::starts_with(source, "BTC-")) {
-    return boost::replace_first_copy(source, "-", "_");
-    ;
-  }
   std::vector<std::string> subs;
   boost::split(subs, source, boost::is_any_of("-"));
   if (subs.size() != 2) {
