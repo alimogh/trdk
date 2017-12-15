@@ -33,24 +33,27 @@ class PullingTask : private boost::noncopyable {
   ~PullingTask();
 
  public:
-  bool AddTask(const std::string &name,
+  void AddTask(const std::string &&name,
                size_t priority,
-               const boost::function<bool()> &task,
+               const boost::function<bool()> &&,
                size_t frequency);
-  void ReplaceTask(const std::string &name,
+  void ReplaceTask(const std::string &&name,
                    size_t priority,
-                   const boost::function<bool()> &task,
+                   const boost::function<bool()> &&,
                    size_t frequency);
   void AccelerateNextPulling();
 
  private:
-  void Run();
+  void RunTasks();
+  bool RunTask(Task &, bool isAccelerated) const;
 
-  bool SetTask(const std::string &name,
-               size_t priority,
-               const boost::function<bool()> &task,
-               size_t frequency,
-               bool replace);
+  void ScheduleTaskSetting(const std::string &&name,
+                           size_t priority,
+                           const boost::function<bool()> &&,
+                           size_t frequency,
+                           bool replace);
+
+  void SetTasks();
 
  private:
   ModuleEventsLog &m_log;
@@ -58,6 +61,7 @@ class PullingTask : private boost::noncopyable {
   boost::condition_variable m_condition;
   const boost::chrono::microseconds m_pullingInterval;
   std::vector<Task> m_tasks;
+  std::vector<std::pair<Task, bool /* replace */>> m_newTasks;
   boost::optional<boost::thread> m_thread;
   boost::atomic_bool m_isAccelerated;
 };

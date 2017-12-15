@@ -58,13 +58,13 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  Verify(m_pullingTask->AddTask(
+  m_pullingTask->AddTask(
       "Prices", 1,
       [this]() {
         RequestActualPrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency()));
+      m_settings.pullingSetttings.GetPricesRequestFrequency());
 
   m_pullingTask->AccelerateNextPulling();
 }

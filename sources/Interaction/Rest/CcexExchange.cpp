@@ -345,30 +345,30 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    Verify(m_pullingTask->AddTask(
+    m_pullingTask->AddTask(
         "Prices", 1,
         [this] {
           UpdateSecurities();
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency()));
-    Verify(m_pullingTask->AddTask(
+        m_settings.pullingSetttings.GetPricesRequestFrequency());
+    m_pullingTask->AddTask(
         "Actual orders", 0,
         [this] {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
-    Verify(m_pullingTask->AddTask(
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+    m_pullingTask->AddTask(
         "Balances", 1,
         [this] {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency()));
-    Verify(m_pullingTask->AddTask(
+        m_settings.pullingSetttings.GetBalancesRequestFrequency());
+    m_pullingTask->AddTask(
         "Opened orders", 100, [this] { return UpdateOpenedOrders(); },
-        m_settings.pullingSetttings.GetAllOrdersRequestFrequency()));
+        m_settings.pullingSetttings.GetAllOrdersRequestFrequency());
 
     m_pullingTask->AccelerateNextPulling();
 

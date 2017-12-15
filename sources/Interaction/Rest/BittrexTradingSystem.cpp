@@ -97,20 +97,20 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  Verify(m_pullingTask.AddTask(
+  m_pullingTask.AddTask(
       "Actual orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
-  Verify(m_pullingTask.AddTask(
+      m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+  m_pullingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+      m_settings.pullingSetttings.GetBalancesRequestFrequency());
 
   m_pullingTask.AccelerateNextPulling();
 }
