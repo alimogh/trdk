@@ -675,7 +675,7 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
           record % orderId               // 1
               % std::string(ex.what());  // 2
         });
-    GetLog().Warn(
+    GetLog().Error(
         "Error while sending order cancel transaction for order %1%: "
         "\"%2%\".",
         orderId,                  // 1

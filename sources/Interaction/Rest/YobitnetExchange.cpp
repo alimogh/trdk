@@ -183,9 +183,9 @@ class TradeRequest : public Request {
         if (message) {
           if (*message == "invalid pair") {
             throw InvalidPairException(error.str().c_str());
-          } else if (*message ==
-                     "The given order has already been closed and cannot be "
-                     "canceled.") {
+          } else if (boost::istarts_with(*message,
+                                         "The given order has already been "
+                                         "closed and cannot be cancel")) {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
           }
         }
