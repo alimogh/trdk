@@ -32,15 +32,14 @@ PullingTask::~PullingTask() {
     AssertEq(0, m_tasks.size());
     return;
   }
-  AssertLt(0, m_tasks.size());
   try {
-    {
-      const Lock lock(m_mutex);
-      m_tasks.clear();
-      m_newTasks.clear();
-    }
+    Lock lock(m_mutex);
+    m_newTasks.clear();
+    auto thread = std::move(*m_thread);
+    m_thread = boost::none;
+    lock.unlock();
     m_condition.notify_all();
-    m_thread->join();
+    thread.join();
   } catch (...) {
     AssertFailNoException();
     terminate();
@@ -137,6 +136,9 @@ void PullingTask::RunTasks() {
       }
 
       lock.lock();
+      if (!m_thread) {
+        break;
+      }
       if (!m_isAccelerated) {
         m_condition.wait_until(lock, nextStartTime);
       }
