@@ -405,32 +405,18 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 }
 
 OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
+#ifdef DEV_VER
+  GetTradingLog().Write(
+      "debug-dump-order-status\t%1%",
+      [&](TradingRecord &record) { record % ConvertToString(node, false); });
+#endif
+
   OrderId id;
-  OrderSide side;
-  Qty qty;
   Qty remainingQty;
-  Price price;
   pt::ptime time;
-  std::string symbol;
 
   try {
     id = node.get<OrderId>("OrderId");
-    {
-      const auto &sideField = node.get<std::string>("Type");
-      if (sideField == "Buy") {
-        side = ORDER_SIDE_BUY;
-      } else if (sideField == "Sell") {
-        side = ORDER_SIDE_SELL;
-      } else {
-        boost::format error("Unknown order side for order (message: \"%1%\")");
-        error % ConvertToString(node, false);
-        throw Exception(error.str().c_str());
-      }
-    }
-    symbol = node.get<std::string>("Market");
-    boost::replace_first(symbol, "/", "_");
-    price = node.get<Price>("Rate");
-    qty = node.get<Price>("Amount");
     remainingQty = node.get<Price>("Remaining");
     {
       const auto &timeField = node.get<std::string>("TimeStamp");
@@ -444,12 +430,10 @@ OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
     throw Exception(error.str().c_str());
   }
 
-  AssertGe(qty, remainingQty);
-
-  OnOrder(id, symbol,
-          qty == remainingQty ? ORDER_STATUS_SUBMITTED
-                              : ORDER_STATUS_FILLED_PARTIALLY,
-          qty, remainingQty, price, side, TIME_IN_FORCE_GTC, time, time);
+  try {
+    OnOrderStatusUpdate(time, id, ORDER_STATUS_SUBMITTED, remainingQty);
+  } catch (const OrderIsUnknown &) {
+  }
 
   return id;
 }

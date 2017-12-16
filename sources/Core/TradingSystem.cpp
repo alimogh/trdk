@@ -279,9 +279,6 @@ class TradingSystem::Implementation : private boost::noncopyable {
     ActiveOrderWriteLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
-      m_log.Warn(
-          "Failed to handle status update for order %1% as order is unknown.",
-          orderId);
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
     }
@@ -311,14 +308,23 @@ class TradingSystem::Implementation : private boost::noncopyable {
         static_assert(numberOfOrderStatuses == 8, "List changed.");
         switch (status) {
           case ORDER_STATUS_SENT:
-          case ORDER_STATUS_SUBMITTED:
-            AssertEq(ORDER_STATUS_FILLED_PARTIALLY, status);
-            status = ORDER_STATUS_FILLED_PARTIALLY;
+          case ORDER_STATUS_SUBMITTED: {
+            const auto &newStatus = *remainingQty
+                                        ? ORDER_STATUS_FILLED_PARTIALLY
+                                        : ORDER_STATUS_FILLED;
+            status = newStatus;
             break;
+          }
           case ORDER_STATUS_CANCELLED:
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_REJECTED:
           case ORDER_STATUS_ERROR:
+            m_log.Error(
+                "Wrong order remaining quantity received. Remaining quantity "
+                "is %1%, but status is \"%2%\", so remaining quantity has to "
+                "be 0. Ignoring order remaining quantity.",
+                *remainingQty,  // 1
+                status);        // 2
             AssertEq(0, *remainingQty);
             remainingQty = 0;
             break;
@@ -326,6 +332,12 @@ class TradingSystem::Implementation : private boost::noncopyable {
             break;
         }
       } else if (cache.remainingQty < *remainingQty) {
+        m_log.Error(
+            "Wrong order remaining quantity received - greater than was "
+            "before. Was %1%, but now is %2%. Ignoring order remaining "
+            "quantity update.",
+            cache.remainingQty,  // 1 * 2
+            *remainingQty);      // 2
         AssertGe(cache.remainingQty, *remainingQty);
         remainingQty = cache.remainingQty;
       }
@@ -338,11 +350,12 @@ class TradingSystem::Implementation : private boost::noncopyable {
         switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
-            AssertEq(cache.status, status);
             status = cache.status;
             break;
         }
         break;
+    }
+    switch (status) {
       case ORDER_STATUS_FILLED:
       case ORDER_STATUS_FILLED_PARTIALLY:
         if (!tradeInfo && remainingQty) {
