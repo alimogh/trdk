@@ -734,7 +734,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       Position &openedPosition,
       const Security &failedPositionTarget,
       Operation &operation) {
-    m_controller->ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
     operation.GetReportData().Add(BusinessOperationReportData::PositionReport{
         operation.GetId(), openedPosition.GetSubOperationId() == 1 ? 2 : 1,
         !openedPosition.IsLong(), pt::not_a_date_time, pt::not_a_date_time,
@@ -746,6 +745,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         operation.GetTradingSystem(m_self, openedPosition.GetSecurity())
             .CalcCommission(openedPosition.GetOpenedVolume(),
                             openedPosition.GetSecurity())});
+    m_controller->ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
   }
 };
 
