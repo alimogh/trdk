@@ -18,10 +18,21 @@ typedef int CryptopiaProductId;
 
 struct CryptopiaProduct {
   CryptopiaProductId id;
+  bool isReversed;
   Lib::Double feeRatio;
   std::pair<Qty, Qty> minMaxQty;
-  std::pair<Qty, Qty> minMaxBaseQty;
+  std::pair<Qty, Qty> minMaxVolume;
   std::pair<Price, Price> minMaxPrice;
+
+  Price NormalizePrice(const trdk::Price &price,
+                       const trdk::Security &security) const {
+    return !isReversed ? price : TradingLib::ReversePrice(price, security);
+  }
+  Qty NormalizeQty(const trdk::Price &price,
+                   const trdk::Qty &qty,
+                   const trdk::Security &security) const {
+    return !isReversed ? qty : TradingLib::ReverseQty(price, qty, security);
+  }
 };
 
 boost::unordered_map<std::string, CryptopiaProduct> RequestCryptopiaProductList(
