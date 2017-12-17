@@ -121,6 +121,12 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
                                  const Qty &qty,
                                  const boost::optional<Price> &price,
                                  const OrderSide &side) const {
+  {
+    const auto &result = Base::CheckOrder(security, currency, qty, price, side);
+    if (result) {
+      return result;
+    }
+  }
   const auto &symbol = security.GetSymbol();
   if (symbol.GetQuoteSymbol() == "BTC") {
     if (price && qty * *price < 0.001) {
@@ -131,8 +137,12 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
         return OrderCheckError{0.015};
       }
     }
+  } else if (symbol.GetQuoteSymbol() == "ETH") {
+    if (price && qty * *price < 0.0005) {
+      return OrderCheckError{boost::none, boost::none, 0.0005};
+    }
   }
-  return Base::CheckOrder(security, currency, qty, price, side);
+  return boost::none;
 }
 
 std::unique_ptr<OrderTransactionContext>

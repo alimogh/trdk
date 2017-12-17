@@ -31,6 +31,7 @@
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"
 
+#include "TradingLib/Util.hpp"
 #include "Core/BalancesContainer.hpp"
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"

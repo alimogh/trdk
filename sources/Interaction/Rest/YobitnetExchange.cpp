@@ -183,9 +183,9 @@ class TradeRequest : public Request {
         if (message) {
           if (*message == "invalid pair") {
             throw InvalidPairException(error.str().c_str());
-          } else if (*message ==
-                     "The given order has already been closed and cannot be "
-                     "canceled.") {
+          } else if (boost::istarts_with(*message,
+                                         "The given order has already been "
+                                         "closed and cannot be cancel")) {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
           }
         }
@@ -364,18 +364,26 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const Qty &qty,
       const boost::optional<Price> &price,
       const OrderSide &side) const override {
-    const auto &symbol = security.GetSymbol();
-    if (symbol.GetQuoteSymbol() == "BTC") {
-      if (price && qty * *price < 0.0001) {
-        return OrderCheckError{boost::none, boost::none, 0.0001};
-      }
-      if (symbol.GetSymbol() == "ETH_BTC") {
-        if (qty < 0.005) {
-          return OrderCheckError{0.005};
-        }
+    {
+      const auto &result =
+          TradingSystem::CheckOrder(security, currency, qty, price, side);
+      if (result) {
+        return result;
       }
     }
-    return TradingSystem::CheckOrder(security, currency, qty, price, side);
+    {
+      const auto &minVolume = 0.0001;
+      if (price && qty * *price < minVolume) {
+        return OrderCheckError{boost::none, boost::none, minVolume};
+      }
+    }
+    if (security.GetSymbol().GetSymbol() == "ETH_BTC") {
+      const auto minQty = 0.005;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
+      }
+    }
+    return boost::none;
   }
 
  protected:

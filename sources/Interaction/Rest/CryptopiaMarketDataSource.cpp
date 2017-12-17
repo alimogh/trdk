@@ -17,6 +17,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 using namespace trdk::Interaction::Rest;
 
 namespace r = trdk::Interaction::Rest;
@@ -95,7 +96,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
   {
     const auto &it = m_securities.find(product->second.id);
     if (it != m_securities.cend()) {
-      return *it->second;
+      return *it->second.second;
     }
   }
 
@@ -108,7 +109,9 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
                                              .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
-  Verify(m_securities.emplace(product->second.id, result).second);
+  Verify(
+      m_securities.emplace(product->second.id, std::make_pair(product, result))
+          .second);
 
   return *result;
 }
@@ -127,12 +130,13 @@ void CryptopiaMarketDataSource::RequestActualPrices(Request &request) {
                        pairNode.get<std::string>("TradePairId"));
         continue;
       }
-      UpdatePrices(time, pairNode, *security->second, delayMeasurement);
+      UpdatePrices(time, pairNode, security->second.first->second,
+                   *security->second.second, delayMeasurement);
     }
   } catch (const std::exception &ex) {
     for (auto &security : m_securities) {
       try {
-        security.second->SetOnline(pt::not_a_date_time, false);
+        security.second.second->SetOnline(pt::not_a_date_time, false);
       } catch (...) {
         AssertFailNoException();
         throw;
@@ -169,16 +173,45 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
   return boost::none;
 }
 #pragma warning(pop)
+
+template <Level1TickType priceType, Level1TickType qtyType>
+boost::optional<std::pair<Level1TickValue, Level1TickValue>> Reverse(
+    const std::pair<Level1TickValue, Level1TickValue> &source,
+    const trdk::Security &security) {
+  Assert(source.first.GetType() == LEVEL1_TICK_BID_PRICE ||
+         source.first.GetType() == LEVEL1_TICK_ASK_PRICE);
+  AssertNe(priceType, source.first.GetType());
+  Assert(source.second.GetType() == LEVEL1_TICK_BID_QTY ||
+         source.second.GetType() == LEVEL1_TICK_ASK_QTY);
+  AssertNe(qtyType, source.second.GetType());
+  return std::make_pair(
+      Level1TickValue::Create<priceType>(
+          ReversePrice(source.first.GetValue(), security)),
+      Level1TickValue::Create<qtyType>(ReverseQty(
+          source.first.GetValue(), source.second.GetValue(), security)));
+}
 }
 void CryptopiaMarketDataSource::UpdatePrices(
     const pt::ptime &time,
     const ptr::ptree &source,
+    const CryptopiaProduct &product,
     r::Security &security,
     const Milestones &delayMeasurement) {
-  const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+  auto bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
       source.get_child_optional("Buy"));
-  const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+  auto ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("Sell"));
+
+  if (product.isReversed) {
+    bid.swap(ask);
+    if (bid) {
+      bid = Reverse<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(*bid, security);
+    }
+    if (ask) {
+      ask = Reverse<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(*ask, security);
+    }
+  }
+
   if (bid && ask) {
     security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
                        delayMeasurement);

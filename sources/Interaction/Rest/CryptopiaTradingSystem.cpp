@@ -173,36 +173,63 @@ Volume CryptopiaTradingSystem::CalcCommission(
 boost::optional<CryptopiaTradingSystem::OrderCheckError>
 CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
                                    const Currency &currency,
-                                   const Qty &qty,
-                                   const boost::optional<Price> &price,
+                                   const Qty &internalQty,
+                                   const boost::optional<Price> &internalPrice,
                                    const OrderSide &side) const {
+  {
+    const auto result =
+        Base::CheckOrder(security, currency, internalQty, internalPrice, side);
+    if (result) {
+      return result;
+    }
+  }
+
+  if (!internalPrice) {
+    //! Market price order is not supported.
+    return boost::none;
+  }
+
   const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
   if (productIt != m_products.cend()) {
-    const CryptopiaProduct &product = productIt->second;
-    if (price) {
-      if (*price < product.minMaxPrice.first) {
-        return OrderCheckError{boost::none, product.minMaxPrice.first};
-      } else if (product.minMaxPrice.second < *price) {
-        return OrderCheckError{boost::none, product.minMaxPrice.second};
-      }
-      const auto volume = *price * qty;
-      if (volume < product.minMaxBaseQty.first) {
-        return OrderCheckError{boost::none, boost::none,
-                               product.minMaxBaseQty.first};
-      } else if (product.minMaxBaseQty.second < volume) {
-        return OrderCheckError{boost::none, boost::none,
-                               product.minMaxBaseQty.second};
-      }
-    }
-    if (qty < product.minMaxQty.first) {
-      return OrderCheckError{product.minMaxQty.first};
-    } else if (product.minMaxQty.second < qty) {
-      return OrderCheckError{product.minMaxQty.second};
-    }
-  } else {
     GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
+    return boost::none;
   }
-  return Base::CheckOrder(security, currency, qty, price, side);
+
+  const CryptopiaProduct &product = productIt->second;
+  const auto &price = product.NormalizePrice(*internalPrice, security);
+
+  if (price < product.minMaxPrice.first) {
+    return OrderCheckError{
+        boost::none,
+        product.NormalizePrice(product.minMaxPrice.first, security)};
+  } else if (product.minMaxPrice.second < price) {
+    return OrderCheckError{
+        boost::none,
+        product.NormalizePrice(product.minMaxPrice.second, security)};
+  }
+
+  const auto &qty = product.NormalizeQty(*internalPrice, internalQty, security);
+
+  {
+    const auto volume = price * qty;
+    if (volume < product.minMaxVolume.first) {
+      return OrderCheckError{boost::none, boost::none,
+                             product.minMaxVolume.first};
+    } else if (product.minMaxVolume.second < volume) {
+      return OrderCheckError{boost::none, boost::none,
+                             product.minMaxVolume.second};
+    }
+  }
+
+  if (qty < product.minMaxQty.first) {
+    return OrderCheckError{
+        product.NormalizeQty(price, product.minMaxQty.first, security)};
+  } else if (product.minMaxQty.second < qty) {
+    return OrderCheckError{
+        product.NormalizeQty(price, product.minMaxQty.second, security)};
+  }
+
+  return boost::none;
 }
 
 std::unique_ptr<OrderTransactionContext>
@@ -238,7 +265,6 @@ CryptopiaTradingSystem::SendOrderTransaction(
   }
 
   const auto &productId = product->second.id;
-  const auto &actualPrice = *price;
 
   class NewOrderRequest : public OrderTransactionRequest {
    public:
@@ -267,8 +293,10 @@ CryptopiaTradingSystem::SendOrderTransaction(
           % qty;          // 4
       return result.str();
     }
-  } request(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell", qty,
-            actualPrice, m_nonces, m_settings);
+  } request(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell",
+            product->second.NormalizeQty(*price, qty, security),
+            product->second.NormalizePrice(*price, security), m_nonces,
+            m_settings);
 
   const auto response =
       boost::get<1>(request.Send(m_tradingSession, GetContext()));
@@ -405,32 +433,18 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 }
 
 OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
+#ifdef DEV_VER
+  GetTradingLog().Write(
+      "debug-dump-order-status\t%1%",
+      [&](TradingRecord &record) { record % ConvertToString(node, false); });
+#endif
+
   OrderId id;
-  OrderSide side;
-  Qty qty;
   Qty remainingQty;
-  Price price;
   pt::ptime time;
-  std::string symbol;
 
   try {
     id = node.get<OrderId>("OrderId");
-    {
-      const auto &sideField = node.get<std::string>("Type");
-      if (sideField == "Buy") {
-        side = ORDER_SIDE_BUY;
-      } else if (sideField == "Sell") {
-        side = ORDER_SIDE_SELL;
-      } else {
-        boost::format error("Unknown order side for order (message: \"%1%\")");
-        error % ConvertToString(node, false);
-        throw Exception(error.str().c_str());
-      }
-    }
-    symbol = node.get<std::string>("Market");
-    boost::replace_first(symbol, "/", "_");
-    price = node.get<Price>("Rate");
-    qty = node.get<Price>("Amount");
     remainingQty = node.get<Price>("Remaining");
     {
       const auto &timeField = node.get<std::string>("TimeStamp");
@@ -444,12 +458,10 @@ OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
     throw Exception(error.str().c_str());
   }
 
-  AssertGe(qty, remainingQty);
-
-  OnOrder(id, symbol,
-          qty == remainingQty ? ORDER_STATUS_SUBMITTED
-                              : ORDER_STATUS_FILLED_PARTIALLY,
-          qty, remainingQty, price, side, TIME_IN_FORCE_GTC, time, time);
+  try {
+    OnOrderStatusUpdate(time, id, ORDER_STATUS_SUBMITTED, remainingQty);
+  } catch (const OrderIsUnknown &) {
+  }
 
   return id;
 }

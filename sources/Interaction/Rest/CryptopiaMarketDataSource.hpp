@@ -43,6 +43,7 @@ class CryptopiaMarketDataSource : public MarketDataSource {
   void RequestActualPrices(Request &);
   void UpdatePrices(const boost::posix_time::ptime &,
                     const boost::property_tree::ptree &,
+                    const CryptopiaProduct &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
@@ -50,7 +51,11 @@ class CryptopiaMarketDataSource : public MarketDataSource {
   const Settings m_settings;
   boost::unordered_map<std::string, CryptopiaProduct> m_products;
   boost::mutex m_securitiesLock;
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Rest::Security>>
+  boost::unordered_map<
+      CryptopiaProductId,
+      std::pair<
+          boost::unordered_map<std::string, CryptopiaProduct>::const_iterator,
+          boost::shared_ptr<Rest::Security>>>
       m_securities;
   Poco::Net::HTTPSClientSession m_session;
   std::unique_ptr<PullingTask> m_pullingTask;
