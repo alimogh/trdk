@@ -184,13 +184,14 @@ CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
     }
   }
 
+  Assert(internalPrice);
   if (!internalPrice) {
     //! Market price order is not supported.
     return boost::none;
   }
 
   const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
-  if (productIt != m_products.cend()) {
+  if (productIt == m_products.cend()) {
     GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
     return boost::none;
   }

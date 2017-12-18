@@ -129,17 +129,26 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
   }
   const auto &symbol = security.GetSymbol();
   if (symbol.GetQuoteSymbol() == "BTC") {
-    if (price && qty * *price < 0.001) {
-      return OrderCheckError{boost::none, boost::none, 0.001};
+    const auto minVolume = 0.001;
+    if (price && qty * *price < minVolume) {
+      return OrderCheckError{boost::none, boost::none, minVolume};
     }
-    if (symbol.GetSymbol() == "ETH_BTC") {
-      if (qty < 0.015) {
-        return OrderCheckError{0.015};
+    if (symbol.GetBaseSymbol() == "ETH") {
+      const auto minQty = 0.015;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
       }
     }
   } else if (symbol.GetQuoteSymbol() == "ETH") {
-    if (price && qty * *price < 0.0005) {
-      return OrderCheckError{boost::none, boost::none, 0.0005};
+    const auto minVolume = 0.0005;
+    if (price && qty * *price < minVolume) {
+      return OrderCheckError{boost::none, boost::none, minVolume};
+    }
+    if (symbol.GetBaseSymbol() == "LTC") {
+      const auto minQty = 0.0457;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
+      }
     }
   }
   return boost::none;

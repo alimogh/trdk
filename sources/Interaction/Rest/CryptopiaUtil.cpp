@@ -36,15 +36,16 @@ Rest::RequestCryptopiaProductList(net::HTTPClientSession &session,
         quoteSymbol.swap(baseSymbol);
       }
       const auto symbol = quoteSymbol + "_" + baseSymbol;
-      const CryptopiaProduct product = {pairNode.get<CryptopiaProductId>("Id"),
-                                        isReverted,
-                                        pairNode.get<Double>("TradeFee") / 100,
-                                        {pairNode.get<Qty>("MinimumTrade"),
-                                         pairNode.get<Qty>("MaximumTrade")},
-                                        {pairNode.get<Qty>("MinimumBaseTrade"),
-                                         pairNode.get<Qty>("MaximumBaseTrade")},
-                                        {pairNode.get<Price>("MinimumPrice"),
-                                         pairNode.get<Price>("MaximumPrice")}};
+      const CryptopiaProduct product = {
+          pairNode.get<CryptopiaProductId>("Id"),
+          isReverted,
+          pairNode.get<Double>("TradeFee") / 100,
+          {pairNode.get<Qty>("MinimumTrade"),
+           pairNode.get<Qty>("MaximumTrade")},
+          {pairNode.get<Volume>("MinimumBaseTrade"),
+           pairNode.get<Volume>("MaximumBaseTrade")},
+          {pairNode.get<Price>("MinimumPrice"),
+           pairNode.get<Price>("MaximumPrice")}};
       if (!result.emplace(std::move(symbol), std::move(product)).second) {
         log.Error("Product duplicate: \"%1%\"",
                   pairNode.get<std::string>("Symbol") + "_" +

@@ -21,7 +21,7 @@ struct CryptopiaProduct {
   bool isReversed;
   Lib::Double feeRatio;
   std::pair<Qty, Qty> minMaxQty;
-  std::pair<Qty, Qty> minMaxVolume;
+  std::pair<Volume, Volume> minMaxVolume;
   std::pair<Price, Price> minMaxPrice;
 
   Price NormalizePrice(const Price &price,
