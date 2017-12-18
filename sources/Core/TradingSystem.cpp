@@ -319,14 +319,16 @@ class TradingSystem::Implementation : private boost::noncopyable {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_REJECTED:
           case ORDER_STATUS_ERROR:
-            m_log.Error(
-                "Wrong order remaining quantity received. Remaining quantity "
-                "is %1%, but status is \"%2%\", so remaining quantity has to "
-                "be 0. Ignoring order remaining quantity.",
-                *remainingQty,  // 1
-                status);        // 2
-            AssertEq(0, *remainingQty);
-            remainingQty = 0;
+            if (*remainingQty) {
+              m_log.Error(
+                  "Wrong order remaining quantity received. Remaining quantity "
+                  "is %1%, but status is \"%2%\", so remaining quantity has to "
+                  "be 0. Ignoring order remaining quantity.",
+                  *remainingQty,  // 1
+                  status);        // 2
+              AssertEq(0, *remainingQty);
+              remainingQty = 0;
+            }
             break;
           case ORDER_STATUS_FILLED_PARTIALLY:
             break;
