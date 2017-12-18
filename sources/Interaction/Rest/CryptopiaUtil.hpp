@@ -24,14 +24,19 @@ struct CryptopiaProduct {
   std::pair<Qty, Qty> minMaxVolume;
   std::pair<Price, Price> minMaxPrice;
 
-  Price NormalizePrice(const trdk::Price &price,
+  Price NormalizePrice(const Price &price,
                        const trdk::Security &security) const {
     return !isReversed ? price : TradingLib::ReversePrice(price, security);
   }
-  Qty NormalizeQty(const trdk::Price &price,
-                   const trdk::Qty &qty,
+  Qty NormalizeQty(const Price &price,
+                   const Qty &qty,
                    const trdk::Security &security) const {
     return !isReversed ? qty : TradingLib::ReverseQty(price, qty, security);
+  }
+  OrderSide NormalizeSide(const OrderSide &side) const {
+    return !isReversed
+               ? side
+               : side == ORDER_SIDE_BUY ? ORDER_SIDE_SELL : ORDER_SIDE_BUY;
   }
 };
 
