@@ -293,10 +293,11 @@ CryptopiaTradingSystem::SendOrderTransaction(
           % qty;          // 4
       return result.str();
     }
-  } request(productId, side == ORDER_SIDE_BUY ? "Buy" : "Sell",
-            product->second.NormalizeQty(*price, qty, security),
-            product->second.NormalizePrice(*price, security), m_nonces,
-            m_settings);
+  } request(
+      productId,
+      product->second.NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell",
+      product->second.NormalizeQty(*price, qty, security),
+      product->second.NormalizePrice(*price, security), m_nonces, m_settings);
 
   const auto response =
       boost::get<1>(request.Send(m_tradingSession, GetContext()));
