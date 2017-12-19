@@ -31,7 +31,8 @@ Rest::RequestCryptopiaProductList(net::HTTPClientSession &session,
       const auto &pairNode = node.second;
       auto quoteSymbol = pairNode.get<std::string>("Symbol");
       auto baseSymbol = pairNode.get<std::string>("BaseSymbol");
-      const bool isReverted = baseSymbol == "LTC" && quoteSymbol == "ETH";
+      const bool isReverted =
+          false /*baseSymbol == "LTC" && quoteSymbol == "ETH"*/;
       if (isReverted) {
         quoteSymbol.swap(baseSymbol);
       }
