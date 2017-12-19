@@ -61,7 +61,7 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   m_pullingTask->AddTask(
       "Prices", 1,
       [this]() {
-        RequestActualPrices();
+        UpdatePrices();
         return true;
       },
       m_settings.pullingSetttings.GetPricesRequestFrequency());
@@ -108,7 +108,7 @@ trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
   return *m_securities.back().first;
 }
 
-void BittrexMarketDataSource::RequestActualPrices() {
+void BittrexMarketDataSource::UpdatePrices() {
   const boost::mutex::scoped_lock lock(m_securitiesLock);
   for (const auto &subscribtion : m_securities) {
     Rest::Security &security = *subscribtion.first;

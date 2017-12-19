@@ -126,6 +126,11 @@ void PullingTask::RunTasks() {
       bool isAccelerated = true;
       isAccelerated =
           m_isAccelerated.compare_exchange_weak(isAccelerated, false);
+      if (isAccelerated) {
+        lock.lock();
+        SetTasks();
+        lock.unlock();
+      }
 
       for (auto it = m_tasks.begin(); it != m_tasks.cend();) {
         if (RunTask(*it++, isAccelerated)) {

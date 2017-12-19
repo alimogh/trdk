@@ -360,7 +360,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     switch (status) {
       case ORDER_STATUS_FILLED:
       case ORDER_STATUS_FILLED_PARTIALLY:
-        if (!tradeInfo && remainingQty) {
+        if (!tradeInfo && remainingQty && *remainingQty < cache.remainingQty) {
           tradeInfo = TradeInfo{cache.price};
         }
         break;

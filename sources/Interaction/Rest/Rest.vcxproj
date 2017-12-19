@@ -317,6 +317,11 @@
     <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="BittrexMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinRequest.cpp" />
+    <ClCompile Include="LivecoinTradingSystem.cpp" />
+    <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -353,6 +358,10 @@
     <ClInclude Include="CryptopiaUtil.hpp" />
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="LivecoinMarketDataSource.hpp" />
+    <ClInclude Include="LivecoinRequest.hpp" />
+    <ClInclude Include="LivecoinTradingSystem.hpp" />
+    <ClInclude Include="LivecoinUtil.hpp" />
     <ClInclude Include="NonceStorage.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PullingSettings.hpp" />

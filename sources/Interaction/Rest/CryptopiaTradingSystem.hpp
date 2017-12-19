@@ -33,7 +33,6 @@ class CryptopiaTradingSystem : public TradingSystem {
   struct Settings : public Rest::Settings, public NonceStorage::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
-    std::vector<std::string> defaultSymbols;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };

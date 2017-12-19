@@ -36,15 +36,12 @@ namespace {
 struct Settings : public Rest::Settings, public NonceStorage::Settings {
   std::string apiKey;
   std::string apiSecret;
-  std::vector<std::string> defaultSymbols;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : Rest::Settings(conf, log),
         NonceStorage::Settings(conf, log),
         apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")),
-        defaultSymbols(
-            conf.GetBase().ReadList("Defaults", "symbol_list", ",", false)) {
+        apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/16 12:04:46
+ *   Created: 2017/12/12 16:54:23
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,23 +10,28 @@
 
 #pragma once
 
-#include "BittrexUtil.hpp"
+#include "LivecoinRequest.hpp"
+#include "LivecoinUtil.hpp"
 #include "Settings.hpp"
+#include "Util.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class BittrexMarketDataSource : public MarketDataSource {
+//! Livecoin market data source.
+/** @sa https://www.livecoin.net/api/public
+  */
+class LivecoinMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
  public:
-  explicit BittrexMarketDataSource(const App &,
-                                   Context &context,
-                                   const std::string &instanceName,
-                                   const Lib::IniSectionRef &);
-  virtual ~BittrexMarketDataSource() override;
+  explicit LivecoinMarketDataSource(const App &,
+                                    Context &context,
+                                    const std::string &instanceName,
+                                    const Lib::IniSectionRef &);
+  virtual ~LivecoinMarketDataSource() override;
 
  public:
   virtual void Connect(const Lib::IniSectionRef &conf) override;
@@ -38,19 +43,21 @@ class BittrexMarketDataSource : public MarketDataSource {
 
  private:
   void UpdatePrices();
-  void UpdatePrices(const boost::posix_time::ptime &,
-                    const boost::property_tree::ptree &,
+  void UpdatePrices(const boost::property_tree::ptree &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
  private:
   const Settings m_settings;
-  boost::unordered_map<std::string, BittrexProduct> m_products;
+  boost::unordered_map<std::string, LivecoinProduct> m_products;
+
   boost::mutex m_securitiesLock;
-  std::vector<std::pair<boost::shared_ptr<Rest::Security>,
-                        std::unique_ptr<BittrexPublicRequest>>>
+  boost::unordered_map<LivecoinProductId, boost::shared_ptr<Rest::Security>>
       m_securities;
+  LivecoinPublicRequest m_allOrderBooksRequest;
+
   Poco::Net::HTTPSClientSession m_session;
+
   std::unique_ptr<PullingTask> m_pullingTask;
 };
 }

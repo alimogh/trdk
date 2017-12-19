@@ -13,6 +13,7 @@
 #include "Fwd.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/circular_buffer.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
