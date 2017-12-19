@@ -29,9 +29,7 @@ CryptopiaTradingSystem::Settings::Settings(const IniSectionRef &conf,
     : Rest::Settings(conf, log),
       NonceStorage::Settings(conf, log),
       apiKey(conf.ReadKey("api_key")),
-      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
-      defaultSymbols(
-          conf.GetBase().ReadList("Defaults", "symbol_list", ",", false)) {
+      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2

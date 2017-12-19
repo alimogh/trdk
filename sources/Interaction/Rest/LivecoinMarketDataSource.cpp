@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/12/07 15:24:26
+ *   Created: 2017/12/12 19:24:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,15 +9,13 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "CryptopiaMarketDataSource.hpp"
-#include "CryptopiaRequest.hpp"
+#include "LivecoinMarketDataSource.hpp"
 #include "PullingTask.hpp"
 #include "Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
 using namespace trdk::Interaction::Rest;
 
 namespace r = trdk::Interaction::Rest;
@@ -26,20 +24,22 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CryptopiaMarketDataSource::CryptopiaMarketDataSource(
+LivecoinMarketDataSource::LivecoinMarketDataSource(
     const App &,
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session("www.cryptopia.co.nz"),
+      m_allOrderBooksRequest("/exchange/all/order_book",
+                             "groupByPrice=true&depth=1"),
+      m_session("api.livecoin.net"),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
                                                     GetLog())) {
   m_session.setKeepAlive(true);
 }
 
-CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
+LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   try {
     m_pullingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
@@ -51,16 +51,16 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   }
 }
 
-void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
+void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
+    m_products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
 }
 
-void CryptopiaMarketDataSource::SubscribeToSecurities() {
+void LivecoinMarketDataSource::SubscribeToSecurities() {
   if (m_securities.empty()) {
     return;
   }
@@ -71,20 +71,18 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
     uriSymbolsPath.emplace_back(
         boost::lexical_cast<std::string>(security.first));
   }
-  const auto &request = boost::make_shared<CryptopiaPublicRequest>(
-      "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1");
 
-  m_pullingTask->ReplaceTask(
+  m_pullingTask->AddTask(
       "Prices", 1,
-      [this, request]() {
-        UpdatePrices(*request);
+      [this]() {
+        UpdatePrices();
         return true;
       },
       m_settings.pullingSetttings.GetPricesRequestFrequency());
   m_pullingTask->AccelerateNextPulling();
 }
 
-trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
+trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -96,7 +94,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
   {
     const auto &it = m_securities.find(product->second.id);
     if (it != m_securities.cend()) {
-      return *it->second.second;
+      return *it->second;
     }
   }
 
@@ -109,34 +107,26 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
                                              .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
-  Verify(
-      m_securities.emplace(product->second.id, std::make_pair(product, result))
-          .second);
+  Verify(m_securities.emplace(product->second.id, result).second);
 
   return *result;
 }
 
-void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
+void LivecoinMarketDataSource::UpdatePrices() {
   try {
-    const auto &response = request.Send(m_session, GetContext());
-    const auto &time = boost::get<0>(response);
+    const auto &response = m_allOrderBooksRequest.Send(m_session, GetContext());
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
-      const auto &pairNode = record.second;
-      const auto security =
-          m_securities.find(pairNode.get<CryptopiaProductId>("TradePairId"));
+      const auto security = m_securities.find(record.first);
       if (security == m_securities.cend()) {
-        GetLog().Error("Received price for unknown product ID \"%1%\".",
-                       pairNode.get<std::string>("TradePairId"));
         continue;
       }
-      UpdatePrices(time, pairNode, security->second.first->second,
-                   *security->second.second, delayMeasurement);
+      UpdatePrices(record.second, *security->second, delayMeasurement);
     }
   } catch (const std::exception &ex) {
     for (auto &security : m_securities) {
       try {
-        security.second.second->SetOnline(pt::not_a_date_time, false);
+        security.second->SetOnline(pt::not_a_date_time, false);
       } catch (...) {
         AssertFailNoException();
         throw;
@@ -163,55 +153,41 @@ namespace {
 template <Level1TickType priceType, Level1TickType qtyType, typename Source>
 boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
     const Source &source) {
-  if (source) {
-    for (const auto &level : *source) {
-      return std::make_pair(
-          Level1TickValue::Create<priceType>(level.second.get<Price>("Price")),
-          Level1TickValue::Create<qtyType>(level.second.get<Qty>("Total")));
-    }
+  if (!source) {
+    return boost::none;
   }
-  return boost::none;
+  boost::optional<Level1TickValue> price;
+  boost::optional<Level1TickValue> qty;
+  for (const auto &level : *source) {
+    for (const auto &node : level.second) {
+      const auto &value = node.second.get_value<Double>();
+      Assert(!qty);
+      if (!price) {
+        price = Level1TickValue::Create<priceType>(value);
+      } else {
+        qty = Level1TickValue::Create<qtyType>(value);
+      }
+    }
+    break;
+  }
+  if (!qty) {
+    Assert(!price);
+    return boost::none;
+  }
+  Assert(price);
+  return std::make_pair(std::move(*price), std::move(*qty));
 }
 #pragma warning(pop)
-
-template <Level1TickType priceType, Level1TickType qtyType>
-boost::optional<std::pair<Level1TickValue, Level1TickValue>> Reverse(
-    const std::pair<Level1TickValue, Level1TickValue> &source,
-    const trdk::Security &security) {
-  Assert(source.first.GetType() == LEVEL1_TICK_BID_PRICE ||
-         source.first.GetType() == LEVEL1_TICK_ASK_PRICE);
-  AssertNe(priceType, source.first.GetType());
-  Assert(source.second.GetType() == LEVEL1_TICK_BID_QTY ||
-         source.second.GetType() == LEVEL1_TICK_ASK_QTY);
-  AssertNe(qtyType, source.second.GetType());
-  return std::make_pair(
-      Level1TickValue::Create<priceType>(
-          ReversePrice(source.first.GetValue(), security)),
-      Level1TickValue::Create<qtyType>(ReverseQty(
-          source.first.GetValue(), source.second.GetValue(), security)));
 }
-}
-void CryptopiaMarketDataSource::UpdatePrices(
-    const pt::ptime &time,
+void LivecoinMarketDataSource::UpdatePrices(
     const ptr::ptree &source,
-    const CryptopiaProduct &product,
     r::Security &security,
     const Milestones &delayMeasurement) {
-  auto bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-      source.get_child_optional("Buy"));
-  auto ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-      source.get_child_optional("Sell"));
-
-  if (product.isReversed) {
-    bid.swap(ask);
-    if (bid) {
-      bid = Reverse<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(*bid, security);
-    }
-    if (ask) {
-      ask = Reverse<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(*ask, security);
-    }
-  }
-
+  const auto &time = pt::from_time_t(source.get<time_t>("timestamp"));
+  const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+      source.get_child_optional("asks"));
+  const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+      source.get_child_optional("bids"));
   if (bid && ask) {
     security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
                        delayMeasurement);
@@ -228,11 +204,11 @@ void CryptopiaMarketDataSource::UpdatePrices(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<MarketDataSource> CreateCryptopiaMarketDataSource(
+boost::shared_ptr<MarketDataSource> CreateLivecoinMarketDataSource(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<CryptopiaMarketDataSource>(
+  return boost::make_shared<LivecoinMarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }
 
