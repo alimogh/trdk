@@ -14,4 +14,7 @@ EXPORTS
 	CreateCryptopiaTradingSystem
 	CreateCryptopiaMarketDataSource
 	CreateCryptopia
+	CreateLivecoinTradingSystem
+	CreateLivecoinMarketDataSource
+	CreateLivecoin
 	GetTrdkModuleVersionInfoV1

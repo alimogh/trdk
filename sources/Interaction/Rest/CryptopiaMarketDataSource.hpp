@@ -40,19 +40,27 @@ class CryptopiaMarketDataSource : public MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
-  void RequestActualPrices(Request &);
+  void UpdatePrices(Request &);
   void UpdatePrices(const boost::posix_time::ptime &,
                     const boost::property_tree::ptree &,
+                    const CryptopiaProduct &,
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
  private:
   const Settings m_settings;
   boost::unordered_map<std::string, CryptopiaProduct> m_products;
+
   boost::mutex m_securitiesLock;
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Rest::Security>>
+  boost::unordered_map<
+      CryptopiaProductId,
+      std::pair<
+          boost::unordered_map<std::string, CryptopiaProduct>::const_iterator,
+          boost::shared_ptr<Rest::Security>>>
       m_securities;
+
   Poco::Net::HTTPSClientSession m_session;
+
   std::unique_ptr<PullingTask> m_pullingTask;
 };
 }

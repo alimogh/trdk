@@ -272,28 +272,26 @@ class TradingSystem::Implementation : private boost::noncopyable {
       const pt::ptime &time,
       const OrderId &orderId,
       const OrderStatus &status,
-      const boost::optional<Qty> &remainingQty,
+      boost::optional<Qty> &&remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::function<void(OrderTransactionContext &)> &callback) {
     ActiveOrderWriteLock lock(m_activeOrdersMutex);
     const auto &it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
-      m_log.Warn(
-          "Failed to handle status update for order %1% as order is unknown.",
-          orderId);
       throw OrderIsUnknown(
           "Failed to handle status update for order as order is unknown");
     }
-    OnOrderStatusUpdate(time, orderId, status, remainingQty, commission,
-                        std::move(tradeInfo), it, std::move(lock), callback);
+    OnOrderStatusUpdate(time, orderId, status, std::move(remainingQty),
+                        commission, std::move(tradeInfo), it, std::move(lock),
+                        callback);
   }
 
   void OnOrderStatusUpdate(
       const pt::ptime &time,
       const OrderId &orderId,
       OrderStatus status,
-      const boost::optional<Qty> &remainingQty,
+      boost::optional<Qty> &&remainingQty,
       const boost::optional<Volume> &commission,
       boost::optional<TradeInfo> &&tradeInfo,
       const boost::unordered_map<OrderId, ActiveOrder>::iterator &it,
@@ -305,6 +303,48 @@ class TradingSystem::Implementation : private boost::noncopyable {
       return;
     }
 
+    if (remainingQty) {
+      if (cache.remainingQty > *remainingQty) {
+        static_assert(numberOfOrderStatuses == 8, "List changed.");
+        switch (status) {
+          case ORDER_STATUS_SENT:
+          case ORDER_STATUS_SUBMITTED: {
+            const auto &newStatus = *remainingQty
+                                        ? ORDER_STATUS_FILLED_PARTIALLY
+                                        : ORDER_STATUS_FILLED;
+            status = newStatus;
+            break;
+          }
+          case ORDER_STATUS_CANCELLED:
+          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_REJECTED:
+          case ORDER_STATUS_ERROR:
+            if (*remainingQty) {
+              m_log.Error(
+                  "Wrong order remaining quantity received. Remaining quantity "
+                  "is %1%, but status is \"%2%\", so remaining quantity has to "
+                  "be 0. Ignoring order remaining quantity.",
+                  *remainingQty,  // 1
+                  status);        // 2
+              AssertEq(0, *remainingQty);
+              remainingQty = 0;
+            }
+            break;
+          case ORDER_STATUS_FILLED_PARTIALLY:
+            break;
+        }
+      } else if (cache.remainingQty < *remainingQty) {
+        m_log.Error(
+            "Wrong order remaining quantity received - greater than was "
+            "before. Was %1%, but now is %2%. Ignoring order remaining "
+            "quantity update.",
+            cache.remainingQty,  // 1 * 2
+            *remainingQty);      // 2
+        AssertGe(cache.remainingQty, *remainingQty);
+        remainingQty = cache.remainingQty;
+      }
+    }
+
     static_assert(numberOfOrderStatuses == 8, "List changed.");
     switch (status) {
       case ORDER_STATUS_SENT:
@@ -312,14 +352,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
         switch (cache.status) {
           case ORDER_STATUS_FILLED:
           case ORDER_STATUS_FILLED_PARTIALLY:
-            AssertEq(cache.status, status);
             status = cache.status;
             break;
         }
         break;
+    }
+    switch (status) {
       case ORDER_STATUS_FILLED:
       case ORDER_STATUS_FILLED_PARTIALLY:
-        if (!tradeInfo && remainingQty) {
+        if (!tradeInfo && remainingQty && *remainingQty < cache.remainingQty) {
           tradeInfo = TradeInfo{cache.price};
         }
         break;
@@ -453,7 +494,6 @@ Balances &TradingSystem::GetBalancesStorage() {
                                                const Price &,
                                                const OrderSide &,
                                                const TradingSystem &) override {
-
     }
 
   } result;
@@ -637,7 +677,7 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
           record % orderId               // 1
               % std::string(ex.what());  // 2
         });
-    GetLog().Warn(
+    GetLog().Error(
         "Error while sending order cancel transaction for order %1%: "
         "\"%2%\".",
         orderId,                  // 1

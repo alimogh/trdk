@@ -36,15 +36,12 @@ namespace {
 struct Settings : public Rest::Settings, public NonceStorage::Settings {
   std::string apiKey;
   std::string apiSecret;
-  std::vector<std::string> defaultSymbols;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : Rest::Settings(conf, log),
         NonceStorage::Settings(conf, log),
         apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")),
-        defaultSymbols(
-            conf.GetBase().ReadList("Defaults", "symbol_list", ",", false)) {
+        apiSecret(conf.ReadKey("api_secret")) {
     Log(log);
     Validate();
   }
@@ -183,9 +180,9 @@ class TradeRequest : public Request {
         if (message) {
           if (*message == "invalid pair") {
             throw InvalidPairException(error.str().c_str());
-          } else if (*message ==
-                     "The given order has already been closed and cannot be "
-                     "canceled.") {
+          } else if (boost::istarts_with(*message,
+                                         "The given order has already been "
+                                         "closed and cannot be cancel")) {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
           }
         }
@@ -244,6 +241,11 @@ std::string NormilizeSymbol(std::string source) {
     source[2] = 'H';
   } else if (boost::ends_with(source, "_BCC")) {
     source.back() = 'H';
+  }
+  if (boost::starts_with(source, "USD_")) {
+    source.insert(3, 1, 'T');
+  } else if (boost::ends_with(source, "_USD")) {
+    source.push_back('T');
   }
   return source;
 }
@@ -359,18 +361,26 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const Qty &qty,
       const boost::optional<Price> &price,
       const OrderSide &side) const override {
-    const auto &symbol = security.GetSymbol();
-    if (symbol.GetQuoteSymbol() == "BTC") {
-      if (price && qty * *price < 0.0001) {
-        return OrderCheckError{boost::none, boost::none, 0.0001};
-      }
-      if (symbol.GetSymbol() == "ETH_BTC") {
-        if (qty < 0.005) {
-          return OrderCheckError{0.005};
-        }
+    {
+      const auto &result =
+          TradingSystem::CheckOrder(security, currency, qty, price, side);
+      if (result) {
+        return result;
       }
     }
-    return TradingSystem::CheckOrder(security, currency, qty, price, side);
+    {
+      const auto &minVolume = 0.0001;
+      if (price && qty * *price < minVolume) {
+        return OrderCheckError{boost::none, boost::none, minVolume};
+      }
+    }
+    if (security.GetSymbol().GetSymbol() == "ETH_BTC") {
+      const auto minQty = 0.005;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
+      }
+    }
+    return boost::none;
   }
 
  protected:
@@ -382,20 +392,20 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    Verify(m_pullingTask->AddTask(
+    m_pullingTask->AddTask(
         "Actual orders", 0,
         [this]() {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
-    Verify(m_pullingTask->AddTask(
+        m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+    m_pullingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+        m_settings.pullingSetttings.GetBalancesRequestFrequency());
 
     m_pullingTask->AccelerateNextPulling();
   }
@@ -494,11 +504,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
  private:
-  void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.symbol, status, order.qty, order.qty, order.price,
-            order.side, order.tid, order.time, order.time);
-  }
-
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("/api/3/info", "Info");

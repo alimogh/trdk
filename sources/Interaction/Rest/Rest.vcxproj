@@ -317,6 +317,11 @@
     <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="BittrexMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinRequest.cpp" />
+    <ClCompile Include="LivecoinTradingSystem.cpp" />
+    <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -353,6 +358,10 @@
     <ClInclude Include="CryptopiaUtil.hpp" />
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
+    <ClInclude Include="LivecoinMarketDataSource.hpp" />
+    <ClInclude Include="LivecoinRequest.hpp" />
+    <ClInclude Include="LivecoinTradingSystem.hpp" />
+    <ClInclude Include="LivecoinUtil.hpp" />
     <ClInclude Include="NonceStorage.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="PullingSettings.hpp" />
@@ -374,6 +383,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\TradingLib\TradingLib.vcxproj">
+      <Project>{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -97,20 +97,20 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  Verify(m_pullingTask.AddTask(
+  m_pullingTask.AddTask(
       "Actual orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency()));
-  Verify(m_pullingTask.AddTask(
+      m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+  m_pullingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency()));
+      m_settings.pullingSetttings.GetBalancesRequestFrequency());
 
   m_pullingTask.AccelerateNextPulling();
 }
@@ -121,18 +121,37 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
                                  const Qty &qty,
                                  const boost::optional<Price> &price,
                                  const OrderSide &side) const {
+  {
+    const auto &result = Base::CheckOrder(security, currency, qty, price, side);
+    if (result) {
+      return result;
+    }
+  }
   const auto &symbol = security.GetSymbol();
   if (symbol.GetQuoteSymbol() == "BTC") {
-    if (price && qty * *price < 0.001) {
-      return OrderCheckError{boost::none, boost::none, 0.001};
+    const auto minVolume = 0.001;
+    if (price && qty * *price < minVolume) {
+      return OrderCheckError{boost::none, boost::none, minVolume};
     }
-    if (symbol.GetSymbol() == "ETH_BTC") {
-      if (qty < 0.015) {
-        return OrderCheckError{0.015};
+    if (symbol.GetBaseSymbol() == "ETH") {
+      const auto minQty = 0.015;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
+      }
+    }
+  } else if (symbol.GetQuoteSymbol() == "ETH") {
+    const auto minVolume = 0.0005;
+    if (price && qty * *price < minVolume) {
+      return OrderCheckError{boost::none, boost::none, minVolume};
+    }
+    if (symbol.GetBaseSymbol() == "LTC") {
+      const auto minQty = 0.0457;
+      if (qty < minQty) {
+        return OrderCheckError{minQty};
       }
     }
   }
-  return Base::CheckOrder(security, currency, qty, price, side);
+  return boost::none;
 }
 
 std::unique_ptr<OrderTransactionContext>

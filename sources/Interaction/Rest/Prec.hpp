@@ -13,6 +13,7 @@
 #include "Fwd.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/circular_buffer.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -31,6 +32,7 @@
 #include "Common/Common.hpp"
 #include "Common/Crypto.hpp"
 
+#include "TradingLib/Util.hpp"
 #include "Core/BalancesContainer.hpp"
 #include "Core/Context.hpp"
 #include "Core/EventsLog.hpp"
