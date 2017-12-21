@@ -25,6 +25,12 @@ class TRDK_CORE_API Timer {
    public:
     Scope();
     Scope(Scope &&) = default;
+
+    //! Destructor.
+    /** Blocks thread until all current tasks are executing, so should be used
+      * carefully to avoid deadlocks with scheduled tasks.
+      * @sa Cancel()
+      */
     ~Scope();
 
     void Swap(Scope &rhs) noexcept {
@@ -41,7 +47,10 @@ class TRDK_CORE_API Timer {
     bool IsEmpty() const { return m_timer ? false : true; }
 
     //! Cancels all tasks scheduled by this scope.
-    /** @return The number of canceled tasks. An executed task will not be
+    /** Blocks thread until all current tasks are executing, so should be used
+      * carefully to avoid deadlocks with scheduled tasks.
+      * @sa ~Scope()
+      * @return The number of canceled tasks. An executed task will not be
       *         canceled if it will be removed from the schedule after
       *         execution if it is not periodic.
       */
@@ -63,9 +72,9 @@ class TRDK_CORE_API Timer {
 
  public:
   void Schedule(const boost::posix_time::time_duration &,
-                const boost::function<void()> &,
+                const boost::function<void()> &&,
                 Scope &);
-  void Schedule(const boost::function<void()> &, Scope &);
+  void Schedule(const boost::function<void()> &&, Scope &);
 
  private:
   class Implementation;
