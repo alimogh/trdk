@@ -41,13 +41,10 @@ const Volume &TrailingStop::Params::GetMinProfitPerLotToClose() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TrailingStop::TrailingStop(
-    const boost::shared_ptr<const Params> &params,
-    Position &position,
-    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopOrder(position, orderPolicy),
-      m_params(params),
-      m_isActivated(false) {}
+TrailingStop::TrailingStop(const boost::shared_ptr<const Params> &params,
+                           Position &position,
+                           PositionController &controller)
+    : StopOrder(position, controller), m_params(params), m_isActivated(false) {}
 
 TrailingStop::~TrailingStop() = default;
 
@@ -70,11 +67,10 @@ void TrailingStop::Run() {
       if (!CheckSignal()) {
         return;
       }
-      GetPosition().ResetCloseReason(CLOSE_REASON_TRAILING_STOP);
       break;
   }
 
-  OnHit();
+  OnHit(CLOSE_REASON_TRAILING_STOP);
 }
 
 bool TrailingStop::CheckSignal() {

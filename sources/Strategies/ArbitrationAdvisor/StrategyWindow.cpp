@@ -171,11 +171,9 @@ void StrategyWindow::InitBySelectedSymbol() {
       }
       os << key << " = " << conf.ReadKey("General", key) << std::endl;
     };
-    copyKey("restore_balances");
-    copyKey("trailing_activation_percentage");
     copyKey("lowest_spread_percentage");
-    copyKey("operation_stop_spread_percentage");
     copyKey("cross_arbitrage_mode");
+    copyKey("stop_loss");
     m_engine.GetContext().Add(IniString(os.str()));
   }
   m_strategy = boost::polymorphic_downcast<aa::Strategy *>(

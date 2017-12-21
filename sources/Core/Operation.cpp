@@ -59,7 +59,7 @@ const OrderPolicy &Operation::GetCloseOrderPolicy(const Position &) const {
       "Position instance does not use operation context to close positions");
 }
 
-void Operation::Setup(Position &) const {}
+void Operation::Setup(Position &, PositionController &) const {}
 
 bool Operation::IsLong(const Security &) const {
   throw LogicError(

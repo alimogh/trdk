@@ -677,6 +677,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Operation.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="Prec.cpp">

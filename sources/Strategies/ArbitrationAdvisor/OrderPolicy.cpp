@@ -15,17 +15,31 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
-OrderPolicy::OrderPolicy(const Price &sellPrice, const Price &buyPrice)
+////////////////////////////////////////////////////////////////////////////////
+
+OpenOrderPolicy::OpenOrderPolicy(const Price &sellPrice, const Price &buyPrice)
     : m_sellPrice(sellPrice), m_buyPrice(buyPrice) {}
 
-Price OrderPolicy::GetOpenOrderPrice(bool isLong) const {
+Price OpenOrderPolicy::GetOpenOrderPrice(bool isLong) const {
   return isLong ? m_buyPrice : m_sellPrice;
 }
 
-Price OrderPolicy::GetOpenOrderPrice(Position &position) const {
+Price OpenOrderPolicy::GetOpenOrderPrice(Position &position) const {
   return GetOpenOrderPrice(position.IsLong());
 }
 
-Price OrderPolicy::GetCloseOrderPrice(Position &) const {
-  throw LogicError("Order policy doesn't allow close position");
+Price OpenOrderPolicy::GetCloseOrderPrice(Position &) const {
+  throw LogicError("Order policy doesn't allow close positions");
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+Price CloseOrderPolicy::GetOpenOrderPrice(Position &) const {
+  throw LogicError("Order policy doesn't allow open positions");
+}
+
+Price CloseOrderPolicy::GetCloseOrderPrice(Position &position) const {
+  return Base::GetCloseOrderPrice(position) * (position.IsLong() ? 0.95 : 1.05);
+}
+
+////////////////////////////////////////////////////////////////////////////////

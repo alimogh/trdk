@@ -14,13 +14,15 @@ namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 
-class OrderPolicy : public TradingLib::LimitGtcOrderPolicy {
+////////////////////////////////////////////////////////////////////////////////
+
+class OpenOrderPolicy : public TradingLib::LimitGtcOrderPolicy {
  public:
   typedef LimitGtcOrderPolicy Base;
 
  public:
-  explicit OrderPolicy(const Price &sellPrice, const Price &buyPrice);
-  virtual ~OrderPolicy() override = default;
+  explicit OpenOrderPolicy(const Price &sellPrice, const Price &buyPrice);
+  virtual ~OpenOrderPolicy() override = default;
 
  public:
   trdk::Price GetOpenOrderPrice(bool isLong) const;
@@ -33,6 +35,22 @@ class OrderPolicy : public TradingLib::LimitGtcOrderPolicy {
   const Price m_sellPrice;
   const Price m_buyPrice;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+class CloseOrderPolicy : public TradingLib::LimitIocOrderPolicy {
+ public:
+  typedef LimitIocOrderPolicy Base;
+
+ public:
+  virtual ~CloseOrderPolicy() override = default;
+
+ protected:
+  virtual Price GetOpenOrderPrice(Position &) const;
+  virtual Price GetCloseOrderPrice(Position &) const;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 }
 }
 }

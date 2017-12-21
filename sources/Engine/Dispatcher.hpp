@@ -436,8 +436,7 @@ class Dispatcher : private boost::noncopyable {
       throw;
     } catch (...) {
       m_context.GetLog().Error(
-          "Unhandled exception caught in dispatcher"
-          " notification task \"%1%\".",
+          "Unhandled exception caught in dispatcher notification task \"%1%\".",
           list.GetName());
       AssertFailNoException();
       throw;

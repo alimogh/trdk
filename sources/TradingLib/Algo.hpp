@@ -18,15 +18,26 @@ namespace TradingLib {
 
 class Algo : private boost::noncopyable {
  public:
+  explicit Algo(trdk::Position &);
   virtual ~Algo() noexcept = default;
 
  public:
+  trdk::ModuleTradingLog &GetTradingLog() const noexcept;
+
   //! Runs algorithm iteration.
   virtual void Run() = 0;
 
-  //! Reports about attaching to the position.
-  virtual void Report(const trdk::Position &,
-                      trdk::ModuleTradingLog &) const = 0;
+  //! Reports about external action.
+  virtual void Report(const char *action) const = 0;
+
+ protected:
+  trdk::Position &GetPosition() { return m_position; }
+  const trdk::Position &GetPosition() const {
+    return const_cast<Algo *>(this)->GetPosition();
+  }
+
+ private:
+  trdk::Position &m_position;
 };
 }
 }

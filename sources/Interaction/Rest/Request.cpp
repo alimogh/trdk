@@ -156,11 +156,11 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
       boost::format error(
-          "System-level error at the request \"%1%\" (%2%): \"%3%\"");
+          "Failed to read request \"%1%\" (%2%) response: \"%3%\"");
       error % m_name             // 1
           % m_request->getURI()  // 2
           % ex.what();           // 3
-      throw Exception(error.str().c_str());
+      throw Interactor::CommunicationError(error.str().c_str());
     }
   }
 }

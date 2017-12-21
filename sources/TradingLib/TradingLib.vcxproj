@@ -248,6 +248,7 @@
     <Import Project="..\Configuration Test.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Algo.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="PositionReport.cpp" />

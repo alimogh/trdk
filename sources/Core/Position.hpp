@@ -71,13 +71,15 @@ class TRDK_CORE_API Position
  public:
   int64_t GetSubOperationId() const;
 
-  //! Attaches algorithm to the position.
+  //! Adds algorithm to the position.
   /** Will try to execute algorithm at each price update, but only if position
     * is not in the "canceling state".
     * @sa IsCancelling
     * @sa IsCompleted
     */
-  void AttachAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+  void AddAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+  //! Removes all algorithms.
+  void RemoveAlgos();
 
   const boost::shared_ptr<trdk::Operation> &GetOperation();
   const boost::shared_ptr<const trdk::Operation> &GetOperation() const;
@@ -101,6 +103,7 @@ class TRDK_CORE_API Position
  public:
   const trdk::TradingSystem &GetTradingSystem() const;
   trdk::TradingSystem &GetTradingSystem();
+  void ReplaceTradingSystem(trdk::Security &, trdk::TradingSystem &);
 
   const trdk::Strategy &GetStrategy() const noexcept;
   trdk::Strategy &GetStrategy() noexcept;
