@@ -74,14 +74,14 @@ class Timer::Implementation : private boost::noncopyable {
  public:
   const Context &m_context;
 
-  Mutex m_tasksMutex;
-  Mutex m_execMutex;
+  Mutex m_mutex;
   boost::condition_variable m_condition;
   boost::optional<boost::thread> m_thread;
 
   std::vector<Task> m_immediateTasks;
   std::vector<Task> m_newImmediateTasks;
   std::list<TimedTask> m_newTimedTasks;
+  std::vector<Scope::Id> m_removedTimedTasks;
   std::list<TimedTask> m_timedTasks;
   pt::ptime m_nearestEvent;
 
@@ -92,20 +92,19 @@ class Timer::Implementation : private boost::noncopyable {
         m_utcDiff(m_context.GetSettings().GetTimeZone()->base_utc_offset()) {}
 
   ~Implementation() {
-    if (!m_thread) {
-      try {
-        boost::optional<boost::thread> thread;
-        {
-          const Lock lock(m_tasksMutex);
-          Assert(m_thread);
-          m_thread.swap(thread);
-        }
+    try {
+      boost::optional<boost::thread> thread;
+      {
+        const Lock lock(m_mutex);
+        m_thread.swap(thread);
+      }
+      if (thread) {
         m_condition.notify_all();
         thread->join();
-      } catch (...) {
-        AssertFailNoException();
-        terminate();
       }
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
     }
   }
 
@@ -113,7 +112,7 @@ class Timer::Implementation : private boost::noncopyable {
                 const boost::function<void()> &&callback,
                 Scope &scope) {
     {
-      Lock lock(m_tasksMutex);
+      Lock lock(m_mutex);
       if (time != pt::not_a_date_time) {
         m_newTimedTasks.emplace_back(scope.m_id, std::move(callback),
                                      m_context.GetCurrentTime() + time);
@@ -135,8 +134,11 @@ class Timer::Implementation : private boost::noncopyable {
   }
 
   void SetNewTasks() {
-    m_immediateTasks.clear();
-    m_immediateTasks.swap(m_newImmediateTasks);
+    for (const auto &removedId : m_removedTimedTasks) {
+      Erase(m_timedTasks, removedId, m_context);
+    }
+    m_removedTimedTasks.clear();
+
     for (auto &&task : m_newTimedTasks) {
       m_timedTasks.emplace_back(std::move(task));
       if (m_nearestEvent == pt::not_a_date_time ||
@@ -144,18 +146,21 @@ class Timer::Implementation : private boost::noncopyable {
         m_nearestEvent = m_timedTasks.back().time;
       }
     }
+    m_newTimedTasks.clear();
+
+    m_immediateTasks.clear();
+    m_immediateTasks.swap(m_newImmediateTasks);
   }
 
   void ExecuteScheduling() {
     m_context.GetLog().Debug("Started timer task.");
 
     try {
-      Lock tasksLock(m_tasksMutex);
+      Lock tasksLock(m_mutex);
       while (m_thread) {
         SetNewTasks();
 
         {
-          const Lock execLock(m_execMutex);
           tasksLock.unlock();
 
           for (const auto &task : m_immediateTasks) {
@@ -244,13 +249,12 @@ size_t Timer::Scope::Cancel() noexcept {
     return 0;
   }
   try {
-    const Lock tasksLock(m_timer->m_pimpl->m_tasksMutex);
-    const Lock execLock(m_timer->m_pimpl->m_execMutex);
+    //! @todo Add ability to set scope mode "blocked cancel" (for tasks in
+    //! execution too).
+    const Lock tasksLock(m_timer->m_pimpl->m_mutex);
+    m_timer->m_pimpl->m_removedTimedTasks.emplace_back(m_id);
     return Erase(m_timer->m_pimpl->m_newTimedTasks, m_id,
                  m_timer->m_pimpl->m_context) +
-           Erase(m_timer->m_pimpl->m_timedTasks, m_id,
-                 m_timer->m_pimpl->m_context) +
-           Erase(m_timer->m_pimpl->m_immediateTasks, m_id) +
            Erase(m_timer->m_pimpl->m_newImmediateTasks, m_id);
   } catch (...) {
     AssertFailNoException();

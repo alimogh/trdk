@@ -23,14 +23,8 @@ class TRDK_CORE_API Timer {
     typedef uintmax_t Id;
 
    public:
-    Scope();
+    explicit Scope();
     Scope(Scope &&) = default;
-
-    //! Destructor.
-    /** Blocks thread until all current tasks are executing, so should be used
-      * carefully to avoid deadlocks with scheduled tasks.
-      * @sa Cancel()
-      */
     ~Scope();
 
     void Swap(Scope &rhs) noexcept {
@@ -46,14 +40,7 @@ class TRDK_CORE_API Timer {
     //! If scope is not empty it activated for one or more scheduling.
     bool IsEmpty() const { return m_timer ? false : true; }
 
-    //! Cancels all tasks scheduled by this scope.
-    /** Blocks thread until all current tasks are executing, so should be used
-      * carefully to avoid deadlocks with scheduled tasks.
-      * @sa ~Scope()
-      * @return The number of canceled tasks. An executed task will not be
-      *         canceled if it will be removed from the schedule after
-      *         execution if it is not periodic.
-      */
+    //! Cancels all tasks scheduled by this scope, but not executed tasks.
     size_t Cancel() noexcept;
 
    private:
