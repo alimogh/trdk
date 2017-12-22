@@ -116,7 +116,8 @@ class Request : public Rest::Request {
     try {
       const auto &message =
           ReadJson(responseContent).get<std::string>("message");
-      if (message == "Order already done") {
+      if (boost::iequals(message, "Order already done") ||
+          boost::iequals(message, "order not found")) {
         throw TradingSystem::OrderIsUnknown(message.c_str());
       } else if (!message.empty()) {
         throw TradingSystem::Error(message.c_str());

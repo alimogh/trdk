@@ -19,17 +19,17 @@ namespace TradingLib {
 
 class StopLossOrder : public trdk::TradingLib::StopOrder {
  public:
-  explicit StopLossOrder(
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
-  explicit StopLossOrder(
-      const boost::posix_time::time_duration &delay,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLossOrder(trdk::Position &,
+                         trdk::TradingLib::PositionController &);
+  explicit StopLossOrder(const boost::posix_time::time_duration &delay,
+                         trdk::Position &,
+                         trdk::TradingLib::PositionController &);
   virtual ~StopLossOrder() override = default;
 
  public:
   virtual void Run() override;
+
+  virtual bool IsWatching() const;
 
  protected:
   const boost::posix_time::time_duration &GetDelay() const { return m_delay; }
@@ -55,22 +55,43 @@ class StopPrice : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopPrice(
-      const boost::shared_ptr<const Params> &,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopPrice(const boost::shared_ptr<const Params> &,
+                     trdk::Position &,
+                     trdk::TradingLib::PositionController &);
   virtual ~StopPrice() override = default;
 
-  virtual void Report(const trdk::Position &,
-                      trdk::ModuleTradingLog &) const override;
+  virtual void Report(const char *action) const override;
 
  protected:
-  virtual const char *GetName() const override;
-
   virtual bool Activate() override;
+  virtual trdk::Price GetActualPrice() const = 0;
 
  private:
   const boost::shared_ptr<const Params> m_params;
+};
+
+class StopLastPrice : public trdk::TradingLib::StopPrice {
+ public:
+  explicit StopLastPrice(const boost::shared_ptr<const Params> &,
+                         trdk::Position &,
+                         trdk::TradingLib::PositionController &);
+  virtual ~StopLastPrice() override = default;
+
+ protected:
+  virtual const char *GetName() const override;
+  virtual trdk::Price GetActualPrice() const override;
+};
+
+class StopBidAskPrice : public trdk::TradingLib::StopPrice {
+ public:
+  explicit StopBidAskPrice(const boost::shared_ptr<const Params> &,
+                           trdk::Position &,
+                           trdk::TradingLib::PositionController &);
+  virtual ~StopBidAskPrice() override = default;
+
+ protected:
+  virtual const char *GetName() const override;
+  virtual trdk::Price GetActualPrice() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,19 +110,16 @@ class StopLoss : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopLoss(
-      const boost::shared_ptr<const Params> &,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
-  explicit StopLoss(
-      const boost::shared_ptr<const Params> &,
-      const boost::posix_time::time_duration &delay,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLoss(const boost::shared_ptr<const Params> &,
+                    trdk::Position &,
+                    trdk::TradingLib::PositionController &);
+  explicit StopLoss(const boost::shared_ptr<const Params> &,
+                    const boost::posix_time::time_duration &delay,
+                    trdk::Position &,
+                    trdk::TradingLib::PositionController &);
   virtual ~StopLoss() override = default;
 
-  virtual void Report(const trdk::Position &,
-                      trdk::ModuleTradingLog &) const override;
+  virtual void Report(const char *action) const override;
 
  protected:
   virtual const char *GetName() const override;
@@ -132,17 +150,14 @@ class StopLossShare : public trdk::TradingLib::StopLossOrder {
   };
 
  public:
-  explicit StopLossShare(
-      const boost::shared_ptr<const Params> &,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
-  explicit StopLossShare(
-      const trdk::Lib::Double &maxLossShare,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit StopLossShare(const boost::shared_ptr<const Params> &,
+                         trdk::Position &,
+                         trdk::TradingLib::PositionController &);
+  explicit StopLossShare(const trdk::Lib::Double &maxLossShare,
+                         trdk::Position &,
+                         trdk::TradingLib::PositionController &);
 
-  virtual void Report(const trdk::Position &,
-                      trdk::ModuleTradingLog &) const override;
+  virtual void Report(const char *action) const override;
 
  protected:
   virtual const char *GetName() const override;

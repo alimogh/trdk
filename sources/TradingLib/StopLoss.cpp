@@ -22,18 +22,18 @@ namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StopLossOrder::StopLossOrder(
-    Position &position, const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopOrder(position, orderPolicy) {}
+StopLossOrder::StopLossOrder(Position &position, PositionController &controller)
+    : StopOrder(position, controller), m_delay(pt::not_a_date_time) {}
 
-StopLossOrder::StopLossOrder(
-    const pt::time_duration &delay,
-    Position &position,
-    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopOrder(position, orderPolicy), m_delay(delay) {}
+StopLossOrder::StopLossOrder(const pt::time_duration &delay,
+                             Position &position,
+                             PositionController &controller)
+    : StopOrder(position, controller), m_delay(delay) {}
+
+bool StopLossOrder::IsWatching() const { return GetPosition().IsOpened(); }
 
 void StopLossOrder::Run() {
-  if (!GetPosition().IsOpened() ||
+  if (!IsWatching() ||
       (m_delay != pt::not_a_date_time &&
        GetPosition().GetOpenTime() + m_delay >
            GetPosition().GetSecurity().GetContext().GetCurrentTime())) {
@@ -52,11 +52,10 @@ void StopLossOrder::Run() {
       if (!Activate()) {
         return;
       }
-      GetPosition().ResetCloseReason(CLOSE_REASON_STOP_LOSS);
       break;
   }
 
-  OnHit();
+  OnHit(CLOSE_REASON_STOP_LOSS);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,26 +66,28 @@ const Price &StopPrice::Params::GetPrice() const { return m_price; }
 
 StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
                      Position &position,
-                     const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopLossOrder(position, orderPolicy), m_params(params) {}
+                     PositionController &controller)
+    : StopLossOrder(position, controller), m_params(params) {}
 
-const char *StopPrice::GetName() const { return "stop price"; }
-
-void StopPrice::Report(const Position &position, ModuleTradingLog &log) const {
-  log.Write(
-      "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f}, 'delayTime': "
-      "'%3%', 'position': '%4%/%5%'}",
-      [this, &position](TradingRecord &record) {
-        record % GetName()                      // 1
-            % m_params->GetPrice()              // 2
-            % GetDelay()                        // 3
-            % position.GetOperation()->GetId()  // 4
-            % position.GetSubOperationId();     // 5
+void StopPrice::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
+      "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'type': '%8%', "
+      "'operation': '%4%/%5%'}}}",
+      [this, action](TradingRecord &record) {
+        record % GetName()                            // 1
+            % m_params->GetPrice()                    // 2
+            % GetDelay()                              // 3
+            % GetPosition().GetOperation()->GetId()   // 4
+            % GetPosition().GetSubOperationId()       // 5
+            % action                                  // 6
+            % (GetPosition().IsLong() ? "<=" : ">=")  // 7
+            % ConvertToPch(GetPosition().GetType());  // 8
       });
 }
 
 bool StopPrice::Activate() {
-  const auto &currentPrice = GetPosition().GetSecurity().GetLastPrice();
+  const auto &currentPrice = GetActualPrice();
   if (GetPosition().IsLong()) {
     if (m_params->GetPrice() < currentPrice) {
       return false;
@@ -96,7 +97,9 @@ bool StopPrice::Activate() {
   }
 
   GetTradingLog().Write(
-      "%1%\thit\tprice=%2$.8f%3%%4$.8f\tbid/ask=%5$.8f/%6$.8f\tpos=%7%/%8%",
+      "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2$.8f%3%%4$.8f', "
+      "'bid': %5$.8f, 'ask': %6$.8f, 'position': {'type': '%9%', 'operation': "
+      "'%7%/%8%'}}}",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
             % currentPrice                                    // 2
@@ -105,10 +108,33 @@ bool StopPrice::Activate() {
             % GetPosition().GetSecurity().GetBidPriceValue()  // 5
             % GetPosition().GetSecurity().GetAskPriceValue()  // 6
             % GetPosition().GetOperation()->GetId()           // 7
-            % GetPosition().GetSubOperationId();              // 8
+            % GetPosition().GetSubOperationId()               // 8
+            % ConvertToPch(GetPosition().GetType());          // 9
       });
 
   return true;
+}
+
+StopLastPrice::StopLastPrice(const boost::shared_ptr<const Params> &params,
+                             Position &position,
+                             PositionController &controller)
+    : StopPrice(params, position, controller) {}
+
+const char *StopLastPrice::GetName() const { return "stop last price"; }
+
+Price StopLastPrice::GetActualPrice() const {
+  return GetPosition().GetSecurity().GetLastPrice();
+}
+
+StopBidAskPrice::StopBidAskPrice(const boost::shared_ptr<const Params> &params,
+                                 Position &position,
+                                 PositionController &controller)
+    : StopPrice(params, position, controller) {}
+
+const char *StopBidAskPrice::GetName() const { return "stop bid-ask price"; }
+
+Price StopBidAskPrice::GetActualPrice() const {
+  return GetPosition().GetMarketClosePrice();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,27 +148,28 @@ const Volume &StopLoss::Params::GetMaxLossPerLot() const {
 
 StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
                    Position &position,
-                   const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopLossOrder(position, orderPolicy), m_params(params) {}
+                   PositionController &controller)
+    : StopLossOrder(position, controller), m_params(params) {}
 
 StopLoss::StopLoss(const boost::shared_ptr<const Params> &params,
                    const boost::posix_time::time_duration &delay,
                    Position &position,
-                   const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopLossOrder(delay, position, orderPolicy), m_params(params) {}
+                   PositionController &controller)
+    : StopLossOrder(delay, position, controller), m_params(params) {}
 
 const char *StopLoss::GetName() const { return "stop-loss"; }
 
-void StopLoss::Report(const Position &position, ModuleTradingLog &log) const {
-  log.Write(
-      "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
-      "'delayTime': '%3%', 'position': '%4%/%5%'}",
-      [this, &position](TradingRecord &record) {
-        record % GetName()                      // 1
-            % m_params->GetMaxLossPerLot()      // 2
-            % GetDelay()                        // 3
-            % position.GetOperation()->GetId()  // 4
-            % position.GetSubOperationId();     // 5
+void StopLoss::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'maxLoss': "
+      "%2$.8f}, 'delayTime': '%3%', 'position': '%4%/%5%'}}",
+      [this, action](TradingRecord &record) {
+        record % GetName()                           // 1
+            % m_params->GetMaxLossPerLot()           // 2
+            % GetDelay()                             // 3
+            % GetPosition().GetOperation()->GetId()  // 4
+            % GetPosition().GetSubOperationId()      // 5
+            % action;                                // 6
       });
 }
 
@@ -183,32 +210,30 @@ const Volume &StopLossShare::Params::GetMaxLossShare() const {
   return m_maxLossShare;
 }
 
-StopLossShare::StopLossShare(
-    const boost::shared_ptr<const Params> &params,
-    Position &position,
-    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopLossOrder(position, orderPolicy), m_params(params) {}
+StopLossShare::StopLossShare(const boost::shared_ptr<const Params> &params,
+                             Position &position,
+                             PositionController &controller)
+    : StopLossOrder(position, controller), m_params(params) {}
 
-StopLossShare::StopLossShare(
-    const Double &maxLossShare,
-    Position &position,
-    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopLossOrder(position, orderPolicy),
+StopLossShare::StopLossShare(const Double &maxLossShare,
+                             Position &position,
+                             PositionController &controller)
+    : StopLossOrder(position, controller),
       m_params(boost::make_shared<Params>(maxLossShare)) {}
 
 const char *StopLossShare::GetName() const { return "stop-loss share"; }
 
-void StopLossShare::Report(const Position &position,
-                           ModuleTradingLog &log) const {
-  log.Write(
-      "'algoAttach': {'type': '%1%', 'params': {'maxLoss': %2$.8f}, "
-      "'delayTime': '%3%', 'position': '%4%/%5%'}",
-      [this, &position](TradingRecord &record) {
+void StopLossShare::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'maxLoss': "
+      "%2$.8f}, 'delayTime': '%3%', 'position': '%4%/%5%'}}",
+      [this, action](TradingRecord &record) {
         record % GetName()                           // 1
             % m_params->GetMaxLossShare()            // 2
             % GetDelay()                             // 3
             % GetPosition().GetOperation()->GetId()  // 4
-            % GetPosition().GetSubOperationId();     // 5
+            % GetPosition().GetSubOperationId()      // 5
+            % action;                                // 6
       });
 }
 

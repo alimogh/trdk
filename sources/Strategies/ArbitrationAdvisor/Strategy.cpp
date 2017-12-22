@@ -81,11 +81,11 @@ class SignalSession : private boost::noncopyable {
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
-  const Double m_operationStopSpreadRatio;
   const boost::optional<Double> m_lowestSpreadRatio;
   const bool m_isCrossMode;
+  const bool m_isStopLossEnabled;
 
-  std::unique_ptr<PositionController> m_controller;
+  PositionController m_controller;
 
   sig::signal<void(const Advice &)> m_adviceSignal;
 
@@ -98,15 +98,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_operationStopSpreadRatio(
-            conf.ReadTypedKey<Double>("operation_stop_spread_percentage") /
-            100),
-        m_controller(
-            !conf.ReadBoolKey("restore_balances", false)
-                ? boost::make_unique<PositionController>(m_self)
-                : boost::make_unique<PositionAndBalanceController>(m_self)),
+        m_controller(m_self),
         m_minPriceDifferenceRatioToAdvice(0),
-        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)) {
+        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)),
+        m_isStopLossEnabled(conf.ReadBoolKey("stop_loss", false)) {
     {
       const char *const key = "lowest_spread_percentage";
       if (conf.IsKeyExist(key)) {
@@ -118,13 +113,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_self.GetLog().Info("Lowest spread: not set.");
       }
     }
-    m_self.GetLog().Info("Operation stop spread: %1%%%.",
-                         m_operationStopSpreadRatio * 100);
-    if (dynamic_cast<const PositionAndBalanceController *>(&*m_controller)) {
-      m_self.GetLog().Info("Enabled balances restoration.");
-    }
     if (m_isCrossMode) {
       m_self.GetLog().Info("Cross-arbitrage mode enabled.");
+    }
+    if (m_isStopLossEnabled) {
+      m_self.GetLog().Info("Stop-loss enabled.");
     }
   }
 
@@ -133,12 +126,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
               const Double &spreadRatio,
               SignalSession &session,
               const Milestones &delayMeasurement) {
-    if (spreadRatio <= m_operationStopSpreadRatio) {
-      StopTrading(sellTarget, buyTarget, spreadRatio);
-    } else if (m_tradingSettings &&
-               spreadRatio >= m_tradingSettings->minPriceDifferenceRatio) {
-      Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
+    if (!m_tradingSettings ||
+        spreadRatio < m_tradingSettings->minPriceDifferenceRatio ||
+        CheckActualPositions(sellTarget, buyTarget)) {
+      return;
     }
+    Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
   }
 
   void CheckSignal(Security &updatedSecurity,
@@ -272,21 +265,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
+  static bool CheckActualPosition(const Position &position,
+                                  const Security &sellTarget,
+                                  const Security &buyTarget) {
+    return !position.IsCompleted() &&
+           position.GetTypedOperation<aa::Operation>().IsSame(sellTarget,
+                                                              buyTarget);
+  }
+
   bool CheckActualPositions(const Security &sellTarget,
                             const Security &buyTarget) {
-    size_t numberOfPositionsWithTheSameTarget = 0;
     for (auto &position : m_self.GetPositions()) {
-      if (!IsBusinessPosition(position) || position.IsCompleted()) {
-        continue;
-      }
-      const auto &operation = position.GetTypedOperation<aa::Operation>();
-      if (operation.IsSame(sellTarget, buyTarget) && !operation.IsExpired()) {
-        AssertGe(2, numberOfPositionsWithTheSameTarget);
-        ++numberOfPositionsWithTheSameTarget;
+      if (CheckActualPosition(position, sellTarget, buyTarget)) {
+        return true;
       }
     }
-    AssertGe(2, numberOfPositionsWithTheSameTarget);
-    return numberOfPositionsWithTheSameTarget > 0;
+    return false;
   }
 
   void Trade(Security &sellTarget,
@@ -294,15 +288,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
              const Double &bestSpreadRatio,
              SignalSession &signalSession,
              const Milestones &delayMeasurement) {
-    if (CheckActualPositions(sellTarget, buyTarget)) {
-      return;
-    }
-
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
     Double spreadRatio = bestSpreadRatio;
     {
-      const auto pip = 1.0 / 10000000;
+      const auto pip = std::min(sellTarget.GetPip(), buyTarget.GetPip());
       const auto &lowestSpreadRatio =
           m_lowestSpreadRatio ? *m_lowestSpreadRatio
                               : m_tradingSettings->minPriceDifferenceRatio;
@@ -418,13 +408,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                  bestSpreadRatio);
 
     const auto operation = boost::make_shared<Operation>(
-        sellTarget, buyTarget, qty, sellPrice, buyPrice);
+        sellTarget, buyTarget, qty, sellPrice, buyPrice, m_isStopLossEnabled);
 
     qtys.Return(qty);
 
+#if 0
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
-                            isSellTargetInBlackList, isBuyTargetInBlackList,
+                            isBuyTargetInBlackList,
                             spreadRatio, bestSpreadRatio, delayMeasurement)) {
         return;
       }
@@ -432,51 +423,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                                   bestSpreadRatio, delayMeasurement)) {
       return;
     }
+#else
+    if (!OpenPositionSync(sellTarget, buyTarget, operation,
+                          isBuyTargetInBlackList, spreadRatio, bestSpreadRatio,
+                          delayMeasurement)) {
+      return;
+    }
+#endif
 
     if (isBuyTargetInBlackList) {
       m_errors.erase(buyTargetBlackListIt);
     }
     if (isSellTargetInBlackList) {
       m_errors.erase(sellTargetBlackListIt);
-    }
-  }
-
-  void StopTrading(const Security &sellTarget,
-                   const Security &buyTarget,
-                   const Double &spreadRatio) {
-    if (!sellTarget.IsOnline() || !buyTarget.IsOnline()) {
-      return;
-    }
-
-    bool isReported = false;
-
-    for (auto &position : m_self.GetPositions()) {
-      if (position.GetCloseReason() != CLOSE_REASON_NONE ||
-          !IsBusinessPosition(position)) {
-        // In the current implementation "not business position" will be closed
-        // immediately after creation.
-        AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
-        continue;
-      }
-      if (!isReported) {
-        m_self.GetTradingLog().Write(
-            "{'signal': {'stop': {'sell': {'exchange': '%1%', 'bid': %2$.8f, "
-            "'ask': %3$.8f}, 'buy': {'exchange': '%4%', 'bid': %5$.8f, 'ask': "
-            "%6$.8f}}, 'spread': %7$.3f}}",
-            [&](TradingRecord &record) {
-              record %
-                  boost::cref(sellTarget.GetSource().GetInstanceName())   // 1
-                  % sellTarget.GetBidPriceValue()                         // 2
-                  % buyTarget.GetAskPriceValue()                          // 3
-                  % boost::cref(buyTarget.GetSource().GetInstanceName())  // 4
-                  % buyTarget.GetBidPriceValue()                          // 5
-                  % buyTarget.GetAskPriceValue()                          // 6
-                  % (spreadRatio * 100);                                  // 7
-            });
-        isReported = true;
-      }
-
-      m_controller->ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
     }
   }
 
@@ -610,28 +569,24 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   bool OpenPositionSync(Security &sellTarget,
                         Security &buyTarget,
                         const boost::shared_ptr<Operation> &operation,
-                        bool isSellTargetInBlackList,
                         bool isBuyTargetInBlackList,
                         const Double &spreadRatio,
                         const Double &bestSpreadRatio,
                         const Milestones &delayMeasurement) {
-    Assert(isBuyTargetInBlackList || isSellTargetInBlackList);
-    UseUnused(isSellTargetInBlackList);
-
     const auto &legTargets = isBuyTargetInBlackList
                                  ? std::make_pair(&buyTarget, &sellTarget)
                                  : std::make_pair(&sellTarget, &buyTarget);
 
     Position *firstLeg = nullptr;
     try {
-      firstLeg = &m_controller->OpenPosition(operation, 1, *legTargets.first,
-                                             delayMeasurement);
-      m_controller->OpenPosition(operation, 2, *legTargets.second,
-                                 delayMeasurement);
+      firstLeg = &m_controller.OpenPosition(operation, 1, *legTargets.first,
+                                            delayMeasurement);
+      m_controller.OpenPosition(operation, 2, *legTargets.second,
+                                delayMeasurement);
 
       return true;
 
-    } catch (const std::exception &ex) {
+    } catch (const Interactor::CommunicationError &ex) {
       ReportSignal("error", "sync", sellTarget, buyTarget, spreadRatio,
                    bestSpreadRatio);
       m_self.GetLog().Error("Failed to start trading (sync): \"%1%\".",
@@ -664,41 +619,49 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          const Double &spreadRatio,
                          const Double &bestSpreadRatio,
                          const Milestones &delayMeasurement) {
-    const boost::function<Position *(int64_t, Security &)> &openPosition = [&](
-        int64_t leg, Security &target) -> Position * {
-      try {
-        return &m_controller->OpenPosition(operation, leg, target,
-                                           delayMeasurement);
-      } catch (const std::exception ex) {
-        return nullptr;
-      } catch (...) {
-        AssertFailNoException();
-        throw;
-      }
+    const boost::function<Position &(int64_t, Security &)> &openPosition = [&](
+        int64_t leg, Security &target) -> Position & {
+      return m_controller.OpenPosition(operation, leg, target,
+                                       delayMeasurement);
     };
 
     auto &firstLegTarget = sellTarget;
     auto &secondLegTarget = buyTarget;
 
-    auto firstLeg =
-        boost::async(boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
-    auto secondLeg = openPosition(2, secondLegTarget);
-    if (firstLeg.get() && secondLeg) {
+    Position *firstLeg = nullptr;
+    Position *secondLeg = nullptr;
+    {
+      auto firstLegFuture = boost::async(
+          boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
+      try {
+        secondLeg = &openPosition(2, secondLegTarget);
+      } catch (const Interactor::CommunicationError &ex) {
+        ReportSignal("error", "async 2nd leg", sellTarget, buyTarget,
+                     spreadRatio, bestSpreadRatio);
+        m_self.GetLog().Error(
+            "Failed to start trading (async 2nd leg): \"%1%\".", ex.what());
+      }
+      try {
+        firstLeg = &firstLegFuture.get();
+      } catch (const Interactor::CommunicationError &ex) {
+        ReportSignal("error", "async 1st leg", sellTarget, buyTarget,
+                     spreadRatio, bestSpreadRatio);
+        m_self.GetLog().Error(
+            "Failed to start trading (async 1st leg): \"%1%\".", ex.what());
+      }
+    }
+    if (firstLeg && secondLeg) {
       return true;
     }
 
-    ReportSignal("error", "async", sellTarget, buyTarget, spreadRatio,
-                 bestSpreadRatio);
-    m_self.GetLog().Error("Failed to start trading (async).");
-
-    if (!firstLeg.get()) {
+    if (!firstLeg) {
       Verify(m_errors.emplace(&firstLegTarget).second);
     }
     if (!secondLeg) {
       Verify(m_errors.emplace(&secondLegTarget).second);
     }
 
-    if (!firstLeg.get() && !secondLeg) {
+    if (!firstLeg && !secondLeg) {
       m_self.GetLog().Warn(
           "\"%1%\" and \"%2%\" added to the blacklist by position opening "
           "error.",
@@ -708,10 +671,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     const Security *errorLeg;
-    if (firstLeg.get()) {
+    if (firstLeg) {
       Assert(!secondLeg);
       errorLeg = &secondLegTarget;
-      CloseLegPositionByOperationStartError(*firstLeg.get(), secondLegTarget,
+      CloseLegPositionByOperationStartError(*firstLeg, secondLegTarget,
                                             *operation);
     } else {
       Assert(secondLeg);
@@ -723,7 +686,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
         "%3% leg is \"%4%\"",
         *errorLeg,                                      // 1
-        firstLeg.get() ? "second" : "first",            // 2
+        firstLeg ? "second" : "first",                  // 2
         secondLeg ? "Second" : "First",                 // 3
         secondLeg ? secondLegTarget : firstLegTarget);  // 4
 
@@ -734,7 +697,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       Position &openedPosition,
       const Security &failedPositionTarget,
       Operation &operation) {
-    operation.GetReportData().Add(BusinessOperationReportData::PositionReport{
+    operation.GetReportData().Add(OperationReportData::PositionReport{
         operation.GetId(), openedPosition.GetSubOperationId() == 1 ? 2 : 1,
         !openedPosition.IsLong(), pt::not_a_date_time, pt::not_a_date_time,
         operation.GetOpenOrderPolicy().GetOpenOrderPrice(
@@ -745,7 +708,13 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         operation.GetTradingSystem(m_self, openedPosition.GetSecurity())
             .CalcCommission(openedPosition.GetOpenedVolume(),
                             openedPosition.GetSecurity())});
-    m_controller->ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
+    try {
+      m_controller.ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
+    } catch (const Interactor::CommunicationError &ex) {
+      m_self.GetLog().Warn(
+          "Communication error at position closing request: \"%1%\".",
+          ex.what());
+    }
   }
 };
 
@@ -780,6 +749,13 @@ void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
   }
   m_pimpl->m_minPriceDifferenceRatioToAdvice = minPriceDifferenceRatio;
   m_pimpl->RecheckSignal();
+}
+
+void aa::Strategy::ForEachSecurity(
+    const Symbol &symbol, const boost::function<void(Security &)> &callback) {
+  for (auto &security : m_pimpl->m_symbols[symbol]) {
+    callback(*security.security);
+  }
 }
 
 void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
@@ -848,20 +824,21 @@ void aa::Strategy::OnLevel1Update(Security &security,
     return;
   }
   AssertLt(0, m_pimpl->m_adviceSignal.num_slots());
-  try {
-    m_pimpl->CheckSignal(security, m_pimpl->m_symbols[security.GetSymbol()],
-                         delayMeasurement);
-  } catch (const Exception &ex) {
-    GetLog().Error("Failed to check signal: \"%1%\".", ex.what());
-  }
+  m_pimpl->CheckSignal(security, m_pimpl->m_symbols[security.GetSymbol()],
+                       delayMeasurement);
 }
 
 void aa::Strategy::OnPositionUpdate(Position &position) {
-  m_pimpl->m_controller->OnPositionUpdate(position);
+  try {
+    m_pimpl->m_controller.OnPositionUpdate(position);
+  } catch (const Interactor::CommunicationError &ex) {
+    GetLog().Warn("Communication error at position update handling: \"%1%\".",
+                  ex.what());
+  }
 }
 
 void aa::Strategy::OnPostionsCloseRequest() {
-  m_pimpl->m_controller->OnPostionsCloseRequest();
+  m_pimpl->m_controller.OnPostionsCloseRequest();
 }
 ////////////////////////////////////////////////////////////////////////////////
 

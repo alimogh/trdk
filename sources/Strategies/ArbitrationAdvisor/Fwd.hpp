@@ -14,7 +14,7 @@ namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 class Strategy;
-class BusinessOperationReport;
+class OperationReport;
 struct Advice;
 struct AdviceSide;
 struct AdviceSecuritySignal;

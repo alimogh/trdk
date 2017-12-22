@@ -26,7 +26,7 @@ class TRDK_CORE_API Security : public trdk::Instrument {
    public:
     Request();
     operator bool() const;
-    void Swap(Request &) throw();
+    void Swap(Request &) noexcept;
     //! Returns true if one or more fields have earlier value.
     /** Does not cancel the reverse.
       */
@@ -226,7 +226,9 @@ class TRDK_CORE_API Security : public trdk::Instrument {
   const Qty &GetLotSize() const;
 
   uintmax_t GetPricePrecisionPower() const;
-  uint8_t GetPricePrecision() const throw();
+  uint8_t GetPricePrecision() const noexcept;
+
+  trdk::Price GetPip() const { return 1.0 / GetPricePrecisionPower(); }
 
  public:
   boost::posix_time::ptime GetLastMarketDataTime() const;

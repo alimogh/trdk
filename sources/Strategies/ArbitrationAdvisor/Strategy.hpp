@@ -43,6 +43,9 @@ class Strategy : public trdk::Strategy {
   const boost::optional<TradingSettings> &GetAutoTradingSettings() const;
   void DeactivateAutoTrading();
 
+  void ForEachSecurity(const Lib::Symbol &,
+                       const boost::function<void(Security &)> &);
+
  protected:
   virtual void OnSecurityStart(trdk::Security &,
                                trdk::Security::Request &) override;

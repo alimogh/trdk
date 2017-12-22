@@ -16,7 +16,7 @@ namespace ArbitrageAdvisor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct BusinessOperationReportData : private boost::noncopyable {
+struct OperationReportData : private boost::noncopyable {
  public:
   struct PositionReport {
     boost::uuids::uuid operation;
@@ -33,7 +33,7 @@ struct BusinessOperationReportData : private boost::noncopyable {
   };
 
  public:
-  BusinessOperationReportData();
+  OperationReportData();
 
   bool Add(const Position &);
   bool Add(PositionReport &&);
@@ -48,41 +48,24 @@ struct BusinessOperationReportData : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BusinessOperationReport : private boost::noncopyable {
+class OperationReport : private boost::noncopyable {
  public:
-  explicit BusinessOperationReport(const trdk::Strategy &);
-  virtual ~BusinessOperationReport() = default;
+  explicit OperationReport(const trdk::Strategy &);
+  virtual ~OperationReport() = default;
 
  public:
-  virtual void Append(const BusinessOperationReportData &);
+  virtual void Append(const OperationReportData &);
 
  protected:
   virtual void Open(std::ofstream &);
   virtual void PrintHead(std::ostream &);
-  virtual void PrintReport(
-      const BusinessOperationReportData::PositionReport &sell,
-      const BusinessOperationReportData::PositionReport &buy,
-      std::ostream &);
+  virtual void PrintReport(const OperationReportData::PositionReport &sell,
+                           const OperationReportData::PositionReport &buy,
+                           std::ostream &);
 
  protected:
   const trdk::Strategy &m_strategy;
   std::ofstream m_file;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class BalanceRestoreOperationReport : public TradingLib::PositionReport {
- public:
-  typedef TradingLib::PositionReport Base;
-
- public:
-  explicit BalanceRestoreOperationReport(const trdk::Strategy &);
-  virtual ~BalanceRestoreOperationReport() override = default;
-
- protected:
-  virtual void Open(std::ofstream &) override;
-  virtual void PrintHead(std::ostream &) override;
-  virtual void PrintReport(const Position &, std::ostream &) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

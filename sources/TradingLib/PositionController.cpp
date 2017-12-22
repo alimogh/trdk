@@ -348,6 +348,6 @@ boost::shared_ptr<Position> PositionController::CreatePosition(
                               : CreatePositionObject<ShortPosition>(
                                     operationContext, subOperationId, security,
                                     qty, price, delayMeasurement);
-  result->GetOperation()->Setup(*result);
+  result->GetOperation()->Setup(*result, *this);
   return result;
 }

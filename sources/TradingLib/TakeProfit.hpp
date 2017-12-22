@@ -32,10 +32,9 @@ class TakeProfit : public trdk::TradingLib::StopOrder {
   };
 
  public:
-  explicit TakeProfit(
-      const boost::shared_ptr<const Params> &,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit TakeProfit(const boost::shared_ptr<const Params> &,
+                      trdk::Position &,
+                      trdk::TradingLib::PositionController &);
   virtual ~TakeProfit() override = default;
 
  public:
