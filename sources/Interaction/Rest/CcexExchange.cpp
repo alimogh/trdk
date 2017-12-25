@@ -457,7 +457,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     const auto &result = request.Send(m_tradingSession, GetContext());
     try {
       return boost::make_unique<OrderTransactionContext>(
-          boost::get<1>(result).get<OrderId>("uuid"));
+          *this, boost::get<1>(result).get<OrderId>("uuid"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();

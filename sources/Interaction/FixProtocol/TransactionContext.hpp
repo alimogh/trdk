@@ -19,8 +19,9 @@ class OrderTransactionContext : public trdk::OrderTransactionContext {
   typedef trdk::OrderTransactionContext Base;
 
  public:
-  explicit OrderTransactionContext(const MessageSequenceNumber &orderId)
-      : Base(orderId) {}
+  explicit OrderTransactionContext(TradingSystem &tradingSystem,
+                                   const MessageSequenceNumber &orderId)
+      : Base(tradingSystem, orderId) {}
   virtual ~OrderTransactionContext() = default;
 
  public:

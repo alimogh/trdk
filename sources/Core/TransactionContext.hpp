@@ -14,16 +14,23 @@
 
 namespace trdk {
 
-class TRDK_CORE_API OrderTransactionContext {
+class OrderTransactionContext : private boost::noncopyable {
  public:
-  explicit OrderTransactionContext(const trdk::OrderId &&orderId)
-      : m_orderId(std::move(orderId)) {}
+  explicit OrderTransactionContext(trdk::TradingSystem &tradingSystem,
+                                   const trdk::OrderId &&orderId)
+      : m_tradingSystem(tradingSystem), m_orderId(std::move(orderId)) {}
   virtual ~OrderTransactionContext() = default;
 
  public:
+  trdk::TradingSystem &GetTradingSystem() { return m_tradingSystem; }
+  const trdk::TradingSystem &GetTradingSystem() const {
+    return const_cast<OrderTransactionContext *>(this)->GetTradingSystem();
+  }
+
   const trdk::OrderId &GetOrderId() const { return m_orderId; }
 
  public:
+  trdk::TradingSystem &m_tradingSystem;
   const trdk::OrderId m_orderId;
 };
 }

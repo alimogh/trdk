@@ -21,15 +21,50 @@ struct OperationReportData : private boost::noncopyable {
   struct PositionReport {
     boost::uuids::uuid operation;
     int64_t subOperation;
-    bool isLong;
+    PositionSide side;
     boost::posix_time::ptime openStartTime;
     boost::posix_time::ptime openEndTime;
     Price openStartPrice;
-    Price openPrice;
     Qty openedQty;
-    const TradingSystem *target;
     CloseReason closeReason;
-    Volume commissions;
+    const TradingSystem *signalTarget;
+    Volume openedVolume;
+    Volume closedVolume;
+    std::vector<const TradingSystem *> closeTargets;
+    boost::optional<Price> openPrice;
+    boost::posix_time::ptime closeStartTime;
+    boost::posix_time::ptime closeEndTime;
+    boost::optional<Qty> closedQty;
+    boost::optional<Price> closeStartPrice;
+    boost::optional<Price> closePrice;
+
+    PositionReport() {}
+
+    explicit PositionReport(const boost::uuids::uuid &operation,
+                            int64_t subOperation,
+                            const PositionSide &side,
+                            const boost::posix_time::ptime &openStartTime,
+                            const boost::posix_time::ptime &openEndTime,
+                            const Price &openStartPrice,
+                            const Qty &openedQty,
+                            const CloseReason &closeReason,
+                            const TradingSystem &signalTarget,
+                            const Volume &openedVolume,
+                            const Volume &closedVolume)
+        : operation(operation),
+          subOperation(subOperation),
+          side(side),
+          openStartTime(openStartTime),
+          openEndTime(openEndTime),
+          openStartPrice(openStartPrice),
+          openedQty(openedQty),
+          closedQty(closedQty),
+          closeReason(closeReason),
+          signalTarget(&signalTarget),
+          openedVolume(openedVolume),
+          closedVolume(closedVolume),
+          closeStartTime(boost::posix_time::not_a_date_time),
+          closeEndTime(boost::posix_time::not_a_date_time) {}
   };
 
  public:

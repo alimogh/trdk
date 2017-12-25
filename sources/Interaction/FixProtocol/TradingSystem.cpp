@@ -100,7 +100,7 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
   }
   m_client.Send(message);
   return boost::make_unique<fix::OrderTransactionContext>(
-      message.GetSequenceNumber());
+      *this, message.GetSequenceNumber());
 }
 
 void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {

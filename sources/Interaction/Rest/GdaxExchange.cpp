@@ -463,7 +463,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_orderTransactionRequest.Send(m_tradingSession, GetContext());
     try {
       return boost::make_unique<OrderTransactionContext>(
-          boost::get<1>(result).get<OrderId>("id"));
+          *this, boost::get<1>(result).get<OrderId>("id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();

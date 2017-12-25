@@ -55,17 +55,17 @@ void aa::Operation::Setup(Position &position,
     virtual void Report(const char *action) const override {
       GetTradingLog().Write(
           "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-          "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'type': '%8%', "
+          "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
           "'operation': '%4%/%5%'}}}",
           [this, action](TradingRecord &record) {
-            record % GetName()                            // 1
-                % GetPosition().GetOpenStartPrice()       // 2
-                % GetDelay()                              // 3
-                % GetPosition().GetOperation()->GetId()   // 4
-                % GetPosition().GetSubOperationId()       // 5
-                % action                                  // 6
-                % (GetPosition().IsLong() ? ">" : "<")    // 7
-                % ConvertToPch(GetPosition().GetType());  // 8
+            record % GetName()                           // 1
+                % GetPosition().GetOpenStartPrice()      // 2
+                % GetDelay()                             // 3
+                % GetPosition().GetOperation()->GetId()  // 4
+                % GetPosition().GetSubOperationId()      // 5
+                % action                                 // 6
+                % (GetPosition().IsLong() ? ">" : "<")   // 7
+                % GetPosition().GetSide();               // 8
           });
     }
 
@@ -90,7 +90,7 @@ void aa::Operation::Setup(Position &position,
 
       GetTradingLog().Write(
           "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2$.8f %3% "
-          "%4$.8f', 'bid': %5$.8f, 'ask': %6$.8f, 'position': {'type': '%9%', "
+          "%4$.8f', 'bid': %5$.8f, 'ask': %6$.8f, 'position': {'side': '%9%', "
           "'operation': '%7%/%8%'}}}",
           [&](TradingRecord &record) {
             record % GetName()                                    // 1
@@ -101,7 +101,7 @@ void aa::Operation::Setup(Position &position,
                 % GetPosition().GetSecurity().GetAskPriceValue()  // 6
                 % GetPosition().GetOperation()->GetId()           // 7
                 % GetPosition().GetSubOperationId()               // 8
-                % ConvertToPch(GetPosition().GetType());          // 9
+                % GetPosition().GetSide();                        // 9
           });
 
       return true;

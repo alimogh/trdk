@@ -60,6 +60,8 @@ class TRDK_CORE_API AsyncLogRecord {
 
     PT_TIME_IN_FORCE,
 
+    PT_POSITION_SIDE,
+
     numberOfParamTypes
 
   };
@@ -134,7 +136,7 @@ class TRDK_CORE_API AsyncLogRecord {
         }
       }
 
-      static_assert(numberOfParamTypes == 25, "Parameter type list changed.");
+      static_assert(numberOfParamTypes == 26, "Parameter type list changed.");
       switch (type) {
         case PT_INT8:
           WriteToDumpStream(boost::any_cast<int8_t>(val), os);
@@ -242,6 +244,11 @@ class TRDK_CORE_API AsyncLogRecord {
                             os);
           break;
 
+        case PT_POSITION_SIDE:
+          WriteToDumpStream(boost::any_cast<const trdk::PositionSide &>(val),
+                            os);
+          break;
+
         default:
           AssertEq(PT_UINT64, type);
       }
@@ -318,6 +325,10 @@ class TRDK_CORE_API AsyncLogRecord {
 
   void StoreParam(const trdk::TimeInForce &tif) {
     StoreTypedParam(PT_TIME_IN_FORCE, tif);
+  }
+
+  void StoreParam(const trdk::PositionSide &positionSide) {
+    StoreTypedParam(PT_POSITION_SIDE, positionSide);
   }
 
   void StoreParam(const trdk::OrderId &orderId) {

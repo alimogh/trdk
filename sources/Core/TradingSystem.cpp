@@ -864,29 +864,32 @@ LegacyTradingSystem::SendOrderTransaction(
     if (price) {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
-          return boost::make_shared<OrderTransactionContext>(SendBuy(
-              security, currency, qty, *price, params, std::move(callback)));
+          return boost::make_shared<OrderTransactionContext>(
+              *this, SendBuy(security, currency, qty, *price, params,
+                             std::move(callback)));
         case TIME_IN_FORCE_IOC:
           return boost::make_unique<OrderTransactionContext>(
-              SendBuyImmediatelyOrCancel(security, currency, qty, *price,
-                                         params, std::move(callback)));
+              *this, SendBuyImmediatelyOrCancel(security, currency, qty, *price,
+                                                params, std::move(callback)));
       }
     } else {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
           return boost::make_shared<OrderTransactionContext>(
-              SendBuyAtMarketPrice(security, currency, qty, params,
-                                   std::move(callback)));
+              *this, SendBuyAtMarketPrice(security, currency, qty, params,
+                                          std::move(callback)));
       }
     }
   } else {
     if (price) {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
-          return boost::make_shared<OrderTransactionContext>(SendSell(
-              security, currency, qty, *price, params, std::move(callback)));
+          return boost::make_shared<OrderTransactionContext>(
+              *this, SendSell(security, currency, qty, *price, params,
+                              std::move(callback)));
         case TIME_IN_FORCE_IOC:
           return boost::make_shared<OrderTransactionContext>(
+              *this,
               SendSellImmediatelyOrCancel(security, currency, qty, *price,
                                           params, std::move(callback)));
       }
@@ -894,8 +897,8 @@ LegacyTradingSystem::SendOrderTransaction(
       switch (tif) {
         case TIME_IN_FORCE_GTC:
           return boost::make_shared<OrderTransactionContext>(
-              SendSellAtMarketPrice(security, currency, qty, params,
-                                    std::move(callback)));
+              *this, SendSellAtMarketPrice(security, currency, qty, params,
+                                           std::move(callback)));
       }
     }
   }

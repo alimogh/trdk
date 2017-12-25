@@ -697,17 +697,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       Position &openedPosition,
       const Security &failedPositionTarget,
       Operation &operation) {
-    operation.GetReportData().Add(OperationReportData::PositionReport{
-        operation.GetId(), openedPosition.GetSubOperationId() == 1 ? 2 : 1,
-        !openedPosition.IsLong(), pt::not_a_date_time, pt::not_a_date_time,
+    operation.GetReportData().Add(OperationReportData::PositionReport(
+        operation.GetId(),                                // operation
+        openedPosition.GetSubOperationId() == 1 ? 2 : 1,  // subOperation
+        openedPosition.GetSide() == POSITION_SIDE_LONG
+            ? POSITION_SIDE_SHORT
+            : POSITION_SIDE_LONG,  // side
+        pt::not_a_date_time,       // openStartTime;
+        pt::not_a_date_time,       // openEndTime
         operation.GetOpenOrderPolicy().GetOpenOrderPrice(
-            !openedPosition.IsLong()),
-        std::numeric_limits<double>::quiet_NaN(), 0,
-        &operation.GetTradingSystem(m_self, failedPositionTarget),
-        CLOSE_REASON_OPEN_FAILED,
-        operation.GetTradingSystem(m_self, openedPosition.GetSecurity())
-            .CalcCommission(openedPosition.GetOpenedVolume(),
-                            openedPosition.GetSecurity())});
+            !openedPosition.IsLong()),  // openStartPrice
+        0,                              // openedQty
+        CLOSE_REASON_OPEN_FAILED,       // closeReason
+        operation.GetTradingSystem(m_self,
+                                   failedPositionTarget),  // signalTarget
+        0,                                                 // openedVolume
+        0));                                               // closedVolume
     try {
       m_controller.ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
     } catch (const Interactor::CommunicationError &ex) {
