@@ -183,7 +183,8 @@ void LivecoinMarketDataSource::UpdatePrices(
     const ptr::ptree &source,
     r::Security &security,
     const Milestones &delayMeasurement) {
-  const auto &time = pt::from_time_t(source.get<time_t>("timestamp"));
+  const auto &time =
+      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000);
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("asks"));
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
