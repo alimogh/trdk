@@ -14,6 +14,7 @@
 #include "Strategy.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
@@ -70,14 +71,22 @@ bool aa::PositionController::ClosePosition(Position &position,
           position.GetStrategy().StartThreadPositionsTransaction();
       oppositePositionClosingFuture =
           boost::async([this, &oppositePosition, &reason] {
-            Base::ClosePosition(*oppositePosition, reason);
+            try {
+              Base::ClosePosition(*oppositePosition, reason);
+            } catch (const Interactor::CommunicationError &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const Exception &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const std::exception &ex) {
+              throw boost::enable_current_exception(ex);
+            }
           });
     }
   }
   const auto &result = Base::ClosePosition(position, reason);
 
   if (oppositePositionClosingFuture.valid()) {
-    oppositePositionClosingFuture.wait();
+    oppositePositionClosingFuture.get();
   }
   return result;
 }
