@@ -19,6 +19,7 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PositionController.hpp"
 #include "TradingLib/PositionReport.hpp"
+#include "TradingLib/StopLoss.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -33,6 +34,7 @@
 #include "FrontEnd/Lib/Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
+#include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>

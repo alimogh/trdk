@@ -87,7 +87,7 @@ class PositionController : private boost::noncopyable {
   /** @return true, if did some action to close position, if not (for ex.: there
     *         is no opened position) - false.
     */
-  bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
+  virtual bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
   //! Cancels all active open-orders, if exists, and closes all positions.
   void CloseAllPositions(const trdk::CloseReason &);
 

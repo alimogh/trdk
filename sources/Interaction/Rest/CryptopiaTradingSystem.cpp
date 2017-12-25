@@ -324,7 +324,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
     SubscribeToOrderUpdates(productId);
   }
 
-  return boost::make_unique<OrderTransactionContext>(std::move(orderId));
+  return boost::make_unique<OrderTransactionContext>(*this, std::move(orderId));
 }
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(

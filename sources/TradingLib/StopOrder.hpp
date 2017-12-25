@@ -18,24 +18,16 @@ namespace TradingLib {
 
 class StopOrder : public trdk::TradingLib::Algo {
  public:
-  explicit StopOrder(trdk::Position &,
-                     const boost::shared_ptr<const OrderPolicy> &);
+  explicit StopOrder(trdk::Position &, trdk::TradingLib::PositionController &);
   virtual ~StopOrder() override = default;
-
- public:
-  trdk::ModuleTradingLog &GetTradingLog() const noexcept;
 
  protected:
   virtual const char *GetName() const = 0;
 
-  virtual void OnHit();
-
-  trdk::Position &GetPosition();
-  const trdk::Position &GetPosition() const;
+  virtual void OnHit(const trdk::CloseReason &);
 
  private:
-  trdk::Position &m_position;
-  const boost::shared_ptr<const OrderPolicy> m_orderPolicy;
+  trdk::TradingLib::PositionController &m_controller;
 };
 }
 }

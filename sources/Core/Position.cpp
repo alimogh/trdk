@@ -25,6 +25,36 @@ using namespace trdk::TradingLib;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+boost::atomic_size_t objectsCounter(0);
+
+void ReportAboutGeneralAction(const Position &position,
+                              const char *action) noexcept {
+  position.GetStrategy().GetTradingLog().Write(
+      "{'position': {'action': '%1%', 'side': '%2%', 'operation': '%3%/%4%'}}",
+      [&position, action](TradingRecord &record) {
+        record % action                         // 1
+            % position.GetSide()                // 2
+            % position.GetOperation()->GetId()  // 3
+            % position.GetSubOperationId();     // 4
+      });
+}
+
+void ReportAboutDeletion(const Position &position) noexcept {
+  position.GetStrategy().GetTradingLog().Write(
+      "{'position': {'action': 'del', 'side': '%1%', 'operation': '%2%/%3%', "
+      "'numberOfObject': %4%}}",
+      [&position](TradingRecord &record) {
+        record % position.GetSide()             // 1
+            % position.GetOperation()->GetId()  // 2
+            % position.GetSubOperationId()      // 3
+            % objectsCounter;                   // 4
+      });
+}
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 Position::Exception::Exception(const char *what) noexcept
@@ -142,14 +172,14 @@ class Position::Implementation : private boost::noncopyable {
 
   const boost::shared_ptr<Operation> m_operation;
 
-  TradingSystem &m_tradingSystem;
+  TradingSystem *m_tradingSystem;
 
   mutable StateUpdateSignal m_stateUpdateSignal;
 
   Strategy &m_strategy;
   const int64_t m_subOperationId;
   bool m_isRegistered;
-  Security &m_security;
+  Security *m_security;
   const Currency m_currency;
 
   Qty m_planedQty;
@@ -184,11 +214,11 @@ class Position::Implementation : private boost::noncopyable {
                           const TimeMeasurement::Milestones &timeMeasurement)
       : m_self(position),
         m_operation(operation),
-        m_tradingSystem(tradingSystem),
+        m_tradingSystem(&tradingSystem),
         m_strategy(strategy),
         m_subOperationId(subOperationId),
         m_isRegistered(false),
-        m_security(security),
+        m_security(&security),
         m_currency(currency),
         m_planedQty(qty),
         m_isMarketAsCompleted(false),
@@ -278,7 +308,7 @@ class Position::Implementation : private boost::noncopyable {
       AssertLe(order.executedQty, order.qty);
 
       if (order.qty && m_open.time.is_not_a_date_time()) {
-        m_open.time = m_security.GetContext().GetCurrentTime();
+        m_open.time = m_security->GetContext().GetCurrentTime();
       }
     }
 
@@ -365,7 +395,7 @@ class Position::Implementation : private boost::noncopyable {
 
     if (!m_self.GetActiveQty()) {
       Assert(m_close.time.is_not_a_date_time());
-      m_close.time = m_security.GetContext().GetCurrentTime();
+      m_close.time = m_security->GetContext().GetCurrentTime();
     }
 
     order.isActive = false;
@@ -387,9 +417,9 @@ class Position::Implementation : private boost::noncopyable {
         [this](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % m_self.GetOpenOrderSide()                         // 1
-              % m_security.GetSymbol().GetSymbol().c_str()           // 2
+              % m_security->GetSymbol().GetSymbol().c_str()          // 2
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 3
-              % m_tradingSystem.GetMode()                            // 4
+              % m_tradingSystem->GetMode()                           // 4
               % m_self.GetOpenStartPrice()                           // 5
               % m_self.GetOpenTime()                                 // 6
               % m_open.startPrice;                                   // 7
@@ -416,21 +446,21 @@ class Position::Implementation : private boost::noncopyable {
           const auto &order = m_open.orders.back();
           record % eventDesc                                         // 1
               % m_self.GetOpenOrderSide()                            // 2
-              % m_security.GetSymbol().GetSymbol().c_str()           // 3
+              % m_security->GetSymbol().GetSymbol().c_str()          // 3
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 4
-              % m_tradingSystem.GetMode()                            // 5
+              % m_tradingSystem->GetMode()                           // 5
               % m_open.startPrice;                                   // 6
           if (order.price) {
             record % *order.price;  // 7
           } else {
             record % '-';  // 7
           }
-          record % m_self.GetCurrency()        // 8
-              % m_self.GetPlanedQty()          // 9
-              % m_security.GetBidPriceValue()  // 10
-              % m_security.GetAskPriceValue()  // 11
-              % m_operation->GetId()           // 12
-              % m_subOperationId;              // 13
+          record % m_self.GetCurrency()         // 8
+              % m_self.GetPlanedQty()           // 9
+              % m_security->GetBidPriceValue()  // 10
+              % m_security->GetAskPriceValue()  // 11
+              % m_operation->GetId()            // 12
+              % m_subOperationId;               // 13
           if (id) {
             record % *id;  // 14
           } else {
@@ -450,9 +480,9 @@ class Position::Implementation : private boost::noncopyable {
           const auto &order = m_open.orders.back();
           record % orderStatus                                       // 1
               % m_self.GetOpenOrderSide()                            // 2
-              % m_security.GetSymbol().GetSymbol().c_str()           // 3
+              % m_security->GetSymbol().GetSymbol().c_str()          // 3
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 4
-              % m_tradingSystem.GetMode()                            // 5
+              % m_tradingSystem->GetMode()                           // 5
               % m_self.GetOpenStartPrice();                          // 6
           if (order.price) {
             record % *order.price;  // 7
@@ -468,8 +498,8 @@ class Position::Implementation : private boost::noncopyable {
           record % m_self.GetCurrency()                  // 10
               % m_self.GetPlanedQty()                    // 11
               % m_self.GetOpenedQty()                    // 12
-              % m_security.GetBidPriceValue()            // 13
-              % m_security.GetAskPriceValue()            // 14
+              % m_security->GetBidPriceValue()           // 13
+              % m_security->GetAskPriceValue()           // 14
               % m_operation->GetId()                     // 15
               % m_subOperationId                         // 16
               % order.transactionContext->GetOrderId();  // 17
@@ -487,9 +517,9 @@ class Position::Implementation : private boost::noncopyable {
         [&](TradingRecord &record) {
           record % eventDesc                                         // 1
               % m_self.GetCloseOrderSide()                           // 2
-              % m_security.GetSymbol().GetSymbol().c_str()           // 3
+              % m_security->GetSymbol().GetSymbol().c_str()          // 3
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 4
-              % m_tradingSystem.GetMode()                            // 5
+              % m_tradingSystem->GetMode()                           // 5
               % m_closeReason                                        // 6
               % m_self.GetCloseStartPrice();                         // 7
           const auto &order = m_close.orders.back();
@@ -498,13 +528,13 @@ class Position::Implementation : private boost::noncopyable {
           } else {
             record % '-';  // 8
           }
-          record % m_self.GetCurrency()        // 9
-              % maxQty                         // 10
-              % m_self.GetActiveQty()          // 11
-              % m_security.GetBidPriceValue()  // 12
-              % m_security.GetAskPriceValue()  // 13
-              % m_operation->GetId()           // 14
-              % m_subOperationId;              // 15
+          record % m_self.GetCurrency()         // 9
+              % maxQty                          // 10
+              % m_self.GetActiveQty()           // 11
+              % m_security->GetBidPriceValue()  // 12
+              % m_security->GetAskPriceValue()  // 13
+              % m_operation->GetId()            // 14
+              % m_subOperationId;               // 15
           if (id) {
             record % *id;  // 16
           } else {
@@ -524,9 +554,9 @@ class Position::Implementation : private boost::noncopyable {
           const auto &order = m_close.orders.back();
           record % orderStatus                                       // 1
               % m_self.GetCloseOrderSide()                           // 2
-              % m_security.GetSymbol().GetSymbol().c_str()           // 3
+              % m_security->GetSymbol().GetSymbol().c_str()          // 3
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 4
-              % m_tradingSystem.GetMode()                            // 5
+              % m_tradingSystem->GetMode()                           // 5
               % m_closeReason                                        // 6
               % m_self.GetCloseStartPrice();                         // 7
           if (order.price) {
@@ -544,8 +574,8 @@ class Position::Implementation : private boost::noncopyable {
               % m_self.GetOpenedQty()                    // 12
               % m_self.GetClosedQty()                    // 13
               % m_self.GetActiveQty()                    // 14
-              % m_security.GetBidPriceValue()            // 15
-              % m_security.GetAskPriceValue()            // 16
+              % m_security->GetBidPriceValue()           // 15
+              % m_security->GetAskPriceValue()           // 16
               % m_operation->GetId()                     // 17
               % m_subOperationId                         // 18
               % order.transactionContext->GetOrderId();  // 19
@@ -591,8 +621,8 @@ class Position::Implementation : private boost::noncopyable {
       isRegistered = true;
     }
 
-    if (!m_security.GetSymbol().IsExplicit()) {
-      m_expiration = m_security.GetExpiration();
+    if (!m_security->GetSymbol().IsExplicit()) {
+      m_expiration = m_security->GetExpiration();
     }
 
     m_open.orders.emplace_back(std::move(openStartTime), boost::none,
@@ -633,9 +663,9 @@ class Position::Implementation : private boost::noncopyable {
                                       boost::optional<Price> &&price) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
 
-    if (!m_security.IsOnline()) {
+    if (!m_security->IsOnline()) {
       throw Exception("Security is not online");
-    } else if (!m_security.IsTradingSessionOpened()) {
+    } else if (!m_security->IsTradingSessionOpened()) {
       throw Exception("Security trading session is closed");
     } else if (m_self.IsCancelling()) {
       throw Exception("Failed to start opening as canceling is not completed");
@@ -661,8 +691,8 @@ class Position::Implementation : private boost::noncopyable {
     auto &order = m_open.orders.back();
 
     try {
-      if (!orderParams.expiration && !m_security.GetSymbol().IsExplicit()) {
-        m_expiration = m_security.GetExpiration();
+      if (!orderParams.expiration && !m_security->GetSymbol().IsExplicit()) {
+        m_expiration = m_security->GetExpiration();
         OrderParams additionalOrderParams(orderParams);
         additionalOrderParams.expiration = &*m_expiration;
         order.transactionContext = openImpl(qty, additionalOrderParams);
@@ -682,10 +712,6 @@ class Position::Implementation : private boost::noncopyable {
       if (isRegistered) {
         Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
-      }
-      try {
-      } catch (...) {
-        AssertFailNoException();
       }
       m_open.orders.pop_back();
       throw;
@@ -763,14 +789,14 @@ class Position::Implementation : private boost::noncopyable {
         "\toperation=%5%/%6%\torder=%7%",
         [this, &order, &direction](TradingRecord &record) {
           record % direction                                         // 1
-              % m_security.GetSymbol().GetSymbol().c_str()           // 2
+              % m_security->GetSymbol().GetSymbol().c_str()          // 2
               % m_self.GetTradingSystem().GetInstanceName().c_str()  // 3
-              % m_tradingSystem.GetMode()                            // 4
+              % m_tradingSystem->GetMode()                           // 4
               % m_operation->GetId()                                 // 5
               % m_subOperationId                                     // 6
               % order.transactionContext->GetOrderId();              // 7
         });
-    m_tradingSystem.CancelOrder(order.transactionContext->GetOrderId());
+    m_tradingSystem->CancelOrder(order.transactionContext->GetOrderId());
     order.isCanceled = true;
     return true;
   }
@@ -779,6 +805,7 @@ class Position::Implementation : private boost::noncopyable {
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
+
 class DummyOperation : public Operation {
  public:
   virtual ~DummyOperation() override = default;
@@ -792,7 +819,7 @@ class DummyOperation : public Operation {
       const Position &) const override {
     throw LogicError("Position instance does not use operation context");
   }
-  virtual void Setup(Position &) const override {
+  virtual void Setup(Position &, PositionController &) const override {
     throw LogicError("Position instance does not use operation context");
   }
   virtual bool IsLong(const Security &) const override {
@@ -802,10 +829,6 @@ class DummyOperation : public Operation {
     throw LogicError("Position instance does not use operation context");
   }
 };
-
-#ifdef DEV_VER
-boost::atomic_size_t objectsCounter(0);
-#endif
 }
 Position::Position(Strategy &strategy,
                    TradingSystem &tradingSystem,
@@ -826,13 +849,7 @@ Position::Position(Strategy &strategy,
                                            startPrice,
                                            timeMeasurement)) {
   Assert(!strategy.IsBlocked());
-#ifdef DEV_VER
   ++objectsCounter;
-  GetStrategy().GetLog().Debug("New position %1%/%2% (number of objects: %3%).",
-                               GetOperation()->GetId(),  // 1
-                               GetSubOperationId(),      // 2
-                               objectsCounter);          // 3
-#endif
 }
 
 Position::Position(const boost::shared_ptr<Operation> &operation,
@@ -855,33 +872,22 @@ Position::Position(const boost::shared_ptr<Operation> &operation,
           startPrice,
           timeMeasurement)) {
   Assert(!strategy.IsBlocked());
-#ifdef DEV_VER
   ++objectsCounter;
-  GetStrategy().GetLog().Debug(
-      "New position %1%/%2% (number of active objects: %3%).",
-      GetOperation()->GetId(),  // 1
-      GetSubOperationId(),      // 2
-      objectsCounter);          // 3
-#endif
 }
 
-#ifdef DEV_VER
 Position::~Position() {
   AssertLt(0, objectsCounter);
   --objectsCounter;
 }
-#else
-Position::~Position() = default;
-#endif
 
 int64_t Position::GetSubOperationId() const {
   return m_pimpl->m_subOperationId;
 }
 
 bool Position::IsLong() const {
-  static_assert(numberOfTypes == 2, "List changed.");
-  Assert(GetType() == Position::TYPE_LONG || GetType() == Position::TYPE_SHORT);
-  return GetType() == Position::TYPE_LONG;
+  static_assert(numberOfPositionSides == 2, "List changed.");
+  Assert(GetSide() == POSITION_SIDE_LONG || GetSide() == POSITION_SIDE_SHORT);
+  return GetSide() == POSITION_SIDE_LONG;
 }
 
 const boost::shared_ptr<Operation> &Position::GetOperation() {
@@ -915,13 +921,50 @@ Strategy &Position::GetStrategy() noexcept { return m_pimpl->m_strategy; }
 const Security &Position::GetSecurity() const noexcept {
   return const_cast<Position *>(this)->GetSecurity();
 }
-Security &Position::GetSecurity() noexcept { return m_pimpl->m_security; }
+Security &Position::GetSecurity() noexcept { return *m_pimpl->m_security; }
 
 const TradingSystem &Position::GetTradingSystem() const {
   return const_cast<Position *>(this)->GetTradingSystem();
 }
 
-TradingSystem &Position::GetTradingSystem() { return m_pimpl->m_tradingSystem; }
+TradingSystem &Position::GetTradingSystem() {
+  return *m_pimpl->m_tradingSystem;
+}
+
+void Position::ReplaceTradingSystem(Security &security,
+                                    TradingSystem &tradingSystem) {
+  if (HasActiveOrders()) {
+    throw Exception(
+        "Filled to replace trading system as position has active orders");
+  }
+  if (m_pimpl->m_security == &security &&
+      m_pimpl->m_tradingSystem == &tradingSystem) {
+    return;
+  }
+  GetStrategy().GetTradingLog().Write(
+      "{'position': {'action': 'replace trading system', 'side': '%13%', "
+      "'security': {'prev': {'security': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, "
+      "'new': {'security': '%4%', 'bid' : %5$.8f, 'ask' : %6$.8f}}, "
+      "'tradingSystem': {'prev': {'name': '%7%', 'mode': '%8%'}, 'new': "
+      "{'name': '%9%', 'mode': '%10%'}}, 'operation': '%11%/%12%'}}",
+      [&](TradingRecord &record) {
+        record % *m_pimpl->m_security                              // 1
+            % m_pimpl->m_security->GetBidPriceValue()              // 2
+            % m_pimpl->m_security->GetAskPriceValue()              // 3
+            % security                                             // 4
+            % security.GetBidPriceValue()                          // 5
+            % security.GetAskPriceValue()                          // 6
+            % m_pimpl->m_tradingSystem->GetInstanceName().c_str()  // 7
+            % m_pimpl->m_tradingSystem->GetMode()                  // 8
+            % tradingSystem.GetInstanceName().c_str()              // 9
+            % tradingSystem.GetMode()                              // 10
+            % m_pimpl->m_operation->GetId()                        // 11
+            % m_pimpl->m_subOperationId                            // 12
+            % GetSide();                                           // 13
+      });
+  m_pimpl->m_security = &security;
+  m_pimpl->m_tradingSystem = &tradingSystem;
+}
 
 const Currency &Position::GetCurrency() const { return m_pimpl->m_currency; }
 
@@ -981,12 +1024,7 @@ void Position::MarkAsCompleted() {
         m_pimpl->m_isMarketAsCompleted ? "forced" : "native");  // 3
     return;
   }
-  GetStrategy().GetTradingLog().Write(
-      "{'position': {'markAsCompleted': {}, 'pos': '%1%/%2%'}}",
-      [this](TradingRecord &record) {
-        record % GetOperation()->GetId()  // 1
-            % GetSubOperationId();        // 2
-      });
+  ReportAboutGeneralAction(*this, "mark as completed");
   AssertEq(m_pimpl->m_close.time, pt::not_a_date_time);
   m_pimpl->m_close.time = GetSecurity().GetContext().GetCurrentTime();
   m_pimpl->m_isMarketAsCompleted = true;
@@ -1034,16 +1072,29 @@ void Position::UpdateClosing(const OrderId &orderId,
 
 const pt::ptime &Position::GetOpenTime() const { return m_pimpl->m_open.time; }
 
-const boost::shared_ptr<const OrderTransactionContext>
-    &Position::GetOpeningContext() const {
-  if (m_pimpl->m_open.orders.empty()) {
-    throw Exception("Position has no open-order to have opening context");
+namespace {
+
+template <typename Source>
+const boost::shared_ptr<const OrderTransactionContext> &GetOrderContext(
+    const Source &source, size_t index) {
+  AssertLt(index, source.orders.size());
+  if (index >= source.orders.size()) {
+    throw Exception("Position has no order to have order context");
   }
-  const auto &result = m_pimpl->m_open.orders.front().transactionContext;
+  const auto &result = source.orders[index].transactionContext;
   if (!result) {
-    throw Exception("Position has no opening context");
+    throw Exception("Position order has no context");
   }
   return result;
+}
+}
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetOpeningContext(size_t index) const {
+  return GetOrderContext(m_pimpl->m_open, index);
+}
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetClosingContext(size_t index) const {
+  return GetOrderContext(m_pimpl->m_close, index);
 }
 
 Qty Position::GetActiveQty() const noexcept {
@@ -1167,10 +1218,17 @@ Position::StateUpdateConnection Position::Subscribe(
   return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
 }
 
-void Position::AttachAlgo(std::unique_ptr<Algo> &&algo) {
+void Position::AddAlgo(std::unique_ptr<Algo> &&algo) {
   Assert(algo);
   m_pimpl->m_algos.emplace_back(std::move(algo));
-  m_pimpl->m_algos.back()->Report(*this, GetStrategy().GetTradingLog());
+  m_pimpl->m_algos.back()->Report("add");
+}
+
+void Position::RemoveAlgos() {
+  for (const auto &algo : m_pimpl->m_algos) {
+    algo->Report("remove");
+  }
+  m_pimpl->m_algos.clear();
 }
 
 void Position::RunAlgos() {
@@ -1403,19 +1461,6 @@ bool Position::CancelAllOrders() {
   return isCancelRequestSent;
 }
 
-const char *trdk::ConvertToPch(const Position::Type &type) {
-  static_assert(Position::numberOfTypes == 2, "Close type list changed.");
-  switch (type) {
-    default:
-      AssertEq(Position::TYPE_LONG, type);
-      return "unknown";
-    case Position::TYPE_LONG:
-      return "long";
-    case Position::TYPE_SHORT:
-      return "short";
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 LongPosition::LongPosition(Strategy &strategy,
@@ -1494,15 +1539,9 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
       });
 }
 
-LongPosition::~LongPosition() {
-  GetStrategy().GetTradingLog().Write("position\tdel\tlong\toperation=%1%/%2%",
-                                      [this](TradingRecord &record) {
-                                        record % GetOperation()->GetId()  // 1
-                                            % GetSubOperationId();        // 2
-                                      });
-}
+LongPosition::~LongPosition() { ReportAboutDeletion(*this); }
 
-LongPosition::Type LongPosition::GetType() const { return TYPE_LONG; }
+PositionSide LongPosition::GetSide() const { return POSITION_SIDE_LONG; }
 
 OrderSide LongPosition::GetOpenOrderSide() const { return ORDER_SIDE_BUY; }
 
@@ -1714,15 +1753,9 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
       });
 }
 
-ShortPosition::~ShortPosition() {
-  GetStrategy().GetTradingLog().Write("position\tdel\tshort\toperation=%1%/%2%",
-                                      [this](TradingRecord &record) {
-                                        record % GetOperation()->GetId()  // 1
-                                            % GetSubOperationId();        // 2
-                                      });
-}
+ShortPosition::~ShortPosition() { ReportAboutDeletion(*this); }
 
-ShortPosition::Type ShortPosition::GetType() const { return TYPE_SHORT; }
+PositionSide ShortPosition::GetSide() const { return POSITION_SIDE_SHORT; }
 
 OrderSide ShortPosition::GetOpenOrderSide() const { return ORDER_SIDE_SELL; }
 

@@ -41,17 +41,15 @@ class TakeProfitStopLimit : public trdk::TradingLib::StopOrder {
   };
 
  public:
-  explicit TakeProfitStopLimit(
-      const boost::shared_ptr<const Params> &,
-      trdk::Position &,
-      const boost::shared_ptr<const trdk::TradingLib::OrderPolicy> &);
+  explicit TakeProfitStopLimit(const boost::shared_ptr<const Params> &,
+                               trdk::Position &,
+                               trdk::TradingLib::PositionController &);
   virtual ~TakeProfitStopLimit() override = default;
 
  public:
   virtual void Run() override;
 
-  virtual void Report(const trdk::Position &,
-                      trdk::ModuleTradingLog &) const override;
+  virtual void Report(const char *action) const override;
 
  protected:
   virtual const char *GetName() const override;

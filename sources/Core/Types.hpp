@@ -43,6 +43,21 @@ inline std::ostream &operator<<(std::ostream &os, const trdk::OrderSide &side) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+enum PositionSide {
+  POSITION_SIDE_LONG,
+  POSITION_SIDE_SHORT,
+  numberOfPositionSides
+};
+
+TRDK_CORE_API const char *ConvertToPch(const trdk::PositionSide &);
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const trdk::PositionSide &positionSide) {
+  return os << trdk::ConvertToPch(positionSide);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 //! Time in Force
 enum TimeInForce {
   // Good Till Day.

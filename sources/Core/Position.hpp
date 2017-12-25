@@ -29,8 +29,6 @@ class TRDK_CORE_API Position
   typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
   typedef boost::signals2::connection StateUpdateConnection;
 
-  enum Type { TYPE_LONG, TYPE_SHORT, numberOfTypes };
-
   class TRDK_CORE_API Exception : public trdk::Lib::Exception {
    public:
     explicit Exception(const char *what) noexcept;
@@ -71,13 +69,15 @@ class TRDK_CORE_API Position
  public:
   int64_t GetSubOperationId() const;
 
-  //! Attaches algorithm to the position.
+  //! Adds algorithm to the position.
   /** Will try to execute algorithm at each price update, but only if position
     * is not in the "canceling state".
     * @sa IsCancelling
     * @sa IsCompleted
     */
-  void AttachAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+  void AddAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+  //! Removes all algorithms.
+  void RemoveAlgos();
 
   const boost::shared_ptr<trdk::Operation> &GetOperation();
   const boost::shared_ptr<const trdk::Operation> &GetOperation() const;
@@ -92,7 +92,7 @@ class TRDK_CORE_API Position
   }
 
   bool IsLong() const;
-  virtual trdk::Position::Type GetType() const = 0;
+  virtual trdk::PositionSide GetSide() const = 0;
   virtual trdk::OrderSide GetOpenOrderSide() const = 0;
   virtual trdk::OrderSide GetCloseOrderSide() const = 0;
 
@@ -101,6 +101,7 @@ class TRDK_CORE_API Position
  public:
   const trdk::TradingSystem &GetTradingSystem() const;
   trdk::TradingSystem &GetTradingSystem();
+  void ReplaceTradingSystem(trdk::Security &, trdk::TradingSystem &);
 
   const trdk::Strategy &GetStrategy() const noexcept;
   trdk::Strategy &GetStrategy() noexcept;
@@ -205,8 +206,16 @@ class TRDK_CORE_API Position
 
   //! Returns position opening context if exists or throws an exception if
   //! doesn't have it.
+  /** @sa GetNumberOfOpenOrders
+    */
   const boost::shared_ptr<const trdk::OrderTransactionContext>
-      &GetOpeningContext() const;
+      &GetOpeningContext(size_t index) const;
+  //! Returns position closing context if exists or throws an exception if
+  //! doesn't have it.
+  /** @sa GetNumberOfCloseOrders
+    */
+  const boost::shared_ptr<const trdk::OrderTransactionContext>
+      &GetClosingContext(size_t index) const;
 
   trdk::Qty GetActiveQty() const noexcept;
   trdk::Volume GetActiveVolume() const;
@@ -403,12 +412,6 @@ class TRDK_CORE_API Position
   std::unique_ptr<Implementation> m_pimpl;
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::Position::Type &);
-inline std::ostream &operator<<(std::ostream &os,
-                                const trdk::Position::Type &positionType) {
-  return os << trdk::ConvertToPch(positionType);
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 class TRDK_CORE_API LongPosition : public Position {
@@ -431,7 +434,7 @@ class TRDK_CORE_API LongPosition : public Position {
   virtual ~LongPosition() override;
 
  public:
-  virtual trdk::Position::Type GetType() const override;
+  virtual trdk::PositionSide GetSide() const override;
   virtual trdk::OrderSide GetOpenOrderSide() const override;
   virtual trdk::OrderSide GetCloseOrderSide() const override;
 
@@ -491,7 +494,7 @@ class TRDK_CORE_API ShortPosition : public Position {
   virtual ~ShortPosition() override;
 
  public:
-  virtual trdk::Position::Type GetType() const override;
+  virtual trdk::PositionSide GetSide() const override;
   virtual trdk::OrderSide GetOpenOrderSide() const override;
   virtual trdk::OrderSide GetCloseOrderSide() const override;
 

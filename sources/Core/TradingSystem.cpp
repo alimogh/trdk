@@ -187,7 +187,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     if (trade) {
       m_tradingLog.Write(
           "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}, "
-          "'id': %4%}}",
+          "'id': '%4%'}}",
           [&orderId, &trade](TradingRecord &record) {
             if (trade->id) {
               record % *trade->id;  // 1
@@ -580,7 +580,16 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     GetTradingLog().Write(
         "{'order': {'sendError': {'reason': '%1%'}}}",
         [&ex](TradingRecord &record) { record % std::string(ex.what()); });
-    GetLog().Warn("Error while sending order transaction: \"%1%\".", ex.what());
+    try {
+      throw;
+    } catch (const CommunicationError &ex) {
+      GetLog().Warn(
+          "Communication error while sending order transaction: \"%1%\".",
+          ex.what());
+    } catch (const std::exception &ex) {
+      GetLog().Error("Error while sending order transaction: \"%1%\".",
+                     ex.what());
+    }
     m_pimpl->ConfirmSellOrder(riskControlOperationId, riskControlScope,
                               ORDER_STATUS_ERROR, security, currency,
                               actualPrice, qty, nullptr, delaysMeasurement);
@@ -649,7 +658,7 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   const auto &orderId = result->GetOrderId();
   m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>();
   GetContext().GetTimer().Schedule(
-      params.goodInTime ? *params.goodInTime : pt::milliseconds(300),
+      params.goodInTime ? *params.goodInTime : pt::seconds(3),
       [this, orderId] { CancelOrder(orderId); },
       *m_pimpl->m_lastOrderTimerScope);
   return result;
@@ -657,13 +666,13 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
 
 bool TradingSystem::CancelOrder(const OrderId &orderId) {
   GetTradingLog().Write(
-      "{'order': {'cancel': {'id': %1%}}}",
+      "{'order': {'cancel': {'id': '%1%'}}}",
       [&orderId](TradingRecord &record) { record % orderId; });
   try {
     SendCancelOrderTransaction(orderId);
   } catch (const OrderIsUnknown &ex) {
     GetTradingLog().Write(
-        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
+        "{'order': {'cancelSendError': {'id': '%1%', 'reason': '%2%'}}}",
         [&orderId, &ex](TradingRecord &record) {
           record % orderId               // 1
               % std::string(ex.what());  // 2
@@ -672,21 +681,31 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
     return false;
   } catch (const std::exception &ex) {
     GetTradingLog().Write(
-        "{'order': {'cancelSendError': {'id': %1%, 'reason': '%2%'}}}",
+        "{'order': {'cancelSendError': {'id': '%1%', 'reason': '%2%'}}}",
         [&orderId, &ex](TradingRecord &record) {
           record % orderId               // 1
               % std::string(ex.what());  // 2
         });
-    GetLog().Error(
-        "Error while sending order cancel transaction for order %1%: "
-        "\"%2%\".",
-        orderId,                  // 1
-        std::string(ex.what()));  // 2
+    try {
+      throw;
+    } catch (const CommunicationError &ex) {
+      GetLog().Warn(
+          "Communication error while sending order cancel transaction for "
+          "order %1%: \"%2%\".",
+          orderId,                  // 1
+          std::string(ex.what()));  // 2
+    } catch (const std::exception &ex) {
+      GetLog().Error(
+          "Error while sending order cancel transaction for order %1%: "
+          "\"%2%\".",
+          orderId,                  // 1
+          std::string(ex.what()));  // 2
+    }
     OnTransactionSent(orderId);
     throw;
   } catch (...) {
     GetTradingLog().Write(
-        "{'order': {'cancelSendError': {'id': %1%, 'reason': 'Unknown "
+        "{'order': {'cancelSendError': {'id': '%1%', 'reason': 'Unknown "
         "exception'}}}",
         [&orderId](TradingRecord &record) { record % orderId; });
     GetLog().Error(
@@ -769,7 +788,7 @@ void TradingSystem::OnOrderCancel(const pt::ptime &time,
 void TradingSystem::OnOrderError(const pt::ptime &time,
                                  const OrderId &orderId,
                                  const std::string &&error) {
-  GetTradingLog().Write("{'order': {'error': {'id': %1%, 'reason': '%2%'}}}",
+  GetTradingLog().Write("{'order': {'error': {'id': '%1%', 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % error;      // 2
@@ -787,7 +806,7 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
 void TradingSystem::OnOrderReject(const pt::ptime &time,
                                   const OrderId &orderId,
                                   const std::string &&reason) {
-  GetTradingLog().Write("{'order': {'reject': {'id': %1%, 'reason': '%2%'}}}",
+  GetTradingLog().Write("{'order': {'reject': {'id': '%1%', 'reason': '%2%'}}}",
                         [&](TradingRecord &record) {
                           record % orderId  // 1
                               % reason;     // 2
@@ -845,29 +864,32 @@ LegacyTradingSystem::SendOrderTransaction(
     if (price) {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
-          return boost::make_shared<OrderTransactionContext>(SendBuy(
-              security, currency, qty, *price, params, std::move(callback)));
+          return boost::make_shared<OrderTransactionContext>(
+              *this, SendBuy(security, currency, qty, *price, params,
+                             std::move(callback)));
         case TIME_IN_FORCE_IOC:
           return boost::make_unique<OrderTransactionContext>(
-              SendBuyImmediatelyOrCancel(security, currency, qty, *price,
-                                         params, std::move(callback)));
+              *this, SendBuyImmediatelyOrCancel(security, currency, qty, *price,
+                                                params, std::move(callback)));
       }
     } else {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
           return boost::make_shared<OrderTransactionContext>(
-              SendBuyAtMarketPrice(security, currency, qty, params,
-                                   std::move(callback)));
+              *this, SendBuyAtMarketPrice(security, currency, qty, params,
+                                          std::move(callback)));
       }
     }
   } else {
     if (price) {
       switch (tif) {
         case TIME_IN_FORCE_GTC:
-          return boost::make_shared<OrderTransactionContext>(SendSell(
-              security, currency, qty, *price, params, std::move(callback)));
+          return boost::make_shared<OrderTransactionContext>(
+              *this, SendSell(security, currency, qty, *price, params,
+                              std::move(callback)));
         case TIME_IN_FORCE_IOC:
           return boost::make_shared<OrderTransactionContext>(
+              *this,
               SendSellImmediatelyOrCancel(security, currency, qty, *price,
                                           params, std::move(callback)));
       }
@@ -875,8 +897,8 @@ LegacyTradingSystem::SendOrderTransaction(
       switch (tif) {
         case TIME_IN_FORCE_GTC:
           return boost::make_shared<OrderTransactionContext>(
-              SendSellAtMarketPrice(security, currency, qty, params,
-                                    std::move(callback)));
+              *this, SendSellAtMarketPrice(security, currency, qty, params,
+                                           std::move(callback)));
       }
     }
   }

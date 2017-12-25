@@ -505,7 +505,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                       trades),
           m_timerScope);
     }
-    return boost::make_unique<OrderTransactionContext>(std::move(*orderId));
+    return boost::make_unique<OrderTransactionContext>(*this,
+                                                       std::move(*orderId));
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {

@@ -28,35 +28,33 @@ class Operation : public trdk::Operation {
                      Security &buyTarget,
                      const Qty &maxQty,
                      const Price &sellPrice,
-                     const Price &buyPrice)
-      : m_startTime(sellTarget.GetContext().GetCurrentTime()),
-        m_orderPolicy(sellPrice, buyPrice),
-        m_sellTarget(sellTarget),
-        m_buyTarget(buyTarget),
-        m_maxQty(maxQty) {}
+                     const Price &buyPrice,
+                     bool isStopLossEnabled);
   virtual ~Operation() override = default;
 
  public:
-  bool IsSame(const Security &sellTarget, const Security &buyTarget) const {
-    return &m_sellTarget == &sellTarget && &m_buyTarget == &buyTarget;
-  }
-  bool IsExpired() const {
-    return m_startTime + boost::posix_time::seconds(15) <=
-           m_sellTarget.GetContext().GetCurrentTime();
-  }
+  bool IsSame(const Security &sellTarget, const Security &buyTarget) const;
 
-  BusinessOperationReportData &GetReportData() { return m_reportData; }
-  const BusinessOperationReportData &GetReportData() const {
+  OperationReportData &GetReportData() { return m_reportData; }
+  const OperationReportData &GetReportData() const {
     return const_cast<Operation *>(this)->GetReportData();
   }
 
  public:
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
+  virtual void Setup(Position &,
+                     TradingLib::PositionController &) const override;
+
+  const OpenOrderPolicy &GetOpenOrderPolicy() const {
+    return m_openOrderPolicy;
+  }
+  virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy(
       const Position &) const override {
     return GetOpenOrderPolicy();
   }
-
-  const OrderPolicy &GetOpenOrderPolicy() const { return m_orderPolicy; }
+  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override {
+    return m_closeOrderPolicy;
+  }
 
   virtual bool IsLong(const Security &security) const override {
     Assert(&security == &m_sellTarget || &security == &m_buyTarget);
@@ -66,48 +64,14 @@ class Operation : public trdk::Operation {
   virtual trdk::Qty GetPlannedQty() const override { return m_maxQty; }
 
  private:
-  const boost::posix_time::ptime m_startTime;
-  OrderPolicy m_orderPolicy;
+  OpenOrderPolicy m_openOrderPolicy;
+  CloseOrderPolicy m_closeOrderPolicy;
   Security &m_sellTarget;
   Security &m_buyTarget;
   const Qty m_maxQty;
-  BusinessOperationReportData m_reportData;
+  OperationReportData m_reportData;
+  const bool m_isStopLossEnabled;
 };
-
-////////////////////////////////////////////////////////////////////////////////
-
-class BalanceRestoringOperation : public trdk::Operation {
- public:
-  typedef trdk::Operation Base;
-
- public:
-  explicit BalanceRestoringOperation(const boost::shared_ptr<Operation> &parent,
-                                     const Price &price)
-      : m_parent(parent), m_orderPolicy(price) {}
-  virtual ~BalanceRestoringOperation() override = default;
-
- public:
-  virtual const TradingLib::OrderPolicy &GetCloseOrderPolicy(
-      const Position &) const override {
-    return m_orderPolicy;
-  }
-  virtual boost::shared_ptr<const Operation> GetParent() const override {
-    return m_parent;
-  }
-  virtual boost::shared_ptr<Operation> GetParent() override { return m_parent; }
-
-  virtual bool HasCloseSignal(const Position &) const { return true; }
-
-  virtual boost::shared_ptr<Operation> StartInvertedPosition(const Position &) {
-    return nullptr;
-  }
-
- private:
-  const boost::shared_ptr<Operation> m_parent;
-  const TradingLib::LimitPriceGtcOrderPolicy m_orderPolicy;
-};
-
-////////////////////////////////////////////////////////////////////////////////
 }
 }
 }

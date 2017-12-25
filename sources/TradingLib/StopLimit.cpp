@@ -23,24 +23,24 @@ namespace pt = boost::posix_time;
 TakeProfitStopLimit::TakeProfitStopLimit(
     const boost::shared_ptr<const Params> &params,
     Position &position,
-    const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopOrder(position, orderPolicy), m_params(params), m_isActivated(false) {
+    PositionController &controller)
+    : StopOrder(position, controller), m_params(params), m_isActivated(false) {
   Assert(m_params);
 }
 
 const char *TakeProfitStopLimit::GetName() const { return "stop limit"; }
 
-void TakeProfitStopLimit::Report(const Position &position,
-                                 ModuleTradingLog &log) const {
-  log.Write(
-      "'algoAttach': {'type': '%1%', 'params': {'price': %2$.8f, 'time': "
-      "'%3%'}, 'position': '%4%/%5%'}",
-      [this, &position](TradingRecord &record) {
+void TakeProfitStopLimit::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
+      "%2$.8f, 'time': '%3%'}, 'operation': '%4%/%5%'}}",
+      [this, action](TradingRecord &record) {
         record % GetName()                                     // 1
             % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
             % m_params->GetTimeOffsetBeforeForcedActivation()  // 3
-            % position.GetOperation()->GetId()                 // 4
-            % position.GetSubOperationId();                    // 5
+            % GetPosition().GetOperation()->GetId()            // 4
+            % GetPosition().GetSubOperationId()                // 5
+            % action;                                          // 6
       });
 }
 
@@ -55,14 +55,13 @@ void TakeProfitStopLimit::Run() {
       if (!CheckSignal()) {
         return;
       }
-      GetPosition().SetCloseReason(CLOSE_REASON_STOP_LIMIT);
       m_isActivated = true;
       break;
     default:
       return;
   }
 
-  OnHit();
+  OnHit(CLOSE_REASON_STOP_LIMIT);
 }
 
 bool TakeProfitStopLimit::CheckSignal() {

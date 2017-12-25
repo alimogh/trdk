@@ -218,6 +218,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
   };
 
   return boost::make_unique<OrderTransactionContext>(
+      *this,
       side == ORDER_SIDE_BUY
           ? NewOrderRequest("/market/buylimit", productId, qty, actualPrice,
                             m_settings)

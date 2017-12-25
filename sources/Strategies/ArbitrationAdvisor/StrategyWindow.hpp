@@ -99,7 +99,7 @@ class StrategyWindow : public QMainWindow {
 
   void ToggleAutoTrading(bool activate);
   void DeactivateAutoTrading();
-  void UpdateAutoTradingLevel(double level);
+  void UpdateAutoTradingLevel(const Lib::Double &level, const Qty &maxQty);
 
   void UpdateAdviceLevel(double level);
 

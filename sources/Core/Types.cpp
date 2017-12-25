@@ -33,6 +33,21 @@ const char *trdk::ConvertToPch(const OrderSide &side) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char *trdk::ConvertToPch(const PositionSide &type) {
+  static_assert(numberOfPositionSides == 2, "List changed.");
+  switch (type) {
+    default:
+      AssertEq(POSITION_SIDE_LONG, type);
+      return "unknown";
+    case POSITION_SIDE_LONG:
+      return "long";
+    case POSITION_SIDE_SHORT:
+      return "short";
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 template <typename Param>

@@ -359,7 +359,7 @@ Security::Request::operator bool() const {
   return m_numberOfTicks || !m_time.is_not_a_date_time();
 }
 
-void Security::Request::Swap(Request &rhs) throw() {
+void Security::Request::Swap(Request &rhs) noexcept {
   std::swap(m_time, rhs.m_time);
   std::swap(m_numberOfTicks, rhs.m_numberOfTicks);
 }
@@ -693,7 +693,7 @@ uintmax_t Security::GetPricePrecisionPower() const {
   return m_pimpl->m_pricePrecisionPower;
 }
 
-uint8_t Security::GetPricePrecision() const throw() {
+uint8_t Security::GetPricePrecision() const noexcept {
   return m_pimpl->m_pricePrecision;
 }
 

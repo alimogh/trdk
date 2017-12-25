@@ -45,7 +45,8 @@ class TRDK_CORE_API Operation {
   //! Setups new position.
   /** Place to attach stop-orders and so on.
     */
-  virtual void Setup(trdk::Position &) const;
+  virtual void Setup(trdk::Position &,
+                     trdk::TradingLib::PositionController &) const;
 
   //! Next new position direction.
   virtual bool IsLong(const trdk::Security &) const;

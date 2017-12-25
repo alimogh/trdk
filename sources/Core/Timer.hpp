@@ -23,7 +23,7 @@ class TRDK_CORE_API Timer {
     typedef uintmax_t Id;
 
    public:
-    Scope();
+    explicit Scope();
     Scope(Scope &&) = default;
     ~Scope();
 
@@ -40,11 +40,7 @@ class TRDK_CORE_API Timer {
     //! If scope is not empty it activated for one or more scheduling.
     bool IsEmpty() const { return m_timer ? false : true; }
 
-    //! Cancels all tasks scheduled by this scope.
-    /** @return The number of canceled tasks. An executed task will not be
-      *         canceled if it will be removed from the schedule after
-      *         execution if it is not periodic.
-      */
+    //! Cancels all tasks scheduled by this scope, but not executed tasks.
     size_t Cancel() noexcept;
 
    private:
@@ -63,9 +59,9 @@ class TRDK_CORE_API Timer {
 
  public:
   void Schedule(const boost::posix_time::time_duration &,
-                const boost::function<void()> &,
+                const boost::function<void()> &&,
                 Scope &);
-  void Schedule(const boost::function<void()> &, Scope &);
+  void Schedule(const boost::function<void()> &&, Scope &);
 
  private:
   class Implementation;

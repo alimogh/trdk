@@ -484,7 +484,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     try {
       return boost::make_unique<OrderTransactionContext>(
-          boost::get<1>(result).get<OrderId>("order_id"));
+          *this, boost::get<1>(result).get<OrderId>("order_id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();

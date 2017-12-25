@@ -16,24 +16,59 @@ namespace ArbitrageAdvisor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct BusinessOperationReportData : private boost::noncopyable {
+struct OperationReportData : private boost::noncopyable {
  public:
   struct PositionReport {
     boost::uuids::uuid operation;
     int64_t subOperation;
-    bool isLong;
+    PositionSide side;
     boost::posix_time::ptime openStartTime;
     boost::posix_time::ptime openEndTime;
     Price openStartPrice;
-    Price openPrice;
     Qty openedQty;
-    const TradingSystem *target;
     CloseReason closeReason;
-    Volume commissions;
+    const TradingSystem *signalTarget;
+    Volume openedVolume;
+    Volume closedVolume;
+    std::vector<const TradingSystem *> closeTargets;
+    boost::optional<Price> openPrice;
+    boost::posix_time::ptime closeStartTime;
+    boost::posix_time::ptime closeEndTime;
+    boost::optional<Qty> closedQty;
+    boost::optional<Price> closeStartPrice;
+    boost::optional<Price> closePrice;
+
+    PositionReport() {}
+
+    explicit PositionReport(const boost::uuids::uuid &operation,
+                            int64_t subOperation,
+                            const PositionSide &side,
+                            const boost::posix_time::ptime &openStartTime,
+                            const boost::posix_time::ptime &openEndTime,
+                            const Price &openStartPrice,
+                            const Qty &openedQty,
+                            const CloseReason &closeReason,
+                            const TradingSystem &signalTarget,
+                            const Volume &openedVolume,
+                            const Volume &closedVolume)
+        : operation(operation),
+          subOperation(subOperation),
+          side(side),
+          openStartTime(openStartTime),
+          openEndTime(openEndTime),
+          openStartPrice(openStartPrice),
+          openedQty(openedQty),
+          closedQty(closedQty),
+          closeReason(closeReason),
+          signalTarget(&signalTarget),
+          openedVolume(openedVolume),
+          closedVolume(closedVolume),
+          closeStartTime(boost::posix_time::not_a_date_time),
+          closeEndTime(boost::posix_time::not_a_date_time) {}
   };
 
  public:
-  BusinessOperationReportData();
+  OperationReportData();
 
   bool Add(const Position &);
   bool Add(PositionReport &&);
@@ -48,41 +83,24 @@ struct BusinessOperationReportData : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BusinessOperationReport : private boost::noncopyable {
+class OperationReport : private boost::noncopyable {
  public:
-  explicit BusinessOperationReport(const trdk::Strategy &);
-  virtual ~BusinessOperationReport() = default;
+  explicit OperationReport(const trdk::Strategy &);
+  virtual ~OperationReport() = default;
 
  public:
-  virtual void Append(const BusinessOperationReportData &);
+  virtual void Append(const OperationReportData &);
 
  protected:
   virtual void Open(std::ofstream &);
   virtual void PrintHead(std::ostream &);
-  virtual void PrintReport(
-      const BusinessOperationReportData::PositionReport &sell,
-      const BusinessOperationReportData::PositionReport &buy,
-      std::ostream &);
+  virtual void PrintReport(const OperationReportData::PositionReport &sell,
+                           const OperationReportData::PositionReport &buy,
+                           std::ostream &);
 
  protected:
   const trdk::Strategy &m_strategy;
   std::ofstream m_file;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class BalanceRestoreOperationReport : public TradingLib::PositionReport {
- public:
-  typedef TradingLib::PositionReport Base;
-
- public:
-  explicit BalanceRestoreOperationReport(const trdk::Strategy &);
-  virtual ~BalanceRestoreOperationReport() override = default;
-
- protected:
-  virtual void Open(std::ofstream &) override;
-  virtual void PrintHead(std::ostream &) override;
-  virtual void PrintReport(const Position &, std::ostream &) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

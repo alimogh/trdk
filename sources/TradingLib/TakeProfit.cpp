@@ -37,8 +37,8 @@ const Volume &TakeProfit::Params::GetMaxPriceOffsetPerLotToClose() const {
 
 TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
                        Position &position,
-                       const boost::shared_ptr<const OrderPolicy> &orderPolicy)
-    : StopOrder(position, orderPolicy), m_params(params), m_isActivated(false) {
+                       PositionController &controller)
+    : StopOrder(position, controller), m_params(params), m_isActivated(false) {
   Assert(m_params);
 }
 
@@ -55,7 +55,6 @@ void TakeProfit::Run() {
       if (!CheckSignal()) {
         return;
       }
-      GetPosition().SetCloseReason(CLOSE_REASON_TAKE_PROFIT);
       break;
     case CLOSE_REASON_TAKE_PROFIT:
       break;
@@ -63,7 +62,7 @@ void TakeProfit::Run() {
       return;
   }
 
-  OnHit();
+  OnHit(CLOSE_REASON_TAKE_PROFIT);
 }
 
 bool TakeProfit::CheckSignal() {

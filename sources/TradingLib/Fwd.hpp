@@ -14,11 +14,9 @@ namespace trdk {
 namespace TradingLib {
 
 class Algo;
-
 class OrderPolicy;
-
 class PositionReport;
-
 class Trend;
+class PositionController;
 }
 }
