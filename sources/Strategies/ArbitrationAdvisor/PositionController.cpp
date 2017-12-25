@@ -61,18 +61,17 @@ void aa::PositionController::HoldPosition(Position &position) {
 bool aa::PositionController::ClosePosition(Position &position,
                                            const CloseReason &reason) {
   boost::shared_future<void> oppositePositionClosingFuture;
+  std::unique_ptr<const Strategy::PositionListTransaction> listTransaction;
   {
     auto *const oppositePosition = FindOppositePosition(position);
     if (oppositePosition &&
         oppositePosition->GetCloseReason() == CLOSE_REASON_NONE) {
-#if 0
+      listTransaction =
+          position.GetStrategy().StartThreadPositionsTransaction();
       oppositePositionClosingFuture =
           boost::async([this, &oppositePosition, &reason] {
             Base::ClosePosition(*oppositePosition, reason);
           });
-#else
-      Base::ClosePosition(*oppositePosition, reason);
-#endif
     }
   }
   const auto &result = Base::ClosePosition(position, reason);

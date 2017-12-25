@@ -412,24 +412,16 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     qtys.Return(qty);
 
-#if 0
     if (isSellTargetInBlackList || isBuyTargetInBlackList) {
       if (!OpenPositionSync(sellTarget, buyTarget, operation,
-                            isBuyTargetInBlackList,
-                            spreadRatio, bestSpreadRatio, delayMeasurement)) {
+                            isBuyTargetInBlackList, spreadRatio,
+                            bestSpreadRatio, delayMeasurement)) {
         return;
       }
     } else if (!OpenPositionAsync(sellTarget, buyTarget, operation, spreadRatio,
                                   bestSpreadRatio, delayMeasurement)) {
       return;
     }
-#else
-    if (!OpenPositionSync(sellTarget, buyTarget, operation,
-                          isBuyTargetInBlackList, spreadRatio, bestSpreadRatio,
-                          delayMeasurement)) {
-      return;
-    }
-#endif
 
     if (isBuyTargetInBlackList) {
       m_errors.erase(buyTargetBlackListIt);
@@ -631,6 +623,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     Position *firstLeg = nullptr;
     Position *secondLeg = nullptr;
     {
+      const auto secondLegPositionsTransaction =
+          m_self.StartThreadPositionsTransaction();
       auto firstLegFuture = boost::async(
           boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
       try {
