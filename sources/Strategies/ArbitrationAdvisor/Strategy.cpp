@@ -625,8 +625,18 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     {
       const auto secondLegPositionsTransaction =
           m_self.StartThreadPositionsTransaction();
-      auto firstLegFuture = boost::async(
-          boost::bind(openPosition, 1, boost::ref(firstLegTarget)));
+      auto firstLegFuture =
+          boost::async([&openPosition, &firstLegTarget]() -> Position & {
+            try {
+              return openPosition(1, firstLegTarget);
+            } catch (const Interactor::CommunicationError &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const Exception &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const std::exception &ex) {
+              throw boost::enable_current_exception(ex);
+            }
+          });
       try {
         secondLeg = &openPosition(2, secondLegTarget);
       } catch (const Interactor::CommunicationError &ex) {
