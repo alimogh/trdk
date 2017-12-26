@@ -128,6 +128,7 @@ class Timer::Implementation : private boost::noncopyable {
       if (!m_thread) {
         m_thread = boost::thread(
             boost::bind(&Implementation::ExecuteScheduling, this));
+        return;
       }
     }
     m_condition.notify_all();
