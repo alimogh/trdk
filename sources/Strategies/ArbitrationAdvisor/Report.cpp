@@ -212,10 +212,10 @@ void OperationReport::PrintReport(
   {
     Qty unusedQty = (buy.openedQty - sell.openedQty);
     if (sell.closedQty) {
-      unusedQty -= *sell.closedQty;
+      unusedQty += *sell.closedQty;
     }
     if (buy.closedQty) {
-      unusedQty += *buy.closedQty;
+      unusedQty -= *buy.closedQty;
     }
     os << ',' << unusedQty;  // 17. Unused Qty
   }
