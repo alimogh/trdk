@@ -289,13 +289,14 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
       [&](TradingRecord &record) { record % ConvertToString(order, false); });
 #endif
 
-  const auto &remainingQty = order.get<Qty>("QuantityRemaining");
-
+  Qty remainingQty;
   OrderStatus status;
   pt::ptime time;
   try {
+    remainingQty = order.get<Qty>("QuantityRemaining");
+
     if (order.get<bool>("CancelInitiated")) {
-      status = ORDER_STATUS_CANCELLED;
+      status = remainingQty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
     } else if (order.get<bool>("IsOpen")) {
       const auto &qty = order.get<Qty>("Quantity");
       AssertGe(qty, remainingQty);
