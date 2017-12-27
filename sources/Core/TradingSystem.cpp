@@ -426,6 +426,38 @@ class TradingSystem::Implementation : private boost::noncopyable {
       }
     });
   }
+
+  void CancelEmultedIocOrder(const OrderId &orderId,
+                             const pt::time_duration &goodInTime) {
+    {
+      const ActiveOrderReadLock lock(m_activeOrdersMutex);
+      if (!m_activeOrders.count(orderId)) {
+        return;
+      }
+    }
+    try {
+      m_self.CancelOrder(orderId);
+    } catch (const CommunicationError &) {
+      const ActiveOrderReadLock lock(m_activeOrdersMutex);
+      const auto &it = m_activeOrders.find(orderId);
+      if (it == m_activeOrders.cend() || !it->second.timerScope) {
+        Assert(it == m_activeOrders.cend());
+        throw;
+      }
+      m_context.GetTimer().Schedule(goodInTime,
+                                    [this, orderId, goodInTime]() {
+                                      CancelEmultedIocOrder(orderId,
+                                                            goodInTime);
+                                    },
+                                    *it->second.timerScope);
+    } catch (...) {
+      m_log.Error(
+          "IOC-emulation for order \"%1%\" is stopped by order canceling "
+          "error.",
+          orderId);
+      throw;
+    }
+  };
 };
 
 TradingSystem::TradingSystem(const TradingMode &mode,
@@ -657,10 +689,14 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   Assert(!m_pimpl->m_lastOrderTimerScope);
   const auto &orderId = result->GetOrderId();
   m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>();
-  GetContext().GetTimer().Schedule(
-      params.goodInTime ? *params.goodInTime : pt::seconds(3),
-      [this, orderId] { CancelOrder(orderId); },
-      *m_pimpl->m_lastOrderTimerScope);
+  const auto goodInTime =
+      params.goodInTime ? *params.goodInTime : pt::seconds(3);
+  GetContext().GetTimer().Schedule(goodInTime,
+                                   [this, orderId, goodInTime]() {
+                                     m_pimpl->CancelEmultedIocOrder(orderId,
+                                                                    goodInTime);
+                                   },
+                                   *m_pimpl->m_lastOrderTimerScope);
   return result;
 }
 

@@ -214,6 +214,7 @@ class Timer::Implementation : private boost::noncopyable {
         }
 
         tasksLock.lock();
+        SetNewTasks();
         m_nearestEvent != pt::not_a_date_time
             ? m_condition.timed_wait(tasksLock, m_nearestEvent - m_utcDiff)
             : m_condition.wait(tasksLock);
