@@ -275,14 +275,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_nonces(m_settings, GetTsLog()),
-        m_marketDataSession("yobit.net"),
-        m_tradingSession(m_marketDataSession.getHost()),
+        m_marketDataSession(CreateSession("yobit.net", m_settings)),
+        m_tradingSession(CreateSession("yobit.net", m_settings)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {
-    m_marketDataSession.setKeepAlive(true);
-    m_tradingSession.setKeepAlive(true);
-  }
+            m_settings.pullingSetttings, GetMdsLog())) {}
 
   virtual ~YobitnetExchange() override {
     try {
@@ -480,7 +477,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     TradeRequest request("Trade", m_nonces.TakeNonce(), m_settings, true,
                          requestParams.str());
-    const auto &result = request.Send(m_tradingSession, GetContext());
+    const auto &result = request.Send(*m_tradingSession, GetContext());
 
     try {
       return boost::make_unique<OrderTransactionContext>(
@@ -495,7 +492,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     TradeRequest("CancelOrder", m_nonces.TakeNonce(), m_settings, true,
                  "order_id=" + boost::lexical_cast<std::string>(orderId))
-        .Send(m_tradingSession, GetContext());
+        .Send(*m_tradingSession, GetContext());
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -509,7 +506,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     PublicRequest request("/api/3/info", "Info");
     try {
       const auto response =
-          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+          boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
       for (const auto &node : response.get_child("pairs")) {
         const auto &exchangeSymbol = boost::to_upper_copy(node.first);
         const auto &symbol = NormilizeSymbol(exchangeSymbol);
@@ -546,7 +543,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     try {
       const auto response = boost::get<1>(
           TradeRequest("getInfo", m_nonces.TakeNonce(), m_settings, false)
-              .Send(m_tradingSession, GetContext()));
+              .Send(*m_tradingSession, GetContext()));
 
       SetBalances(response);
       {
@@ -602,7 +599,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   void UpdateBalances() {
     const auto response = boost::get<1>(
         TradeRequest("getInfo", m_nonces.TakeNonce(), m_settings, false)
-            .Send(m_marketDataSession, GetContext()));
+            .Send(*m_marketDataSession, GetContext()));
     SetBalances(response);
   }
 
@@ -621,7 +618,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   void UpdatePrices(PublicRequest &depthRequest) {
     try {
       const auto &response =
-          depthRequest.Send(m_marketDataSession, GetContext());
+          depthRequest.Send(*m_marketDataSession, GetContext());
       const auto &time = boost::get<0>(response);
       const auto &delayMeasurement = boost::get<2>(response);
       for (const auto &updateRecord : boost::get<1>(response)) {
@@ -686,7 +683,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             TradeRequest(
                 "OrderInfo", m_nonces.TakeNonce(), m_settings, false,
                 "order_id=" + boost::lexical_cast<std::string>(orderId))
-                .Send(m_marketDataSession, GetContext()));
+                .Send(*m_marketDataSession, GetContext()));
       } catch (const Exception &ex) {
         boost::format error("Failed to request state for order %1%: \"%2%\"");
         error % orderId   // 1
@@ -756,8 +753,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   NonceStorage m_nonces;
 
-  net::HTTPSClientSession m_marketDataSession;
-  net::HTTPSClientSession m_tradingSession;
+  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
 

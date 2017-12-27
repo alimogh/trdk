@@ -82,8 +82,8 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings),
-      m_tradingSession("bittrex.com"),
-      m_pullingSession("bittrex.com"),
+      m_tradingSession(CreateSession("bittrex.com", m_settings)),
+      m_pullingSession(CreateSession("bittrex.com", m_settings)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
@@ -92,7 +92,7 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestBittrexProductList(m_tradingSession, GetContext(), GetLog());
+        RequestBittrexProductList(*m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -222,16 +222,16 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
       side == ORDER_SIDE_BUY
           ? NewOrderRequest("/market/buylimit", productId, qty, actualPrice,
                             m_settings)
-                .SendOrderTransaction(m_tradingSession, GetContext())
+                .SendOrderTransaction(*m_tradingSession, GetContext())
           : NewOrderRequest("/market/selllimit", productId, qty, actualPrice,
                             m_settings)
-                .SendOrderTransaction(m_tradingSession, GetContext()));
+                .SendOrderTransaction(*m_tradingSession, GetContext()));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   OrderTransactionRequest("/market/cancel", "uuid=" + orderId.GetValue(),
                           m_settings)
-      .Send(m_tradingSession, GetContext());
+      .Send(*m_tradingSession, GetContext());
 }
 
 void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
@@ -240,7 +240,7 @@ void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
 }
 
 void BittrexTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(m_pullingSession, GetContext());
+  const auto response = m_balancesRequest.Send(*m_pullingSession, GetContext());
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     auto symbol = balance.get<std::string>("Currency");
@@ -341,7 +341,7 @@ void BittrexTradingSystem::UpdateOrders() {
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
                            m_settings);
     UpdateOrder(orderId,
-                boost::get<1>(request.Send(m_pullingSession, GetContext())));
+                boost::get<1>(request.Send(*m_pullingSession, GetContext())));
   }
 }
 

@@ -238,8 +238,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession("api.gdax.com"),
-        m_tradingSession(m_marketDataSession.getHost()),
+        m_marketDataSession(CreateSession("api.gdax.com", m_settings)),
+        m_tradingSession(CreateSession("api.gdax.com", m_settings)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())),
@@ -249,10 +249,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            net::HTTPRequest::HTTP_GET,
                            m_settings,
                            false,
-                           "status=open&status=pending") {
-    m_marketDataSession.setKeepAlive(true);
-    m_tradingSession.setKeepAlive(true);
-  }
+                           "status=open&status=pending") {}
 
   virtual ~GdaxExchange() override {
     try {
@@ -319,7 +316,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
             auto &request = *subscribtion.second.request;
             try {
               const auto &response =
-                  request.Send(m_marketDataSession, GetContext());
+                  request.Send(*m_marketDataSession, GetContext());
               const auto &time = boost::get<0>(response);
               const auto &update = boost::get<1>(response);
               const auto &delayMeasurement = boost::get<2>(response);
@@ -460,7 +457,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
 
     const auto &result =
-        m_orderTransactionRequest.Send(m_tradingSession, GetContext());
+        m_orderTransactionRequest.Send(*m_tradingSession, GetContext());
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
@@ -474,7 +471,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     PrivateRequest("orders/" + orderId.GetValue(),
                    net::HTTPRequest::HTTP_DELETE, m_settings, true)
-        .Send(m_tradingSession, GetContext());
+        .Send(*m_tradingSession, GetContext());
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -487,7 +484,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("products");
     const auto response =
-        boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+        boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
     std::vector<std::string> log;
     for (const auto &node : response) {
       const auto &productNode = node.second;
@@ -523,7 +520,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            false);
     try {
       const auto response =
-          boost::get<1>(request.Send(m_tradingSession, GetContext()));
+          boost::get<1>(request.Send(*m_tradingSession, GetContext()));
       for (const auto &node : response) {
         const auto &account = node.second;
         m_balances.SetAvailableToTrade(account.get<std::string>("currency"),
@@ -643,7 +640,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     const bool isInitial = m_orders.empty();
     try {
       const auto orders = boost::get<1>(
-          m_orderListRequest.Send(m_marketDataSession, GetContext()));
+          m_orderListRequest.Send(*m_marketDataSession, GetContext()));
       for (const auto &order : orders) {
         const Order notifiedOrder = UpdateOrder(order.second);
         if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
@@ -704,7 +701,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       OrderStateRequest request(orderId, m_settings);
       try {
         UpdateOrder(
-            boost::get<1>(request.Send(m_marketDataSession, GetContext())));
+            boost::get<1>(request.Send(*m_marketDataSession, GetContext())));
       } catch (const OrderIsUnknown &) {
         OnOrderCancel(GetContext().GetCurrentTime(), orderId);
       } catch (const std::exception &ex) {
@@ -719,8 +716,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_marketDataSession;
-  net::HTTPSClientSession m_tradingSession;
+  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;

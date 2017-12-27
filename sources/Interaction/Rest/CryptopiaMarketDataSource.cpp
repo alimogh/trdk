@@ -13,6 +13,7 @@
 #include "CryptopiaRequest.hpp"
 #include "PullingTask.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -33,11 +34,9 @@ CryptopiaMarketDataSource::CryptopiaMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session("www.cryptopia.co.nz"),
+      m_session(CreateSession("www.cryptopia.co.nz", m_settings)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
-                                                    GetLog())) {
-  m_session.setKeepAlive(true);
-}
+                                                    GetLog())) {}
 
 CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   try {
@@ -54,7 +53,8 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
 void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
+    m_products =
+        RequestCryptopiaProductList(*m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -118,7 +118,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
 
 void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
   try {
-    const auto &response = request.Send(m_session, GetContext());
+    const auto &response = request.Send(*m_session, GetContext());
     const auto &time = boost::get<0>(response);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {

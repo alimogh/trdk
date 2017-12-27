@@ -132,8 +132,8 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings),
       m_openOrdersRequestsVersion(0),
-      m_tradingSession("www.cryptopia.co.nz"),
-      m_pullingSession("www.cryptopia.co.nz"),
+      m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings)),
+      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
@@ -142,7 +142,7 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestCryptopiaProductList(m_tradingSession, GetContext(), GetLog());
+        RequestCryptopiaProductList(*m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -299,7 +299,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
       product->second.NormalizePrice(*price, security), m_nonces, m_settings);
 
   const auto response =
-      boost::get<1>(request.Send(m_tradingSession, GetContext()));
+      boost::get<1>(request.Send(*m_tradingSession, GetContext()));
 #ifdef DEV_VER
   GetTradingLog().Write("debug-dump-order-status\t%1%",
                         [&response](TradingRecord &record) {
@@ -334,7 +334,7 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
       "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
 
   CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-  const auto &response = request.Send(m_tradingSession, GetContext());
+  const auto &response = request.Send(*m_tradingSession, GetContext());
   Verify(m_cancelingOrders.emplace(orderId).second);
   cancelOrderLock.unlock();
 
@@ -367,7 +367,7 @@ void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(m_pullingSession, GetContext());
+  const auto response = m_balancesRequest.Send(*m_pullingSession, GetContext());
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
@@ -393,7 +393,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   std::vector<CryptopiaProductId> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response =
-        boost::get<1>(request.second->Send(m_pullingSession, GetContext()));
+        boost::get<1>(request.second->Send(*m_pullingSession, GetContext()));
     if (!response.empty()) {
       for (const auto &node : response) {
         Verify(orders.emplace(UpdateOrder(node.second)).second);

@@ -59,7 +59,7 @@ class CryptopiaMarketDataSource : public MarketDataSource {
           boost::shared_ptr<Rest::Security>>>
       m_securities;
 
-  Poco::Net::HTTPSClientSession m_session;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
 
   std::unique_ptr<PullingTask> m_pullingTask;
 };

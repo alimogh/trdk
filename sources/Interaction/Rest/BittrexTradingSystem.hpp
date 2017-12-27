@@ -132,8 +132,8 @@ class BittrexTradingSystem : public TradingSystem {
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
-  Poco::Net::HTTPSClientSession m_tradingSession;
-  Poco::Net::HTTPSClientSession m_pullingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
 
   PullingTask m_pullingTask;
 };
