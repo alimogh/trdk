@@ -33,30 +33,60 @@ namespace fs = boost::filesystem;
 
 namespace {
 
-struct Settings : public Rest::Settings, public NonceStorage::Settings {
-  std::string apiKey;
-  std::string apiSecret;
+struct Settings : public Rest::Settings {
+  struct Auth {
+    std::string key;
+    std::string secret;
+    NonceStorage::Settings nonces;
+
+    explicit Auth(const IniSectionRef &conf,
+                  const char *apiKeyKey,
+                  const char *apiSecretKey,
+                  bool isTrading,
+                  ModuleEventsLog &log)
+        : key(conf.ReadKey(apiKeyKey)),
+          secret(conf.ReadKey(apiSecretKey)),
+          nonces(key, "Yobitnet", conf, log, isTrading) {}
+  };
+  Auth generalAuth;
+  boost::optional<Auth> tradingAuth;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
       : Rest::Settings(conf, log),
-        NonceStorage::Settings(conf, log),
-        apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")) {
+        generalAuth(conf, "api_key", "api_secret", false, log) {
+    {
+      const char *apiKeyKey = "api_trading_key";
+      const char *apiSecretKey = "api_trading_secret";
+      if (conf.IsKeyExist(apiKeyKey) || conf.IsKeyExist(apiSecretKey)) {
+        tradingAuth = Auth(conf, apiKeyKey, apiSecretKey, true, log);
+      }
+    }
     Log(log);
     Validate();
   }
 
   void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%.",
-             apiKey,                                     // 1
-             apiSecret.empty() ? "not set" : "is set");  // 2
+    log.Info("General API key: \"%1%\". General API secret: %2%.",
+             generalAuth.key,                                     // 1
+             generalAuth.secret.empty() ? "not set" : "is set");  // 2
+    if (tradingAuth) {
+      log.Info("Trading API key: \"%1%\". Trading API secret: %2%.",
+               tradingAuth->key,                                     // 1
+               tradingAuth->secret.empty() ? "not set" : "is set");  // 2
+    }
   }
 
   void Validate() {
-    if (initialNonce <= 0) {
+    if (generalAuth.nonces.initialNonce <= 0 ||
+        (tradingAuth && tradingAuth->nonces.initialNonce <= 0)) {
       throw TradingSystem::Error("Initial nonce could not be less than 1");
     }
   }
+};
+
+struct Auth {
+  Settings::Auth &settings;
+  NonceStorage &nonces;
 };
 
 class InvalidPairException : public Exception {
@@ -132,21 +162,18 @@ class TradeRequest : public Request {
 
  public:
   explicit TradeRequest(const std::string &method,
-                        NonceStorage::TakenValue &&nonce,
-                        const Settings &settings,
+                        Auth &auth,
                         bool isPriority,
                         const std::string &uriParams = std::string())
-      : Base("/tapi/",
-             method,
-             net::HTTPRequest::HTTP_POST,
-             AppendUriParams("method=" + method + "&nonce=" +
-                                 boost::lexical_cast<std::string>(nonce.Get()),
-                             uriParams)),
-        m_apiKey(settings.apiKey),
-        m_apiSecret(settings.apiSecret),
+      : Base("/tapi/", method, net::HTTPRequest::HTTP_POST, uriParams),
+        m_auth(auth),
         m_isPriority(isPriority),
-        m_nonce(std::move(nonce)) {
+        m_nonce(m_auth.nonces.TakeNonce()) {
     AssertGe(2147483646, m_nonce->Get());
+    SetUriParams(AppendUriParams(
+        "method=" + method +
+            "&nonce=" + boost::lexical_cast<std::string>(m_nonce->Get()),
+        GetUriParams()));
   }
 
   virtual ~TradeRequest() override = default;
@@ -198,10 +225,11 @@ class TradeRequest : public Request {
   virtual void PrepareRequest(const net::HTTPClientSession &session,
                               const std::string &body,
                               net::HTTPRequest &request) const override {
-    request.set("Key", m_apiKey);
+    request.set("Key", m_auth.settings.key);
     {
       using namespace trdk::Lib::Crypto;
-      const auto &digest = Hmac::CalcSha512Digest(GetUriParams(), m_apiSecret);
+      const auto &digest =
+          Hmac::CalcSha512Digest(GetUriParams(), m_auth.settings.secret);
       request.set("Sign", EncodeToHex(&digest[0], digest.size()));
     }
     Base::PrepareRequest(session, body, request);
@@ -226,8 +254,7 @@ class TradeRequest : public Request {
   virtual bool IsPriority() const { return m_isPriority; }
 
  private:
-  const std::string m_apiKey;
-  const std::string m_apiSecret;
+  Auth &m_auth;
   const bool m_isPriority;
   boost::optional<NonceStorage::TakenValue> m_nonce;
 };
@@ -259,6 +286,14 @@ struct Order {
   TimeInForce tid;
   pt::ptime time;
 };
+
+std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
+    const Settings &settings, ModuleEventsLog &log) {
+  if (!settings.tradingAuth) {
+    return nullptr;
+  }
+  return boost::make_unique<NonceStorage>(settings.tradingAuth->nonces, log);
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,7 +309,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
-        m_nonces(m_settings, GetTsLog()),
+        m_generalNonces(m_settings.generalAuth.nonces, GetTsLog()),
+        m_tradingNonces(CreateTradingNoncesStorage(m_settings, GetTsLog())),
+        m_generalAuth({m_settings.generalAuth, m_generalNonces}),
+        m_tradingAuth(m_settings.tradingAuth
+                          ? Auth{*m_settings.tradingAuth, *m_tradingNonces}
+                          : Auth{m_settings.generalAuth, m_generalNonces}),
         m_marketDataSession(CreateSession("yobit.net", m_settings)),
         m_tradingSession(CreateSession("yobit.net", m_settings)),
         m_balances(GetTsLog(), GetTsTradingLog()),
@@ -475,8 +515,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         % RoundByPrecision(*price, product->second.precisionPower)  // 3
         % qty;                                                      // 4
 
-    TradeRequest request("Trade", m_nonces.TakeNonce(), m_settings, true,
-                         requestParams.str());
+    TradeRequest request("Trade", m_tradingAuth, true, requestParams.str());
     const auto &result = request.Send(*m_tradingSession, GetContext());
 
     try {
@@ -490,7 +529,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    TradeRequest("CancelOrder", m_nonces.TakeNonce(), m_settings, true,
+    TradeRequest("CancelOrder", m_tradingAuth, true,
                  "order_id=" + boost::lexical_cast<std::string>(orderId))
         .Send(*m_tradingSession, GetContext());
   }
@@ -541,9 +580,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     size_t numberOfActiveOrders = 0;
 
     try {
-      const auto response = boost::get<1>(
-          TradeRequest("getInfo", m_nonces.TakeNonce(), m_settings, false)
-              .Send(*m_tradingSession, GetContext()));
+      const auto response =
+          boost::get<1>(TradeRequest("getInfo", m_generalAuth, false)
+                            .Send(*m_tradingSession, GetContext()));
 
       SetBalances(response);
       {
@@ -597,9 +636,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateBalances() {
-    const auto response = boost::get<1>(
-        TradeRequest("getInfo", m_nonces.TakeNonce(), m_settings, false)
-            .Send(*m_marketDataSession, GetContext()));
+    const auto response =
+        boost::get<1>(TradeRequest("getInfo", m_generalAuth, false)
+                          .Send(*m_marketDataSession, GetContext()));
     SetBalances(response);
   }
 
@@ -681,7 +720,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       try {
         response = boost::get<1>(
             TradeRequest(
-                "OrderInfo", m_nonces.TakeNonce(), m_settings, false,
+                "OrderInfo", m_generalAuth, false,
                 "order_id=" + boost::lexical_cast<std::string>(orderId))
                 .Send(*m_marketDataSession, GetContext()));
       } catch (const Exception &ex) {
@@ -751,7 +790,11 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
  private:
   Settings m_settings;
 
-  NonceStorage m_nonces;
+  NonceStorage m_generalNonces;
+  std::unique_ptr<NonceStorage> m_tradingNonces;
+
+  Auth m_generalAuth;
+  Auth m_tradingAuth;
 
   std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
   std::unique_ptr<net::HTTPClientSession> m_tradingSession;

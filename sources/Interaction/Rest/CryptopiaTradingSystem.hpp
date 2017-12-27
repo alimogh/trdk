@@ -30,9 +30,10 @@ class CryptopiaTradingSystem : public TradingSystem {
   typedef boost::mutex CancelOrderMutex;
   typedef OrdersRequestsMutex::scoped_lock CancelOrderLock;
 
-  struct Settings : public Rest::Settings, public NonceStorage::Settings {
+  struct Settings : public Rest::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
+    NonceStorage::Settings nonces;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };

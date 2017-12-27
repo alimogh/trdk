@@ -45,6 +45,7 @@ class Request {
   static std::string AppendUriParams(const std::string &newParams,
                                      const std::string &result);
 
+  void SetUriParams(const std::string &uriParams) { m_uriParams = uriParams; }
   const std::string &GetUriParams() const { return m_uriParams; }
   virtual void CreateBody(const Poco::Net::HTTPClientSession &,
                           std::string &result) const;
@@ -62,7 +63,7 @@ class Request {
 
  private:
   const std::string m_uri;
-  const std::string m_uriParams;
+  std::string m_uriParams;
   std::unique_ptr<Poco::Net::HTTPRequest> m_request;
   const std::string m_name;
   std::string m_body;

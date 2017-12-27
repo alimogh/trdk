@@ -27,9 +27,9 @@ namespace gr = boost::gregorian;
 CryptopiaTradingSystem::Settings::Settings(const IniSectionRef &conf,
                                            ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      NonceStorage::Settings(conf, log),
       apiKey(conf.ReadKey("api_key")),
-      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))) {
+      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
+      nonces(apiKey, "Cryptopia", conf, log) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -128,7 +128,7 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
                                                const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_nonces(m_settings, GetLog()),
+      m_nonces(m_settings.nonces, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings),
       m_openOrdersRequestsVersion(0),

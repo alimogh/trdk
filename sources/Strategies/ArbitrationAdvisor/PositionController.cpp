@@ -103,25 +103,25 @@ void aa::PositionController::ClosePosition(Position &position) {
              checkSecurity.GetBidQty() >= position.GetActiveQty() &&
              checkSecurity.IsOnline();
     };
+    const auto &altCheck = [&bestSecurity, &position](
+        Security & /*checkSecurity*/) { return !bestSecurity->IsOnline(); };
 
     position.IsLong()
         ? strategy.ForEachSecurity(position.GetSecurity().GetSymbol(),
-                                   [&bestSecurity, &position,
-                                    &generalCheck](Security &checkSecurity) {
+                                   [&](Security &checkSecurity) {
                                      if (generalCheck(checkSecurity) &&
                                          (bestSecurity->GetBidPrice() <
                                               checkSecurity.GetBidPrice() ||
-                                          !bestSecurity->IsOnline())) {
+                                          altCheck(checkSecurity))) {
                                        bestSecurity = &checkSecurity;
                                      }
                                    })
         : strategy.ForEachSecurity(position.GetSecurity().GetSymbol(),
-                                   [&bestSecurity, &position,
-                                    &generalCheck](Security &checkSecurity) {
+                                   [&](Security &checkSecurity) {
                                      if (generalCheck(checkSecurity) &&
                                          (bestSecurity->GetAskPrice() >
                                               checkSecurity.GetAskPrice() ||
-                                          !bestSecurity->IsOnline())) {
+                                          altCheck(checkSecurity))) {
                                        bestSecurity = &checkSecurity;
                                      }
                                    });
