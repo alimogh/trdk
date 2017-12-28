@@ -436,6 +436,7 @@ void Engine::Context::Stop(const StopMode &stopMode) {
     }
   }
 
+  m_pimpl->m_tradingSystems.clear();
   m_pimpl->m_marketDataSources.clear();
 
   m_pimpl->m_state.reset();

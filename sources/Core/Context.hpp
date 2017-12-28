@@ -67,7 +67,7 @@ class TRDK_CORE_API Context : private boost::noncopyable {
   trdk::Context::Log &GetLog() const noexcept;
   trdk::Context::TradingLog &GetTradingLog() const noexcept;
 
-  trdk::Timer &GetTimer();
+  const trdk::Timer &GetTimer();
 
   //! Subscribes to state changes.
   StateUpdateConnection SubscribeToStateUpdates(const StateUpdateSlot &) const;
