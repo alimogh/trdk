@@ -101,13 +101,14 @@ Dispatcher::Dispatcher(Engine::Context &context)
   m_queues.emplace_back(&m_bookUpdateTicks);
   m_queues.shrink_to_fit();
 
-  unsigned int threadsCount = 1;
+  unsigned int threadsCount = 2;
   boost::shared_ptr<boost::barrier> startBarrier(
       new boost::barrier(threadsCount + 1));
   StartNotificationTask<DispatchingTimeMeasurementPolicy>(
       startBarrier, m_level1Updates, m_level1Ticks, m_bookUpdateTicks,
-      m_newTrades, m_positionsUpdates, m_newBars, m_brokerPositionsUpdates,
-      threadsCount);
+      m_newTrades, m_newBars, threadsCount);
+  StartNotificationTask<DispatchingTimeMeasurementPolicy>(
+      startBarrier, m_positionsUpdates, m_brokerPositionsUpdates, threadsCount);
   AssertEq(0, threadsCount);
   startBarrier->wait();
 }
