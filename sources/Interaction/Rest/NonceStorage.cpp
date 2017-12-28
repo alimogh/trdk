@@ -18,18 +18,22 @@ using namespace trdk::Interaction::Rest;
 namespace fs = boost::filesystem;
 
 NonceStorage::NonceStorage(const Settings &settings, ModuleEventsLog &log) {
+  bool usedStoredValue = false;
   {
     std::ifstream nonceStorage(settings.nonceStorageFile.string().c_str());
     if (!nonceStorage) {
       log.Debug("Failed to open %1% to read.", settings.nonceStorageFile);
     } else {
       nonceStorage.read(reinterpret_cast<char *>(&m_value), sizeof(m_value));
-      log.Debug("Restored %1%nonce-value %2% from %3%.",
-                !settings.isTrading ? "" : "trading ",  // 1
-                m_value,                                // 2
-                settings.nonceStorageFile);             // 3
+      if (nonceStorage) {
+        log.Debug("Restored %1%nonce-value %2% from %3%.",
+                  !settings.isTrading ? "" : "trading ",  // 1
+                  m_value,                                // 2
+                  settings.nonceStorageFile);             // 3
+        usedStoredValue = true;
+      }
     }
-    if (m_value < settings.initialNonce) {
+    if (!usedStoredValue || m_value < settings.initialNonce) {
       log.Debug("Using %1%initial nonce-value %2%.",
                 !settings.isTrading ? "" : "trading ",  // 1
                 settings.initialNonce);                 // 2

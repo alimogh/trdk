@@ -40,10 +40,10 @@ class NonceStorage : private boost::noncopyable {
     }
 
     void Log(ModuleEventsLog &log) {
-      log.Info("%1% nonce: %2%. Nonce storage file: %3%.",
-               !isTrading ? "Initial" : "Trading initial",  // 1
-               initialNonce,                                // 2
-               nonceStorageFile);                           // 3
+      log.Debug("%1% nonce: %2%. Nonce storage file: %3%.",
+                !isTrading ? "Initial" : "Trading initial",  // 1
+                initialNonce,                                // 2
+                nonceStorageFile);                           // 3
     }
 
     void Validate() {}

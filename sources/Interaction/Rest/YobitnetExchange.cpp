@@ -357,7 +357,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     if (IsConnected()) {
       return;
     }
-    GetTsLog().Debug("Creating connection...");
     CreateConnection(conf);
   }
 
@@ -422,9 +421,23 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
+    GetTsLog().Debug(
+        "Creating connection%1%...",
+        !m_settings.tradingAuth ? "" : " with general credentials");
     try {
-      RequestAccountInfo();
+      if (m_settings.tradingAuth) {
+        Assert(&m_tradingAuth.settings != &m_generalAuth.settings);
+        RequestAccountInfo(m_generalAuth);
+        GetTsLog().Debug("Creating connection with trading credentials...");
+      } else {
+        Assert(&m_tradingAuth.settings == &m_generalAuth.settings);
+      }
+      if (!RequestAccountInfo(m_tradingAuth)) {
+        throw ConnectError("Credentials don't have trading rights");
+      }
       RequestProducts();
+    } catch (const ConnectError &) {
+      throw;
     } catch (const std::exception &ex) {
       throw ConnectError(ex.what());
     }
@@ -571,21 +584,24 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     if (products.empty()) {
       throw Exception("Exchange doesn't have products");
     }
-    m_products = std::move(products);
+    products.swap(m_products);
   }
 
-  void RequestAccountInfo() {
+  bool RequestAccountInfo(Auth &auth) {
+    bool hasTradingRights = false;
+
     std::vector<std::string> rights;
     size_t numberOfTransactions = 0;
     size_t numberOfActiveOrders = 0;
 
     try {
       const auto response =
-          boost::get<1>(TradeRequest("getInfo", m_generalAuth, false)
+          boost::get<1>(TradeRequest("getInfo", auth, false)
                             .Send(*m_tradingSession, GetContext()));
 
       SetBalances(response);
       {
+#if 0
         const auto &fundsInclOrdersNode =
             response.get_child_optional("funds_incl_orders");
         if (fundsInclOrdersNode) {
@@ -596,12 +612,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                 boost::lexical_cast<Volume>(node.second.data()));  // 2
           }
         }
+#endif
       }
       {
         const auto &rightsNode = response.get_child_optional("rights");
         if (rightsNode) {
           for (const auto &node : *rightsNode) {
             rights.emplace_back(node.first + ": " + node.second.data());
+            if (node.first == "trade") {
+              hasTradingRights = node.second.data() == "1";
+            }
           }
         }
       }
@@ -633,6 +653,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         rights.empty() ? "none" : boost::join(rights, ", "),  // 1
         numberOfTransactions,                                 // 2
         numberOfActiveOrders);                                // 3
+
+    return hasTradingRights;
   }
 
   void UpdateBalances() {
