@@ -462,17 +462,29 @@ class Strategy::Implementation : private boost::noncopyable {
       lock.unlock();
       boost::this_thread::yield();
       lock.lock();
+      if (m_delayedPositionToForget.empty()) {
+        break;
+      }
       Assert(m_delayedPositionToForget.back());
       auto &delayedPosition = *m_delayedPositionToForget.back();
       m_delayedPositionToForget.pop_back();
       Assert(delayedPosition.IsCompleted());
       if (&delayedPosition == eventPosition) {
         Assert(eventPosition);
+        // It may also be in the ThreadPositionListTransaction::GetInstance by
+        // this case was not required before as no one calls "make completed"
+        // from async task:
         Assert(!m_positions.Has(delayedPosition));
         continue;
       }
+      // It may also be in the ThreadPositionListTransaction::GetInstance by
+      // this case was not required before as no one calls "make completed"
+      // from async task:
       Assert(m_positions.Has(delayedPosition));
       RaiseSinglePositionUpdateEvent(delayedPosition);
+      // It may also be in the ThreadPositionListTransaction::GetInstance by
+      // this case was not required before as no one calls "make completed"
+      // from async task:
       Assert(!m_positions.Has(delayedPosition));
     }
   }
@@ -587,7 +599,6 @@ void Strategy::Unregister(Position &position) noexcept {
 void Strategy::RaiseLevel1UpdateEvent(
     Security &security, const TimeMeasurement::Milestones &delayMeasurement) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -610,7 +621,6 @@ void Strategy::RaiseLevel1TickEvent(
     const Level1TickValue &value,
     const TimeMeasurement::Milestones &delayMeasurement) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -632,7 +642,6 @@ void Strategy::RaiseNewTradeEvent(Security &service,
                                   const Price &price,
                                   const Qty &qty) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -651,7 +660,6 @@ void Strategy::RaiseServiceDataUpdateEvent(
     const Service &service,
     const TimeMeasurement::Milestones &timeMeasurement) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -669,7 +677,6 @@ void Strategy::RaiseServiceDataUpdateEvent(
 void Strategy::RaisePositionUpdateEvent(Position &position) {
   Assert(position.IsStarted());
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   m_pimpl->RaiseSinglePositionUpdateEvent(position);
   m_pimpl->FlushDelayed(&position, lock);
 }
@@ -689,7 +696,6 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
                                                   Security::Request &request,
                                                   bool &isSwitched) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -710,7 +716,6 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
                                               const Volume &volume,
                                               bool isInitial) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -727,7 +732,6 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
 
 void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -747,7 +751,6 @@ void Strategy::RaiseBookUpdateTickEvent(
     const PriceBook &book,
     const TimeMeasurement::Milestones &timeMeasurement) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
@@ -767,7 +770,6 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
                                          Security &security,
                                          const Security::ServiceEvent &event) {
   auto lock = LockForOtherThreads();
-  AssertEq(0, m_pimpl->m_delayedPositionToForget.size());
   // 1st time already checked: before enqueue event (without locking),
   // here - control check (under mutex as blocking and enabling - under
   // the mutex too):
