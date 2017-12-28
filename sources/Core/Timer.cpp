@@ -168,7 +168,6 @@ class Timer::Implementation : private boost::noncopyable {
 
     try {
       Lock tasksLock(m_mutex);
-      Assert(m_isStopped);
       while (m_thread) {
         SetNewTasks();
 
