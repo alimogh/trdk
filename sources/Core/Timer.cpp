@@ -127,7 +127,7 @@ class Timer::Implementation : private boost::noncopyable {
         m_newTimedTasks.emplace_back(scope.m_id, std::move(callback),
                                      m_context.GetCurrentTime() + time);
         m_context.GetTradingLog().Write(
-            "Timer", "{'timer': {'scheduling': {'time': '%1%', 'scope': %2%}}}",
+            "Timer", "{'timer': {'scheduled': {'time': '%1%', 'scope': %2%}}}",
             [this](TradingRecord &record) {
               record % m_newTimedTasks.back().time  // 1
                   % m_newTimedTasks.back().scope;   // 2
@@ -135,9 +135,9 @@ class Timer::Implementation : private boost::noncopyable {
       } else {
         m_newImmediateTasks.emplace_back(Task{scope.m_id, std::move(callback)});
         m_context.GetTradingLog().Write(
-            "Timer", "{'timer': {'scheduling': {'scope': %1%}}}",
+            "Timer", "{'async': {'scheduled': {'scope': %1%}}}",
             [this](TradingRecord &record) {
-              record % m_newTimedTasks.back().scope;
+              record % m_newImmediateTasks.back().scope;
             });
       }
       if (!m_thread) {
@@ -181,7 +181,7 @@ class Timer::Implementation : private boost::noncopyable {
 
           for (const auto &task : m_immediateTasks) {
             m_context.GetTradingLog().Write(
-                "Timer", "{'timer': {'exec': {'scope': %1%}}}",
+                "Timer", "{'async': {'exec': {'scope': %1%}}}",
                 [&task](TradingRecord &record) { record % task.scope; });
             try {
               task.callback();
