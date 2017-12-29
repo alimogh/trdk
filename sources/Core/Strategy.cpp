@@ -416,9 +416,6 @@ class Strategy::Implementation : private boost::noncopyable {
     // Not supported as was not required before:
     Assert(!ThreadPositionListTransaction::IsStarted());
 
-    if (position.IsCompleted() && !m_positions.Has(position)) {
-      return;
-    }
     Assert(m_positions.Has(position));
 
     if (position.IsError()) {
@@ -434,13 +431,13 @@ class Strategy::Implementation : private boost::noncopyable {
       m_strategy.Block(blockPeriod);
     }
 
+    const bool isCompleted = position.IsCompleted();
     try {
       Assert(!position.IsCancelling());
       position.RunAlgos();
       if (!position.IsCancelling()) {
-        const bool wasCompleted = position.IsCompleted();
         m_strategy.OnPositionUpdate(position);
-        if (!wasCompleted && position.IsCompleted()) {
+        if (!isCompleted && position.IsCompleted()) {
           m_strategy.OnPositionUpdate(position);
         }
       }
@@ -449,12 +446,12 @@ class Strategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    if (position.IsCompleted()) {
+    if (isCompleted) {
       ForgetPosition(position);
     }
   }
 
-  void FlushDelayed(const Position *eventPosition, Lock &lock) {
+  void FlushDelayed(Lock &lock) {
     // Not supported as was not required before:
     Assert(!ThreadPositionListTransaction::IsStarted());
 
@@ -469,23 +466,12 @@ class Strategy::Implementation : private boost::noncopyable {
       auto &delayedPosition = *m_delayedPositionToForget.back();
       m_delayedPositionToForget.pop_back();
       Assert(delayedPosition.IsCompleted());
-      if (&delayedPosition == eventPosition) {
-        Assert(eventPosition);
-        // It may also be in the ThreadPositionListTransaction::GetInstance by
-        // this case was not required before as no one calls "make completed"
-        // from async task:
-        Assert(!m_positions.Has(delayedPosition));
-        continue;
-      }
       // It may also be in the ThreadPositionListTransaction::GetInstance by
       // this case was not required before as no one calls "make completed"
       // from async task:
       Assert(m_positions.Has(delayedPosition));
       RaiseSinglePositionUpdateEvent(delayedPosition);
-      // It may also be in the ThreadPositionListTransaction::GetInstance by
-      // this case was not required before as no one calls "make completed"
-      // from async task:
-      Assert(!m_positions.Has(delayedPosition));
+      Assert(!m_positions.Has(delayedPosition) || m_strategy.IsBlocked());
     }
   }
 };
@@ -612,7 +598,7 @@ void Strategy::RaiseLevel1UpdateEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseLevel1TickEvent(
@@ -634,7 +620,7 @@ void Strategy::RaiseLevel1TickEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseNewTradeEvent(Security &service,
@@ -653,7 +639,7 @@ void Strategy::RaiseNewTradeEvent(Security &service,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(
@@ -671,14 +657,17 @@ void Strategy::RaiseServiceDataUpdateEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "service data update");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
   Assert(position.IsStarted());
   auto lock = LockForOtherThreads();
+  if (position.IsCompleted() && !m_pimpl->m_positions.Has(position)) {
+    return;
+  }
   m_pimpl->RaiseSinglePositionUpdateEvent(position);
-  m_pimpl->FlushDelayed(&position, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::OnPositionMarkedAsCompleted(Position &position) {
@@ -707,7 +696,7 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
@@ -727,7 +716,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
@@ -743,7 +732,7 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseBookUpdateTickEvent(
@@ -763,7 +752,7 @@ void Strategy::RaiseBookUpdateTickEvent(
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
@@ -781,7 +770,7 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security service event");
   }
-  m_pimpl->FlushDelayed(nullptr, lock);
+  m_pimpl->FlushDelayed(lock);
 }
 
 bool Strategy::IsBlocked(bool isForever) const {
