@@ -348,7 +348,12 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
         m_cancelingOrders.erase(orderId);
         try {
           OnOrderCancel(now, orderId);
-        } catch (const OrderIsUnknown &) {
+        } catch (const OrderIsUnknown &ex) {
+          UseUnused(ex);
+#ifdef DEV_VER
+          GetLog().Debug("Failed to cancel order by scheduled task: \"%1%\".",
+                         ex);
+#endif
         }
       },
       m_timerScope);
