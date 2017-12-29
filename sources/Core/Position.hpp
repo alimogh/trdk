@@ -376,6 +376,8 @@ class TRDK_CORE_API Position
     */
   void RunAlgos();
 
+  void ScheduleUpdateEvent(const boost::posix_time::time_duration &);
+
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
   DoOpenAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) = 0;

@@ -154,6 +154,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   virtual const trdk::TradingSystem::Account &GetAccount() const;
 
+  const boost::posix_time::time_duration &GetDefaultPollingInterval() const;
+
   const trdk::Balances &GetBalances() const;
 
   virtual trdk::Volume CalcCommission(const trdk::Volume &,

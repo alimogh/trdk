@@ -507,6 +507,11 @@ const TradingSystem::Account &TradingSystem::GetAccount() const {
   throw MethodIsNotImplementedException("Account Cash Balance not implemented");
 }
 
+const pt::time_duration &TradingSystem::GetDefaultPollingInterval() const {
+  static const pt::time_duration result = pt::seconds(3);
+  return result;
+}
+
 const Balances &TradingSystem::GetBalances() const {
   return const_cast<TradingSystem *>(this)->GetBalancesStorage();
 }
@@ -690,7 +695,7 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
   const auto &orderId = result->GetOrderId();
   m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>();
   const auto goodInTime =
-      params.goodInTime ? *params.goodInTime : pt::seconds(3);
+      params.goodInTime ? *params.goodInTime : GetDefaultPollingInterval();
   GetContext().GetTimer().Schedule(goodInTime,
                                    [this, orderId, goodInTime]() {
                                      m_pimpl->CancelEmultedIocOrder(orderId,

@@ -148,7 +148,19 @@ bool PositionController::ClosePosition(Position &position,
 
 void PositionController::ClosePosition(Position &position) {
   Assert(!position.HasActiveOrders());
-  position.GetOperation()->GetCloseOrderPolicy(position).Close(position);
+  const auto &policy = position.GetOperation()->GetCloseOrderPolicy(position);
+  try {
+    policy.Close(position);
+  } catch (const Interactor::CommunicationError &ex) {
+    position.GetStrategy().GetLog().Warn(
+        "Failed to close position \"%1%/%2%\": \"%3%\".",
+        position.GetOperation()->GetId(),  // 1
+        position.GetSubOperationId(),      // 2
+        ex);                               // 3
+    position.ScheduleUpdateEvent(
+        position.GetTradingSystem().GetDefaultPollingInterval());
+    throw;
+  }
 }
 
 void PositionController::CloseAllPositions(const CloseReason &reason) {
