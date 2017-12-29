@@ -119,19 +119,19 @@ class Timer::Implementation : private boost::noncopyable {
                 const boost::function<void()> &&callback,
                 Scope &scope) {
     {
-      Lock lock(m_mutex);
+      const Lock lock(m_mutex);
       if (m_isStopped) {
         return;
       }
+      m_context.GetTradingLog().Write(
+          "Timer", "{'timer': {'scheduling': {'time': '%1%', 'scope': %2%}}}",
+          [this](TradingRecord &record) {
+            record % m_newTimedTasks.back().time  // 1
+                % m_newTimedTasks.back().scope;   // 2
+          });
       if (time != pt::not_a_date_time) {
         m_newTimedTasks.emplace_back(scope.m_id, std::move(callback),
                                      m_context.GetCurrentTime() + time);
-        m_context.GetTradingLog().Write(
-            "Timer", "{'timer': {'scheduling': {'time': '%1%', 'scope': %2%}}}",
-            [this](TradingRecord &record) {
-              record % m_newTimedTasks.back().time  // 1
-                  % m_newTimedTasks.back().scope;   // 2
-            });
       } else {
         m_newImmediateTasks.emplace_back(Task{scope.m_id, std::move(callback)});
       }
@@ -171,10 +171,15 @@ class Timer::Implementation : private boost::noncopyable {
       while (m_thread) {
         SetNewTasks();
 
-        {
+        do {
           tasksLock.unlock();
 
           for (const auto &task : m_immediateTasks) {
+            m_context.GetTradingLog().Write(
+                "Timer",
+                "{'timer': {'exec': {'time': 'not-a-date-time', 'scope': "
+                "%1%}}}",
+                [&task](TradingRecord &record) { record % task.scope; });
             try {
               task.callback();
             } catch (const std::exception &ex) {
@@ -221,10 +226,11 @@ class Timer::Implementation : private boost::noncopyable {
             AssertEq(m_nearestEvent == pt::not_a_date_time,
                      m_timedTasks.empty());
           }
-        }
 
-        tasksLock.lock();
-        SetNewTasks();
+          tasksLock.lock();
+          SetNewTasks();
+        } while (!m_immediateTasks.empty());
+
         m_nearestEvent != pt::not_a_date_time
             ? m_condition.timed_wait(tasksLock, m_nearestEvent - m_utcDiff)
             : m_condition.wait(tasksLock);
