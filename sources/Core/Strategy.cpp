@@ -367,6 +367,9 @@ class Strategy::Implementation : private boost::noncopyable {
 
  public:
   void ForgetPosition(const Position &position) {
+    Assert(std::find(m_delayedPositionToForget.cbegin(),
+                     m_delayedPositionToForget.cend(),
+                     &position) == m_delayedPositionToForget.cend());
     ThreadPositionListTransaction::IsStarted()
         ? ThreadPositionListTransaction::GetData().Erase(position)
         : m_positions.Erase(position);
@@ -437,9 +440,6 @@ class Strategy::Implementation : private boost::noncopyable {
       position.RunAlgos();
       if (!position.IsCancelling()) {
         m_strategy.OnPositionUpdate(position);
-        if (!isCompleted && position.IsCompleted()) {
-          m_strategy.OnPositionUpdate(position);
-        }
       }
     } catch (const ::trdk::Lib::RiskControlException &ex) {
       BlockByRiskControlEvent(ex, "position update");
