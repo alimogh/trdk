@@ -91,44 +91,143 @@ bool aa::PositionController::ClosePosition(Position &position,
   return result;
 }
 
+namespace {
+class BestSecurityChecker : private boost::noncopyable {
+ public:
+  explicit BestSecurityChecker(Position &position)
+      : m_position(position), m_bestSecurity(&position.GetSecurity()) {}
+
+  virtual ~BestSecurityChecker() {
+    try {
+      if (&m_position.GetSecurity() != m_bestSecurity) {
+        m_position.ReplaceTradingSystem(
+            *m_bestSecurity,
+            m_position.GetOperation()->GetTradingSystem(
+                m_position.GetStrategy(), *m_bestSecurity));
+      }
+    } catch (...) {
+      AssertFailNoException();
+      terminate();
+    }
+  }
+
+ public:
+  void Check(Security &checkSecurity) {
+    if (!CheckGeneral(checkSecurity) || !CheckExchnage(checkSecurity) ||
+        !(CheckPrice(checkSecurity) || m_bestSecurity->IsOnline())) {
+      return;
+    }
+    m_bestSecurity = &checkSecurity;
+  }
+
+ protected:
+  virtual bool CheckPrice(const Security &) const = 0;
+  virtual Qty GetQty(const Security &) const = 0;
+  virtual Price GetPrice(const Security &) const = 0;
+  virtual const std::string &GetBalanceSymbol() const = 0;
+  virtual Double GetRequiredBalance() const = 0;
+  virtual OrderSide GetSide() const = 0;
+
+  const Security &GetBestSecurity() const { return *m_bestSecurity; }
+  const Position &GetPosition() const { return m_position; }
+
+ private:
+  bool CheckGeneral(const Security &checkSecurity) const {
+    return m_bestSecurity != &checkSecurity && checkSecurity.IsOnline() &&
+           GetQty(checkSecurity) >= m_position.GetActiveQty();
+  }
+
+  bool CheckExchnage(const Security &checkSecurity) const {
+    const auto &tradingSystem = m_position.GetStrategy().GetTradingSystem(
+        checkSecurity.GetSource().GetIndex());
+    if (tradingSystem.GetBalances().FindAvailableToTrade(GetBalanceSymbol()) <
+        GetRequiredBalance()) {
+      return false;
+    }
+    if (!tradingSystem.CheckOrder(checkSecurity, m_position.GetCurrency(),
+                                  m_position.GetActiveQty(),
+                                  GetPrice(checkSecurity), GetSide())) {
+      return false;
+    }
+    return true;
+  }
+
+ private:
+  Position &m_position;
+  Security *m_bestSecurity;
+};
+
+class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
+ public:
+  explicit BestSecurityCheckerForLongPosition(Position &position)
+      : BestSecurityChecker(position) {
+    Assert(position.IsLong());
+  }
+  virtual ~BestSecurityCheckerForLongPosition() override = default;
+
+ protected:
+  virtual bool CheckPrice(const Security &checkSecurity) const override {
+    return GetBestSecurity().GetBidPrice() < GetPrice(checkSecurity);
+  }
+  virtual Qty GetQty(const Security &checkSecurity) const override {
+    return checkSecurity.GetBidQty();
+  }
+  virtual Price GetPrice(const Security &checkSecurity) const {
+    return checkSecurity.GetBidPrice();
+  }
+  virtual const std::string &GetBalanceSymbol() const {
+    return GetBestSecurity().GetSymbol().GetBaseSymbol();
+  }
+  virtual Double GetRequiredBalance() const {
+    return GetPosition().GetActiveQty();
+  }
+  virtual OrderSide GetSide() const { return ORDER_SIDE_SELL; }
+};
+
+class BestSecurityCheckerForShortPosition : public BestSecurityChecker {
+ public:
+  explicit BestSecurityCheckerForShortPosition(Position &position)
+      : BestSecurityChecker(position) {
+    Assert(!position.IsLong());
+  }
+  virtual ~BestSecurityCheckerForShortPosition() override = default;
+
+ protected:
+  virtual bool CheckPrice(const Security &checkSecurity) const override {
+    return GetBestSecurity().GetAskPrice() > GetPrice(checkSecurity);
+  }
+  virtual Qty GetQty(const Security &checkSecurity) const override {
+    return checkSecurity.GetAskQty();
+  }
+  virtual Price GetPrice(const Security &checkSecurity) const {
+    return checkSecurity.GetAskPrice();
+  }
+  virtual const std::string &GetBalanceSymbol() const {
+    return GetBestSecurity().GetSymbol().GetQuoteSymbol();
+  }
+  virtual Double GetRequiredBalance() const {
+    return GetPosition().GetActiveVolume();
+  }
+  virtual OrderSide GetSide() const { return ORDER_SIDE_BUY; }
+};
+
+std::unique_ptr<BestSecurityChecker> CreateBestSecurityChecker(
+    Position &positon) {
+  if (positon.IsLong()) {
+    return boost::make_unique<BestSecurityCheckerForLongPosition>(positon);
+  } else {
+    return boost::make_unique<BestSecurityCheckerForShortPosition>(positon);
+  }
+}
+}
+
 void aa::PositionController::ClosePosition(Position &position) {
   {
-    auto &strategy =
-        *boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy());
-    Security *bestSecurity = &position.GetSecurity();
-
-    const auto &generalCheck = [&bestSecurity,
-                                &position](Security &checkSecurity) {
-      return bestSecurity != &checkSecurity &&
-             checkSecurity.GetBidQty() >= position.GetActiveQty() &&
-             checkSecurity.IsOnline();
-    };
-    const auto &altCheck = [&bestSecurity, &position](
-        Security & /*checkSecurity*/) { return !bestSecurity->IsOnline(); };
-
-    position.IsLong()
-        ? strategy.ForEachSecurity(position.GetSecurity().GetSymbol(),
-                                   [&](Security &checkSecurity) {
-                                     if (generalCheck(checkSecurity) &&
-                                         (bestSecurity->GetBidPrice() <
-                                              checkSecurity.GetBidPrice() ||
-                                          altCheck(checkSecurity))) {
-                                       bestSecurity = &checkSecurity;
-                                     }
-                                   })
-        : strategy.ForEachSecurity(position.GetSecurity().GetSymbol(),
-                                   [&](Security &checkSecurity) {
-                                     if (generalCheck(checkSecurity) &&
-                                         (bestSecurity->GetAskPrice() >
-                                              checkSecurity.GetAskPrice() ||
-                                          altCheck(checkSecurity))) {
-                                       bestSecurity = &checkSecurity;
-                                     }
-                                   });
-
-    position.ReplaceTradingSystem(
-        *bestSecurity,
-        position.GetOperation()->GetTradingSystem(strategy, *bestSecurity));
+    const auto &checker = CreateBestSecurityChecker(position);
+    boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
+        ->ForEachSecurity(
+            position.GetSecurity().GetSymbol(),
+            [&checker](Security &security) { checker->Check(security); });
   }
   Base::ClosePosition(position);
 }

@@ -61,7 +61,7 @@ void aa::Operation::Setup(Position &position,
           "'operation': '%4%/%5%'}}}",
           [this, action](TradingRecord &record) {
             record % GetName()                           // 1
-                % GetPosition().GetOpenStartPrice()      // 2
+                % m_controlPrice                         // 2
                 % GetDelay()                             // 3
                 % GetPosition().GetOperation()->GetId()  // 4
                 % GetPosition().GetSubOperationId()      // 5
@@ -97,7 +97,7 @@ void aa::Operation::Setup(Position &position,
             record % GetName()                                    // 1
                 % currentPrice                                    // 2
                 % (GetPosition().IsLong() ? ">" : "<")            // 3
-                % m_controlPrice                                 // 4
+                % m_controlPrice                                  // 4
                 % GetPosition().GetSecurity().GetBidPriceValue()  // 5
                 % GetPosition().GetSecurity().GetAskPriceValue()  // 6
                 % GetPosition().GetOperation()->GetId()           // 7
