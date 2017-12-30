@@ -167,13 +167,17 @@ class TradingSystem::Implementation : private boost::noncopyable {
                        [&](TradingRecord &record) { record % orderId; });
   }
   void LogOrderUpdate(const OrderId &orderId,
+                      const OrderSide &side,
+                      const Security &security,
+                      const Qty &orderQty,
                       const OrderStatus &orderStatus,
                       const Qty &remainingQty,
                       const boost::optional<Volume> &commission,
                       const TradeInfo *trade) {
     m_tradingLog.Write(
-        "{'order': {'status': {'status': '%1%', 'remainingQty': %2$.8f, "
-        "'id': '%3%', 'commission': %4$.8f}}}",
+        "{'order': {'status': {'status': '%1%', 'qty': %7$.8f, 'remainingQty': "
+        "%2$.8f, 'side': '%5%', 'security': '%6%', 'id': '%3%', 'commission': "
+        "%4$.8f}}}",
         [&](TradingRecord &record) {
           record % orderStatus  // 1
               % remainingQty    // 2
@@ -183,12 +187,15 @@ class TradingSystem::Implementation : private boost::noncopyable {
           } else {
             record % "null";  // 4
           }
+          record % side    // 5
+              % security   // 6
+              % orderQty;  // 7
         });
     if (trade) {
       m_tradingLog.Write(
-          "{'order': {'trade': {'id': '%1%', 'qty': %2$.8f, 'price': %3$.8f}, "
-          "'id': '%4%'}}",
-          [&orderId, &trade](TradingRecord &record) {
+          "{'order': {'trade': {'side': '%5%', 'security': '%6%', 'id': '%1%', "
+          "'qty': %2$.8f, 'price': %3$.8f}, 'id': '%4%', 'qty': %7$.8f}}",
+          [&](TradingRecord &record) {
             if (trade->id) {
               record % *trade->id;  // 1
             } else {
@@ -196,7 +203,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
             }
             record % trade->qty  // 2
                 % trade->price   // 3
-                % orderId;       // 4
+                % orderId        // 4
+                % side           // 5
+                % security       // 6
+                % orderQty;      // 7
           });
     }
   }
@@ -309,10 +319,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
         switch (status) {
           case ORDER_STATUS_SENT:
           case ORDER_STATUS_SUBMITTED: {
-            const auto &newStatus = *remainingQty
-                                        ? ORDER_STATUS_FILLED_PARTIALLY
-                                        : ORDER_STATUS_FILLED;
-            status = newStatus;
+            status = *remainingQty ? ORDER_STATUS_FILLED_PARTIALLY
+                                   : ORDER_STATUS_FILLED;
             break;
           }
           case ORDER_STATUS_CANCELLED:
@@ -404,7 +412,6 @@ class TradingSystem::Implementation : private boost::noncopyable {
         break;
       }
       default: {
-        cache.status = status;
         if (remainingQty) {
           cache.remainingQty = *remainingQty;
         }
@@ -596,12 +603,12 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     result = SendOrderTransaction(
         security, currency, qty, price, actualPrice, params, side, tif,
         [this, &riskControlScope, riskControlOperationId, &security, currency,
-         actualPrice, delaysMeasurement, callback, side](
+         actualPrice, delaysMeasurement, callback, side, qty](
             const OrderId &orderId, const OrderStatus &orderStatus,
             const Qty &remainingQty, const boost::optional<Volume> &commission,
             const TradeInfo *trade) {
-          m_pimpl->LogOrderUpdate(orderId, orderStatus, remainingQty,
-                                  commission, trade);
+          m_pimpl->LogOrderUpdate(orderId, side, security, qty, orderStatus,
+                                  remainingQty, commission, trade);
           side == ORDER_SIDE_BUY
               ? m_pimpl->ConfirmBuyOrder(riskControlOperationId,
                                          riskControlScope, orderStatus,
@@ -732,12 +739,12 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
     } catch (const CommunicationError &ex) {
       GetLog().Warn(
           "Communication error while sending order cancel transaction for "
-          "order %1%: \"%2%\".",
+          "order \"%1%\": \"%2%\".",
           orderId,                  // 1
           std::string(ex.what()));  // 2
     } catch (const std::exception &ex) {
       GetLog().Error(
-          "Error while sending order cancel transaction for order %1%: "
+          "Error while sending order cancel transaction for order \"%1%\": "
           "\"%2%\".",
           orderId,                  // 1
           std::string(ex.what()));  // 2
@@ -750,7 +757,8 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
         "exception'}}}",
         [&orderId](TradingRecord &record) { record % orderId; });
     GetLog().Error(
-        "Unknown error while sending order cancel transaction for order %1%.",
+        "Unknown error while sending order cancel transaction for order "
+        "\"%1%\".",
         orderId);
     AssertFailNoException();
     throw;
