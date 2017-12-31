@@ -113,11 +113,16 @@ class BestSecurityChecker : private boost::noncopyable {
 
  public:
   void Check(Security &checkSecurity) {
-    if (!CheckGeneral(checkSecurity) || !CheckExchnage(checkSecurity) ||
-        !(CheckPrice(checkSecurity) || m_bestSecurity->IsOnline())) {
+    if (!m_isBadBestSecurity) {
+      m_isBadBestSecurity =
+          !m_bestSecurity->IsOnline() || !CheckExchange(*m_bestSecurity);
+    }
+    if (!CheckGeneral(checkSecurity) || !CheckExchange(checkSecurity) ||
+        !(*m_isBadBestSecurity || CheckPrice(checkSecurity))) {
       return;
     }
     m_bestSecurity = &checkSecurity;
+    m_isBadBestSecurity = false;
   }
 
  protected:
@@ -137,16 +142,16 @@ class BestSecurityChecker : private boost::noncopyable {
            GetQty(checkSecurity) >= m_position.GetActiveQty();
   }
 
-  bool CheckExchnage(const Security &checkSecurity) const {
+  bool CheckExchange(const Security &checkSecurity) const {
     const auto &tradingSystem = m_position.GetStrategy().GetTradingSystem(
         checkSecurity.GetSource().GetIndex());
     if (tradingSystem.GetBalances().FindAvailableToTrade(GetBalanceSymbol()) <
         GetRequiredBalance()) {
       return false;
     }
-    if (!tradingSystem.CheckOrder(checkSecurity, m_position.GetCurrency(),
-                                  m_position.GetActiveQty(),
-                                  GetPrice(checkSecurity), GetSide())) {
+    if (tradingSystem.CheckOrder(checkSecurity, m_position.GetCurrency(),
+                                 m_position.GetActiveQty(),
+                                 GetPrice(checkSecurity), GetSide())) {
       return false;
     }
     return true;
@@ -155,6 +160,7 @@ class BestSecurityChecker : private boost::noncopyable {
  private:
   Position &m_position;
   Security *m_bestSecurity;
+  boost::optional<bool> m_isBadBestSecurity;
 };
 
 class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
