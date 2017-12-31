@@ -56,6 +56,8 @@ class NonceStorage : private boost::noncopyable {
    public:
     TakenValue(const Value &&value, Lock &&lock)
         : m_value(std::move(value)), m_lock(std::move(lock)) {}
+    TakenValue(TakenValue &&rhs)
+        : m_value(std::move(rhs.m_value)), m_lock(std::move(rhs.m_lock)) {}
 
    public:
     const Value &Get() const { return m_value; }

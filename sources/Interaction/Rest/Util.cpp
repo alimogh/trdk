@@ -44,6 +44,6 @@ std::unique_ptr<net::HTTPClientSession> Rest::CreateSession(
   auto result = boost::make_unique<net::HTTPSClientSession>(host);
   result->setKeepAlive(true);
   result->setKeepAliveTimeout(Poco::Timespan(115, 0));
-  result->setTimeout(Poco::Timespan(30, 0));
+  result->setTimeout(Poco::Timespan(10, 0));
   return result;
 }

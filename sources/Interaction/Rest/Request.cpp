@@ -179,8 +179,9 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 3) {
     switch (response.getStatus()) {
-      case net::HTTPResponse::HTTP_TEMPORARY_REDIRECT:
+#if 0
       case net::HTTPResponse::HTTP_REQUEST_TIMEOUT:
+#endif
       case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
       case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
