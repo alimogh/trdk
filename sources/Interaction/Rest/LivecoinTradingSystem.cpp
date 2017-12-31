@@ -42,8 +42,8 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
-      m_tradingSession(CreateSession("api.livecoin.net", m_settings)),
-      m_pullingSession(CreateSession("api.livecoin.net", m_settings)),
+      m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
+      m_pullingSession(CreateSession("api.livecoin.net", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {

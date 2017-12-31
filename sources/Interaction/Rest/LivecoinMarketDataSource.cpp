@@ -33,7 +33,7 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
       m_settings(conf, GetLog()),
       m_allOrderBooksRequest("/exchange/all/order_book",
                              "groupByPrice=true&depth=1"),
-      m_session(CreateSession("api.livecoin.net", m_settings)),
+      m_session(CreateSession("api.livecoin.net", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
                                                     GetLog())) {}
 

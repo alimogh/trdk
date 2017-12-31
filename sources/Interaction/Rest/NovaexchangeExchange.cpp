@@ -271,8 +271,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession(CreateSession("novaexchange.com", m_settings)),
-        m_tradingSession(CreateSession("novaexchange.com", m_settings)),
+        m_marketDataSession(
+            CreateSession("novaexchange.com", m_settings, false)),
+        m_tradingSession(CreateSession("novaexchange.com", m_settings, true)),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {}
 

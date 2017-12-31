@@ -238,8 +238,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession(CreateSession("api.gdax.com", m_settings)),
-        m_tradingSession(CreateSession("api.gdax.com", m_settings)),
+        m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
+        m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())),

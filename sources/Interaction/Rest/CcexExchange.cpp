@@ -247,8 +247,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_endpoint(GetEndpoint()),
-        m_marketDataSession(CreateSession(m_endpoint.host, m_settings)),
-        m_tradingSession(CreateSession(m_endpoint.host, m_settings)),
+        m_marketDataSession(CreateSession(m_endpoint.host, m_settings, false)),
+        m_tradingSession(CreateSession(m_endpoint.host, m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {}

@@ -132,8 +132,8 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings),
       m_openOrdersRequestsVersion(0),
-      m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings)),
-      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings)),
+      m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
+      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {

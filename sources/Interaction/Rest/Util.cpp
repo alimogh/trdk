@@ -40,10 +40,10 @@ std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
 }
 
 std::unique_ptr<net::HTTPClientSession> Rest::CreateSession(
-    const std::string &host, const Settings &) {
+    const std::string &host, const Settings &, bool isTrading) {
   auto result = boost::make_unique<net::HTTPSClientSession>(host);
   result->setKeepAlive(true);
-  result->setKeepAliveTimeout(Poco::Timespan(115, 0));
-  result->setTimeout(Poco::Timespan(10, 0));
+  result->setKeepAliveTimeout(Poco::Timespan(1150, 0));
+  result->setTimeout(Poco::Timespan(isTrading ? 60 : 10, 0));
   return result;
 }

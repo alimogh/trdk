@@ -33,7 +33,7 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session(CreateSession("bittrex.com", m_settings)),
+      m_session(CreateSession("bittrex.com", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
                                                     GetLog())) {}
 

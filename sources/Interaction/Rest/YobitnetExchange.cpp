@@ -315,8 +315,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_tradingAuth(m_settings.tradingAuth
                           ? Auth{*m_settings.tradingAuth, *m_tradingNonces}
                           : Auth{m_settings.generalAuth, m_generalNonces}),
-        m_marketDataSession(CreateSession("yobit.net", m_settings)),
-        m_tradingSession(CreateSession("yobit.net", m_settings)),
+        m_marketDataSession(CreateSession("yobit.net", m_settings, false)),
+        m_tradingSession(CreateSession("yobit.net", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
             m_settings.pullingSetttings, GetMdsLog())) {}

@@ -82,8 +82,8 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings),
-      m_tradingSession(CreateSession("bittrex.com", m_settings)),
-      m_pullingSession(CreateSession("bittrex.com", m_settings)),
+      m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
+      m_pullingSession(CreateSession("bittrex.com", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
