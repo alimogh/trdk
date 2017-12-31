@@ -145,7 +145,7 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
       return OrderCheckError{boost::none, boost::none, minVolume};
     }
     if (symbol.GetBaseSymbol() == "LTC") {
-      const auto minQty = 0.0457;
+      const auto minQty = 0.06;
       if (qty < minQty) {
         return OrderCheckError{minQty};
       }
