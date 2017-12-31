@@ -18,6 +18,7 @@ typedef int CryptopiaProductId;
 
 struct CryptopiaProduct {
   CryptopiaProductId id;
+  std::string symbol;
   bool isReversed;
   Lib::Double feeRatio;
   std::pair<Qty, Qty> minMaxQty;
@@ -40,8 +41,31 @@ struct CryptopiaProduct {
   }
 };
 
-boost::unordered_map<std::string, CryptopiaProduct> RequestCryptopiaProductList(
-    Poco::Net::HTTPClientSession &, Context &, ModuleEventsLog &);
+struct BySymbol {};
+struct ById {};
+
+typedef boost::multi_index_container<
+    CryptopiaProduct,
+    boost::multi_index::indexed_by<
+        boost::multi_index::hashed_unique<
+            boost::multi_index::tag<BySymbol>,
+            boost::multi_index::member<CryptopiaProduct,
+                                       std::string,
+                                       &CryptopiaProduct::symbol>>,
+        boost::multi_index::hashed_unique<
+            boost::multi_index::tag<ById>,
+            boost::multi_index::member<CryptopiaProduct,
+                                       CryptopiaProductId,
+                                       &CryptopiaProduct::id>>>>
+    CryptopiaProductList;
+
+inline size_t hash_value(const CryptopiaProductList::iterator &iterator) {
+  return stdext::hash_value(iterator->id);
+}
+
+CryptopiaProductList RequestCryptopiaProductList(Poco::Net::HTTPClientSession &,
+                                                 Context &,
+                                                 ModuleEventsLog &);
 }
 }
 }
