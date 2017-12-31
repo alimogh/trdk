@@ -170,7 +170,18 @@ Symbol::Symbol(const std::string &line,
   } else if (defCurrency == numberOfCurrencies) {
     throw StringFormatError("Currency is not set");
   } else {
-    m_data.currency = defCurrency;
+    switch (m_data.securityType) {
+      case SECURITY_TYPE_CRYPTO:
+        try {
+          m_data.currency = ConvertCurrencyFromIso(m_data.quoteSymbol);
+        } catch (const trdk::Lib::Exception &ex) {
+          throw StringFormatError(ex.what());
+        }
+        break;
+      default:
+        m_data.currency = defCurrency;
+        break;
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////
