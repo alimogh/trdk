@@ -27,7 +27,6 @@ class OpenOrderPolicy : public TradingLib::LimitGtcOrderPolicy {
  public:
   trdk::Price GetOpenOrderPrice(bool isLong) const;
 
- protected:
   virtual trdk::Price GetOpenOrderPrice(trdk::Position &) const override;
   virtual trdk::Price GetCloseOrderPrice(trdk::Position &) const override;
 
@@ -45,7 +44,7 @@ class CloseOrderPolicy : public TradingLib::LimitIocOrderPolicy {
  public:
   virtual ~CloseOrderPolicy() override = default;
 
- protected:
+ public:
   virtual Price GetOpenOrderPrice(Position &) const;
   virtual Price GetCloseOrderPrice(Position &) const;
 };

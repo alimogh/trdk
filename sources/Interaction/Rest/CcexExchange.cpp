@@ -247,14 +247,11 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
         m_endpoint(GetEndpoint()),
-        m_marketDataSession(m_endpoint.host),
-        m_tradingSession(m_endpoint.host),
+        m_marketDataSession(CreateSession(m_endpoint.host, m_settings, false)),
+        m_tradingSession(CreateSession(m_endpoint.host, m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
         m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {
-    m_marketDataSession.setKeepAlive(true);
-    m_tradingSession.setKeepAlive(true);
-  }
+            m_settings.pullingSetttings, GetMdsLog())) {}
 
   virtual ~CcexExchange() override {
     try {
@@ -454,7 +451,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                            m_settings, m_endpoint.floodControl, true,
                            requestParams.str());
 
-    const auto &result = request.Send(m_tradingSession, GetContext());
+    const auto &result = request.Send(*m_tradingSession, GetContext());
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("uuid"));
@@ -488,7 +485,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         return responseTree;
       }
     } request(orderId, m_settings, m_endpoint.floodControl);
-    request.Send(m_tradingSession, GetContext());
+    request.Send(*m_tradingSession, GetContext());
 
     GetContext().GetTimer().Schedule(
         [this, orderId]() {
@@ -514,7 +511,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                            false);
     ptr::ptree response;
     try {
-      response = boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+      response =
+          boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
     } catch (const std::exception &ex) {
       boost::format error("Failed to request balance list: \"%1%\"");
       error % ex.what();
@@ -541,7 +539,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     PublicRequest request("getmarkets", m_endpoint.floodControl);
     try {
       const auto response =
-          boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+          boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
       for (const auto &node : response) {
         const auto &data = node.second;
         Product product = {data.get<std::string>("MarketName")};
@@ -649,7 +647,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                              m_endpoint.floodControl, false);
       try {
         const auto orders =
-            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+            boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
         for (const auto &order : orders) {
           const Order notifiedOrder = UpdateOrder(order.second, false);
           if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
@@ -682,7 +680,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       auto &security = *subscribtion.second.security;
       auto &request = *subscribtion.second.request;
       try {
-        const auto &response = request.Send(m_marketDataSession, GetContext());
+        const auto &response = request.Send(*m_marketDataSession, GetContext());
         const auto &time = boost::get<0>(response);
         const auto &delayMeasurement = boost::get<2>(response);
         for (const auto &updateRecord :
@@ -729,7 +727,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       ptr::ptree response;
       try {
         response =
-            boost::get<1>(request.Send(m_marketDataSession, GetContext()));
+            boost::get<1>(request.Send(*m_marketDataSession, GetContext()));
       } catch (const OrderIsUnknown &) {
         OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                             ORDER_STATUS_FILLED, 0, {});
@@ -755,8 +753,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   bool m_isConnected;
   Endpoint &m_endpoint;
-  net::HTTPSClientSession m_marketDataSession;
-  net::HTTPSClientSession m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_marketDataSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
 

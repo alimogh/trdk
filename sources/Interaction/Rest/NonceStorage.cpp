@@ -15,26 +15,40 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
+namespace fs = boost::filesystem;
+
 NonceStorage::NonceStorage(const Settings &settings, ModuleEventsLog &log) {
-  std::ifstream nonceStorage(settings.nonceStorageFile.string().c_str());
-  if (!nonceStorage) {
-    log.Debug("Failed to open %1% to read.", settings.nonceStorageFile);
-  } else {
-    nonceStorage.read(reinterpret_cast<char *>(&m_value), sizeof(m_value));
-    log.Debug("Restored nonce-value %1% from %2%.",
-              m_value,                     // 1
-              settings.nonceStorageFile);  // 2
+  bool usedStoredValue = false;
+  {
+    std::ifstream nonceStorage(settings.nonceStorageFile.string().c_str());
+    if (!nonceStorage) {
+      log.Debug("Failed to open %1% to read.", settings.nonceStorageFile);
+    } else {
+      nonceStorage.read(reinterpret_cast<char *>(&m_value), sizeof(m_value));
+      if (nonceStorage) {
+        log.Debug("Restored %1%nonce-value %2% from %3%.",
+                  !settings.isTrading ? "" : "trading ",  // 1
+                  m_value,                                // 2
+                  settings.nonceStorageFile);             // 3
+        usedStoredValue = true;
+      }
+    }
+    if (!usedStoredValue || m_value < settings.initialNonce) {
+      log.Debug("Using %1%initial nonce-value %2%.",
+                !settings.isTrading ? "" : "trading ",  // 1
+                settings.initialNonce);                 // 2
+      m_value = settings.initialNonce;
+    }
   }
-  if (m_value < settings.initialNonce) {
-    log.Debug("Using initial nonce-value %1%.", settings.initialNonce);
-    m_value = settings.initialNonce;
-  }
-  m_storage = std::ofstream(settings.nonceStorageFile.string().c_str(),
-                            std::fstream::out | std::fstream::binary);
-  if (!m_storage) {
-    boost::format error("Failed to open %1% to store");
-    error % settings.nonceStorageFile;
-    throw Exception(error.str().c_str());
+  {
+    fs::create_directories(settings.nonceStorageFile.branch_path());
+    m_storage = std::ofstream(settings.nonceStorageFile.string().c_str(),
+                              std::fstream::out | std::fstream::binary);
+    if (!m_storage) {
+      boost::format error("Failed to open %1% to store");
+      error % settings.nonceStorageFile;
+      throw Exception(error.str().c_str());
+    }
   }
 }
 

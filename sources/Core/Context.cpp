@@ -369,6 +369,7 @@ void Context::OnStarted() {
 }
 
 void Context::OnBeforeStop() {
+  m_pimpl->m_timer->Stop();
   if (m_pimpl->m_statReport) {
     m_pimpl->m_statReport->StopMonitoring();
   }
@@ -443,7 +444,7 @@ pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
   }
 }
 
-Timer &Context::GetTimer() { return *m_pimpl->m_timer; }
+const Timer &Context::GetTimer() { return *m_pimpl->m_timer; }
 
 const Settings &Context::GetSettings() const { return m_pimpl->m_settings; }
 

@@ -79,9 +79,6 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
         m_pimpl->m_storage.emplace(std::move(symbol), std::move(balance));
     Assert(it.second);
     if (it.first->second) {
-      m_pimpl->m_eventsLog.Info("\"%1%\" balance: %2$.8f.",
-                                it.first->first,    // 1
-                                it.first->second);  // 2
       m_pimpl->m_tradingLog.Write(
           "{'balance': {'symbol': '%1%', 'prev': null, 'new': %2$.8f, 'delta': "
           "%2$.8f}}",

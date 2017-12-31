@@ -32,12 +32,14 @@ const std::string chf = ConvertToIsoPch(CURRENCY_CHF);
 const std::string aud = ConvertToIsoPch(CURRENCY_AUD);
 const std::string inr = ConvertToIsoPch(CURRENCY_INR);
 const std::string btc = ConvertToIsoPch(CURRENCY_BTC);
+const std::string eth = ConvertToIsoPch(CURRENCY_ETH);
+const std::string ltc = ConvertToIsoPch(CURRENCY_LTC);
 }
 }
 
 const std::string &Lib::ConvertToIso(const Currency &currency) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 9, "Currency list changed.");
+  static_assert(numberOfCurrencies == 11, "Currency list changed.");
   switch (currency) {
     case CURRENCY_USD:
       return usd;
@@ -57,6 +59,10 @@ const std::string &Lib::ConvertToIso(const Currency &currency) {
       return inr;
     case CURRENCY_BTC:
       return btc;
+    case CURRENCY_ETH:
+      return eth;
+    case CURRENCY_LTC:
+      return ltc;
     default:
       AssertEq(CURRENCY_USD, currency);
       throw Exception("Internal error: Unknown currency ID");
@@ -65,7 +71,7 @@ const std::string &Lib::ConvertToIso(const Currency &currency) {
 
 const char *Lib::ConvertToIsoPch(const Currency &currency) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 9, "Currency list changed.");
+  static_assert(numberOfCurrencies == 11, "Currency list changed.");
   switch (currency) {
     case CURRENCY_USD:
       return "USD";
@@ -85,6 +91,10 @@ const char *Lib::ConvertToIsoPch(const Currency &currency) {
       return "INR";
     case CURRENCY_BTC:
       return "BTC";
+    case CURRENCY_ETH:
+      return "ETH";
+    case CURRENCY_LTC:
+      return "LTC";
     default:
       AssertEq(CURRENCY_USD, currency);
       throw Exception("Internal error: Unknown currency ID");
@@ -93,7 +103,7 @@ const char *Lib::ConvertToIsoPch(const Currency &currency) {
 
 Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 9, "Currency list changed.");
+  static_assert(numberOfCurrencies == 11, "Currency list changed.");
   if (boost::iequals(code, usd)) {
     return CURRENCY_USD;
   } else if (boost::iequals(code, eur)) {
@@ -112,6 +122,10 @@ Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
     return CURRENCY_INR;
   } else if (boost::iequals(code, btc)) {
     return CURRENCY_BTC;
+  } else if (boost::iequals(code, eth)) {
+    return CURRENCY_ETH;
+  } else if (boost::iequals(code, ltc)) {
+    return CURRENCY_LTC;
   } else {
     boost::format message("Currency code \"%1%\" is unknown");
     message % code;

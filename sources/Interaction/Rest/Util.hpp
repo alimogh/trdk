@@ -17,6 +17,9 @@ namespace Rest {
 std::string ConvertToString(const boost::property_tree::ptree &,
                             bool multiline);
 boost::property_tree::ptree ReadJson(const std::string &);
+
+std::unique_ptr<Poco::Net::HTTPClientSession> CreateSession(
+    const std::string &host, const Settings &, bool isTrading);
 }
 }
 }

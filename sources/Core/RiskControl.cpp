@@ -219,7 +219,7 @@ class StandardRiskControlScope : public RiskControlScope {
 
     if (m_settings.pnl.first == 0 || m_settings.pnl.second == 0 ||
         m_settings.pnl.first > .1 || m_settings.pnl.second > .1) {
-      throw WrongSettingsException("Wrong PnL available range set");
+      throw WrongSettingsException("Wrong P&L available range set");
     }
 
     if (m_settings.winRatioMinValue < 0 || m_settings.winRatioMinValue > 100) {
@@ -818,7 +818,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
  private:
   static_assert(
-      numberOfCurrencies == 9,
+      numberOfCurrencies == 11,
       "List changes. Each new currency adds new item into static array here!"
       "See Ctor.");
   mutable std::vector<Double> m_stat;

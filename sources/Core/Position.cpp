@@ -14,6 +14,7 @@
 #include "Operation.hpp"
 #include "Settings.hpp"
 #include "Strategy.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 #include "TransactionContext.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -201,6 +202,8 @@ class Position::Implementation : private boost::noncopyable {
   std::vector<boost::shared_ptr<Algo>> m_algos;
 
   OrderParams m_defaultOrderParams;
+
+  Timer::Scope m_timerScope;
 
   explicit Implementation(Position &position,
                           const boost::shared_ptr<Operation> &operation,
@@ -1216,6 +1219,11 @@ size_t Position::GetNumberOfCloseTrades() const {
 Position::StateUpdateConnection Position::Subscribe(
     const StateUpdateSlot &slot) const {
   return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
+}
+
+void Position::ScheduleUpdateEvent(const pt::time_duration &delay) {
+  GetStrategy().GetContext().GetTimer().Schedule(
+      delay, [this]() { m_pimpl->SignalUpdate(); }, m_pimpl->m_timerScope);
 }
 
 void Position::AddAlgo(std::unique_ptr<Algo> &&algo) {
