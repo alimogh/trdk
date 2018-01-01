@@ -95,16 +95,17 @@ namespace {
 class BestSecurityChecker : private boost::noncopyable {
  public:
   explicit BestSecurityChecker(Position &position)
-      : m_position(position), m_bestSecurity(&position.GetSecurity()) {}
+      : m_position(position), m_bestSecurity(nullptr) {}
 
   virtual ~BestSecurityChecker() {
+    if (!m_bestSecurity) {
+      return;
+    }
     try {
-      if (&m_position.GetSecurity() != m_bestSecurity) {
-        m_position.ReplaceTradingSystem(
-            *m_bestSecurity,
-            m_position.GetOperation()->GetTradingSystem(
-                m_position.GetStrategy(), *m_bestSecurity));
-      }
+      m_position.ReplaceTradingSystem(
+          *m_bestSecurity,
+          m_position.GetOperation()->GetTradingSystem(m_position.GetStrategy(),
+                                                      *m_bestSecurity));
     } catch (...) {
       AssertFailNoException();
       terminate();
@@ -113,40 +114,39 @@ class BestSecurityChecker : private boost::noncopyable {
 
  public:
   void Check(Security &checkSecurity) {
-    if (!m_isBadBestSecurity) {
-      m_isBadBestSecurity =
-          !m_bestSecurity->IsOnline() || !CheckExchange(*m_bestSecurity);
-    }
+    AssertNe(m_bestSecurity, &checkSecurity);
+    AssertEq(GetPosition().GetSecurity().GetSymbol().GetSymbol(),
+             checkSecurity.GetSymbol().GetSymbol());
     if (!CheckGeneral(checkSecurity) || !CheckExchange(checkSecurity) ||
-        !(*m_isBadBestSecurity || CheckPrice(checkSecurity))) {
+        !(!m_bestSecurity || CheckPrice(*m_bestSecurity, checkSecurity))) {
       return;
     }
     m_bestSecurity = &checkSecurity;
-    m_isBadBestSecurity = false;
   }
 
  protected:
-  virtual bool CheckPrice(const Security &) const = 0;
+  virtual bool CheckPrice(const Security &bestSecurity,
+                          const Security &checkSecurity) const = 0;
   virtual Qty GetQty(const Security &) const = 0;
   virtual Price GetPrice(const Security &) const = 0;
-  virtual const std::string &GetBalanceSymbol() const = 0;
+  virtual const std::string &GetBalanceSymbol(
+      const Security &checkSecurity) const = 0;
   virtual Double GetRequiredBalance() const = 0;
   virtual OrderSide GetSide() const = 0;
 
-  const Security &GetBestSecurity() const { return *m_bestSecurity; }
   const Position &GetPosition() const { return m_position; }
 
  private:
   bool CheckGeneral(const Security &checkSecurity) const {
-    return m_bestSecurity != &checkSecurity && checkSecurity.IsOnline() &&
+    return checkSecurity.IsOnline() &&
            GetQty(checkSecurity) >= m_position.GetActiveQty();
   }
 
   bool CheckExchange(const Security &checkSecurity) const {
     const auto &tradingSystem = m_position.GetStrategy().GetTradingSystem(
         checkSecurity.GetSource().GetIndex());
-    if (tradingSystem.GetBalances().FindAvailableToTrade(GetBalanceSymbol()) <
-        GetRequiredBalance()) {
+    if (tradingSystem.GetBalances().FindAvailableToTrade(
+            GetBalanceSymbol(checkSecurity)) < GetRequiredBalance()) {
       return false;
     }
     if (tradingSystem.CheckOrder(checkSecurity, m_position.GetCurrency(),
@@ -160,7 +160,6 @@ class BestSecurityChecker : private boost::noncopyable {
  private:
   Position &m_position;
   Security *m_bestSecurity;
-  boost::optional<bool> m_isBadBestSecurity;
 };
 
 class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
@@ -172,8 +171,9 @@ class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
   virtual ~BestSecurityCheckerForLongPosition() override = default;
 
  protected:
-  virtual bool CheckPrice(const Security &checkSecurity) const override {
-    return GetBestSecurity().GetBidPrice() < GetPrice(checkSecurity);
+  virtual bool CheckPrice(const Security &bestSecurity,
+                          const Security &checkSecurity) const override {
+    return bestSecurity.GetBidPrice() < GetPrice(checkSecurity);
   }
   virtual Qty GetQty(const Security &checkSecurity) const override {
     return checkSecurity.GetBidQty();
@@ -181,8 +181,9 @@ class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
   virtual Price GetPrice(const Security &checkSecurity) const {
     return checkSecurity.GetBidPrice();
   }
-  virtual const std::string &GetBalanceSymbol() const {
-    return GetBestSecurity().GetSymbol().GetBaseSymbol();
+  virtual const std::string &GetBalanceSymbol(
+      const Security &checkSecurity) const {
+    return checkSecurity.GetSymbol().GetBaseSymbol();
   }
   virtual Double GetRequiredBalance() const {
     return GetPosition().GetActiveQty();
@@ -199,8 +200,9 @@ class BestSecurityCheckerForShortPosition : public BestSecurityChecker {
   virtual ~BestSecurityCheckerForShortPosition() override = default;
 
  protected:
-  virtual bool CheckPrice(const Security &checkSecurity) const override {
-    return GetBestSecurity().GetAskPrice() > GetPrice(checkSecurity);
+  virtual bool CheckPrice(const Security &bestSecurity,
+                          const Security &checkSecurity) const override {
+    return bestSecurity.GetAskPrice() > GetPrice(checkSecurity);
   }
   virtual Qty GetQty(const Security &checkSecurity) const override {
     return checkSecurity.GetAskQty();
@@ -208,8 +210,9 @@ class BestSecurityCheckerForShortPosition : public BestSecurityChecker {
   virtual Price GetPrice(const Security &checkSecurity) const {
     return checkSecurity.GetAskPrice();
   }
-  virtual const std::string &GetBalanceSymbol() const {
-    return GetBestSecurity().GetSymbol().GetQuoteSymbol();
+  virtual const std::string &GetBalanceSymbol(
+      const Security &checkSecurity) const {
+    return checkSecurity.GetSymbol().GetQuoteSymbol();
   }
   virtual Double GetRequiredBalance() const {
     return GetPosition().GetActiveVolume();
