@@ -107,7 +107,10 @@ void PullingTask::SetTasks() {
 }
 
 void PullingTask::AccelerateNextPulling() {
-  m_isAccelerated = true;
+  {
+    const Lock lock(m_mutex);
+    m_isAccelerated = true;
+  }
   m_condition.notify_all();
 }
 
@@ -118,19 +121,13 @@ void PullingTask::RunTasks() {
     Lock lock(m_mutex);
 
     SetTasks();
-    lock.unlock();
 
     while (!m_tasks.empty()) {
       const auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
-
-      bool isAccelerated = true;
-      isAccelerated =
-          m_isAccelerated.compare_exchange_weak(isAccelerated, false);
-      if (isAccelerated) {
-        lock.lock();
-        SetTasks();
-        lock.unlock();
-      }
+      const bool isAccelerated = m_isAccelerated;
+      m_isAccelerated = false;
+      SetTasks();
+      lock.unlock();
 
       for (auto it = m_tasks.begin(); it != m_tasks.cend();) {
         if (RunTask(*it++, isAccelerated)) {
@@ -148,7 +145,6 @@ void PullingTask::RunTasks() {
         m_condition.wait_until(lock, nextStartTime);
       }
       SetTasks();
-      lock.unlock();
     }
   } catch (const std::exception &ex) {
     m_log.Error("Fatal error in the pulling task: \"%1%\".", ex.what());

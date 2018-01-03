@@ -328,31 +328,10 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
       "CancelTrade", m_nonces, m_settings,
       "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
 
-  CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+  const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
   const auto &response = request.Send(*m_tradingSession, GetContext());
   Verify(m_cancelingOrders.emplace(orderId).second);
-  cancelOrderLock.unlock();
-
   UseUnused(response);
-  const auto now = GetContext().GetCurrentTime();
-
-  GetContext().GetTimer().Schedule(
-      [this, orderId, now]() {
-        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-        AssertEq(1, m_cancelingOrders.count(orderId));
-        m_cancelingOrders.erase(orderId);
-        try {
-          OnOrderCancel(now, orderId);
-        } catch (const OrderIsUnknown &ex) {
-          UseUnused(ex);
-#ifdef DEV_VER
-          GetLog().Debug("Failed to cancel order by scheduled task: \"%1%\".",
-                         ex);
-#endif
-        }
-      },
-      m_timerScope);
-
 #ifdef DEV_VER
   GetTradingLog().Write(
       "debug-dump-order-cancel\t%1%", [&response](TradingRecord &record) {
@@ -404,20 +383,28 @@ bool CryptopiaTradingSystem::UpdateOrders() {
     }
   }
 
+  const auto &now = GetContext().GetCurrentTime();
+
   for (const auto &activeOrder : GetActiveOrderList()) {
-    if (orders.count(activeOrder) == 0) {
-      {
-        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-        if (m_cancelingOrders.count(activeOrder)) {
-          continue;
-        }
-      }
-      try {
-        OnOrderStatusUpdate(GetContext().GetCurrentTime(), activeOrder,
-                            ORDER_STATUS_FILLED, 0);
-      } catch (const OrderIsUnknown &) {
+    if (orders.count(activeOrder)) {
+      continue;
+    }
+    {
+      //! @todo Also see https://trello.com/c/Dmk5kjlA
+      CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+      const auto &canceledOrderIt = m_cancelingOrders.find(activeOrder);
+      if (canceledOrderIt != m_cancelingOrders.cend()) {
+        m_cancelingOrders.erase(canceledOrderIt);
+        cancelOrderLock.unlock();
+        // There are no other places which can remove the order from the active
+        // list so this status update doesn't catch OrderIsUnknown-exception.
+        OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_CANCELLED, 0);
+        continue;
       }
     }
+    // There are no other places which can remove the order from the active
+    // list so this status update doesn't catch OrderIsUnknown-exception.
+    OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_FILLED, 0);
   }
 
   {
