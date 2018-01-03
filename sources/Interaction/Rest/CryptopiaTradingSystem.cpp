@@ -301,12 +301,6 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
   const auto response =
       boost::get<1>(request.Send(*m_tradingSession, GetContext()));
-#ifdef DEV_VER
-  GetTradingLog().Write("debug-dump-order-status\t%1%",
-                        [&response](TradingRecord &record) {
-                          record % ConvertToString(response, false);
-                        });
-#endif
 
   auto orderId = response.get<OrderId>("OrderId");
   if (orderId.GetValue() == "null") {

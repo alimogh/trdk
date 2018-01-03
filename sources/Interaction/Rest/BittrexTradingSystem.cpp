@@ -219,13 +219,10 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   return boost::make_unique<OrderTransactionContext>(
       *this,
-      side == ORDER_SIDE_BUY
-          ? NewOrderRequest("/market/buylimit", productId, qty, actualPrice,
-                            m_settings)
-                .SendOrderTransaction(*m_tradingSession, GetContext())
-          : NewOrderRequest("/market/selllimit", productId, qty, actualPrice,
-                            m_settings)
-                .SendOrderTransaction(*m_tradingSession, GetContext()));
+      NewOrderRequest(
+          side == ORDER_SIDE_BUY ? "/market/buylimit" : "/market/selllimit",
+          productId, qty, actualPrice, m_settings)
+          .SendOrderTransaction(*m_tradingSession, GetContext()));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
@@ -329,7 +326,7 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
   } catch (const std::exception &ex) {
     boost::format error("Failed to update order list: \"%1%\"");
     error % ex.what();
-    throw TradingSystem::CommunicationError(error.str().c_str());
+    throw Exception(error.str().c_str());
   }
 
   OnOrderStatusUpdate(time, order.get<OrderId>("OrderUuid"), status,
