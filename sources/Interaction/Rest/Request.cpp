@@ -98,9 +98,6 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        if (attempt < 3) {
-          continue;
-        }
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());

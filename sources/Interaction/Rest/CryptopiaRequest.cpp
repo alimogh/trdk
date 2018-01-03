@@ -50,7 +50,7 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
           boost::ends_with(*serverError, " does not exist")) {
         throw TradingSystem::OrderIsUnknown(error.str().c_str());
       } else {
-        throw TradingSystem::CommunicationError(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
     }
   }
@@ -60,7 +60,7 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
     boost::format error(
         "The server did not return response to the request \"%1%\"");
     error % GetName();
-    throw TradingSystem::CommunicationError(error.str().c_str());
+    throw Exception(error.str().c_str());
   }
 
   return {boost::get<0>(result), *resultNode, boost::get<2>(result)};

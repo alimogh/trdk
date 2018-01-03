@@ -213,7 +213,7 @@ class TradeRequest : public Request {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
           }
         }
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
     }
 

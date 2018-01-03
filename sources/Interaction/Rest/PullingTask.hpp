@@ -63,7 +63,7 @@ class PullingTask : private boost::noncopyable {
   std::vector<Task> m_tasks;
   std::vector<std::pair<Task, bool /* replace */>> m_newTasks;
   boost::optional<boost::thread> m_thread;
-  boost::atomic_bool m_isAccelerated;
+  bool m_isAccelerated;
 };
 }
 }

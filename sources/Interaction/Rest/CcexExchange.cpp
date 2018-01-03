@@ -135,7 +135,7 @@ class Request : public Rest::Request {
           error << "unknown";
         }
         error << ")";
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
     }
 
