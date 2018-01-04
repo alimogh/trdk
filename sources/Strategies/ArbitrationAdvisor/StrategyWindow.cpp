@@ -118,7 +118,14 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(m_ui.autoTradeLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
-                 this, &StrategyWindow::UpdateAutoTradingLevel));
+                 [this](double level) {
+                   UpdateAutoTradingLevel(level, m_ui.maxQty->value());
+                 }));
+  Verify(connect(m_ui.maxQty, static_cast<void (QDoubleSpinBox::*)(double)>(
+                                  &QDoubleSpinBox::valueChanged),
+                 [this](double qty) {
+                   UpdateAutoTradingLevel(m_ui.autoTradeLevel->value(), qty);
+                 }));
 
   qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
       "trdk::Strategies::ArbitrageAdvisor::Advice");
@@ -429,14 +436,16 @@ void StrategyWindow::DeactivateAutoTrading() {
   }
 }
 
-void StrategyWindow::UpdateAutoTradingLevel(double level) {
+void StrategyWindow::UpdateAutoTradingLevel(const Double &level,
+                                            const Qty &maxQty) {
   try {
-    m_strategy->Invoke<aa::Strategy>([this, level](aa::Strategy &advisor) {
-      if (!advisor.GetAutoTradingSettings()) {
-        return;
-      }
-      advisor.ActivateAutoTrading({level / 100, m_ui.maxQty->value()});
-    });
+    m_strategy->Invoke<aa::Strategy>(
+        [this, &level, &maxQty](aa::Strategy &advisor) {
+          if (!advisor.GetAutoTradingSettings()) {
+            return;
+          }
+          advisor.ActivateAutoTrading({level / 100, maxQty});
+        });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to setup auto-trading"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);

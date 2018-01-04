@@ -33,11 +33,9 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
       m_settings(conf, GetLog()),
       m_allOrderBooksRequest("/exchange/all/order_book",
                              "groupByPrice=true&depth=1"),
-      m_session("api.livecoin.net"),
+      m_session(CreateSession("api.livecoin.net", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
-                                                    GetLog())) {
-  m_session.setKeepAlive(true);
-}
+                                                    GetLog())) {}
 
 LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   try {
@@ -54,7 +52,7 @@ LivecoinMarketDataSource::~LivecoinMarketDataSource() {
 void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
+    m_products = RequestLivecoinProductList(*m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -114,7 +112,8 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
 
 void LivecoinMarketDataSource::UpdatePrices() {
   try {
-    const auto &response = m_allOrderBooksRequest.Send(m_session, GetContext());
+    const auto &response =
+        m_allOrderBooksRequest.Send(*m_session, GetContext());
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
       const auto security = m_securities.find(record.first);
@@ -183,7 +182,8 @@ void LivecoinMarketDataSource::UpdatePrices(
     const ptr::ptree &source,
     r::Security &security,
     const Milestones &delayMeasurement) {
-  const auto &time = pt::from_time_t(source.get<time_t>("timestamp"));
+  const auto &time =
+      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000);
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("asks"));
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(

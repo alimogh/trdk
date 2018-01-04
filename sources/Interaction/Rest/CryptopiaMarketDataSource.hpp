@@ -49,17 +49,15 @@ class CryptopiaMarketDataSource : public MarketDataSource {
 
  private:
   const Settings m_settings;
-  boost::unordered_map<std::string, CryptopiaProduct> m_products;
+  CryptopiaProductList m_products;
 
   boost::mutex m_securitiesLock;
-  boost::unordered_map<
-      CryptopiaProductId,
-      std::pair<
-          boost::unordered_map<std::string, CryptopiaProduct>::const_iterator,
-          boost::shared_ptr<Rest::Security>>>
+  boost::unordered_map<CryptopiaProductId,
+                       std::pair<CryptopiaProductList::const_iterator,
+                                 boost::shared_ptr<Rest::Security>>>
       m_securities;
 
-  Poco::Net::HTTPSClientSession m_session;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
 
   std::unique_ptr<PullingTask> m_pullingTask;
 };

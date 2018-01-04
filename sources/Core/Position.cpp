@@ -14,6 +14,7 @@
 #include "Operation.hpp"
 #include "Settings.hpp"
 #include "Strategy.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 #include "TransactionContext.hpp"
 #include "Common/ExpirationCalendar.hpp"
@@ -33,10 +34,10 @@ boost::atomic_size_t objectsCounter(0);
 void ReportAboutGeneralAction(const Position &position,
                               const char *action) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'action': '%1%', 'type': '%2%', 'operation': '%3%/%4%'}}",
+      "{'position': {'action': '%1%', 'side': '%2%', 'operation': '%3%/%4%'}}",
       [&position, action](TradingRecord &record) {
         record % action                         // 1
-            % position.GetType()                // 2
+            % position.GetSide()                // 2
             % position.GetOperation()->GetId()  // 3
             % position.GetSubOperationId();     // 4
       });
@@ -44,10 +45,10 @@ void ReportAboutGeneralAction(const Position &position,
 
 void ReportAboutDeletion(const Position &position) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'action': 'del', 'type': '%1%', 'operation': '%2%/%3%', "
+      "{'position': {'action': 'del', 'side': '%1%', 'operation': '%2%/%3%', "
       "'numberOfObject': %4%}}",
       [&position](TradingRecord &record) {
-        record % position.GetType()             // 1
+        record % position.GetSide()             // 1
             % position.GetOperation()->GetId()  // 2
             % position.GetSubOperationId()      // 3
             % objectsCounter;                   // 4
@@ -201,6 +202,8 @@ class Position::Implementation : private boost::noncopyable {
   std::vector<boost::shared_ptr<Algo>> m_algos;
 
   OrderParams m_defaultOrderParams;
+
+  Timer::Scope m_timerScope;
 
   explicit Implementation(Position &position,
                           const boost::shared_ptr<Operation> &operation,
@@ -713,11 +716,6 @@ class Position::Implementation : private boost::noncopyable {
         Assert(!m_isRegistered);
         m_strategy.Unregister(m_self);
       }
-      try {
-        throw;
-      } catch (...) {
-        AssertFailNoException();
-      }
       m_open.orders.pop_back();
       throw;
     }
@@ -890,9 +888,9 @@ int64_t Position::GetSubOperationId() const {
 }
 
 bool Position::IsLong() const {
-  static_assert(numberOfTypes == 2, "List changed.");
-  Assert(GetType() == Position::TYPE_LONG || GetType() == Position::TYPE_SHORT);
-  return GetType() == Position::TYPE_LONG;
+  static_assert(numberOfPositionSides == 2, "List changed.");
+  Assert(GetSide() == POSITION_SIDE_LONG || GetSide() == POSITION_SIDE_SHORT);
+  return GetSide() == POSITION_SIDE_LONG;
 }
 
 const boost::shared_ptr<Operation> &Position::GetOperation() {
@@ -947,7 +945,7 @@ void Position::ReplaceTradingSystem(Security &security,
     return;
   }
   GetStrategy().GetTradingLog().Write(
-      "{'position': {'action': 'replace trading system', 'type': '%13%', "
+      "{'position': {'action': 'replace trading system', 'side': '%13%', "
       "'security': {'prev': {'security': '%1%', 'bid': %2$.8f, 'ask': %3$.8f}, "
       "'new': {'security': '%4%', 'bid' : %5$.8f, 'ask' : %6$.8f}}, "
       "'tradingSystem': {'prev': {'name': '%7%', 'mode': '%8%'}, 'new': "
@@ -965,7 +963,7 @@ void Position::ReplaceTradingSystem(Security &security,
             % tradingSystem.GetMode()                              // 10
             % m_pimpl->m_operation->GetId()                        // 11
             % m_pimpl->m_subOperationId                            // 12
-            % GetType();                                           // 13
+            % GetSide();                                           // 13
       });
   m_pimpl->m_security = &security;
   m_pimpl->m_tradingSystem = &tradingSystem;
@@ -1077,16 +1075,29 @@ void Position::UpdateClosing(const OrderId &orderId,
 
 const pt::ptime &Position::GetOpenTime() const { return m_pimpl->m_open.time; }
 
-const boost::shared_ptr<const OrderTransactionContext>
-    &Position::GetOpeningContext() const {
-  if (m_pimpl->m_open.orders.empty()) {
-    throw Exception("Position has no open-order to have opening context");
+namespace {
+
+template <typename Source>
+const boost::shared_ptr<const OrderTransactionContext> &GetOrderContext(
+    const Source &source, size_t index) {
+  AssertLt(index, source.orders.size());
+  if (index >= source.orders.size()) {
+    throw Exception("Position has no order to have order context");
   }
-  const auto &result = m_pimpl->m_open.orders.front().transactionContext;
+  const auto &result = source.orders[index].transactionContext;
   if (!result) {
-    throw Exception("Position has no opening context");
+    throw Exception("Position order has no context");
   }
   return result;
+}
+}
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetOpeningContext(size_t index) const {
+  return GetOrderContext(m_pimpl->m_open, index);
+}
+const boost::shared_ptr<const OrderTransactionContext>
+    &Position::GetClosingContext(size_t index) const {
+  return GetOrderContext(m_pimpl->m_close, index);
 }
 
 Qty Position::GetActiveQty() const noexcept {
@@ -1208,6 +1219,11 @@ size_t Position::GetNumberOfCloseTrades() const {
 Position::StateUpdateConnection Position::Subscribe(
     const StateUpdateSlot &slot) const {
   return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
+}
+
+void Position::ScheduleUpdateEvent(const pt::time_duration &delay) {
+  GetStrategy().GetContext().GetTimer().Schedule(
+      delay, [this]() { m_pimpl->SignalUpdate(); }, m_pimpl->m_timerScope);
 }
 
 void Position::AddAlgo(std::unique_ptr<Algo> &&algo) {
@@ -1453,19 +1469,6 @@ bool Position::CancelAllOrders() {
   return isCancelRequestSent;
 }
 
-const char *trdk::ConvertToPch(const Position::Type &type) {
-  static_assert(Position::numberOfTypes == 2, "Close type list changed.");
-  switch (type) {
-    default:
-      AssertEq(Position::TYPE_LONG, type);
-      return "unknown";
-    case Position::TYPE_LONG:
-      return "long";
-    case Position::TYPE_SHORT:
-      return "short";
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 LongPosition::LongPosition(Strategy &strategy,
@@ -1546,7 +1549,7 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
 
 LongPosition::~LongPosition() { ReportAboutDeletion(*this); }
 
-LongPosition::Type LongPosition::GetType() const { return TYPE_LONG; }
+PositionSide LongPosition::GetSide() const { return POSITION_SIDE_LONG; }
 
 OrderSide LongPosition::GetOpenOrderSide() const { return ORDER_SIDE_BUY; }
 
@@ -1760,7 +1763,7 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
 
 ShortPosition::~ShortPosition() { ReportAboutDeletion(*this); }
 
-ShortPosition::Type ShortPosition::GetType() const { return TYPE_SHORT; }
+PositionSide ShortPosition::GetSide() const { return POSITION_SIDE_SHORT; }
 
 OrderSide ShortPosition::GetOpenOrderSide() const { return ORDER_SIDE_SELL; }
 

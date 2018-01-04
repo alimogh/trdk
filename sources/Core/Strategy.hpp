@@ -108,6 +108,11 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
     virtual ConstIterator GetEnd() const = 0;
   };
 
+  class PositionListTransaction : private boost::noncopyable {
+   public:
+    virtual ~PositionListTransaction() = default;
+  };
+
  public:
   explicit Strategy(trdk::Context &,
                     const std::string &typeUuid,
@@ -224,6 +229,8 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   PositionList &GetPositions();
   const PositionList &GetPositions() const;
+
+  std::unique_ptr<PositionListTransaction> StartThreadPositionsTransaction();
 
  public:
   PositionUpdateSlotConnection SubscribeToPositionsUpdates(

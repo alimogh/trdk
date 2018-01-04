@@ -45,12 +45,11 @@ class TRDK_CORE_API Timer {
 
    private:
     Id m_id;
-    Timer *m_timer;
+    const Timer *m_timer;
   };
 
  public:
   explicit Timer(const trdk::Context &);
-  Timer(Timer &&);
   ~Timer();
 
  private:
@@ -60,8 +59,10 @@ class TRDK_CORE_API Timer {
  public:
   void Schedule(const boost::posix_time::time_duration &,
                 const boost::function<void()> &&,
-                Scope &);
-  void Schedule(const boost::function<void()> &&, Scope &);
+                Scope &) const;
+  void Schedule(const boost::function<void()> &&, Scope &) const;
+
+  void Stop();
 
  private:
   class Implementation;

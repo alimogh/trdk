@@ -13,6 +13,7 @@
 #include "CryptopiaRequest.hpp"
 #include "PullingTask.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -33,11 +34,9 @@ CryptopiaMarketDataSource::CryptopiaMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session("www.cryptopia.co.nz"),
+      m_session(CreateSession("www.cryptopia.co.nz", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
-                                                    GetLog())) {
-  m_session.setKeepAlive(true);
-}
+                                                    GetLog())) {}
 
 CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   try {
@@ -54,7 +53,8 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
 void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
+    m_products =
+        RequestCryptopiaProductList(*m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -86,15 +86,16 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
 
 trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  const auto &product = m_products.find(symbol.GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &productIndex = m_products.get<BySymbol>();
+  const auto &product = productIndex.find(symbol.GetSymbol());
+  if (product == productIndex.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedError(message.str().c_str());
   }
 
   {
-    const auto &it = m_securities.find(product->second.id);
+    const auto &it = m_securities.find(product->id);
     if (it != m_securities.cend()) {
       return *it->second.second;
     }
@@ -109,16 +110,15 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
                                              .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
-  Verify(
-      m_securities.emplace(product->second.id, std::make_pair(product, result))
-          .second);
+  Verify(m_securities.emplace(product->id, std::make_pair(product, result))
+             .second);
 
   return *result;
 }
 
 void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
   try {
-    const auto &response = request.Send(m_session, GetContext());
+    const auto &response = request.Send(*m_session, GetContext());
     const auto &time = boost::get<0>(response);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
@@ -130,7 +130,7 @@ void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
                        pairNode.get<std::string>("TradePairId"));
         continue;
       }
-      UpdatePrices(time, pairNode, security->second.first->second,
+      UpdatePrices(time, pairNode, *security->second.first,
                    *security->second.second, delayMeasurement);
     }
   } catch (const std::exception &ex) {

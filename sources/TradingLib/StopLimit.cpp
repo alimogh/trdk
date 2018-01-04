@@ -33,7 +33,7 @@ const char *TakeProfitStopLimit::GetName() const { return "stop limit"; }
 void TakeProfitStopLimit::Report(const char *action) const {
   GetTradingLog().Write(
       "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-      "%2$.8f, 'time': '%3%'}, 'position': '%4%/%5%'}}",
+      "%2$.8f, 'time': '%3%'}, 'operation': '%4%/%5%'}}",
       [this, action](TradingRecord &record) {
         record % GetName()                                     // 1
             % m_params->GetMaxPriceOffsetPerLotToClose()       // 2

@@ -19,27 +19,34 @@ class NonceStorage : private boost::noncopyable {
   typedef std::int32_t Value;
 
   struct Settings {
+    bool isTrading;
     Value initialNonce;
     boost::filesystem::path nonceStorageFile;
 
-    explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
-        : initialNonce(conf.ReadTypedKey<Value>("initial_nonce", 1)),
-          nonceStorageFile(conf.ReadFileSystemPath("nonce_storage_file_path")) {
+    explicit Settings(const std::string &keyName,
+                      const std::string &tag,
+                      const Lib::IniSectionRef &conf,
+                      ModuleEventsLog &log,
+                      bool isTrading = false)
+        : isTrading(isTrading),
+          initialNonce(conf.ReadTypedKey<Value>(
+              !isTrading ? "initial_nonce" : "initial_trading_nonce", 1)),
+          nonceStorageFile(conf.ReadFileSystemPath(
+                               !isTrading ? "nonce_storage_dir"
+                                          : "trading_nonce_storage_dir") /
+                           (tag + "_" + keyName + ".nonce")) {
       Log(log);
       Validate();
     }
 
     void Log(ModuleEventsLog &log) {
-      log.Info("Initial nonce: %1%. Nonce storage  file: %2%",
-               initialNonce,       // 1
-               nonceStorageFile);  // 2
+      log.Debug("%1% nonce: %2%. Nonce storage file: %3%.",
+                !isTrading ? "Initial" : "Trading initial",  // 1
+                initialNonce,                                // 2
+                nonceStorageFile);                           // 3
     }
 
-    void Validate() {
-      if (initialNonce <= 0) {
-        throw TradingSystem::Error("Initial nonce could not be less than 1");
-      }
-    }
+    void Validate() {}
   };
 
   typedef boost::mutex Mutex;
@@ -49,6 +56,8 @@ class NonceStorage : private boost::noncopyable {
    public:
     TakenValue(const Value &&value, Lock &&lock)
         : m_value(std::move(value)), m_lock(std::move(lock)) {}
+    TakenValue(TakenValue &&rhs)
+        : m_value(std::move(rhs.m_value)), m_lock(std::move(rhs.m_lock)) {}
 
    public:
     const Value &Get() const { return m_value; }
@@ -61,6 +70,7 @@ class NonceStorage : private boost::noncopyable {
 
  public:
   explicit NonceStorage(const Settings &, ModuleEventsLog &);
+  NonceStorage(NonceStorage &&) = default;
 
  public:
   TakenValue TakeNonce();

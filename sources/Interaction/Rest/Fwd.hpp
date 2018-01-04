@@ -15,6 +15,7 @@ namespace Interaction {
 namespace Rest {
 class FloodControl;
 class Security;
+struct Settings;
 
 class PullingSetttings;
 class PullingTask;

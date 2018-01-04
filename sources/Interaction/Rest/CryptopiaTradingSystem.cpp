@@ -27,9 +27,9 @@ namespace gr = boost::gregorian;
 CryptopiaTradingSystem::Settings::Settings(const IniSectionRef &conf,
                                            ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      NonceStorage::Settings(conf, log),
       apiKey(conf.ReadKey("api_key")),
-      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))) {
+      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
+      nonces(apiKey, "Cryptopia", conf, log) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -128,12 +128,12 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
                                                const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_nonces(m_settings, GetLog()),
+      m_nonces(m_settings.nonces, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings),
       m_openOrdersRequestsVersion(0),
-      m_tradingSession("www.cryptopia.co.nz"),
-      m_pullingSession("www.cryptopia.co.nz"),
+      m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
+      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
@@ -142,7 +142,7 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestCryptopiaProductList(m_tradingSession, GetContext(), GetLog());
+        RequestCryptopiaProductList(*m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -160,12 +160,12 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
 
 Volume CryptopiaTradingSystem::CalcCommission(
     const Volume &volume, const trdk::Security &security) const {
-  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
-  if (productIt == m_products.cend()) {
+  const auto &productIndex = m_products.get<BySymbol>();
+  const auto &productIt = productIndex.find(security.GetSymbol().GetSymbol());
+  if (productIt == productIndex.cend()) {
     return 0;
   }
-  const CryptopiaProduct &product = productIt->second;
-  return volume * product.feeRatio;
+  return volume * productIt->feeRatio;
 }
 
 boost::optional<CryptopiaTradingSystem::OrderCheckError>
@@ -188,13 +188,14 @@ CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
     return boost::none;
   }
 
-  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
-  if (productIt == m_products.cend()) {
+  const auto &productIndex = m_products.get<BySymbol>();
+  const auto &productIt = productIndex.find(security.GetSymbol().GetSymbol());
+  if (productIt == productIndex.cend()) {
     GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
     return boost::none;
   }
 
-  const CryptopiaProduct &product = productIt->second;
+  const CryptopiaProduct &product = *productIt;
   const auto &price = product.NormalizePrice(*internalPrice, security);
 
   if (price < product.minMaxPrice.first) {
@@ -258,12 +259,13 @@ CryptopiaTradingSystem::SendOrderTransaction(
     throw TradingSystem::Error("Market order is not supported");
   }
 
-  const auto &product = m_products.find(security.GetSymbol().GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &productIndex = m_products.get<BySymbol>();
+  const auto &product = productIndex.find(security.GetSymbol().GetSymbol());
+  if (product == productIndex.cend()) {
     throw TradingSystem::Error("Symbol is not supported by exchange");
   }
 
-  const auto &productId = product->second.id;
+  const auto &productId = product->id;
 
   class NewOrderRequest : public OrderTransactionRequest {
    public:
@@ -292,20 +294,13 @@ CryptopiaTradingSystem::SendOrderTransaction(
           % qty;          // 4
       return result.str();
     }
-  } request(
-      productId,
-      product->second.NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell",
-      product->second.NormalizeQty(*price, qty, security),
-      product->second.NormalizePrice(*price, security), m_nonces, m_settings);
+  } request(productId,
+            product->NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell",
+            product->NormalizeQty(*price, qty, security),
+            product->NormalizePrice(*price, security), m_nonces, m_settings);
 
   const auto response =
-      boost::get<1>(request.Send(m_tradingSession, GetContext()));
-#ifdef DEV_VER
-  GetTradingLog().Write("debug-dump-order-status\t%1%",
-                        [&response](TradingRecord &record) {
-                          record % ConvertToString(response, false);
-                        });
-#endif
+      boost::get<1>(request.Send(*m_tradingSession, GetContext()));
 
   auto orderId = response.get<OrderId>("OrderId");
   if (orderId.GetValue() == "null") {
@@ -321,10 +316,10 @@ CryptopiaTradingSystem::SendOrderTransaction(
         },
         m_timerScope);
   } else {
-    SubscribeToOrderUpdates(productId);
+    SubscribeToOrderUpdates(product);
   }
 
-  return boost::make_unique<OrderTransactionContext>(std::move(orderId));
+  return boost::make_unique<OrderTransactionContext>(*this, std::move(orderId));
 }
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(
@@ -333,26 +328,10 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
       "CancelTrade", m_nonces, m_settings,
       "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
 
-  CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-  const auto &response = request.Send(m_tradingSession, GetContext());
+  const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+  const auto &response = request.Send(*m_tradingSession, GetContext());
   Verify(m_cancelingOrders.emplace(orderId).second);
-  cancelOrderLock.unlock();
-
   UseUnused(response);
-  const auto now = GetContext().GetCurrentTime();
-
-  GetContext().GetTimer().Schedule(
-      [this, orderId, now]() {
-        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-        AssertEq(1, m_cancelingOrders.count(orderId));
-        m_cancelingOrders.erase(orderId);
-        try {
-          OnOrderCancel(now, orderId);
-        } catch (const OrderIsUnknown &) {
-        }
-      },
-      m_timerScope);
-
 #ifdef DEV_VER
   GetTradingLog().Write(
       "debug-dump-order-cancel\t%1%", [&response](TradingRecord &record) {
@@ -367,7 +346,7 @@ void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(m_pullingSession, GetContext());
+  const auto response = m_balancesRequest.Send(*m_pullingSession, GetContext());
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
@@ -376,7 +355,8 @@ void CryptopiaTradingSystem::UpdateBalances() {
 }
 
 bool CryptopiaTradingSystem::UpdateOrders() {
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Request>>
+  boost::unordered_map<CryptopiaProductList::iterator,
+                       boost::shared_ptr<Request>>
       openOrdersRequests;
   size_t version;
   {
@@ -390,33 +370,41 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   boost::unordered_set<OrderId> orders;
 
-  std::vector<CryptopiaProductId> emptyRequests;
+  std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response =
-        boost::get<1>(request.second->Send(m_pullingSession, GetContext()));
+        boost::get<1>(request.second->Send(*m_pullingSession, GetContext()));
     if (!response.empty()) {
       for (const auto &node : response) {
-        Verify(orders.emplace(UpdateOrder(node.second)).second);
+        Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
       }
     } else {
       emptyRequests.emplace_back(request.first);
     }
   }
 
+  const auto &now = GetContext().GetCurrentTime();
+
   for (const auto &activeOrder : GetActiveOrderList()) {
-    if (orders.count(activeOrder) == 0) {
-      {
-        const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-        if (m_cancelingOrders.count(activeOrder)) {
-          continue;
-        }
-      }
-      try {
-        OnOrderStatusUpdate(GetContext().GetCurrentTime(), activeOrder,
-                            ORDER_STATUS_FILLED, 0);
-      } catch (const OrderIsUnknown &) {
+    if (orders.count(activeOrder)) {
+      continue;
+    }
+    {
+      //! @todo Also see https://trello.com/c/Dmk5kjlA
+      CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+      const auto &canceledOrderIt = m_cancelingOrders.find(activeOrder);
+      if (canceledOrderIt != m_cancelingOrders.cend()) {
+        m_cancelingOrders.erase(canceledOrderIt);
+        cancelOrderLock.unlock();
+        // There are no other places which can remove the order from the active
+        // list so this status update doesn't catch OrderIsUnknown-exception.
+        OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_CANCELLED, 0);
+        continue;
       }
     }
+    // There are no other places which can remove the order from the active
+    // list so this status update doesn't catch OrderIsUnknown-exception.
+    OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_FILLED, 0);
   }
 
   {
@@ -432,7 +420,8 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   }
 }
 
-OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
+OrderId CryptopiaTradingSystem::UpdateOrder(
+    const CryptopiaProduct & /*product*/, const ptr::ptree &node) {
 #ifdef DEV_VER
   GetTradingLog().Write(
       "debug-dump-order-status\t%1%",
@@ -458,6 +447,8 @@ OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
     throw Exception(error.str().c_str());
   }
 
+  // remainingQty = product.NormalizeQty(, remainingQty, );
+
   try {
     OnOrderStatusUpdate(time, id, ORDER_STATUS_SUBMITTED, remainingQty);
   } catch (const OrderIsUnknown &) {
@@ -467,7 +458,7 @@ OrderId CryptopiaTradingSystem::UpdateOrder(const ptr::ptree &node) {
 }
 
 void CryptopiaTradingSystem::SubscribeToOrderUpdates(
-    const CryptopiaProductId &productId) {
+    const CryptopiaProductList::const_iterator &product) {
   class OpenOrdersRequest : public AccountRequest {
    public:
     explicit OpenOrdersRequest(const CryptopiaProductId &product,
@@ -485,8 +476,8 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
   {
     const OrdersRequestsWriteLock lock(m_openOrdersRequestMutex);
     if (!m_openOrdersRequests
-             .emplace(productId, boost::make_shared<OpenOrdersRequest>(
-                                     productId, m_nonces, m_settings))
+             .emplace(product, boost::make_shared<OpenOrdersRequest>(
+                                   product->id, m_nonces, m_settings))
              .second) {
       return;
     }

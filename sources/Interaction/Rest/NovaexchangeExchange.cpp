@@ -271,13 +271,11 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
         m_isConnected(false),
-        m_marketDataSession("novaexchange.com"),
-        m_tradingSession(m_marketDataSession.getHost()),
+        m_marketDataSession(
+            CreateSession("novaexchange.com", m_settings, false)),
+        m_tradingSession(CreateSession("novaexchange.com", m_settings, true)),
         m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {
-    m_marketDataSession.setKeepAlive(true);
-    m_tradingSession.setKeepAlive(true);
-  }
+            m_settings.pullingSetttings, GetMdsLog())) {}
 
   virtual ~NovaexchangeExchange() override {
     try {
@@ -340,7 +338,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             auto &request = *subscribtion.second.request;
             try {
               const auto &response =
-                  request.Send(m_marketDataSession, GetContext());
+                  request.Send(*m_marketDataSession, GetContext());
               const auto &time = boost::get<0>(response);
               const auto &delayMeasurement = boost::get<2>(response);
               const auto &update = boost::get<1>(response);
@@ -373,7 +371,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("/remote/v2/private/getbalances/", "balances",
                            m_settings, false);
     try {
-      const auto &response = request.Send(m_marketDataSession, GetContext());
+      const auto &response = request.Send(*m_marketDataSession, GetContext());
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
@@ -466,7 +464,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         "/remote/v2/private/trade/" +
             NormilizeProductId(security.GetSymbol().GetSymbol()) + "/",
         "tradeitems", m_settings, true, requestParams.str());
-    const auto &result = request.Send(m_tradingSession, GetContext());
+    const auto &result = request.Send(*m_tradingSession, GetContext());
 
     boost::optional<OrderId> orderId;
     std::vector<TradeInfo> trades;
@@ -505,14 +503,15 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                       trades),
           m_timerScope);
     }
-    return boost::make_unique<OrderTransactionContext>(std::move(*orderId));
+    return boost::make_unique<OrderTransactionContext>(*this,
+                                                       std::move(*orderId));
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     PrivateRequest("/remote/v2/private/cancelorder/" +
                        boost::lexical_cast<std::string>(orderId) + "/",
                    "cancelorder", m_settings, true)
-        .Send(m_tradingSession, GetContext());
+        .Send(*m_tradingSession, GetContext());
   }
 
   void OnTradesInfo(const OrderId &orderId,
@@ -531,8 +530,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  net::HTTPSClientSession m_marketDataSession;
-  net::HTTPSClientSession m_tradingSession;
+  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;

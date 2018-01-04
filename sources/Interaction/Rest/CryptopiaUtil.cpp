@@ -19,11 +19,9 @@ using namespace trdk::Interaction::Rest;
 
 namespace net = Poco::Net;
 
-boost::unordered_map<std::string, CryptopiaProduct>
-Rest::RequestCryptopiaProductList(net::HTTPClientSession &session,
-                                  Context &context,
-                                  ModuleEventsLog &log) {
-  boost::unordered_map<std::string, CryptopiaProduct> result;
+CryptopiaProductList Rest::RequestCryptopiaProductList(
+    net::HTTPClientSession &session, Context &context, ModuleEventsLog &log) {
+  CryptopiaProductList result;
   CryptopiaPublicRequest request("GetTradePairs");
   try {
     const auto response = boost::get<1>(request.Send(session, context));
@@ -31,14 +29,18 @@ Rest::RequestCryptopiaProductList(net::HTTPClientSession &session,
       const auto &pairNode = node.second;
       auto quoteSymbol = pairNode.get<std::string>("Symbol");
       auto baseSymbol = pairNode.get<std::string>("BaseSymbol");
-      const bool isReverted =
-          false /*baseSymbol == "LTC" && quoteSymbol == "ETH"*/;
+#if 0
+      const bool isReverted = baseSymbol == "LTC" && quoteSymbol == "ETH";
       if (isReverted) {
         quoteSymbol.swap(baseSymbol);
       }
+#else
+      const bool isReverted = false;
+#endif
       const auto symbol = quoteSymbol + "_" + baseSymbol;
       const CryptopiaProduct product = {
           pairNode.get<CryptopiaProductId>("Id"),
+          std::move(symbol),
           isReverted,
           pairNode.get<Double>("TradeFee") / 100,
           {pairNode.get<Qty>("MinimumTrade"),
@@ -47,7 +49,7 @@ Rest::RequestCryptopiaProductList(net::HTTPClientSession &session,
            pairNode.get<Volume>("MaximumBaseTrade")},
           {pairNode.get<Price>("MinimumPrice"),
            pairNode.get<Price>("MaximumPrice")}};
-      if (!result.emplace(std::move(symbol), std::move(product)).second) {
+      if (!result.emplace(std::move(product)).second) {
         log.Error("Product duplicate: \"%1%\"",
                   pairNode.get<std::string>("Symbol") + "_" +
                       pairNode.get<std::string>("BaseSymbol"));

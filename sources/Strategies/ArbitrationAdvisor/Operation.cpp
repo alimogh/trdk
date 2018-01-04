@@ -47,25 +47,27 @@ void aa::Operation::Setup(Position &position,
     typedef TradingLib::StopLossOrder Base;
 
    public:
-    explicit StopLoss(Position &position, PositionController &controller)
-        : Base(position, controller) {}
+    explicit StopLoss(const Price &controlPrice,
+                      Position &position,
+                      PositionController &controller)
+        : Base(position, controller), m_controlPrice(controlPrice) {}
     virtual ~StopLoss() override = default;
 
    public:
     virtual void Report(const char *action) const override {
       GetTradingLog().Write(
           "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-          "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'type': '%8%', "
+          "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
           "'operation': '%4%/%5%'}}}",
           [this, action](TradingRecord &record) {
-            record % GetName()                            // 1
-                % GetPosition().GetOpenStartPrice()       // 2
-                % GetDelay()                              // 3
-                % GetPosition().GetOperation()->GetId()   // 4
-                % GetPosition().GetSubOperationId()       // 5
-                % action                                  // 6
-                % (GetPosition().IsLong() ? ">" : "<")    // 7
-                % ConvertToPch(GetPosition().GetType());  // 8
+            record % GetName()                           // 1
+                % m_controlPrice                         // 2
+                % GetDelay()                             // 3
+                % GetPosition().GetOperation()->GetId()  // 4
+                % GetPosition().GetSubOperationId()      // 5
+                % action                                 // 6
+                % (GetPosition().IsLong() ? ">" : "<")   // 7
+                % GetPosition().GetSide();               // 8
           });
     }
 
@@ -79,34 +81,37 @@ void aa::Operation::Setup(Position &position,
     }
     virtual bool Activate() override {
       const auto &currentPrice = GetPosition().GetMarketOpenPrice();
-      const auto &controlPrice = GetPosition().GetOpenStartPrice();
       if (GetPosition().IsLong()) {
-        if (currentPrice <= controlPrice) {
+        if (currentPrice <= m_controlPrice) {
           return false;
         }
-      } else if (controlPrice <= currentPrice) {
+      } else if (m_controlPrice <= currentPrice) {
         return false;
       }
 
       GetTradingLog().Write(
           "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2$.8f %3% "
-          "%4$.8f', 'bid': %5$.8f, 'ask': %6$.8f, 'position': {'type': '%9%', "
+          "%4$.8f', 'bid': %5$.8f, 'ask': %6$.8f, 'position': {'side': '%9%', "
           "'operation': '%7%/%8%'}}}",
-          [&](TradingRecord &record) {
+          [this, &currentPrice](TradingRecord &record) {
             record % GetName()                                    // 1
                 % currentPrice                                    // 2
                 % (GetPosition().IsLong() ? ">" : "<")            // 3
-                % controlPrice                                    // 4
+                % m_controlPrice                                  // 4
                 % GetPosition().GetSecurity().GetBidPriceValue()  // 5
                 % GetPosition().GetSecurity().GetAskPriceValue()  // 6
                 % GetPosition().GetOperation()->GetId()           // 7
                 % GetPosition().GetSubOperationId()               // 8
-                % ConvertToPch(GetPosition().GetType());          // 9
+                % GetPosition().GetSide();                        // 9
           });
 
       return true;
     }
+
+   private:
+    const Price m_controlPrice;
   };
 
-  position.AddAlgo(boost::make_unique<StopLoss>(position, controller));
+  position.AddAlgo(boost::make_unique<StopLoss>(
+      m_openOrderPolicy.GetOpenOrderPrice(position), position, controller));
 }

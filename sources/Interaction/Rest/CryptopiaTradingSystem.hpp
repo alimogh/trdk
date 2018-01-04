@@ -30,9 +30,10 @@ class CryptopiaTradingSystem : public TradingSystem {
   typedef boost::mutex CancelOrderMutex;
   typedef OrdersRequestsMutex::scoped_lock CancelOrderLock;
 
-  struct Settings : public Rest::Settings, public NonceStorage::Settings {
+  struct Settings : public Rest::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
+    NonceStorage::Settings nonces;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };
@@ -134,28 +135,30 @@ class CryptopiaTradingSystem : public TradingSystem {
   void UpdateBalances();
 
   bool UpdateOrders();
-  OrderId UpdateOrder(const boost::property_tree::ptree &);
+  OrderId UpdateOrder(const CryptopiaProduct &,
+                      const boost::property_tree::ptree &);
 
-  void SubscribeToOrderUpdates(const CryptopiaProductId &);
+  void SubscribeToOrderUpdates(const CryptopiaProductList::const_iterator &);
 
  private:
   Settings m_settings;
   NonceStorage m_nonces;
-  boost::unordered_map<std::string, CryptopiaProduct> m_products;
+  CryptopiaProductList m_products;
 
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   OrdersRequestsMutex m_openOrdersRequestMutex;
   size_t m_openOrdersRequestsVersion;
-  boost::unordered_map<CryptopiaProductId, boost::shared_ptr<Request>>
+  boost::unordered_map<CryptopiaProductList::const_iterator,
+                       boost::shared_ptr<Request>>
       m_openOrdersRequests;
 
   CancelOrderMutex m_cancelOrderMutex;
   boost::unordered_set<OrderId> m_cancelingOrders;
 
-  Poco::Net::HTTPSClientSession m_tradingSession;
-  Poco::Net::HTTPSClientSession m_pullingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
 
   PullingTask m_pullingTask;
 

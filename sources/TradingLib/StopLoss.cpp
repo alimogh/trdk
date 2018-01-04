@@ -72,7 +72,7 @@ StopPrice::StopPrice(const boost::shared_ptr<const Params> &params,
 void StopPrice::Report(const char *action) const {
   GetTradingLog().Write(
       "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-      "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'type': '%8%', "
+      "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
       "'operation': '%4%/%5%'}}}",
       [this, action](TradingRecord &record) {
         record % GetName()                            // 1
@@ -82,7 +82,7 @@ void StopPrice::Report(const char *action) const {
             % GetPosition().GetSubOperationId()       // 5
             % action                                  // 6
             % (GetPosition().IsLong() ? "<=" : ">=")  // 7
-            % ConvertToPch(GetPosition().GetType());  // 8
+            % GetPosition().GetSide();                // 8
       });
 }
 
@@ -98,7 +98,7 @@ bool StopPrice::Activate() {
 
   GetTradingLog().Write(
       "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2$.8f%3%%4$.8f', "
-      "'bid': %5$.8f, 'ask': %6$.8f, 'position': {'type': '%9%', 'operation': "
+      "'bid': %5$.8f, 'ask': %6$.8f, 'position': {'side': '%9%', 'operation': "
       "'%7%/%8%'}}}",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
@@ -109,7 +109,7 @@ bool StopPrice::Activate() {
             % GetPosition().GetSecurity().GetAskPriceValue()  // 6
             % GetPosition().GetOperation()->GetId()           // 7
             % GetPosition().GetSubOperationId()               // 8
-            % ConvertToPch(GetPosition().GetType());          // 9
+            % GetPosition().GetSide();                        // 9
       });
 
   return true;
@@ -162,7 +162,7 @@ const char *StopLoss::GetName() const { return "stop-loss"; }
 void StopLoss::Report(const char *action) const {
   GetTradingLog().Write(
       "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'maxLoss': "
-      "%2$.8f}, 'delayTime': '%3%', 'position': '%4%/%5%'}}",
+      "%2$.8f}, 'delayTime': '%3%', 'operation': '%4%/%5%'}}",
       [this, action](TradingRecord &record) {
         record % GetName()                           // 1
             % m_params->GetMaxLossPerLot()           // 2
@@ -226,7 +226,7 @@ const char *StopLossShare::GetName() const { return "stop-loss share"; }
 void StopLossShare::Report(const char *action) const {
   GetTradingLog().Write(
       "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'maxLoss': "
-      "%2$.8f}, 'delayTime': '%3%', 'position': '%4%/%5%'}}",
+      "%2$.8f}, 'delayTime': '%3%', 'operation': '%4%/%5%'}}",
       [this, action](TradingRecord &record) {
         record % GetName()                           // 1
             % m_params->GetMaxLossShare()            // 2

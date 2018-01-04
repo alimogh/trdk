@@ -87,24 +87,31 @@ class Timer::Implementation : private boost::noncopyable {
 
   const pt::time_duration m_utcDiff;
 
+  bool m_isStopped;
+
   explicit Implementation(const Context &context)
       : m_context(context),
-        m_utcDiff(m_context.GetSettings().GetTimeZone()->base_utc_offset()) {}
+        m_utcDiff(m_context.GetSettings().GetTimeZone()->base_utc_offset()),
+        m_isStopped(false) {}
 
   ~Implementation() {
     try {
-      boost::optional<boost::thread> thread;
-      {
-        const Lock lock(m_mutex);
-        m_thread.swap(thread);
-      }
-      if (thread) {
-        m_condition.notify_all();
-        thread->join();
-      }
+      Stop();
     } catch (...) {
       AssertFailNoException();
       terminate();
+    }
+  }
+
+  void Stop() {
+    boost::optional<boost::thread> thread;
+    {
+      const Lock lock(m_mutex);
+      m_thread.swap(thread);
+    }
+    if (thread) {
+      m_condition.notify_all();
+      thread->join();
     }
   }
 
@@ -112,22 +119,31 @@ class Timer::Implementation : private boost::noncopyable {
                 const boost::function<void()> &&callback,
                 Scope &scope) {
     {
-      Lock lock(m_mutex);
+      const Lock lock(m_mutex);
+      if (m_isStopped) {
+        return;
+      }
       if (time != pt::not_a_date_time) {
         m_newTimedTasks.emplace_back(scope.m_id, std::move(callback),
                                      m_context.GetCurrentTime() + time);
         m_context.GetTradingLog().Write(
-            "Timer", "{'timer': {'scheduling': {'time': '%1%', 'scope': %2%}}}",
+            "Timer", "{'timer': {'scheduled': {'time': '%1%', 'scope': %2%}}}",
             [this](TradingRecord &record) {
               record % m_newTimedTasks.back().time  // 1
                   % m_newTimedTasks.back().scope;   // 2
             });
       } else {
         m_newImmediateTasks.emplace_back(Task{scope.m_id, std::move(callback)});
+        m_context.GetTradingLog().Write(
+            "Timer", "{'async': {'scheduled': {'scope': %1%}}}",
+            [this](TradingRecord &record) {
+              record % m_newImmediateTasks.back().scope;
+            });
       }
       if (!m_thread) {
         m_thread = boost::thread(
             boost::bind(&Implementation::ExecuteScheduling, this));
+        return;
       }
     }
     m_condition.notify_all();
@@ -160,10 +176,13 @@ class Timer::Implementation : private boost::noncopyable {
       while (m_thread) {
         SetNewTasks();
 
-        {
+        do {
           tasksLock.unlock();
 
           for (const auto &task : m_immediateTasks) {
+            m_context.GetTradingLog().Write(
+                "Timer", "{'async': {'exec': {'scope': %1%}}}",
+                [&task](TradingRecord &record) { record % task.scope; });
             try {
               task.callback();
             } catch (const std::exception &ex) {
@@ -210,9 +229,11 @@ class Timer::Implementation : private boost::noncopyable {
             AssertEq(m_nearestEvent == pt::not_a_date_time,
                      m_timedTasks.empty());
           }
-        }
 
-        tasksLock.lock();
+          tasksLock.lock();
+          SetNewTasks();
+        } while (!m_immediateTasks.empty());
+
         m_nearestEvent != pt::not_a_date_time
             ? m_condition.timed_wait(tasksLock, m_nearestEvent - m_utcDiff)
             : m_condition.wait(tasksLock);
@@ -227,6 +248,12 @@ class Timer::Implementation : private boost::noncopyable {
             m_immediateTasks.empty()
                 ? boost::lexical_cast<std::string>(m_nearestEvent).c_str()
                 : "\"immediately\"");
+        Assert(m_isStopped);
+        m_immediateTasks.clear();
+        m_newImmediateTasks.clear();
+        m_newTimedTasks.clear();
+        m_removedTimedTasks.clear();
+        m_timedTasks.clear();
       }
     } catch (...) {
       AssertFailNoException();
@@ -265,13 +292,11 @@ size_t Timer::Scope::Cancel() noexcept {
 Timer::Timer(const Context &context)
     : m_pimpl(boost::make_unique<Implementation>(context)) {}
 
-Timer::Timer(Timer &&) = default;
-
 Timer::~Timer() = default;
 
 void Timer::Schedule(const pt::time_duration &time,
                      const boost::function<void()> &&callback,
-                     Timer::Scope &scope) {
+                     Timer::Scope &scope) const {
   Assert(!scope.m_timer || scope.m_timer == this);
   Assert(time != pt::not_a_date_time);
   if (scope.m_timer && scope.m_timer != this) {
@@ -283,6 +308,18 @@ void Timer::Schedule(const pt::time_duration &time,
   scope.m_timer = this;
 }
 
-void Timer::Schedule(const boost::function<void()> &&callback, Scope &scope) {
+void Timer::Schedule(const boost::function<void()> &&callback,
+                     Scope &scope) const {
   m_pimpl->Schedule(pt::not_a_date_time, std::move(callback), scope);
+}
+
+void Timer::Stop() {
+  {
+    const Lock lock(m_pimpl->m_mutex);
+    if (m_pimpl->m_isStopped) {
+      throw LogicError("Timer already stopped");
+    }
+    m_pimpl->m_isStopped = true;
+  }
+  m_pimpl->Stop();
 }

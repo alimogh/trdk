@@ -24,6 +24,8 @@ enum Currency {
   CURRENCY_AUD,
   CURRENCY_INR,
   CURRENCY_BTC,
+  CURRENCY_ETH,
+  CURRENCY_LTC,
   numberOfCurrencies
 };
 

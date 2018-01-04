@@ -73,7 +73,7 @@ void PositionReport::PrintReport(const Position &pos, std::ostream &os) {
   os << ','
      << ExcelTextField(pos.GetCloseTime() - pos.GetCloseStartTime());   // 7
   os << ',' << ExcelTextField(pos.GetCloseTime() - pos.GetOpenTime());  // 8
-  os << ',' << pos.GetType();                                           // 9
+  os << ',' << pos.GetSide();                                           // 9
   os << ',' << pos.GetRealizedPnlVolume();                              // 10
   os << ',' << pos.GetRealizedPnlRatio();                               // 11
   os << (pos.IsProfit() ? ",1,0" : ",0,1");   // 12, 13

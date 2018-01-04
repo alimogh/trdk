@@ -98,9 +98,6 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        if (attempt < 3) {
-          continue;
-        }
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());
@@ -179,8 +176,6 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 3) {
     switch (response.getStatus()) {
-      case net::HTTPResponse::HTTP_TEMPORARY_REDIRECT:
-      case net::HTTPResponse::HTTP_REQUEST_TIMEOUT:
       case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
       case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:

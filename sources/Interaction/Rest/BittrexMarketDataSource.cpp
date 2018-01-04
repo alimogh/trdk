@@ -13,6 +13,7 @@
 #include "BittrexRequest.hpp"
 #include "PullingTask.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -32,11 +33,9 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_session("bittrex.com"),
+      m_session(CreateSession("bittrex.com", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
-                                                    GetLog())) {
-  m_session.setKeepAlive(true);
-}
+                                                    GetLog())) {}
 
 BittrexMarketDataSource::~BittrexMarketDataSource() {
   try {
@@ -53,7 +52,7 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
+    m_products = RequestBittrexProductList(*m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -118,7 +117,7 @@ void BittrexMarketDataSource::UpdatePrices() {
     Request &request = *subscribtion.second;
 
     try {
-      const auto &response = request.Send(m_session, GetContext());
+      const auto &response = request.Send(*m_session, GetContext());
       UpdatePrices(boost::get<0>(response), boost::get<1>(response), security,
                    boost::get<2>(response));
     } catch (const std::exception &ex) {
