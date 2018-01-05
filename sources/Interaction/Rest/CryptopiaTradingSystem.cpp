@@ -304,9 +304,9 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
   auto orderId = response.get<OrderId>("OrderId");
   if (orderId.GetValue() == "null") {
-    const auto now = GetContext().GetCurrentTime();
+    const auto &now = GetContext().GetCurrentTime();
     static size_t virtualOrderId = 1;
-    orderId = "virtual_" + boost::lexical_cast<std::string>(virtualOrderId++);
+    orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
     GetContext().GetTimer().Schedule(
         [this, orderId, now]() {
           try {
@@ -324,20 +324,23 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(
     const OrderId &orderId) {
+  if (!orderId.GetValue().empty() && orderId.GetValue().front() == 'v') {
+    throw OrderIsUnknown("Order was filled immediately at request");
+  }
+
   OrderTransactionRequest request(
       "CancelTrade", m_nonces, m_settings,
       "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
 
-  const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+  CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
   const auto &response = request.Send(*m_tradingSession, GetContext());
   Verify(m_cancelingOrders.emplace(orderId).second);
-  UseUnused(response);
-#ifdef DEV_VER
+  cancelOrderLock.unlock();
+
   GetTradingLog().Write(
       "debug-dump-order-cancel\t%1%", [&response](TradingRecord &record) {
         record % ConvertToString(boost::get<1>(response), false);
       });
-#endif
 }
 
 void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
