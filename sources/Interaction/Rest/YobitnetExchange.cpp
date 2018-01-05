@@ -89,11 +89,6 @@ struct Auth {
   NonceStorage &nonces;
 };
 
-class InvalidPairException : public Exception {
- public:
-  explicit InvalidPairException(const char *what) noexcept : Exception(what) {}
-};
-
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
@@ -219,12 +214,14 @@ class TradeRequest : public Request {
           error << "Unknown error";
         }
         if (message) {
-          if (*message == "invalid pair") {
-            throw InvalidPairException(error.str().c_str());
-          } else if (boost::istarts_with(*message,
-                                         "The given order has already been "
-                                         "closed and cannot be cancel")) {
+          if (boost::istarts_with(*message,
+                                  "The given order has already been "
+                                  "closed and cannot be cancel")) {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
+          } else if (boost::istarts_with(*message,
+                                         "Insufficient funds in wallet of the "
+                                         "second currency of the pair")) {
+            throw TradingSystem::CommunicationError(error.str().c_str());
           }
         }
         throw Exception(error.str().c_str());

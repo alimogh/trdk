@@ -74,7 +74,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
           emit m_self.Message(tr("Strategy is blocked by unknown reason."),
                               true);
         } else {
-          emit m_self.Message(tr("Strategy is blocked: %1.")
+          emit m_self.Message(tr("Strategy is blocked: \"%1\".")
                                   .arg(QString::fromStdString(*updateMessage)),
                               true);
         }

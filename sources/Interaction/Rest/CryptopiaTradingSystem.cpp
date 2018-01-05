@@ -447,7 +447,7 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
               pt::duration_from_string(timeField.substr(11, 8))};
     }
   } catch (const std::exception &ex) {
-    boost::format error("Field to parse order : \"%1%\". Message: \"%2%\"");
+    boost::format error("Failed to parse order : \"%1%\". Message: \"%2%\"");
     error % ex.what()                    // 1
         % ConvertToString(node, false);  // 2
     throw Exception(error.str().c_str());
