@@ -27,6 +27,9 @@ class Request {
       const std::string &name,
       const std::string &method,
       const std::string &uriParams,
+      const Context &context,
+      ModuleEventsLog &log,
+      ModuleTradingLog * = nullptr,
       const std::string &contentType = "application/x-www-form-urlencoded",
       const std::string &version = Poco::Net::HTTPMessage::HTTP_1_1);
   virtual ~Request() = default;
@@ -35,7 +38,7 @@ class Request {
   const std::string &GetName() const { return m_name; }
   void SetBody(const std::string &body) { m_body = body; }
 
-  virtual Response Send(Poco::Net::HTTPClientSession &, const Context &);
+  virtual Response Send(Poco::Net::HTTPClientSession &);
 
   const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
 
@@ -62,6 +65,9 @@ class Request {
   virtual bool IsPriority() const = 0;
 
  private:
+  const Context &m_context;
+  ModuleEventsLog &m_log;
+  ModuleTradingLog *const m_tradingLog;
   const std::string m_uri;
   std::string m_uriParams;
   std::unique_ptr<Poco::Net::HTTPRequest> m_request;

@@ -39,8 +39,16 @@ BittrexTradingSystem::Settings::Settings(const IniSectionRef &conf,
 BittrexTradingSystem::PrivateRequest::PrivateRequest(
     const std::string &name,
     const std::string &uriParams,
-    const Settings &settings)
-    : Base(name, name, AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+    const Settings &settings,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
+    : Base(name,
+           name,
+           AppendUriParams("apikey=" + settings.apiKey, uriParams),
+           context,
+           log,
+           tradingLog),
       m_settings(settings) {}
 
 void BittrexTradingSystem::PrivateRequest::PrepareRequest(
@@ -63,8 +71,11 @@ class BittrexTradingSystem::OrderTransactionRequest : public PrivateRequest {
  public:
   explicit OrderTransactionRequest(const std::string &name,
                                    const std::string &uriParams,
-                                   const Settings &settings)
-      : Base(name, uriParams, settings) {}
+                                   const Settings &settings,
+                                   const Context &context,
+                                   ModuleEventsLog &log,
+                                   ModuleTradingLog &tradingLog)
+      : Base(name, uriParams, settings, context, log, &tradingLog) {}
   virtual ~OrderTransactionRequest() override = default;
 
  protected:
@@ -81,7 +92,7 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
-      m_balancesRequest(m_settings),
+      m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
       m_pullingSession(CreateSession("bittrex.com", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
@@ -194,14 +205,20 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                              const std::string &productId,
                              const Qty &qty,
                              const Price &price,
-                             const Settings &settings)
-        : OrderTransactionRequest(
-              name, CreateUriParams(productId, qty, price), settings) {}
+                             const Settings &settings,
+                             const Context &context,
+                             ModuleEventsLog &log,
+                             ModuleTradingLog &tradingLog)
+        : OrderTransactionRequest(name,
+                                  CreateUriParams(productId, qty, price),
+                                  settings,
+                                  context,
+                                  log,
+                                  tradingLog) {}
 
    public:
-    OrderId SendOrderTransaction(net::HTTPClientSession &session,
-                                 const Context &context) {
-      const auto response = boost::get<1>(Base::Send(session, context));
+    OrderId SendOrderTransaction(net::HTTPClientSession &session) {
+      const auto response = boost::get<1>(Base::Send(session));
       return response.get<std::string>("uuid");
     }
 
@@ -221,14 +238,15 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
       *this,
       NewOrderRequest(
           side == ORDER_SIDE_BUY ? "/market/buylimit" : "/market/selllimit",
-          productId, qty, actualPrice, m_settings)
-          .SendOrderTransaction(*m_tradingSession, GetContext()));
+          productId, qty, actualPrice, m_settings, GetContext(), GetLog(),
+          GetTradingLog())
+          .SendOrderTransaction(*m_tradingSession));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   OrderTransactionRequest("/market/cancel", "uuid=" + orderId.GetValue(),
-                          m_settings)
-      .Send(*m_tradingSession, GetContext());
+                          m_settings, GetContext(), GetLog(), GetTradingLog())
+      .Send(*m_tradingSession);
 }
 
 void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
@@ -237,7 +255,7 @@ void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
 }
 
 void BittrexTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession, GetContext());
+  const auto response = m_balancesRequest.Send(*m_pullingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     auto symbol = balance.get<std::string>("Currency");
@@ -280,12 +298,6 @@ pt::ptime ParseTime(std::string &&source) {
 
 void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
-#ifdef DEV_VER
-  GetTradingLog().Write(
-      "debug-dump-order-status\t%1%",
-      [&](TradingRecord &record) { record % ConvertToString(order, false); });
-#endif
-
   Qty remainingQty;
   OrderStatus status;
   pt::ptime time;
@@ -336,9 +348,9 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
 void BittrexTradingSystem::UpdateOrders() {
   for (const OrderId &orderId : GetActiveOrderList()) {
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
-                           m_settings);
-    UpdateOrder(orderId,
-                boost::get<1>(request.Send(*m_pullingSession, GetContext())));
+                           m_settings, GetContext(), GetLog(),
+                           &GetTradingLog());
+    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pullingSession)));
   }
 }
 

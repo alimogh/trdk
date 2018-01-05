@@ -36,12 +36,12 @@ std::string NormilizeSymbol(std::string source) {
 
 boost::unordered_map<std::string, Rest::BittrexProduct>
 Rest::RequestBittrexProductList(net::HTTPClientSession &session,
-                                Context &context,
+                                const Context &context,
                                 ModuleEventsLog &log) {
   boost::unordered_map<std::string, BittrexProduct> result;
-  BittrexPublicRequest request("getmarkets");
+  BittrexPublicRequest request("getmarkets", std::string(), context, log);
   try {
-    const auto response = boost::get<1>(request.Send(session, context));
+    const auto response = boost::get<1>(request.Send(session));
     for (const auto &node : response) {
       const auto &data = node.second;
       BittrexProduct product = {data.get<std::string>("MarketName")};

@@ -20,11 +20,13 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 
 CryptopiaProductList Rest::RequestCryptopiaProductList(
-    net::HTTPClientSession &session, Context &context, ModuleEventsLog &log) {
+    net::HTTPClientSession &session,
+    const Context &context,
+    ModuleEventsLog &log) {
   CryptopiaProductList result;
-  CryptopiaPublicRequest request("GetTradePairs");
+  CryptopiaPublicRequest request("GetTradePairs", std::string(), context, log);
   try {
-    const auto response = boost::get<1>(request.Send(session, context));
+    const auto response = boost::get<1>(request.Send(session));
     for (const auto &node : response) {
       const auto &pairNode = node.second;
       auto quoteSymbol = pairNode.get<std::string>("Symbol");

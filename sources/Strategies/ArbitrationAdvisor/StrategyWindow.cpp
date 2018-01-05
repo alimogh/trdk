@@ -181,6 +181,7 @@ void StrategyWindow::InitBySelectedSymbol() {
     copyKey("lowest_spread_percentage");
     copyKey("cross_arbitrage_mode");
     copyKey("stop_loss");
+    copyKey("stop_loss_delay_sec");
     m_engine.GetContext().Add(IniString(os.str()));
   }
   m_strategy = boost::polymorphic_downcast<aa::Strategy *>(

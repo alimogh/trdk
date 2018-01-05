@@ -48,12 +48,14 @@ class CryptopiaTradingSystem : public TradingSystem {
     explicit PrivateRequest(const std::string &name,
                             NonceStorage &nonces,
                             const Settings &settings,
-                            const std::string &params);
+                            const std::string &params,
+                            const Context &,
+                            ModuleEventsLog &,
+                            ModuleTradingLog * = nullptr);
     virtual ~PrivateRequest() override = default;
 
    public:
-    virtual Response Send(Poco::Net::HTTPClientSession &,
-                          const Context &) override;
+    virtual Response Send(Poco::Net::HTTPClientSession &) override;
 
    protected:
     virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
@@ -75,8 +77,11 @@ class CryptopiaTradingSystem : public TradingSystem {
     explicit AccountRequest(const std::string &name,
                             NonceStorage &nonces,
                             const Settings &settings,
-                            const std::string &params)
-        : Base(name, nonces, settings, params) {}
+                            const std::string &params,
+                            const Context &context,
+                            ModuleEventsLog &log,
+                            TradingLog *tradingLog = nullptr)
+        : Base(name, nonces, settings, params, context, log, tradingLog) {}
     virtual ~AccountRequest() override = default;
 
    protected:
@@ -88,8 +93,11 @@ class CryptopiaTradingSystem : public TradingSystem {
     typedef AccountRequest Base;
 
    public:
-    explicit BalancesRequest(NonceStorage &nonces, const Settings &settings)
-        : Base("GetBalance", nonces, settings, "{}") {}
+    explicit BalancesRequest(NonceStorage &nonces,
+                             const Settings &settings,
+                             const Context &context,
+                             ModuleEventsLog &log)
+        : Base("GetBalance", nonces, settings, "{}", context, log) {}
   };
 
  public:

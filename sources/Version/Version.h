@@ -23,8 +23,8 @@
 #define TRDK_NAME	"Trading Robot"
 #define TRDK_NAME_W	L"Trading Robot"
 
-#define TRDK_COPYRIGHT		"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
-#define TRDK_COPYRIGHT_W	L"Copyright 2017 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT		"Copyright 2018 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
+#define TRDK_COPYRIGHT_W	L"Copyright 2018 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved."
 
 #define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)

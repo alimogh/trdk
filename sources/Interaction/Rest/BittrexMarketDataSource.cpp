@@ -81,7 +81,8 @@ void BittrexMarketDataSource::SubscribeToSecurities() {
       continue;
     }
     security.second = std::make_unique<BittrexPublicRequest>(
-        "getorderbook", "market=" + product->second.id + "&type=both");
+        "getorderbook", "market=" + product->second.id + "&type=both",
+        GetContext(), GetLog());
     security.first->SetTradingSessionState(pt::not_a_date_time, true);
   }
 }
@@ -117,7 +118,7 @@ void BittrexMarketDataSource::UpdatePrices() {
     Request &request = *subscribtion.second;
 
     try {
-      const auto &response = request.Send(*m_session, GetContext());
+      const auto &response = request.Send(*m_session);
       UpdatePrices(boost::get<0>(response), boost::get<1>(response), security,
                    boost::get<2>(response));
     } catch (const std::exception &ex) {

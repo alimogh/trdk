@@ -64,7 +64,7 @@ inline size_t hash_value(const CryptopiaProductList::iterator &iterator) {
 }
 
 CryptopiaProductList RequestCryptopiaProductList(Poco::Net::HTTPClientSession &,
-                                                 Context &,
+                                                 const Context &,
                                                  ModuleEventsLog &);
 }
 }
