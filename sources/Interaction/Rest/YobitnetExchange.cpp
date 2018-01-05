@@ -760,12 +760,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       for (const auto &node : response) {
         const auto &order = node.second;
 
-#ifdef DEV_VER
         GetTsTradingLog().Write("debug-dump-order-status\t%1%",
                                 [&](TradingRecord &record) {
                                   record % ConvertToString(order, false);
                                 });
-#endif
 
         pt::ptime time;
         OrderStatus status;

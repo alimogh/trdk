@@ -425,11 +425,9 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
 OrderId CryptopiaTradingSystem::UpdateOrder(
     const CryptopiaProduct & /*product*/, const ptr::ptree &node) {
-#ifdef DEV_VER
   GetTradingLog().Write(
       "debug-dump-order-status\t%1%",
       [&](TradingRecord &record) { record % ConvertToString(node, false); });
-#endif
 
   OrderId id;
   Qty remainingQty;

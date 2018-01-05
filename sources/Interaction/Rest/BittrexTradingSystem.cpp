@@ -280,11 +280,9 @@ pt::ptime ParseTime(std::string &&source) {
 
 void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
-#ifdef DEV_VER
   GetTradingLog().Write(
       "debug-dump-order-status\t%1%",
       [&](TradingRecord &record) { record % ConvertToString(order, false); });
-#endif
 
   Qty remainingQty;
   OrderStatus status;
