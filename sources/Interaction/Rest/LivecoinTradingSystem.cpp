@@ -139,12 +139,16 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
         error << "\" (error code: " << errorCode << ")";
       } catch (const boost::bad_lexical_cast &) {
         error << exception << "\"";
+        if (boost::starts_with(exception,
+                               "Not sufficient funds on the account")) {
+          throw TradingSystem::CommunicationError(error.str().c_str());
+        }
       }
       throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for request \"" << GetName()
+    error << "Failed to read server response for request \"" << GetName()
           << "\" (" << GetRequest().getURI() << "): \"" << ex.what() << "\"";
     throw Interactor::CommunicationError(error.str().c_str());
   }
@@ -289,7 +293,7 @@ void LivecoinTradingSystem::UpdateOrders() {
       remainingQuantity = order.get<Price>("remaining_quantity");
     } catch (const ptr::ptree_error &ex) {
       std::ostringstream error;
-      error << "Field to read order status: \"" << ex.what() << "\"";
+      error << "Failed to read order status: \"" << ex.what() << "\"";
       throw Exception(error.str().c_str());
     }
     if (status == ORDER_STATUS_FILLED) {
@@ -404,7 +408,7 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
         product->second.requestId + "_" + response.get<std::string>("orderId"));
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for new order request \""
+    error << "Failed to read server response for new order request \""
           << ex.what() << "\"";
     throw Exception(error.str().c_str());
   }
@@ -439,7 +443,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
     }
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for order cancel request \""
+    error << "Failed to read server response for order cancel request \""
           << ex.what() << "\"";
     throw Exception(error.str().c_str());
   }

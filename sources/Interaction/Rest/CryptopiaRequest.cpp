@@ -46,12 +46,15 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
         error << ", message: \"" << *serverMessage << "\"";
       }
       error << ")";
-      if (serverError && boost::starts_with(*serverError, "Trade #") &&
-          boost::ends_with(*serverError, " does not exist")) {
-        throw TradingSystem::OrderIsUnknown(error.str().c_str());
-      } else {
-        throw Exception(error.str().c_str());
+      if (serverError) {
+        if (boost::starts_with(*serverError, "Trade #") &&
+            boost::ends_with(*serverError, " does not exist")) {
+          throw TradingSystem::OrderIsUnknown(error.str().c_str());
+        } else if (*serverError == "Insufficient Funds.") {
+          throw TradingSystem::CommunicationError(error.str().c_str());
+        }
       }
+      throw Exception(error.str().c_str());
     }
   }
 
