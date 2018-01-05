@@ -24,6 +24,7 @@ class TRDK_CORE_API BalancesContainer : public trdk::Balances {
 
  public:
   void SetAvailableToTrade(const std::string &&symbol, const trdk::Volume &&);
+  void SetLocked(const std::string &&symbol, const trdk::Volume &&);
 
   virtual void ReduceAvailableToTradeByOrder(
       const trdk::Security &,

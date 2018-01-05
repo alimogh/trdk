@@ -154,3 +154,5 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
     }
   }
 }
+
+void BalancesContainer::SetLocked(const std::string &&, const Volume &&) {}

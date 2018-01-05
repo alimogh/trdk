@@ -21,11 +21,54 @@ class LivecoinTradingSystem : public TradingSystem {
  public:
   typedef TradingSystem Base;
 
+ private:
   struct Settings : public Rest::Settings {
     std::string apiKey;
-    std::vector<unsigned char> apiSecret;
+    std::string apiSecret;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+  };
+
+  class PrivateRequest : public LivecoinRequest {
+   public:
+    explicit PrivateRequest(const std::string &name,
+                            const std::string &method,
+                            const Settings &,
+                            const std::string &params = std::string());
+    virtual ~PrivateRequest() override = default;
+
+   protected:
+    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                                const std::string &,
+                                Poco::Net::HTTPRequest &) const override;
+
+   private:
+    const Settings &m_settings;
+  };
+
+  class TradingRequest : public PrivateRequest {
+   public:
+    explicit TradingRequest(const std::string &name,
+                            const Settings &,
+                            const std::string &params = std::string());
+    virtual ~TradingRequest() override = default;
+
+   public:
+    LivecoinTradingSystem::TradingRequest::Response
+    LivecoinTradingSystem::TradingRequest::Send(Poco::Net::HTTPClientSession &,
+                                                const Context &) override;
+
+   protected:
+    virtual bool IsPriority() const override { return true; }
+  };
+
+  class BalancesRequest : public PrivateRequest {
+   public:
+    explicit BalancesRequest(const Settings &);
+    virtual ~BalancesRequest() override = default;
+
+   protected:
+    virtual bool IsPriority() const override { return false; }
   };
 
  public:
@@ -68,10 +111,15 @@ class LivecoinTradingSystem : public TradingSystem {
   virtual void OnTransactionSent(const trdk::OrderId &) override;
 
  private:
+  void UpdateBalances();
+  void UpdateOrders();
+
+ private:
   Settings m_settings;
   boost::unordered_map<std::string, LivecoinProduct> m_products;
 
   BalancesContainer m_balances;
+  BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
