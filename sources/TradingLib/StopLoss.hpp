@@ -32,6 +32,7 @@ class StopLossOrder : public trdk::TradingLib::StopOrder {
   virtual bool IsWatching() const;
 
  protected:
+  virtual const boost::posix_time::ptime &GetStartTime() const;
   const boost::posix_time::time_duration &GetDelay() const { return m_delay; }
   virtual bool Activate() = 0;
 

@@ -24,12 +24,13 @@ class Operation : public trdk::Operation {
   typedef trdk::Operation Base;
 
  public:
-  explicit Operation(Security &sellTarget,
-                     Security &buyTarget,
-                     const Qty &maxQty,
-                     const Price &sellPrice,
-                     const Price &buyPrice,
-                     bool isStopLossEnabled);
+  explicit Operation(
+      Security &sellTarget,
+      Security &buyTarget,
+      const Qty &maxQty,
+      const Price &sellPrice,
+      const Price &buyPrice,
+      const boost::optional<boost::posix_time::time_duration> &stopLossDelay);
   virtual ~Operation() override = default;
 
  public:
@@ -70,7 +71,7 @@ class Operation : public trdk::Operation {
   Security &m_buyTarget;
   const Qty m_maxQty;
   OperationReportData m_reportData;
-  const bool m_isStopLossEnabled;
+  const boost::optional<boost::posix_time::time_duration> m_stopLossDelay;
 };
 }
 }

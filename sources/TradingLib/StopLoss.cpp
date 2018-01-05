@@ -32,10 +32,14 @@ StopLossOrder::StopLossOrder(const pt::time_duration &delay,
 
 bool StopLossOrder::IsWatching() const { return GetPosition().IsOpened(); }
 
+const pt::ptime &StopLossOrder::GetStartTime() const {
+  return GetPosition().GetOpenTime();
+}
+
 void StopLossOrder::Run() {
   if (!IsWatching() ||
       (m_delay != pt::not_a_date_time &&
-       GetPosition().GetOpenTime() + m_delay >
+       GetStartTime() + m_delay >
            GetPosition().GetSecurity().GetContext().GetCurrentTime())) {
     return;
   }

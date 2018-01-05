@@ -15,19 +15,21 @@ using namespace trdk;
 using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
+namespace pt = boost::posix_time;
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-aa::Operation::Operation(Security &sellTarget,
-                         Security &buyTarget,
-                         const Qty &maxQty,
-                         const Price &sellPrice,
-                         const Price &buyPrice,
-                         bool isStopLossEnabled)
+aa::Operation::Operation(
+    Security &sellTarget,
+    Security &buyTarget,
+    const Qty &maxQty,
+    const Price &sellPrice,
+    const Price &buyPrice,
+    const boost::optional<pt::time_duration> &stopLossDelay)
     : m_openOrderPolicy(sellPrice, buyPrice),
       m_sellTarget(sellTarget),
       m_buyTarget(buyTarget),
       m_maxQty(maxQty),
-      m_isStopLossEnabled(isStopLossEnabled) {}
+      m_stopLossDelay(stopLossDelay) {}
 
 bool aa::Operation::IsSame(const Security &sellTarget,
                            const Security &buyTarget) const {
@@ -38,7 +40,7 @@ void aa::Operation::Setup(Position &position,
                           PositionController &controller) const {
   Base::Setup(position, controller);
 
-  if (!m_isStopLossEnabled) {
+  if (!m_stopLossDelay) {
     return;
   }
 
@@ -49,8 +51,10 @@ void aa::Operation::Setup(Position &position,
    public:
     explicit StopLoss(const Price &controlPrice,
                       Position &position,
-                      PositionController &controller)
-        : Base(position, controller), m_controlPrice(controlPrice) {}
+                      PositionController &controller,
+                      const pt::time_duration &stopLossDelay)
+        : Base(stopLossDelay, position, controller),
+          m_controlPrice(controlPrice) {}
     virtual ~StopLoss() override = default;
 
    public:
@@ -72,13 +76,25 @@ void aa::Operation::Setup(Position &position,
     }
 
     virtual bool IsWatching() const override {
-      return GetPosition().HasActiveOpenOrders();
+      if (!GetPosition().HasActiveOpenOrders()) {
+        return false;
+      }
+      if (m_startTime == pt::not_a_date_time) {
+        // The first call after the position sent orders.
+        m_startTime = GetPosition().GetStrategy().GetContext().GetCurrentTime();
+      }
+      return true;
     }
 
    protected:
     virtual const char *GetName() const override {
       return "opening stop price";
     }
+    virtual const pt::ptime &GetStartTime() const override {
+      Assert(m_startTime != pt::not_a_date_time);
+      return m_startTime;
+    }
+
     virtual bool Activate() override {
       const auto &currentPrice = GetPosition().GetMarketOpenPrice();
       if (GetPosition().IsLong()) {
@@ -110,8 +126,10 @@ void aa::Operation::Setup(Position &position,
 
    private:
     const Price m_controlPrice;
+    mutable pt::ptime m_startTime;
   };
 
   position.AddAlgo(boost::make_unique<StopLoss>(
-      m_openOrderPolicy.GetOpenOrderPrice(position), position, controller));
+      m_openOrderPolicy.GetOpenOrderPrice(position), position, controller,
+      *m_stopLossDelay));
 }
