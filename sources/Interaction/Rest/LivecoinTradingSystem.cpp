@@ -275,7 +275,7 @@ void LivecoinTradingSystem::UpdateOrders() {
     TradeInfo tradeInfo = {};
     try {
       const auto &statusField = order.get<std::string>("status");
-      if (statusField == "OPEN") {
+      if (statusField == "OPEN" || statusField == "PARTIALLY_FILLED") {
         status = ORDER_STATUS_SUBMITTED;
       } else if (statusField == "CANCELLED") {
         status = ORDER_STATUS_CANCELLED;
