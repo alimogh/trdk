@@ -384,7 +384,7 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   boost::format requestParams("currencyPair=%1%&price=%2$.8f&quantity=%3$.8f");
   requestParams % product->second.requestId  // 1
-      % RoundByPrecision(*price),
+      % RoundByPrecision(*price,
                          product->second.pricePrecisionPower)  // 2
       % qty;                                                   // 3
 
