@@ -23,22 +23,25 @@ namespace ptr = boost::property_tree;
 
 boost::unordered_map<std::string, LivecoinProduct>
 Rest::RequestLivecoinProductList(net::HTTPClientSession &session,
-                                 Context &context,
+                                 const Context &context,
                                  ModuleEventsLog &log) {
   boost::unordered_map<std::string, LivecoinProduct> result;
 
   ptr::ptree response;
   try {
-    response = boost::get<1>(
-        LivecoinPublicRequest("/exchange/restrictions").Send(session, context));
+    response = boost::get<1>(LivecoinPublicRequest("/exchange/restrictions",
+                                                   std::string(), context, log)
+                                 .Send(session));
     if (!response.get<bool>("success")) {
       throw Exception("Failed to request product list");
     }
     const auto &minBtcVolume = response.get<Volume>("minBtcVolume");
     for (const auto &node : response.get_child("restrictions")) {
       const LivecoinProduct product = {
-          node.second.get<std::string>("currencyPair"), minBtcVolume,
-          node.second.get<uint16_t>("priceScale")};
+          node.second.get<std::string>("currencyPair"),
+          boost::replace_first_copy(product.id, "/", "%2F"), minBtcVolume,
+          static_cast<uintmax_t>(
+              std::pow(10, node.second.get<uint32_t>("priceScale")))};
       const auto &symbol = boost::replace_first_copy(product.id, "/", "_");
       if (!result.emplace(std::move(symbol), std::move(product)).second) {
         log.Error("Product duplicate: \"%1%\"",

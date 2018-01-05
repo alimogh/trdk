@@ -32,7 +32,9 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_allOrderBooksRequest("/exchange/all/order_book",
-                             "groupByPrice=true&depth=1"),
+                             "groupByPrice=true&depth=1",
+                             GetContext(),
+                             GetLog()),
       m_session(CreateSession("api.livecoin.net", m_settings, false)),
       m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
                                                     GetLog())) {}
@@ -112,8 +114,7 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
 
 void LivecoinMarketDataSource::UpdatePrices() {
   try {
-    const auto &response =
-        m_allOrderBooksRequest.Send(*m_session, GetContext());
+    const auto &response = m_allOrderBooksRequest.Send(*m_session);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
       const auto security = m_securities.find(record.first);

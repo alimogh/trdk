@@ -44,9 +44,15 @@ Request::Request(const std::string &uri,
                  const std::string &name,
                  const std::string &method,
                  const std::string &uriParams,
+                 const Context &context,
+                 ModuleEventsLog &log,
+                 ModuleTradingLog *tradingLog,
                  const std::string &contentType,
                  const std::string &version)
-    : m_uri(uri),
+    : m_context(context),
+      m_log(log),
+      m_tradingLog(tradingLog),
+      m_uri(uri),
       m_uriParams(uriParams),
       m_request(boost::make_unique<net::HTTPRequest>(method, m_uri, version)),
       m_name(name) {
@@ -63,7 +69,7 @@ void Request::PrepareRequest(const net::HTTPClientSession &,
                              net::HTTPRequest &) const {}
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
-Request::Send(net::HTTPClientSession &session, const Context &context) {
+Request::Send(net::HTTPClientSession &session) {
   std::string uri = m_uri + "?nonce=" +
                     pt::to_iso_string(pt::microsec_clock::universal_time());
   if (!m_uriParams.empty() &&
@@ -106,52 +112,64 @@ Request::Send(net::HTTPClientSession &session, const Context &context) {
       }
     }
 
-    const auto &delayMeasurement = context.StartStrategyTimeMeasurement();
-    const auto &updateTime = context.GetCurrentTime();
+    const auto &delayMeasurement = m_context.StartStrategyTimeMeasurement();
+    const auto &updateTime = m_context.GetCurrentTime();
 
     try {
       net::HTTPResponse response;
-#ifndef DEV_VER
       std::istream &responseStream = session.receiveResponse(response);
-#else
-      std::istream &responseStreamSource = session.receiveResponse(response);
       std::string responseBuffer;
-      Poco::StreamCopier::copyToString(responseStreamSource, responseBuffer);
-      std::stringstream responseStream;
-      responseStream.str(responseBuffer);
-#endif
+      if (m_tradingLog) {
+        m_tradingLog->Write(
+            "response-dump %1%\t%2%",
+            [this, &responseStream, &responseBuffer](TradingRecord &record) {
+              Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+              record % m_uri         // 1
+                  % responseBuffer;  // 2
+            });
+      }
+
       if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
-        std::string responseContent;
-        Poco::StreamCopier::copyToString(responseStream, responseContent);
-        CheckErrorResponse(response, responseContent, attempt);
+        if (responseBuffer.empty()) {
+          Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+        }
+        CheckErrorResponse(response, responseBuffer, attempt);
         continue;
       }
 
       ptr::ptree result;
       try {
-        ptr::read_json(responseStream, result);
+        if (responseBuffer.empty()) {
+          ptr::read_json(responseStream, result);
+        } else {
+          boost::iostreams::array_source source(&responseBuffer[0],
+                                                responseBuffer.size());
+          boost::iostreams::stream<boost::iostreams::array_source> is(source);
+          ptr::read_json(is, result);
+        }
       } catch (const ptr::ptree_error &ex) {
-#ifdef DEV_VER
-        boost::format error(
-            "Failed to read server response to the request \"%1%\" (%2%): "
-            "\"%4%\" (%3%)");
-        error % m_name             // 1
-            % m_request->getURI()  // 2
-            % responseBuffer       // 3
-            % ex.what();           // 4
-#else
         boost::format error(
             "Failed to read server response to the request \"%1%\" (%2%): "
             "\"%3%\"");
         error % m_name             // 1
             % m_request->getURI()  // 2
             % ex.what();           // 3
-#endif
         throw Interactor::CommunicationError(error.str().c_str());
       }
 
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
+      if (attempt < 2) {
+        try {
+          throw;
+        } catch (const net::NoMessageException &ex) {
+          m_log.Warn("Repeating request \"%1%\" after error \"%2%\"...",
+                     m_request->getURI(),  // 1
+                     ex.what());           // 2
+          continue;
+        } catch (...) {
+        }
+      }
       boost::format error(
           "Failed to read request \"%1%\" (%2%) response: \"%3%\"");
       error % m_name             // 1
@@ -174,12 +192,15 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
                                  const std::string &responseContent,
                                  size_t attemptNumber) const {
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
-  if (attemptNumber < 3) {
+  if (attemptNumber < 2) {
     switch (response.getStatus()) {
       case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
       case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
+        m_log.Warn("Repeating request \"%1%\" after error with code %2%...",
+                   m_request->getURI(),    // 1
+                   response.getStatus());  // 2
         return;
     }
   }

@@ -83,7 +83,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   aa::Strategy &m_self;
   const boost::optional<Double> m_lowestSpreadRatio;
   const bool m_isCrossMode;
-  const bool m_isStopLossEnabled;
+  const boost::optional<pt::time_duration> m_stopLossDelay;
 
   PositionController m_controller;
 
@@ -100,8 +100,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       : m_self(self),
         m_controller(m_self),
         m_minPriceDifferenceRatioToAdvice(0),
-        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)),
-        m_isStopLossEnabled(conf.ReadBoolKey("stop_loss", false)) {
+        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)) {
+    if (conf.ReadBoolKey("stop_loss", false)) {
+      const_cast<boost::optional<pt::time_duration> &>(m_stopLossDelay) =
+          pt::seconds(conf.ReadTypedKey("stop_loss_delay_sec", 0));
+    }
     {
       const char *const key = "lowest_spread_percentage";
       if (conf.IsKeyExist(key)) {
@@ -116,8 +119,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (m_isCrossMode) {
       m_self.GetLog().Info("Cross-arbitrage mode enabled.");
     }
-    if (m_isStopLossEnabled) {
-      m_self.GetLog().Info("Stop-loss enabled.");
+    if (m_stopLossDelay) {
+      m_self.GetLog().Info("Stop-loss uses delay %1%.", *m_stopLossDelay);
     }
   }
 
@@ -408,7 +411,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                  bestSpreadRatio);
 
     const auto operation = boost::make_shared<Operation>(
-        sellTarget, buyTarget, qty, sellPrice, buyPrice, m_isStopLossEnabled);
+        sellTarget, buyTarget, qty, sellPrice, buyPrice, m_stopLossDelay);
 
     qtys.Return(qty);
 

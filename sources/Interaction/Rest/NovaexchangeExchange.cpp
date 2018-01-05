@@ -116,15 +116,18 @@ class Request : public Rest::Request {
   explicit Request(const std::string &uri,
                    const std::string &name,
                    const std::string &method,
-                   const std::string &uriParams = std::string())
-      : Base(uri, name, method, uriParams) {}
+                   const std::string &uriParams,
+                   const Context &context,
+                   ModuleEventsLog &log,
+                   ModuleTradingLog *tradingLog = nullptr)
+      : Base(uri, name, method, uriParams, context, log, tradingLog) {}
 
   virtual ~Request() override = default;
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPClientSession &session, const Context &context) override {
-    auto result = Base::Send(session, context);
+      net::HTTPClientSession &session) override {
+    auto result = Base::Send(session);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
     return {boost::get<0>(result), ExtractContent(responseTree),
@@ -180,8 +183,10 @@ class PublicRequest : public Request {
  public:
   explicit PublicRequest(const std::string &uri,
                          const std::string &name,
-                         const std::string &uriParams = std::string())
-      : Base(uri, name, net::HTTPRequest::HTTP_GET, uriParams) {}
+                         const std::string &uriParams,
+                         const Context &context,
+                         ModuleEventsLog &log)
+      : Base(uri, name, net::HTTPRequest::HTTP_GET, uriParams, context, log) {}
 
  protected:
   virtual bool IsPriority() const { return false; }
@@ -196,11 +201,17 @@ class PrivateRequest : public Request {
                           const std::string &name,
                           const Settings &settings,
                           bool isPriority,
-                          const std::string &uriParams = std::string())
+                          const std::string &uriParams,
+                          const Context &context,
+                          ModuleEventsLog &log,
+                          ModuleTradingLog *tradingLog = nullptr)
       : Base(uri,
              name,
              net::HTTPRequest::HTTP_POST,
-             AppendUriParams("apikey=" + settings.apiKey, uriParams)),
+             AppendUriParams("apikey=" + settings.apiKey, uriParams),
+             context,
+             log,
+             tradingLog),
         m_apiSecret(settings.apiSecret),
         m_isPriority(isPriority) {}
 
@@ -235,7 +246,10 @@ class OpenOrdersRequest : public PublicRequest {
   typedef PublicRequest Base;
 
  public:
-  explicit OpenOrdersRequest(const std::string &uri) : Base(uri, "orders") {}
+  explicit OpenOrdersRequest(const std::string &uri,
+                             const Context &context,
+                             ModuleEventsLog &log)
+      : Base(uri, "orders", std::string(), context, log) {}
 
   virtual ~OpenOrdersRequest() override = default;
 
@@ -337,8 +351,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
             try {
-              const auto &response =
-                  request.Send(*m_marketDataSession, GetContext());
+              const auto &response = request.Send(*m_marketDataSession);
               const auto &time = boost::get<0>(response);
               const auto &delayMeasurement = boost::get<2>(response);
               const auto &update = boost::get<1>(response);
@@ -369,9 +382,10 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     PrivateRequest request("/remote/v2/private/getbalances/", "balances",
-                           m_settings, false);
+                           m_settings, false, std::string(), GetContext(),
+                           GetTsLog());
     try {
-      const auto &response = request.Send(*m_marketDataSession, GetContext());
+      const auto &response = request.Send(*m_marketDataSession);
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
@@ -417,7 +431,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     {
       const auto marketDataRequest = boost::make_shared<OpenOrdersRequest>(
           "/remote/v2/market/openorders/" +
-          NormilizeProductId(result->GetSymbol().GetSymbol()) + "/BOTH/");
+              NormilizeProductId(result->GetSymbol().GetSymbol()) + "/BOTH/",
+          GetContext(), GetTsLog());
 
       const SecuritiesLock lock(m_securitiesMutex);
       Verify(m_securities
@@ -463,8 +478,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request(
         "/remote/v2/private/trade/" +
             NormilizeProductId(security.GetSymbol().GetSymbol()) + "/",
-        "tradeitems", m_settings, true, requestParams.str());
-    const auto &result = request.Send(*m_tradingSession, GetContext());
+        "tradeitems", m_settings, true, requestParams.str(), GetContext(),
+        GetTsLog());
+    const auto &result = request.Send(*m_tradingSession);
 
     boost::optional<OrderId> orderId;
     std::vector<TradeInfo> trades;
@@ -510,8 +526,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
     PrivateRequest("/remote/v2/private/cancelorder/" +
                        boost::lexical_cast<std::string>(orderId) + "/",
-                   "cancelorder", m_settings, true)
-        .Send(*m_tradingSession, GetContext());
+                   "cancelorder", m_settings, true, std::string(), GetContext(),
+                   GetTsLog())
+        .Send(*m_tradingSession);
   }
 
   void OnTradesInfo(const OrderId &orderId,

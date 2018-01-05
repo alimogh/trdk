@@ -72,7 +72,8 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
         boost::lexical_cast<std::string>(security.first));
   }
   const auto &request = boost::make_shared<CryptopiaPublicRequest>(
-      "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1");
+      "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1",
+      GetContext(), GetLog());
 
   m_pullingTask->ReplaceTask(
       "Prices", 1,
@@ -118,7 +119,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
 
 void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
   try {
-    const auto &response = request.Send(*m_session, GetContext());
+    const auto &response = request.Send(*m_session);
     const auto &time = boost::get<0>(response);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {

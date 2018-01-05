@@ -27,16 +27,22 @@ class CryptopiaRequest : public Request {
   explicit CryptopiaRequest(const std::string &name,
                             const std::string &uri,
                             const std::string &method,
-                            const std::string &contentType = std::string())
+                            const std::string &contentType,
+                            const Context &context,
+                            ModuleEventsLog &log,
+                            ModuleTradingLog *tradingLog = nullptr)
       : Base("/api/" + name + "/" + uri,
              name,
              method,
              std::string(),
+             context,
+             log,
+             tradingLog,
              contentType) {}
   virtual ~CryptopiaRequest() override = default;
 
  public:
-  Response Send(Poco::Net::HTTPClientSession &, const Context &) override;
+  Response Send(Poco::Net::HTTPClientSession &) override;
 
  protected:
   virtual FloodControl &GetFloodControl() override;
@@ -47,8 +53,15 @@ class CryptopiaRequest : public Request {
 class CryptopiaPublicRequest : public CryptopiaRequest {
  public:
   explicit CryptopiaPublicRequest(const std::string &name,
-                                  const std::string &params = std::string())
-      : CryptopiaRequest(name, params, Poco::Net::HTTPRequest::HTTP_GET) {}
+                                  const std::string &params,
+                                  const Context &context,
+                                  ModuleEventsLog &log)
+      : CryptopiaRequest(name,
+                         params,
+                         Poco::Net::HTTPRequest::HTTP_GET,
+                         std::string(),
+                         context,
+                         log) {}
   virtual ~CryptopiaPublicRequest() override = default;
 
  protected:

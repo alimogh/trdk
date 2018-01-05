@@ -42,7 +42,10 @@ class BittrexTradingSystem : public TradingSystem {
    public:
     explicit PrivateRequest(const std::string &name,
                             const std::string &uriParams,
-                            const Settings &settings);
+                            const Settings &settings,
+                            const Context &context,
+                            ModuleEventsLog &log,
+                            ModuleTradingLog *tradingLog = nullptr);
     virtual ~PrivateRequest() override = default;
 
    protected:
@@ -61,8 +64,11 @@ class BittrexTradingSystem : public TradingSystem {
    public:
     explicit AccountRequest(const std::string &name,
                             const std::string &uriParams,
-                            const Settings &settings)
-        : Base(name, uriParams, settings) {}
+                            const Settings &settings,
+                            const Context &context,
+                            ModuleEventsLog &log,
+                            TradingLog *tradingLog = nullptr)
+        : Base(name, uriParams, settings, context, log, tradingLog) {}
     virtual ~AccountRequest() override = default;
 
    protected:
@@ -74,8 +80,10 @@ class BittrexTradingSystem : public TradingSystem {
     typedef AccountRequest Base;
 
    public:
-    explicit BalancesRequest(const Settings &settings)
-        : Base("/account/getbalances", std::string(), settings) {}
+    explicit BalancesRequest(const Settings &settings,
+                             const Context &context,
+                             ModuleEventsLog &log)
+        : Base("/account/getbalances", std::string(), settings, context, log) {}
   };
 
  public:
