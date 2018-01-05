@@ -23,14 +23,15 @@ namespace ptr = boost::property_tree;
 
 boost::unordered_map<std::string, LivecoinProduct>
 Rest::RequestLivecoinProductList(net::HTTPClientSession &session,
-                                 Context &context,
+                                 const Context &context,
                                  ModuleEventsLog &log) {
   boost::unordered_map<std::string, LivecoinProduct> result;
 
   ptr::ptree response;
   try {
-    response = boost::get<1>(
-        LivecoinPublicRequest("/exchange/restrictions").Send(session, context));
+    response = boost::get<1>(LivecoinPublicRequest("/exchange/restrictions",
+                                                   std::string(), context, log)
+                                 .Send(session));
     if (!response.get<bool>("success")) {
       throw Exception("Failed to request product list");
     }

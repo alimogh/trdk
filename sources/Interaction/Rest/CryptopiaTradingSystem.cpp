@@ -41,11 +41,17 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
     const std::string &name,
     NonceStorage &nonces,
     const Settings &settings,
-    const std::string &params)
+    const std::string &params,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
     : Base(name,
            "",
            Poco::Net::HTTPRequest::HTTP_POST,
-           "application/json; charset=utf-8"),
+           "application/json; charset=utf-8",
+           context,
+           log,
+           tradingLog),
       m_settings(settings),
       m_paramsDigest(Base64::Encode(CalcMd5Digest(params), false)),
       m_nonces(nonces) {
@@ -53,8 +59,7 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
 }
 
 CryptopiaTradingSystem::PrivateRequest::Response
-CryptopiaTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session,
-                                             const Context &context) {
+CryptopiaTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session) {
   Assert(!m_nonce);
   m_nonce.emplace(m_nonces.TakeNonce());
 
@@ -67,7 +72,7 @@ CryptopiaTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session,
     }
   } nonceScope = {m_nonce};
 
-  const auto result = Base::Send(session, context);
+  const auto result = Base::Send(session);
 
   Assert(m_nonce);
   m_nonce->Use();
@@ -111,8 +116,11 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
   explicit OrderTransactionRequest(const std::string &name,
                                    NonceStorage &nonces,
                                    const Settings &settings,
-                                   const std::string &params)
-      : Base(name, nonces, settings, params) {}
+                                   const std::string &params,
+                                   const Context &context,
+                                   ModuleEventsLog &log,
+                                   ModuleTradingLog &tradingLog)
+      : Base(name, nonces, settings, params, context, log, &tradingLog) {}
   virtual ~OrderTransactionRequest() override = default;
 
  protected:
@@ -130,7 +138,7 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_nonces(m_settings.nonces, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
-      m_balancesRequest(m_nonces, m_settings),
+      m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),
       m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
       m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
@@ -274,11 +282,17 @@ CryptopiaTradingSystem::SendOrderTransaction(
                              const Qty &qty,
                              const Price &price,
                              NonceStorage &nonces,
-                             const Settings &settings)
+                             const Settings &settings,
+                             const Context &context,
+                             ModuleEventsLog &log,
+                             ModuleTradingLog &tradingLog)
         : OrderTransactionRequest("SubmitTrade",
                                   nonces,
                                   settings,
-                                  CreateParams(productId, side, qty, price)) {}
+                                  CreateParams(productId, side, qty, price),
+                                  context,
+                                  log,
+                                  tradingLog) {}
 
    private:
     static std::string CreateParams(const CryptopiaProductId &productId,
@@ -297,10 +311,10 @@ CryptopiaTradingSystem::SendOrderTransaction(
   } request(productId,
             product->NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell",
             product->NormalizeQty(*price, qty, security),
-            product->NormalizePrice(*price, security), m_nonces, m_settings);
+            product->NormalizePrice(*price, security), m_nonces, m_settings,
+            GetContext(), GetLog(), GetTradingLog());
 
-  const auto response =
-      boost::get<1>(request.Send(*m_tradingSession, GetContext()));
+  const auto response = boost::get<1>(request.Send(*m_tradingSession));
 
   auto orderId = response.get<OrderId>("OrderId");
   if (orderId.GetValue() == "null") {
@@ -330,17 +344,12 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
 
   OrderTransactionRequest request(
       "CancelTrade", m_nonces, m_settings,
-      "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}");
+      "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}",
+      GetContext(), GetLog(), GetTradingLog());
 
-  CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-  const auto &response = request.Send(*m_tradingSession, GetContext());
+  const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
+  request.Send(*m_tradingSession);
   Verify(m_cancelingOrders.emplace(orderId).second);
-  cancelOrderLock.unlock();
-
-  GetTradingLog().Write(
-      "debug-dump-order-cancel\t%1%", [&response](TradingRecord &record) {
-        record % ConvertToString(boost::get<1>(response), false);
-      });
 }
 
 void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
@@ -349,7 +358,7 @@ void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession, GetContext());
+  const auto response = m_balancesRequest.Send(*m_pullingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
@@ -376,7 +385,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response =
-        boost::get<1>(request.second->Send(*m_pullingSession, GetContext()));
+        boost::get<1>(request.second->Send(*m_pullingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
         Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
@@ -425,10 +434,6 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
 OrderId CryptopiaTradingSystem::UpdateOrder(
     const CryptopiaProduct & /*product*/, const ptr::ptree &node) {
-  GetTradingLog().Write(
-      "debug-dump-order-status\t%1%",
-      [&](TradingRecord &record) { record % ConvertToString(node, false); });
-
   OrderId id;
   Qty remainingQty;
   pt::ptime time;
@@ -464,21 +469,28 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
    public:
     explicit OpenOrdersRequest(const CryptopiaProductId &product,
                                NonceStorage &nonces,
-                               const Settings &settings)
+                               const Settings &settings,
+                               const Context &context,
+                               ModuleEventsLog &log,
+                               ModuleTradingLog &tradingLog)
         : AccountRequest(
               "GetOpenOrders",
               nonces,
               settings,
               (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") %
                product)
-                  .str()) {}
+                  .str(),
+              context,
+              log,
+              &tradingLog) {}
   };
 
   {
     const OrdersRequestsWriteLock lock(m_openOrdersRequestMutex);
     if (!m_openOrdersRequests
              .emplace(product, boost::make_shared<OpenOrdersRequest>(
-                                   product->id, m_nonces, m_settings))
+                                   product->id, m_nonces, m_settings,
+                                   GetContext(), GetLog(), GetTradingLog()))
              .second) {
       return;
     }

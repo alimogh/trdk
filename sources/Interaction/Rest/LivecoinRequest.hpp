@@ -26,8 +26,11 @@ class LivecoinRequest : public Request {
  public:
   explicit LivecoinRequest(const std::string &name,
                            const std::string &method,
-                           const std::string &params = std::string())
-      : Base(name, name, method, params) {}
+                           const std::string &params,
+                           const Context &context,
+                           ModuleEventsLog &log,
+                           ModuleTradingLog *tradingLog = nullptr)
+      : Base(name, name, method, params, context, log, tradingLog) {}
   virtual ~LivecoinRequest() override = default;
 
  protected:
@@ -39,8 +42,11 @@ class LivecoinRequest : public Request {
 class LivecoinPublicRequest : public LivecoinRequest {
  public:
   explicit LivecoinPublicRequest(const std::string &name,
-                                 const std::string &params = std::string())
-      : LivecoinRequest(name, Poco::Net::HTTPRequest::HTTP_GET, params) {}
+                                 const std::string &params,
+                                 const Context &context,
+                                 ModuleEventsLog &log)
+      : LivecoinRequest(
+            name, Poco::Net::HTTPRequest::HTTP_GET, params, context, log) {}
   virtual ~LivecoinPublicRequest() override = default;
 
  protected:

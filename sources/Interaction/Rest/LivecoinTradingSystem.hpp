@@ -34,7 +34,10 @@ class LivecoinTradingSystem : public TradingSystem {
     explicit PrivateRequest(const std::string &name,
                             const std::string &method,
                             const Settings &,
-                            const std::string &params = std::string());
+                            const std::string &params,
+                            const Context &,
+                            ModuleEventsLog &,
+                            ModuleTradingLog * = nullptr);
     virtual ~PrivateRequest() override = default;
 
    protected:
@@ -50,13 +53,16 @@ class LivecoinTradingSystem : public TradingSystem {
    public:
     explicit TradingRequest(const std::string &name,
                             const Settings &,
-                            const std::string &params = std::string());
+                            const std::string &params,
+                            const Context &,
+                            ModuleEventsLog &,
+                            ModuleTradingLog * = nullptr);
     virtual ~TradingRequest() override = default;
 
    public:
     LivecoinTradingSystem::TradingRequest::Response
-    LivecoinTradingSystem::TradingRequest::Send(Poco::Net::HTTPClientSession &,
-                                                const Context &) override;
+    LivecoinTradingSystem::TradingRequest::Send(
+        Poco::Net::HTTPClientSession &) override;
 
    protected:
     virtual bool IsPriority() const override { return true; }
@@ -64,7 +70,9 @@ class LivecoinTradingSystem : public TradingSystem {
 
   class BalancesRequest : public PrivateRequest {
    public:
-    explicit BalancesRequest(const Settings &);
+    explicit BalancesRequest(const Settings &,
+                             const Context &,
+                             ModuleEventsLog &);
     virtual ~BalancesRequest() override = default;
 
    protected:

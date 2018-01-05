@@ -34,11 +34,16 @@ LivecoinTradingSystem::Settings::Settings(const IniSectionRef &conf,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-LivecoinTradingSystem::PrivateRequest::PrivateRequest(const std::string &name,
-                                                      const std::string &method,
-                                                      const Settings &settings,
-                                                      const std::string &params)
-    : LivecoinRequest(name, method, params), m_settings(settings) {}
+LivecoinTradingSystem::PrivateRequest::PrivateRequest(
+    const std::string &name,
+    const std::string &method,
+    const Settings &settings,
+    const std::string &params,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
+    : LivecoinRequest(name, method, params, context, log, tradingLog),
+      m_settings(settings) {}
 
 void LivecoinTradingSystem::PrivateRequest::PrepareRequest(
     const net::HTTPClientSession &session,
@@ -55,15 +60,24 @@ void LivecoinTradingSystem::PrivateRequest::PrepareRequest(
   Base::PrepareRequest(session, body, request);
 }
 
-LivecoinTradingSystem::TradingRequest::TradingRequest(const std::string &name,
-                                                      const Settings &settings,
-                                                      const std::string &params)
-    : PrivateRequest(name, net::HTTPRequest::HTTP_POST, settings, params) {}
+LivecoinTradingSystem::TradingRequest::TradingRequest(
+    const std::string &name,
+    const Settings &settings,
+    const std::string &params,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
+    : PrivateRequest(name,
+                     net::HTTPRequest::HTTP_POST,
+                     settings,
+                     params,
+                     context,
+                     log,
+                     tradingLog) {}
 
 LivecoinTradingSystem::TradingRequest::Response
-LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session,
-                                            const Context &context) {
-  const auto &result = Base::Send(session, context);
+LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
+  const auto &result = Base::Send(session);
   const auto &content = boost::get<1>(result);
   try {
     const auto &status = content.get<bool>("success");
@@ -138,9 +152,13 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session,
 }
 
 LivecoinTradingSystem::BalancesRequest::BalancesRequest(
-    const Settings &settings)
-    : PrivateRequest(
-          "/payment/balances", net::HTTPRequest::HTTP_GET, settings) {}
+    const Settings &settings, const Context &context, ModuleEventsLog &log)
+    : PrivateRequest("/payment/balances",
+                     net::HTTPRequest::HTTP_GET,
+                     settings,
+                     std::string(),
+                     context,
+                     log) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -152,7 +170,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
-      m_balancesRequest(m_settings),
+      m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
       m_pullingSession(CreateSession("api.livecoin.net", m_settings, false)),
       m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
@@ -193,7 +211,7 @@ Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
 
 void LivecoinTradingSystem::UpdateBalances() {
   const auto response =
-      boost::get<1>(m_balancesRequest.Send(*m_pullingSession, GetContext()));
+      boost::get<1>(m_balancesRequest.Send(*m_pullingSession));
   for (const auto &node : response) {
     const auto &balance = node.second;
     const auto &type = balance.get<std::string>("type");
@@ -214,18 +232,18 @@ void LivecoinTradingSystem::UpdateOrders() {
 
    public:
     explicit OrderStatusRequest(const OrderId &orderId,
-                                const Settings &settings)
+                                const Settings &settings,
+                                const Context &context,
+                                ModuleEventsLog &log,
+                                ModuleTradingLog &tradingLog)
         : Base("/exchange/order",
                net::HTTPRequest::HTTP_GET,
                settings,
-               "orderId=" + ExtractOrderId(orderId)) {}
+               "orderId=" + ExtractOrderId(orderId),
+               context,
+               log,
+               &tradingLog) {}
     virtual ~OrderStatusRequest() override = default;
-
-   public:
-    virtual Response Send(net::HTTPClientSession &session,
-                          const Context &context) override {
-      return Base::Send(session, context);
-    }
 
    protected:
     virtual bool IsPriority() const override { return false; }
@@ -244,12 +262,9 @@ void LivecoinTradingSystem::UpdateOrders() {
 
   for (const auto &orderId : GetActiveOrderList()) {
     const auto order =
-        boost::get<1>(OrderStatusRequest(orderId, m_settings)
-                          .Send(*m_pullingSession, GetContext()));
-    GetTradingLog().Write("debug-dump-order-status\t%1%",
-                          [&order](TradingRecord &record) {
-                            record % ConvertToString(order, false);
-                          });
+        boost::get<1>(OrderStatusRequest(orderId, m_settings, GetContext(),
+                                         GetLog(), GetTradingLog())
+                          .Send(*m_pullingSession));
     OrderStatus status;
     Qty remainingQuantity;
     Volume commission;
@@ -369,19 +384,15 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   boost::format requestParams("currencyPair=%1%&price=%2$.8f&quantity=%3$.8f");
   requestParams % product->second.requestId  // 1
-      % RoundByPrecision(*price,
+      % RoundByPrecision(*price),
                          product->second.pricePrecisionPower)  // 2
       % qty;                                                   // 3
 
   TradingRequest request(
       side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",
-      m_settings, requestParams.str());
-  const auto response =
-      boost::get<1>(request.Send(*m_tradingSession, GetContext()));
-  GetTradingLog().Write("debug-dump-order-submit\t%1%",
-                        [&response](TradingRecord &record) {
-                          record % ConvertToString(response, false);
-                        });
+      m_settings, requestParams.str(), GetContext(), GetLog(),
+      &GetTradingLog());
+  const auto response = boost::get<1>(request.Send(*m_tradingSession));
   try {
     if (!response.get<bool>("added")) {
       throw Exception(
@@ -413,12 +424,9 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   }
 
   const auto response = boost::get<1>(
-      TradingRequest("/exchange/cancellimit", m_settings, requestParams.str())
-          .Send(*m_tradingSession, GetContext()));
-  GetTradingLog().Write("debug-dump-order-cancel\t%1%",
-                        [&response](TradingRecord &record) {
-                          record % ConvertToString(response, false);
-                        });
+      TradingRequest("/exchange/cancellimit", m_settings, requestParams.str(),
+                     GetContext(), GetLog(), &GetTradingLog())
+          .Send(*m_tradingSession));
 
   try {
     if (!response.get<bool>("cancelled")) {
