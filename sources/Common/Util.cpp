@@ -38,6 +38,11 @@ fs::path Lib::SymbolToFileName(const std::string &symbol,
 
 namespace {
 
+boost::shared_ptr<lt::posix_time_zone> GetUtcTimeZone() {
+  static const lt::posix_time_zone timeZone("UTC");
+  return boost::make_shared<lt::posix_time_zone>(timeZone);
+}
+
 boost::shared_ptr<lt::posix_time_zone> GetEstTimeZone() {
   static const lt::posix_time_zone timeZone("EST-5");
   return boost::make_shared<lt::posix_time_zone>(timeZone);
@@ -76,6 +81,15 @@ std::string Lib::ConvertToFileName(const gr::date &source) {
   result << std::setfill('0') << source.year() << std::setw(2)
          << source.month().as_number() << std::setw(2) << source.day();
   return result.str();
+}
+
+pt::time_duration Lib::GetUtcTimeZoneDiff(
+    const lt::time_zone_ptr &localTimeZone) {
+  return CalcTimeZoneOffset(
+      lt::local_date_time(boost::get_system_time(), GetUtcTimeZone())
+          .local_time(),
+      lt::local_date_time(boost::get_system_time(), localTimeZone)
+          .local_time());
 }
 
 pt::time_duration Lib::GetEstTimeZoneDiff(

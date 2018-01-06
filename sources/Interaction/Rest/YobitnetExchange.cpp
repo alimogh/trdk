@@ -745,10 +745,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         throw;
       } catch (const CommunicationError &) {
         throw CommunicationError(error.str().c_str());
-      } catch (const Exception &) {
+      } catch (...) {
         throw Exception(error.str().c_str());
-      } catch (const std::exception &) {
-        throw CommunicationError(error.str().c_str());
       }
     }
   }
@@ -774,11 +772,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         } catch (...) {
           throw Exception(error.str().c_str());
         }
-      } catch (const std::exception &ex) {
-        boost::format error("Failed to request state for order %1%: \"%2%\"");
-        error % orderId   // 1
-            % ex.what();  // 2
-        throw CommunicationError(error.str().c_str());
       }
 
       for (const auto &node : response) {

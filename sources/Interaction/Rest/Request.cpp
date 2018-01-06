@@ -104,7 +104,7 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        throw Interactor::CommunicationError(getError(ex).c_str());
+        throw TimeoutException(getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
@@ -175,7 +175,13 @@ Request::Send(net::HTTPClientSession &session) {
       error % m_name             // 1
           % m_request->getURI()  // 2
           % ex.what();           // 3
-      throw Interactor::CommunicationError(error.str().c_str());
+      try {
+        throw;
+      } catch (const Poco::TimeoutException &) {
+        throw TimeoutException(error.str().c_str());
+      } catch (...) {
+        throw Interactor::CommunicationError(error.str().c_str());
+      }
     }
   }
 }
