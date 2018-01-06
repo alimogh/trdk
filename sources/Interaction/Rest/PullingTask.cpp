@@ -173,7 +173,7 @@ bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
       try {
         throw;
       } catch (const Interactor::CommunicationError &ex) {
-        m_log.Warn(
+        m_log.Debug(
             "%1% task \"%2%\" error: \"%3%\".",
             task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
             task.name,                                                  // 2
@@ -193,7 +193,7 @@ bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
   }
 
   if (task.numberOfErrors > 1) {
-    m_log.Info("Pulling task \"%1%\" restored.", task.name);
+    m_log.Debug("Pulling task \"%1%\" restored.", task.name);
   }
   task.numberOfErrors = 0;
 

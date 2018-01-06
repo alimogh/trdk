@@ -163,9 +163,9 @@ Request::Send(net::HTTPClientSession &session) {
         try {
           throw;
         } catch (const net::NoMessageException &ex) {
-          m_log.Warn("Repeating request \"%1%\" after error \"%2%\"...",
-                     m_request->getURI(),  // 1
-                     ex.what());           // 2
+          m_log.Debug("Repeating request \"%1%\" after error \"%2%\"...",
+                      m_request->getURI(),  // 1
+                      ex.what());           // 2
           continue;
         } catch (...) {
         }
@@ -198,9 +198,9 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
       case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
-        m_log.Warn("Repeating request \"%1%\" after error with code %2%...",
-                   m_request->getURI(),    // 1
-                   response.getStatus());  // 2
+        m_log.Debug("Repeating request \"%1%\" after error with code %2%...",
+                    m_request->getURI(),    // 1
+                    response.getStatus());  // 2
         return;
     }
   }

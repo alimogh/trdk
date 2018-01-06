@@ -387,8 +387,8 @@ class Strategy::Implementation : private boost::noncopyable {
       const BlockLock lock(m_blockMutex);
       m_isBlocked = true;
       m_blockEndTime = pt::not_a_date_time;
-      reason ? m_strategy.GetLog().Info("Blocked by reason: \"%s\".", *reason)
-             : m_strategy.GetLog().Info("Blocked.");
+      reason ? m_strategy.GetLog().Error("Blocked by reason: \"%s\".", *reason)
+             : m_strategy.GetLog().Error("Blocked.");
       m_stopCondition.notify_all();
     } catch (...) {
       AssertFailNoException();

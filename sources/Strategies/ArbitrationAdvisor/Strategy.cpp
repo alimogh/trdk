@@ -584,8 +584,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     } catch (const Interactor::CommunicationError &ex) {
       ReportSignal("error", "sync", sellTarget, buyTarget, spreadRatio,
                    bestSpreadRatio);
-      m_self.GetLog().Error("Failed to start trading (sync): \"%1%\".",
-                            ex.what());
+      m_self.GetLog().Warn("Failed to start trading (sync): \"%1%\".",
+                           ex.what());
 
       if (firstLeg) {
         CloseLegPositionByOperationStartError(*firstLeg, *legTargets.second,
@@ -595,7 +595,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto &errorLeg =
           *(!firstLeg ? legTargets.first : legTargets.second);
       m_errors.emplace(&errorLeg);
-      m_self.GetLog().Warn(
+      m_self.GetLog().Debug(
           "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
           "%3% leg is \"%4%\"",
           errorLeg,                        // 1
@@ -645,7 +645,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       } catch (const Interactor::CommunicationError &ex) {
         ReportSignal("error", "async 2nd leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);
-        m_self.GetLog().Error(
+        m_self.GetLog().Warn(
             "Failed to start trading (async 2nd leg): \"%1%\".", ex.what());
       }
       try {
@@ -653,7 +653,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       } catch (const Interactor::CommunicationError &ex) {
         ReportSignal("error", "async 1st leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);
-        m_self.GetLog().Error(
+        m_self.GetLog().Warn(
             "Failed to start trading (async 1st leg): \"%1%\".", ex.what());
       }
     }
@@ -669,7 +669,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     if (!firstLeg && !secondLeg) {
-      m_self.GetLog().Warn(
+      m_self.GetLog().Debug(
           "\"%1%\" and \"%2%\" added to the blacklist by position opening "
           "error.",
           firstLegTarget,    // 1
@@ -689,7 +689,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       CloseLegPositionByOperationStartError(*secondLeg, firstLegTarget,
                                             *operation);
     }
-    m_self.GetLog().Warn(
+    m_self.GetLog().Debug(
         "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
         "%3% leg is \"%4%\"",
         *errorLeg,                                      // 1
@@ -844,8 +844,8 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const Interactor::CommunicationError &ex) {
-    GetLog().Warn("Communication error at position update handling: \"%1%\".",
-                  ex.what());
+    GetLog().Debug("Communication error at position update handling: \"%1%\".",
+                   ex.what());
   }
 }
 
