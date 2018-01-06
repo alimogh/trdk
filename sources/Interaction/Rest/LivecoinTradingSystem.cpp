@@ -142,10 +142,6 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
         if (boost::starts_with(exception,
                                "Not sufficient funds on the account")) {
           throw TradingSystem::CommunicationError(error.str().c_str());
-        } else if (boost::starts_with(exception, "Order[orderId={") &&
-                   boost::contains(exception,
-                                   "}] isn't in OrderBook: status={")) {
-          throw OrderIsUnknown(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());
@@ -441,7 +437,10 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
       boost::format error("Failed to cancel order: \"%1%\"");
       const auto &message = response.get<std::string>("message");
       error % message;
-      boost::istarts_with(message, "Failed to cancel order: can't find order")
+      boost::istarts_with(message,
+                          "Failed to cancel order: can't find order") ||
+              (boost::starts_with(message, "Order[orderId={") &&
+               boost::contains(message, "}] isn't in OrderBook: status={"))
           ? throw OrderIsUnknown(error.str().c_str())
           : throw Exception(error.str().c_str());
     }
