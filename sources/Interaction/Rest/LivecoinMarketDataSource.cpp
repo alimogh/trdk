@@ -138,10 +138,8 @@ void LivecoinMarketDataSource::UpdatePrices() {
       throw;
     } catch (const CommunicationError &) {
       throw CommunicationError(error.str().c_str());
-    } catch (const Exception &) {
+    } catch (...) {
       throw Exception(error.str().c_str());
-    } catch (const std::exception &) {
-      throw CommunicationError(error.str().c_str());
     }
   }
 }

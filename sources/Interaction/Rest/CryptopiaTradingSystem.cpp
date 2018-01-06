@@ -24,6 +24,22 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+OrderId ParseOrderId(const ptr::ptree &source) {
+  return source.get<OrderId>("OrderId");
+}
+pt::ptime ParseTimeStamp(const ptr::ptree &source,
+                         const pt::time_duration &timeZoneOffset) {
+  const auto &field = source.get<std::string>("TimeStamp");
+  pt::ptime result(gr::from_string(field.substr(0, 10)),
+                   pt::duration_from_string(field.substr(11, 8)));
+  result += timeZoneOffset;
+  return result;
+}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 CryptopiaTradingSystem::Settings::Settings(const IniSectionRef &conf,
                                            ModuleEventsLog &log)
     : Rest::Settings(conf, log),
@@ -136,6 +152,8 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
                                                const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
+      m_serverTimeDiff(
+          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_nonces(m_settings.nonces, GetLog()),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
@@ -274,6 +292,10 @@ CryptopiaTradingSystem::SendOrderTransaction(
   }
 
   const auto &productId = product->id;
+  const std::string actualSide =
+      product->NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell";
+  const auto &actualQty = product->NormalizeQty(*price, qty, security);
+  const auto &actualPrice = product->NormalizePrice(*price, security);
 
   class NewOrderRequest : public OrderTransactionRequest {
    public:
@@ -308,13 +330,27 @@ CryptopiaTradingSystem::SendOrderTransaction(
           % qty;          // 4
       return result.str();
     }
-  } request(productId,
-            product->NormalizeSide(side) == ORDER_SIDE_BUY ? "Buy" : "Sell",
-            product->NormalizeQty(*price, qty, security),
-            product->NormalizePrice(*price, security), m_nonces, m_settings,
+  } request(productId, actualSide, actualQty, actualPrice, m_nonces, m_settings,
             GetContext(), GetLog(), GetTradingLog());
 
-  const auto response = boost::get<1>(request.Send(*m_tradingSession));
+  ptr::ptree response;
+  const auto &startTime = GetContext().GetCurrentTime();
+  try {
+    response = boost::get<1>(request.Send(*m_tradingSession));
+  } catch (const Request::TimeoutException &ex) {
+    GetLog().Debug(
+        "Got error \"%1%\" at the new-order request sending. Trying to "
+        "retrieve actual result...",
+        ex.what());
+    const auto &orderId = FindNewOrderId(productId, startTime, actualSide,
+                                         actualQty, actualPrice);
+    if (!orderId) {
+      throw;
+    }
+    GetLog().Debug("Retrieved new order ID \"%1%\".", *orderId);
+    return boost::make_unique<OrderTransactionContext>(*this,
+                                                       std::move(*orderId));
+  }
 
   auto orderId = response.get<OrderId>("OrderId");
   if (orderId.GetValue() == "null") {
@@ -439,13 +475,9 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
   pt::ptime time;
 
   try {
-    id = node.get<OrderId>("OrderId");
+    id = ParseOrderId(node);
     remainingQty = node.get<Price>("Remaining");
-    {
-      const auto &timeField = node.get<std::string>("TimeStamp");
-      time = {gr::from_string(timeField.substr(0, 10)),
-              pt::duration_from_string(timeField.substr(11, 8))};
-    }
+    time = ParseTimeStamp(node, m_serverTimeDiff);
   } catch (const std::exception &ex) {
     boost::format error("Failed to parse order : \"%1%\". Message: \"%2%\"");
     error % ex.what()                    // 1
@@ -465,26 +497,6 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
 
 void CryptopiaTradingSystem::SubscribeToOrderUpdates(
     const CryptopiaProductList::const_iterator &product) {
-  class OpenOrdersRequest : public AccountRequest {
-   public:
-    explicit OpenOrdersRequest(const CryptopiaProductId &product,
-                               NonceStorage &nonces,
-                               const Settings &settings,
-                               const Context &context,
-                               ModuleEventsLog &log,
-                               ModuleTradingLog &tradingLog)
-        : AccountRequest(
-              "GetOpenOrders",
-              nonces,
-              settings,
-              (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") %
-               product)
-                  .str(),
-              context,
-              log,
-              &tradingLog) {}
-  };
-
   {
     const OrdersRequestsWriteLock lock(m_openOrdersRequestMutex);
     if (!m_openOrdersRequests
@@ -499,6 +511,45 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
   m_pullingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
       m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+}
+
+boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
+    const CryptopiaProductId &productId,
+    const pt::ptime &startTime,
+    const std::string &side,
+    const Qty &qty,
+    const Price &price) const {
+  boost::optional<OrderId> result;
+  const auto &knownOrders = GetActiveOrderList();
+  OpenOrdersRequest request(productId, m_nonces, m_settings, GetContext(),
+                            GetLog(), GetTradingLog());
+  try {
+    for (const auto &node : boost::get<1>(request.Send(*m_tradingSession))) {
+      const auto &order = node.second;
+      const auto &id = ParseOrderId(order);
+      if (std::find(knownOrders.cbegin(), knownOrders.cend(), id) !=
+              knownOrders.cend() ||
+          order.get<std::string>("Type") != side ||
+          order.get<Qty>("Amount") != qty ||
+          order.get<Price>("Rate") != price ||
+          ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
+              startTime) {
+        continue;
+      }
+      if (result) {
+        GetLog().Warn(
+            "Failed to find new order ID: Two or more orders are suitable "
+            "(order ID: \"%1%\").",
+            id);
+        return boost::none;
+      }
+      result = id;
+    }
+  } catch (const CommunicationError &ex) {
+    GetLog().Debug("Failed to find new order ID: \"%1%\".", ex.what());
+    return boost::none;
+  }
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

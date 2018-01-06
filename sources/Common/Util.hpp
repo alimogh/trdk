@@ -86,6 +86,11 @@ boost::filesystem::path Normalize(
 
 //////////////////////////////////////////////////////////////////////////
 
+//! UTC - Coordinated Universal Time.
+boost::posix_time::time_duration GetUtcTimeZoneDiff(
+    const boost::local_time::time_zone_ptr &localTimeZone);
+
+//! EST.
 boost::posix_time::time_duration GetEstTimeZoneDiff(
     const boost::local_time::time_zone_ptr &localTimeZone);
 

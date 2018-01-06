@@ -104,7 +104,7 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        throw Interactor::CommunicationError(getError(ex).c_str());
+        throw TimeoutException(getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
@@ -163,9 +163,9 @@ Request::Send(net::HTTPClientSession &session) {
         try {
           throw;
         } catch (const net::NoMessageException &ex) {
-          m_log.Warn("Repeating request \"%1%\" after error \"%2%\"...",
-                     m_request->getURI(),  // 1
-                     ex.what());           // 2
+          m_log.Debug("Repeating request \"%1%\" after error \"%2%\"...",
+                      m_request->getURI(),  // 1
+                      ex.what());           // 2
           continue;
         } catch (...) {
         }
@@ -175,7 +175,13 @@ Request::Send(net::HTTPClientSession &session) {
       error % m_name             // 1
           % m_request->getURI()  // 2
           % ex.what();           // 3
-      throw Interactor::CommunicationError(error.str().c_str());
+      try {
+        throw;
+      } catch (const Poco::TimeoutException &) {
+        throw TimeoutException(error.str().c_str());
+      } catch (...) {
+        throw Interactor::CommunicationError(error.str().c_str());
+      }
     }
   }
 }
@@ -198,9 +204,9 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
       case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
-        m_log.Warn("Repeating request \"%1%\" after error with code %2%...",
-                   m_request->getURI(),    // 1
-                   response.getStatus());  // 2
+        m_log.Debug("Repeating request \"%1%\" after error with code %2%...",
+                    m_request->getURI(),    // 1
+                    response.getStatus());  // 2
         return;
     }
   }

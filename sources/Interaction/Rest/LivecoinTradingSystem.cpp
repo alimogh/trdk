@@ -142,6 +142,10 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
         if (boost::starts_with(exception,
                                "Not sufficient funds on the account")) {
           throw TradingSystem::CommunicationError(error.str().c_str());
+        } else if (boost::starts_with(exception, "Order[orderId={") &&
+                   boost::contains(exception,
+                                   "}] isn't in OrderBook: status={")) {
+          throw OrderIsUnknown(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());

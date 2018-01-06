@@ -21,6 +21,12 @@ class Request {
                        Lib::TimeMeasurement::Milestones>
       Response;
 
+  class TimeoutException : public Interactor::CommunicationError {
+   public:
+    explicit TimeoutException(const char *what) noexcept
+        : CommunicationError(what) {}
+  };
+
  public:
   explicit Request(
       const std::string &uri,
