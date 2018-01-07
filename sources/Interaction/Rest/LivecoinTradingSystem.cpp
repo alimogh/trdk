@@ -279,6 +279,11 @@ void LivecoinTradingSystem::UpdateOrders() {
         status = ORDER_STATUS_SUBMITTED;
       } else if (statusField == "CANCELLED") {
         status = ORDER_STATUS_CANCELLED;
+      } else if (statusField == "PARTIALLY_FILLED_AND_CANCELLED") {
+        status = ORDER_STATUS_FILLED_PARTIALLY;
+        const auto &trade = order.get_child("trades");
+        commission = trade.get<Volume>("commission");
+        tradeInfo.price = trade.get<Price>("avg_price");
       } else if (statusField == "EXECUTED") {
         status = ORDER_STATUS_FILLED;
         const auto &trade = order.get_child("trades");
@@ -299,6 +304,11 @@ void LivecoinTradingSystem::UpdateOrders() {
     if (status == ORDER_STATUS_FILLED) {
       OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
                           remainingQuantity, commission, std::move(tradeInfo));
+    } else if (status == ORDER_STATUS_FILLED_PARTIALLY) {
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
+                          remainingQuantity, commission, std::move(tradeInfo));
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
+                          ORDER_STATUS_CANCELLED, 0, commission);
     } else {
       OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
                           remainingQuantity);
