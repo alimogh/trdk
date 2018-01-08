@@ -52,4 +52,5 @@ class TradingLog;
 class ModuleTradingLog;
 
 class Timer;
+class TimerScope;
 }

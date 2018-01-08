@@ -124,7 +124,7 @@ Request::Send(net::HTTPClientSession &session) {
             "response-dump %1%\t%2%",
             [this, &responseStream, &responseBuffer](TradingRecord &record) {
               Poco::StreamCopier::copyToString(responseStream, responseBuffer);
-              record % m_uri         // 1
+              record % GetName()     // 1
                   % responseBuffer;  // 2
             });
       }

@@ -79,24 +79,6 @@ typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::ReadLock
     ActiveOrderReadLock;
 typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::WriteLock
     ActiveOrderWriteLock;
-
-struct ActiveOrder {
-  boost::shared_ptr<OrderTransactionContext> transactionContext;
-  TradingSystem::OrderStatusUpdateSlot statusUpdateSignal;
-  Qty remainingQty;
-  Price price;
-  OrderStatus status;
-  pt::ptime updateTime;
-  std::unique_ptr<trdk::Timer::Scope> timerScope;
-
-  bool IsChanged(
-      const OrderStatus &rhsStatus,
-      const boost::optional<Qty> &rhsRemainingQty,
-      const boost::optional<TradingSystem::TradeInfo> &tradeInfo) const {
-    return tradeInfo || status != rhsStatus ||
-           (rhsRemainingQty && remainingQty != *rhsRemainingQty);
-  }
-};
 }
 
 class TradingSystem::Implementation : private boost::noncopyable {
@@ -116,7 +98,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   TradingSystem::TradingLog m_tradingLog;
 
   ActiveOrderMutex m_activeOrdersMutex;
-  boost::unordered_map<OrderId, ActiveOrder> m_activeOrders;
+  ActiveOrders m_activeOrders;
   std::unique_ptr<Timer::Scope> m_lastOrderTimerScope;
 
   explicit Implementation(TradingSystem &self,
@@ -557,7 +539,7 @@ boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
   return boost::none;
 }
 
-std::vector<OrderId> TradingSystem::GetActiveOrderList() const {
+std::vector<OrderId> TradingSystem::GetActiveOrderIdList() const {
   std::vector<OrderId> result;
   const ActiveOrderReadLock lock(m_pimpl->m_activeOrdersMutex);
   result.reserve(m_pimpl->m_activeOrders.size());
@@ -565,6 +547,10 @@ std::vector<OrderId> TradingSystem::GetActiveOrderList() const {
     result.emplace_back(order.first);
   }
   return result;
+}
+
+const TradingSystem::ActiveOrders &TradingSystem::GetActiveOrders() const {
+  return m_pimpl->m_activeOrders;
 }
 
 void TradingSystem::Connect(const IniSectionRef &conf) {

@@ -264,7 +264,7 @@ void LivecoinTradingSystem::UpdateOrders() {
     }
   };
 
-  for (const auto &orderId : GetActiveOrderList()) {
+  for (const auto &orderId : GetActiveOrderIdList()) {
     const auto order =
         boost::get<1>(OrderStatusRequest(orderId, m_settings, GetContext(),
                                          GetLog(), GetTradingLog())

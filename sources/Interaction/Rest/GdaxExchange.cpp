@@ -725,7 +725,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     };
 
-    for (const OrderId &orderId : GetActiveOrderList()) {
+    for (const OrderId &orderId : GetActiveOrderIdList()) {
       OrderStateRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                 GetTsTradingLog());
       try {

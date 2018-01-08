@@ -736,7 +736,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrders() {
-    for (const OrderId &orderId : GetActiveOrderList()) {
+    for (const OrderId &orderId : GetActiveOrderIdList()) {
       PrivateRequest request(
           "getorder", m_settings, m_endpoint.floodControl, false,
           "uuid=" + boost::lexical_cast<std::string>(orderId), GetContext(),

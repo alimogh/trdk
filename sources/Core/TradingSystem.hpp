@@ -115,6 +115,26 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     boost::optional<trdk::Volume> volume;
   };
 
+ protected:
+  struct ActiveOrder {
+    boost::shared_ptr<trdk::OrderTransactionContext> transactionContext;
+    OrderStatusUpdateSlot statusUpdateSignal;
+    trdk::Qty remainingQty;
+    trdk::Price price;
+    trdk::OrderStatus status;
+    boost::posix_time::ptime updateTime;
+    std::unique_ptr<trdk::TimerScope> timerScope;
+
+    bool IsChanged(const trdk::OrderStatus &rhsStatus,
+                   const boost::optional<trdk::Qty> &rhsRemainingQty,
+                   const boost::optional<TradeInfo> &tradeInfo) const {
+      return tradeInfo || status != rhsStatus ||
+             (rhsRemainingQty && remainingQty != *rhsRemainingQty);
+    }
+  };
+
+  typedef boost::unordered_map<trdk::OrderId, ActiveOrder> ActiveOrders;
+
  public:
   explicit TradingSystem(const trdk::TradingMode &,
                          trdk::Context &,
@@ -161,7 +181,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual trdk::Volume CalcCommission(const trdk::Volume &,
                                       const trdk::Security &) const;
 
-  std::vector<trdk::OrderId> GetActiveOrderList() const;
+  std::vector<trdk::OrderId> GetActiveOrderIdList() const;
 
  public:
   virtual boost::optional<trdk::TradingSystem::OrderCheckError> CheckOrder(
@@ -199,6 +219,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
 
   virtual trdk::Balances &GetBalancesStorage();
+
+  const ActiveOrders &GetActiveOrders() const;
 
  protected:
   virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
