@@ -20,7 +20,7 @@ struct LivecoinProduct {
   LivecoinProductId id;
   std::string requestId;
   Volume minBtcVolume;
-  uintmax_t pricePrecisionPower;
+  uint8_t pricePrecision;
 };
 
 boost::unordered_map<std::string, LivecoinProduct> RequestLivecoinProductList(

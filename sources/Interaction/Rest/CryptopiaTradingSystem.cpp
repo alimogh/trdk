@@ -33,7 +33,7 @@ pt::ptime ParseTimeStamp(const ptr::ptree &source,
   const auto &field = source.get<std::string>("TimeStamp");
   pt::ptime result(gr::from_string(field.substr(0, 10)),
                    pt::duration_from_string(field.substr(11, 8)));
-  result += timeZoneOffset;
+  result -= timeZoneOffset;
   return result;
 }
 }
@@ -433,7 +433,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   const auto &now = GetContext().GetCurrentTime();
 
-  for (const auto &activeOrder : GetActiveOrderList()) {
+  for (const auto &activeOrder : GetActiveOrderIdList()) {
     if (orders.count(activeOrder)) {
       continue;
     }
@@ -520,15 +520,14 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
     const Qty &qty,
     const Price &price) const {
   boost::optional<OrderId> result;
-  const auto &knownOrders = GetActiveOrderList();
   OpenOrdersRequest request(productId, m_nonces, m_settings, GetContext(),
                             GetLog(), GetTradingLog());
   try {
-    for (const auto &node : boost::get<1>(request.Send(*m_tradingSession))) {
+    const auto response = boost::get<1>(request.Send(*m_tradingSession));
+    for (const auto &node : response) {
       const auto &order = node.second;
       const auto &id = ParseOrderId(order);
-      if (std::find(knownOrders.cbegin(), knownOrders.cend(), id) !=
-              knownOrders.cend() ||
+      if (GetActiveOrders().count(id) ||
           order.get<std::string>("Type") != side ||
           order.get<Qty>("Amount") != qty ||
           order.get<Price>("Rate") != price ||

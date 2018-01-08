@@ -267,11 +267,11 @@ namespace {
 boost::atomic_size_t lastScopeId(0);
 }
 
-Timer::Scope::Scope() : m_id(lastScopeId++), m_timer(nullptr) {}
+TimerScope::TimerScope() : m_id(lastScopeId++), m_timer(nullptr) {}
 
-Timer::Scope::~Scope() { Cancel(); }
+TimerScope::~TimerScope() { Cancel(); }
 
-size_t Timer::Scope::Cancel() noexcept {
+size_t TimerScope::Cancel() noexcept {
   if (!m_timer) {
     return 0;
   }
