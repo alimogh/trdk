@@ -387,8 +387,8 @@ class Strategy::Implementation : private boost::noncopyable {
       const BlockLock lock(m_blockMutex);
       m_isBlocked = true;
       m_blockEndTime = pt::not_a_date_time;
-      reason ? m_strategy.GetLog().Info("Blocked by reason: \"%s\".", *reason)
-             : m_strategy.GetLog().Info("Blocked.");
+      reason ? m_strategy.GetLog().Error("Blocked by reason: \"%s\".", *reason)
+             : m_strategy.GetLog().Error("Blocked.");
       m_stopCondition.notify_all();
     } catch (...) {
       AssertFailNoException();
@@ -441,8 +441,11 @@ class Strategy::Implementation : private boost::noncopyable {
       if (!position.IsCancelling()) {
         m_strategy.OnPositionUpdate(position);
       }
-    } catch (const ::trdk::Lib::RiskControlException &ex) {
+    } catch (const RiskControlException &ex) {
       BlockByRiskControlEvent(ex, "position update");
+      return;
+    } catch (const Exception &ex) {
+      m_strategy.Block(ex.what());
       return;
     }
 
@@ -595,8 +598,12 @@ void Strategy::RaiseLevel1UpdateEvent(
   try {
     m_pimpl->RunAllAlgos();
     OnLevel1Update(security, delayMeasurement);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -617,8 +624,12 @@ void Strategy::RaiseLevel1TickEvent(
   try {
     m_pimpl->RunAllAlgos();
     OnLevel1Tick(security, time, value, delayMeasurement);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -636,8 +647,12 @@ void Strategy::RaiseNewTradeEvent(Security &service,
   }
   try {
     OnNewTrade(service, time, price, qty);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -654,8 +669,12 @@ void Strategy::RaiseServiceDataUpdateEvent(
   }
   try {
     OnServiceDataUpdate(service, timeMeasurement);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "service data update");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -693,8 +712,12 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
   }
   try {
     OnSecurityContractSwitched(time, security, request, isSwitched);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -713,8 +736,12 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
   }
   try {
     OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -729,8 +756,12 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
   }
   try {
     OnNewBar(security, bar);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -749,8 +780,12 @@ void Strategy::RaiseBookUpdateTickEvent(
   timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
     OnBookUpdateTick(security, book, timeMeasurement);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }
@@ -769,6 +804,10 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
     OnSecurityServiceEvent(time, security, event);
   } catch (const ::trdk::Lib::RiskControlException &ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security service event");
+    return;
+  } catch (const Exception &ex) {
+    Block(ex.what());
+    return;
   }
   m_pimpl->FlushDelayed(lock);
 }

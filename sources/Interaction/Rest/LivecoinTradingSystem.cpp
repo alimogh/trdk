@@ -139,12 +139,16 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
         error << "\" (error code: " << errorCode << ")";
       } catch (const boost::bad_lexical_cast &) {
         error << exception << "\"";
+        if (boost::starts_with(exception,
+                               "Not sufficient funds on the account")) {
+          throw TradingSystem::CommunicationError(error.str().c_str());
+        }
       }
       throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for request \"" << GetName()
+    error << "Failed to read server response for request \"" << GetName()
           << "\" (" << GetRequest().getURI() << "): \"" << ex.what() << "\"";
     throw Interactor::CommunicationError(error.str().c_str());
   }
@@ -271,10 +275,15 @@ void LivecoinTradingSystem::UpdateOrders() {
     TradeInfo tradeInfo = {};
     try {
       const auto &statusField = order.get<std::string>("status");
-      if (statusField == "OPEN") {
+      if (statusField == "OPEN" || statusField == "PARTIALLY_FILLED") {
         status = ORDER_STATUS_SUBMITTED;
       } else if (statusField == "CANCELLED") {
         status = ORDER_STATUS_CANCELLED;
+      } else if (statusField == "PARTIALLY_FILLED_AND_CANCELLED") {
+        status = ORDER_STATUS_FILLED_PARTIALLY;
+        const auto &trade = order.get_child("trades");
+        commission = trade.get<Volume>("commission");
+        tradeInfo.price = trade.get<Price>("avg_price");
       } else if (statusField == "EXECUTED") {
         status = ORDER_STATUS_FILLED;
         const auto &trade = order.get_child("trades");
@@ -289,12 +298,17 @@ void LivecoinTradingSystem::UpdateOrders() {
       remainingQuantity = order.get<Price>("remaining_quantity");
     } catch (const ptr::ptree_error &ex) {
       std::ostringstream error;
-      error << "Field to read order status: \"" << ex.what() << "\"";
+      error << "Failed to read order status: \"" << ex.what() << "\"";
       throw Exception(error.str().c_str());
     }
     if (status == ORDER_STATUS_FILLED) {
       OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
                           remainingQuantity, commission, std::move(tradeInfo));
+    } else if (status == ORDER_STATUS_FILLED_PARTIALLY) {
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
+                          remainingQuantity, commission, std::move(tradeInfo));
+      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
+                          ORDER_STATUS_CANCELLED, 0, commission);
     } else {
       OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
                           remainingQuantity);
@@ -404,7 +418,7 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
         product->second.requestId + "_" + response.get<std::string>("orderId"));
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for new order request \""
+    error << "Failed to read server response for new order request \""
           << ex.what() << "\"";
     throw Exception(error.str().c_str());
   }
@@ -433,13 +447,16 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
       boost::format error("Failed to cancel order: \"%1%\"");
       const auto &message = response.get<std::string>("message");
       error % message;
-      boost::istarts_with(message, "Failed to cancel order: can't find order")
+      boost::istarts_with(message,
+                          "Failed to cancel order: can't find order") ||
+              (boost::starts_with(message, "Order[orderId={") &&
+               boost::contains(message, "}] isn't in OrderBook: status={"))
           ? throw OrderIsUnknown(error.str().c_str())
           : throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
-    error << "Field to read server response for order cancel request \""
+    error << "Failed to read server response for order cancel request \""
           << ex.what() << "\"";
     throw Exception(error.str().c_str());
   }

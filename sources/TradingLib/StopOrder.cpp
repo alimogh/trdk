@@ -31,7 +31,7 @@ void StopOrder::OnHit(const CloseReason &reason) {
         ex.what());  // 2
   } catch (const std::exception &ex) {
     GetPosition().GetStrategy().GetLog().Error(
-        "Field to start position closing by stop-order \"%1%\": \"%2%\".",
+        "Failed to start position closing by stop-order \"%1%\": \"%2%\".",
         GetName(),   // 1
         ex.what());  // 2
     throw;

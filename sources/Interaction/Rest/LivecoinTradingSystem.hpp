@@ -60,9 +60,7 @@ class LivecoinTradingSystem : public TradingSystem {
     virtual ~TradingRequest() override = default;
 
    public:
-    LivecoinTradingSystem::TradingRequest::Response
-    LivecoinTradingSystem::TradingRequest::Send(
-        Poco::Net::HTTPClientSession &) override;
+    Response Send(Poco::Net::HTTPClientSession &) override;
 
    protected:
     virtual bool IsPriority() const override { return true; }

@@ -100,6 +100,26 @@ class CryptopiaTradingSystem : public TradingSystem {
         : Base("GetBalance", nonces, settings, "{}", context, log) {}
   };
 
+  class OpenOrdersRequest : public AccountRequest {
+   public:
+    explicit OpenOrdersRequest(const CryptopiaProductId &product,
+                               NonceStorage &nonces,
+                               const Settings &settings,
+                               const Context &context,
+                               ModuleEventsLog &log,
+                               ModuleTradingLog &tradingLog)
+        : AccountRequest(
+              "GetOpenOrders",
+              nonces,
+              settings,
+              (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") %
+               product)
+                  .str(),
+              context,
+              log,
+              &tradingLog) {}
+  };
+
  public:
   explicit CryptopiaTradingSystem(const App &,
                                   const TradingMode &,
@@ -148,9 +168,17 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   void SubscribeToOrderUpdates(const CryptopiaProductList::const_iterator &);
 
+  boost::optional<OrderId> FindNewOrderId(
+      const CryptopiaProductId &,
+      const boost::posix_time::ptime &startTime,
+      const std::string &side,
+      const Qty &,
+      const Price &) const;
+
  private:
   Settings m_settings;
-  NonceStorage m_nonces;
+  const boost::posix_time::time_duration m_serverTimeDiff;
+  mutable NonceStorage m_nonces;
   CryptopiaProductList m_products;
 
   BalancesContainer m_balances;

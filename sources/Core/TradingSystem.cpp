@@ -627,7 +627,7 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     try {
       throw;
     } catch (const CommunicationError &ex) {
-      GetLog().Warn(
+      GetLog().Debug(
           "Communication error while sending order transaction: \"%1%\".",
           ex.what());
     } catch (const std::exception &ex) {
@@ -737,7 +737,7 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
     try {
       throw;
     } catch (const CommunicationError &ex) {
-      GetLog().Warn(
+      GetLog().Debug(
           "Communication error while sending order cancel transaction for "
           "order \"%1%\": \"%2%\".",
           orderId,                  // 1

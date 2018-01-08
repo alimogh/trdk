@@ -89,11 +89,6 @@ struct Auth {
   NonceStorage &nonces;
 };
 
-class InvalidPairException : public Exception {
- public:
-  explicit InvalidPairException(const char *what) noexcept : Exception(what) {}
-};
-
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
@@ -219,12 +214,14 @@ class TradeRequest : public Request {
           error << "Unknown error";
         }
         if (message) {
-          if (*message == "invalid pair") {
-            throw InvalidPairException(error.str().c_str());
-          } else if (boost::istarts_with(*message,
-                                         "The given order has already been "
-                                         "closed and cannot be cancel")) {
+          if (boost::istarts_with(*message,
+                                  "The given order has already been "
+                                  "closed and cannot be cancel")) {
             throw TradingSystem::OrderIsUnknown(error.str().c_str());
+          } else if (boost::istarts_with(*message,
+                                         "Insufficient funds in wallet of the "
+                                         "second currency of the pair")) {
+            throw TradingSystem::CommunicationError(error.str().c_str());
           }
         }
         throw Exception(error.str().c_str());
@@ -748,10 +745,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         throw;
       } catch (const CommunicationError &) {
         throw CommunicationError(error.str().c_str());
-      } catch (const Exception &) {
+      } catch (...) {
         throw Exception(error.str().c_str());
-      } catch (const std::exception &) {
-        throw CommunicationError(error.str().c_str());
       }
     }
   }
@@ -770,12 +765,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         boost::format error("Failed to request state for order %1%: \"%2%\"");
         error % orderId   // 1
             % ex.what();  // 2
-        throw Exception(error.str().c_str());
-      } catch (const std::exception &ex) {
-        boost::format error("Failed to request state for order %1%: \"%2%\"");
-        error % orderId   // 1
-            % ex.what();  // 2
-        throw CommunicationError(error.str().c_str());
+        try {
+          throw;
+        } catch (const CommunicationError &) {
+          throw CommunicationError(error.str().c_str());
+        } catch (...) {
+          throw Exception(error.str().c_str());
+        }
       }
 
       for (const auto &node : response) {
