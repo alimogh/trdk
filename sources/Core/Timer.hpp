@@ -14,39 +14,47 @@
 
 namespace trdk {
 
-class TRDK_CORE_API Timer {
+////////////////////////////////////////////////////////////////////////////////
+
+class TRDK_CORE_API TimerScope {
+  friend class trdk::Timer;
+
  public:
-  class TRDK_CORE_API Scope {
-    friend class trdk::Timer;
+  typedef uintmax_t Id;
 
-   public:
-    typedef uintmax_t Id;
+ public:
+  explicit TimerScope();
+  TimerScope(TimerScope &&) = default;
+  ~TimerScope();
 
-   public:
-    explicit Scope();
-    Scope(Scope &&) = default;
-    ~Scope();
+  void Swap(TimerScope &rhs) noexcept {
+    std::swap(m_id, rhs.m_id);
+    std::swap(m_timer, rhs.m_timer);
+  }
 
-    void Swap(Scope &rhs) noexcept {
-      std::swap(m_id, rhs.m_id);
-      std::swap(m_timer, rhs.m_timer);
-    }
+ private:
+  TimerScope(const TimerScope &);
+  const TimerScope operator=(const TimerScope &);
 
-   private:
-    Scope(const Scope &);
-    const Scope operator=(const Scope &);
+ public:
+  //! If scope is not empty it activated for one or more scheduling.
+  bool IsEmpty() const { return m_timer ? false : true; }
 
-   public:
-    //! If scope is not empty it activated for one or more scheduling.
-    bool IsEmpty() const { return m_timer ? false : true; }
+  //! Cancels all tasks scheduled by this scope, but not executed tasks.
+  size_t Cancel() noexcept;
 
-    //! Cancels all tasks scheduled by this scope, but not executed tasks.
-    size_t Cancel() noexcept;
+ private:
+  Id m_id;
+  const Timer *m_timer;
+};
 
-   private:
-    Id m_id;
-    const Timer *m_timer;
-  };
+////////////////////////////////////////////////////////////////////////////////
+
+class TRDK_CORE_API Timer {
+  friend class trdk::TimerScope;
+
+ public:
+  typedef trdk::TimerScope Scope;
 
  public:
   explicit Timer(const trdk::Context &);
@@ -68,4 +76,6 @@ class TRDK_CORE_API Timer {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
+
+////////////////////////////////////////////////////////////////////////////////
 }

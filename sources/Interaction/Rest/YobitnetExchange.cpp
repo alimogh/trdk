@@ -160,6 +160,12 @@ class TradeRequest : public Request {
  public:
   typedef Request Base;
 
+  class EmptyResponseException : public Exception {
+   public:
+    explicit EmptyResponseException(const char *what) noexcept
+        : Exception(what) {}
+  };
+
  public:
   explicit TradeRequest(const std::string &method,
                         Auth &auth,
@@ -257,7 +263,7 @@ class TradeRequest : public Request {
           "\"%2%\".");
       error % GetName()  // 1
           % ss.str();    // 2
-      throw Interactor::CommunicationError(error.str().c_str());
+      throw EmptyResponseException(error.str().c_str());
     }
     return *result;
   }
@@ -286,6 +292,13 @@ std::string NormilizeSymbol(std::string source) {
     source.push_back('T');
   }
   return source;
+}
+
+pt::ptime ParseTimeStamp(const ptr::ptree &source,
+                         const pt::time_duration &timeZoneOffset) {
+  auto result = pt::from_time_t(source.get<time_t>("timestamp_created"));
+  result -= timeZoneOffset;
+  return result;
 }
 
 struct Order {
@@ -320,6 +333,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
+        m_serverTimeDiff(
+            GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_generalNonces(m_settings.generalAuth.nonces, GetTsLog()),
         m_tradingNonces(CreateTradingNoncesStorage(m_settings, GetTsLog())),
         m_generalAuth({m_settings.generalAuth, m_generalNonces}),
@@ -534,32 +549,64 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Symbol is not supported by exchange");
     }
 
-    boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
-    requestParams % product->second.id                              // 1
-        % (side == ORDER_SIDE_SELL ? "sell" : "buy")                // 2
-        % RoundByPrecision(*price, product->second.precisionPower)  // 3
-        % qty;                                                      // 4
+    const auto &productId = product->second.id;
+    const std::string actualSide = side == ORDER_SIDE_SELL ? "sell" : "buy";
+    const auto actualPrice =
+        RoundByPrecision(*price, product->second.precisionPower);
 
-    const auto &result =
-        TradeRequest("Trade", m_tradingAuth, true, requestParams.str(),
-                     GetContext(), GetTsLog(), &GetTsTradingLog())
-            .Send(*m_tradingSession);
+    boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
+    requestParams % productId  // 1
+        % actualSide           // 2
+        % actualPrice          // 3
+        % qty;                 // 4
+
+    ptr::ptree response;
+    const auto &startTime = GetContext().GetCurrentTime();
+    try {
+      response = boost::get<1>(TradeRequest("Trade", m_tradingAuth, true,
+                                            requestParams.str(), GetContext(),
+                                            GetTsLog(), &GetTsTradingLog())
+                                   .Send(*m_tradingSession));
+    } catch (const Request::TimeoutException &ex) {
+      GetTsLog().Debug(
+          "Got error \"%1%\" at the new-order request sending. Trying to "
+          "retrieve actual result...",
+          ex.what());
+      const auto &orderId =
+          FindNewOrderId(productId, startTime, actualSide, qty, actualPrice);
+      if (!orderId) {
+        throw;
+      }
+      GetTsLog().Debug("Retrieved new order ID \"%1%\".", *orderId);
+      return boost::make_unique<OrderTransactionContext>(*this,
+                                                         std::move(*orderId));
+    }
 
     try {
+      SetBalances(response);
       return boost::make_unique<OrderTransactionContext>(
-          *this, boost::get<1>(result).get<OrderId>("order_id"));
+          *this, response.get<OrderId>("order_id"));
     } catch (const std::exception &ex) {
-      boost::format error("Failed to read order transaction reply: \"%1%\"");
+      boost::format error("Failed to read order transaction response: \"%1%\"");
       error % ex.what();
       throw TradingSystem::Error(error.str().c_str());
     }
   }
 
   virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    TradeRequest("CancelOrder", m_tradingAuth, true,
-                 "order_id=" + boost::lexical_cast<std::string>(orderId),
-                 GetContext(), GetTsLog(), &GetTsTradingLog())
-        .Send(*m_tradingSession);
+    const auto &response = boost::get<1>(
+        TradeRequest("CancelOrder", m_tradingAuth, true,
+                     "order_id=" + boost::lexical_cast<std::string>(orderId),
+                     GetContext(), GetTsLog(), &GetTsTradingLog())
+            .Send(*m_tradingSession));
+    try {
+      SetBalances(response);
+    } catch (const std::exception &ex) {
+      boost::format error(
+          "Failed to read order cancel request response: \"%1%\"");
+      error % ex.what();
+      throw TradingSystem::Error(error.str().c_str());
+    }
   }
 
   virtual void OnTransactionSent(const OrderId &orderId) override {
@@ -752,7 +799,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrders() {
-    for (const OrderId &orderId : GetActiveOrderList()) {
+    for (const OrderId &orderId : GetActiveOrderIdList()) {
       ptr::ptree response;
       try {
         response = boost::get<1>(
@@ -780,7 +827,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         OrderStatus status;
         Qty remainingQty = 0;
         try {
-          time = pt::from_time_t(order.get<time_t>("timestamp_created"));
+          time = ParseTimeStamp(order, m_serverTimeDiff);
 
           switch (order.get<int>("status")) {
             case 0: {  // 0 - active
@@ -818,14 +865,114 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
+  boost::optional<OrderId> FindNewOrderId(
+      const std::string &productId,
+      const boost::posix_time::ptime &startTime,
+      const std::string &side,
+      const Qty &qty,
+      const Price &price) const {
+    boost::optional<OrderId> result;
+
+    try {
+      boost::unordered_set<OrderId> orderIds;
+
+      {
+        TradeRequest request("ActiveOrders", m_tradingAuth, true,
+                             "pair=" + productId, GetContext(), GetTsLog(),
+                             &GetTsTradingLog());
+        const auto response = boost::get<1>(request.Send(*m_tradingSession));
+        for (const auto &node : response) {
+          const auto &id = node.first;
+          const auto &order = node.second;
+          if (GetActiveOrders().count(id) ||
+              order.get<std::string>("type") != side ||
+              order.get<Qty>("amount") > qty ||
+              order.get<Price>("rate") != price ||
+              ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
+                  startTime) {
+            continue;
+          }
+          Verify(orderIds.emplace(std::move(id)).second);
+        }
+      }
+
+      ForEachRemoteTrade(productId, startTime - pt::minutes(2), m_tradingAuth,
+                         true,
+                         [&](const std::string &, const ptr::ptree &trade) {
+                           const auto &orderId = trade.get<OrderId>("order_id");
+                           if (GetActiveOrders().count(orderId) ||
+                               trade.get<std::string>("type") != side) {
+                             return;
+                           }
+                           orderIds.emplace(std::move(orderId));
+                         });
+
+      for (const auto &orderId : orderIds) {
+        TradeRequest request(
+            "OrderInfo", m_tradingAuth, true,
+            "order_id=" + boost::lexical_cast<std::string>(orderId),
+            GetContext(), GetTsLog(), &GetTsTradingLog());
+        const auto response = boost::get<1>(request.Send(*m_tradingSession));
+        for (const auto &node : response) {
+          const auto &order = node.second;
+          AssertEq(orderId, node.first);
+          AssertEq(0, GetActiveOrders().count(orderId));
+          AssertEq(side, order.get<std::string>("type"));
+          if (order.get<Qty>("start_amount") != qty ||
+              order.get<Price>("rate") != price ||
+              ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
+                  startTime) {
+            continue;
+          }
+          if (result) {
+            GetTsLog().Warn(
+                "Failed to find new order ID: Two or more orders are suitable "
+                "(order ID: \"%1%\").",
+                orderId);
+            return boost::none;
+          }
+          result = std::move(orderId);
+        }
+      }
+    } catch (const CommunicationError &ex) {
+      GetTsLog().Debug("Failed to find new order ID: \"%1%\".", ex.what());
+      return boost::none;
+    }
+
+    return result;
+  }
+
+  template <typename Callback>
+  void ForEachRemoteTrade(const std::string &productId,
+                          const pt::ptime &tradeListStartTime,
+                          Auth &auth,
+                          bool isPriority,
+                          const Callback &callback) const {
+    TradeRequest request("TradeHistory", auth, isPriority,
+                         "pair=" + productId + "&since=" +
+                             boost::lexical_cast<std::string>(pt::to_time_t(
+                                 tradeListStartTime + m_serverTimeDiff)),
+                         GetContext(), GetTsLog(), &GetTsTradingLog());
+    ptr::ptree response;
+    try {
+      response = boost::get<1>(request.Send(*m_tradingSession));
+    } catch (const TradeRequest::EmptyResponseException &) {
+      return;
+    }
+    for (const auto &node : response) {
+      callback(node.first, node.second);
+    }
+  }
+
  private:
   Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff;
 
   NonceStorage m_generalNonces;
   std::unique_ptr<NonceStorage> m_tradingNonces;
 
-  Auth m_generalAuth;
-  Auth m_tradingAuth;
+  mutable Auth m_generalAuth;
+  mutable Auth m_tradingAuth;
 
   std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
   std::unique_ptr<net::HTTPClientSession> m_tradingSession;

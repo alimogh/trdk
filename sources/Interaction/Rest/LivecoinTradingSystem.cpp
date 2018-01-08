@@ -264,7 +264,7 @@ void LivecoinTradingSystem::UpdateOrders() {
     }
   };
 
-  for (const auto &orderId : GetActiveOrderList()) {
+  for (const auto &orderId : GetActiveOrderIdList()) {
     const auto order =
         boost::get<1>(OrderStatusRequest(orderId, m_settings, GetContext(),
                                          GetLog(), GetTradingLog())
@@ -396,11 +396,11 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
     throw TradingSystem::Error("Symbol is not supported by exchange");
   }
 
-  boost::format requestParams("currencyPair=%1%&price=%2$.8f&quantity=%3$.8f");
-  requestParams % product->second.requestId  // 1
-      % RoundByPrecision(*price,
-                         product->second.pricePrecisionPower)  // 2
-      % qty;                                                   // 3
+  std::ostringstream requestParams;
+  requestParams << std::fixed << "currencyPair=" << product->second.requestId
+                << "&price="
+                << std::setprecision(product->second.pricePrecision) << *price
+                << "&quantity=" << std::setprecision(8) << qty;
 
   TradingRequest request(
       side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",
