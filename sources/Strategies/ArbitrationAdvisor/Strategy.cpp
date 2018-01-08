@@ -29,16 +29,18 @@ namespace {
 
 typedef std::pair<Price, AdviceSecuritySignal *> PriceItem;
 
-std::pair<Price, Double> CaclSpread(const Price &bid, const Price &ask) {
-  const Price spread = bid - ask;
-  Double spreadRatio = 100 / (ask / spread);
-  spreadRatio = RoundByPrecision(spreadRatio, 100);
-  spreadRatio /= 100;
-  return {spread, spreadRatio};
+Price CaclSpread(const Price &bid, const Price &ask) { return bid - ask; }
+std::pair<Price, Double> CaclSpreadAndRatio(const Price &bid,
+                                            const Price &ask) {
+  const auto spread = CaclSpread(bid, ask);
+  auto ratio = 100 / (ask / spread);
+  ratio = RoundByPrecision(ratio, 100);
+  ratio /= 100;
+  return {spread, ratio};
 }
-std::pair<Price, Double> CaclSpread(const PriceItem &bestBid,
-                                    const PriceItem &bestAsk) {
-  return CaclSpread(bestBid.first, bestAsk.first);
+std::pair<Price, Double> CaclSpreadAndRatio(const PriceItem &bestBid,
+                                            const PriceItem &bestAsk) {
+  return CaclSpreadAndRatio(bestBid.first, bestAsk.first);
 }
 
 class SignalSession : private boost::noncopyable {
@@ -182,7 +184,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (!bids.empty() && !asks.empty()) {
       const auto &bestBid = bids.front();
       const auto &bestAsk = asks.front();
-      boost::tie(spread, spreadRatio) = CaclSpread(bestBid, bestAsk);
+      boost::tie(spread, spreadRatio) = CaclSpreadAndRatio(bestBid, bestAsk);
       if (!m_isCrossMode) {
         SignalSession session;
         Signal(*bestBid.second->security, *bestAsk.second->security,
@@ -225,8 +227,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
       explicit SignalData(Security &sellTarget, Security &buyTarget)
           : spreadRatio(CaclSpread(sellTarget.GetBidPriceValue(),
-                                   buyTarget.GetAskPriceValue())
-                            .second),
+                                   buyTarget.GetAskPriceValue())),
             sellTarget(&sellTarget),
             buyTarget(&buyTarget) {
         Assert(this->sellTarget != this->buyTarget);
@@ -293,23 +294,22 @@ class aa::Strategy::Implementation : private boost::noncopyable {
              const Milestones &delayMeasurement) {
     Price sellPrice = sellTarget.GetBidPrice();
     Price buyPrice = buyTarget.GetAskPrice();
-    Double spreadRatio = bestSpreadRatio;
+    AssertGt(sellPrice, buyPrice);
+    const auto spreadRatio = m_lowestSpreadRatio
+                                 ? *m_lowestSpreadRatio
+                                 : m_tradingSettings->minPriceDifferenceRatio;
     {
-      const auto pip = std::min(sellTarget.GetPip(), buyTarget.GetPip());
-      const auto &lowestSpreadRatio =
-          m_lowestSpreadRatio ? *m_lowestSpreadRatio
-                              : m_tradingSettings->minPriceDifferenceRatio;
-      for (;;) {
-        const auto nextSellPrice = sellPrice - pip;
-        const auto nextBuyPrice = buyPrice + pip;
-        const auto &nextSpread = CaclSpread(nextSellPrice, nextBuyPrice);
-        if (nextSpread.second <= lowestSpreadRatio) {
-          break;
-        }
-        spreadRatio = nextSpread.second;
-        sellPrice = nextSellPrice;
-        buyPrice = nextBuyPrice;
-      }
+      const auto spreadHalfPercent = (spreadRatio * 100) / 2;
+      const auto middle = buyPrice + ((sellPrice - buyPrice) / 2);
+      const auto newBuyPrice =
+          middle - ((middle * spreadHalfPercent) / (100 + spreadHalfPercent));
+      AssertLe(buyPrice, newBuyPrice);
+      buyPrice = std::move(newBuyPrice);
+      const auto newSellPrice = buyPrice * (spreadRatio + 1);
+      AssertGe(sellPrice, newSellPrice);
+      sellPrice = std::move(newSellPrice);
+      AssertGt(sellPrice, buyPrice);
+      AssertEq(spreadRatio, CaclSpreadAndRatio(sellPrice, buyPrice).second);
     }
 
     const auto qtyPrecisionPower = 1000000;
