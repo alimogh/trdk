@@ -226,8 +226,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       Security *buyTarget;
 
       explicit SignalData(Security &sellTarget, Security &buyTarget)
-          : spreadRatio(CaclSpread(sellTarget.GetBidPriceValue(),
-                                   buyTarget.GetAskPriceValue())),
+          : spreadRatio(CaclSpreadAndRatio(sellTarget.GetBidPriceValue(),
+                                           buyTarget.GetAskPriceValue())
+                            .second),
             sellTarget(&sellTarget),
             buyTarget(&buyTarget) {
         Assert(this->sellTarget != this->buyTarget);
