@@ -492,10 +492,6 @@ const std::string &TradingSystem::GetStringId() const noexcept {
   return m_pimpl->m_stringId;
 }
 
-const TradingSystem::Account &TradingSystem::GetAccount() const {
-  throw MethodIsNotImplementedException("Account Cash Balance not implemented");
-}
-
 const pt::time_duration &TradingSystem::GetDefaultPollingInterval() const {
   static const pt::time_duration result = pt::seconds(3);
   return result;
