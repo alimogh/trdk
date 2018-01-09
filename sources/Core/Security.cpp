@@ -711,9 +711,13 @@ bool Security::SetOnline(const pt::ptime &time, bool isOnline) {
   if (m_pimpl->m_isOnline == isOnline) {
     return false;
   }
+#if 0
+  // Custom branch logic - disabling log about security online for REST-based
+  // exchanges.
   GetContext().GetLog().Info(
       "\"%1%\" now is %2% by the event %3%. Last data time: %4%.", *this,
       isOnline ? "online" : "offline", time, GetLastMarketDataTime());
+#endif
   {
     const auto lock = GetSource().GetContext().SyncDispatching();
     m_pimpl->m_isOnline = isOnline;
