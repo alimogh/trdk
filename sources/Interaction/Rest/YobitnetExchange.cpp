@@ -270,6 +270,8 @@ class TradeRequest : public Request {
 
   virtual bool IsPriority() const { return m_isPriority; }
 
+  virtual size_t GetNumberOfAttempts() const override { return 1; }
+
  private:
   Auth &m_auth;
   const bool m_isPriority;
@@ -567,7 +569,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                             requestParams.str(), GetContext(),
                                             GetTsLog(), &GetTsTradingLog())
                                    .Send(*m_tradingSession));
-    } catch (const Request::TimeoutException &ex) {
+    } catch (
+        const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
       GetTsLog().Debug(
           "Got error \"%1%\" at the new-order request sending. Trying to "
           "retrieve actual result...",

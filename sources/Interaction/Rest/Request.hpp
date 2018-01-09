@@ -21,9 +21,11 @@ class Request {
                        Lib::TimeMeasurement::Milestones>
       Response;
 
-  class TimeoutException : public Interactor::CommunicationError {
+  class CommunicationErrorWithUndeterminedRemoteResult
+      : public Interactor::CommunicationError {
    public:
-    explicit TimeoutException(const char *what) noexcept
+    explicit CommunicationErrorWithUndeterminedRemoteResult(
+        const char *what) noexcept
         : CommunicationError(what) {}
   };
 
@@ -69,6 +71,8 @@ class Request {
   virtual FloodControl &GetFloodControl() = 0;
 
   virtual bool IsPriority() const = 0;
+
+  virtual size_t GetNumberOfAttempts() const { return 2; }
 
  private:
   const Context &m_context;

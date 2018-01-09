@@ -115,7 +115,11 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        throw TimeoutException(getError(ex).c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
@@ -169,7 +173,7 @@ Request::Send(net::HTTPClientSession &session) {
 
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
-      if (attempt < 2) {
+      if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
         } catch (const net::NoMessageException &ex) {
@@ -188,7 +192,11 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &) {
-        throw TimeoutException(error.str().c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
       } catch (...) {
         throw Interactor::CommunicationError(error.str().c_str());
       }

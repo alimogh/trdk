@@ -337,7 +337,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
   const auto &startTime = GetContext().GetCurrentTime();
   try {
     response = boost::get<1>(request.Send(*m_tradingSession));
-  } catch (const Request::TimeoutException &ex) {
+  } catch (const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
     GetLog().Debug(
         "Got error \"%1%\" at the new-order request sending. Trying to "
         "retrieve actual result...",
