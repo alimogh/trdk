@@ -42,6 +42,11 @@ std::pair<Price, Double> CaclSpreadAndRatio(const PriceItem &bestBid,
                                             const PriceItem &bestAsk) {
   return CaclSpreadAndRatio(bestBid.first, bestAsk.first);
 }
+std::pair<Price, Double> CaclSpreadAndRatio(const Security &sellTarget,
+                                            const Security &buyTarget) {
+  return CaclSpreadAndRatio(sellTarget.GetBidPriceValue(),
+                            buyTarget.GetAskPriceValue());
+}
 
 class SignalSession : private boost::noncopyable {
  public:
@@ -138,6 +143,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
     Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
   }
+  void Signal(Security &sellTarget,
+              Security &buyTarget,
+              SignalSession &session,
+              const Milestones &delayMeasurement) {
+    Signal(sellTarget, buyTarget,
+           CaclSpreadAndRatio(sellTarget, buyTarget).second, session,
+           delayMeasurement);
+  }
 
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
@@ -226,9 +239,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       Security *buyTarget;
 
       explicit SignalData(Security &sellTarget, Security &buyTarget)
-          : spreadRatio(CaclSpreadAndRatio(sellTarget.GetBidPriceValue(),
-                                           buyTarget.GetAskPriceValue())
-                            .second),
+          : spreadRatio(CaclSpreadAndRatio(sellTarget, buyTarget).second),
             sellTarget(&sellTarget),
             buyTarget(&buyTarget) {
         Assert(this->sellTarget != this->buyTarget);
@@ -257,8 +268,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     SignalSession session;
     for (const auto &signal : signalSet) {
-      Signal(*signal.sellTarget, *signal.buyTarget, signal.spreadRatio, session,
-             delayMeasurement);
+      Signal(*signal.sellTarget, *signal.buyTarget, session, delayMeasurement);
     }
   }
 

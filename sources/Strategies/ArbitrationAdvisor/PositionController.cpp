@@ -42,7 +42,6 @@ void aa::PositionController::HoldPosition(Position &position) {
   Assert(!position.HasActiveOrders());
 
   Position *const oppositePosition = FindOppositePosition(position);
-  Assert(oppositePosition);
   if (!oppositePosition) {
     ClosePosition(position, CLOSE_REASON_SYSTEM_ERROR);
     return;

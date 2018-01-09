@@ -270,6 +270,8 @@ class TradeRequest : public Request {
 
   virtual bool IsPriority() const { return m_isPriority; }
 
+  virtual size_t GetNumberOfAttempts() const override { return 1; }
+
  private:
   Auth &m_auth;
   const bool m_isPriority;
@@ -567,7 +569,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                             requestParams.str(), GetContext(),
                                             GetTsLog(), &GetTsTradingLog())
                                    .Send(*m_tradingSession));
-    } catch (const Request::TimeoutException &ex) {
+    } catch (
+        const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
       GetTsLog().Debug(
           "Got error \"%1%\" at the new-order request sending. Trying to "
           "retrieve actual result...",
@@ -876,28 +879,21 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     try {
       boost::unordered_set<OrderId> orderIds;
 
-      {
-        TradeRequest request("ActiveOrders", m_tradingAuth, true,
-                             "pair=" + productId, GetContext(), GetTsLog(),
-                             &GetTsTradingLog());
-        const auto response = boost::get<1>(request.Send(*m_tradingSession));
-        for (const auto &node : response) {
-          const auto &id = node.first;
-          const auto &order = node.second;
-          if (GetActiveOrders().count(id) ||
-              order.get<std::string>("type") != side ||
-              order.get<Qty>("amount") > qty ||
-              order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
-                  startTime) {
-            continue;
-          }
-          Verify(orderIds.emplace(std::move(id)).second);
-        }
-      }
-
-      ForEachRemoteTrade(productId, startTime - pt::minutes(2), m_tradingAuth,
-                         true,
+      ForEachRemoteActiveOrder(
+          productId, *m_tradingSession, m_tradingAuth, true,
+          [&](const std::string &orderId, const ptr::ptree &order) {
+            if (GetActiveOrders().count(orderId) ||
+                order.get<std::string>("type") != side ||
+                order.get<Qty>("amount") > qty ||
+                order.get<Price>("rate") != price ||
+                ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
+                    startTime) {
+              return;
+            }
+            Verify(orderIds.emplace(std::move(orderId)).second);
+          });
+      ForEachRemoteTrade(productId, startTime - pt::minutes(2),
+                         *m_tradingSession, m_tradingAuth, true,
                          [&](const std::string &, const ptr::ptree &trade) {
                            const auto &orderId = trade.get<OrderId>("order_id");
                            if (GetActiveOrders().count(orderId) ||
@@ -943,8 +939,28 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   template <typename Callback>
+  void ForEachRemoteActiveOrder(const std::string &productId,
+                                net::HTTPClientSession &session,
+                                Auth &auth,
+                                bool isPriority,
+                                const Callback &callback) const {
+    TradeRequest request("ActiveOrders", auth, isPriority, "pair=" + productId,
+                         GetContext(), GetTsLog(), &GetTsTradingLog());
+    ptr::ptree response;
+    try {
+      response = boost::get<1>(request.Send(session));
+    } catch (const TradeRequest::EmptyResponseException &) {
+      return;
+    }
+    for (const auto &node : response) {
+      callback(node.first, node.second);
+    }
+  }
+
+  template <typename Callback>
   void ForEachRemoteTrade(const std::string &productId,
                           const pt::ptime &tradeListStartTime,
+                          net::HTTPClientSession &session,
                           Auth &auth,
                           bool isPriority,
                           const Callback &callback) const {
@@ -955,7 +971,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                          GetContext(), GetTsLog(), &GetTsTradingLog());
     ptr::ptree response;
     try {
-      response = boost::get<1>(request.Send(*m_tradingSession));
+      response = boost::get<1>(request.Send(session));
     } catch (const TradeRequest::EmptyResponseException &) {
       return;
     }

@@ -19,6 +19,17 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
+namespace ios = boost::iostreams;
+
+namespace {
+void CopyToString(std::istream &source, std::string &result) {
+  //! Reimplement with std::string::data with C++17.
+  Poco::StreamCopier::copyToString(source, result);
+  result.erase(std::remove_if(result.begin(), result.end(),
+                              [](char ch) { return ch == '\r' || ch == '\n'; }),
+               result.end());
+}
+}
 
 void Request::AppendUriParams(const std::string &newParams,
                               std::string &result) {
@@ -104,7 +115,11 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        throw TimeoutException(getError(ex).c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
         throw Interactor::CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
@@ -123,7 +138,7 @@ Request::Send(net::HTTPClientSession &session) {
         m_tradingLog->Write(
             "response-dump %1%\t%2%",
             [this, &responseStream, &responseBuffer](TradingRecord &record) {
-              Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+              CopyToString(responseStream, responseBuffer);
               record % GetName()     // 1
                   % responseBuffer;  // 2
             });
@@ -131,7 +146,7 @@ Request::Send(net::HTTPClientSession &session) {
 
       if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
         if (responseBuffer.empty()) {
-          Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+          CopyToString(responseStream, responseBuffer);
         }
         CheckErrorResponse(response, responseBuffer, attempt);
         continue;
@@ -142,9 +157,8 @@ Request::Send(net::HTTPClientSession &session) {
         if (responseBuffer.empty()) {
           ptr::read_json(responseStream, result);
         } else {
-          boost::iostreams::array_source source(&responseBuffer[0],
-                                                responseBuffer.size());
-          boost::iostreams::stream<boost::iostreams::array_source> is(source);
+          ios::array_source source(&responseBuffer[0], responseBuffer.size());
+          ios::stream<ios::array_source> is(source);
           ptr::read_json(is, result);
         }
       } catch (const ptr::ptree_error &ex) {
@@ -159,7 +173,7 @@ Request::Send(net::HTTPClientSession &session) {
 
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
-      if (attempt < 2) {
+      if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
         } catch (const net::NoMessageException &ex) {
@@ -178,7 +192,11 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &) {
-        throw TimeoutException(error.str().c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
       } catch (...) {
         throw Interactor::CommunicationError(error.str().c_str());
       }
