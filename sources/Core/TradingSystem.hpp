@@ -59,19 +59,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                                const trdk::TradingSystem::TradeInfo *tradeInfo)>
       OrderStatusUpdateSlot;
 
-  struct Account {
-    boost::atomic<double> cashBalance;
-    boost::atomic<double> equityWithLoanValue;
-    boost::atomic<double> maintenanceMargin;
-    boost::atomic<double> excessLiquidity;
-
-    Account()
-        : cashBalance(.0),
-          equityWithLoanValue(.0),
-          maintenanceMargin(.0),
-          excessLiquidity(.0) {}
-  };
-
   struct Position {
     std::string account;
     trdk::Lib::Symbol symbol;
@@ -168,12 +155,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   void Connect(const trdk::Lib::IniSectionRef &);
 
  public:
-  //! Returns default account info.
-  /** All values is unscaled. If default account hasn't been set - throws
-    * an exception.
-    */
-  virtual const trdk::TradingSystem::Account &GetAccount() const;
-
   const boost::posix_time::time_duration &GetDefaultPollingInterval() const;
 
   const trdk::Balances &GetBalances() const;

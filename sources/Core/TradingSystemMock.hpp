@@ -36,8 +36,6 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_CONST_METHOD0(IsConnected, virtual bool());
   MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
 
-  MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
-
   MOCK_METHOD10(SendOrder,
                 boost::shared_ptr<const trdk::OrderTransactionContext>(
                     trdk::Security &,
