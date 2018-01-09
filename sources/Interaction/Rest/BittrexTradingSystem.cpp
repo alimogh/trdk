@@ -10,9 +10,7 @@
 
 #include "Prec.hpp"
 #include "BittrexTradingSystem.hpp"
-#ifdef DEV_VER
 #include "Util.hpp"
-#endif
 
 using namespace trdk;
 using namespace trdk::Lib;
