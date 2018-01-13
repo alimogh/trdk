@@ -110,7 +110,7 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
           break;
         }
         GetLog().Error("Wrong file format at line %1%.", lineNo);
-        throw Error("Wrong file format");
+        throw Exception("Wrong file format");
       }
 
       const auto recordTime = pt::time_from_string(fields[0]);

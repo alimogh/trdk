@@ -129,7 +129,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     }
     boost::format error("Failed to find expiration info for \"%1%\"");
     error % symbol;
-    throw Error(error.str().c_str());
+    throw Exception(error.str().c_str());
   }
 
   ContractExpiration ResolveNextContractExpiration(
@@ -152,7 +152,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
     }
     boost::format error("Failed to find next expiration info for \"%1%\" %2%");
     error % security % security.GetExpiration();
-    throw Error(error.str().c_str());
+    throw Exception(error.str().c_str());
   }
 };
 

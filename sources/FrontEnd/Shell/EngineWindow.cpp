@@ -66,10 +66,6 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
                  &EngineWindow::OnMessage, Qt::QueuedConnection));
   Verify(connect(&m_engine, &Lib::Engine::LogRecord, this,
                  &EngineWindow::OnLogRecord, Qt::QueuedConnection));
-  Verify(connect(&m_engine, &Lib::Engine::Order, this, &EngineWindow::OnOrder,
-                 Qt::QueuedConnection));
-  Verify(connect(&m_engine, &Lib::Engine::Trade, this, &EngineWindow::OnTrade,
-                 Qt::QueuedConnection));
 
   Verify(connect(m_ui.securityList, &QTableView::doubleClicked,
                  [this](const QModelIndex &index) {
@@ -219,27 +215,4 @@ void EngineWindow::ShowOrderWindow(Security &security) {
 void EngineWindow::CloseOrderWindow(const Symbol &symbol) {
   Assert(m_orderWindows.find(symbol) != m_orderWindows.cend());
   m_orderWindows.erase(symbol);
-}
-
-void EngineWindow::OnOrder(const QString &id, int status, double remainingQty) {
-  //! @todo Remove.
-  std::ostringstream os;
-  os << "Order " << id.toStdString() << ": " << OrderStatus(status)
-     << " (remaining " << remainingQty << ").";
-  QMessageBox::information(nullptr, "Order", QString::fromStdString(os.str()));
-}
-
-void EngineWindow::OnTrade(const QString &orderId,
-                           int status,
-                           double remainingQty,
-                           QString tradeId,
-                           double tradeQty,
-                           double tradePrice) {
-  //! @todo Remove.
-  std::ostringstream os;
-  os << "Order " << orderId.toStdString() << ": " << OrderStatus(status)
-     << " (remaining " << remainingQty << ")."
-     << " Trade " << tradeId.toStdString() << " " << tradeQty << " for "
-     << tradePrice << ".";
-  QMessageBox::information(nullptr, "Trade", QString::fromStdString(os.str()));
 }

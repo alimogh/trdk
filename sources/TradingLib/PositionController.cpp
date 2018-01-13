@@ -15,6 +15,7 @@
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/TradingSystem.hpp"
 #include "OrderPolicy.hpp"
 #include "PositionReport.hpp"
 
@@ -135,7 +136,7 @@ bool PositionController::ClosePosition(Position &position,
     try {
       Verify(position.CancelAllOrders());
       return true;
-    } catch (const TradingSystem::OrderIsUnknown &) {
+    } catch (const OrderIsUnknown &) {
       return false;
     }
   } else if (position.HasActiveCloseOrders()) {
@@ -151,7 +152,7 @@ void PositionController::ClosePosition(Position &position) {
   const auto &policy = position.GetOperation()->GetCloseOrderPolicy(position);
   try {
     policy.Close(position);
-  } catch (const Interactor::CommunicationError &ex) {
+  } catch (const CommunicationError &ex) {
     position.GetStrategy().GetLog().Warn(
         "Failed to close position \"%1%/%2%\": \"%3%\".",
         position.GetOperation()->GetId(),  // 1

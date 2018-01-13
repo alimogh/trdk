@@ -592,7 +592,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
       return true;
 
-    } catch (const Interactor::CommunicationError &ex) {
+    } catch (const CommunicationError &ex) {
       ReportSignal("error", "sync", sellTarget, buyTarget, spreadRatio,
                    bestSpreadRatio);
       m_self.GetLog().Warn("Failed to start trading (sync): \"%1%\".",
@@ -643,7 +643,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           boost::async([&openPosition, &firstLegTarget]() -> Position & {
             try {
               return openPosition(1, firstLegTarget);
-            } catch (const Interactor::CommunicationError &ex) {
+            } catch (const CommunicationError &ex) {
               throw boost::enable_current_exception(ex);
             } catch (const Exception &ex) {
               throw boost::enable_current_exception(ex);
@@ -653,7 +653,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           });
       try {
         secondLeg = &openPosition(2, secondLegTarget);
-      } catch (const Interactor::CommunicationError &ex) {
+      } catch (const CommunicationError &ex) {
         ReportSignal("error", "async 2nd leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);
         m_self.GetLog().Warn(
@@ -661,7 +661,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
       try {
         firstLeg = &firstLegFuture.get();
-      } catch (const Interactor::CommunicationError &ex) {
+      } catch (const CommunicationError &ex) {
         ReportSignal("error", "async 1st leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);
         m_self.GetLog().Warn(
@@ -733,7 +733,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         0));                                               // closedVolume
     try {
       m_controller.ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
-    } catch (const Interactor::CommunicationError &ex) {
+    } catch (const CommunicationError &ex) {
       m_self.GetLog().Warn(
           "Communication error at position closing request: \"%1%\".",
           ex.what());
@@ -854,7 +854,7 @@ void aa::Strategy::OnLevel1Update(Security &security,
 void aa::Strategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
-  } catch (const Interactor::CommunicationError &ex) {
+  } catch (const CommunicationError &ex) {
     GetLog().Debug("Communication error at position update handling: \"%1%\".",
                    ex.what());
   }

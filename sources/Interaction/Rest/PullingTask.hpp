@@ -22,6 +22,7 @@ class PullingTask : private boost::noncopyable {
   struct Task {
     std::string name;
     size_t priority;
+    bool isAccelerable;
     boost::function<bool()> task;
     size_t frequency;
     size_t numberOfErrors;
@@ -36,11 +37,13 @@ class PullingTask : private boost::noncopyable {
   void AddTask(const std::string &&name,
                size_t priority,
                const boost::function<bool()> &&,
-               size_t frequency);
+               size_t frequency,
+               bool isAccelerable);
   void ReplaceTask(const std::string &&name,
                    size_t priority,
                    const boost::function<bool()> &&,
-                   size_t frequency);
+                   size_t frequency,
+                   bool isAccelerable);
   void AccelerateNextPulling();
 
  private:
@@ -51,6 +54,7 @@ class PullingTask : private boost::noncopyable {
                            size_t priority,
                            const boost::function<bool()> &&,
                            size_t frequency,
+                           bool isAccelerable,
                            bool replace);
 
   void SetTasks();

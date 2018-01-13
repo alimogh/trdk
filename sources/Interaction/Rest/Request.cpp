@@ -121,7 +121,7 @@ Request::Send(net::HTTPClientSession &session) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
-        throw Interactor::CommunicationError(getError(ex).c_str());
+        throw CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
         throw Exception(getError(ex).c_str());
       }
@@ -168,7 +168,7 @@ Request::Send(net::HTTPClientSession &session) {
         error % m_name             // 1
             % m_request->getURI()  // 2
             % ex.what();           // 3
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
 
       return {updateTime, result, delayMeasurement};
@@ -198,7 +198,7 @@ Request::Send(net::HTTPClientSession &session) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             error.str().c_str());
       } catch (...) {
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
     }
   }
@@ -239,6 +239,6 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
     case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       throw CommunicationErrorWithUndeterminedRemoteResult(error.str().c_str());
     default:
-      throw Interactor::CommunicationError(error.str().c_str());
+      throw CommunicationError(error.str().c_str());
   }
 }

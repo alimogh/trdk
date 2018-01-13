@@ -23,7 +23,7 @@ Test::MarketDataSource::MarketDataSource(Context &context,
                                          const IniSectionRef &)
     : Base(context, instanceName), m_stopFlag(false) {
   if (!GetContext().GetSettings().IsReplayMode()) {
-    throw Error("Failed to start without Replay Mode");
+    throw Exception("Failed to start without Replay Mode");
   }
 }
 

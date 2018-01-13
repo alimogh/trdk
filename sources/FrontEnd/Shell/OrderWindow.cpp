@@ -14,6 +14,7 @@
 #include "Core/Security.hpp"
 #include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
+#include "Lib/OrderStatusNotifier.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -206,7 +207,7 @@ void OrderWindow::SendBuyOrder() {
       tradingSystemMode->SendOrder(
           *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
           Price(m_ui.price->value()), params,
-          m_engine.GetOrderTradingSystemSlot(),
+          boost::make_unique<OrderStatusNotifier>(),
           m_engine.GetRiskControl(tradingSystemMode->GetMode()), ORDER_SIDE_BUY,
           IsIocOrder() ? TIME_IN_FORCE_IOC : TIME_IN_FORCE_GTC, Milestones());
       break;
@@ -236,7 +237,7 @@ void OrderWindow::SendSellOrder() {
       tradingSystemMode->SendOrder(
           *m_security, m_security->GetSymbol().GetCurrency(), m_ui.qty->value(),
           Price(m_ui.price->value()), params,
-          m_engine.GetOrderTradingSystemSlot(),
+          boost::make_unique<OrderStatusNotifier>(),
           m_engine.GetRiskControl(tradingSystemMode->GetMode()),
           ORDER_SIDE_SELL, IsIocOrder() ? TIME_IN_FORCE_IOC : TIME_IN_FORCE_GTC,
           Milestones());

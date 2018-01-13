@@ -33,6 +33,20 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     return;
   }
 
+  if (position.IsRejected()) {
+    position.GetStrategy().GetLog().Error(
+        "Position \"%1%/%2%\" (\"%3%\") is rejected by trading system \"%4%\".",
+        position.GetOperation()->GetId(),  // 1
+        position.GetSubOperationId(),      // 2
+        position.GetSecurity(),            // 3
+        position.GetTradingSystem());      // 4
+    if (!position.GetNumberOfCloseOrders()) {
+      position.SetOpenedQty(position.GetPlanedQty());
+    } else {
+      position.SetClosedQty(position.GetOpenedQty());
+    }
+  }
+
   Base::OnPositionUpdate(position);
 }
 
@@ -72,7 +86,7 @@ bool aa::PositionController::ClosePosition(Position &position,
           boost::async([this, &oppositePosition, &reason] {
             try {
               Base::ClosePosition(*oppositePosition, reason);
-            } catch (const Interactor::CommunicationError &ex) {
+            } catch (const CommunicationError &ex) {
               throw boost::enable_current_exception(ex);
             } catch (const Exception &ex) {
               throw boost::enable_current_exception(ex);

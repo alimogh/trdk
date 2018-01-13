@@ -12,6 +12,8 @@
 #include "TradingSystem.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
+#include "Core/Trade.hpp"
+#include "Core/TransactionContext.hpp"
 
 namespace pt = boost::posix_time;
 
@@ -30,7 +32,7 @@ struct Order {
   Currency currency;
   bool isSell;
   OrderId id;
-  Test::TradingSystem::OrderStatusUpdateSlot callback;
+  boost::function<void(void)> callback;
   Qty qty;
   Price price;
   OrderParams params;
@@ -121,8 +123,8 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
   Condition m_condition;
   boost::thread m_thread;
 
-  std::multimap<pt::ptime, Order> m_orders;
-  std::vector<std::pair<pt::ptime, Order>> m_newOrders;
+  std::multimap<pt::ptime, ::Order> m_orders;
+  std::vector<std::pair<pt::ptime, ::Order>> m_newOrders;
   std::vector<std::pair<pt::ptime, OrderId>> m_cancels;
 
   const std::string m_orderNumberSuffix;
@@ -182,7 +184,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     }
   }
 
-  void SendOrder(Order &&order) {
+  void SendOrder(::Order &&order) {
     Assert(order.callback);
 
     const auto &now = m_self->GetContext().GetCurrentTime();
@@ -190,11 +192,11 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     auto execTime = now + ChooseExecutionDelay();
     if (!m_self->GetContext().GetSettings().IsReplayMode()) {
       const auto callback = order.callback;
-      order.callback = [this, callback](
-          const OrderId &id, const OrderStatus &status, const Qty &remainingQty,
-          const boost::optional<Volume> &commission, const TradeInfo *trade) {
-        callback(id, status, remainingQty, commission, trade);
-      };
+      //       order.callback = [this, callback](
+      //           const OrderId &, const OrderStatus &, const Qty &,
+      //           const boost::optional<Volume> &, const Trade *) {
+      //         // callback(id, status, remainingQty, commission, trade);
+      //       };
     }
 
     {
@@ -244,7 +246,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 
         for (auto it = m_orders.begin(); it != m_orders.cend();) {
           const auto &execTime = it->first;
-          const Order &order = it->second;
+          const auto &order = it->second;
           Assert(order.callback);
           Assert(order.price);
 
@@ -279,7 +281,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 
       while (!m_orders.empty()) {
         const auto &execTime = m_orders.cbegin()->first;
-        const Order &order = m_orders.cbegin()->second;
+        const auto &order = m_orders.cbegin()->second;
         Assert(order.callback);
         Assert(order.price);
 
@@ -311,12 +313,12 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     }
   }
 
-  bool ExecuteOrder(const Order &order) {
+  bool ExecuteOrder(const ::Order &order) {
     const auto &tradeId =
         (boost::format("%1%%2%") % m_orderNumberSuffix % order.id).str();
 
     if (!order.isCanceled) {
-      TradeInfo trade = {};
+      Trade trade = {};
 
       bool isMatched = order.isSell
                            ? order.price <= order.security->GetBidPrice()
@@ -331,7 +333,9 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
         trade.id = tradeId;
         trade.qty = order.qty;
 
-        order.callback(order.id, ORDER_STATUS_FILLED, 0, boost::none, &trade);
+        //         order.callback(order.id, ORDER_STATUS_FILLED_FULLY, 0,
+        //         boost::none,
+        //                        &trade);
 
         return true;
 
@@ -341,7 +345,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     }
 
     const auto &status =
-        order.isCanceled <= 1 ? ORDER_STATUS_CANCELLED : ORDER_STATUS_ERROR;
+        order.isCanceled <= 1 ? ORDER_STATUS_CANCELED : ORDER_STATUS_ERROR;
 
     if (status == ORDER_STATUS_ERROR) {
       m_self->GetLog().Error(
@@ -350,7 +354,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
           order.id);
     }
 
-    order.callback(order.id, status, order.qty, boost::none, nullptr);
+    // order.callback(order.id, status, order.qty, boost::none, nullptr);
 
     return true;
   }
@@ -411,98 +415,26 @@ void Test::TradingSystem::CreateConnection(const IniSectionRef &) {
   m_pimpl->Start();
 }
 
-OrderId Test::TradingSystem::SendSellAtMarketPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{false, &security, currency, true, id,
-                           std::move(statusUpdateSlot), qty, 0, params});
-  return id;
+std::unique_ptr<OrderTransactionContext>
+Test::TradingSystem::SendOrderTransaction(Security &,
+                                          const Lib::Currency &,
+                                          const Qty &,
+                                          const boost::optional<Price> &,
+                                          const OrderParams &,
+                                          const OrderSide &,
+                                          const TimeInForce &) {
+  throw MethodIsNotImplementedException(
+      "Test::TradingSystem::SendOrderTransaction is not implemented");
 }
 
-OrderId Test::TradingSystem::SendSell(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, price);
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{false, &security, currency, true, id,
-                           std::move(statusUpdateSlot), qty, price, params});
-  return id;
-}
-
-OrderId Test::TradingSystem::SendSellImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, price);
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{true, &security, currency, true, id,
-                           std::move(statusUpdateSlot), qty, price, params});
-  return id;
-}
-
-OrderId Test::TradingSystem::SendBuyAtMarketPrice(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{false, &security, currency, false, id,
-                           std::move(statusUpdateSlot), qty, 0, params});
-  return id;
-}
-
-OrderId Test::TradingSystem::SendBuy(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, price);
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{false, &security, currency, false, id,
-                           std::move(statusUpdateSlot), qty, price, params});
-  return id;
-}
-
-OrderId Test::TradingSystem::SendBuyImmediatelyOrCancel(
-    Security &security,
-    const Currency &currency,
-    const Qty &qty,
-    const Price &price,
-    const OrderParams &params,
-    const OrderStatusUpdateSlot &&statusUpdateSlot) {
-  AssertLt(0, price);
-  AssertLt(0, qty);
-  const auto &id = m_pimpl->TakeOrderId();
-  m_pimpl->SendOrder(Order{true, &security, currency, false, id,
-                           std::move(statusUpdateSlot), qty, price, params});
-  return id;
-}
-
-void Test::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
+void Test::TradingSystem::SendCancelOrderTransaction(
+    const OrderTransactionContext &transaction) {
   const auto &now = GetContext().GetCurrentTime();
   auto execTime = now + m_pimpl->ChooseExecutionDelay();
   {
     const Implementation::Lock lock(m_pimpl->m_mutex);
-    m_pimpl->m_cancels.emplace_back(std::move(execTime), orderId);
+    m_pimpl->m_cancels.emplace_back(std::move(execTime),
+                                    transaction.GetOrderId());
   }
   m_pimpl->m_condition.notify_all();
 }

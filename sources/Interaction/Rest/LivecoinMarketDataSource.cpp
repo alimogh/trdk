@@ -31,6 +31,8 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
+      m_serverTimeDiff(
+          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_allOrderBooksRequest("/exchange/all/order_book",
                              "groupByPrice=true&depth=1",
                              GetContext(),
@@ -78,7 +80,7 @@ void LivecoinMarketDataSource::SubscribeToSecurities() {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency());
+      m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
   m_pullingTask->AccelerateNextPulling();
 }
 
@@ -88,7 +90,7 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
   if (product == m_products.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
-    throw SymbolIsNotSupportedError(message.str().c_str());
+    throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
   {
@@ -182,7 +184,8 @@ void LivecoinMarketDataSource::UpdatePrices(
     r::Security &security,
     const Milestones &delayMeasurement) {
   const auto &time =
-      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000);
+      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000) -
+      m_serverTimeDiff;
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("asks"));
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(

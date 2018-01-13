@@ -102,7 +102,7 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
                    boost::token_compress_on);
       if (fields.size() < 6) {
         GetLog().Error("Wrong file format at line %1%.", lineNo);
-        throw Error("Wrong file format");
+        throw Exception("Wrong file format");
       }
 
       if (lineNo == 1) {
@@ -115,7 +115,7 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
                    boost::token_compress_on);
       if (dateField.size() != 3) {
         GetLog().Error("Wrong date field format at line %1%.", lineNo);
-        throw Error("Wrong file format");
+        throw Exception("Wrong file format");
       }
 
       const pt::ptime time(gr::from_string(dateField[2] + "/" + dateField[0] +
@@ -145,7 +145,7 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
         boost::format error(
             "Failed to find expiration info for \"%1%\" and %2%");
         error % *m_security % time;
-        throw Error(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
       if (!m_security->HasExpiration()) {
         AssertEq(currentTime, pt::not_a_date_time);

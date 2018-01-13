@@ -16,8 +16,6 @@
 namespace trdk {
 namespace Lib {
 
-//////////////////////////////////////////////////////////////////////////
-
 class Exception : public std::exception {
  public:
   explicit Exception(const char *what) noexcept;
@@ -36,41 +34,50 @@ class Exception : public std::exception {
   bool m_doFree;
 };
 
-//////////////////////////////////////////////////////////////////////////
-
 class LogicError : public trdk::Lib::Exception {
  public:
   explicit LogicError(const char *what) noexcept;
 };
-
-//////////////////////////////////////////////////////////////////////////
 
 class SystemException : public trdk::Lib::Exception {
  public:
   explicit SystemException(const char *what) noexcept;
 };
 
-//////////////////////////////////////////////////////////////////////////
-
 class MethodIsNotImplementedException : public trdk::Lib::Exception {
  public:
   explicit MethodIsNotImplementedException(const char *what) noexcept;
 };
-
-//////////////////////////////////////////////////////////////////////////
 
 class ModuleError : public trdk::Lib::Exception {
  public:
   explicit ModuleError(const char *what) noexcept;
 };
 
-//////////////////////////////////////////////////////////////////////////
-
 class RiskControlException : public trdk::Lib::Exception {
  public:
   explicit RiskControlException(const char *what) noexcept;
 };
 
-//////////////////////////////////////////////////////////////////////////
+class ConnectError : public trdk::Lib::Exception {
+ public:
+  ConnectError(const char *what) noexcept : Exception(what) {}
+};
+
+class CommunicationError : public trdk::Lib::Exception {
+ public:
+  CommunicationError(const char *what) noexcept : Exception(what) {}
+};
+
+class OrderIsUnknown : public trdk::Lib::Exception {
+ public:
+  explicit OrderIsUnknown(const char *what) noexcept : Exception(what) {}
+};
+
+class SymbolIsNotSupportedException : public trdk::Lib::Exception {
+ public:
+  explicit SymbolIsNotSupportedException(const char *what) noexcept
+      : Exception(what) {}
+};
 }
 }

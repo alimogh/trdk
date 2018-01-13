@@ -76,7 +76,7 @@ void aa::Operation::Setup(Position &position,
     }
 
     virtual bool IsWatching() const override {
-      if (!GetPosition().HasActiveOpenOrders()) {
+      if (!GetPosition().HasOpenedOpenOrders()) {
         return false;
       }
       if (m_startTime == pt::not_a_date_time) {

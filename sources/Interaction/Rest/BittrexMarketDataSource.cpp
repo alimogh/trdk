@@ -63,7 +63,7 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency());
+      m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
 
   m_pullingTask->AccelerateNextPulling();
 }
@@ -93,7 +93,7 @@ trdk::Security &BittrexMarketDataSource::CreateNewSecurityObject(
   if (product == m_products.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
-    throw SymbolIsNotSupportedError(message.str().c_str());
+    throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
   const boost::mutex::scoped_lock lock(m_securitiesLock);

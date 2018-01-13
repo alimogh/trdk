@@ -425,13 +425,7 @@ class Strategy::Implementation : private boost::noncopyable {
       m_strategy.GetLog().Error("Will be blocked by position error...");
       m_strategy.Block();
       ForgetPosition(position);
-      //! @todo notify engine here
       return;
-    } else if (position.IsInactive()) {
-      const auto &blockPeriod = pt::seconds(1);
-      m_strategy.GetLog().Error(
-          "Will be blocked by position inactivity at %1%...", blockPeriod);
-      m_strategy.Block(blockPeriod);
     }
 
     const bool isCompleted = position.IsCompleted();

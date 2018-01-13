@@ -51,7 +51,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
   if (defaultSymbol) {
     m_ui.symbol->setCurrentText(*defaultSymbol);
   } else {
-    m_ui.symbol->setCurrentIndex(0);
+    static int lastDefaultIndex = 0;
+    if (lastDefaultIndex >= m_ui.symbol->count()) {
+      lastDefaultIndex = 0;
+    }
+    m_ui.symbol->setCurrentIndex(lastDefaultIndex++);
   }
   m_symbolIndex = m_ui.symbol->currentIndex();
   InitBySelectedSymbol();
@@ -392,7 +396,7 @@ void StrategyWindow::SendOrder(const OrderSide &side,
                              m_ui.maxQty->value(),
                              side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                                     : security.GetBidPrice(),
-                             params, m_engine.GetOrderTradingSystemSlot(),
+                             params, boost::make_unique<OrderStatusNotifier>(),
                              m_engine.GetRiskControl(m_tradingMode), side,
                              TIME_IN_FORCE_GTC, Milestones());
   } catch (const std::exception &ex) {

@@ -184,7 +184,7 @@ const std::string &trdk::ConvertToString(const TradingMode &mode) {
 //////////////////////////////////////////////////////////////////////////
 
 const char *trdk::ConvertToPch(const OrderStatus &status) {
-  static_assert(numberOfOrderStatuses == 8, "List changed.");
+  static_assert(numberOfOrderStatuses == 7, "List changed.");
   switch (status) {
     default:
       AssertEq(int(ORDER_STATUS_SENT),
@@ -192,13 +192,11 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
       return "unknown";
     case ORDER_STATUS_SENT:
       return "sent";
-    case ORDER_STATUS_REQUESTED_CANCEL:
-      return "cancel requested";
-    case ORDER_STATUS_SUBMITTED:
-      return "submitted";
-    case ORDER_STATUS_CANCELLED:
+    case ORDER_STATUS_OPENED:
+      return "opened";
+    case ORDER_STATUS_CANCELED:
       return "canceled";
-    case ORDER_STATUS_FILLED:
+    case ORDER_STATUS_FILLED_FULLY:
       return "filled";
     case ORDER_STATUS_FILLED_PARTIALLY:
       return "filled partially";

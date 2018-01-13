@@ -111,14 +111,27 @@ struct OrderParams {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum OrderStatus {
+  //! Order sent by the owner to the trading system. State of the order is
+  //! unknown.
   ORDER_STATUS_SENT,
-  ORDER_STATUS_REQUESTED_CANCEL,
-  ORDER_STATUS_SUBMITTED,
-  ORDER_STATUS_CANCELLED,
-  ORDER_STATUS_FILLED,
+  //! Order sent to the trading system and received reception confirmation. The
+  //! order is active, there are no any trades yet.
+  ORDER_STATUS_OPENED,
+  //! The order is canceled by the owner with or without partial filling. The
+  //! order is not active anymore.
+  ORDER_STATUS_CANCELED,
+  //! The order is fully filled and is not active anymore. Remaining quantity is
+  //! zero.
+  ORDER_STATUS_FILLED_FULLY,
+  //! The order got a new part of the partial filling and still be active.
+  //! Has remaining quantity.
   ORDER_STATUS_FILLED_PARTIALLY,
+  //! The order is rejected by the trading system and is not active. Remaining
+  //! quantity is canceled.
   ORDER_STATUS_REJECTED,
+  //! The unknown error has occurred. State of the order is unknown.
   ORDER_STATUS_ERROR,
+  //! Number of order statuses.
   numberOfOrderStatuses
 };
 

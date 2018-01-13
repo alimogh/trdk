@@ -23,7 +23,7 @@ StopOrder::StopOrder(Position &position, PositionController &controller)
 void StopOrder::OnHit(const CloseReason &reason) {
   try {
     m_controller.ClosePosition(GetPosition(), reason);
-  } catch (const Interactor::CommunicationError &ex) {
+  } catch (const CommunicationError &ex) {
     GetPosition().GetStrategy().GetLog().Warn(
         "Communication error while starting position closing by stop-order "
         "\"%1%\": \"%2%\".",

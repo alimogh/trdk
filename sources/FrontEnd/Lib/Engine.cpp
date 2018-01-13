@@ -31,17 +31,12 @@ class lib::Engine::Implementation : private boost::noncopyable {
   lib::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
   sig::scoped_connection m_engineLogSubscription;
-  TradingSystem::OrderStatusUpdateSlot m_orderTradingSystemSlot;
   boost::array<std::unique_ptr<RiskControlScope>, numberOfTradingModes>
       m_riskControls;
 
  public:
   explicit Implementation(lib::Engine &self, const fs::path &path)
-      : m_self(self),
-        m_configFilePath(path),
-        m_dropCopy(m_self.parent()),
-        m_orderTradingSystemSlot(boost::bind(
-            &Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5)) {
+      : m_self(self), m_configFilePath(path), m_dropCopy(m_self.parent()) {
     // Just a smoke-check that config is an engine config:
     IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
 
@@ -98,23 +93,6 @@ class lib::Engine::Implementation : private boost::noncopyable {
     }
     oss << message;
     emit m_self.LogRecord(QString::fromStdString(oss.str()));
-  }
-
-  void OnOrderUpdate(const OrderId &id,
-                     const OrderStatus &status,
-                     const Qty &remainingQty,
-                     const boost::optional<Volume> &,
-                     const TradingSystem::TradeInfo *tradeInfo) {
-    if (!tradeInfo) {
-      emit m_self.Order(QString::fromStdString(id.GetValue()),
-                        static_cast<int>(status), remainingQty);
-    } else {
-      emit m_self.Trade(
-          QString::fromStdString(id.GetValue()), static_cast<int>(status),
-          remainingQty,
-          tradeInfo->id ? QString::fromStdString(*tradeInfo->id) : QString(),
-          tradeInfo->price, tradeInfo->qty);
-    }
   }
 };
 
@@ -180,10 +158,6 @@ const lib::DropCopy &lib::Engine::GetDropCopy() const {
   return m_pimpl->m_dropCopy;
 }
 
-const TradingSystem::OrderStatusUpdateSlot &
-lib::Engine::GetOrderTradingSystemSlot() {
-  return m_pimpl->m_orderTradingSystemSlot;
-}
 RiskControlScope &lib::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }

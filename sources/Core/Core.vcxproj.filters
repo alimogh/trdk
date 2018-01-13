@@ -232,6 +232,15 @@
     <ClInclude Include="BalancesContainer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OrderHandler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderStatusHandler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Trade.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Core.rc">

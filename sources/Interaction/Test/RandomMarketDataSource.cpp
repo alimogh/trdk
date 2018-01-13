@@ -154,7 +154,7 @@ trdk::Security &RandomMarketDataSource::CreateNewSecurityObject(
         boost::format error(
             "Failed to find expiration info for \"%1%\" and %2%");
         error % symbol % now;
-        throw trdk::MarketDataSource::Error(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
       result->SetExpiration(pt::not_a_date_time, *expiration);
     } break;

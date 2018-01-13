@@ -49,27 +49,31 @@ PullingTask::~PullingTask() {
 void PullingTask::AddTask(const std::string &&name,
                           size_t priority,
                           const boost::function<bool()> &&task,
-                          size_t frequency) {
+                          size_t frequency,
+                          bool isAccelerable) {
   ScheduleTaskSetting(std::move(name), priority, std::move(task), frequency,
-                      false);
+                      isAccelerable, false);
 }
 
 void PullingTask::ReplaceTask(const std::string &&name,
                               size_t priority,
                               const boost::function<bool()> &&task,
-                              size_t frequency) {
+                              size_t frequency,
+                              bool isAccelerable) {
   ScheduleTaskSetting(std::move(name), priority, std::move(task), frequency,
-                      true);
+                      isAccelerable, true);
 }
 
 void PullingTask::ScheduleTaskSetting(const std::string &&name,
                                       size_t priority,
                                       const boost::function<bool()> &&task,
                                       size_t frequency,
+                                      bool isAccelerable,
                                       bool replace) {
   const Lock lock(m_mutex);
-  m_newTasks.emplace_back(
-      Task{std::move(name), priority, std::move(task), frequency}, replace);
+  m_newTasks.emplace_back(Task{std::move(name), priority, isAccelerable,
+                               std::move(task), frequency},
+                          replace);
   if (!m_thread) {
     m_thread = boost::thread(boost::bind(&PullingTask::RunTasks, this));
   }
@@ -119,14 +123,15 @@ void PullingTask::RunTasks() {
 
   try {
     Lock lock(m_mutex);
-
     SetTasks();
 
+    auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
     while (!m_tasks.empty()) {
-      const auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
       const bool isAccelerated = m_isAccelerated;
       m_isAccelerated = false;
-      SetTasks();
+      if (!isAccelerated) {
+        nextStartTime = ch::system_clock::now() + m_pullingInterval;
+      }
       lock.unlock();
 
       for (auto it = m_tasks.begin(); it != m_tasks.cend();) {
@@ -158,8 +163,12 @@ void PullingTask::RunTasks() {
 }
 
 bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
-  if (!isAccelerated && task.skipCount > 0) {
-    --task.skipCount;
+  if (!isAccelerated) {
+    if (task.skipCount > 0) {
+      --task.skipCount;
+      return false;
+    }
+  } else if (!task.isAccelerable) {
     return false;
   }
 
@@ -168,23 +177,30 @@ bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
   bool isCompleted;
   try {
     isCompleted = !task.task();
-  } catch (const std::exception &) {
+  } catch (const std::exception &ex) {
     if (++task.numberOfErrors <= 2) {
       try {
         throw;
-      } catch (const Interactor::CommunicationError &ex) {
+      } catch (const CommunicationError &reEx) {
         m_log.Debug(
             "%1% task \"%2%\" error: \"%3%\".",
             task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
             task.name,                                                  // 2
-            ex.what());                                                 // 3
-      } catch (const std::exception &ex) {
+            reEx.what());                                               // 3
+      } catch (const std::exception &reEx) {
         m_log.Error(
             "%1% task \"%2%\" error: \"%3%\".",
             task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
             task.name,                                                  // 2
-            ex.what());                                                 // 3
+            reEx.what());                                               // 3
       }
+    } else if (!(task.numberOfErrors % 10)) {
+      m_log.Error(
+          "Polling task \"%1%\" still gets an error at each iteration. Last "
+          "error: \"%2%\". Number of errors: %3%.",
+          task.name,             // 1
+          ex.what(),             // 2
+          task.numberOfErrors);  // 3
     }
     return false;
   } catch (...) {

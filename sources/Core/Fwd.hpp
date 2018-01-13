@@ -21,6 +21,8 @@ class Security;
 class Balances;
 
 class OrderTransactionContext;
+class OrderStatusHandler;
+class Trade;
 class TradingSystem;
 class MarketDataSource;
 
@@ -34,6 +36,7 @@ class Strategy;
 class Observer;
 class Service;
 
+typedef size_t RiskControlOperationId;
 class RiskControl;
 class RiskControlSymbolContext;
 class RiskControlScope;

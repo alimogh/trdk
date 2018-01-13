@@ -77,14 +77,13 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
     case TIME_IN_FORCE_GTC:
       break;
     default:
-      throw TradingSystem::Error("Order time-in-force type is not supported");
+      throw Exception("Order time-in-force type is not supported");
   }
   if (currency != security.GetSymbol().GetCurrency()) {
-    throw TradingSystem::Error(
-        "Trading system supports only security quote currency");
+    throw Exception("Trading system supports only security quote currency");
   }
   if (!price) {
-    throw TradingSystem::Error("Market order is not supported");
+    throw Exception("Market order is not supported");
   }
 
   out::NewOrderSingle message(security, side, qty, *price,
@@ -103,8 +102,10 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
       *this, message.GetSequenceNumber());
 }
 
-void fix::TradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
-  m_client.Send(out::OrderCancelRequest(orderId, GetStandardOutgoingHeader()));
+void fix::TradingSystem::SendCancelOrderTransaction(
+    const trdk::OrderTransactionContext &transaction) {
+  m_client.Send(out::OrderCancelRequest(transaction.GetOrderId(),
+                                        GetStandardOutgoingHeader()));
 }
 
 void fix::TradingSystem::OnConnectionRestored() {
@@ -185,9 +186,10 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
         boost::polymorphic_downcast<fix::OrderTransactionContext *>(
             &transactionContext)
             ->SetPositionId(message.ReadPosMaintRptId());
+        return true;
       };
   try {
-    static_assert(numberOfOrderStatuses == 8, "List changed.");
+    static_assert(numberOfOrderStatuses == 7, "List changed.");
     switch (execType) {
       default:
         GetLog().Warn(
@@ -197,12 +199,12 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             orderId);  // 2
         break;
       case EXEC_TYPE_NEW:
-        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_SUBMITTED,
+        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_OPENED,
                             message.ReadLeavesQty(), setPositionId);
         break;
       case EXEC_TYPE_CANCELED:
       case EXEC_TYPE_REPLACE:
-        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_CANCELLED,
+        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_CANCELED,
                             message.ReadLeavesQty());
         break;
       case EXEC_TYPE_REJECTED:
@@ -212,9 +214,9 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
         break;
       case EXEC_TYPE_TRADE: {
         Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
-               orderStatus == ORDER_STATUS_FILLED);
+               orderStatus == ORDER_STATUS_FILLED_FULLY);
         message.ResetReadingState();
-        TradeInfo trade = {message.ReadAvgPx()};
+        Trade trade = {message.ReadAvgPx()};
         OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
                             message.ReadLeavesQty(), std::move(trade),
                             setPositionId);
@@ -222,18 +224,18 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
-          case ORDER_STATUS_SUBMITTED:
+          case ORDER_STATUS_OPENED:
             OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
                                 message.ReadLeavesQty(), setPositionId);
             break;
-          case ORDER_STATUS_CANCELLED:
+          case ORDER_STATUS_CANCELED:
             OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
                                 message.ReadLeavesQty());
             break;
-          case ORDER_STATUS_FILLED:
+          case ORDER_STATUS_FILLED_FULLY:
           case ORDER_STATUS_FILLED_PARTIALLY: {
             message.ResetReadingState();
-            TradeInfo trade = {message.ReadAvgPx()};
+            Trade trade = {message.ReadAvgPx()};
             OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
                                 message.ReadLeavesQty(), std::move(trade),
                                 setPositionId);

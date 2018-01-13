@@ -17,9 +17,9 @@ namespace trdk {
 namespace Interaction {
 namespace Test {
 
-class TradingSystem : public LegacyTradingSystem {
+class TradingSystem : public trdk::TradingSystem {
  public:
-  typedef LegacyTradingSystem Base;
+  typedef trdk::TradingSystem Base;
 
  public:
   explicit TradingSystem(const trdk::TradingMode &,
@@ -32,46 +32,17 @@ class TradingSystem : public LegacyTradingSystem {
   virtual bool IsConnected() const override;
 
  protected:
-  virtual OrderId SendSellAtMarketPrice(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendSell(trdk::Security &,
-                           const trdk::Lib::Currency &,
-                           const trdk::Qty &,
-                           const trdk::Price &,
-                           const trdk::OrderParams &,
-                           const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendSellImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &&) override;
-
-  virtual OrderId SendBuyAtMarketPrice(trdk::Security &,
-                                       const trdk::Lib::Currency &,
-                                       const trdk::Qty &,
-                                       const trdk::OrderParams &,
-                                       const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendBuy(trdk::Security &,
-                          const trdk::Lib::Currency &,
-                          const trdk::Qty &,
-                          const trdk::Price &,
-                          const trdk::OrderParams &,
-                          const OrderStatusUpdateSlot &&) override;
-  virtual OrderId SendBuyImmediatelyOrCancel(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      const OrderStatusUpdateSlot &&) override;
-
-  virtual void SendCancelOrderTransaction(const OrderId &) override;
+ protected:
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const OrderParams &,
+      const OrderSide &,
+      const TimeInForce &) override;
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &) override;
 
  public:
   virtual void CreateConnection(const Lib::IniSectionRef &) override;

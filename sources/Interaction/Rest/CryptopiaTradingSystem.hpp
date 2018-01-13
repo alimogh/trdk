@@ -49,6 +49,7 @@ class CryptopiaTradingSystem : public TradingSystem {
                             NonceStorage &nonces,
                             const Settings &settings,
                             const std::string &params,
+                            bool isPriority,
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
@@ -61,60 +62,65 @@ class CryptopiaTradingSystem : public TradingSystem {
     virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
                                 const std::string &,
                                 Poco::Net::HTTPRequest &) const override;
+    virtual bool IsPriority() const override { return m_isPriority; }
 
    private:
     const Settings &m_settings;
+    const bool m_isPriority;
     const std::string m_paramsDigest;
     NonceStorage &m_nonces;
     mutable boost::optional<NonceStorage::TakenValue> m_nonce;
   };
 
-  class AccountRequest : public PrivateRequest {
-   public:
-    typedef PrivateRequest Base;
-
-   public:
-    explicit AccountRequest(const std::string &name,
-                            NonceStorage &nonces,
-                            const Settings &settings,
-                            const std::string &params,
-                            const Context &context,
-                            ModuleEventsLog &log,
-                            TradingLog *tradingLog = nullptr)
-        : Base(name, nonces, settings, params, context, log, tradingLog) {}
-    virtual ~AccountRequest() override = default;
-
-   protected:
-    virtual bool IsPriority() const override { return false; }
-  };
-
-  class BalancesRequest : public AccountRequest {
-   public:
-    typedef AccountRequest Base;
-
+  class BalancesRequest : public PrivateRequest {
    public:
     explicit BalancesRequest(NonceStorage &nonces,
                              const Settings &settings,
                              const Context &context,
                              ModuleEventsLog &log)
-        : Base("GetBalance", nonces, settings, "{}", context, log) {}
+        : PrivateRequest(
+              "GetBalance", nonces, settings, "{}", false, context, log) {}
   };
 
-  class OpenOrdersRequest : public AccountRequest {
+  class OpenOrdersRequest : public PrivateRequest {
    public:
     explicit OpenOrdersRequest(const CryptopiaProductId &product,
                                NonceStorage &nonces,
                                const Settings &settings,
+                               bool isPriority,
                                const Context &context,
                                ModuleEventsLog &log,
                                ModuleTradingLog &tradingLog)
-        : AccountRequest(
+        : PrivateRequest(
               "GetOpenOrders",
               nonces,
               settings,
               (boost::format("{\"TradePairId\": %1%, \"Count\": 1000}") %
                product)
                   .str(),
+              isPriority,
+              context,
+              log,
+              &tradingLog) {}
+  };
+  class TradesRequest : public PrivateRequest {
+   public:
+    explicit TradesRequest(const CryptopiaProductId &product,
+                           size_t count,
+                           NonceStorage &nonces,
+                           const Settings &settings,
+                           bool isPriority,
+                           const Context &context,
+                           ModuleEventsLog &log,
+                           ModuleTradingLog &tradingLog)
+        : PrivateRequest(
+              "GetTradeHistory",
+              nonces,
+              settings,
+              (boost::format("{\"TradePairId\": %1%, \"Count\": %2%}") %
+               product % count)
+                  .str(),
+              isPriority,
               context,
               log,
               &tradingLog) {}
@@ -155,9 +161,10 @@ class CryptopiaTradingSystem : public TradingSystem {
       const trdk::OrderSide &,
       const trdk::TimeInForce &) override;
 
-  virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(const trdk::OrderId &) override;
+  virtual void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
@@ -174,6 +181,15 @@ class CryptopiaTradingSystem : public TradingSystem {
       const std::string &side,
       const Qty &,
       const Price &) const;
+
+  void ForEachRemoteTrade(
+      const CryptopiaProductId &,
+      Poco::Net::HTTPClientSession &,
+      bool isPriority,
+      const boost::function<void(const boost::property_tree::ptree &)> &) const;
+
+  boost::posix_time::ptime ParseTimeStamp(
+      const boost::property_tree::ptree &) const;
 
  private:
   Settings m_settings;

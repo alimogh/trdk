@@ -120,7 +120,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
       if (std::find(fields.cbegin(), fields.cend(), type) != fields.cend()) {
         boost::format message("Field \"%1%\" set two or more times.");
         message % field;
-        throw Error(message.str().c_str());
+        throw Exception(message.str().c_str());
       }
       fields.emplace_back(type);
     }
@@ -201,7 +201,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
             lineNo,                    // 1
             m_settings.fields.size(),  // 2
             m_settings.delimiter);     // 3
-        throw Error("Wrong file format");
+        throw Exception("Wrong file format");
       }
 
       if (lineNo == 1 && m_settings.skipFirstLine) {
@@ -269,7 +269,7 @@ AssertEq(numberOfLevel1TickTypes,
           return gr::from_string(field);
         default:
           GetLog().Error("Unknown date field format at line %1%.", lineNo);
-          throw Error("Wrong file format");
+          throw Exception("Wrong file format");
       }
     } else {
       return gr::from_undelimited_string(field.substr(0, 8));
@@ -296,7 +296,7 @@ AssertEq(numberOfLevel1TickTypes,
           return pt::duration_from_string(field);
         default:
           GetLog().Error("Unknown time field format at line %1%.", lineNo);
-          throw Error("Wrong file format");
+          throw Exception("Wrong file format");
       }
     } else {
       return pt::duration_from_string(field.substr(9, 2) + ":" +
@@ -312,7 +312,7 @@ AssertEq(numberOfLevel1TickTypes,
     } catch (const boost::bad_lexical_cast &) {
       GetLog().Error("Wrong price field format \"%1%\" at line %2%.", field,
                      lineNo);
-      throw Error("Wrong file format");
+      throw Exception("Wrong file format");
     }
   }
 
