@@ -299,7 +299,11 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
     Volume commission;
     Price tradePrice;
   };
-  boost::optional<ExecInfo> execInfo;
+  struct CloseInfo {
+    Qty remainingQty;
+    boost::optional<ExecInfo> execInfo;
+  };
+  boost::optional<CloseInfo> closeInfo;
 
   try {
     AssertEq(orderId, order.get<OrderId>("OrderUuid"));
@@ -311,14 +315,15 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
       const auto &qty = order.get<Qty>("Quantity");
       if (qty != remainingQty) {
         AssertGe(qty, remainingQty);
-        execInfo = ExecInfo{order.get<Volume>("CommissionPaid"),
-                            order.get<Price>("PricePerUnit")};
-        status = remainingQty || order.get<bool>("CancelInitiated")
-                     ? ORDER_STATUS_CANCELED
-                     : ORDER_STATUS_FILLED_FULLY;
+        status =
+            remainingQty ? ORDER_STATUS_CANCELED : ORDER_STATUS_FILLED_FULLY;
+        closeInfo = CloseInfo{std::move(remainingQty),
+                              ExecInfo{order.get<Volume>("CommissionPaid"),
+                                       order.get<Price>("PricePerUnit")}};
       } else {
         Assert(order.get<bool>("CancelInitiated"));
         status = ORDER_STATUS_CANCELED;
+        closeInfo = CloseInfo{std::move(remainingQty)};
       }
     }
 
@@ -350,10 +355,19 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
     throw Exception(error.str().c_str());
   }
 
-  !execInfo ? OnOrderStatusUpdate(time, orderId, status)
-            : OnOrderStatusUpdate(time, orderId, status,
-                                  Trade{std::move(execInfo->tradePrice)},
-                                  execInfo->commission);
+  if (!closeInfo) {
+    OnOrderStatusUpdate(time, orderId, status);
+  } else {
+    auto &closeInfoVal = *closeInfo;
+    if (!closeInfoVal.execInfo) {
+      OnOrderStatusUpdate(time, orderId, status, closeInfoVal.remainingQty);
+    } else {
+      auto &execInfoVal = *closeInfoVal.execInfo;
+      OnOrderStatusUpdate(time, orderId, status, closeInfoVal.remainingQty,
+                          Trade{std::move(execInfoVal.tradePrice)},
+                          execInfoVal.commission);
+    }
+  }
 }
 
 void BittrexTradingSystem::UpdateOrders() {
