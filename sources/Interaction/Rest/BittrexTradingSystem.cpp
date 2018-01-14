@@ -94,8 +94,8 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
-      m_pullingSession(CreateSession("bittrex.com", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(!IsConnected());
@@ -108,22 +108,22 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Actual orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency(), false);
-  m_pullingTask.AddTask(
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 boost::optional<BittrexTradingSystem::OrderCheckError>
@@ -254,11 +254,11 @@ void BittrexTradingSystem::SendCancelOrderTransaction(
 void BittrexTradingSystem::OnTransactionSent(
     const OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 void BittrexTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession);
+  const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     auto symbol = balance.get<std::string>("Currency");
@@ -361,7 +361,7 @@ void BittrexTradingSystem::UpdateOrders() {
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
                            m_settings, GetContext(), GetLog(),
                            &GetTradingLog());
-    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pullingSession)));
+    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pollingSession)));
   }
 }
 

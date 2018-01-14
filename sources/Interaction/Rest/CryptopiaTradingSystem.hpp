@@ -11,7 +11,7 @@
 #include "CryptopiaRequest.hpp"
 #include "CryptopiaUtil.hpp"
 #include "NonceStorage.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -210,9 +210,9 @@ class CryptopiaTradingSystem : public TradingSystem {
   boost::unordered_set<OrderId> m_cancelingOrders;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
 
-  PullingTask m_pullingTask;
+  PollingTask m_pollingTask;
 
   Timer::Scope m_timerScope;
 };

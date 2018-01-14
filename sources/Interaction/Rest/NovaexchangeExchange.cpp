@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "FloodControl.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -288,12 +288,12 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(
             CreateSession("novaexchange.com", m_settings, false)),
         m_tradingSession(CreateSession("novaexchange.com", m_settings, true)),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {}
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~NovaexchangeExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -341,7 +341,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
@@ -374,9 +374,9 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
  protected:
@@ -554,7 +554,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
   trdk::Timer::Scope m_timerScope;
 };
 }

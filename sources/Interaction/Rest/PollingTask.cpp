@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "PullingTask.hpp"
-#include "PullingSettings.hpp"
+#include "PollingTask.hpp"
+#include "PollingSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -20,14 +20,14 @@ using namespace trdk::Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ch = boost::chrono;
 
-PullingTask::PullingTask(const PullingSetttings &setttings,
+PollingTask::PollingTask(const PollingSetttings &setttings,
                          ModuleEventsLog &log)
     : m_log(log),
-      m_pullingInterval(
+      m_pollingInterval(
           ch::microseconds(setttings.GetInterval().total_microseconds())),
       m_isAccelerated(false) {}
 
-PullingTask::~PullingTask() {
+PollingTask::~PollingTask() {
   if (!m_thread) {
     AssertEq(0, m_tasks.size());
     return;
@@ -46,7 +46,7 @@ PullingTask::~PullingTask() {
   }
 }
 
-void PullingTask::AddTask(const std::string &&name,
+void PollingTask::AddTask(const std::string &&name,
                           size_t priority,
                           const boost::function<bool()> &&task,
                           size_t frequency,
@@ -55,7 +55,7 @@ void PullingTask::AddTask(const std::string &&name,
                       isAccelerable, false);
 }
 
-void PullingTask::ReplaceTask(const std::string &&name,
+void PollingTask::ReplaceTask(const std::string &&name,
                               size_t priority,
                               const boost::function<bool()> &&task,
                               size_t frequency,
@@ -64,7 +64,7 @@ void PullingTask::ReplaceTask(const std::string &&name,
                       isAccelerable, true);
 }
 
-void PullingTask::ScheduleTaskSetting(const std::string &&name,
+void PollingTask::ScheduleTaskSetting(const std::string &&name,
                                       size_t priority,
                                       const boost::function<bool()> &&task,
                                       size_t frequency,
@@ -75,11 +75,11 @@ void PullingTask::ScheduleTaskSetting(const std::string &&name,
                                std::move(task), frequency},
                           replace);
   if (!m_thread) {
-    m_thread = boost::thread(boost::bind(&PullingTask::RunTasks, this));
+    m_thread = boost::thread(boost::bind(&PollingTask::RunTasks, this));
   }
 }
 
-void PullingTask::SetTasks() {
+void PollingTask::SetTasks() {
   if (m_newTasks.empty()) {
     return;
   }
@@ -110,7 +110,7 @@ void PullingTask::SetTasks() {
   m_tasks.shrink_to_fit();
 }
 
-void PullingTask::AccelerateNextPulling() {
+void PollingTask::AccelerateNextPolling() {
   {
     const Lock lock(m_mutex);
     m_isAccelerated = true;
@@ -118,19 +118,19 @@ void PullingTask::AccelerateNextPulling() {
   m_condition.notify_all();
 }
 
-void PullingTask::RunTasks() {
-  m_log.Debug("Starting pulling task...");
+void PollingTask::RunTasks() {
+  m_log.Debug("Starting polling task...");
 
   try {
     Lock lock(m_mutex);
     SetTasks();
 
-    auto nextStartTime = ch::system_clock::now() + m_pullingInterval;
+    auto nextStartTime = ch::system_clock::now() + m_pollingInterval;
     while (!m_tasks.empty()) {
       const bool isAccelerated = m_isAccelerated;
       m_isAccelerated = false;
       if (!isAccelerated) {
-        nextStartTime = ch::system_clock::now() + m_pullingInterval;
+        nextStartTime = ch::system_clock::now() + m_pollingInterval;
       }
       lock.unlock();
 
@@ -152,17 +152,17 @@ void PullingTask::RunTasks() {
       SetTasks();
     }
   } catch (const std::exception &ex) {
-    m_log.Error("Fatal error in the pulling task: \"%1%\".", ex.what());
+    m_log.Error("Fatal error in the polling task: \"%1%\".", ex.what());
     throw;
   } catch (...) {
-    m_log.Error("Fatal unknown error in the pulling task.");
+    m_log.Error("Fatal unknown error in the polling task.");
     AssertFailNoException();
     throw;
   }
-  m_log.Debug("Pulling task is completed.");
+  m_log.Debug("Polling task is completed.");
 }
 
-bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
+bool PollingTask::RunTask(Task &task, bool isAccelerated) const {
   if (!isAccelerated) {
     if (task.skipCount > 0) {
       --task.skipCount;
@@ -184,13 +184,13 @@ bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
       } catch (const CommunicationError &reEx) {
         m_log.Debug(
             "%1% task \"%2%\" error: \"%3%\".",
-            task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
+            task.numberOfErrors == 1 ? "Polling" : "Repeated polling",  // 1
             task.name,                                                  // 2
             reEx.what());                                               // 3
       } catch (const std::exception &reEx) {
         m_log.Error(
             "%1% task \"%2%\" error: \"%3%\".",
-            task.numberOfErrors == 1 ? "Pulling" : "Repeated pulling",  // 1
+            task.numberOfErrors == 1 ? "Polling" : "Repeated polling",  // 1
             task.name,                                                  // 2
             reEx.what());                                               // 3
       }
@@ -209,7 +209,7 @@ bool PullingTask::RunTask(Task &task, bool isAccelerated) const {
   }
 
   if (task.numberOfErrors > 1) {
-    m_log.Debug("Pulling task \"%1%\" restored.", task.name);
+    m_log.Debug("Polling task \"%1%\" restored.", task.name);
   }
   task.numberOfErrors = 0;
 

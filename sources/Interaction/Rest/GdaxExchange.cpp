@@ -12,7 +12,7 @@
 
 #include "Prec.hpp"
 #include "FloodControl.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -256,8 +256,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
         m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())),
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())),
         m_orderListRequest("orders",
                            net::HTTPRequest::HTTP_GET,
                            m_settings,
@@ -268,7 +268,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual ~GdaxExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -319,7 +319,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Prices", 1,
         [this]() -> bool {
           const SecuritiesLock lock(m_securitiesMutex);
@@ -361,9 +361,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           }
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
@@ -377,23 +377,23 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Actual orders", 0,
         [this]() {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency(), false);
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+    m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency(), true);
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+    m_pollingTask->AddTask(
         "Opened orders", 100, [this]() { return UpdateOpenedOrders(); },
-        m_settings.pullingSetttings.GetAllOrdersRequestFrequency(), false);
+        m_settings.pollingSetttings.GetAllOrdersRequestFrequency(), false);
 
     m_isConnected = true;
   }
@@ -496,7 +496,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   virtual void OnTransactionSent(
       const OrderTransactionContext &transaction) override {
     TradingSystem::OnTransactionSent(transaction);
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
  private:
@@ -749,7 +749,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   BalancesContainer m_balances;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 
   PrivateRequest m_orderListRequest;
   boost::unordered_map<OrderId, Order> m_orders;

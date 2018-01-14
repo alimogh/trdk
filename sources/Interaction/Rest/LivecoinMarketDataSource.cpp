@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "LivecoinMarketDataSource.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Security.hpp"
 
 using namespace trdk;
@@ -38,12 +38,12 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
                              GetContext(),
                              GetLog()),
       m_session(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
 LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   try {
-    m_pullingTask.reset();
+    m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -74,14 +74,14 @@ void LivecoinMarketDataSource::SubscribeToSecurities() {
         boost::lexical_cast<std::string>(security.first));
   }
 
-  m_pullingTask->AddTask(
+  m_pollingTask->AddTask(
       "Prices", 1,
       [this]() {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
-  m_pullingTask->AccelerateNextPulling();
+      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AccelerateNextPolling();
 }
 
 trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(

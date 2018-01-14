@@ -195,8 +195,8 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
-      m_pullingSession(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(m_products.empty());
@@ -209,22 +209,22 @@ void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency(), false);
-  m_pullingTask.AddTask(
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
@@ -234,7 +234,7 @@ Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
 
 void LivecoinTradingSystem::UpdateBalances() {
   const auto response =
-      boost::get<1>(m_balancesRequest.Send(*m_pullingSession));
+      boost::get<1>(m_balancesRequest.Send(*m_pollingSession));
   for (const auto &node : response) {
     const auto &balance = node.second;
     const auto &type = balance.get<std::string>("type");
@@ -275,7 +275,7 @@ void LivecoinTradingSystem::UpdateOrders() {
   for (const auto &orderId : GetActiveOrderIdList()) {
     const auto response = OrderStatusRequest(orderId, m_settings, GetContext(),
                                              GetLog(), GetTradingLog())
-                              .Send(*m_pullingSession);
+                              .Send(*m_pollingSession);
     const auto &time = boost::get<0>(response);
     const auto &order = boost::get<1>(response);
     OrderStatus status;
@@ -478,7 +478,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
 void LivecoinTradingSystem::OnTransactionSent(
     const OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

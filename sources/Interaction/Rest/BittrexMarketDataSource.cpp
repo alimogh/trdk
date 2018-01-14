@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "BittrexMarketDataSource.hpp"
 #include "BittrexRequest.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
 
@@ -34,12 +34,12 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateSession("bittrex.com", m_settings, false)),
-      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
 BittrexMarketDataSource::~BittrexMarketDataSource() {
   try {
-    m_pullingTask.reset();
+    m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -57,15 +57,15 @@ void BittrexMarketDataSource::Connect(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask->AddTask(
+  m_pollingTask->AddTask(
       "Prices", 1,
       [this]() {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
+      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-  m_pullingTask->AccelerateNextPulling();
+  m_pollingTask->AccelerateNextPolling();
 }
 
 void BittrexMarketDataSource::SubscribeToSecurities() {

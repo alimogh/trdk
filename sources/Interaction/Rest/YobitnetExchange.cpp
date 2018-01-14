@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "FloodControl.hpp"
 #include "NonceStorage.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -344,12 +344,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(CreateSession("yobit.net", m_settings, false)),
         m_tradingSession(CreateSession("yobit.net", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {}
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~YobitnetExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -399,15 +399,15 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &depthRequest = boost::make_shared<PublicRequest>(
         "/api/3/depth/" + boost::join(uriSymbolsPath, "-"), "Depth", "limit=1",
         GetContext(), GetTsLog());
-    m_pullingTask->ReplaceTask(
+    m_pollingTask->ReplaceTask(
         "Prices", 1,
         [this, depthRequest]() {
           UpdatePrices(*depthRequest);
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency(), false);
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
@@ -469,22 +469,22 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Actual orders", 0,
         [this]() {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency(), false);
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+    m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency(), false);
+        m_settings.pollingSetttings.GetBalancesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -1081,7 +1081,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       m_securities;
   BalancesContainer m_balances;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 };
 }
 

@@ -60,7 +60,7 @@ class LivecoinMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 };
 }
 }

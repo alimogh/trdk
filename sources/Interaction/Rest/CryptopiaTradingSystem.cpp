@@ -169,8 +169,8 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),
       m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
-      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(m_products.empty());
@@ -183,15 +183,15 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency(), true);
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 Volume CryptopiaTradingSystem::CalcCommission(
@@ -405,11 +405,11 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
 void CryptopiaTradingSystem::OnTransactionSent(
     const OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession);
+  const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
@@ -436,7 +436,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response =
-        boost::get<1>(request.second->Send(*m_pullingSession));
+        boost::get<1>(request.second->Send(*m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
         Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
@@ -523,9 +523,9 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
     }
     ++m_openOrdersRequestsVersion;
   }
-  m_pullingTask.ReplaceTask(
+  m_pollingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency(), false);
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
 }
 
 boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
