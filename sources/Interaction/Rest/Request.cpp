@@ -121,7 +121,7 @@ Request::Send(net::HTTPClientSession &session) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
-        throw Interactor::CommunicationError(getError(ex).c_str());
+        throw CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
         throw Exception(getError(ex).c_str());
       }
@@ -168,7 +168,7 @@ Request::Send(net::HTTPClientSession &session) {
         error % m_name             // 1
             % m_request->getURI()  // 2
             % ex.what();           // 3
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
 
       return {updateTime, result, delayMeasurement};
@@ -198,7 +198,7 @@ Request::Send(net::HTTPClientSession &session) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             error.str().c_str());
       } catch (...) {
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
     }
   }
@@ -218,9 +218,7 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 2) {
     switch (response.getStatus()) {
-      case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
-      case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
         m_log.Debug("Repeating request \"%1%\" after error with code %2%...",
                     m_request->getURI(),    // 1
@@ -236,5 +234,11 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
       % response.getStatus()                                   // 3
       % m_name                                                 // 4
       % m_request->getURI();                                   // 5
-  throw Interactor::CommunicationError(error.str().c_str());
+  switch (response.getStatus()) {
+    case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
+    case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
+      throw CommunicationErrorWithUndeterminedRemoteResult(error.str().c_str());
+    default:
+      throw CommunicationError(error.str().c_str());
+  }
 }

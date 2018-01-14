@@ -30,6 +30,7 @@
 #include "Core/TradingLog.hpp"
 #include "FrontEnd/Lib/Adapters.hpp"
 #include "FrontEnd/Lib/Engine.hpp"
+#include "FrontEnd/Lib/OrderStatusNotifier.hpp"
 #include "FrontEnd/Lib/Types.hpp"
 #include "FrontEnd/Lib/Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"

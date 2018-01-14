@@ -22,7 +22,7 @@ class Request {
       Response;
 
   class CommunicationErrorWithUndeterminedRemoteResult
-      : public Interactor::CommunicationError {
+      : public Lib::CommunicationError {
    public:
     explicit CommunicationErrorWithUndeterminedRemoteResult(
         const char *what) noexcept

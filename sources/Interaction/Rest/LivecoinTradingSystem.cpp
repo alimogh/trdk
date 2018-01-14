@@ -22,6 +22,25 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+class LivecoinOrderTransactionContext : public OrderTransactionContext {
+ public:
+  explicit LivecoinOrderTransactionContext(LivecoinTradingSystem &tradingSystem,
+                                           const std::string &productRequestId,
+                                           const OrderId &&orderId)
+      : OrderTransactionContext(tradingSystem, std::move(orderId)),
+        m_productRequestId(productRequestId) {}
+
+ public:
+  const std::string &GetProductRequestId() const { return m_productRequestId; }
+
+ private:
+  const std::string &m_productRequestId;
+};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 LivecoinTradingSystem::Settings::Settings(const IniSectionRef &conf,
                                           ModuleEventsLog &log)
     : Rest::Settings(conf, log),
@@ -141,7 +160,7 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
         error << exception << "\"";
         if (boost::starts_with(exception,
                                "Not sufficient funds on the account")) {
-          throw TradingSystem::CommunicationError(error.str().c_str());
+          throw CommunicationError(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());
@@ -150,7 +169,7 @@ LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
     std::ostringstream error;
     error << "Failed to read server response for request \"" << GetName()
           << "\" (" << GetRequest().getURI() << "): \"" << ex.what() << "\"";
-    throw Interactor::CommunicationError(error.str().c_str());
+    throw CommunicationError(error.str().c_str());
   }
   return result;
 }
@@ -176,8 +195,8 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
-      m_pullingSession(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(m_products.empty());
@@ -190,22 +209,22 @@ void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
-  m_pullingTask.AddTask(
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency());
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
@@ -215,7 +234,7 @@ Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
 
 void LivecoinTradingSystem::UpdateBalances() {
   const auto response =
-      boost::get<1>(m_balancesRequest.Send(*m_pullingSession));
+      boost::get<1>(m_balancesRequest.Send(*m_pollingSession));
   for (const auto &node : response) {
     const auto &balance = node.second;
     const auto &type = balance.get<std::string>("type");
@@ -243,7 +262,7 @@ void LivecoinTradingSystem::UpdateOrders() {
         : Base("/exchange/order",
                net::HTTPRequest::HTTP_GET,
                settings,
-               "orderId=" + ExtractOrderId(orderId),
+               "orderId=" + boost::lexical_cast<std::string>(orderId),
                context,
                log,
                &tradingLog) {}
@@ -251,68 +270,68 @@ void LivecoinTradingSystem::UpdateOrders() {
 
    protected:
     virtual bool IsPriority() const override { return false; }
-
-   private:
-    static std::string ExtractOrderId(const OrderId &source) {
-      const auto &orderId = source.GetValue();
-      const auto &pos = orderId.find('_');
-      AssertNe(std::string::npos, pos);
-      if (pos == std::string::npos) {
-        return orderId;
-      }
-      return orderId.substr(pos + 1);
-    }
   };
 
   for (const auto &orderId : GetActiveOrderIdList()) {
-    const auto order =
-        boost::get<1>(OrderStatusRequest(orderId, m_settings, GetContext(),
-                                         GetLog(), GetTradingLog())
-                          .Send(*m_pullingSession));
+    const auto response = OrderStatusRequest(orderId, m_settings, GetContext(),
+                                             GetLog(), GetTradingLog())
+                              .Send(*m_pollingSession);
+    const auto &time = boost::get<0>(response);
+    const auto &order = boost::get<1>(response);
     OrderStatus status;
-    Qty remainingQuantity;
-    Volume commission;
-    TradeInfo tradeInfo = {};
+
+    struct ExecInfo {
+      Qty remainingQuantity;
+      Volume commission;
+      Trade trade;
+    };
+    boost::optional<ExecInfo> execInfo;
+
     try {
       const auto &statusField = order.get<std::string>("status");
       if (statusField == "OPEN" || statusField == "PARTIALLY_FILLED") {
-        status = ORDER_STATUS_SUBMITTED;
-      } else if (statusField == "CANCELLED") {
-        status = ORDER_STATUS_CANCELLED;
-      } else if (statusField == "PARTIALLY_FILLED_AND_CANCELLED") {
-        status = ORDER_STATUS_FILLED_PARTIALLY;
-        const auto &trade = order.get_child("trades");
-        commission = trade.get<Volume>("commission");
-        tradeInfo.price = trade.get<Price>("avg_price");
+        status = ORDER_STATUS_OPENED;
+      } else if (statusField == "CANCELLED" ||
+                 statusField == "PARTIALLY_FILLED_AND_CANCELLED") {
+        status = ORDER_STATUS_CANCELED;
       } else if (statusField == "EXECUTED") {
-        status = ORDER_STATUS_FILLED;
-        const auto &trade = order.get_child("trades");
-        commission = trade.get<Volume>("commission");
-        tradeInfo.price = trade.get<Price>("avg_price");
+        status = ORDER_STATUS_FILLED_FULLY;
       } else {
         GetLog().Error(
             "Unknown order status received from trading system: \"%1%\".",
             statusField);
-        continue;
+        status = ORDER_STATUS_ERROR;
       }
-      remainingQuantity = order.get<Price>("remaining_quantity");
+      switch (status) {
+        case ORDER_STATUS_FILLED_FULLY: {
+          const auto &remainingQty = order.get<Price>("remaining_quantity");
+          AssertEq(0, remainingQty);
+          execInfo = ExecInfo{std::move(remainingQty),
+                              order.get<Volume>("commission_rate"),
+                              {order.get<Price>("trades.avg_price")}};
+          break;
+        }
+        case ORDER_STATUS_CANCELED: {
+          const auto &qty = order.get<Qty>("quantity");
+          const auto &remainingQty = order.get<Qty>("remaining_quantity");
+          AssertGe(qty, remainingQty);
+          if (qty != remainingQty) {
+            execInfo = ExecInfo{std::move(remainingQty),
+                                order.get<Volume>("commission_rate"),
+                                {order.get<Price>("trades.avg_price")}};
+          }
+          break;
+        }
+      }
     } catch (const ptr::ptree_error &ex) {
       std::ostringstream error;
       error << "Failed to read order status: \"" << ex.what() << "\"";
       throw Exception(error.str().c_str());
     }
-    if (status == ORDER_STATUS_FILLED) {
-      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
-                          remainingQuantity, commission, std::move(tradeInfo));
-    } else if (status == ORDER_STATUS_FILLED_PARTIALLY) {
-      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
-                          remainingQuantity, commission, std::move(tradeInfo));
-      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
-                          ORDER_STATUS_CANCELLED, 0, commission);
-    } else {
-      OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId, status,
-                          remainingQuantity);
-    }
+    execInfo ? OnOrderStatusUpdate(
+                   time, orderId, status, execInfo->remainingQuantity,
+                   std::move(execInfo->trade), execInfo->commission)
+             : OnOrderStatusUpdate(time, orderId, status);
   }
 }
 
@@ -381,19 +400,18 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
     case TIME_IN_FORCE_GTC:
       break;
     default:
-      throw TradingSystem::Error("Order time-in-force type is not supported");
+      throw Exception("Order time-in-force type is not supported");
   }
   if (currency != security.GetSymbol().GetCurrency()) {
-    throw TradingSystem::Error(
-        "Trading system supports only security quote currency");
+    throw Exception("Trading system supports only security quote currency");
   }
   if (!price) {
-    throw TradingSystem::Error("Market order is not supported");
+    throw Exception("Market order is not supported");
   }
 
   const auto &product = m_products.find(security.GetSymbol().GetSymbol());
   if (product == m_products.cend()) {
-    throw TradingSystem::Error("Symbol is not supported by exchange");
+    throw Exception("Symbol is not supported by exchange");
   }
 
   std::ostringstream requestParams;
@@ -413,9 +431,8 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
           ("Failed to add new order: " + ConvertToString(response, false))
               .c_str());
     }
-    return boost::make_unique<OrderTransactionContext>(
-        *this,
-        product->second.requestId + "_" + response.get<std::string>("orderId"));
+    return boost::make_unique<LivecoinOrderTransactionContext>(
+        *this, product->second.requestId, response.get<std::string>("orderId"));
   } catch (const ptr::ptree_error &ex) {
     std::ostringstream error;
     error << "Failed to read server response for new order request \""
@@ -424,18 +441,14 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
   }
 }
 
-void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
+void LivecoinTradingSystem::SendCancelOrderTransaction(
+    const OrderTransactionContext &transaction) {
   boost::format requestParams("currencyPair=%1%&orderId=%2%");
-  {
-    std::vector<std::string> params;
-    params.reserve(2);
-    boost::split(params, orderId.GetValue(), boost::is_any_of("_"));
-    if (params.size() != 2) {
-      throw Exception("Order ID has unknown format");
-    }
-    requestParams % params.front()  // 1
-        % params.back();            // 2
-  }
+  requestParams %
+      boost::polymorphic_downcast<const LivecoinOrderTransactionContext *>(
+          &transaction)
+          ->GetProductRequestId()  // 1
+      % transaction.GetOrderId();  // 2
 
   const auto response = boost::get<1>(
       TradingRequest("/exchange/cancellimit", m_settings, requestParams.str(),
@@ -462,9 +475,10 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
   }
 }
 
-void LivecoinTradingSystem::OnTransactionSent(const OrderId &orderId) {
-  Base::OnTransactionSent(orderId);
-  m_pullingTask.AccelerateNextPulling();
+void LivecoinTradingSystem::OnTransactionSent(
+    const OrderTransactionContext &transaction) {
+  Base::OnTransactionSent(transaction);
+  m_pollingTask.AccelerateNextPolling();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

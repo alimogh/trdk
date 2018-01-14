@@ -324,6 +324,8 @@
     <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
+    <ClCompile Include="PollingSettings.cpp" />
+    <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -338,8 +340,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PullingSettings.cpp" />
-    <ClCompile Include="PullingTask.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Util.cpp" />
@@ -363,9 +363,9 @@
     <ClInclude Include="LivecoinTradingSystem.hpp" />
     <ClInclude Include="LivecoinUtil.hpp" />
     <ClInclude Include="NonceStorage.hpp" />
+    <ClInclude Include="PollingSettings.hpp" />
+    <ClInclude Include="PollingTask.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="PullingSettings.hpp" />
-    <ClInclude Include="PullingTask.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Settings.hpp" />

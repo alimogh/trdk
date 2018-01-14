@@ -12,7 +12,6 @@
 
 #include "Api.h"
 #include "Instrument.hpp"
-#include "TradingSystem.hpp"
 
 namespace trdk {
 
@@ -45,8 +44,6 @@ class TRDK_CORE_API Security : public trdk::Instrument {
     boost::posix_time::ptime m_time;
     size_t m_numberOfTicks;
   };
-
-  typedef trdk::TradingSystem::OrderStatusUpdateSlot OrderStatusUpdateSlot;
 
   typedef std::bitset<trdk::numberOfLevel1TickTypes> SupportedLevel1Types;
 

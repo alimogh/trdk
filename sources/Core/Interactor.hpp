@@ -14,22 +14,6 @@ namespace trdk {
 
 class Interactor : private boost::noncopyable {
  public:
-  class Error : public trdk::Lib::Exception {
-   public:
-    explicit Error(const char *what) noexcept : Exception(what) {}
-  };
-
-  class ConnectError : public Error {
-   public:
-    ConnectError(const char *what) noexcept : Error(what) {}
-  };
-
-  class CommunicationError : public Error {
-   public:
-    CommunicationError(const char *what) noexcept : Error(what) {}
-  };
-
- public:
   virtual ~Interactor() = default;
 };
 }

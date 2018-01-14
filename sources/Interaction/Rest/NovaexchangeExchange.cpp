@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "FloodControl.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -288,12 +288,12 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(
             CreateSession("novaexchange.com", m_settings, false)),
         m_tradingSession(CreateSession("novaexchange.com", m_settings, true)),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {}
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~NovaexchangeExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -341,7 +341,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Prices", 1,
         [this]() {
           for (const auto &subscribtion : m_securities) {
@@ -368,15 +368,15 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
               boost::format error(
                   "Failed to read order book for \"%1%\": \"%2%\"");
               error % security % ex.what();
-              throw MarketDataSource::Error(error.str().c_str());
+              throw Exception(error.str().c_str());
             }
             security.SetOnline(pt::not_a_date_time, true);
           }
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency());
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
  protected:
@@ -461,14 +461,13 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
       case TIME_IN_FORCE_GTC:
         break;
       default:
-        throw TradingSystem::Error("Order time-in-force type is not supported");
+        throw Exception("Order time-in-force type is not supported");
     }
     if (currency != security.GetSymbol().GetCurrency()) {
-      throw TradingSystem::Error(
-          "Trading system supports only security quote currency");
+      throw Exception("Trading system supports only security quote currency");
     }
     if (!price) {
-      throw TradingSystem::Error("Market order is not supported");
+      throw Exception("Market order is not supported");
     }
 
     boost::format requestParams(
@@ -483,13 +482,13 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
     const auto &result = request.Send(*m_tradingSession);
 
     boost::optional<OrderId> orderId;
-    std::vector<TradeInfo> trades;
+    std::vector<Trade> trades;
     for (const auto &node : boost::get<1>(result)) {
       const auto &item = node.second;
       try {
         const auto &type = item.get<std::string>("type");
         if (boost::iequals(type, "trade")) {
-          trades.emplace_back(TradeInfo{
+          trades.emplace_back(Trade{
               item.get<double>("price"),
               item.get<double>("fromamount") - item.get<double>("toamount")});
         } else if (boost::iequals(type, "created")) {
@@ -498,19 +497,19 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
           GetContext().GetTimer().Schedule(
               [this, orderId, qty] {
                 OnOrderStatusUpdate(GetContext().GetCurrentTime(), *orderId,
-                                    ORDER_STATUS_SUBMITTED, qty);
+                                    ORDER_STATUS_OPENED, qty);
               },
               m_timerScope);
         }
       } catch (const std::exception &ex) {
         boost::format error("Failed to read order transaction reply: \"%1%\"");
         error % ex.what();
-        throw TradingSystem::Error(error.str().c_str());
+        throw Exception(error.str().c_str());
       }
     }
 
     if (!orderId) {
-      throw TradingSystem::Error("Exchange answer is empty");
+      throw Exception("Exchange answer is empty");
     }
 
     if (!trades.empty()) {
@@ -523,22 +522,24 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                                                        std::move(*orderId));
   }
 
-  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    PrivateRequest("/remote/v2/private/cancelorder/" +
-                       boost::lexical_cast<std::string>(orderId) + "/",
-                   "cancelorder", m_settings, true, std::string(), GetContext(),
-                   GetTsLog())
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &transaction) override {
+    PrivateRequest(
+        "/remote/v2/private/cancelorder/" +
+            boost::lexical_cast<std::string>(transaction.GetOrderId()) + "/",
+        "cancelorder", m_settings, true, std::string(), GetContext(),
+        GetTsLog())
         .Send(*m_tradingSession);
   }
 
   void OnTradesInfo(const OrderId &orderId,
                     Qty &remainingQty,
-                    std::vector<TradeInfo> &trades) {
+                    std::vector<Trade> &trades) {
     for (auto &trade : trades) {
       remainingQty -= trade.qty;
       OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                           remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
-                                           : ORDER_STATUS_FILLED,
+                                           : ORDER_STATUS_FILLED_FULLY,
                           remainingQty, std::move(trade));
     }
   }
@@ -553,7 +554,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
   trdk::Timer::Scope m_timerScope;
 };
 }

@@ -79,6 +79,10 @@ int main(int argc, char *argv[]) {
     }
 
     mainWindow.CreateNewArbitrageStrategy();
+#ifdef DEV_VER
+    mainWindow.CreateNewArbitrageStrategy();
+    mainWindow.CreateNewArbitrageStrategy();
+#endif
 
     mainWindow.show();
     splash->finish(&mainWindow);

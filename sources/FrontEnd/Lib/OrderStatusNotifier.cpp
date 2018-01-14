@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/11/16 13:21:08
+ *   Created: 2018/01/10 16:27:48
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,27 +8,20 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "OrderStatusNotifier.hpp"
 
-#include "PollingSettings.hpp"
+using namespace trdk;
+using namespace trdk::FrontEnd::Lib;
 
-namespace trdk {
-namespace Interaction {
-namespace Rest {
+void OrderStatusNotifier::OnOpen() {}
 
-struct Settings {
-  PollingSetttings pollingSetttings;
+void OrderStatusNotifier::OnCancel() {}
 
-  explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
-      : pollingSetttings(conf) {
-    Log(log);
-    Validate();
-  }
+void OrderStatusNotifier::OnTrade(const Trade &, bool) {}
 
-  void Log(ModuleEventsLog &log) { pollingSetttings.Log(log); }
+void OrderStatusNotifier::OnReject() {}
 
-  void Validate() {}
-};
-}
-}
-}
+void OrderStatusNotifier::OnError() {}
+
+void OrderStatusNotifier::OnCommission(const Volume &) {}

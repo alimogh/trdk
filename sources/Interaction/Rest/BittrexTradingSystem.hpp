@@ -12,7 +12,7 @@
 
 #include "BittrexRequest.hpp"
 #include "BittrexUtil.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -124,26 +124,31 @@ class BittrexTradingSystem : public TradingSystem {
       const trdk::OrderSide &,
       const trdk::TimeInForce &) override;
 
-  virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(const trdk::OrderId &) override;
+  virtual void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
   void UpdateOrders();
   void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
+  boost::posix_time::ptime ParseTime(std::string &&) const;
+
  private:
   Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff;
+
   boost::unordered_map<std::string, BittrexProduct> m_products;
 
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
 
-  PullingTask m_pullingTask;
+  PollingTask m_pollingTask;
 };
 }
 }

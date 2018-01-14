@@ -14,7 +14,7 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class PullingTask : private boost::noncopyable {
+class PollingTask : private boost::noncopyable {
  private:
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
@@ -22,6 +22,7 @@ class PullingTask : private boost::noncopyable {
   struct Task {
     std::string name;
     size_t priority;
+    bool isAccelerable;
     boost::function<bool()> task;
     size_t frequency;
     size_t numberOfErrors;
@@ -29,19 +30,21 @@ class PullingTask : private boost::noncopyable {
   };
 
  public:
-  explicit PullingTask(const PullingSetttings &, ModuleEventsLog &);
-  ~PullingTask();
+  explicit PollingTask(const PollingSetttings &, ModuleEventsLog &);
+  ~PollingTask();
 
  public:
   void AddTask(const std::string &&name,
                size_t priority,
                const boost::function<bool()> &&,
-               size_t frequency);
+               size_t frequency,
+               bool isAccelerable);
   void ReplaceTask(const std::string &&name,
                    size_t priority,
                    const boost::function<bool()> &&,
-                   size_t frequency);
-  void AccelerateNextPulling();
+                   size_t frequency,
+                   bool isAccelerable);
+  void AccelerateNextPolling();
 
  private:
   void RunTasks();
@@ -51,6 +54,7 @@ class PullingTask : private boost::noncopyable {
                            size_t priority,
                            const boost::function<bool()> &&,
                            size_t frequency,
+                           bool isAccelerable,
                            bool replace);
 
   void SetTasks();
@@ -59,7 +63,7 @@ class PullingTask : private boost::noncopyable {
   ModuleEventsLog &m_log;
   Mutex m_mutex;
   boost::condition_variable m_condition;
-  const boost::chrono::microseconds m_pullingInterval;
+  const boost::chrono::microseconds m_pollingInterval;
   std::vector<Task> m_tasks;
   std::vector<std::pair<Task, bool /* replace */>> m_newTasks;
   boost::optional<boost::thread> m_thread;

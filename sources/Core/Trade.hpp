@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/10 15:13:22
+ *   Created: 2018/01/09 16:12:16
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -11,17 +11,19 @@
 #pragma once
 
 namespace trdk {
-namespace Interaction {
-namespace Rest {
-class FloodControl;
-class Security;
-struct Settings;
 
-class PollingSetttings;
-class PollingTask;
-
-class Request;
-class BittrexPublicRequest;
-}
-}
+//! Trade.
+class Trade {
+ public:
+  //! Trade price.
+  /** If set as "zero" - will be calculated automatically by trading system.
+    */
+  trdk::Price price;
+  //! Trade quantity.
+  /** If set as "zero" - will be calculated automatically by trading system.
+    */
+  trdk::Qty qty;
+  //! Trade ID. Optional.
+  std::string id;
+};
 }

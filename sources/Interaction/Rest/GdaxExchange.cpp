@@ -12,7 +12,7 @@
 
 #include "Prec.hpp"
 #include "FloodControl.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -127,9 +127,9 @@ class Request : public Rest::Request {
           ReadJson(responseContent).get<std::string>("message");
       if (boost::iequals(message, "Order already done") ||
           boost::iequals(message, "order not found")) {
-        throw TradingSystem::OrderIsUnknown(message.c_str());
+        throw OrderIsUnknown(message.c_str());
       } else if (!message.empty()) {
-        throw TradingSystem::Error(message.c_str());
+        throw Exception(message.c_str());
       }
     } catch (const ptr::ptree_error &) {
     }
@@ -256,16 +256,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
         m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())),
-        m_orderTransactionRequest("orders",
-                                  net::HTTPRequest::HTTP_POST,
-                                  m_settings,
-                                  true,
-                                  std::string(),
-                                  GetContext(),
-                                  GetTsLog(),
-                                  &GetTsTradingLog()),
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())),
         m_orderListRequest("orders",
                            net::HTTPRequest::HTTP_GET,
                            m_settings,
@@ -276,7 +268,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual ~GdaxExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -327,7 +319,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Prices", 1,
         [this]() -> bool {
           const SecuritiesLock lock(m_securitiesMutex);
@@ -363,15 +355,15 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                   "Failed to read order book for \"%1%\": \"%2%\"");
               error % security  // 1
                   % ex.what();  // 2
-              throw MarketDataSource::Error(error.str().c_str());
+              throw Exception(error.str().c_str());
             }
             security.SetOnline(pt::not_a_date_time, true);
           }
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency());
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
@@ -385,23 +377,23 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Actual orders", 0,
         [this]() {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+    m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+    m_pollingTask->AddTask(
         "Opened orders", 100, [this]() { return UpdateOpenedOrders(); },
-        m_settings.pullingSetttings.GetAllOrdersRequestFrequency());
+        m_settings.pollingSetttings.GetAllOrdersRequestFrequency(), false);
 
     m_isConnected = true;
   }
@@ -413,7 +405,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       boost::format message(
           "Symbol \"%1%\" is not in the exchange product list");
       message % symbol.GetSymbol();
-      throw SymbolIsNotSupportedError(message.str().c_str());
+      throw SymbolIsNotSupportedException(message.str().c_str());
     }
 
     const auto result = boost::make_shared<Rest::Security>(
@@ -453,14 +445,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       case TIME_IN_FORCE_GTC:
         break;
       default:
-        throw TradingSystem::Error("Order time-in-force type is not supported");
+        throw Exception("Order time-in-force type is not supported");
     }
     if (currency != security.GetSymbol().GetCurrency()) {
-      throw TradingSystem::Error(
-          "Trading system supports only security quote currency");
+      throw Exception("Trading system supports only security quote currency");
     }
     if (!price) {
-      throw TradingSystem::Error("Market order is not supported");
+      throw Exception("Market order is not supported");
     }
 
     const auto &product = m_products.find(security.GetSymbol().GetSymbol());
@@ -468,6 +459,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Symbol is not supported by exchange");
     }
 
+    PrivateRequest request("orders", net::HTTPRequest::HTTP_POST, m_settings,
+                           true, std::string(), GetContext(), GetTsLog(),
+                           &GetTsTradingLog());
     {
       boost::format requestParams(
           "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
@@ -476,30 +470,33 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           % product->second.id                                        // 2
           % RoundByPrecision(*price, product->second.precisionPower)  // 3
           % qty;                                                      // 4
-      m_orderTransactionRequest.SetBody(requestParams.str());
+      request.SetBody(requestParams.str());
     }
 
-    const auto &result = m_orderTransactionRequest.Send(*m_tradingSession);
+    const auto &result = request.Send(*m_tradingSession);
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();
-      throw TradingSystem::Error(error.str().c_str());
+      throw Exception(error.str().c_str());
     }
   }
 
-  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    PrivateRequest("orders/" + orderId.GetValue(),
-                   net::HTTPRequest::HTTP_DELETE, m_settings, true,
-                   std::string(), GetContext(), GetTsLog(), &GetTsTradingLog())
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &transaction) override {
+    PrivateRequest(
+        "orders/" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
+        net::HTTPRequest::HTTP_DELETE, m_settings, true, std::string(),
+        GetContext(), GetTsLog(), &GetTsTradingLog())
         .Send(*m_tradingSession);
   }
 
-  virtual void OnTransactionSent(const OrderId &orderId) override {
-    TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask->AccelerateNextPulling();
+  virtual void OnTransactionSent(
+      const OrderTransactionContext &transaction) override {
+    TradingSystem::OnTransactionSent(transaction);
+    m_pollingTask->AccelerateNextPolling();
   }
 
  private:
@@ -581,7 +578,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       } else if (type != "market") {
         GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
                          orderId);
-        throw TradingSystem::Error("Failed to request order status");
+        throw Exception("Failed to request order status");
       }
     }
 
@@ -597,7 +594,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       } else {
         GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", tifField,
                          orderId);
-        throw TradingSystem::Error("Failed to request order status");
+        throw Exception("Failed to request order status");
       }
     }
 
@@ -612,15 +609,15 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       if (statusField == "open" || statusField == "pending") {
         status = filledQty > 0
                      ? remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
-                                        : ORDER_STATUS_FILLED
-                     : ORDER_STATUS_SUBMITTED;
+                                        : ORDER_STATUS_FILLED_FULLY
+                     : ORDER_STATUS_OPENED;
       } else if (statusField == "done") {
-        status = ORDER_STATUS_FILLED;
-        remainingQty = 0;
+        status =
+            remainingQty ? ORDER_STATUS_CANCELED : ORDER_STATUS_FILLED_FULLY;
       } else {
         GetTsLog().Error("Unknown order status \"%1%\" for order %2%.",
                          statusField, orderId);
-        throw TradingSystem::Error("Failed to request order status");
+        throw Exception("Failed to request order status");
       }
     }
 
@@ -664,7 +661,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           boost::get<1>(m_orderListRequest.Send(*m_marketDataSession));
       for (const auto &order : orders) {
         const Order notifiedOrder = UpdateOrder(order.second);
-        if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
+        if (notifiedOrder.status != ORDER_STATUS_CANCELED &&
             (isInitial || m_orders.count(notifiedOrder.id))) {
           const auto id = notifiedOrder.id;
           notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
@@ -678,7 +675,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
 
     for (const auto &canceledOrder : m_orders) {
-      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELED);
     }
 
     m_orders.swap(notifiedOrderOrders);
@@ -687,16 +684,16 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrders() {
-    class OrderStateRequest : public PrivateRequest {
+    class OrderStatusRequest : public PrivateRequest {
      public:
       typedef PrivateRequest Base;
 
      public:
-      explicit OrderStateRequest(const OrderId &orderId,
-                                 const Settings &settings,
-                                 const Context &context,
-                                 ModuleEventsLog &log,
-                                 ModuleTradingLog &tradingLog)
+      explicit OrderStatusRequest(const OrderId &orderId,
+                                  const Settings &settings,
+                                  const Context &context,
+                                  ModuleEventsLog &log,
+                                  ModuleTradingLog &tradingLog)
           : Base("orders/" + orderId.GetValue(),
                  net::HTTPRequest::HTTP_GET,
                  settings,
@@ -705,7 +702,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                  context,
                  log,
                  &tradingLog) {}
-      virtual ~OrderStateRequest() override = default;
+      virtual ~OrderStatusRequest() override = default;
 
      protected:
       virtual void CheckErrorResponse(const net::HTTPResponse &response,
@@ -715,9 +712,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           const auto &message =
               ReadJson(responseContent).get<std::string>("message");
           if (message == "NotFound") {
-            throw TradingSystem::OrderIsUnknown(message.c_str());
+            throw OrderIsUnknown(message.c_str());
           } else if (!message.empty()) {
-            throw TradingSystem::Error(message.c_str());
+            throw Exception(message.c_str());
           }
         } catch (const ptr::ptree_error &) {
         }
@@ -726,8 +723,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     };
 
     for (const OrderId &orderId : GetActiveOrderIdList()) {
-      OrderStateRequest request(orderId, m_settings, GetContext(), GetTsLog(),
-                                GetTsTradingLog());
+      OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
+                                 GetTsTradingLog());
       try {
         UpdateOrder(boost::get<1>(request.Send(*m_marketDataSession)));
       } catch (const OrderIsUnknown &) {
@@ -752,9 +749,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   BalancesContainer m_balances;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
-
-  PrivateRequest m_orderTransactionRequest;
+  std::unique_ptr<PollingTask> m_pollingTask;
 
   PrivateRequest m_orderListRequest;
   boost::unordered_map<OrderId, Order> m_orders;

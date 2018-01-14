@@ -44,6 +44,7 @@
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Timer.hpp"
+#include "Core/Trade.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/TransactionContext.hpp"

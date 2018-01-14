@@ -10,7 +10,7 @@
 
 #include "LivecoinRequest.hpp"
 #include "LivecoinUtil.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Settings.hpp"
 
 namespace trdk {
@@ -112,9 +112,10 @@ class LivecoinTradingSystem : public TradingSystem {
       const trdk::OrderSide &,
       const trdk::TimeInForce &) override;
 
-  virtual void SendCancelOrderTransaction(const trdk::OrderId &) override;
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(const trdk::OrderId &) override;
+  virtual void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
@@ -128,9 +129,9 @@ class LivecoinTradingSystem : public TradingSystem {
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pullingSession;
+  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
 
-  PullingTask m_pullingTask;
+  PollingTask m_pollingTask;
 };
 }
 }

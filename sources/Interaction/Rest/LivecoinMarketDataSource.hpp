@@ -49,6 +49,8 @@ class LivecoinMarketDataSource : public MarketDataSource {
 
  private:
   const Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff;
+
   boost::unordered_map<std::string, LivecoinProduct> m_products;
 
   boost::mutex m_securitiesLock;
@@ -58,7 +60,7 @@ class LivecoinMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 };
 }
 }

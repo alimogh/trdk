@@ -12,7 +12,7 @@
 
 #include "Prec.hpp"
 #include "FloodControl.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -68,7 +68,7 @@ struct Settings : public Rest::Settings {
   void Validate() {}
 };
 
-struct Order {
+struct CcexOrder {
   OrderId id;
   std::string symbol;
   OrderStatus status;
@@ -128,7 +128,7 @@ class Request : public Rest::Request {
               << GetName() << "\" (" << GetRequest().getURI() << "): ";
         if (message) {
           if (boost::iequals(*message, "UUID_INVALID")) {
-            throw TradingSystem::OrderIsUnknown(message->c_str());
+            throw OrderIsUnknown(message->c_str());
           }
           error << "\"" << *message << "\"";
         } else {
@@ -157,7 +157,7 @@ class Request : public Rest::Request {
       boost::format error(
           "The server did not return response to the request \"%1%\"");
       error % GetName();
-      throw Interactor::CommunicationError(error.str().c_str());
+      throw CommunicationError(error.str().c_str());
     }
     return *result;
   }
@@ -264,12 +264,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(CreateSession(m_endpoint.host, m_settings, false)),
         m_tradingSession(CreateSession(m_endpoint.host, m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {}
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~CcexExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -356,32 +356,32 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Prices", 1,
         [this] {
           UpdateSecurities();
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+    m_pollingTask->AddTask(
         "Actual orders", 0,
         [this] {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+    m_pollingTask->AddTask(
         "Balances", 1,
         [this] {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
+    m_pollingTask->AddTask(
         "Opened orders", 100, [this] { return UpdateOpenedOrders(); },
-        m_settings.pullingSetttings.GetAllOrdersRequestFrequency());
+        m_settings.pollingSetttings.GetAllOrdersRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
 
     m_isConnected = true;
   }
@@ -393,7 +393,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       boost::format message(
           "Symbol \"%1%\" is not in the exchange product list");
       message % symbol.GetSymbol();
-      throw SymbolIsNotSupportedError(message.str().c_str());
+      throw SymbolIsNotSupportedException(message.str().c_str());
     }
 
     {
@@ -442,14 +442,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       case TIME_IN_FORCE_GTC:
         break;
       default:
-        throw TradingSystem::Error("Order time-in-force type is not supported");
+        throw Exception("Order time-in-force type is not supported");
     }
     if (currency != security.GetSymbol().GetCurrency()) {
-      throw TradingSystem::Error(
-          "Trading system supports only security quote currency");
+      throw Exception("Trading system supports only security quote currency");
     }
     if (!price) {
-      throw TradingSystem::Error("Market order is not supported");
+      throw Exception("Market order is not supported");
     }
 
     const auto &product = m_products.find(security.GetSymbol().GetSymbol());
@@ -474,11 +473,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction reply: \"%1%\"");
       error % ex.what();
-      throw TradingSystem::Error(error.str().c_str());
+      throw Exception(error.str().c_str());
     }
   }
 
-  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &transaction) override {
+    const auto orderId = transaction.GetOrderId();
+
     class CancelOrderRequest : public PrivateRequest {
      public:
       typedef PrivateRequest Base;
@@ -510,6 +512,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
               GetTsLog(), GetTsTradingLog());
     request.Send(*m_tradingSession);
 
+    //! @todo Bug here, move canceling to the update thread.
     GetContext().GetTimer().Schedule(
         [this, orderId]() {
           try {
@@ -523,9 +526,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_timerScope);
   }
 
-  virtual void OnTransactionSent(const OrderId &orderId) override {
-    TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask->AccelerateNextPulling();
+  virtual void OnTransactionSent(
+      const OrderTransactionContext &transaction) override {
+    TradingSystem::OnTransactionSent(transaction);
+    m_pollingTask->AccelerateNextPolling();
   }
 
  private:
@@ -583,7 +587,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     m_products = std::move(products);
   }
 
-  void UpdateOrder(const Order &order, const OrderStatus &status) {
+  void UpdateOrder(const CcexOrder &order, const OrderStatus &status) {
     const auto qtyPrecision = 1000000;
     OnOrder(order.id, order.symbol, status,
             RoundByPrecision(order.qty, qtyPrecision),
@@ -591,8 +595,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
             order.side, order.tif, order.openTime, order.updateTime);
   }
 
-  Order UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
-    Order result;
+  CcexOrder UpdateOrder(const ptr::ptree &order, bool isActialOrder) {
+    CcexOrder result;
     try {
       const auto &orderId = order.get<OrderId>("OrderUuid");
       const auto &type =
@@ -609,7 +613,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       } else {
         GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
                          orderId);
-        throw TradingSystem::Error("Failed to request order status");
+        throw Exception("Failed to request order status");
       }
 
       const Qty qty = order.get<double>("Quantity");
@@ -622,13 +626,13 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       OrderStatus status;
       if (!boost::iequals(closedField, "null")) {
         updateTime = pt::time_from_string(closedField);
-        status =
-            remainingQty == qty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
+        status = remainingQty == qty ? ORDER_STATUS_CANCELED
+                                     : ORDER_STATUS_FILLED_FULLY;
       } else {
         updateTime = openTime;
         status = order.get<bool>("CancelInitiated")
-                     ? ORDER_STATUS_CANCELLED
-                     : remainingQty == qty ? ORDER_STATUS_SUBMITTED
+                     ? ORDER_STATUS_CANCELED
+                     : remainingQty == qty ? ORDER_STATUS_OPENED
                                            : ORDER_STATUS_FILLED_PARTIALLY;
       }
 
@@ -656,7 +660,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   }
 
   bool UpdateOpenedOrders() {
-    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
+    boost::unordered_map<OrderId, CcexOrder> notifiedOrderOrders;
     bool isInitial = m_orders.empty();
     {
       PrivateRequest request("getopenorders", m_settings,
@@ -665,8 +669,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       try {
         const auto orders = boost::get<1>(request.Send(*m_marketDataSession));
         for (const auto &order : orders) {
-          const Order notifiedOrder = UpdateOrder(order.second, false);
-          if (notifiedOrder.status != ORDER_STATUS_CANCELLED &&
+          const auto notifiedOrder = UpdateOrder(order.second, false);
+          if (notifiedOrder.status != ORDER_STATUS_CANCELED &&
               (isInitial || m_orders.count(notifiedOrder.id))) {
             const auto id = notifiedOrder.id;
             notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
@@ -680,7 +684,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
     }
     for (const auto &canceledOrder : m_orders) {
-      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELLED);
+      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELED);
     }
     m_orders.swap(notifiedOrderOrders);
 
@@ -746,7 +750,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         response = boost::get<1>(request.Send(*m_marketDataSession));
       } catch (const OrderIsUnknown &) {
         OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
-                            ORDER_STATUS_FILLED, 0, {});
+                            ORDER_STATUS_FILLED_FULLY, 0, Trade{});
       } catch (const std::exception &ex) {
         boost::format error(
             "Failed to request state for order %1%: \"%2%\" (request: \"%3%\", "
@@ -779,9 +783,9 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   BalancesContainer m_balances;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 
-  boost::unordered_map<OrderId, Order> m_orders;
+  boost::unordered_map<OrderId, CcexOrder> m_orders;
 
   trdk::Timer::Scope m_timerScope;
 };

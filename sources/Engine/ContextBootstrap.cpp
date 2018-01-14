@@ -1333,8 +1333,7 @@ class ContextStateBootstrapper : private boost::noncopyable {
                 SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
                                               &security);
               }
-            } catch (
-                const trdk::MarketDataSource::SymbolIsNotSupportedError &ex) {
+            } catch (const SymbolIsNotSupportedException &ex) {
               m_context.GetLog().Warn(
                   "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
                   symbol,      // 1

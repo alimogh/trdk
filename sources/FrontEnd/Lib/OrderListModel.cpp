@@ -115,7 +115,7 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                     qtyStr,
                     ConvertPriceToText(price, security->GetPricePrecision()),
                     QString(ConvertToPch(tif)).toUpper(),
-                    ConvertToPch(ORDER_STATUS_SUBMITTED),
+                    ConvertToPch(ORDER_STATUS_OPENED),
                     ConvertPriceToText(0, security->GetPricePrecision()),
                     qtyStr,
                     qtime};

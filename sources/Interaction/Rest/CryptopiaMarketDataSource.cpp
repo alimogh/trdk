@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "CryptopiaMarketDataSource.hpp"
 #include "CryptopiaRequest.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
 
@@ -35,12 +35,12 @@ CryptopiaMarketDataSource::CryptopiaMarketDataSource(
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateSession("www.cryptopia.co.nz", m_settings, false)),
-      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
 CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
   try {
-    m_pullingTask.reset();
+    m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -75,14 +75,14 @@ void CryptopiaMarketDataSource::SubscribeToSecurities() {
       "GetMarketOrderGroups", boost::join(uriSymbolsPath, "-") + "/1",
       GetContext(), GetLog());
 
-  m_pullingTask->ReplaceTask(
+  m_pollingTask->ReplaceTask(
       "Prices", 1,
       [this, request]() {
         UpdatePrices(*request);
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency());
-  m_pullingTask->AccelerateNextPulling();
+      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AccelerateNextPolling();
 }
 
 trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
@@ -92,7 +92,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
   if (product == productIndex.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
-    throw SymbolIsNotSupportedError(message.str().c_str());
+    throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
   {

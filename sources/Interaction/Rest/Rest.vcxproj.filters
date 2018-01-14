@@ -41,9 +41,6 @@
     <ClCompile Include="Util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PullingTask.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FloodControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BittrexUtil.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PullingSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CryptopiaMarketDataSource.cpp">
@@ -98,6 +92,12 @@
     <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PollingSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PollingTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -118,9 +118,6 @@
     <ClInclude Include="Util.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PullingTask.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FloodControl.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -137,9 +134,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BittrexUtil.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PullingSettings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CryptopiaMarketDataSource.hpp">
@@ -167,6 +161,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LivecoinRequest.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PollingSettings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PollingTask.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

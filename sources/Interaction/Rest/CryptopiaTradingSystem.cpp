@@ -28,14 +28,22 @@ namespace {
 OrderId ParseOrderId(const ptr::ptree &source) {
   return source.get<OrderId>("OrderId");
 }
-pt::ptime ParseTimeStamp(const ptr::ptree &source,
-                         const pt::time_duration &timeZoneOffset) {
-  const auto &field = source.get<std::string>("TimeStamp");
-  pt::ptime result(gr::from_string(field.substr(0, 10)),
-                   pt::duration_from_string(field.substr(11, 8)));
-  result -= timeZoneOffset;
-  return result;
-}
+
+class CryptopiaOrderTransactionContext : public OrderTransactionContext {
+ public:
+  explicit CryptopiaOrderTransactionContext(
+      CryptopiaTradingSystem &tradingSystem,
+      const OrderId &&orderId,
+      bool isImmediatelyFilled)
+      : OrderTransactionContext(tradingSystem, std::move(orderId)),
+        m_isImmediatelyFilled(isImmediatelyFilled) {}
+
+ public:
+  bool IsImmediatelyFilled() const { return m_isImmediatelyFilled; }
+
+ private:
+  const bool m_isImmediatelyFilled;
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +66,7 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
     NonceStorage &nonces,
     const Settings &settings,
     const std::string &params,
+    bool isPriority,
     const Context &context,
     ModuleEventsLog &log,
     ModuleTradingLog *tradingLog)
@@ -69,6 +78,7 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
            log,
            tradingLog),
       m_settings(settings),
+      m_isPriority(isPriority),
       m_paramsDigest(Base64::Encode(CalcMd5Digest(params), false)),
       m_nonces(nonces) {
   SetBody(params);
@@ -136,7 +146,7 @@ class CryptopiaTradingSystem::OrderTransactionRequest : public PrivateRequest {
                                    const Context &context,
                                    ModuleEventsLog &log,
                                    ModuleTradingLog &tradingLog)
-      : Base(name, nonces, settings, params, context, log, &tradingLog) {}
+      : Base(name, nonces, settings, params, true, context, log, &tradingLog) {}
   virtual ~OrderTransactionRequest() override = default;
 
  protected:
@@ -159,8 +169,8 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),
       m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
-      m_pullingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("www.cryptopia.co.nz", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(m_products.empty());
@@ -173,15 +183,15 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency());
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 Volume CryptopiaTradingSystem::CalcCommission(
@@ -275,20 +285,19 @@ CryptopiaTradingSystem::SendOrderTransaction(
     case TIME_IN_FORCE_GTC:
       break;
     default:
-      throw TradingSystem::Error("Order time-in-force type is not supported");
+      throw Exception("Order time-in-force type is not supported");
   }
   if (currency != security.GetSymbol().GetCurrency()) {
-    throw TradingSystem::Error(
-        "Trading system supports only security quote currency");
+    throw Exception("Trading system supports only security quote currency");
   }
   if (!price) {
-    throw TradingSystem::Error("Market order is not supported");
+    throw Exception("Market order is not supported");
   }
 
   const auto &productIndex = m_products.get<BySymbol>();
   const auto &product = productIndex.find(security.GetSymbol().GetSymbol());
   if (product == productIndex.cend()) {
-    throw TradingSystem::Error("Symbol is not supported by exchange");
+    throw Exception("Symbol is not supported by exchange");
   }
 
   const auto &productId = product->id;
@@ -348,19 +357,20 @@ CryptopiaTradingSystem::SendOrderTransaction(
       throw;
     }
     GetLog().Debug("Retrieved new order ID \"%1%\".", *orderId);
-    return boost::make_unique<OrderTransactionContext>(*this,
-                                                       std::move(*orderId));
+    return boost::make_unique<CryptopiaOrderTransactionContext>(
+        *this, std::move(*orderId), false);
   }
 
   auto orderId = response.get<OrderId>("OrderId");
-  if (orderId.GetValue() == "null") {
+  const bool isImmediatelyFilled = orderId.GetValue() == "null";
+  if (isImmediatelyFilled) {
     const auto &now = GetContext().GetCurrentTime();
     static size_t virtualOrderId = 1;
     orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
     GetContext().GetTimer().Schedule(
         [this, orderId, now]() {
           try {
-            OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED, 0);
+            OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED_FULLY, 0);
           } catch (const OrderIsUnknown &) {
           }
         },
@@ -369,32 +379,37 @@ CryptopiaTradingSystem::SendOrderTransaction(
     SubscribeToOrderUpdates(product);
   }
 
-  return boost::make_unique<OrderTransactionContext>(*this, std::move(orderId));
+  return boost::make_unique<CryptopiaOrderTransactionContext>(
+      *this, std::move(orderId), isImmediatelyFilled);
 }
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(
-    const OrderId &orderId) {
-  if (!orderId.GetValue().empty() && orderId.GetValue().front() == 'v') {
+    const OrderTransactionContext &transaction) {
+  if (boost::polymorphic_downcast<const CryptopiaOrderTransactionContext *>(
+          &transaction)
+          ->IsImmediatelyFilled()) {
     throw OrderIsUnknown("Order was filled immediately at request");
   }
 
   OrderTransactionRequest request(
       "CancelTrade", m_nonces, m_settings,
-      "{\"OrderId\":" + boost::lexical_cast<std::string>(orderId) + "}",
+      "{\"OrderId\":" +
+          boost::lexical_cast<std::string>(transaction.GetOrderId()) + "}",
       GetContext(), GetLog(), GetTradingLog());
 
   const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
   request.Send(*m_tradingSession);
-  Verify(m_cancelingOrders.emplace(orderId).second);
+  Verify(m_cancelingOrders.emplace(transaction.GetOrderId()).second);
 }
 
-void CryptopiaTradingSystem::OnTransactionSent(const OrderId &orderId) {
-  Base::OnTransactionSent(orderId);
-  m_pullingTask.AccelerateNextPulling();
+void CryptopiaTradingSystem::OnTransactionSent(
+    const OrderTransactionContext &transaction) {
+  Base::OnTransactionSent(transaction);
+  m_pollingTask.AccelerateNextPolling();
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession);
+  const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
@@ -421,7 +436,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response =
-        boost::get<1>(request.second->Send(*m_pullingSession));
+        boost::get<1>(request.second->Send(*m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
         Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
@@ -446,13 +461,13 @@ bool CryptopiaTradingSystem::UpdateOrders() {
         cancelOrderLock.unlock();
         // There are no other places which can remove the order from the active
         // list so this status update doesn't catch OrderIsUnknown-exception.
-        OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_CANCELLED, 0);
+        OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_CANCELED);
         continue;
       }
     }
     // There are no other places which can remove the order from the active
     // list so this status update doesn't catch OrderIsUnknown-exception.
-    OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_FILLED, 0);
+    OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_FILLED_FULLY);
   }
 
   {
@@ -477,7 +492,7 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
   try {
     id = ParseOrderId(node);
     remainingQty = node.get<Price>("Remaining");
-    time = ParseTimeStamp(node, m_serverTimeDiff);
+    time = ParseTimeStamp(node);
   } catch (const std::exception &ex) {
     boost::format error("Failed to parse order : \"%1%\". Message: \"%2%\"");
     error % ex.what()                    // 1
@@ -488,7 +503,7 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
   // remainingQty = product.NormalizeQty(, remainingQty, );
 
   try {
-    OnOrderStatusUpdate(time, id, ORDER_STATUS_SUBMITTED, remainingQty);
+    OnOrderStatusUpdate(time, id, ORDER_STATUS_OPENED, remainingQty);
   } catch (const OrderIsUnknown &) {
   }
 
@@ -501,16 +516,16 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
     const OrdersRequestsWriteLock lock(m_openOrdersRequestMutex);
     if (!m_openOrdersRequests
              .emplace(product, boost::make_shared<OpenOrdersRequest>(
-                                   product->id, m_nonces, m_settings,
+                                   product->id, m_nonces, m_settings, false,
                                    GetContext(), GetLog(), GetTradingLog()))
              .second) {
       return;
     }
     ++m_openOrdersRequestsVersion;
   }
-  m_pullingTask.ReplaceTask(
+  m_pollingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
 }
 
 boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
@@ -520,7 +535,7 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
     const Qty &qty,
     const Price &price) const {
   boost::optional<OrderId> result;
-  OpenOrdersRequest request(productId, m_nonces, m_settings, GetContext(),
+  OpenOrdersRequest request(productId, m_nonces, m_settings, true, GetContext(),
                             GetLog(), GetTradingLog());
   try {
     const auto response = boost::get<1>(request.Send(*m_tradingSession));
@@ -531,8 +546,7 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
           order.get<std::string>("Type") != side ||
           order.get<Qty>("Amount") != qty ||
           order.get<Price>("Rate") != price ||
-          ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
-              startTime) {
+          ParseTimeStamp(order) + pt::minutes(2) < startTime) {
         continue;
       }
       if (result) {
@@ -548,7 +562,30 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
     GetLog().Debug("Failed to find new order ID: \"%1%\".", ex.what());
     return boost::none;
   }
+
   return result;
+}
+
+pt::ptime CryptopiaTradingSystem::ParseTimeStamp(
+    const ptr::ptree &source) const {
+  const auto &field = source.get<std::string>("TimeStamp");
+  pt::ptime result(gr::from_string(field.substr(0, 10)),
+                   pt::duration_from_string(field.substr(11, 8)));
+  result -= m_serverTimeDiff;
+  return result;
+}
+
+void CryptopiaTradingSystem::ForEachRemoteTrade(
+    const CryptopiaProductId &product,
+    net::HTTPClientSession &session,
+    bool isPriority,
+    const boost::function<void(const ptr::ptree &)> &callback) const {
+  TradesRequest request(product, 500, m_nonces, m_settings, isPriority,
+                        GetContext(), GetLog(), GetTradingLog());
+  const auto response = boost::get<1>(request.Send(session));
+  for (const auto &node : response) {
+    callback(node.second);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -224,7 +224,7 @@ void Engine::Context::Start(
         }
         try {
           source.marketDataSource->Connect(IniSectionRef(conf, source.section));
-        } catch (const Interactor::ConnectError &ex) {
+        } catch (const ConnectError &ex) {
           boost::format message(
               "Failed to connect to market data source \"%1%\": \"%2%\"");
           message % source.marketDataSource->GetInstanceName()  // 1
@@ -234,7 +234,7 @@ void Engine::Context::Start(
             Verify(errors.emplace(i).second);
             continue;
           } else {
-            throw Interactor::ConnectError(message.str().c_str());
+            throw ConnectError(message.str().c_str());
           }
         } catch (const Lib::Exception &ex) {
           GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
@@ -267,7 +267,7 @@ void Engine::Context::Start(
 
           try {
             tradingSystem.Connect(confSection);
-          } catch (const Interactor::ConnectError &ex) {
+          } catch (const ConnectError &ex) {
             boost::format message(
                 "Failed to connect to trading system \"%1%\": \"%2%\"");
             message % tradingSystem.GetInstanceName()  // 1
@@ -277,7 +277,7 @@ void Engine::Context::Start(
               Verify(errors.emplace(i).second);
               break;
             } else {
-              throw Interactor::ConnectError(message.str().c_str());
+              throw ConnectError(message.str().c_str());
             }
           } catch (const Lib::Exception &ex) {
             GetLog().Error("Failed to make trading system connection: \"%1%\".",
@@ -314,8 +314,7 @@ void Engine::Context::Start(
 
         if (m_pimpl->m_tradingSystems.empty() ||
             m_pimpl->m_tradingSystems.empty()) {
-          throw Interactor::ConnectError(
-              "Failed to start: All sources failed to connect.");
+          throw ConnectError("Failed to start: All sources failed to connect.");
         }
 
         m_pimpl->m_tradingSystems.shrink_to_fit();
@@ -363,11 +362,11 @@ void Engine::Context::Start(
     ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
       try {
         source.SubscribeToSecurities();
-      } catch (const Interactor::ConnectError &ex) {
+      } catch (const ConnectError &ex) {
         boost::format message(
             "Failed to make market data subscription: \"%1%\"");
         message % ex;
-        throw Interactor::ConnectError(message.str().c_str());
+        throw ConnectError(message.str().c_str());
       } catch (const Lib::Exception &ex) {
         GetLog().Error("Failed to make market data subscription: \"%1%\".", ex);
         throw Exception("Failed to make market data subscription");

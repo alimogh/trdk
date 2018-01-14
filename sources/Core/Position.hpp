@@ -156,14 +156,16 @@ class TRDK_CORE_API Position
 
   //! Open operation started, but error occurred at opening or closing.
   bool IsError() const noexcept;
-  //! Open operation started, but temporary error occurred at opening
-  //! or closing.
-  bool IsInactive() const noexcept;
-  void ResetInactive();
+  //! Open operation started, but was rejected by trading system at opening or
+  //! closing.
+  bool IsRejected() const noexcept;
 
   bool HasActiveOrders() const noexcept;
+  bool HasOpenedOrders() const noexcept;
   bool HasActiveOpenOrders() const noexcept;
+  bool HasOpenedOpenOrders() const noexcept;
   bool HasActiveCloseOrders() const noexcept;
+  bool HasOpenedCloseOrders() const noexcept;
 
  public:
   const trdk::Qty &GetPlanedQty() const;
@@ -380,34 +382,34 @@ class TRDK_CORE_API Position
 
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) = 0;
+  DoOpenAtMarketPrice(const trdk::Qty &,
+                      const trdk::OrderParams &,
+                      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &qty, const trdk::Price &, const trdk::OrderParams &) = 0;
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
   DoOpenImmediatelyOrCancel(const trdk::Qty &,
                             const trdk::Price &,
-                            const trdk::OrderParams &) = 0;
+                            const trdk::OrderParams &,
+                            std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
 
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) = 0;
+  DoCloseAtMarketPrice(const trdk::Qty &,
+                       const trdk::OrderParams &,
+                       std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &qty, const trdk::Price &, const trdk::OrderParams &) = 0;
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
   DoCloseImmediatelyOrCancel(const trdk::Qty &,
                              const trdk::Price &,
-                             const trdk::OrderParams &) = 0;
-
- protected:
-  void UpdateOpening(const trdk::OrderId &,
-                     const trdk::OrderStatus &,
-                     const trdk::Qty &remainingQty,
-                     const boost::optional<trdk::Volume> &commission,
-                     const trdk::TradingSystem::TradeInfo *);
-  void UpdateClosing(const trdk::OrderId &,
-                     const trdk::OrderStatus &,
-                     const trdk::Qty &remainingQty,
-                     const boost::optional<trdk::Volume> &commission,
-                     const trdk::TradingSystem::TradeInfo *);
+                             const trdk::OrderParams &,
+                             std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
 
  private:
   class Implementation;
@@ -451,27 +453,36 @@ class TRDK_CORE_API LongPosition : public Position {
 
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) override;
+  DoOpenAtMarketPrice(const trdk::Qty &,
+                      const trdk::OrderParams &,
+                      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &qty,
+      const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &) override;
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenImmediatelyOrCancel(const trdk::Qty &,
-                            const trdk::Price &,
-                            const trdk::OrderParams &) override;
+  DoOpenImmediatelyOrCancel(
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
 
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &qty,
-                       const trdk::OrderParams &) override;
+  DoCloseAtMarketPrice(const trdk::Qty &,
+                       const trdk::OrderParams &,
+                       std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &qty,
+      const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &) override;
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseImmediatelyOrCancel(const trdk::Qty &,
-                             const trdk::Price &,
-                             const trdk::OrderParams &) override;
+  DoCloseImmediatelyOrCancel(
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -511,27 +522,36 @@ class TRDK_CORE_API ShortPosition : public Position {
 
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &qty, const trdk::OrderParams &) override;
+  DoOpenAtMarketPrice(const trdk::Qty &,
+                      const trdk::OrderParams &,
+                      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &qty,
+      const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &) override;
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenImmediatelyOrCancel(const trdk::Qty &,
-                            const trdk::Price &,
-                            const trdk::OrderParams &) override;
+  DoOpenImmediatelyOrCancel(
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
 
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &qty,
-                       const trdk::OrderParams &) override;
+  DoCloseAtMarketPrice(const trdk::Qty &,
+                       const trdk::OrderParams &,
+                       std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &qty,
+      const trdk::Qty &,
       const trdk::Price &,
-      const trdk::OrderParams &) override;
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseImmediatelyOrCancel(const trdk::Qty &,
-                             const trdk::Price &,
-                             const trdk::OrderParams &) override;
+  DoCloseImmediatelyOrCancel(
+      const trdk::Qty &,
+      const trdk::Price &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

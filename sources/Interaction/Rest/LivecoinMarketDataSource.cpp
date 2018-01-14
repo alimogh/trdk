@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "LivecoinMarketDataSource.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Security.hpp"
 
 using namespace trdk;
@@ -31,17 +31,19 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
+      m_serverTimeDiff(
+          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_allOrderBooksRequest("/exchange/all/order_book",
                              "groupByPrice=true&depth=1",
                              GetContext(),
                              GetLog()),
       m_session(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
 LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   try {
-    m_pullingTask.reset();
+    m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -72,14 +74,14 @@ void LivecoinMarketDataSource::SubscribeToSecurities() {
         boost::lexical_cast<std::string>(security.first));
   }
 
-  m_pullingTask->AddTask(
+  m_pollingTask->AddTask(
       "Prices", 1,
       [this]() {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency());
-  m_pullingTask->AccelerateNextPulling();
+      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AccelerateNextPolling();
 }
 
 trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
@@ -88,7 +90,7 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
   if (product == m_products.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
-    throw SymbolIsNotSupportedError(message.str().c_str());
+    throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
   {
@@ -182,7 +184,8 @@ void LivecoinMarketDataSource::UpdatePrices(
     r::Security &security,
     const Milestones &delayMeasurement) {
   const auto &time =
-      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000);
+      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000) -
+      m_serverTimeDiff;
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("asks"));
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
