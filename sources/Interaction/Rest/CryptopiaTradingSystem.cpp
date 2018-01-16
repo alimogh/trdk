@@ -525,7 +525,7 @@ void CryptopiaTradingSystem::SubscribeToOrderUpdates(
   }
   m_pollingTask.ReplaceTask(
       "Orders", 0, [this]() { return UpdateOrders(); },
-      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
 }
 
 boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
