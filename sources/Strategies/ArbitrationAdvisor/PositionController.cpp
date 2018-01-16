@@ -46,6 +46,7 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
                       position.GetNumberOfTrades()
                           ? position.GetLastTradePrice()
                           : position.GetOpenStartPrice());
+    position.ResetRejected();
   }
 
   Base::OnPositionUpdate(position);

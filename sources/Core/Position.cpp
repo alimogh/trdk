@@ -1059,7 +1059,12 @@ void Position::MarkAsCompleted() {
 }
 
 bool Position::IsError() const noexcept { return m_pimpl->m_isError; }
+
 bool Position::IsRejected() const noexcept { return m_pimpl->m_isRejected; }
+void Position::ResetRejected() {
+  Assert(m_pimpl->m_isRejected);
+  m_pimpl->m_isRejected = false;
+}
 
 bool Position::IsCancelling() const {
   return m_pimpl->m_open.IsCanceling() || m_pimpl->m_close.IsCanceling();

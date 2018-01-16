@@ -156,9 +156,16 @@ class TRDK_CORE_API Position
 
   //! Open operation started, but error occurred at opening or closing.
   bool IsError() const noexcept;
+
   //! Open operation started, but was rejected by trading system at opening or
   //! closing.
+  /** @sa ResetRejected
+    */
   bool IsRejected() const noexcept;
+  //! Resets reject-status.
+  /** @sa IsRejected
+    */
+  void ResetRejected();
 
   bool HasActiveOrders() const noexcept;
   bool HasOpenedOrders() const noexcept;
