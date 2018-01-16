@@ -468,7 +468,8 @@ class Security::Implementation : private boost::noncopyable {
   boost::atomic_size_t m_numberOfMarketDataUpdates;
   mutable boost::atomic_bool m_isLevel1Started;
   const SupportedLevel1Types m_supportedLevel1Types;
-  bool m_isOnline;
+  // Custom branch logic - atomic var as set-method has no sync in this branch.
+  boost::atomic_bool m_isOnline;
   bool m_isOpened;
 
   boost::optional<ContractExpiration> m_expiration;
@@ -711,18 +712,12 @@ bool Security::SetOnline(const pt::ptime &time, bool isOnline) {
   if (m_pimpl->m_isOnline == isOnline) {
     return false;
   }
-#if 0
-  // Custom branch logic - disabling log about security online for REST-based
-  // exchanges.
   GetContext().GetLog().Info(
       "\"%1%\" now is %2% by the event %3%. Last data time: %4%.", *this,
       isOnline ? "online" : "offline", time, GetLastMarketDataTime());
-#endif
   {
-    const auto lock = GetSource().GetContext().SyncDispatching();
+    // Custom branch logic - set-method doesn't sync dispatching.
     m_pimpl->m_isOnline = isOnline;
-    m_pimpl->m_serviceEventSignal(
-        time, isOnline ? SERVICE_EVENT_ONLINE : SERVICE_EVENT_OFFLINE);
   }
   return true;
 }
