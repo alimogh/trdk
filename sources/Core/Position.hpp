@@ -177,7 +177,6 @@ class TRDK_CORE_API Position
     */
   const boost::posix_time::ptime &GetOpenStartTime() const;
 
-  void SetOpenedQty(const trdk::Qty &) const noexcept;
   const trdk::Qty &GetOpenedQty() const noexcept;
   trdk::Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
@@ -310,9 +309,10 @@ class TRDK_CORE_API Position
   virtual trdk::Price GetMarketCloseOppositePrice() const = 0;
 
   size_t GetNumberOfOpenOrders() const;
-  size_t GetNumberOfOpenTrades() const;
-
   size_t GetNumberOfCloseOrders() const;
+
+  size_t GetNumberOfTrades() const;
+  size_t GetNumberOfOpenTrades() const;
   size_t GetNumberOfCloseTrades() const;
 
  public:
@@ -328,6 +328,11 @@ class TRDK_CORE_API Position
       const trdk::Price &openPrice,
       const boost::shared_ptr<const trdk::OrderTransactionContext>
           &openingContext = nullptr);
+
+  //! Adds trade to the last order.
+  /** Raises an exception if order conditions will be violated by this trade.
+    */
+  void AddTrade(const trdk::Qty &, const trdk::Price &);
 
  public:
   const trdk::OrderTransactionContext &OpenAtMarketPrice();

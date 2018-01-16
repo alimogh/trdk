@@ -34,17 +34,17 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
   }
 
   if (position.IsRejected()) {
+    Assert(!position.HasActiveOrders());
     position.GetStrategy().GetLog().Error(
         "Position \"%1%/%2%\" (\"%3%\") is rejected by trading system \"%4%\".",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
         position.GetTradingSystem());      // 4
-    if (!position.GetNumberOfCloseOrders()) {
-      position.SetOpenedQty(position.GetPlanedQty());
-    } else {
-      position.SetClosedQty(position.GetOpenedQty());
-    }
+    position.AddTrade(position.GetActiveQty(),
+                      position.GetNumberOfTrades()
+                          ? position.GetLastTradePrice()
+                          : position.GetOpenStartPrice());
   }
 
   Base::OnPositionUpdate(position);

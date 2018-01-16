@@ -36,13 +36,13 @@ boost::atomic_size_t objectsCounter(0);
 
 void ReportAboutGeneralAction(const Position &position,
                               const char *action,
-                              const char *state) noexcept {
+                              const char *status) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'%1%': {'state': '%2%'}, 'startPrice': %3$.8f, 'qty': "
+      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3$.8f, 'qty': "
       "%4$.8f, 'type': '%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
       [&](TradingRecord &record) {
         record % action                         // 1
-            % state                             // 2
+            % status                            // 2
             % position.GetOpenStartPrice()      // 3
             % position.GetPlanedQty()           // 4
             % position.GetSide()                // 5
@@ -176,16 +176,30 @@ class Position::Implementation : private boost::noncopyable {
       return HasActiveOrders() && orders.back().isCanceled;
     }
 
-    void OnNewTrade(const Trade &trade, const Price &price) {
-      AssertLt(0, trade.price);
-      AssertLt(0, trade.qty);
+    void AddTrade(const Trade &trade) { AddTrade(trade.qty, trade.price); }
+    void AddTrade(const Qty &tradeQty, const Price &tradePrice) {
+      AssertLt(0, tradePrice);
+      AssertLt(0, tradeQty);
       Assert(!orders.empty());
       auto &order = orders.back();
-      order.executedQty += trade.qty;
-      volume += price * trade.qty;
-      qty += trade.qty;
+      order.executedQty += tradeQty;
+      volume += tradePrice * tradeQty;
+      qty += tradeQty;
       ++numberOfTrades;
-      lastTradePrice = trade.price;
+      lastTradePrice = tradePrice;
+    }
+    bool CheckAndAddTrade(const Qty &tradeQty, const Price &tradePrice) {
+      if (orders.empty()) {
+        return false;
+      }
+      auto &order = orders.back();
+      if (order.executedQty + tradeQty > order.qty) {
+        AssertLe(order.executedQty + tradeQty, order.qty);
+        throw Exception(
+            "Order quantity is greater than active order remaining quantity");
+      }
+      AddTrade(tradeQty, tradePrice);
+      return true;
     }
   };
 
@@ -299,9 +313,7 @@ class Position::Implementation : private boost::noncopyable {
     virtual Order &GetOrder() = 0;
 
     virtual const char *GetSide() const = 0;
-    virtual const Qty &GetQty() const = 0;
-    virtual const Price &GetLastPrice() const = 0;
-    virtual Price GetAvgPrice() const = 0;
+    virtual const Qty &GetFilledQty() const = 0;
 
     virtual void AddTrade(const Trade &) = 0;
     virtual pt::ptime &GetStartTime() = 0;
@@ -326,45 +338,9 @@ class Position::Implementation : private boost::noncopyable {
       GetPositionImpl().SignalUpdate();
     }
 
-    void Report(const OrderStatus &state) {
-      GetPosition().GetStrategy().GetTradingLog().Write(
-          "{'position': {'%1%': {'state': '%2%', 'orderPrice': %3$.8f, "
-          "'lastPrice': %4$.8f, 'avgPrice': %5$.8f, 'qty': %6$.8f, 'orderId': "
-          "'%7%'}, 'startPrice': %8$.8f, 'qty': %9$.8f, 'type': '%10%', "
-          "'security': '%11%', 'operation': '%12%/%13%'}}",
-          [this, &state](TradingRecord &record) {
-            record % GetSide()  // 1
-                % state;        // 2
-
-            const auto &order = GetOrder();
-            if (order.price) {
-              record % *order.price;  // 3
-            } else {
-              record % "null";  // 3
-            }
-            const auto &position = GetPosition();
-            {
-              const auto &qty = GetQty();
-              if (qty) {
-                record % GetLastPrice()  // 4
-                    % GetAvgPrice();     // 5
-              } else {
-                record % "null"  // 4
-                    % "null";    // 5
-              }
-              record % qty;  // 6
-            }
-            record % order.transactionContext->GetOrderId()  // 7
-                % position.GetOpenStartPrice()               // 8
-                % position.GetPlanedQty()                    // 9
-                % position.GetSide()                         // 10
-                % position.GetSecurity();                    // 11
-            {
-              const auto &impl = GetPositionImpl();
-              record % impl.m_operation->GetId()  // 12
-                  % impl.m_subOperationId;        // 13
-            }
-          });
+    void Report(const OrderStatus &status) {
+      GetPositionImpl().ReportAction(GetSide(), ConvertToPch(status),
+                                     GetOrder(), GetFilledQty());
     }
 
    private:
@@ -386,17 +362,11 @@ class Position::Implementation : private boost::noncopyable {
       return GetPositionImpl().m_open.orders.back();
     }
     virtual const char *GetSide() const override { return "open"; }
-    virtual const Qty &GetQty() const override {
+    virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetOpenedQty();
     }
-    virtual const Price &GetLastPrice() const override {
-      return GetPositionImpl().m_open.lastTradePrice;
-    }
-    virtual Price GetAvgPrice() const override {
-      return GetPosition().GetOpenAvgPrice();
-    }
     virtual void AddTrade(const Trade &trade) override {
-      GetPositionImpl().m_open.OnNewTrade(trade, trade.price);
+      GetPositionImpl().m_open.AddTrade(trade);
     }
     virtual pt::ptime &GetStartTime() override {
       return GetPositionImpl().m_open.time;
@@ -418,17 +388,11 @@ class Position::Implementation : private boost::noncopyable {
       return GetPositionImpl().m_close.orders.back();
     }
     virtual const char *GetSide() const override { return "close"; }
-    virtual const Qty &GetQty() const override {
+    virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetClosedQty();
     }
-    virtual const Price &GetLastPrice() const override {
-      return GetPositionImpl().m_close.lastTradePrice;
-    }
-    virtual Price GetAvgPrice() const override {
-      return GetPosition().GetCloseAvgPrice();
-    }
     virtual void AddTrade(const Trade &trade) override {
-      GetPositionImpl().m_close.OnNewTrade(trade, trade.price);
+      GetPositionImpl().m_close.AddTrade(trade);
     }
     virtual pt::ptime &GetStartTime() override {
       return GetPositionImpl().m_close.time;
@@ -602,6 +566,39 @@ class Position::Implementation : private boost::noncopyable {
         });
   }
 
+  void ReportAction(const char *action,
+                    const char *status,
+                    const Order &order,
+                    const Qty &filledQty) {
+    m_strategy.GetTradingLog().Write(
+        "{'position': {'%1%': {'status': '%2%', 'orderPrice': %3$.8f, "
+        "'lastPrice': %4$.8f, 'qty': %5$.8f, 'orderId': '%6%'}, 'startPrice': "
+        "%7$.8f, 'qty': %8$.8f, 'type': '%9%', 'security': '%10%', "
+        "'operation': '%11%/%12%'}}",
+        [&](TradingRecord &record) {
+          record % action  // 1
+              % status;    // 2
+          if (order.price) {
+            record % *order.price;  // 3
+          } else {
+            record % "null";  // 3
+          }
+          if (filledQty) {
+            record % m_self.GetLastTradePrice();  // 4
+          } else {
+            record % "null";  // 4
+          }
+          record % filledQty                            // 5
+              % order.transactionContext->GetOrderId()  // 6
+              % m_open.startPrice                       // 7
+              % m_planedQty                             // 8
+              % m_self.GetSide()                        // 9
+              % *m_security                             // 10
+              % m_operation->GetId()                    // 11
+              % m_subOperationId;                       // 12
+        });
+  }
+
  public:
   void RestoreOpenState(
       const pt::ptime &openStartTime,
@@ -653,7 +650,7 @@ class Position::Implementation : private boost::noncopyable {
       order.status = ORDER_STATUS_STEP_CLOSED;
 
       m_open.time = openTime;
-      m_open.OnNewTrade(Trade{openPrice, order.qty}, openPrice);
+      m_open.AddTrade(order.qty, openPrice);
 
       if (order.transactionContext) {
         m_defaultOrderParams.position = &*order.transactionContext;
@@ -1220,12 +1217,15 @@ Volume Position::CalcCommission() const {
 size_t Position::GetNumberOfOpenOrders() const {
   return m_pimpl->m_open.orders.size();
 }
-size_t Position::GetNumberOfOpenTrades() const {
-  return m_pimpl->m_open.numberOfTrades;
-}
-
 size_t Position::GetNumberOfCloseOrders() const {
   return m_pimpl->m_close.orders.size();
+}
+
+size_t Position::GetNumberOfTrades() const {
+  return GetNumberOfOpenTrades() + GetNumberOfCloseTrades();
+}
+size_t Position::GetNumberOfOpenTrades() const {
+  return m_pimpl->m_open.numberOfTrades;
 }
 size_t Position::GetNumberOfCloseTrades() const {
   return m_pimpl->m_close.numberOfTrades;
@@ -1282,13 +1282,6 @@ const pt::ptime &Position::GetOpenStartTime() const {
 
 const Qty &Position::GetOpenedQty() const noexcept {
   return m_pimpl->m_open.qty;
-}
-void Position::SetOpenedQty(const Qty &newQty) const noexcept {
-  m_pimpl->m_open.qty = newQty;
-  if (newQty > m_pimpl->m_planedQty) {
-    m_pimpl->m_planedQty = newQty;
-  }
-  ReportAboutGeneralAction(*this, "forcing", "openedQty");
 }
 
 Price Position::GetOpenAvgPrice() const {
@@ -1384,6 +1377,18 @@ void Position::RestoreOpenState(
     const Price &openPrice,
     const boost::shared_ptr<const OrderTransactionContext> &openingContext) {
   m_pimpl->RestoreOpenState(openStartTime, openTime, openPrice, openingContext);
+}
+
+void Position::AddTrade(const Qty &qty, const Price &price) {
+  if (m_pimpl->m_close.CheckAndAddTrade(qty, price)) {
+    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close.orders.back(),
+                          GetClosedQty());
+  } else if (m_pimpl->m_open.CheckAndAddTrade(qty, price)) {
+    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open.orders.back(),
+                          GetOpenedQty());
+  } else {
+    throw Exception("There are no active orders to add trade");
+  }
 }
 
 const OrderTransactionContext &Position::OpenAtMarketPrice() {
