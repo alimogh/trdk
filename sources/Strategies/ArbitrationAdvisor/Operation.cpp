@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Operation.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::TradingLib;
@@ -78,6 +79,14 @@ void aa::Operation::Setup(Position &position,
     virtual bool IsWatching() const override {
       if (!GetPosition().HasOpenedOpenOrders()) {
         return false;
+      }
+      {
+        const auto *const oppositePosition =
+            FindOppositePosition(GetPosition());
+        if (oppositePosition && oppositePosition->HasActiveOpenOrders() &&
+            !oppositePosition->HasOpenedOpenOrders()) {
+          return false;
+        }
       }
       if (m_startTime == pt::not_a_date_time) {
         // The first call after the position sent orders.

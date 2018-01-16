@@ -32,9 +32,6 @@ class PositionController : public TradingLib::PositionController {
   virtual void ClosePosition(Position &) override;
 
  private:
-  Position *FindOppositePosition(const Position &);
-
- private:
   std::unique_ptr<OperationReport> m_report;
 };
 }

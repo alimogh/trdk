@@ -12,6 +12,7 @@
 #include "PositionController.hpp"
 #include "Operation.hpp"
 #include "Strategy.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -252,20 +253,4 @@ void aa::PositionController::ClosePosition(Position &position) {
             [&checker](Security &security) { checker->Check(security); });
   }
   Base::ClosePosition(position);
-}
-
-Position *aa::PositionController::FindOppositePosition(
-    const Position &position) {
-  Position *result = nullptr;
-  for (auto &oppositePosition : GetStrategy().GetPositions()) {
-    if (oppositePosition.GetOperation() == position.GetOperation() &&
-        &oppositePosition != &position) {
-      Assert(!result);
-      result = &oppositePosition;
-#ifndef BOOST_ENABLE_ASSERT_HANDLER
-      break;
-#endif
-    }
-  }
-  return result;
 }
