@@ -12,6 +12,7 @@
 #include "PositionController.hpp"
 #include "Operation.hpp"
 #include "Strategy.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -34,17 +35,17 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
   }
 
   if (position.IsRejected()) {
+    Assert(!position.HasActiveOrders());
     position.GetStrategy().GetLog().Error(
         "Position \"%1%/%2%\" (\"%3%\") is rejected by trading system \"%4%\".",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
         position.GetTradingSystem());      // 4
-    if (!position.GetNumberOfCloseOrders()) {
-      position.SetOpenedQty(position.GetPlanedQty());
-    } else {
-      position.SetClosedQty(position.GetOpenedQty());
-    }
+    position.AddTrade(position.GetActiveQty(),
+                      position.GetNumberOfTrades()
+                          ? position.GetLastTradePrice()
+                          : position.GetOpenStartPrice());
   }
 
   Base::OnPositionUpdate(position);
@@ -252,20 +253,4 @@ void aa::PositionController::ClosePosition(Position &position) {
             [&checker](Security &security) { checker->Check(security); });
   }
   Base::ClosePosition(position);
-}
-
-Position *aa::PositionController::FindOppositePosition(
-    const Position &position) {
-  Position *result = nullptr;
-  for (auto &oppositePosition : GetStrategy().GetPositions()) {
-    if (oppositePosition.GetOperation() == position.GetOperation() &&
-        &oppositePosition != &position) {
-      Assert(!result);
-      result = &oppositePosition;
-#ifndef BOOST_ENABLE_ASSERT_HANDLER
-      break;
-#endif
-    }
-  }
-  return result;
 }

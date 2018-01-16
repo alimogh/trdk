@@ -700,6 +700,7 @@
     <ClCompile Include="TargetActionsWidget.cpp" />
     <ClCompile Include="TargetSideWidget.cpp" />
     <ClCompile Include="TargetTitleWidget.cpp" />
+    <ClCompile Include="Util.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -707,6 +708,7 @@
     <ClInclude Include="GeneratedFiles\ui_TargetActionsWidget.h" />
     <ClInclude Include="GeneratedFiles\ui_TargetSideWidget.h" />
     <ClInclude Include="GeneratedFiles\ui_TargetTitleWidget.h" />
+    <ClInclude Include="Util.hpp" />
     <CustomBuild Include="TargetActionsWidget.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">Moc%27ing TargetActionsWidget.hpp...</Message>

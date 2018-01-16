@@ -475,7 +475,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           UpdateOrders();
           return true;
         },
-        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), false);
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
     m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {

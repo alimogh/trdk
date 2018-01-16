@@ -712,7 +712,7 @@ bool Security::SetOnline(const pt::ptime &time, bool isOnline) {
   if (m_pimpl->m_isOnline == isOnline) {
     return false;
   }
-  GetContext().GetLog().Info(
+  GetContext().GetLog().Debug(
       "\"%1%\" now is %2% by the event %3%. Last data time: %4%.", *this,
       isOnline ? "online" : "offline", time, GetLastMarketDataTime());
   {
