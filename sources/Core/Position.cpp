@@ -678,10 +678,12 @@ class Position::Implementation : private boost::noncopyable {
                                       const OrderParams &orderParams,
                                       boost::optional<Price> &&price) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
-
-    if (!m_security->IsOnline()) {
+    // Custom branch logic - disabling security online check as in this branch
+    // security doesn't sync dispatching when changes the state
+    // (https://trello.com/c/MC22RgzA):
+    /* if (!m_security->IsOnline()) {
       throw Exception("Security is not online");
-    } else if (!m_security->IsTradingSessionOpened()) {
+    } else */ if (!m_security->IsTradingSessionOpened()) {
       throw Exception("Security trading session is closed");
     } else if (m_self.IsCancelling()) {
       throw Exception("Failed to start opening as canceling is not completed");
