@@ -79,10 +79,13 @@ int main(int argc, char *argv[]) {
     }
 
     mainWindow.CreateNewArbitrageStrategy();
+    // Custom branch modification:
+    /*
 #ifdef DEV_VER
     mainWindow.CreateNewArbitrageStrategy();
     mainWindow.CreateNewArbitrageStrategy();
 #endif
+    */
 
     mainWindow.show();
     splash->finish(&mainWindow);
