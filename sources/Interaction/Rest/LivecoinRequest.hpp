@@ -35,6 +35,10 @@ class LivecoinRequest : public Request {
 
  protected:
   virtual FloodControl &GetFloodControl() override;
+
+  virtual void CheckErrorResponse(const Poco::Net::HTTPResponse &,
+                                  const std::string &responseContent,
+                                  size_t attemptNumber) const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
