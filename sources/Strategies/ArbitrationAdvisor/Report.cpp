@@ -110,39 +110,38 @@ void OperationReport::Open(std::ofstream &file) {
 
 void OperationReport::PrintHead(std::ostream &os) {
   os << "1. Date"
-     << ",2. Sell Leg"
-     << ",3. Buy Leg"
-     << ",4. Second Leg Delay"
-     << ",5. Sell Exchange"
-     << ",6. Buy Exchange"
-     << ",7. Sell Start Time"
-     << ",8. Sell End Time"
-     << ",9. Buy Start Time"
-     << ",10. Buy End Time"
-     << ",11. Selling Duration"
-     << ",12. Buying Duration"
-     << ",13. Sell-Open Qty"
-     << ",14. Buy-Open Qty"
-     << ",15. Sell-Close Qty"
-     << ",16. Buy-Close Qty"
-     << ",17. Unused Qty"
-     << ",18. Sell Start Price"
-     << ",19. Buy Start Price"
-     << ",20. Sell Price"
-     << ",21. Buy Price"
-     << ",22. Sell Price Diff."
-     << ",23. Buy Price Diff."
-     << ",24. Start Spread"
-     << ",25. Spread"
-     << ",26. Start Spread %"
-     << ",27. Spread %"
-     << ",28. Spread % Diff."
-     << ",29. Is Profit"
-     << ",30. Is Loss"
-     << ",31. P&L Volume"
-     << ",32. Sell-Close Exchanges"
-     << ",33. Buy-Close Exchanges"
-     << ",34. Operation ID" << std::endl;
+     << ",2. Time"
+     << ",3. Sell Leg"
+     << ",4. Buy Leg"
+     << ",5. Second Leg Delay"
+     << ",6. Sell Exchange"
+     << ",7. Buy Exchange"
+     << ",8. Selling Duration"
+     << ",9. Buying Duration"
+     << ",10. Sell-Open Qty"
+     << ",11. Buy-Open Qty"
+     << ",12. Sell-Close Qty"
+     << ",13. Buy-Close Qty"
+     << ",14. Unused Qty"
+     << ",15. Sell Start Price"
+     << ",16. Buy Start Price"
+     << ",17. Sell Price"
+     << ",18. Buy Price"
+     << ",19. Sell Price Diff."
+     << ",20. Buy Price Diff."
+     << ",21. Start Spread"
+     << ",22. Spread"
+     << ",23. Start Spread %"
+     << ",24. Spread %"
+     << ",25. Spread % Diff."
+     << ",26. Is Profit"
+     << ",27. Is Loss"
+     << ",28. P&L Volume"
+     << ",29. Sell-Close Reason"
+     << ",30. Buy-Close Reason"
+     << ",31. Sell-Close Exchanges"
+     << ",32. Buy-Close Exchanges"
+     << ",33. Operation ID" << std::endl;
 }
 
 void OperationReport::PrintReport(
@@ -153,61 +152,50 @@ void OperationReport::PrintReport(
 
   os << std::min(sell.openStartTime.date(),
                  buy.openStartTime.date());  // 1. Date
+  os << ',';
+  {
+    const auto *time = &sell.openStartTime;
+    if (*time == pt::not_a_date_time || *time > buy.openStartTime) {
+      time = &buy.openStartTime;
+    }
+    os << ExcelTextField(time->time_of_day());  // 2. Start Time
+  }
 
-  os << ',' << sell.subOperation;  // 2. Sell Leg
-  os << ',' << buy.subOperation;   // 3. Buy Leg
+  os << ',' << sell.subOperation;  // 3. Sell Leg
+  os << ',' << buy.subOperation;   // 4. Buy Leg
   os << ',';
   if (sell.openStartTime != pt::not_a_date_time &&
       buy.openStartTime != pt::not_a_date_time) {
     os << ExcelTextField(sell.subOperation == 2
                              ? sell.openStartTime - buy.openStartTime
                              : buy.openStartTime -
-                                   sell.openStartTime);  // 4. Second Leg Delay
+                                   sell.openStartTime);  // 5. Second Leg Delay
   }
 
-  os << ',' << sell.signalTarget->GetInstanceName();  // 5. Sell Exchange
-  os << ',' << buy.signalTarget->GetInstanceName();   // 6. Buy Exchange
-
-  os << ',';
-  if (sell.openStartTime != pt::not_a_date_time) {
-    os << ExcelTextField(
-        sell.openStartTime.time_of_day());  // 7. Sell Start Time
-  }
-  os << ',';
-  if (sell.openEndTime != pt::not_a_date_time) {
-    os << ExcelTextField(sell.openEndTime.time_of_day());  // 8. Sell End Time
-  }
-
-  os << ',';
-  if (buy.openStartTime != pt::not_a_date_time) {
-    os << ExcelTextField(buy.openStartTime.time_of_day());  // 9. Buy Start Time
-  }
-  os << ',';
-  if (buy.openEndTime != pt::not_a_date_time) {
-    os << ExcelTextField(buy.openEndTime.time_of_day());  // 10. Buy End Time
-  }
+  os << ',' << sell.signalTarget->GetInstanceName();  // 6. Sell Exchange
+  os << ',' << buy.signalTarget->GetInstanceName();   // 7. Buy Exchange
 
   os << ',';
   if (sell.openEndTime != pt::not_a_date_time &&
       sell.openStartTime != pt::not_a_date_time) {
-    os << (sell.openEndTime - sell.openStartTime);  // 11. Selling Duration
+    os << (sell.openEndTime - sell.openStartTime);  // 8. Selling Duration
   }
   os << ',';
   if (buy.openEndTime != pt::not_a_date_time &&
       buy.openStartTime != pt::not_a_date_time) {
-    os << (buy.openEndTime - buy.openStartTime);  // 12. Buying Duration
+    os << (buy.openEndTime - buy.openStartTime);  // 9. Buying Duration
   }
 
   os << std::setprecision(8);
-  os << ',' << sell.openedQty;  // 13. Sell-Open Qty
-  os << ',' << buy.openedQty;   // 14. Buy-Open Qty
+  os << ',' << sell.openedQty;  // 10. Sell-Open Qty
+  os << ',' << buy.openedQty;   // 11. Buy-Open Qty
   os << ',';
   if (sell.closedQty) {
-    os << *sell.closedQty;  // 15. Sell-Close Qty
+    os << *sell.closedQty;  // 12. Sell-Close Qty
   }
   os << ',';
   if (buy.closedQty) {
-    os << *buy.closedQty;  // 16. Buy-Close Qty
+    os << *buy.closedQty;  // 13. Buy-Close Qty
   }
   {
     Qty unusedQty = (buy.openedQty - sell.openedQty);
@@ -217,28 +205,28 @@ void OperationReport::PrintReport(
     if (buy.closedQty) {
       unusedQty -= *buy.closedQty;
     }
-    os << ',' << unusedQty;  // 17. Unused Qty
+    os << ',' << unusedQty;  // 14. Unused Qty
   }
 
-  os << ',' << sell.openStartPrice;  // 18. Sell Start Price
-  os << ',' << buy.openStartPrice;   // 19. Buy Start Price
-
-  os << ',';
-  if (sell.openPrice) {
-    os << *sell.openPrice;  // 20. Sell Price
-  }
-  os << ',';
-  if (buy.openPrice) {
-    os << *buy.openPrice;  // 21. Buy Price
-  }
+  os << ',' << sell.openStartPrice;  // 15. Sell Start Price
+  os << ',' << buy.openStartPrice;   // 16. Buy Start Price
 
   os << ',';
   if (sell.openPrice) {
-    os << (sell.openStartPrice - *sell.openPrice);  // 22. Sell Price Diff.
+    os << *sell.openPrice;  // 17. Sell Price
   }
   os << ',';
   if (buy.openPrice) {
-    os << (*buy.openPrice - buy.openStartPrice);  // 23. Buy Price Diff.
+    os << *buy.openPrice;  // 18. Buy Price
+  }
+
+  os << ',';
+  if (sell.openPrice) {
+    os << (sell.openStartPrice - *sell.openPrice);  // 19. Sell Price Diff.
+  }
+  os << ',';
+  if (buy.openPrice) {
+    os << (*buy.openPrice - buy.openStartPrice);  // 20. Buy Price Diff.
   }
 
   {
@@ -247,31 +235,40 @@ void OperationReport::PrintReport(
                               ? *sell.openPrice - *buy.openPrice
                               : std::numeric_limits<double>::quiet_NaN();
 
-    os << ',' << startSpread;  // 24. Start Spread
+    os << ',' << startSpread;  // 21. Start Spread
 
     os << ',';
     if (spread.IsNotNan()) {
-      os << spread;  // 25. Spread
+      os << spread;  // 22. Spread
     }
 
     const auto startSpreadPercent = (100 / (buy.openStartPrice / startSpread));
     os << std::setprecision(3);
-    os << ',' << startSpreadPercent;  // 26. Start Spread %
+    os << ',' << startSpreadPercent;  // 23. Start Spread %
     if (spread.IsNotNan()) {
       const auto spreadPercent = (100 / (*buy.openPrice / spread));
-      os << ',' << spreadPercent;                  // 27. Spread %
-      os << ',' << (spread - startSpreadPercent);  // 28. Spread % Diff.
+      os << ',' << spreadPercent;                  // 24. Spread %
+      os << ',' << (spread - startSpreadPercent);  // 25. Spread % Diff.
     } else {
-      os << ",,";  // 27, 28
+      os << ",,";  // 24, 25
     }
   }
 
   {
     const auto pnl = sell.openedVolume - sell.closedVolume - buy.openedVolume +
                      buy.closedVolume;
-    os << (pnl > 0 ? ",1,0" : ",0,1");  // 29. Is Profit, 30. Is Loss
+    os << (pnl > 0 ? ",1,0" : ",0,1");  // 26. Is Profit, 27. Is Loss
     os << std::setprecision(8);
-    os << ',' << pnl;  // 31. P&L Volume
+    os << ',' << pnl;  // 28. P&L Volume
+  }
+
+  os << ',';
+  if (sell.closeReason != CLOSE_REASON_NONE) {
+    os << sell.closeReason;  // 29. Sell-Close Reason
+  }
+  os << ',';
+  if (buy.closeReason != CLOSE_REASON_NONE) {
+    os << buy.closeReason;  // 30. Buy-Close Reason
   }
 
   {
@@ -279,17 +276,17 @@ void OperationReport::PrintReport(
     for (const TradingSystem *tradingSystem : sell.closeTargets) {
       list.emplace_back(tradingSystem->GetInstanceName());
     }
-    os << ",\"" << boost::join(list, ", ") << '"';  // 32. Sell-Close Exchanges
+    os << ",\"" << boost::join(list, ", ") << '"';  // 31. Sell-Close Exchanges
   }
   {
     std::vector<std::string> list;
     for (const TradingSystem *tradingSystem : buy.closeTargets) {
       list.emplace_back(tradingSystem->GetInstanceName());
     }
-    os << ",\"" << boost::join(list, ", ") << '"';  // 33. Buy-Close Exchanges
+    os << ",\"" << boost::join(list, ", ") << '"';  // 32. Buy-Close Exchanges
   }
 
-  os << ',' << sell.operation;  // 34. Operation ID
+  os << ',' << sell.operation;  // 33. Operation ID
 
   os << std::endl;
 }

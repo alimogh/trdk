@@ -19,6 +19,17 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
+namespace ios = boost::iostreams;
+
+namespace {
+void CopyToString(std::istream &source, std::string &result) {
+  //! Reimplement with std::string::data with C++17.
+  Poco::StreamCopier::copyToString(source, result);
+  result.erase(std::remove_if(result.begin(), result.end(),
+                              [](char ch) { return ch == '\r' || ch == '\n'; }),
+               result.end());
+}
+}
 
 void Request::AppendUriParams(const std::string &newParams,
                               std::string &result) {
@@ -70,13 +81,7 @@ void Request::PrepareRequest(const net::HTTPClientSession &,
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPClientSession &session) {
-  std::string uri = m_uri + "?nonce=" +
-                    pt::to_iso_string(pt::microsec_clock::universal_time());
-  if (!m_uriParams.empty() &&
-      m_request->getMethod() == net::HTTPRequest::HTTP_GET) {
-    uri += '&' + m_uriParams;
-  }
-  m_request->setURI(std::move(uri));
+  SetUri(m_uri, *m_request);
 
   std::string body = m_body;
   CreateBody(session, body);
@@ -104,9 +109,13 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &ex) {
-        throw TimeoutException(getError(ex).c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
-        throw Interactor::CommunicationError(getError(ex).c_str());
+        throw CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
         throw Exception(getError(ex).c_str());
       }
@@ -123,7 +132,7 @@ Request::Send(net::HTTPClientSession &session) {
         m_tradingLog->Write(
             "response-dump %1%\t%2%",
             [this, &responseStream, &responseBuffer](TradingRecord &record) {
-              Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+              CopyToString(responseStream, responseBuffer);
               record % GetName()     // 1
                   % responseBuffer;  // 2
             });
@@ -131,7 +140,7 @@ Request::Send(net::HTTPClientSession &session) {
 
       if (response.getStatus() != net::HTTPResponse::HTTP_OK) {
         if (responseBuffer.empty()) {
-          Poco::StreamCopier::copyToString(responseStream, responseBuffer);
+          CopyToString(responseStream, responseBuffer);
         }
         CheckErrorResponse(response, responseBuffer, attempt);
         continue;
@@ -142,9 +151,8 @@ Request::Send(net::HTTPClientSession &session) {
         if (responseBuffer.empty()) {
           ptr::read_json(responseStream, result);
         } else {
-          boost::iostreams::array_source source(&responseBuffer[0],
-                                                responseBuffer.size());
-          boost::iostreams::stream<boost::iostreams::array_source> is(source);
+          ios::array_source source(&responseBuffer[0], responseBuffer.size());
+          ios::stream<ios::array_source> is(source);
           ptr::read_json(is, result);
         }
       } catch (const ptr::ptree_error &ex) {
@@ -154,12 +162,12 @@ Request::Send(net::HTTPClientSession &session) {
         error % m_name             // 1
             % m_request->getURI()  // 2
             % ex.what();           // 3
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
 
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
-      if (attempt < 2) {
+      if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
         } catch (const net::NoMessageException &ex) {
@@ -178,9 +186,13 @@ Request::Send(net::HTTPClientSession &session) {
       try {
         throw;
       } catch (const Poco::TimeoutException &) {
-        throw TimeoutException(error.str().c_str());
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
+      } catch (const net::NoMessageException &) {
+        throw CommunicationErrorWithUndeterminedRemoteResult(
+            error.str().c_str());
       } catch (...) {
-        throw Interactor::CommunicationError(error.str().c_str());
+        throw CommunicationError(error.str().c_str());
       }
     }
   }
@@ -200,9 +212,7 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 2) {
     switch (response.getStatus()) {
-      case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
       case net::HTTPResponse::HTTP_BAD_GATEWAY:
-      case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
       case net::HTTPResponse::HTTP_GATEWAY_TIMEOUT:
         m_log.Debug("Repeating request \"%1%\" after error with code %2%...",
                     m_request->getURI(),    // 1
@@ -218,5 +228,21 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
       % response.getStatus()                                   // 3
       % m_name                                                 // 4
       % m_request->getURI();                                   // 5
-  throw Interactor::CommunicationError(error.str().c_str());
+  switch (response.getStatus()) {
+    case net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR:
+    case net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE:
+      throw CommunicationErrorWithUndeterminedRemoteResult(error.str().c_str());
+    default:
+      throw CommunicationError(error.str().c_str());
+  }
+}
+
+void Request::SetUri(const std::string &uri, net::HTTPRequest &request) const {
+  std::string fullUri =
+      uri + "?nonce=" + pt::to_iso_string(pt::microsec_clock::universal_time());
+  if (!m_uriParams.empty() &&
+      request.getMethod() == net::HTTPRequest::HTTP_GET) {
+    fullUri += '&' + m_uriParams;
+  }
+  request.setURI(std::move(fullUri));
 }

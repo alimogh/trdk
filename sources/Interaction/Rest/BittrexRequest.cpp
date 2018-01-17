@@ -42,9 +42,9 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session) {
       error << ")";
       if (message) {
         if (*message == "ORDER_NOT_OPEN") {
-          throw TradingSystem::OrderIsUnknown(error.str().c_str());
+          throw OrderIsUnknown(error.str().c_str());
         } else if (*message == "INSUFFICIENT_FUNDS") {
-          throw TradingSystem::CommunicationError(error.str().c_str());
+          throw CommunicationError(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());

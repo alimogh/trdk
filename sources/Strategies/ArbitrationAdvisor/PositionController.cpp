@@ -12,6 +12,7 @@
 #include "PositionController.hpp"
 #include "Operation.hpp"
 #include "Strategy.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -33,6 +34,21 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     return;
   }
 
+  if (position.IsRejected()) {
+    Assert(!position.HasActiveOrders());
+    position.GetStrategy().GetLog().Error(
+        "Position \"%1%/%2%\" (\"%3%\") is rejected by trading system \"%4%\".",
+        position.GetOperation()->GetId(),  // 1
+        position.GetSubOperationId(),      // 2
+        position.GetSecurity(),            // 3
+        position.GetTradingSystem());      // 4
+    position.AddTrade(position.GetActiveQty(),
+                      position.GetNumberOfTrades()
+                          ? position.GetLastTradePrice()
+                          : position.GetOpenStartPrice());
+    position.ResetRejected();
+  }
+
   Base::OnPositionUpdate(position);
 }
 
@@ -42,7 +58,6 @@ void aa::PositionController::HoldPosition(Position &position) {
   Assert(!position.HasActiveOrders());
 
   Position *const oppositePosition = FindOppositePosition(position);
-  Assert(oppositePosition);
   if (!oppositePosition) {
     ClosePosition(position, CLOSE_REASON_SYSTEM_ERROR);
     return;
@@ -73,7 +88,7 @@ bool aa::PositionController::ClosePosition(Position &position,
           boost::async([this, &oppositePosition, &reason] {
             try {
               Base::ClosePosition(*oppositePosition, reason);
-            } catch (const Interactor::CommunicationError &ex) {
+            } catch (const CommunicationError &ex) {
               throw boost::enable_current_exception(ex);
             } catch (const Exception &ex) {
               throw boost::enable_current_exception(ex);
@@ -98,7 +113,7 @@ class BestSecurityChecker : private boost::noncopyable {
       : m_position(position), m_bestSecurity(nullptr) {}
 
   virtual ~BestSecurityChecker() {
-    if (!m_bestSecurity) {
+    if (!HasSuitableSecurity()) {
       return;
     }
     try {
@@ -122,6 +137,10 @@ class BestSecurityChecker : private boost::noncopyable {
       return;
     }
     m_bestSecurity = &checkSecurity;
+  }
+
+  bool HasSuitableSecurity() const noexcept {
+    return m_bestSecurity ? true : false;
   }
 
  protected:
@@ -237,22 +256,19 @@ void aa::PositionController::ClosePosition(Position &position) {
         ->ForEachSecurity(
             position.GetSecurity().GetSymbol(),
             [&checker](Security &security) { checker->Check(security); });
-  }
-  Base::ClosePosition(position);
-}
-
-Position *aa::PositionController::FindOppositePosition(
-    const Position &position) {
-  Position *result = nullptr;
-  for (auto &oppositePosition : GetStrategy().GetPositions()) {
-    if (oppositePosition.GetOperation() == position.GetOperation() &&
-        &oppositePosition != &position) {
-      Assert(!result);
-      result = &oppositePosition;
-#ifndef BOOST_ENABLE_ASSERT_HANDLER
-      break;
-#endif
+    if (!checker->HasSuitableSecurity() && position.GetClosedQty() > 0) {
+      position.GetStrategy().GetLog().Error(
+          "Failed to find suitable security for the position \"%1%/%2%\" "
+          "(actual security is \"%3%\") to close the rest of the position "
+          "%4$.8f out of %5$.8f.",
+          position.GetOperation()->GetId(),  // 1
+          position.GetSubOperationId(),      // 2
+          position.GetSecurity(),            // 3
+          position.GetOpenedQty(),           // 4
+          position.GetActiveQty());          // 5
+      position.AddTrade(position.GetActiveQty(), position.GetLastTradePrice());
+      return;
     }
   }
-  return result;
+  Base::ClosePosition(position);
 }

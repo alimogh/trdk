@@ -17,8 +17,8 @@ class FloodControl;
 class Security;
 struct Settings;
 
-class PullingSetttings;
-class PullingTask;
+class PollingSetttings;
+class PollingTask;
 
 class Request;
 class BittrexPublicRequest;

@@ -10,8 +10,9 @@
 
 #include "Prec.hpp"
 #include "LivecoinMarketDataSource.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -31,17 +32,19 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
+      m_serverTimeDiff(
+          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_allOrderBooksRequest("/exchange/all/order_book",
                              "groupByPrice=true&depth=1",
                              GetContext(),
                              GetLog()),
       m_session(CreateSession("api.livecoin.net", m_settings, false)),
-      m_pullingTask(boost::make_unique<PullingTask>(m_settings.pullingSetttings,
+      m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
 LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   try {
-    m_pullingTask.reset();
+    m_pollingTask.reset();
     // Each object, that implements CreateNewSecurityObject should wait for
     // log flushing before destroying objects:
     GetTradingLog().WaitForFlush();
@@ -61,6 +64,8 @@ void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
 }
 
 void LivecoinMarketDataSource::SubscribeToSecurities() {
+  const boost::mutex::scoped_lock lock(m_securitiesMutex);
+
   if (m_securities.empty()) {
     return;
   }
@@ -72,14 +77,14 @@ void LivecoinMarketDataSource::SubscribeToSecurities() {
         boost::lexical_cast<std::string>(security.first));
   }
 
-  m_pullingTask->AddTask(
+  m_pollingTask->AddTask(
       "Prices", 1,
       [this]() {
         UpdatePrices();
         return true;
       },
-      m_settings.pullingSetttings.GetPricesRequestFrequency());
-  m_pullingTask->AccelerateNextPulling();
+      m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
+  m_pollingTask->AccelerateNextPolling();
 }
 
 trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
@@ -88,10 +93,13 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
   if (product == m_products.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
-    throw SymbolIsNotSupportedError(message.str().c_str());
+    throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
+  // Two locks as only one thread can add new securities.
+
   {
+    const boost::mutex::scoped_lock lock(m_securitiesMutex);
     const auto &it = m_securities.find(product->second.id);
     if (it != m_securities.cend()) {
       return *it->second;
@@ -107,7 +115,10 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
                                              .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
-  Verify(m_securities.emplace(product->second.id, result).second);
+  {
+    const boost::mutex::scoped_lock lock(m_securitiesMutex);
+    Verify(m_securities.emplace(product->second.id, result).second);
+  }
 
   return *result;
 }
@@ -117,6 +128,7 @@ void LivecoinMarketDataSource::UpdatePrices() {
     const auto &response = m_allOrderBooksRequest.Send(*m_session);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
+      const boost::mutex::scoped_lock lock(m_securitiesMutex);
       const auto security = m_securities.find(record.first);
       if (security == m_securities.cend()) {
         continue;
@@ -124,12 +136,15 @@ void LivecoinMarketDataSource::UpdatePrices() {
       UpdatePrices(record.second, *security->second, delayMeasurement);
     }
   } catch (const std::exception &ex) {
-    for (auto &security : m_securities) {
-      try {
-        security.second->SetOnline(pt::not_a_date_time, false);
-      } catch (...) {
-        AssertFailNoException();
-        throw;
+    {
+      const boost::mutex::scoped_lock lock(m_securitiesMutex);
+      for (auto &security : m_securities) {
+        try {
+          security.second->SetOnline(pt::not_a_date_time, false);
+        } catch (...) {
+          AssertFailNoException();
+          throw;
+        }
       }
     }
     boost::format error("Failed to read prices: \"%1%\"");
@@ -182,7 +197,8 @@ void LivecoinMarketDataSource::UpdatePrices(
     r::Security &security,
     const Milestones &delayMeasurement) {
   const auto &time =
-      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000);
+      ConvertToPTimeFromMicroseconds(source.get<time_t>("timestamp") * 1000) -
+      m_serverTimeDiff;
   const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
       source.get_child_optional("asks"));
   const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(

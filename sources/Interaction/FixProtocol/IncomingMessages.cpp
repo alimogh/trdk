@@ -744,19 +744,19 @@ OrderStatus Incoming::Message::ReadOrdStatus() const {
   switch (FindAndReadCharTagFromSoh(static_cast<int32_t>(1027158785), it,
                                     GetEnd())) {
     case '0':
-      result = ORDER_STATUS_SUBMITTED;
+      result = ORDER_STATUS_OPENED;
       break;
     case '1':
       result = ORDER_STATUS_FILLED_PARTIALLY;
       break;
     case '2':
-      result = ORDER_STATUS_FILLED;
+      result = ORDER_STATUS_FILLED_FULLY;
       break;
     case '8':
       result = ORDER_STATUS_REJECTED;
       break;
     case '4':
-      result = ORDER_STATUS_CANCELLED;
+      result = ORDER_STATUS_CANCELED;
       break;
     default:
       throw ProtocolError("Unknown order status received", &*it, 0);

@@ -49,9 +49,9 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
       if (serverError) {
         if (boost::starts_with(*serverError, "Trade #") &&
             boost::ends_with(*serverError, " does not exist")) {
-          throw TradingSystem::OrderIsUnknown(error.str().c_str());
+          throw OrderIsUnknown(error.str().c_str());
         } else if (*serverError == "Insufficient Funds.") {
-          throw TradingSystem::CommunicationError(error.str().c_str());
+          throw CommunicationError(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());

@@ -309,6 +309,11 @@
     <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="BittrexUtil.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
+    <ClCompile Include="CexioMarketDataSource.cpp" />
+    <ClCompile Include="CexioRequest.cpp" />
+    <ClCompile Include="CexioTradingSystem.cpp" />
+    <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="CexioUtil.cpp" />
     <ClCompile Include="CryptopiaMarketDataSource.cpp" />
     <ClCompile Include="CryptopiaRequest.cpp" />
     <ClCompile Include="CryptopiaTradingSystem.cpp" />
@@ -324,6 +329,8 @@
     <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
     <ClCompile Include="NovaexchangeExchange.cpp" />
+    <ClCompile Include="PollingSettings.cpp" />
+    <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -338,8 +345,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PullingSettings.cpp" />
-    <ClCompile Include="PullingTask.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Util.cpp" />
@@ -352,6 +357,10 @@
     <ClInclude Include="BittrexRequest.hpp" />
     <ClInclude Include="BittrexTradingSystem.hpp" />
     <ClInclude Include="BittrexUtil.hpp" />
+    <ClInclude Include="CexioMarketDataSource.hpp" />
+    <ClInclude Include="CexioRequest.hpp" />
+    <ClInclude Include="CexioTradingSystem.hpp" />
+    <ClInclude Include="CexioUtil.hpp" />
     <ClInclude Include="CryptopiaMarketDataSource.hpp" />
     <ClInclude Include="CryptopiaRequest.hpp" />
     <ClInclude Include="CryptopiaTradingSystem.hpp" />
@@ -363,9 +372,9 @@
     <ClInclude Include="LivecoinTradingSystem.hpp" />
     <ClInclude Include="LivecoinUtil.hpp" />
     <ClInclude Include="NonceStorage.hpp" />
+    <ClInclude Include="PollingSettings.hpp" />
+    <ClInclude Include="PollingTask.hpp" />
     <ClInclude Include="Prec.hpp" />
-    <ClInclude Include="PullingSettings.hpp" />
-    <ClInclude Include="PullingTask.hpp" />
     <ClInclude Include="Request.hpp" />
     <ClInclude Include="Security.hpp" />
     <ClInclude Include="Settings.hpp" />

@@ -13,6 +13,7 @@
 #include "EventsLog.hpp"
 #include "Security.hpp"
 #include "TradingLog.hpp"
+#include "TradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

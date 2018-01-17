@@ -411,6 +411,9 @@
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="Consumer.hpp" />
     <ClInclude Include="Operation.hpp" />
+    <ClInclude Include="OrderHandler.hpp" />
+    <ClInclude Include="OrderStatusHandler.hpp" />
+    <ClInclude Include="Trade.hpp" />
     <ClInclude Include="TransactionContext.hpp" />
     <ClInclude Include="PriceBook.hpp" />
     <ClInclude Include="SecurityMock.hpp" />

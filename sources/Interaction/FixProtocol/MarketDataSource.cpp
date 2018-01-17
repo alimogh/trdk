@@ -80,7 +80,7 @@ void fix::MarketDataSource::SubscribeToSecurities() {
     }
   } catch (const Exception &ex) {
     GetLog().Error("Failed to send market data request: \"%1%\".", ex);
-    throw Error("Failed to send market data request");
+    throw Exception("Failed to send market data request");
   }
 
   GetLog().Debug("Market data request sent.");
@@ -107,7 +107,7 @@ fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
   if (result == m_securities.cend()) {
     boost::format error("Failed to resolve security with FIX Symbol ID %1%");
     error % id;
-    throw Error(error.str().c_str());
+    throw Exception(error.str().c_str());
   }
   return *result->second;
 }

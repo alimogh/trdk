@@ -10,22 +10,22 @@
 
 #pragma once
 
-#include "PullingSettings.hpp"
+#include "PollingSettings.hpp"
 
 namespace trdk {
 namespace Interaction {
 namespace Rest {
 
 struct Settings {
-  PullingSetttings pullingSetttings;
+  PollingSetttings pollingSetttings;
 
   explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
-      : pullingSetttings(conf) {
+      : pollingSetttings(conf) {
     Log(log);
     Validate();
   }
 
-  void Log(ModuleEventsLog &log) { pullingSetttings.Log(log); }
+  void Log(ModuleEventsLog &log) { pollingSetttings.Log(log); }
 
   void Validate() {}
 };

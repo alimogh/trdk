@@ -14,9 +14,9 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class PullingSetttings {
+class PollingSetttings {
  public:
-  explicit PullingSetttings(const Lib::IniSectionRef &);
+  explicit PollingSetttings(const Lib::IniSectionRef &);
 
  public:
   void Log(ModuleEventsLog &) const;

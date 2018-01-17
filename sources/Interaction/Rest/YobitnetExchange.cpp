@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "FloodControl.hpp"
 #include "NonceStorage.hpp"
-#include "PullingTask.hpp"
+#include "PollingTask.hpp"
 #include "Request.hpp"
 #include "Security.hpp"
 #include "Settings.hpp"
@@ -79,7 +79,7 @@ struct Settings : public Rest::Settings {
   void Validate() {
     if (generalAuth.nonces.initialNonce <= 0 ||
         (tradingAuth && tradingAuth->nonces.initialNonce <= 0)) {
-      throw TradingSystem::Error("Initial nonce could not be less than 1");
+      throw Exception("Initial nonce could not be less than 1");
     }
   }
 };
@@ -223,11 +223,11 @@ class TradeRequest : public Request {
           if (boost::istarts_with(*message,
                                   "The given order has already been "
                                   "closed and cannot be cancel")) {
-            throw TradingSystem::OrderIsUnknown(error.str().c_str());
+            throw OrderIsUnknown(error.str().c_str());
           } else if (boost::istarts_with(*message,
                                          "Insufficient funds in wallet of the "
                                          "second currency of the pair")) {
-            throw TradingSystem::CommunicationError(error.str().c_str());
+            throw CommunicationError(error.str().c_str());
           }
         }
         throw Exception(error.str().c_str());
@@ -270,10 +270,27 @@ class TradeRequest : public Request {
 
   virtual bool IsPriority() const { return m_isPriority; }
 
+  virtual size_t GetNumberOfAttempts() const override { return 1; }
+
  private:
   Auth &m_auth;
   const bool m_isPriority;
   boost::optional<NonceStorage::TakenValue> m_nonce;
+};
+
+class YobitnetOrderTransactionContext : public OrderTransactionContext {
+ public:
+  explicit YobitnetOrderTransactionContext(TradingSystem &tradingSystem,
+                                           const OrderId &&orderId)
+      : OrderTransactionContext(tradingSystem, std::move(orderId)) {}
+
+ public:
+  bool RegisterTrade(const std::string &id) {
+    return m_trades.emplace(id).second;
+  }
+
+ private:
+  boost::unordered_set<std::string> m_trades;
 };
 
 std::string NormilizeProductId(std::string source) {
@@ -293,23 +310,6 @@ std::string NormilizeSymbol(std::string source) {
   }
   return source;
 }
-
-pt::ptime ParseTimeStamp(const ptr::ptree &source,
-                         const pt::time_duration &timeZoneOffset) {
-  auto result = pt::from_time_t(source.get<time_t>("timestamp_created"));
-  result -= timeZoneOffset;
-  return result;
-}
-
-struct Order {
-  OrderId id;
-  std::string symbol;
-  Qty qty;
-  boost::optional<trdk::Price> price;
-  OrderSide side;
-  TimeInForce tid;
-  pt::ptime time;
-};
 
 std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
     const Settings &settings, ModuleEventsLog &log) {
@@ -344,12 +344,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_marketDataSession(CreateSession("yobit.net", m_settings, false)),
         m_tradingSession(CreateSession("yobit.net", m_settings, true)),
         m_balances(GetTsLog(), GetTsTradingLog()),
-        m_pullingTask(boost::make_unique<PullingTask>(
-            m_settings.pullingSetttings, GetMdsLog())) {}
+        m_pollingTask(boost::make_unique<PollingTask>(
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~YobitnetExchange() override {
     try {
-      m_pullingTask.reset();
+      m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
       // log flushing before destroying objects:
       MarketDataSource::GetTradingLog().WaitForFlush();
@@ -399,15 +399,15 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &depthRequest = boost::make_shared<PublicRequest>(
         "/api/3/depth/" + boost::join(uriSymbolsPath, "-"), "Depth", "limit=1",
         GetContext(), GetTsLog());
-    m_pullingTask->ReplaceTask(
+    m_pollingTask->ReplaceTask(
         "Prices", 1,
         [this, depthRequest]() {
           UpdatePrices(*depthRequest);
           return true;
         },
-        m_settings.pullingSetttings.GetPricesRequestFrequency());
+        m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
@@ -469,22 +469,22 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       throw ConnectError(ex.what());
     }
 
-    m_pullingTask->AddTask(
+    m_pollingTask->AddTask(
         "Actual orders", 0,
         [this]() {
           UpdateOrders();
           return true;
         },
-        m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
-    m_pullingTask->AddTask(
+        m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+    m_pollingTask->AddTask(
         "Balances", 1,
         [this]() {
           UpdateBalances();
           return true;
         },
-        m_settings.pullingSetttings.GetBalancesRequestFrequency());
+        m_settings.pollingSetttings.GetBalancesRequestFrequency(), false);
 
-    m_pullingTask->AccelerateNextPulling();
+    m_pollingTask->AccelerateNextPolling();
   }
 
   virtual trdk::Security &CreateNewSecurityObject(
@@ -494,7 +494,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       boost::format message(
           "Symbol \"%1%\" is not in the exchange product list");
       message % symbol.GetSymbol();
-      throw SymbolIsNotSupportedError(message.str().c_str());
+      throw SymbolIsNotSupportedException(message.str().c_str());
     }
 
     {
@@ -534,14 +534,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case TIME_IN_FORCE_GTC:
         break;
       default:
-        throw TradingSystem::Error("Order time-in-force type is not supported");
+        throw Exception("Order time-in-force type is not supported");
     }
     if (currency != security.GetSymbol().GetCurrency()) {
-      throw TradingSystem::Error(
-          "Trading system supports only security quote currency");
+      throw Exception("Trading system supports only security quote currency");
     }
     if (!price) {
-      throw TradingSystem::Error("Market order is not supported");
+      throw Exception("Market order is not supported");
     }
 
     const auto &product = m_products.find(security.GetSymbol().GetSymbol());
@@ -567,7 +566,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                             requestParams.str(), GetContext(),
                                             GetTsLog(), &GetTsTradingLog())
                                    .Send(*m_tradingSession));
-    } catch (const Request::TimeoutException &ex) {
+    } catch (
+        const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
       GetTsLog().Debug(
           "Got error \"%1%\" at the new-order request sending. Trying to "
           "retrieve actual result...",
@@ -578,25 +578,27 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         throw;
       }
       GetTsLog().Debug("Retrieved new order ID \"%1%\".", *orderId);
-      return boost::make_unique<OrderTransactionContext>(*this,
-                                                         std::move(*orderId));
+      return boost::make_unique<YobitnetOrderTransactionContext>(
+          *this, std::move(*orderId));
     }
 
     try {
       SetBalances(response);
-      return boost::make_unique<OrderTransactionContext>(
+      return boost::make_unique<YobitnetOrderTransactionContext>(
           *this, response.get<OrderId>("order_id"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read order transaction response: \"%1%\"");
       error % ex.what();
-      throw TradingSystem::Error(error.str().c_str());
+      throw Exception(error.str().c_str());
     }
   }
 
-  virtual void SendCancelOrderTransaction(const OrderId &orderId) override {
-    const auto &response = boost::get<1>(
+  virtual void SendCancelOrderTransaction(
+      const OrderTransactionContext &transaction) override {
+    const auto response = boost::get<1>(
         TradeRequest("CancelOrder", m_tradingAuth, true,
-                     "order_id=" + boost::lexical_cast<std::string>(orderId),
+                     "order_id=" + boost::lexical_cast<std::string>(
+                                       transaction.GetOrderId()),
                      GetContext(), GetTsLog(), &GetTsTradingLog())
             .Send(*m_tradingSession));
     try {
@@ -605,13 +607,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       boost::format error(
           "Failed to read order cancel request response: \"%1%\"");
       error % ex.what();
-      throw TradingSystem::Error(error.str().c_str());
+      throw Exception(error.str().c_str());
     }
-  }
-
-  virtual void OnTransactionSent(const OrderId &orderId) override {
-    TradingSystem::OnTransactionSent(orderId);
-    m_pullingTask->AccelerateNextPulling();
   }
 
  private:
@@ -799,70 +796,155 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void UpdateOrders() {
-    for (const OrderId &orderId : GetActiveOrderIdList()) {
-      ptr::ptree response;
-      try {
-        response = boost::get<1>(
-            TradeRequest(
-                "OrderInfo", m_generalAuth, false,
-                "order_id=" + boost::lexical_cast<std::string>(orderId),
-                GetContext(), GetTsLog(), &GetTsTradingLog())
-                .Send(*m_marketDataSession));
-      } catch (const Exception &ex) {
-        boost::format error("Failed to request state for order %1%: \"%2%\"");
-        error % orderId   // 1
-            % ex.what();  // 2
+    std::vector<ptr::ptree> orders;
+    boost::unordered_map<std::string, pt::ptime> tradesRequest;
+    {
+      const auto &activeOrders = GetActiveOrderIdList();
+      orders.reserve(activeOrders.size());
+      for (const OrderId &orderId : activeOrders) {
         try {
-          throw;
-        } catch (const CommunicationError &) {
-          throw CommunicationError(error.str().c_str());
-        } catch (...) {
-          throw Exception(error.str().c_str());
-        }
-      }
-
-      for (const auto &node : response) {
-        const auto &order = node.second;
-        pt::ptime time;
-        OrderStatus status;
-        Qty remainingQty = 0;
-        try {
-          time = ParseTimeStamp(order, m_serverTimeDiff);
-
-          switch (order.get<int>("status")) {
-            case 0: {  // 0 - active
-              const auto &qty = order.get<Qty>("start_amount");
-              remainingQty = order.get<Qty>("amount");
-              AssertGe(qty, remainingQty);
-              status = qty == remainingQty ? ORDER_STATUS_SUBMITTED
-                                           : ORDER_STATUS_FILLED_PARTIALLY;
-              break;
-            }
-            case 1:  // 1 - fulfilled and closed
-            case 3:  // 3 - canceled after partially fulfilled
-              status = ORDER_STATUS_FILLED;
-              break;
-            case 2:  // 2 - canceled
-              status = ORDER_STATUS_CANCELLED;
-              break;
-            default:
-              GetTsLog().Error(
-                  "Unknown order status for order %1% (message: \"%2%\").",
-                  orderId,                         // 1
-                  ConvertToString(order, false));  // 2
-              continue;
-              break;
-          }
-        } catch (const std::exception &ex) {
-          boost::format error("Failed to read state for order %1%: \"%2%\"");
+          orders.emplace_back(boost::get<1>(
+              TradeRequest(
+                  "OrderInfo", m_generalAuth, false,
+                  "order_id=" + boost::lexical_cast<std::string>(orderId),
+                  GetContext(), GetTsLog(), &GetTsTradingLog())
+                  .Send(*m_marketDataSession)));
+        } catch (const Exception &ex) {
+          boost::format error("Failed to request state for order %1%: \"%2%\"");
           error % orderId   // 1
               % ex.what();  // 2
-          throw Exception(error.str().c_str());
+          try {
+            throw;
+          } catch (const CommunicationError &) {
+            throw CommunicationError(error.str().c_str());
+          } catch (...) {
+            throw Exception(error.str().c_str());
+          }
         }
-
-        OnOrderStatusUpdate(time, orderId, status, remainingQty);
+        for (const auto &node : orders.back()) {
+          const auto &order = node.second;
+          try {
+            const auto &product = order.get<std::string>("pair");
+            const auto &time = ParseTimeStamp(order, "timestamp_created");
+            const auto &it = tradesRequest.emplace(product, time);
+            if (!it.second && it.first->second > time) {
+              it.first->second = time;
+            }
+          } catch (const std::exception &ex) {
+            boost::format error("Failed to read state for order %1%: \"%2%\"");
+            error % orderId   // 1
+                % ex.what();  // 2
+            throw Exception(error.str().c_str());
+          }
+        }
       }
     }
+
+    boost::unordered_map<OrderId, std::map<size_t, std::pair<pt::ptime, Trade>>>
+        trades;
+    for (const auto &request : tradesRequest) {
+      ForEachRemoteTrade(
+          request.first, request.second, *m_marketDataSession, m_generalAuth,
+          false, [&](const std::string &id, const ptr::ptree &data) {
+            trades[data.get<size_t>("order_id")].emplace(
+                boost::lexical_cast<size_t>(id),
+                std::make_pair(ParseTimeStamp(data, "timestamp"),
+                               Trade{data.get<Price>("rate"),
+                                     data.get<Qty>("amount"), id}));
+          });
+    }
+
+    for (const auto &node : orders) {
+      for (const auto &order : node) {
+        UpdateOrder(order.first, order.second, trades, tradesRequest);
+      }
+    }
+  }
+
+  void UpdateOrder(
+      const OrderId &id,
+      const ptr::ptree &source,
+      boost::unordered_map<OrderId,
+                           std::map<size_t, std::pair<pt::ptime, Trade>>>
+          &trades,
+      const boost::unordered_map<std::string, pt::ptime> &tradesRequest) {
+    pt::ptime time;
+    OrderStatus status;
+    try {
+      time = ParseTimeStamp(source, "timestamp_created");
+      switch (source.get<int>("status")) {
+        case 0: {  // 0 - active
+          const auto &qty = source.get<Qty>("start_amount");
+          const auto &remainingQty = source.get<Qty>("amount");
+          AssertGe(qty, remainingQty);
+          status = qty == remainingQty ? ORDER_STATUS_OPENED
+                                       : ORDER_STATUS_FILLED_PARTIALLY;
+          break;
+        }
+        case 1:  // 1 - fulfilled and closed
+          status = ORDER_STATUS_FILLED_FULLY;
+          break;
+        case 2:  // 2 - canceled
+        case 3:  // 3 - canceled after partially fulfilled
+          status = ORDER_STATUS_CANCELED;
+          break;
+        default:
+          GetTsLog().Error("Unknown order status for order \"%1%\".", id);
+          status = ORDER_STATUS_ERROR;
+          break;
+      }
+    } catch (const std::exception &ex) {
+      boost::format error("Failed to read state for order %1%: \"%2%\"");
+      error % id        // 1
+          % ex.what();  // 2
+      throw Exception(error.str().c_str());
+    }
+
+    const auto &tradesIt = trades.find(id);
+    if (tradesIt == trades.cend()) {
+      if (status == ORDER_STATUS_FILLED_FULLY) {
+        const auto &requestIt =
+            tradesRequest.find(source.get<std::string>("pair"));
+        Assert(requestIt != tradesRequest.cend());
+        GetTsLog().Error(
+            "Received order status \"%1%\" for order \"%2%\", but didn't "
+            "receive trade. Trade request start time: %3%.",
+            status,                                                // 1
+            id,                                                    // 2
+            requestIt != tradesRequest.cend() ? requestIt->second  // 3
+                                              : pt::not_a_date_time);
+      }
+      OnOrderStatusUpdate(time, id, status);
+      return;
+    }
+
+    if (status == ORDER_STATUS_OPENED) {
+      status = ORDER_STATUS_FILLED_PARTIALLY;
+    }
+
+    for (auto &node : tradesIt->second) {
+      const auto &tradeTime = node.second.first;
+      AssertLe(time, tradeTime);
+      if (time < tradeTime) {
+        time = tradeTime;
+      }
+      auto &trade = node.second.second;
+      const auto tradeId = trade.id;
+      OnOrderStatusUpdate(
+          tradeTime, id, ORDER_STATUS_FILLED_PARTIALLY, std::move(trade),
+          [&tradeId](OrderTransactionContext &orderContext) {
+            return boost::polymorphic_cast<YobitnetOrderTransactionContext *>(
+                       &orderContext)
+                ->RegisterTrade(tradeId);
+          });
+    }
+
+    switch (status) {
+      case ORDER_STATUS_FILLED_PARTIALLY:
+      case ORDER_STATUS_FILLED_FULLY:
+        return;
+    }
+    OnOrderStatusUpdate(time, id, status);
   }
 
   boost::optional<OrderId> FindNewOrderId(
@@ -876,28 +958,21 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     try {
       boost::unordered_set<OrderId> orderIds;
 
-      {
-        TradeRequest request("ActiveOrders", m_tradingAuth, true,
-                             "pair=" + productId, GetContext(), GetTsLog(),
-                             &GetTsTradingLog());
-        const auto response = boost::get<1>(request.Send(*m_tradingSession));
-        for (const auto &node : response) {
-          const auto &id = node.first;
-          const auto &order = node.second;
-          if (GetActiveOrders().count(id) ||
-              order.get<std::string>("type") != side ||
-              order.get<Qty>("amount") > qty ||
-              order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
-                  startTime) {
-            continue;
-          }
-          Verify(orderIds.emplace(std::move(id)).second);
-        }
-      }
-
-      ForEachRemoteTrade(productId, startTime - pt::minutes(2), m_tradingAuth,
-                         true,
+      ForEachRemoteActiveOrder(
+          productId, *m_tradingSession, m_tradingAuth, true,
+          [&](const std::string &orderId, const ptr::ptree &order) {
+            if (GetActiveOrders().count(orderId) ||
+                order.get<std::string>("type") != side ||
+                order.get<Qty>("amount") > qty ||
+                order.get<Price>("rate") != price ||
+                ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
+                    startTime) {
+              return;
+            }
+            Verify(orderIds.emplace(std::move(orderId)).second);
+          });
+      ForEachRemoteTrade(productId, startTime - pt::minutes(2),
+                         *m_tradingSession, m_tradingAuth, true,
                          [&](const std::string &, const ptr::ptree &trade) {
                            const auto &orderId = trade.get<OrderId>("order_id");
                            if (GetActiveOrders().count(orderId) ||
@@ -920,7 +995,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           AssertEq(side, order.get<std::string>("type"));
           if (order.get<Qty>("start_amount") != qty ||
               order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, m_serverTimeDiff) + pt::minutes(2) <
+              ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
                   startTime) {
             continue;
           }
@@ -943,8 +1018,28 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   template <typename Callback>
+  void ForEachRemoteActiveOrder(const std::string &productId,
+                                net::HTTPClientSession &session,
+                                Auth &auth,
+                                bool isPriority,
+                                const Callback &callback) const {
+    TradeRequest request("ActiveOrders", auth, isPriority, "pair=" + productId,
+                         GetContext(), GetTsLog(), &GetTsTradingLog());
+    ptr::ptree response;
+    try {
+      response = boost::get<1>(request.Send(session));
+    } catch (const TradeRequest::EmptyResponseException &) {
+      return;
+    }
+    for (const auto &node : response) {
+      callback(node.first, node.second);
+    }
+  }
+
+  template <typename Callback>
   void ForEachRemoteTrade(const std::string &productId,
                           const pt::ptime &tradeListStartTime,
+                          net::HTTPClientSession &session,
                           Auth &auth,
                           bool isPriority,
                           const Callback &callback) const {
@@ -955,13 +1050,20 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                          GetContext(), GetTsLog(), &GetTsTradingLog());
     ptr::ptree response;
     try {
-      response = boost::get<1>(request.Send(*m_tradingSession));
+      response = boost::get<1>(request.Send(session));
     } catch (const TradeRequest::EmptyResponseException &) {
       return;
     }
     for (const auto &node : response) {
       callback(node.first, node.second);
     }
+  }
+
+  pt::ptime ParseTimeStamp(const ptr::ptree &source,
+                           const std::string &key) const {
+    auto result = pt::from_time_t(source.get<time_t>(key));
+    result -= m_serverTimeDiff;
+    return result;
   }
 
  private:
@@ -983,7 +1085,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       m_securities;
   BalancesContainer m_balances;
 
-  std::unique_ptr<PullingTask> m_pullingTask;
+  std::unique_ptr<PollingTask> m_pollingTask;
 };
 }
 

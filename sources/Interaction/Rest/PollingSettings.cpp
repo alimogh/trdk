@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "PullingSettings.hpp"
+#include "PollingSettings.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -26,9 +26,9 @@ const size_t defaultAllOrdersRequestFrequency = 60;
 const size_t defaultBalancesRequestFrequency = 120;
 }
 
-PullingSetttings::PullingSetttings(const IniSectionRef &conf)
+PollingSetttings::PollingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
-          pt::seconds(conf.ReadTypedKey<long>("pulling_interval_second",
+          pt::seconds(conf.ReadTypedKey<long>("polling_interval_second",
                                               defailtInterval.total_seconds())),
           minInterval)),
       m_actualOrdersRequestFrequency(
@@ -43,7 +43,7 @@ PullingSetttings::PullingSetttings(const IniSectionRef &conf)
       m_balancesRequestFrequency(conf.ReadTypedKey<size_t>(
           "balances_request_frequency", defaultBalancesRequestFrequency)) {}
 
-void PullingSetttings::Log(ModuleEventsLog &log) const {
+void PollingSetttings::Log(ModuleEventsLog &log) const {
   if (GetInterval() == defailtInterval &&
       GetPricesRequestFrequency() == defaultPriceRequestFrequency &&
       GetActualOrdersRequestFrequency() ==
@@ -53,7 +53,7 @@ void PullingSetttings::Log(ModuleEventsLog &log) const {
     return;
   }
   log.Info(
-      "Pulling settings: interval = %1%, actual orders freq. = %2%, all orders "
+      "Polling settings: interval = %1%, actual orders freq. = %2%, all orders "
       "freq. = %3%, balances freq. = %4%, prices freq. = %5%.",
       GetInterval(),                      // 1
       GetActualOrdersRequestFrequency(),  // 2

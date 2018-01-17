@@ -12,6 +12,7 @@
 #include "RiskControl.hpp"
 #include "EventsLog.hpp"
 #include "Security.hpp"
+#include "Trade.hpp"
 #include "TradingLog.hpp"
 
 using namespace trdk;
@@ -112,15 +113,14 @@ void EmptyRiskControlScope::ConfirmBuyOrder(const RiskControlOperationId &,
                                             const Currency &,
                                             const Price & /*orderPrice*/,
                                             const Qty & /*remainingQty*/,
-                                            const TradingSystem::TradeInfo *) {}
+                                            const Trade *) {}
 void EmptyRiskControlScope::ConfirmSellOrder(const RiskControlOperationId &,
                                              const OrderStatus &,
                                              Security &,
                                              const Currency &,
                                              const Price & /*orderPrice*/,
                                              const Qty & /*remainingQty*/,
-                                             const TradingSystem::TradeInfo *) {
-}
+                                             const Trade *) {}
 void EmptyRiskControlScope::CheckTotalPnl(const Volume &) const {}
 void EmptyRiskControlScope::CheckTotalWinRatio(
     size_t /*totalWinRatio*/, size_t /*operationsCount*/) const {}
@@ -261,7 +261,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                const Lib::Currency &currency,
                                const Price &orderPrice,
                                const Qty &remainingQty,
-                               const TradingSystem::TradeInfo *trade) {
+                               const Trade *trade) {
     ConfirmOrder(operationId, status, security, currency, orderPrice,
                  remainingQty, trade,
                  security.GetRiskControlContext(GetTradingMode())
@@ -275,7 +275,7 @@ class StandardRiskControlScope : public RiskControlScope {
                                 const Currency &currency,
                                 const Price &orderPrice,
                                 const Qty &remainingQty,
-                                const TradingSystem::TradeInfo *trade) {
+                                const Trade *trade) {
     ConfirmOrder(operationId, status, security, currency, orderPrice,
                  remainingQty, trade,
                  security.GetRiskControlContext(GetTradingMode())
@@ -353,7 +353,7 @@ class StandardRiskControlScope : public RiskControlScope {
                     const Currency &currency,
                     const Price &orderPrice,
                     const Qty &remainingQty,
-                    const TradingSystem::TradeInfo *trade,
+                    const Trade *trade,
                     RiskControlSymbolContext::Side &side) {
     ConfirmUsedFunds(operationId, status, security, currency, orderPrice,
                      remainingQty, trade, side);
@@ -501,18 +501,16 @@ class StandardRiskControlScope : public RiskControlScope {
                         const Currency &currency,
                         const Price &orderPrice,
                         const Qty &remainingQty,
-                        const TradingSystem::TradeInfo *trade,
+                        const Trade *trade,
                         const RiskControlSymbolContext::Side &side) {
-    static_assert(numberOfOrderStatuses == 8, "Status list changed.");
+    static_assert(numberOfOrderStatuses == 7, "Status list changed.");
     switch (status) {
       default:
         AssertEq(ORDER_STATUS_ERROR, status);
         return;
       case ORDER_STATUS_SENT:
-      case ORDER_STATUS_SUBMITTED:
-      case ORDER_STATUS_REQUESTED_CANCEL:
-        break;
-      case ORDER_STATUS_FILLED:
+      case ORDER_STATUS_OPENED:
+      case ORDER_STATUS_FILLED_FULLY:
       case ORDER_STATUS_FILLED_PARTIALLY:
         if (!trade) {
           throw Exception("Filled order has no trade information");
@@ -521,7 +519,7 @@ class StandardRiskControlScope : public RiskControlScope {
         ConfirmBlockedFunds(operationId, security, currency, orderPrice, *trade,
                             side);
         break;
-      case ORDER_STATUS_CANCELLED:
+      case ORDER_STATUS_CANCELED:
       case ORDER_STATUS_REJECTED:
       case ORDER_STATUS_ERROR:
         Assert(!trade);
@@ -535,7 +533,7 @@ class StandardRiskControlScope : public RiskControlScope {
                            Security &security,
                            const Currency &currency,
                            const Price &orderPrice,
-                           const TradingSystem::TradeInfo &trade,
+                           const Trade &trade,
                            const RiskControlSymbolContext::Side &side) {
     const Symbol &symbol = security.GetSymbol();
     if (symbol.GetSecurityType() != SECURITY_TYPE_FOR) {
@@ -818,7 +816,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
 
  private:
   static_assert(
-      numberOfCurrencies == 11,
+      numberOfCurrencies == 13,
       "List changes. Each new currency adds new item into static array here!"
       "See Ctor.");
   mutable std::vector<Double> m_stat;
@@ -1131,7 +1129,7 @@ void RiskControl::ConfirmBuyOrder(
     const Currency &currency,
     const Price &orderPrice,
     const Qty &remainingQty,
-    const TradingSystem::TradeInfo *trade,
+    const Trade *trade,
     const TimeMeasurement::Milestones &timeMeasurement) {
   if (!m_pimpl->m_globalScope) {
     AssertEq(0, operationId);
@@ -1154,7 +1152,7 @@ void RiskControl::ConfirmSellOrder(
     const Currency &currency,
     const Price &orderPrice,
     const Qty &remainingQty,
-    const TradingSystem::TradeInfo *trade,
+    const Trade *trade,
     const TimeMeasurement::Milestones &timeMeasurement) {
   if (!m_pimpl->m_globalScope) {
     AssertEq(0, operationId);

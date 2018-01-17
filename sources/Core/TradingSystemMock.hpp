@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "OrderStatusHandler.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "TradingSystem.hpp"
@@ -36,8 +37,20 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_CONST_METHOD0(IsConnected, virtual bool());
   MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
 
-  MOCK_CONST_METHOD0(GetAccount, const trdk::TradingSystem::Account &());
-
+  virtual boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
+      trdk::Security &security,
+      const trdk::Lib::Currency &currency,
+      const trdk::Qty &qty,
+      const boost::optional<trdk::Price> &price,
+      const trdk::OrderParams &params,
+      std::unique_ptr<trdk::OrderStatusHandler> &&handler,
+      trdk::RiskControlScope &riskControlScope,
+      const trdk::OrderSide &side,
+      const trdk::TimeInForce &tif,
+      const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
+    return SendOrder(security, currency, qty, price, params, *handler,
+                     riskControlScope, side, tif, delayMeasurement);
+  }
   MOCK_METHOD10(SendOrder,
                 boost::shared_ptr<const trdk::OrderTransactionContext>(
                     trdk::Security &,
@@ -45,7 +58,7 @@ class TradingSystem : public trdk::TradingSystem {
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
                     const trdk::OrderParams &,
-                    const trdk::TradingSystem::OrderStatusUpdateSlot &,
+                    trdk::OrderStatusHandler &,
                     trdk::RiskControlScope &,
                     const trdk::OrderSide &,
                     const trdk::TimeInForce &,

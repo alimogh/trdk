@@ -10,9 +10,7 @@
 
 #include "Prec.hpp"
 #include "BittrexTradingSystem.hpp"
-#ifdef DEV_VER
 #include "Util.hpp"
-#endif
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -91,11 +89,13 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
                                            const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
+      m_serverTimeDiff(
+          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_balances(GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
-      m_pullingSession(CreateSession("bittrex.com", m_settings, false)),
-      m_pullingTask(m_settings.pullingSetttings, GetLog()) {}
+      m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
+      m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
 void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   Assert(!IsConnected());
@@ -108,22 +108,22 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
     throw ConnectError(ex.what());
   }
 
-  m_pullingTask.AddTask(
+  m_pollingTask.AddTask(
       "Actual orders", 0,
       [this]() {
         UpdateOrders();
         return true;
       },
-      m_settings.pullingSetttings.GetActualOrdersRequestFrequency());
-  m_pullingTask.AddTask(
+      m_settings.pollingSetttings.GetActualOrdersRequestFrequency(), true);
+  m_pollingTask.AddTask(
       "Balances", 1,
       [this]() {
         UpdateBalances();
         return true;
       },
-      m_settings.pullingSetttings.GetBalancesRequestFrequency());
+      m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
 
-  m_pullingTask.AccelerateNextPulling();
+  m_pollingTask.AccelerateNextPolling();
 }
 
 boost::optional<BittrexTradingSystem::OrderCheckError>
@@ -181,19 +181,18 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
     case TIME_IN_FORCE_GTC:
       break;
     default:
-      throw TradingSystem::Error("Order time-in-force type is not supported");
+      throw Exception("Order time-in-force type is not supported");
   }
   if (currency != security.GetSymbol().GetCurrency()) {
-    throw TradingSystem::Error(
-        "Trading system supports only security quote currency");
+    throw Exception("Trading system supports only security quote currency");
   }
   if (!price) {
-    throw TradingSystem::Error("Market order is not supported");
+    throw Exception("Market order is not supported");
   }
 
   const auto &product = m_products.find(security.GetSymbol().GetSymbol());
   if (product == m_products.cend()) {
-    throw TradingSystem::Error("Symbol is not supported by exchange");
+    throw Exception("Symbol is not supported by exchange");
   }
 
   const auto &productId = product->second.id;
@@ -243,19 +242,23 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
           .SendOrderTransaction(*m_tradingSession));
 }
 
-void BittrexTradingSystem::SendCancelOrderTransaction(const OrderId &orderId) {
-  OrderTransactionRequest("/market/cancel", "uuid=" + orderId.GetValue(),
-                          m_settings, GetContext(), GetLog(), GetTradingLog())
+void BittrexTradingSystem::SendCancelOrderTransaction(
+    const OrderTransactionContext &transaction) {
+  OrderTransactionRequest(
+      "/market/cancel",
+      "uuid=" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
+      m_settings, GetContext(), GetLog(), GetTradingLog())
       .Send(*m_tradingSession);
 }
 
-void BittrexTradingSystem::OnTransactionSent(const OrderId &orderId) {
-  Base::OnTransactionSent(orderId);
-  m_pullingTask.AccelerateNextPulling();
+void BittrexTradingSystem::OnTransactionSent(
+    const OrderTransactionContext &transaction) {
+  Base::OnTransactionSent(transaction);
+  m_pollingTask.AccelerateNextPolling();
 }
 
 void BittrexTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pullingSession);
+  const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     auto symbol = balance.get<std::string>("Currency");
@@ -285,34 +288,43 @@ std::string RestoreSymbol(const std::string &source) {
   RestoreCurrency(subs[1]);
   return boost::join(subs, "-");
 }
-pt::ptime ParseTime(std::string &&source) {
-  AssertLe(19, source.size());
-  AssertEq('T', source[10]);
-  if (source.size() < 11 || source[10] != 'T') {
-    return pt::not_a_date_time;
-  }
-  source[10] = ' ';
-  return pt::time_from_string(std::move(source));
-}
 }
 
 void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
-  Qty remainingQty;
-  OrderStatus status;
+  OrderStatus status = ORDER_STATUS_ERROR;
   pt::ptime time;
-  try {
-    remainingQty = order.get<Qty>("QuantityRemaining");
 
-    if (order.get<bool>("CancelInitiated")) {
-      status = remainingQty ? ORDER_STATUS_CANCELLED : ORDER_STATUS_FILLED;
-    } else if (order.get<bool>("IsOpen")) {
-      const auto &qty = order.get<Qty>("Quantity");
-      AssertGe(qty, remainingQty);
-      status = remainingQty < qty ? ORDER_STATUS_FILLED_PARTIALLY
-                                  : ORDER_STATUS_SUBMITTED;
+  struct ExecInfo {
+    Volume commission;
+    Price tradePrice;
+  };
+  struct CloseInfo {
+    Qty remainingQty;
+    boost::optional<ExecInfo> execInfo;
+  };
+  boost::optional<CloseInfo> closeInfo;
+
+  try {
+    AssertEq(orderId, order.get<OrderId>("OrderUuid"));
+
+    if (order.get<bool>("IsOpen")) {
+      status = ORDER_STATUS_OPENED;
     } else {
-      status = ORDER_STATUS_FILLED;
+      const auto &remainingQty = order.get<Qty>("QuantityRemaining");
+      const auto &qty = order.get<Qty>("Quantity");
+      if (qty != remainingQty) {
+        AssertGe(qty, remainingQty);
+        status =
+            remainingQty ? ORDER_STATUS_CANCELED : ORDER_STATUS_FILLED_FULLY;
+        closeInfo = CloseInfo{std::move(remainingQty),
+                              ExecInfo{order.get<Volume>("CommissionPaid"),
+                                       order.get<Price>("PricePerUnit")}};
+      } else {
+        Assert(order.get<bool>("CancelInitiated"));
+        status = ORDER_STATUS_CANCELED;
+        closeInfo = CloseInfo{std::move(remainingQty)};
+      }
     }
 
     {
@@ -322,27 +334,40 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
         if (time == pt::not_a_date_time) {
           GetLog().Error("Failed to parse order closing time \"%1%\".",
                          *closeTimeField);
+          Assert(time != pt::not_a_date_time);
+          status = ORDER_STATUS_ERROR;
+          time = GetContext().GetCurrentTime();
         }
       } else {
         time = ParseTime(order.get<std::string>("Opened"));
         if (time == pt::not_a_date_time) {
           GetLog().Error("Failed to parse order opening time \"%1%\".",
                          order.get<std::string>("Opened"));
-          return;
+          Assert(time != pt::not_a_date_time);
+          status = ORDER_STATUS_ERROR;
+          time = GetContext().GetCurrentTime();
         }
       }
     }
-  } catch (const OrderIsUnknown &) {
-    OnOrderCancel(GetContext().GetCurrentTime(), orderId);
-    return;
   } catch (const std::exception &ex) {
-    boost::format error("Failed to update order list: \"%1%\"");
+    boost::format error("Failed to read order: \"%1%\"");
     error % ex.what();
     throw Exception(error.str().c_str());
   }
 
-  OnOrderStatusUpdate(time, order.get<OrderId>("OrderUuid"), status,
-                      remainingQty, order.get<Volume>("CommissionPaid"));
+  if (!closeInfo) {
+    OnOrderStatusUpdate(time, orderId, status);
+  } else {
+    auto &closeInfoVal = *closeInfo;
+    if (!closeInfoVal.execInfo) {
+      OnOrderStatusUpdate(time, orderId, status, closeInfoVal.remainingQty);
+    } else {
+      auto &execInfoVal = *closeInfoVal.execInfo;
+      OnOrderStatusUpdate(time, orderId, status, closeInfoVal.remainingQty,
+                          Trade{std::move(execInfoVal.tradePrice)},
+                          execInfoVal.commission);
+    }
+  }
 }
 
 void BittrexTradingSystem::UpdateOrders() {
@@ -350,8 +375,18 @@ void BittrexTradingSystem::UpdateOrders() {
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
                            m_settings, GetContext(), GetLog(),
                            &GetTradingLog());
-    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pullingSession)));
+    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pollingSession)));
   }
+}
+
+pt::ptime BittrexTradingSystem::ParseTime(std::string &&source) const {
+  AssertLe(19, source.size());
+  AssertEq('T', source[10]);
+  if (source.size() < 11 || source[10] != 'T') {
+    return pt::not_a_date_time;
+  }
+  source[10] = ' ';
+  return pt::time_from_string(std::move(source)) - m_serverTimeDiff;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

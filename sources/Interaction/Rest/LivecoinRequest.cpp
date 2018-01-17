@@ -16,6 +16,9 @@ using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
+namespace net = Poco::Net;
+namespace ios = boost::iostreams;
 
 FloodControl &LivecoinRequest::GetFloodControl() {
   static class FloodControl : public Rest::FloodControl {
@@ -67,4 +70,30 @@ FloodControl &LivecoinRequest::GetFloodControl() {
   } result;
 
   return result;
+}
+
+void LivecoinRequest::CheckErrorResponse(const net::HTTPResponse &response,
+                                         const std::string &responseContent,
+                                         size_t attemptNumber) const {
+  if (response.getStatus() == net::HTTPResponse::HTTP_SERVICE_UNAVAILABLE) {
+    ptr::ptree responseTree;
+    ios::array_source source(&responseContent[0], responseContent.size());
+    ios::stream<ios::array_source> is(source);
+    try {
+      ptr::read_json(is, responseTree);
+    } catch (const ptr::ptree_error &) {
+    }
+    const auto &successNode = responseTree.get_optional<bool>("success");
+    if (successNode && !*successNode) {
+      const auto &errorCodeNode = responseTree.get_optional<int>("errorCode");
+      if (errorCodeNode && *errorCodeNode == 503) {
+        const auto &messageNode =
+            responseTree.get_optional<std::string>("errorMessage");
+        if (messageNode) {
+          throw CommunicationError(messageNode->c_str());
+        }
+      }
+    }
+  }
+  Base::CheckErrorResponse(response, responseContent, attemptNumber);
 }

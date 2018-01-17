@@ -141,6 +141,9 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_SortFilterProxyModel.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="OrderStatusNotifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -324,6 +327,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="SortFilterProxyModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OrderStatusNotifier.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

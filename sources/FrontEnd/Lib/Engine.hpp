@@ -34,21 +34,12 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Context &GetContext();
   const Lib::DropCopy &GetDropCopy() const;
 
-  const TradingSystem::OrderStatusUpdateSlot &GetOrderTradingSystemSlot();
-
   RiskControlScope &GetRiskControl(const TradingMode &);
 
  signals:
   void StateChanged(bool isStarted);
   void Message(const QString &, bool isWarning);
   void LogRecord(const QString &);
-  void Order(QString id, int, double remainingQty);
-  void Trade(QString orderId,
-             int,
-             double remainingQty,
-             QString tradeId,
-             double tradeQty,
-             double tradePrice);
 
  public:
   void Start(
