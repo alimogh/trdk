@@ -856,7 +856,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     for (const auto &node : orders) {
       for (const auto &order : node) {
-        UpdateOrder(order.first, order.second, trades);
+        UpdateOrder(order.first, order.second, trades, tradesRequest);
       }
     }
   }
@@ -866,7 +866,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const ptr::ptree &source,
       boost::unordered_map<OrderId,
                            std::map<size_t, std::pair<pt::ptime, Trade>>>
-          &trades) {
+          &trades,
+      const boost::unordered_map<std::string, pt::ptime> &tradesRequest) {
     pt::ptime time;
     OrderStatus status;
     try {
@@ -900,15 +901,18 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     }
 
     const auto &tradesIt = trades.find(id);
-    if (tradesIt == trades.cend() || tradesIt->second.empty()) {
+    if (tradesIt == trades.cend()) {
       if (status == ORDER_STATUS_FILLED_FULLY) {
+        const auto &requestIt =
+            tradesRequest.find(source.get<std::string>("pair"));
+        Assert(requestIt != tradesRequest.cend());
         GetTsLog().Error(
             "Received order status \"%1%\" for order \"%2%\", but didn't "
-            "receive trade.",
-            status,  // 1
-            id);     // 2
-        AssertNe(ORDER_STATUS_FILLED_FULLY, status);
-        status = ORDER_STATUS_ERROR;
+            "receive trade. Trade request start time: %3%.",
+            status,                                                // 1
+            id,                                                    // 2
+            requestIt != tradesRequest.cend() ? requestIt->second  // 3
+                                              : pt::not_a_date_time);
       }
       OnOrderStatusUpdate(time, id, status);
       return;
