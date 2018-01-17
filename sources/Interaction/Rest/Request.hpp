@@ -74,6 +74,8 @@ class Request {
 
   virtual size_t GetNumberOfAttempts() const { return 2; }
 
+  virtual void SetUri(const std::string &uri, Poco::Net::HTTPRequest &) const;
+
  private:
   const Context &m_context;
   ModuleEventsLog &m_log;

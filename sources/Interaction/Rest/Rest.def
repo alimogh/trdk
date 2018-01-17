@@ -17,4 +17,7 @@ EXPORTS
 	CreateLivecoinTradingSystem
 	CreateLivecoinMarketDataSource
 	CreateLivecoin
+	CreateCexioMarketDataSource
+	CreateCexioTradingSystem
+	CreateCexio
 	GetTrdkModuleVersionInfoV1

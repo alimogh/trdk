@@ -8,6 +8,8 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
+#pragma once
+
 #include "LivecoinRequest.hpp"
 #include "LivecoinUtil.hpp"
 #include "PollingTask.hpp"
