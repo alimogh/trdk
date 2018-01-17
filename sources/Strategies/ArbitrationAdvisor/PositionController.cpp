@@ -113,7 +113,7 @@ class BestSecurityChecker : private boost::noncopyable {
       : m_position(position), m_bestSecurity(nullptr) {}
 
   virtual ~BestSecurityChecker() {
-    if (!m_bestSecurity) {
+    if (!HasSuitableSecurity()) {
       return;
     }
     try {
@@ -137,6 +137,10 @@ class BestSecurityChecker : private boost::noncopyable {
       return;
     }
     m_bestSecurity = &checkSecurity;
+  }
+
+  bool HasSuitableSecurity() const noexcept {
+    return m_bestSecurity ? true : false;
   }
 
  protected:
@@ -252,6 +256,19 @@ void aa::PositionController::ClosePosition(Position &position) {
         ->ForEachSecurity(
             position.GetSecurity().GetSymbol(),
             [&checker](Security &security) { checker->Check(security); });
+    if (!checker->HasSuitableSecurity() && position.GetClosedQty() > 0) {
+      position.GetStrategy().GetLog().Error(
+          "Failed to find suitable security for the position \"%1%/%2%\" "
+          "(actual security is \"%3%\") to close the rest of the position "
+          "%4$.8f out of %5$.8f.",
+          position.GetOperation()->GetId(),  // 1
+          position.GetSubOperationId(),      // 2
+          position.GetSecurity(),            // 3
+          position.GetOpenedQty(),           // 4
+          position.GetActiveQty());          // 5
+      position.AddTrade(position.GetActiveQty(), position.GetLastTradePrice());
+      return;
+    }
   }
   Base::ClosePosition(position);
 }
