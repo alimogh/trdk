@@ -23,15 +23,13 @@ CexioRequest::CexioRequest(const std::string &name,
                            const Context &context,
                            ModuleEventsLog &log,
                            ModuleTradingLog *tradingLog)
-    : Base("/api/" + name,
+    : Base("/api/" + name + "/",
            name,
            method,
-           std::string(),
+           params,
            context,
            log,
-           tradingLog) {
-  SetBody(params);
-}
+           tradingLog) {}
 
 FloodControl &CexioRequest::GetFloodControl() {
   static DisabledFloodControl result;
@@ -40,6 +38,10 @@ FloodControl &CexioRequest::GetFloodControl() {
 
 void CexioRequest::SetUri(const std::string &uri,
                           net::HTTPRequest &request) const {
-  AssertEq(std::string(), GetUriParams());
-  request.setURI(uri);
+  const auto &params = GetUriParams();
+  if (params.empty()) {
+    request.setURI(uri);
+  } else {
+    request.setURI(uri + '?' + params);
+  }
 }

@@ -12,6 +12,7 @@
 
 #include "CexioRequest.hpp"
 #include "CexioUtil.hpp"
+#include "NonceStorage.hpp"
 #include "PollingTask.hpp"
 #include "Settings.hpp"
 
@@ -25,10 +26,61 @@ class CexioTradingSystem : public TradingSystem {
 
  private:
   struct Settings : public Rest::Settings {
+    std::string username;
     std::string apiKey;
     std::string apiSecret;
+    NonceStorage::Settings nonces;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+  };
+
+  class PrivateRequest : public CexioRequest {
+   public:
+    typedef CexioRequest Base;
+
+   public:
+    explicit PrivateRequest(const std::string &name,
+                            const std::string &params,
+                            const Settings &,
+                            NonceStorage &nonces,
+                            bool isPriority,
+                            const Context &,
+                            ModuleEventsLog &,
+                            ModuleTradingLog * = nullptr);
+    virtual ~PrivateRequest() override = default;
+
+   public:
+    virtual Response Send(Poco::Net::HTTPClientSession &);
+
+   protected:
+    virtual bool IsPriority() const override { return m_isPriority; }
+    virtual void CreateBody(const Poco::Net::HTTPClientSession &,
+                            std::string &result) const override;
+
+   private:
+    const Settings &m_settings;
+    const bool m_isPriority;
+    NonceStorage &m_nonces;
+    mutable boost::optional<NonceStorage::TakenValue> m_nonce;
+  };
+
+  class BalancesRequest : public PrivateRequest {
+   public:
+    explicit BalancesRequest(const Settings &settings,
+                             NonceStorage &nonces,
+                             const Context &context,
+                             ModuleEventsLog &);
+  };
+
+  class OrderRequest : public PrivateRequest {
+   public:
+    explicit OrderRequest(const std::string &name,
+                          const std::string &params,
+                          const Settings &settings,
+                          NonceStorage &nonces,
+                          const Context &context,
+                          ModuleEventsLog &,
+                          ModuleTradingLog &);
   };
 
  public:
@@ -74,13 +126,16 @@ class CexioTradingSystem : public TradingSystem {
  private:
   void UpdateBalances();
   void UpdateOrders();
+  void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff;
+  mutable NonceStorage m_nonces;
   boost::unordered_map<std::string, CexioProduct> m_products;
 
   BalancesContainer m_balances;
-  // BalancesRequest m_balancesRequest;
+  BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
