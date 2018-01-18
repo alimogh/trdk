@@ -52,13 +52,19 @@ boost::optional<Volume> BalancesContainer::FindAvailableToTrade(
   return it->second;
 }
 
-void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
-                                            const Volume &&balance) {
+void BalancesContainer::Set(const std::string &symbol,
+                            Volume &&availableToTrade,
+                            Volume &&) {
+  SetAvailableToTrade(symbol, std::move(availableToTrade));
+}
+
+void BalancesContainer::SetAvailableToTrade(const std::string &symbol,
+                                            Volume &&availableToTrade) {
   const WriteLock lock(m_pimpl->m_mutex);
   {
     const auto &it = m_pimpl->m_storage.find(symbol);
     if (it != m_pimpl->m_storage.cend()) {
-      const Double delta = balance - it->second;
+      const Double delta = availableToTrade - it->second;
       if (delta == 0) {
         return;
       }
@@ -66,18 +72,18 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
           "{'balance': {'symbol': '%1%', 'prev': %2$.8f, 'new': %3$.8f, "
           "'delta': %4$.8f}}",
           [&](TradingRecord &record) {
-            record % symbol   // 1
-                % it->second  // 2
-                % balance     // 3
-                % delta;      // 4
+            record % symbol         // 1
+                % it->second        // 2
+                % availableToTrade  // 3
+                % delta;            // 4
           });
-      it->second = std::move(balance);
+      it->second = std::move(availableToTrade);
       return;
     }
   }
   {
-    const auto &it =
-        m_pimpl->m_storage.emplace(std::move(symbol), std::move(balance));
+    const auto &it = m_pimpl->m_storage.emplace(std::move(symbol),
+                                                std::move(availableToTrade));
     Assert(it.second);
     if (it.first->second) {
       m_pimpl->m_tradingLog.Write(
@@ -90,6 +96,8 @@ void BalancesContainer::SetAvailableToTrade(const std::string &&symbol,
     }
   }
 }
+
+void BalancesContainer::SetLocked(const std::string &, Volume &&) {}
 
 void BalancesContainer::ReduceAvailableToTradeByOrder(
     const Security &security,
@@ -155,5 +163,3 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
     }
   }
 }
-
-void BalancesContainer::SetLocked(const std::string &&, const Volume &&) {}

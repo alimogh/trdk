@@ -31,6 +31,9 @@ boost::unordered_map<std::string, CexioProduct> RequestCexioProductList(
 boost::posix_time::ptime ParseCexioTimeStamp(
     const boost::property_tree::ptree &source,
     const boost::posix_time::time_duration &serverTimeDiff);
+
+std::unique_ptr<Poco::Net::HTTPClientSession> CreateCexioSession(
+    const Settings &, bool isTrading);
 }
 }
 }

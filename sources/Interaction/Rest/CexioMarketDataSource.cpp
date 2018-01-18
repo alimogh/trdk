@@ -34,7 +34,7 @@ CexioMarketDataSource::CexioMarketDataSource(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_session(CreateSession("cex.io", m_settings, false)),
+      m_session(CreateCexioSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
@@ -71,7 +71,7 @@ void CexioMarketDataSource::SubscribeToSecurities() {
         continue;
       }
       subscribtion.second.request = boost::make_shared<CexioPublicRequest>(
-          "order_book/" + subscribtion.first->id, "{depth: 1}", GetContext(),
+          "order_book/" + subscribtion.first->id, "depth=1", GetContext(),
           GetLog());
     }
   }
@@ -191,9 +191,9 @@ void CexioMarketDataSource::UpdatePrices(const ptr::ptree &source,
   try {
     const auto &id = source.get<decltype(subscribtion.lastBookId)>("id");
     if (id == subscribtion.lastBookId) {
-      AssertLt(subscribtion.lastBookId, id);
       return;
     }
+    AssertLt(subscribtion.lastBookId, id);
 
     const auto &time = ParseTimeStamp(source);
 

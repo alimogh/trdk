@@ -22,8 +22,6 @@ namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
-////////////////////////////////////////////////////////////////////////////////
-
 namespace {
 template <typename Value>
 boost::optional<Value> ParseOptionalValue(const ptr::ptree &source,
@@ -75,8 +73,6 @@ boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
   return result;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
 pt::ptime Rest::ParseCexioTimeStamp(const ptr::ptree &source,
                                     const pt::time_duration &serverTimeDiff) {
   auto result = pt::from_time_t(source.get<time_t>("timestamp"));
@@ -84,4 +80,7 @@ pt::ptime Rest::ParseCexioTimeStamp(const ptr::ptree &source,
   return result;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+std::unique_ptr<net::HTTPClientSession> Rest::CreateCexioSession(
+    const Settings &settings, bool isTrading) {
+  return CreateSession("cex.io", settings, isTrading);
+}
