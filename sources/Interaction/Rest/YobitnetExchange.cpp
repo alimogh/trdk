@@ -825,7 +825,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           const auto &order = node.second;
           try {
             const auto &product = order.get<std::string>("pair");
-            const auto &time = ParseTimeStamp(order, "timestamp_created");
+            const auto &time =
+                ParseTimeStamp(order, "timestamp_created") - pt::seconds(1);
             const auto &it = tradesRequest.emplace(product, time);
             if (!it.second && it.first->second > time) {
               it.first->second = time;
