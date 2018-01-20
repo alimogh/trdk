@@ -318,6 +318,24 @@ std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
   }
   return boost::make_unique<NonceStorage>(settings.tradingAuth->nonces, log);
 }
+
+class YobitBalancesContainer : public BalancesContainer {
+ public:
+ public:
+  explicit YobitBalancesContainer(ModuleEventsLog &log,
+                                  ModuleTradingLog &tradingLog)
+      : BalancesContainer(log, tradingLog) {}
+  virtual ~YobitBalancesContainer() override = default;
+
+ public:
+  virtual void ReduceAvailableToTradeByOrder(const trdk::Security &,
+                                             const Qty &,
+                                             const Price &,
+                                             const OrderSide &,
+                                             const TradingSystem &) override {
+    // Yobit.net sends new rests at order transaction reply.
+  }
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1093,7 +1111,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
-  BalancesContainer m_balances;
+  YobitBalancesContainer m_balances;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
