@@ -945,7 +945,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case ORDER_STATUS_FILLED_FULLY:
         return;
     }
-    OnOrderStatusUpdate(time, id, status);
+    try {
+      OnOrderStatusUpdate(time, id, status);
+    } catch (const OrderIsUnknown &) {
+      if (status != ORDER_STATUS_CANCELED) {
+        throw;
+      }
+      // This is workaround for Yobit bug. See also
+      // https://yobit.net/en/support/e7f3cdb97d7dd1fa200f8b0dc8593f573fa07f9bdf309d43711c72381d39121d
+      // and https://trello.com/c/luVuGQH2 for details.
+    }
   }
 
   boost::optional<OrderId> FindNewOrderId(
