@@ -81,13 +81,7 @@ void Request::PrepareRequest(const net::HTTPClientSession &,
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
 Request::Send(net::HTTPClientSession &session) {
-  std::string uri = m_uri + "?nonce=" +
-                    pt::to_iso_string(pt::microsec_clock::universal_time());
-  if (!m_uriParams.empty() &&
-      m_request->getMethod() == net::HTTPRequest::HTTP_GET) {
-    uri += '&' + m_uriParams;
-  }
-  m_request->setURI(std::move(uri));
+  SetUri(m_uri, *m_request);
 
   std::string body = m_body;
   CreateBody(session, body);
@@ -241,4 +235,14 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
     default:
       throw CommunicationError(error.str().c_str());
   }
+}
+
+void Request::SetUri(const std::string &uri, net::HTTPRequest &request) const {
+  std::string fullUri =
+      uri + "?nonce=" + pt::to_iso_string(pt::microsec_clock::universal_time());
+  if (!m_uriParams.empty() &&
+      request.getMethod() == net::HTTPRequest::HTTP_GET) {
+    fullUri += '&' + m_uriParams;
+  }
+  request.setURI(std::move(fullUri));
 }

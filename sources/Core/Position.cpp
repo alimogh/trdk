@@ -115,6 +115,7 @@ class Position::Implementation : private boost::noncopyable {
 
     OrderStatusStep status;
     bool isCanceled;
+    bool isRejected;
 
     const boost::optional<Price> price;
     const Qty qty;
@@ -131,20 +132,13 @@ class Position::Implementation : private boost::noncopyable {
         : time(std::move(time)),
           status(ORDER_STATUS_STEP_SENT),
           isCanceled(false),
+          isRejected(false),
           price(std::move(price)),
           qty(qty),
           executedQty(0),
           commission(0) {}
   };
 
-  struct CloseOrder : public Order {
-    explicit CloseOrder(const pt::ptime &&time,
-                        boost::optional<Price> &&price,
-                        const Qty &qty)
-        : Order(std::move(time), std::move(price), qty) {}
-  };
-
-  template <typename Order>
   struct DirectionData {
     Price startPrice;
 
@@ -188,7 +182,7 @@ class Position::Implementation : private boost::noncopyable {
       ++numberOfTrades;
       lastTradePrice = tradePrice;
     }
-    bool CheckAndAddTrade(const Qty &tradeQty, const Price &tradePrice) {
+    bool CheckAndAddVirtualTrade(const Qty &tradeQty, const Price &tradePrice) {
       if (orders.empty()) {
         return false;
       }
@@ -196,15 +190,13 @@ class Position::Implementation : private boost::noncopyable {
       if (order.executedQty + tradeQty > order.qty) {
         AssertLe(order.executedQty + tradeQty, order.qty);
         throw Exception(
-            "Order quantity is greater than active order remaining quantity");
+            "Virtual trade quantity is greater than active order remaining "
+            "quantity");
       }
       AddTrade(tradeQty, tradePrice);
       return true;
     }
   };
-
-  typedef DirectionData<Order> OpenData;
-  typedef DirectionData<CloseOrder> CloseData;
 
   class StatusHandler : public OrderStatusHandler {
    public:
@@ -247,7 +239,7 @@ class Position::Implementation : private boost::noncopyable {
       AssertLe(order.executedQty, order.qty);
       AssertLe(order.executedQty + trade.qty, order.qty);
       order.status = ORDER_STATUS_STEP_OPENED;
-      AddTrade(trade);
+      GetDirection().AddTrade(trade);
       if (!GetPositionImpl().m_defaultOrderParams.position) {
         GetPositionImpl().m_defaultOrderParams.position =
             &*GetOrder().transactionContext;
@@ -269,8 +261,9 @@ class Position::Implementation : private boost::noncopyable {
       auto &order = GetOrder();
       AssertLe(order.executedQty, order.qty);
       AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
+      Assert(!order.isRejected);
       order.status = ORDER_STATUS_STEP_CLOSED;
-      GetPositionImpl().m_isRejected = true;
+      order.isRejected = true;
       UpdateStat();
       Report(ORDER_STATUS_REJECTED);
       SignalUpdate(lock);
@@ -310,13 +303,16 @@ class Position::Implementation : private boost::noncopyable {
       return const_cast<StatusHandler *>(this)->GetPositionImpl();
     }
 
-    virtual Order &GetOrder() = 0;
+    virtual DirectionData &GetDirection() = 0;
+
+    Order &GetOrder() {
+      auto &orders = GetDirection().orders;
+      Assert(!orders.empty());
+      return orders.back();
+    }
 
     virtual const char *GetSide() const = 0;
     virtual const Qty &GetFilledQty() const = 0;
-
-    virtual void AddTrade(const Trade &) = 0;
-    virtual pt::ptime &GetStartTime() = 0;
 
    private:
     void UpdateStat() {
@@ -326,7 +322,7 @@ class Position::Implementation : private boost::noncopyable {
       if (!order.qty) {
         return;
       }
-      auto &startTime = GetStartTime();
+      auto &startTime = GetDirection().time;
       if (startTime != pt::not_a_date_time) {
         return;
       }
@@ -357,19 +353,12 @@ class Position::Implementation : private boost::noncopyable {
     virtual ~OpenStatusHandler() override = default;
 
    protected:
-    virtual Order &GetOrder() override {
-      Assert(!GetPositionImpl().m_open.orders.empty());
-      return GetPositionImpl().m_open.orders.back();
+    virtual DirectionData &GetDirection() override {
+      return GetPositionImpl().m_open;
     }
     virtual const char *GetSide() const override { return "open"; }
     virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetOpenedQty();
-    }
-    virtual void AddTrade(const Trade &trade) override {
-      GetPositionImpl().m_open.AddTrade(trade);
-    }
-    virtual pt::ptime &GetStartTime() override {
-      return GetPositionImpl().m_open.time;
     }
   };
 
@@ -383,19 +372,12 @@ class Position::Implementation : private boost::noncopyable {
     virtual ~CloseStatusHandler() override = default;
 
    protected:
-    virtual Order &GetOrder() override {
-      Assert(!GetPositionImpl().m_close.orders.empty());
-      return GetPositionImpl().m_close.orders.back();
+    virtual DirectionData &GetDirection() override {
+      return GetPositionImpl().m_close;
     }
     virtual const char *GetSide() const override { return "close"; }
     virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetClosedQty();
-    }
-    virtual void AddTrade(const Trade &trade) override {
-      GetPositionImpl().m_close.AddTrade(trade);
-    }
-    virtual pt::ptime &GetStartTime() override {
-      return GetPositionImpl().m_close.time;
     }
   };
 
@@ -421,12 +403,11 @@ class Position::Implementation : private boost::noncopyable {
   bool m_isMarketAsCompleted;
 
   bool m_isError;
-  bool m_isRejected;
 
   TimeMeasurement::Milestones m_timeMeasurement;
 
-  OpenData m_open;
-  CloseData m_close;
+  DirectionData m_open;
+  DirectionData m_close;
 
   CloseReason m_closeReason;
 
@@ -457,7 +438,6 @@ class Position::Implementation : private boost::noncopyable {
         m_planedQty(qty),
         m_isMarketAsCompleted(false),
         m_isError(false),
-        m_isRejected(false),
         m_timeMeasurement(timeMeasurement),
         m_open(startPrice),
         m_close(0),
@@ -572,9 +552,10 @@ class Position::Implementation : private boost::noncopyable {
                     const Qty &filledQty) {
     m_strategy.GetTradingLog().Write(
         "{'position': {'%1%': {'status': '%2%', 'orderPrice': %3$.8f, "
-        "'lastPrice': %4$.8f, 'qty': %5$.8f, 'orderId': '%6%'}, 'startPrice': "
-        "%7$.8f, 'qty': %8$.8f, 'type': '%9%', 'security': '%10%', "
-        "'operation': '%11%/%12%'}}",
+        "'lastPrice': %4$.8f, 'orderQty': %5$.8f, 'filledQty': %6$.8f, "
+        "'remainingQty': %7$.8f, 'orderId': '%8%'}, 'startPrice': %9$.8f, "
+        "'plannedQty': %10$.8f, 'activeQty': %11$.8f, 'type': '%12%', "
+        "'security': '%13%', 'operation': '%14%/%15%'}}",
         [&](TradingRecord &record) {
           record % action  // 1
               % status;    // 2
@@ -588,14 +569,17 @@ class Position::Implementation : private boost::noncopyable {
           } else {
             record % "null";  // 4
           }
-          record % filledQty                            // 5
-              % order.transactionContext->GetOrderId()  // 6
-              % m_open.startPrice                       // 7
-              % m_planedQty                             // 8
-              % m_self.GetSide()                        // 9
-              % *m_security                             // 10
-              % m_operation->GetId()                    // 11
-              % m_subOperationId;                       // 12
+          record % order.qty                            // 5
+              % filledQty                               // 6
+              % (order.qty - filledQty)                 // 7
+              % order.transactionContext->GetOrderId()  // 8
+              % m_open.startPrice                       // 9
+              % m_planedQty                             // 10
+              % m_self.GetActiveQty()                   // 11
+              % m_self.GetSide()                        // 12
+              % *m_security                             // 13
+              % m_operation->GetId()                    // 14
+              % m_subOperationId;                       // 15
         });
   }
 
@@ -1062,10 +1046,14 @@ void Position::MarkAsCompleted() {
 
 bool Position::IsError() const noexcept { return m_pimpl->m_isError; }
 
-bool Position::IsRejected() const noexcept { return m_pimpl->m_isRejected; }
-void Position::ResetRejected() {
-  Assert(m_pimpl->m_isRejected);
-  m_pimpl->m_isRejected = false;
+bool Position::IsRejected() const {
+  const auto &orders = !m_pimpl->m_close.orders.empty()
+                           ? m_pimpl->m_close.orders
+                           : m_pimpl->m_open.orders;
+  if (orders.empty()) {
+    return false;
+  }
+  return orders.back().isRejected;
 }
 
 bool Position::IsCancelling() const {
@@ -1386,15 +1374,15 @@ void Position::RestoreOpenState(
   m_pimpl->RestoreOpenState(openStartTime, openTime, openPrice, openingContext);
 }
 
-void Position::AddTrade(const Qty &qty, const Price &price) {
-  if (m_pimpl->m_close.CheckAndAddTrade(qty, price)) {
+void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
+  if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close.orders.back(),
                           GetClosedQty());
-  } else if (m_pimpl->m_open.CheckAndAddTrade(qty, price)) {
+  } else if (m_pimpl->m_open.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open.orders.back(),
                           GetOpenedQty());
   } else {
-    throw Exception("There are no active orders to add trade");
+    throw Exception("There are no active orders to add virtual trade");
   }
 }
 

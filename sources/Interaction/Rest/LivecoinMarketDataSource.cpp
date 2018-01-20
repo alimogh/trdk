@@ -12,6 +12,7 @@
 #include "LivecoinMarketDataSource.hpp"
 #include "PollingTask.hpp"
 #include "Security.hpp"
+#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -63,6 +64,8 @@ void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
 }
 
 void LivecoinMarketDataSource::SubscribeToSecurities() {
+  const boost::mutex::scoped_lock lock(m_securitiesMutex);
+
   if (m_securities.empty()) {
     return;
   }
@@ -93,7 +96,10 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
     throw SymbolIsNotSupportedException(message.str().c_str());
   }
 
+  // Two locks as only one thread can add new securities.
+
   {
+    const boost::mutex::scoped_lock lock(m_securitiesMutex);
     const auto &it = m_securities.find(product->second.id);
     if (it != m_securities.cend()) {
       return *it->second;
@@ -109,7 +115,10 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
                                              .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
-  Verify(m_securities.emplace(product->second.id, result).second);
+  {
+    const boost::mutex::scoped_lock lock(m_securitiesMutex);
+    Verify(m_securities.emplace(product->second.id, result).second);
+  }
 
   return *result;
 }
@@ -119,6 +128,7 @@ void LivecoinMarketDataSource::UpdatePrices() {
     const auto &response = m_allOrderBooksRequest.Send(*m_session);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
+      const boost::mutex::scoped_lock lock(m_securitiesMutex);
       const auto security = m_securities.find(record.first);
       if (security == m_securities.cend()) {
         continue;
@@ -126,12 +136,15 @@ void LivecoinMarketDataSource::UpdatePrices() {
       UpdatePrices(record.second, *security->second, delayMeasurement);
     }
   } catch (const std::exception &ex) {
-    for (auto &security : m_securities) {
-      try {
-        security.second->SetOnline(pt::not_a_date_time, false);
-      } catch (...) {
-        AssertFailNoException();
-        throw;
+    {
+      const boost::mutex::scoped_lock lock(m_securitiesMutex);
+      for (auto &security : m_securities) {
+        try {
+          security.second->SetOnline(pt::not_a_date_time, false);
+        } catch (...) {
+          AssertFailNoException();
+          throw;
+        }
       }
     }
     boost::format error("Failed to read prices: \"%1%\"");

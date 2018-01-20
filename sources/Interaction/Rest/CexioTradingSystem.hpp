@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/12/19 21:00:06
+ *   Created: 2018/01/18 01:12:08
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,8 +10,9 @@
 
 #pragma once
 
-#include "LivecoinRequest.hpp"
-#include "LivecoinUtil.hpp"
+#include "CexioRequest.hpp"
+#include "CexioUtil.hpp"
+#include "NonceStorage.hpp"
 #include "PollingTask.hpp"
 #include "Settings.hpp"
 
@@ -19,73 +20,76 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class LivecoinTradingSystem : public TradingSystem {
+class CexioTradingSystem : public TradingSystem {
  public:
   typedef TradingSystem Base;
 
  private:
   struct Settings : public Rest::Settings {
+    std::string username;
     std::string apiKey;
     std::string apiSecret;
+    NonceStorage::Settings nonces;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };
 
-  class PrivateRequest : public LivecoinRequest {
+  class PrivateRequest : public CexioRequest {
+   public:
+    typedef CexioRequest Base;
+
    public:
     explicit PrivateRequest(const std::string &name,
-                            const std::string &method,
-                            const Settings &,
                             const std::string &params,
+                            const Settings &,
+                            NonceStorage &nonces,
+                            bool isPriority,
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
     virtual ~PrivateRequest() override = default;
 
+   public:
+    virtual Response Send(Poco::Net::HTTPClientSession &);
+
    protected:
-    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                                const std::string &,
-                                Poco::Net::HTTPRequest &) const override;
+    virtual bool IsPriority() const override { return m_isPriority; }
+    virtual void CreateBody(const Poco::Net::HTTPClientSession &,
+                            std::string &result) const override;
 
    private:
     const Settings &m_settings;
-  };
-
-  class TradingRequest : public PrivateRequest {
-   public:
-    explicit TradingRequest(const std::string &name,
-                            const Settings &,
-                            const std::string &params,
-                            const Context &,
-                            ModuleEventsLog &,
-                            ModuleTradingLog * = nullptr);
-    virtual ~TradingRequest() override = default;
-
-   public:
-    Response Send(Poco::Net::HTTPClientSession &) override;
-
-   protected:
-    virtual bool IsPriority() const override { return true; }
+    const bool m_isPriority;
+    NonceStorage &m_nonces;
+    mutable boost::optional<NonceStorage::TakenValue> m_nonce;
   };
 
   class BalancesRequest : public PrivateRequest {
    public:
-    explicit BalancesRequest(const Settings &,
-                             const Context &,
+    explicit BalancesRequest(const Settings &settings,
+                             NonceStorage &nonces,
+                             const Context &context,
                              ModuleEventsLog &);
-    virtual ~BalancesRequest() override = default;
+  };
 
-   protected:
-    virtual bool IsPriority() const override { return false; }
+  class OrderRequest : public PrivateRequest {
+   public:
+    explicit OrderRequest(const std::string &name,
+                          const std::string &params,
+                          const Settings &settings,
+                          NonceStorage &nonces,
+                          const Context &context,
+                          ModuleEventsLog &,
+                          ModuleTradingLog &);
   };
 
  public:
-  explicit LivecoinTradingSystem(const App &,
-                                 const TradingMode &,
-                                 Context &,
-                                 const std::string &instanceName,
-                                 const Lib::IniSectionRef &);
-  virtual ~LivecoinTradingSystem() override = default;
+  explicit CexioTradingSystem(const App &,
+                              const TradingMode &,
+                              Context &,
+                              const std::string &instanceName,
+                              const Lib::IniSectionRef &);
+  virtual ~CexioTradingSystem() override = default;
 
  public:
   virtual bool IsConnected() const override { return !m_products.empty(); }
@@ -122,10 +126,13 @@ class LivecoinTradingSystem : public TradingSystem {
  private:
   void UpdateBalances();
   void UpdateOrders();
+  void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;
-  boost::unordered_map<std::string, LivecoinProduct> m_products;
+  const boost::posix_time::time_duration m_serverTimeDiff;
+  mutable NonceStorage m_nonces;
+  boost::unordered_map<std::string, CexioProduct> m_products;
 
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;

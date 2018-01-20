@@ -309,6 +309,11 @@
     <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="BittrexUtil.cpp" />
     <ClCompile Include="CcexExchange.cpp" />
+    <ClCompile Include="CexioMarketDataSource.cpp" />
+    <ClCompile Include="CexioRequest.cpp" />
+    <ClCompile Include="CexioTradingSystem.cpp" />
+    <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="CexioUtil.cpp" />
     <ClCompile Include="CryptopiaMarketDataSource.cpp" />
     <ClCompile Include="CryptopiaRequest.cpp" />
     <ClCompile Include="CryptopiaTradingSystem.cpp" />
@@ -352,6 +357,10 @@
     <ClInclude Include="BittrexRequest.hpp" />
     <ClInclude Include="BittrexTradingSystem.hpp" />
     <ClInclude Include="BittrexUtil.hpp" />
+    <ClInclude Include="CexioMarketDataSource.hpp" />
+    <ClInclude Include="CexioRequest.hpp" />
+    <ClInclude Include="CexioTradingSystem.hpp" />
+    <ClInclude Include="CexioUtil.hpp" />
     <ClInclude Include="CryptopiaMarketDataSource.hpp" />
     <ClInclude Include="CryptopiaRequest.hpp" />
     <ClInclude Include="CryptopiaTradingSystem.hpp" />

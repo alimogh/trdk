@@ -34,19 +34,30 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     return;
   }
 
-  if (position.IsRejected()) {
+  if (position.IsRejected() &&
+      (position.GetNumberOfCloseOrders() == 0 ? !position.IsFullyOpened()
+                                              : position.GetActiveQty() > 0) &&
+      boost::istarts_with(position.GetTradingSystem().GetInstanceName(),
+                          "yobit")) {
+    // Special logic for Yobit.net, see also https://trello.com/c/KYVxS36k
     Assert(!position.HasActiveOrders());
     position.GetStrategy().GetLog().Error(
-        "Position \"%1%/%2%\" (\"%3%\") is rejected by trading system \"%4%\".",
+        "Order for position \"%1%/%2%\" (\"%3%\") is rejected by trading "
+        "system \"%4%\".",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
         position.GetTradingSystem());      // 4
-    position.AddTrade(position.GetActiveQty(),
-                      position.GetNumberOfTrades()
-                          ? position.GetLastTradePrice()
-                          : position.GetOpenStartPrice());
-    position.ResetRejected();
+    position.AddVirtualTrade(
+        position.GetNumberOfCloseOrders()
+            ? position.GetActiveQty()
+            : position.GetPlanedQty() - position.GetActiveQty(),
+        position.GetNumberOfTrades() ? position.GetLastTradePrice()
+                                     : position.GetOpenStartPrice());
+    Assert(!(position.GetNumberOfCloseOrders() == 0
+                 ? !position.IsFullyOpened()
+                 : position.GetActiveQty() > 0));
+    return;
   }
 
   Base::OnPositionUpdate(position);
@@ -266,7 +277,8 @@ void aa::PositionController::ClosePosition(Position &position) {
           position.GetSecurity(),            // 3
           position.GetOpenedQty(),           // 4
           position.GetActiveQty());          // 5
-      position.AddTrade(position.GetActiveQty(), position.GetLastTradePrice());
+      position.AddVirtualTrade(position.GetActiveQty(),
+                               position.GetLastTradePrice());
       return;
     }
   }

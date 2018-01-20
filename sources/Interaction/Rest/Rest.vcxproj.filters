@@ -1,179 +1,272 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
+    <Filter Include="CEX.IO">
+      <UniqueIdentifier>{db64fee7-a0cd-4db7-9d8e-213b3a61005c}</UniqueIdentifier>
+      <Extensions>Cexio</Extensions>
+    </Filter>
+    <Filter Include="CEX.IO\Header Files">
+      <UniqueIdentifier>{5701c448-6dc4-452a-a2bd-c5adf114cea2}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="CEX.IO\Source Files">
+      <UniqueIdentifier>{b06c4a1c-0ad9-4626-ac76-2de4723fea42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Livecoin">
+      <UniqueIdentifier>{0fc04119-889d-40b8-b97e-f60216dc8ae3}</UniqueIdentifier>
+      <Extensions>Livecoin</Extensions>
+    </Filter>
+    <Filter Include="Bittrex">
+      <UniqueIdentifier>{fdd3ef13-65d0-40f3-801e-b8bc4ca40542}</UniqueIdentifier>
+      <Extensions>Bittrex</Extensions>
+    </Filter>
+    <Filter Include="Cryptopia">
+      <UniqueIdentifier>{f11e9a2b-c979-44ef-81db-3c7c15635631}</UniqueIdentifier>
+      <Extensions>Cryptopia</Extensions>
+    </Filter>
+    <Filter Include="GDAX">
+      <UniqueIdentifier>{510c3443-c472-4d68-a48a-4d244724fd12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Novaexchange">
+      <UniqueIdentifier>{ef3a298f-efc1-4b38-9161-c470b7b3d563}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Yobit.net">
+      <UniqueIdentifier>{d7468aca-8e21-4be5-8316-dd66cebda89d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Livecoin\Header Files">
+      <UniqueIdentifier>{a730d7d0-f4ca-40d5-bb69-76d5a5de1186}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Bittrex\Header Files">
+      <UniqueIdentifier>{f08586f2-8f24-4e32-9f10-3bf66018b6ca}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Cryptopia\Header Files">
+      <UniqueIdentifier>{b895bba0-556d-4795-bb78-7aabcb5cb61c}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Livecoin\Source Files">
+      <UniqueIdentifier>{c8c12307-ddf2-4af4-8b6e-7d2a60dde53d}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Bittrex\Source Files">
+      <UniqueIdentifier>{1e56968a-f9f5-4273-a2ce-d27856637be6}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Cryptopia\Source Files">
+      <UniqueIdentifier>{fe4751f0-282d-4e8d-bc76-5ba298f20b33}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="C-CEX">
+      <UniqueIdentifier>{8f3bb9b8-0af6-4293-9bd2-ee29096314b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="General">
+      <UniqueIdentifier>{0715ba6c-dc93-44f4-9864-827aa659e704}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="General\Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
+    <Filter Include="General\Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="App.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CcexExchange.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NovaexchangeExchange.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Request.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Security.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Version.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="YobitnetExchange.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GdaxExchange.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Util.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FloodControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexTradingSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexRequest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BittrexUtil.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CryptopiaMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CryptopiaTradingSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CryptopiaUtil.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CryptopiaRequest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CryptopiaTradingSystemAndMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NonceStorage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LivecoinTradingSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LivecoinMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LivecoinUtil.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LivecoinRequest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PollingSettings.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PollingTask.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>General\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CexioMarketDataSource.cpp">
+      <Filter>CEX.IO\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CexioRequest.cpp">
+      <Filter>CEX.IO\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CexioTradingSystem.cpp">
+      <Filter>CEX.IO\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp">
+      <Filter>CEX.IO\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CexioUtil.cpp">
+      <Filter>CEX.IO\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="YobitnetExchange.cpp">
+      <Filter>Yobit.net</Filter>
+    </ClCompile>
+    <ClCompile Include="NovaexchangeExchange.cpp">
+      <Filter>Novaexchange</Filter>
+    </ClCompile>
+    <ClCompile Include="GdaxExchange.cpp">
+      <Filter>GDAX</Filter>
+    </ClCompile>
+    <ClCompile Include="BittrexUtil.cpp">
+      <Filter>Bittrex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BittrexMarketDataSource.cpp">
+      <Filter>Bittrex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BittrexRequest.cpp">
+      <Filter>Bittrex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BittrexTradingSystem.cpp">
+      <Filter>Bittrex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BittrexTradingSystemAndMarketDataSource.cpp">
+      <Filter>Bittrex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptopiaMarketDataSource.cpp">
+      <Filter>Cryptopia\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptopiaRequest.cpp">
+      <Filter>Cryptopia\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptopiaTradingSystem.cpp">
+      <Filter>Cryptopia\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptopiaTradingSystemAndMarketDataSource.cpp">
+      <Filter>Cryptopia\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptopiaUtil.cpp">
+      <Filter>Cryptopia\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LivecoinMarketDataSource.cpp">
+      <Filter>Livecoin\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LivecoinRequest.cpp">
+      <Filter>Livecoin\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LivecoinTradingSystem.cpp">
+      <Filter>Livecoin\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp">
+      <Filter>Livecoin\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LivecoinUtil.cpp">
+      <Filter>Livecoin\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CcexExchange.cpp">
+      <Filter>C-CEX</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Prec.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CexioMarketDataSource.hpp">
+      <Filter>CEX.IO\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="App.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CexioRequest.hpp">
+      <Filter>CEX.IO\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fwd.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CexioTradingSystem.hpp">
+      <Filter>CEX.IO\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Request.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Security.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FloodControl.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CexioUtil.hpp">
+      <Filter>CEX.IO\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BittrexMarketDataSource.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BittrexTradingSystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Settings.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Bittrex\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BittrexRequest.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Bittrex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BittrexTradingSystem.hpp">
+      <Filter>Bittrex\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BittrexUtil.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Bittrex\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CryptopiaMarketDataSource.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CryptopiaTradingSystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CryptopiaUtil.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Cryptopia\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CryptopiaRequest.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Cryptopia\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NonceStorage.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CryptopiaTradingSystem.hpp">
+      <Filter>Cryptopia\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LivecoinTradingSystem.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="CryptopiaUtil.hpp">
+      <Filter>Cryptopia\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LivecoinMarketDataSource.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LivecoinUtil.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Livecoin\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LivecoinRequest.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Livecoin\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LivecoinTradingSystem.hpp">
+      <Filter>Livecoin\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LivecoinUtil.hpp">
+      <Filter>Livecoin\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="App.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FloodControl.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NonceStorage.hpp">
+      <Filter>General\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PollingSettings.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>General\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PollingTask.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Prec.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Request.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Security.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.hpp">
+      <Filter>General\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Rest.def" />
+    <None Include="Rest.def">
+      <Filter>General</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Rest.rc" />
+    <ResourceCompile Include="Rest.rc">
+      <Filter>General</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

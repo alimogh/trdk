@@ -95,6 +95,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   PositionController m_controller;
 
   sig::signal<void(const Advice &)> m_adviceSignal;
+  sig::signal<void(const std::string *)> m_blockSignal;
 
   Double m_minPriceDifferenceRatioToAdvice;
   boost::optional<TradingSettings> m_tradingSettings;
@@ -760,6 +761,11 @@ sig::scoped_connection aa::Strategy::SubscribeToAdvice(
   return result;
 }
 
+sig::scoped_connection aa::Strategy::SubscribeToBlocking(
+    const boost::function<void(const std::string *)> &slot) {
+  return m_pimpl->m_blockSignal.connect(slot);
+}
+
 void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
   GetTradingLog().Write(
       "{'setup': {'advising': {'ratio': '%1$.8f->%2$.8f'}}}",
@@ -863,6 +869,17 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
 void aa::Strategy::OnPostionsCloseRequest() {
   m_pimpl->m_controller.OnPostionsCloseRequest();
 }
+
+bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {
+  try {
+    m_pimpl->m_blockSignal(reason);
+  } catch (...) {
+    AssertFailNoException();
+    return true;
+  }
+  return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::Strategy> CreateStrategy(

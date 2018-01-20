@@ -42,6 +42,17 @@ MainWindow::MainWindow(Engine &engine,
   }
   m_ui.area->addSubWindow(&m_orderList);
 
+  Verify(connect(&m_engine, &Lib::Engine::Message,
+                 [this](const QString &message, bool isCritical) {
+                   if (isCritical) {
+                     QMessageBox::critical(this, tr("Engine critical warning"),
+                                           message, QMessageBox::Ok);
+                   } else {
+                     QMessageBox::information(this, tr("Engine information"),
+                                              message, QMessageBox::Ok);
+                   }
+                 }));
+
   Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
                  &MainWindow::CreateNewArbitrageStrategy));
 
