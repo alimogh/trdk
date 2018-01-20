@@ -38,7 +38,7 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
  signals:
   void StateChanged(bool isStarted);
-  void Message(const QString &, bool isWarning);
+  void Message(const QString &, bool isCritical);
   void LogRecord(const QString &);
 
  public:

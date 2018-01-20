@@ -43,7 +43,7 @@ class EngineWindow : public QMainWindow {
   void Stop(bool stop);
 
   void OnStateChanged(bool isStarted);
-  void OnMessage(const QString &, bool isWarning);
+  void OnMessage(const QString &, bool isCritical);
   void OnLogRecord(const QString &);
 
  private:

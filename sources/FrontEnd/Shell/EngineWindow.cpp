@@ -174,9 +174,10 @@ void EngineWindow::OnStateChanged(bool isStarted) {
   m_ui.securityList->setEnabled(isStarted);
 }
 
-void EngineWindow::OnMessage(const QString &message, bool isWarning) {
-  if (isWarning) {
-    QMessageBox::warning(this, tr("Engine warning"), message, QMessageBox::Ok);
+void EngineWindow::OnMessage(const QString &message, bool isCritical) {
+  if (isCritical) {
+    QMessageBox::critical(this, tr("Engine critical warning"), message,
+                          QMessageBox::Ok);
   } else {
     QMessageBox::information(this, tr("Engine information"), message,
                              QMessageBox::Ok);

@@ -35,6 +35,8 @@ class Strategy : public trdk::Strategy {
  public:
   boost::signals2::scoped_connection SubscribeToAdvice(
       const boost::function<void(const Advice &)> &);
+  boost::signals2::scoped_connection SubscribeToBlocking(
+      const boost::function<void(const std::string *reason)> &);
 
  public:
   void SetupAdvising(const Lib::Double &minPriceDifferenceRatio) const;
@@ -53,6 +55,7 @@ class Strategy : public trdk::Strategy {
       trdk::Security &, const Lib::TimeMeasurement::Milestones &) override;
   virtual void OnPositionUpdate(trdk::Position &) override;
   void OnPostionsCloseRequest() override;
+  virtual bool OnBlocked(const std::string * = nullptr) noexcept override;
 
  private:
   class Implementation;

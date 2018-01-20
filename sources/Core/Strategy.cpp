@@ -394,6 +394,9 @@ class Strategy::Implementation : private boost::noncopyable {
       AssertFailNoException();
       raise(SIGTERM);  // is it can mutex or notify_all, also see "include"
     }
+    if (!m_strategy.OnBlocked(reason)) {
+      return;
+    }
     try {
       reason
           ? m_strategy.GetContext().RaiseStateUpdate(
@@ -945,5 +948,7 @@ void Strategy::ClosePositions() {
   GetLog().Info("Closing positions by request...");
   OnPostionsCloseRequest();
 }
+
+bool Strategy::OnBlocked(const std::string *) noexcept { return true; }
 
 ////////////////////////////////////////////////////////////////////////////////
