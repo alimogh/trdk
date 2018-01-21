@@ -53,6 +53,11 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
              const boost::posix_time::ptime &openTime,
              const boost::posix_time::ptime &updateTime);
 
+  void BalanceUpdate(const trdk::TradingSystem *,
+                     const std::string &symbol,
+                     const trdk::Volume &available,
+                     const trdk::Volume &locked);
+
  public:
   //! Tries to flush buffered Drop Copy data.
   /** The method doesn't guarantee to store all records, it just initiates
@@ -155,6 +160,11 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   virtual void CopyLevel1(const trdk::Security &,
                           const boost::posix_time::ptime &,
                           const std::vector<trdk::Level1TickValue> &) override;
+
+  virtual void CopyBalance(const trdk::TradingSystem &,
+                           const std::string &symbol,
+                           const trdk::Volume &available,
+                           const trdk::Volume &locked) override;
 
  private:
   void SignalPriceUpdate(const Security &);

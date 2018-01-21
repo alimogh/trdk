@@ -64,7 +64,9 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
 StrategyWindow::~StrategyWindow() {
   try {
-    DeactivateAutoTrading();
+    if (!m_strategy->IsBlocked()) {
+      DeactivateAutoTrading();
+    }
   } catch (...) {
     AssertFailNoException();
     terminate();
@@ -136,6 +138,9 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(this, &StrategyWindow::Advice, this,
                  &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
 
+  Verify(connect(this, &StrategyWindow::Blocked, this,
+                 &StrategyWindow::OnBlocked, Qt::QueuedConnection));
+
   for (auto &target : m_targetWidgets) {
     auto *const tradingSystem = target.first;
     Verify(connect(&target.second->actions, &TargetActionsWidget::Order,
@@ -199,6 +204,17 @@ void StrategyWindow::InitBySelectedSymbol() {
   m_strategy->Invoke<aa::Strategy>([this](aa::Strategy &advisor) {
     m_adviceConnection = advisor.SubscribeToAdvice(
         [this](const aa::Advice &advice) { emit Advice(advice); });
+  });
+
+  m_strategy->Invoke<aa::Strategy>([this](aa::Strategy &advisor) {
+    m_blockConnection =
+        advisor.SubscribeToBlocking([this](const std::string *reasonSource) {
+          QString reason;
+          if (reasonSource) {
+            reason = QString::fromStdString(*reasonSource);
+          }
+          emit Blocked(reason);
+        });
   });
 
   uint8_t biggestGetPricePrecision = 1;
@@ -363,6 +379,36 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
   }
 }
 
+void StrategyWindow::OnBlocked(const QString &reason) {
+  m_ui.autoTrade->setChecked(false);
+
+  m_ui.symbol->setEnabled(false);
+  m_ui.highlightLevel->setEnabled(false);
+  m_ui.autoTrade->setEnabled(false);
+  m_ui.autoTradeLevel->setEnabled(false);
+  m_ui.maxQty->setEnabled(false);
+
+  QString message = tr("Strategy instance is blocked!");
+  message += "\n\n";
+  if (!reason.isEmpty()) {
+    message += tr("The reason for the blocking is: \"") + reason + "\".";
+  } else {
+    message +=
+        tr("The reason for the blocking is unknown. It may be internal error, "
+           "unterminated behavior or something else.");
+  }
+  message += "\n\n";
+  message +=
+      tr("To prevent uncontrolled funds losing, the trading engine had to "
+         "block trading by this strategy instance. To resume trading please "
+         "carefully check all trading and application settings and restart the "
+         "application.");
+  message += "\n\n";
+  message += tr("Please notify the software vendor about this incident.");
+  QMessageBox::critical(this, tr("Strategy is blocked"), message,
+                        QMessageBox::Ok);
+}
+
 void StrategyWindow::SendOrder(const OrderSide &side,
                                TradingSystem *tradingSystem) {
   if (!tradingSystem) {
@@ -407,6 +453,9 @@ void StrategyWindow::SendOrder(const OrderSide &side,
 }
 
 bool StrategyWindow::IsAutoTradingActivated() const {
+  if (m_strategy->IsBlocked()) {
+    return false;
+  }
   bool result = false;
   m_strategy->Invoke<aa::Strategy>(
       [this, &result](const aa::Strategy &advisor) {

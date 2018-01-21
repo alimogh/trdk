@@ -157,15 +157,10 @@ class TRDK_CORE_API Position
   //! Open operation started, but error occurred at opening or closing.
   bool IsError() const noexcept;
 
-  //! Open operation started, but was rejected by trading system at opening or
-  //! closing.
+  //! Last order was rejected.
   /** @sa ResetRejected
     */
-  bool IsRejected() const noexcept;
-  //! Resets reject-status.
-  /** @sa IsRejected
-    */
-  void ResetRejected();
+  bool IsRejected() const;
 
   bool HasActiveOrders() const noexcept;
   bool HasOpenedOrders() const noexcept;
@@ -336,10 +331,10 @@ class TRDK_CORE_API Position
       const boost::shared_ptr<const trdk::OrderTransactionContext>
           &openingContext = nullptr);
 
-  //! Adds trade to the last order.
+  //! Adds virtual trade to the last order.
   /** Raises an exception if order conditions will be violated by this trade.
     */
-  void AddTrade(const trdk::Qty &, const trdk::Price &);
+  void AddVirtualTrade(const trdk::Qty &, const trdk::Price &);
 
  public:
   const trdk::OrderTransactionContext &OpenAtMarketPrice();

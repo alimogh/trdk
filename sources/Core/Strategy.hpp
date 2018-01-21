@@ -253,6 +253,14 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   virtual void OnPostionsCloseRequest() = 0;
 
+  //! Will be called after position blocking.
+  /** @param[in] Blocking reason, if existent (maybe nullptr).
+    * @return True, if position blocking event should be broadcasted through the
+    *         engine subscription, false otherwise (position still be blocked
+    *         in any case).
+    */
+  virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

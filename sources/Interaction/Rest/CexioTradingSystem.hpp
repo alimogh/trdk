@@ -128,6 +128,9 @@ class CexioTradingSystem : public TradingSystem {
   void UpdateOrders();
   void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
+  boost::posix_time::ptime ParseTimeStamp(
+      const std::string &key, const boost::property_tree::ptree &) const;
+
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;

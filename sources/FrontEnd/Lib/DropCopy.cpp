@@ -31,6 +31,7 @@ lib::DropCopy::DropCopy(QObject *parent)
   qRegisterMetaType<trdk::Lib::Currency>("trdk::Lib::Currency");
   qRegisterMetaType<trdk::OrderStatus>("trdk::OrderStatus");
   qRegisterMetaType<trdk::OrderSide>("trdk::OrderSide");
+  qRegisterMetaType<trdk::Volume>("trdk::Volume");
   qRegisterMetaType<trdk::Qty>("trdk::Qty");
   qRegisterMetaType<trdk::Price>("trdk::Price");
   qRegisterMetaType<boost::optional<trdk::Price>>(
@@ -165,4 +166,11 @@ void lib::DropCopy::SignalPriceUpdate(const Security &security) {
   }
   emit PriceUpdate(&security);
   m_lastSignalTime = std::move(now);
+}
+
+void lib::DropCopy::CopyBalance(const TradingSystem &tradingSystem,
+                                const std::string &symbol,
+                                const Volume &available,
+                                const Volume &locked) {
+  emit BalanceUpdate(&tradingSystem, symbol, available, locked);
 }

@@ -195,7 +195,7 @@ bool PollingTask::RunTask(Task &task, bool isAccelerated) const {
             reEx.what());                                               // 3
       }
     } else if (!(task.numberOfErrors % 10)) {
-      m_log.Error(
+      m_log.Debug(
           "Polling task \"%1%\" still gets an error at each iteration. Last "
           "error: \"%2%\". Number of errors: %3%.",
           task.name,             // 1

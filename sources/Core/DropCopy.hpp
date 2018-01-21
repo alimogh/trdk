@@ -131,5 +131,10 @@ class TRDK_CORE_API DropCopy {
   virtual void CopyLevel1(const trdk::Security &,
                           const boost::posix_time::ptime &,
                           const std::vector<trdk::Level1TickValue> &) = 0;
+
+  virtual void CopyBalance(const trdk::TradingSystem &,
+                           const std::string &symbol,
+                           const trdk::Volume &available,
+                           const trdk::Volume &locked) = 0;
 };
 }

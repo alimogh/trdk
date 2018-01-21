@@ -311,6 +311,15 @@ std::string NormilizeSymbol(std::string source) {
   return source;
 }
 
+std::string NormilizeCurrency(std::string source) {
+  if (source == "bcc") {
+    source = "BCH";
+  } else {
+    boost::to_upper(source);
+  }
+  return source;
+}
+
 std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
     const Settings &settings, ModuleEventsLog &log) {
   if (!settings.tradingAuth) {
@@ -318,6 +327,25 @@ std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
   }
   return boost::make_unique<NonceStorage>(settings.tradingAuth->nonces, log);
 }
+
+class YobitBalancesContainer : public BalancesContainer {
+ public:
+ public:
+  explicit YobitBalancesContainer(const TradingSystem &tradingSystem,
+                                  ModuleEventsLog &log,
+                                  ModuleTradingLog &tradingLog)
+      : BalancesContainer(tradingSystem, log, tradingLog) {}
+  virtual ~YobitBalancesContainer() override = default;
+
+ public:
+  virtual void ReduceAvailableToTradeByOrder(const trdk::Security &,
+                                             const Qty &,
+                                             const Price &,
+                                             const OrderSide &,
+                                             const TradingSystem &) override {
+    // Yobit.net sends new rests at order transaction reply.
+  }
+};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -343,7 +371,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                           : Auth{m_settings.generalAuth, m_generalNonces}),
         m_marketDataSession(CreateSession("yobit.net", m_settings, false)),
         m_tradingSession(CreateSession("yobit.net", m_settings, true)),
-        m_balances(GetTsLog(), GetTsTradingLog()),
+        m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
@@ -662,20 +690,6 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
       SetBalances(response);
       {
-#if 0
-        const auto &fundsInclOrdersNode =
-            response.get_child_optional("funds_incl_orders");
-        if (fundsInclOrdersNode) {
-          for (const auto &node : *fundsInclOrdersNode) {
-            GetTsLog().Info(
-                "\"%1%\" balance with orders: %2$.8f.",
-                boost::to_upper_copy(node.first),                  // 1
-                boost::lexical_cast<Volume>(node.second.data()));  // 2
-          }
-        }
-#endif
-      }
-      {
         const auto &rightsNode = response.get_child_optional("rights");
         if (rightsNode) {
           for (const auto &node : *rightsNode) {
@@ -727,14 +741,33 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   void SetBalances(const ptr::ptree &response) {
-    const auto &fundsNode = response.get_child_optional("funds");
-    if (!fundsNode) {
-      return;
+    boost::unordered_map<std::string, Volume> balances;
+    {
+      const auto &fundsInclOrdersNode =
+          response.get_child_optional("funds_incl_orders");
+      if (fundsInclOrdersNode) {
+        for (const auto &node : *fundsInclOrdersNode) {
+          balances[NormilizeCurrency(node.first)] =
+              boost::lexical_cast<Volume>(node.second.data());
+        }
+      }
     }
-    for (const auto &node : *fundsNode) {
-      m_balances.SetAvailableToTrade(
-          node.first == "bcc" ? "BCH" : boost::to_upper_copy(node.first),
-          boost::lexical_cast<Volume>(node.second.data()));
+    {
+      const auto &fundsNode = response.get_child_optional("funds");
+      if (fundsNode) {
+        for (const auto &node : *fundsNode) {
+          const auto &balance = balances.find(NormilizeCurrency(node.first));
+          Assert(balance != balances.cend());
+          if (balance == balances.cend()) {
+            continue;
+          }
+          auto available = boost::lexical_cast<Volume>(node.second.data());
+          AssertLt(available, balance->second);
+          auto locked = balance->second - available;
+          m_balances.Set(balance->first, std::move(available),
+                         std::move(locked));
+        }
+      }
     }
   }
 
@@ -825,7 +858,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           const auto &order = node.second;
           try {
             const auto &product = order.get<std::string>("pair");
-            const auto &time = ParseTimeStamp(order, "timestamp_created");
+            const auto &time =
+                ParseTimeStamp(order, "timestamp_created") - pt::seconds(1);
             const auto &it = tradesRequest.emplace(product, time);
             if (!it.second && it.first->second > time) {
               it.first->second = time;
@@ -944,7 +978,16 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case ORDER_STATUS_FILLED_FULLY:
         return;
     }
-    OnOrderStatusUpdate(time, id, status);
+    try {
+      OnOrderStatusUpdate(time, id, status);
+    } catch (const OrderIsUnknown &) {
+      if (status != ORDER_STATUS_CANCELED) {
+        throw;
+      }
+      // This is workaround for Yobit bug. See also
+      // https://yobit.net/en/support/e7f3cdb97d7dd1fa200f8b0dc8593f573fa07f9bdf309d43711c72381d39121d
+      // and https://trello.com/c/luVuGQH2 for details.
+    }
   }
 
   boost::optional<OrderId> FindNewOrderId(
@@ -1083,7 +1126,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
-  BalancesContainer m_balances;
+  YobitBalancesContainer m_balances;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
