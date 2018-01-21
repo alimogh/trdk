@@ -388,7 +388,8 @@ void StrategyWindow::OnBlocked(const QString &reason) {
   m_ui.autoTradeLevel->setEnabled(false);
   m_ui.maxQty->setEnabled(false);
 
-  QString message;
+  QString message = tr("Strategy instance is blocked!");
+  message += "\n\n";
   if (!reason.isEmpty()) {
     message += tr("The reason for the blocking is: \"") + reason + "\".";
   } else {
@@ -404,7 +405,7 @@ void StrategyWindow::OnBlocked(const QString &reason) {
          "application.");
   message += "\n\n";
   message += tr("Please notify the software vendor about this incident.");
-  QMessageBox::critical(this, tr("Strategy instance is blocked"), message,
+  QMessageBox::critical(this, tr("Strategy is blocked"), message,
                         QMessageBox::Ok);
 }
 
