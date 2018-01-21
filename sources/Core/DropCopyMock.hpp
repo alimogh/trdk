@@ -133,6 +133,12 @@ class DropCopy : public trdk::DropCopy {
                void(const trdk::Security &,
                     const boost::posix_time::ptime &,
                     const std::vector<trdk::Level1TickValue> &));
+
+  MOCK_METHOD4(CopyBalance,
+               void(const trdk::TradingSystem &,
+                    const std::string &symbol,
+                    const trdk::Volume &,
+                    const trdk::Volume &));
 };
 }
 }

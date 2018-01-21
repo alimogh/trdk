@@ -15,16 +15,23 @@
 namespace trdk {
 class TRDK_CORE_API BalancesContainer : public trdk::Balances {
  public:
-  explicit BalancesContainer(trdk::ModuleEventsLog &, trdk::ModuleTradingLog &);
+  explicit BalancesContainer(const trdk::TradingSystem &,
+                             trdk::ModuleEventsLog &,
+                             trdk::ModuleTradingLog &);
   virtual ~BalancesContainer() override;
 
  public:
-  virtual boost::optional<trdk::Volume> FindAvailableToTrade(
+  virtual trdk::Volume FindAvailableToTrade(
       const std::string &symbol) const override;
 
  public:
+  virtual void ForEach(
+      const boost::function<void(
+          const std::string &, const trdk::Volume &, const trdk::Volume &)> &)
+      const override;
+
   void Set(const std::string &symbol,
-           trdk::Volume &&availableToTrade,
+           trdk::Volume &&available,
            trdk::Volume &&locked);
   void SetAvailableToTrade(const std::string &symbol, trdk::Volume &&);
   void SetLocked(const std::string &symbol, trdk::Volume &&);

@@ -91,7 +91,7 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_balances(GetLog(), GetTradingLog()),
+      m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("bittrex.com", m_settings, true)),
       m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
@@ -260,13 +260,16 @@ void BittrexTradingSystem::OnTransactionSent(
 void BittrexTradingSystem::UpdateBalances() {
   const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
-    const auto &balance = node.second;
-    auto symbol = balance.get<std::string>("Currency");
+    const auto &balanceNode = node.second;
+    auto symbol = balanceNode.get<std::string>("Currency");
     if (symbol == "BCC") {
-      symbol = "BCH";
+      symbol.back() = 'H';
     }
-    m_balances.SetAvailableToTrade(std::move(symbol),
-                                   balance.get<Volume>("Available"));
+    const auto &balance = balanceNode.get<Volume>("Balance");
+    auto available = balanceNode.get<Volume>("Available");
+    AssertLe(available, balance);
+    auto locked = balance - available;
+    m_balances.Set(symbol, std::move(available), std::move(locked));
   }
 }
 

@@ -263,7 +263,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_endpoint(GetEndpoint()),
         m_marketDataSession(CreateSession(m_endpoint.host, m_settings, false)),
         m_tradingSession(CreateSession(m_endpoint.host, m_settings, true)),
-        m_balances(GetTsLog(), GetTsTradingLog()),
+        m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
@@ -546,17 +546,21 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
     for (const auto &node : response) {
       std::string symbol;
-      Volume vol;
+      Volume balance;
+      Volume available;
       try {
         const auto &data = node.second;
         symbol = data.get<std::string>("Currency");
-        vol = data.get<Volume>("Available");
+        balance = data.get<Volume>("Balance");
+        available = data.get<Volume>("Available");
       } catch (const std::exception &ex) {
         boost::format error("Failed to read balance list: \"%1%\"");
         error % ex.what();
         throw CommunicationError(error.str().c_str());
       }
-      m_balances.SetAvailableToTrade(std::move(symbol), std::move(vol));
+      AssertLe(available, balance);
+      auto locked = balance - available;
+      m_balances.Set(symbol, std::move(available), std::move(locked));
     }
   }
 

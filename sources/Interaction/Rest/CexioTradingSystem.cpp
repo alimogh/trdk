@@ -110,7 +110,7 @@ CexioTradingSystem::CexioTradingSystem(const App &,
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_nonces(m_settings.nonces, GetLog()),
-      m_balances(GetLog(), GetTradingLog()),
+      m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, m_nonces, GetContext(), GetLog()),
       m_tradingSession(CreateCexioSession(m_settings, true)),
       m_pollingSession(CreateCexioSession(m_settings, false)),

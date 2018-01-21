@@ -165,7 +165,7 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_nonces(m_settings.nonces, GetLog()),
-      m_balances(GetLog(), GetTradingLog()),
+      m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),
       m_tradingSession(CreateSession("www.cryptopia.co.nz", m_settings, true)),
@@ -412,8 +412,9 @@ void CryptopiaTradingSystem::UpdateBalances() {
   const auto response = m_balancesRequest.Send(*m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
-    m_balances.SetAvailableToTrade(balance.get<std::string>("Symbol"),
-                                   balance.get<Volume>("Available"));
+    m_balances.Set(balance.get<std::string>("Symbol"),
+                   balance.get<Volume>("Available"),
+                   balance.get<Volume>("HeldForTrades"));
   }
 }
 

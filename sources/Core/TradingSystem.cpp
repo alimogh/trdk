@@ -567,9 +567,8 @@ Balances &TradingSystem::GetBalancesStorage() {
     virtual ~DummyBalances() override = default;
 
    public:
-    virtual boost::optional<Volume> FindAvailableToTrade(
-        const std::string &) const override {
-      return boost::none;
+    virtual Volume FindAvailableToTrade(const std::string &) const override {
+      return 0;
     }
     virtual void ReduceAvailableToTradeByOrder(const Security &,
                                                const Qty &,
@@ -577,7 +576,10 @@ Balances &TradingSystem::GetBalancesStorage() {
                                                const OrderSide &,
                                                const TradingSystem &) override {
     }
-
+    virtual void ForEach(
+        const boost::function<void(
+            const std::string &, const trdk::Volume &, const trdk::Volume &)> &)
+        const override {}
   } result;
   return result;
 }

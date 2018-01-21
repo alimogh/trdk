@@ -192,7 +192,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
                                              const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_balances(GetLog(), GetTradingLog()),
+      m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
       m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),

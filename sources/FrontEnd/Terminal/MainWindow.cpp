@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
+#include "Lib/BalanceListModel.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
@@ -26,6 +27,7 @@ MainWindow::MainWindow(Engine &engine,
     : QMainWindow(parent),
       m_engine(engine),
       m_orderList(m_engine, this),
+      m_balanceList(m_engine, this),
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
@@ -39,8 +41,21 @@ MainWindow::MainWindow(Engine &engine,
                      m_orderList.sortByColumn(0, Qt::DescendingOrder);
                      m_orderList.scrollTo(index);
                    }));
+    auto *layout = new QVBoxLayout;
+    layout->addWidget(&m_orderList);
+    m_ui.orders->setLayout(layout);
   }
-  m_ui.area->addSubWindow(&m_orderList);
+
+  {
+    auto *model = new SortFilterProxyModel(&m_balanceList);
+    model->setSourceModel(new BalanceListModel(m_engine, &m_balanceList));
+    m_balanceList.setModel(model);
+    Verify(connect(model, &QAbstractItemModel::rowsInserted,
+                   [this](const QModelIndex &index, int, int) {
+                     m_balanceList.expand(index);
+                   }));
+    m_ui.balances->setWidget(&m_balanceList);
+  }
 
   Verify(connect(&m_engine, &Lib::Engine::Message,
                  [this](const QString &message, bool isCritical) {
@@ -56,15 +71,8 @@ MainWindow::MainWindow(Engine &engine,
   Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
                  &MainWindow::CreateNewArbitrageStrategy));
 
-  Verify(connect(m_ui.showOrderList, &QAction::triggered, [this]() {
-    m_orderList.activateWindow();
-    m_orderList.showNormal();
-  }));
-
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
-  Verify(connect(m_ui.pinToTop, &QAction::triggered,
-                 [this](bool pin) { PinToTop(*this, pin); }));
 
   try {
     m_moduleDlls.emplace_back(

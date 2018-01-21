@@ -59,6 +59,10 @@ QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
   return QString::number(source, 'f', precision);
 }
 
+QString lib::ConvertVolumeToText(const Price &source, uint8_t precision) {
+  return ConvertPriceToText(source, precision);
+}
+
 QString lib::ConvertPriceToText(const boost::optional<Price> &source,
                                 uint8_t precision) {
   return ConvertPriceToText(

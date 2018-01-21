@@ -459,28 +459,15 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             buy.GetSymbol().GetQuoteSymbol());
 
     const auto calcByBuyBalance = [&]() -> Qty {
-      Assert(buyBalance);
-      const auto result = *buyBalance / buyPrice;
+      const auto result = buyBalance / buyPrice;
       return result - buyTradingSystem.CalcCommission(result, buy);
     };
+    const auto &resultByBuyBalance = calcByBuyBalance();
 
-    if (sellBalance && buyBalance) {
-      const auto &resultByBayBalance = calcByBuyBalance();
-      if (*sellBalance <= resultByBayBalance) {
-        return {*sellBalance, &sell};
-      } else {
-        return {resultByBayBalance, &buy};
-      }
-    } else if (sellBalance) {
-      Assert(!buyBalance);
-      return {*sellBalance, &sell};
-    } else if (buyBalance) {
-      Assert(!sellBalance);
-      return {calcByBuyBalance(), &buy};
+    if (sellBalance <= resultByBuyBalance) {
+      return {sellBalance, &sell};
     } else {
-      Assert(!sellBalance);
-      Assert(!buyBalance);
-      return {std::numeric_limits<Qty>::max(), nullptr};
+      return {resultByBuyBalance, &buy};
     }
   }
 

@@ -37,7 +37,6 @@ bool SortFilterProxyModel::lessThan(const QModelIndex &left,
     case QVariant::Double:
       return Double(leftData.toDouble()) < Double(rightData.toDouble());
     default:
-      AssertEq(QVariant::Int, leftData.type());
       return false;
   }
 }

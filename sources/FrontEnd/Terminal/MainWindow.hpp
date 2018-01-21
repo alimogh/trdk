@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Lib/BalanceListView.hpp"
 #include "Lib/OrderListView.hpp"
 #include "ui_MainWindow.h"
 
@@ -35,6 +36,7 @@ class MainWindow : public QMainWindow {
   Lib::Engine &m_engine;
   Ui::MainWindow m_ui;
   Lib::OrderListView m_orderList;
+  Lib::BalanceListView m_balanceList;
   std::vector<std::unique_ptr<trdk::Lib::Dll>> &m_moduleDlls;
 };
 }
