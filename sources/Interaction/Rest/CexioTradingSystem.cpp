@@ -184,7 +184,9 @@ void CexioTradingSystem::UpdateOrder(const OrderId &id,
   OrderStatus status;
   {
     const auto &field = order.get<std::string>("status");
-    if (field == "d") {
+    if (field == "a") {
+      status = ORDER_STATUS_OPENED;
+    } else if (field == "d") {
       // done(fully executed)
       status = ORDER_STATUS_FILLED_FULLY;
     } else if (field == "c" || field == "cd") {
@@ -198,20 +200,15 @@ void CexioTradingSystem::UpdateOrder(const OrderId &id,
     }
   }
 
-  const auto &remains = order.get<Qty>("remains");
-  AssertLe(remains, order.get<Qty>("amount"));
+  const auto &time = ParseTimeStamp("lastTxTime", order);
 
-  pt::ptime time;
-  {
-    auto field = order.get<std::string>("lastTxTime");
-    AssertEq('Z', field.back());
-    field.pop_back();
-    time = pt::ptime(gr::from_string(field.substr(0, 10)),
-                     pt::duration_from_string(field.substr(11)));
-    time -= m_serverTimeDiff;
+  if (status != ORDER_STATUS_OPENED) {
+    const auto &remains = order.get<Qty>("remains");
+    AssertLe(remains, order.get<Qty>("amount"));
+    OnOrderStatusUpdate(time, id, status, remains);
+  } else {
+    OnOrderStatusUpdate(time, id, status);
   }
-
-  OnOrderStatusUpdate(time, id, status, remains);
 }
 
 boost::optional<CexioTradingSystem::OrderCheckError>
@@ -263,7 +260,7 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
   boost::format requestParams("type=%1%&amount=%2$.8f&price=%3$.8f");
   requestParams % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 1
       % qty                                                  // 2
-      % (*price * (side == ORDER_SIDE_BUY ? 0.9 : 1.1));     // 3
+      % *price;                                              // 3
 
   OrderRequest request("place_order/" + product->second.id, requestParams.str(),
                        m_settings, m_nonces, GetContext(), GetLog(),
@@ -288,6 +285,22 @@ void CexioTradingSystem::OnTransactionSent(
     const OrderTransactionContext &transaction) {
   Base::OnTransactionSent(transaction);
   m_pollingTask.AccelerateNextPolling();
+}
+
+pt::ptime CexioTradingSystem::ParseTimeStamp(const std::string &key,
+                                             const ptr::ptree &source) const {
+  pt::ptime result;
+  auto field = source.get<std::string>(key);
+  if (!field.empty() && field.back() == 'Z') {
+    field.pop_back();
+    result = pt::ptime(gr::from_string(field.substr(0, 10)),
+                       pt::duration_from_string(field.substr(11)));
+  } else {
+    result = ConvertToPTimeFromMicroseconds(
+        boost::lexical_cast<int64_t>(field) * 1000);
+  }
+  result -= m_serverTimeDiff;
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
