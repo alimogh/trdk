@@ -89,7 +89,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
   const boost::optional<Double> m_lowestSpreadRatio;
-  const bool m_isCrossMode;
   const boost::optional<pt::time_duration> m_stopLossDelay;
 
   PositionController m_controller;
@@ -107,8 +106,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
         m_controller(OperationReport(m_self)),
-        m_minPriceDifferenceRatioToAdvice(0),
-        m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)) {
+        m_minPriceDifferenceRatioToAdvice(0) {
     if (conf.ReadBoolKey("stop_loss", false)) {
       const_cast<boost::optional<pt::time_duration> &>(m_stopLossDelay) =
           pt::seconds(conf.ReadTypedKey("stop_loss_delay_sec", 0));
@@ -123,9 +121,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       } else {
         m_self.GetLog().Info("Lowest spread: not set.");
       }
-    }
-    if (m_isCrossMode) {
-      m_self.GetLog().Info("Cross-arbitrage mode enabled.");
     }
     if (m_stopLossDelay) {
       m_self.GetLog().Info("Stop-loss uses delay %1%.", *m_stopLossDelay);
@@ -156,9 +151,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
                    const Milestones &delayMeasurement) {
-    if (m_isCrossMode) {
-      CheckCrossSignals(allSecurities, delayMeasurement);
-    }
+    CheckCrossSignals(allSecurities, delayMeasurement);
 
     std::vector<PriceItem> bids;
     std::vector<PriceItem> asks;
@@ -199,11 +192,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto &bestBid = bids.front();
       const auto &bestAsk = asks.front();
       boost::tie(spread, spreadRatio) = CaclSpreadAndRatio(bestBid, bestAsk);
-      if (!m_isCrossMode) {
-        SignalSession session;
-        Signal(*bestBid.second->security, *bestAsk.second->security,
-               spreadRatio, session, delayMeasurement);
-      }
     } else {
       spread = spreadRatio = std::numeric_limits<double>::quiet_NaN();
     }
@@ -232,8 +220,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   void CheckCrossSignals(std::vector<AdviceSecuritySignal> &allSecurities,
                          const Milestones &delayMeasurement) {
-    Assert(m_isCrossMode);
-
     struct SignalData {
       Double spreadRatio;
       Security *sellTarget;
