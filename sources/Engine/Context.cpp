@@ -44,7 +44,7 @@ size_t GetModulesCount(
   }
   return result;
 }
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -275,7 +275,6 @@ void Engine::Context::Start(
             if (startErrorCallback && startErrorCallback(message.str() + ".")) {
               GetLog().Warn("Ignoring error: \"%1%\"...", message);
               Verify(errors.emplace(i).second);
-              break;
             } else {
               throw ConnectError(message.str().c_str());
             }
@@ -284,10 +283,6 @@ void Engine::Context::Start(
                            ex);
             throw Exception("Failed to make trading system connection");
           }
-        }
-
-        if (errors.count(i)) {
-          break;
         }
       }
 
@@ -486,7 +481,7 @@ void UpdateModules(const Lib::Ini &conf, Modules &modules) {
     }
   }
 }
-}
+}  // namespace
 
 void Engine::Context::Update(const Lib::Ini &conf) {
   GetLog().Info("Updating setting...");
