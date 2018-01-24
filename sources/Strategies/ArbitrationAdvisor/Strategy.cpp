@@ -148,6 +148,15 @@ class aa::Strategy::Implementation : private boost::noncopyable {
            delayMeasurement);
   }
 
+  void CheckAutoTradingSignal(Security &security,
+                              const Milestones &delayMeasurement) {
+    if (m_adviceSignal.num_slots() == 0 && !m_tradingSettings) {
+      return;
+    }
+    AssertLt(0, m_adviceSignal.num_slots());
+    CheckSignal(security, m_symbols[security.GetSymbol()], delayMeasurement);
+  }
+
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
                    const Milestones &delayMeasurement) {
@@ -823,17 +832,15 @@ void aa::Strategy::DeactivateAutoTrading() {
 
 void aa::Strategy::OnLevel1Update(Security &security,
                                   const Milestones &delayMeasurement) {
-  if (m_pimpl->m_adviceSignal.num_slots() == 0 && !m_pimpl->m_tradingSettings) {
-    return;
-  }
-  AssertLt(0, m_pimpl->m_adviceSignal.num_slots());
-  m_pimpl->CheckSignal(security, m_pimpl->m_symbols[security.GetSymbol()],
-                       delayMeasurement);
+  m_pimpl->CheckAutoTradingSignal(security, delayMeasurement);
 }
 
 void aa::Strategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
+    if (position.IsCompleted()) {
+      m_pimpl->CheckAutoTradingSignal(position.GetSecurity(), Milestones());
+    }
   } catch (const CommunicationError &ex) {
     GetLog().Debug("Communication error at position update handling: \"%1%\".",
                    ex.what());
