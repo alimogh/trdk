@@ -381,8 +381,10 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
 }
 
 void StrategyWindow::OnBlocked(const QString &reason) {
-  m_ui.autoTrade->setChecked(false);
-
+  {
+    const QSignalBlocker blocker(*m_ui.autoTrade);
+    m_ui.autoTrade->setChecked(false);
+  }
   m_ui.symbol->setEnabled(false);
   m_ui.highlightLevel->setEnabled(false);
   m_ui.autoTrade->setEnabled(false);
