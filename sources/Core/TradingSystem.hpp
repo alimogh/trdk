@@ -42,19 +42,6 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   typedef trdk::ModuleEventsLog Log;
   typedef trdk::ModuleTradingLog TradingLog;
 
-  struct Position {
-    std::string account;
-    trdk::Lib::Symbol symbol;
-    trdk::Qty qty;
-
-    Position() : qty(0) {}
-
-    explicit Position(const std::string &account,
-                      const trdk::Lib::Symbol &symbol,
-                      const trdk::Qty &qty)
-        : account(account), symbol(symbol), qty(qty) {}
-  };
-
   struct OrderCheckError {
     boost::optional<trdk::Qty> qty;
     boost::optional<trdk::Price> price;
@@ -75,6 +62,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     trdk::TimeInForce tif;
     trdk::Lib::TimeMeasurement::Milestones delayMeasurement;
     trdk::RiskControlScope &riskControlScope;
+    boost::shared_ptr<const trdk::Position> position;
     trdk::RiskControlOperationId riskControlOperationId;
     boost::posix_time::ptime updateTime;
     std::unique_ptr<trdk::TimerScope> timerScope;
@@ -147,6 +135,20 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     */
   boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
       trdk::Security &,
+      const trdk::Lib::Currency &,
+      const trdk::Qty &,
+      const boost::optional<trdk::Price> &,
+      const trdk::OrderParams &,
+      std::unique_ptr<trdk::OrderStatusHandler> &&,
+      trdk::RiskControlScope &,
+      const trdk::OrderSide &,
+      const trdk::TimeInForce &,
+      const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
+  //! Sends position order synchronously.
+  /** @return Order transaction pointer in any case.
+    */
+  boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
+      boost::shared_ptr<trdk::Position> &&,
       const trdk::Lib::Currency &,
       const trdk::Qty &,
       const boost::optional<trdk::Price> &,

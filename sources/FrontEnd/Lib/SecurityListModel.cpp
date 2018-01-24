@@ -10,8 +10,6 @@
 
 #include "Prec.hpp"
 #include "SecurityListModel.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
 #include "Util.hpp"
@@ -21,8 +19,9 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 
 namespace pt = boost::posix_time;
+namespace lib = trdk::FrontEnd::Lib;
 
-SecurityListModel::SecurityListModel(Engine &engine, QWidget *parent)
+SecurityListModel::SecurityListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
   Verify(connect(&m_engine, &Engine::StateChanged, this,
                  &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
@@ -47,8 +46,10 @@ void SecurityListModel::Load() {
   std::vector<Security *> securities;
   for (size_t i = 0; i < m_engine.GetContext().GetNumberOfMarketDataSources();
        ++i) {
-    m_engine.GetContext().GetMarketDataSource(i).ForEachSecurity([&securities](
-        Security &security) { securities.emplace_back(&security); });
+    m_engine.GetContext().GetMarketDataSource(i).ForEachSecurity(
+        [&securities](Security &security) {
+          securities.emplace_back(&security);
+        });
   }
   {
     beginResetModel();

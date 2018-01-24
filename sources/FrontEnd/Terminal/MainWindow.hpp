@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Lib/BalanceListView.hpp"
+#include "Lib/OperationListView.hpp"
 #include "Lib/OrderListView.hpp"
 #include "ui_MainWindow.h"
 
@@ -35,10 +36,11 @@ class MainWindow : public QMainWindow {
  private:
   Lib::Engine &m_engine;
   Ui::MainWindow m_ui;
-  Lib::OrderListView m_orderList;
+  Lib::OperationListView m_operationListView;
+  Lib::OrderListView m_standaloneOrderList;
   Lib::BalanceListView m_balanceList;
   std::vector<std::unique_ptr<trdk::Lib::Dll>> &m_moduleDlls;
 };
-}
-}
-}
+}  // namespace Terminal
+}  // namespace FrontEnd
+}  // namespace trdk

@@ -31,40 +31,22 @@ class PositionController::Implementation : private boost::noncopyable {
  public:
   PositionController &m_self;
 
-  Strategy &m_strategy;
-
-  std::unique_ptr<PositionReport> m_report;
+  const boost::shared_ptr<PositionReport> m_report;
 
  public:
-  explicit Implementation(PositionController &self, Strategy &strategy)
-      : m_self(self), m_strategy(strategy) {}
-
-  PositionReport &GetReport() {
-    if (!m_report) {
-      m_report = m_self.OpenReport();
-      Assert(m_report);
-    }
-    return *m_report;
-  }
+  explicit Implementation(PositionController &self,
+                          const boost::shared_ptr<PositionReport> &report)
+      : m_self(self), m_report(report) {}
 };
 
-PositionController::PositionController(Strategy &strategy)
-    : m_pimpl(std::make_unique<Implementation>(*this, strategy)) {}
+PositionController::PositionController()
+    : m_pimpl(std::make_unique<Implementation>(*this, nullptr)) {}
+
+PositionController::PositionController(
+    const boost::shared_ptr<PositionReport> &report)
+    : m_pimpl(std::make_unique<Implementation>(*this, report)) {}
 
 PositionController::~PositionController() = default;
-
-Strategy &PositionController::GetStrategy() { return m_pimpl->m_strategy; }
-const Strategy &PositionController::GetStrategy() const {
-  return const_cast<PositionController *>(this)->GetStrategy();
-}
-
-std::unique_ptr<PositionReport> PositionController::OpenReport() const {
-  return std::make_unique<PositionReport>(GetStrategy());
-}
-
-PositionReport &PositionController::GetReport() const {
-  return m_pimpl->GetReport();
-}
 
 trdk::Position &PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
@@ -164,12 +146,13 @@ void PositionController::ClosePosition(Position &position) {
   }
 }
 
-void PositionController::CloseAllPositions(const CloseReason &reason) {
-  for (auto &position : GetStrategy().GetPositions()) {
+void PositionController::CloseAllPositions(Strategy &strategy,
+                                           const CloseReason &reason) {
+  for (auto &position : strategy.GetPositions()) {
     try {
       ClosePosition(position, reason);
     } catch (const std::exception &ex) {
-      GetStrategy().GetLog().Error(
+      strategy.GetLog().Error(
           "Failed to close position %1%/%2% with reason %3%: \"%4%\".",
           position.GetOperation()->GetId(),  // 1
           position.GetSubOperationId(),      // 2
@@ -185,9 +168,10 @@ Position *PositionController::OnSignal(
     Security &security,
     const Milestones &delayMeasurement) {
   Position *position = nullptr;
-  if (!GetStrategy().GetPositions().IsEmpty()) {
-    AssertEq(1, GetStrategy().GetPositions().GetSize());
-    position = &*GetStrategy().GetPositions().GetBegin();
+  auto &strategy = newOperationContext->GetStrategy();
+  if (!strategy.GetPositions().IsEmpty()) {
+    AssertEq(1, strategy.GetPositions().GetSize());
+    position = &*strategy.GetPositions().GetBegin();
     if (position->IsCompleted()) {
       position = nullptr;
     } else if (!position->GetOperation()->HasCloseSignal(*position)) {
@@ -232,7 +216,9 @@ void PositionController::OnPositionUpdate(Position &position) {
 
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
-      m_pimpl->GetReport().Append(position);
+      if (m_pimpl->m_report) {
+        m_pimpl->m_report->Append(position);
+      }
       auto &operation = *position.GetOperation();
       if (operation.HasCloseSignal(position)) {
         const auto &newOperation = operation.StartInvertedPosition(position);
@@ -294,12 +280,12 @@ void PositionController::OnPositionUpdate(Position &position) {
   }
 }
 
-void PositionController::OnPostionsCloseRequest() {
-  CloseAllPositions(CLOSE_REASON_REQUEST);
+void PositionController::OnPostionsCloseRequest(Strategy &strategy) {
+  CloseAllPositions(strategy, CLOSE_REASON_REQUEST);
 }
 
 void PositionController::OnBrokerPositionUpdate(
-    const boost::shared_ptr<Operation> &operationContext,
+    const boost::shared_ptr<Operation> &operation,
     int64_t subOperationId,
     Security &security,
     bool isLong,
@@ -307,7 +293,7 @@ void PositionController::OnBrokerPositionUpdate(
     const Volume &volume,
     bool isInitial) {
   if (!isInitial || qty == 0) {
-    GetStrategy().GetLog().Debug(
+    operation->GetStrategy().GetLog().Debug(
         "Skipped broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
         "(%4%).",
         qty,                               // 1
@@ -321,7 +307,7 @@ void PositionController::OnBrokerPositionUpdate(
   const auto &now = security.GetContext().GetCurrentTime();
 
   const Price price = volume / qty;
-  GetStrategy().GetLog().Info(
+  operation->GetStrategy().GetLog().Info(
       "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
       "%3$.8f) for \"%4%\"...",
       qty,                         // 1
@@ -329,26 +315,26 @@ void PositionController::OnBrokerPositionUpdate(
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  RestorePosition(operationContext, subOperationId, security, isLong, now, now,
-                  qty, price, price, nullptr, Milestones());
+  RestorePosition(operation, subOperationId, security, isLong, now, now, qty,
+                  price, price, nullptr, Milestones());
 }
 
 template <typename PositionType>
 boost::shared_ptr<Position> PositionController::CreatePositionObject(
-    const boost::shared_ptr<Operation> &operationContext,
+    const boost::shared_ptr<Operation> &operation,
     int64_t subOperationId,
     Security &security,
     const Qty &qty,
     const Price &price,
     const TimeMeasurement::Milestones &delayMeasurement) {
   const auto &result = boost::make_shared<PositionType>(
-      operationContext, subOperationId, GetStrategy(), security,
-      security.GetSymbol().GetCurrency(), qty, price, delayMeasurement);
+      operation, subOperationId, security, security.GetSymbol().GetCurrency(),
+      qty, price, delayMeasurement);
   return result;
 }
 
 boost::shared_ptr<Position> PositionController::CreatePosition(
-    const boost::shared_ptr<Operation> &operationContext,
+    const boost::shared_ptr<Operation> &operation,
     int64_t subOperationId,
     bool isLong,
     Security &security,
@@ -356,11 +342,11 @@ boost::shared_ptr<Position> PositionController::CreatePosition(
     const Price &price,
     const Milestones &delayMeasurement) {
   const auto &result = isLong ? CreatePositionObject<LongPosition>(
-                                    operationContext, subOperationId, security,
-                                    qty, price, delayMeasurement)
+                                    operation, subOperationId, security, qty,
+                                    price, delayMeasurement)
                               : CreatePositionObject<ShortPosition>(
-                                    operationContext, subOperationId, security,
-                                    qty, price, delayMeasurement);
+                                    operation, subOperationId, security, qty,
+                                    price, delayMeasurement);
   result->GetOperation()->Setup(*result, *this);
   return result;
 }

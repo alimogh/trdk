@@ -17,12 +17,9 @@ namespace TradingLib {
 
 class PositionController : private boost::noncopyable {
  public:
-  explicit PositionController(trdk::Strategy &);
+  PositionController();
+  explicit PositionController(const boost::shared_ptr<PositionReport> &);
   virtual ~PositionController();
-
- public:
-  trdk::Strategy &GetStrategy();
-  const trdk::Strategy &GetStrategy() const;
 
  public:
   //! Handles trading signal event.
@@ -41,7 +38,7 @@ class PositionController : private boost::noncopyable {
       trdk::Security &security,
       const trdk::Lib::TimeMeasurement::Milestones &);
   virtual void OnPositionUpdate(trdk::Position &);
-  virtual void OnPostionsCloseRequest();
+  virtual void OnPostionsCloseRequest(trdk::Strategy &);
   void OnBrokerPositionUpdate(const boost::shared_ptr<trdk::Operation> &,
                               int64_t subOperationId,
                               trdk::Security &,
@@ -89,7 +86,7 @@ class PositionController : private boost::noncopyable {
     */
   virtual bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
   //! Cancels all active open-orders, if exists, and closes all positions.
-  void CloseAllPositions(const trdk::CloseReason &);
+  void CloseAllPositions(trdk::Strategy &, const trdk::CloseReason &);
 
  protected:
   boost::shared_ptr<Position> CreatePosition(
@@ -105,9 +102,6 @@ class PositionController : private boost::noncopyable {
   virtual void ClosePosition(trdk::Position &);
 
   virtual void HoldPosition(trdk::Position &);
-
-  virtual std::unique_ptr<PositionReport> OpenReport() const;
-  PositionReport &GetReport() const;
 
  private:
   template <typename PositionType>

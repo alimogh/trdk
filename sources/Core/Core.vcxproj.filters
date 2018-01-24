@@ -241,6 +241,12 @@
     <ClInclude Include="Trade.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Pnl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PnlContainer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Core.rc">

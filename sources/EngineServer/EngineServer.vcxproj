@@ -328,10 +328,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DropCopyRecord.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Pack.hpp" />
     <ClInclude Include="Prec.hpp" />
   </ItemGroup>
   <ItemGroup>

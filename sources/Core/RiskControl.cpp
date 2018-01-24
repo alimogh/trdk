@@ -124,24 +124,6 @@ void EmptyRiskControlScope::ConfirmSellOrder(const RiskControlOperationId &,
 void EmptyRiskControlScope::CheckTotalPnl(const Volume &) const {}
 void EmptyRiskControlScope::CheckTotalWinRatio(
     size_t /*totalWinRatio*/, size_t /*operationsCount*/) const {}
-void EmptyRiskControlScope::ResetStatistics() {
-  AssertFail(
-      "Statistics not available for this Risk Control Context implementation");
-  throw LogicError(
-      "Statistics not available for this Risk Control Context implementation");
-}
-FinancialResult EmptyRiskControlScope::GetStatistics() const {
-  AssertFail(
-      "Statistics not available for this Risk Control Context implementation");
-  throw LogicError(
-      "Statistics not available for this Risk Control Context implementation");
-}
-FinancialResult EmptyRiskControlScope::TakeStatistics() {
-  AssertFail(
-      "Statistics not available for this Risk Control Context implementation");
-  throw LogicError(
-      "Statistics not available for this Risk Control Context implementation");
-}
 void EmptyRiskControlScope::OnSettingsUpdate(const IniSectionRef &) {}
 
 class StandardRiskControlScope : public RiskControlScope {
@@ -680,33 +662,6 @@ class GlobalRiskControlScope : public StandardRiskControlScope {
         conf.ReadTypedKey<uint16_t>("win_ratio.min"));
   }
 
-  virtual void ResetStatistics() {
-    AssertFail(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-    throw LogicError(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-  }
-
-  virtual FinancialResult GetStatistics() const {
-    AssertFail(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-    throw LogicError(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-  }
-
-  virtual FinancialResult TakeStatistics() {
-    AssertFail(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-    throw LogicError(
-        "Statistics not available for this Risk Control Context "
-        "implementation");
-  }
-
  private:
   virtual void SetPositions(
       const Volume &newBaseCurrencyValue,
@@ -733,8 +688,7 @@ class LocalRiskControlScope : public StandardRiskControlScope {
              tradingMode,
              ReadSettings(conf),
              conf.ReadTypedKey<size_t>(
-                 "risk_control.flood_control.orders.max_number")),
-        m_stat(numberOfCurrencies, 0) {}
+                 "risk_control.flood_control.orders.max_number")) {}
 
   virtual ~LocalRiskControlScope() {}
 
@@ -755,72 +709,15 @@ class LocalRiskControlScope : public StandardRiskControlScope {
                     conf.ReadTypedKey<uint16_t>("risk_control.win_ratio.min"));
   }
 
-  virtual void ResetStatistics() {
-    const Lock lock(m_statMutex);
-    std::fill(m_stat.begin(), m_stat.end(), 0);
-  }
-
-  virtual FinancialResult GetStatistics() const {
-    FinancialResult result;
-    result.reserve(m_stat.size());
-    {
-      const Lock lock(m_statMutex);
-      for (size_t i = 0; i < m_stat.size(); ++i) {
-        AssertGt(numberOfCurrencies, i);
-        const auto &position = m_stat[i];
-        if (position == 0) {
-          continue;
-        }
-        result.emplace_back(Currency(i), position);
-      }
-    }
-    return result;
-  }
-
-  virtual FinancialResult TakeStatistics() {
-    FinancialResult result;
-    result.reserve(m_stat.size());
-    {
-      const Lock lock(m_statMutex);
-      for (size_t i = 0; i < m_stat.size(); ++i) {
-        AssertGt(numberOfCurrencies, i);
-        auto &position = m_stat[i];
-        if (position == 0) {
-          continue;
-        }
-        result.emplace_back(Currency(i), position);
-        position = 0;
-      }
-    }
-    return result;
-  }
-
  private:
   virtual void SetPositions(
       const Volume &newbaseCurrencyValue,
       RiskControlSymbolContext::Position &baseCurrencyState,
       const Volume &newQuoteCurrencyValue,
       RiskControlSymbolContext::Position &quoteCurrencyState) const {
-    const Lock lock(m_statMutex);
-    {
-      const auto &diff = newbaseCurrencyValue - baseCurrencyState.position;
-      m_stat[baseCurrencyState.currency] += diff;
-      baseCurrencyState.position = newbaseCurrencyValue;
-    }
-    {
-      const auto &diff = newQuoteCurrencyValue - quoteCurrencyState.position;
-      m_stat[quoteCurrencyState.currency] += diff;
-      quoteCurrencyState.position = newQuoteCurrencyValue;
-    }
+    baseCurrencyState.position = newbaseCurrencyValue;
+    quoteCurrencyState.position = newQuoteCurrencyValue;
   }
-
- private:
-  static_assert(
-      numberOfCurrencies == 13,
-      "List changes. Each new currency adds new item into static array here!"
-      "See Ctor.");
-  mutable std::vector<Double> m_stat;
-  mutable Mutex m_statMutex;
 };
 
 //////////////////////////////////////////////////////////////////////////

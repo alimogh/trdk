@@ -25,6 +25,7 @@ class Operation : public trdk::Operation {
 
  public:
   explicit Operation(
+      trdk::Strategy &,
       Security &sellTarget,
       Security &buyTarget,
       const Qty &maxQty,

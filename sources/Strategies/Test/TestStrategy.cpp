@@ -10,7 +10,9 @@
 
 #include "Prec.hpp"
 #include "TradingLib/OrderPolicy.hpp"
+#include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "TradingLib/PositionReport.hpp"
 #include "Core/Operation.hpp"
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
@@ -31,8 +33,6 @@ namespace trdk {
 namespace Strategies {
 namespace Test {
 
-class TestStrategy;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 class Operation : public trdk::Operation {
@@ -40,8 +40,8 @@ class Operation : public trdk::Operation {
   typedef trdk::Operation Base;
 
  public:
-  explicit Operation(TestStrategy &strategy)
-      : m_strategy(strategy),
+  explicit Operation(Strategy &strategy)
+      : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
         m_orderPolicy(boost::make_shared<LimitGtcOrderPolicy>()) {}
   virtual ~Operation() override = default;
 
@@ -64,14 +64,13 @@ class Operation : public trdk::Operation {
   }
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &) override {
-    return boost::make_shared<Operation>(m_strategy);
+    return boost::make_shared<Operation>(GetStrategy());
   }
 
  private:
   boost::optional<bool> GetIsRising() const;
 
  private:
-  TestStrategy &m_strategy;
   const boost::shared_ptr<OrderPolicy> m_orderPolicy;
 };
 
@@ -93,7 +92,7 @@ class TestStrategy : public Strategy {
               name,
               instanceName,
               conf),
-        m_positionController(*this),
+        m_positionController(boost::make_shared<PositionReport>(*this)),
         m_direction(0),
         m_prevPrice(0) {}
 
@@ -134,7 +133,7 @@ class TestStrategy : public Strategy {
   }
 
   virtual void OnPostionsCloseRequest() override {
-    m_positionController.OnPostionsCloseRequest();
+    m_positionController.OnPostionsCloseRequest(*this);
   }
 
  private:
@@ -167,7 +166,8 @@ class TestStrategy : public Strategy {
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::optional<bool> Operation::GetIsRising() const {
-  return m_strategy.GetIsRising();
+  return boost::polymorphic_downcast<const TestStrategy *>(&GetStrategy())
+      ->GetIsRising();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

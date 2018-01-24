@@ -45,6 +45,15 @@ class DropCopy : public trdk::DropCopy {
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
                     const trdk::TimeInForce &));
+  MOCK_METHOD8(CopySubmittedOrder,
+               void(const trdk::OrderId &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Position &,
+                    const trdk::Lib::Currency &,
+                    const trdk::OrderSide &,
+                    const trdk::Qty &,
+                    const boost::optional<trdk::Price> &,
+                    const trdk::TimeInForce &));
   MOCK_METHOD5(CopyOrderStatus,
                void(const trdk::OrderId &,
                     const trdk::TradingSystem &,
@@ -71,25 +80,21 @@ class DropCopy : public trdk::DropCopy {
                     const trdk::Price &,
                     const trdk::Qty &));
 
-  MOCK_METHOD3(ReportOperationStart,
-               void(const trdk::Strategy &,
-                    const boost::uuids::uuid &id,
-                    const boost::posix_time::ptime &));
-  void ReportOperationEnd(const boost::uuids::uuid &id,
-                          const boost::posix_time::ptime &time,
-                          const trdk::CloseReason &reason,
-                          const trdk::OperationResult &result,
-                          const trdk::Volume &pnl,
-                          trdk::FinancialResult &&financialResult) {
-    ReportOperationEnd(id, time, reason, result, pnl, financialResult);
-  }
-  MOCK_METHOD6(ReportOperationEnd,
-               void(const boost::uuids::uuid &id,
+  MOCK_METHOD3(CopyOperationStart,
+               void(const boost::uuids::uuid &,
                     const boost::posix_time::ptime &,
-                    const trdk::CloseReason &,
-                    const trdk::OperationResult &,
-                    const trdk::Volume &pnl,
-                    const trdk::FinancialResult &));
+                    const trdk::Strategy &));
+  MOCK_METHOD2(CopyOperationUpdate,
+               void(const boost::uuids::uuid &, const trdk::Pnl::Data &));
+  virtual void CopyOperationEnd(const boost::uuids::uuid &id,
+                                const boost::posix_time::ptime &time,
+                                std::unique_ptr<Pnl> &&pnl) override {
+    CopyOperationEnd(id, time, *pnl);
+  }
+  MOCK_METHOD3(CopyOperationEnd,
+               void(const boost::uuids::uuid &,
+                    const boost::posix_time::ptime &,
+                    const trdk::Pnl &));
 
   MOCK_METHOD2(CopyBook, void(const trdk::Security &, const trdk::PriceBook &));
 
@@ -140,6 +145,6 @@ class DropCopy : public trdk::DropCopy {
                     const trdk::Volume &,
                     const trdk::Volume &));
 };
-}
-}
-}
+}  // namespace Mocks
+}  // namespace Tests
+}  // namespace trdk

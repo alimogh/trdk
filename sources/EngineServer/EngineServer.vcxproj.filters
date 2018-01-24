@@ -8,8 +8,6 @@
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Exception.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="DropCopyRecord.hpp" />
-    <ClInclude Include="Pack.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineServer.rc" />

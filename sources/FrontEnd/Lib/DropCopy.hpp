@@ -27,15 +27,26 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
  signals:
   void PriceUpdate(const Security *);
 
-  void OrderSubmitted(const trdk::OrderId &,
-                      const boost::posix_time::ptime &,
-                      const trdk::Security *,
-                      const trdk::Lib::Currency &,
-                      const trdk::TradingSystem *,
-                      const trdk::OrderSide &,
-                      const trdk::Qty &,
-                      const boost::optional<trdk::Price> &,
-                      const trdk::TimeInForce &);
+  void FreeOrderSubmitted(const trdk::OrderId &,
+                          const boost::posix_time::ptime &,
+                          const trdk::Security *,
+                          const trdk::Lib::Currency &,
+                          const trdk::TradingSystem *,
+                          const trdk::OrderSide &,
+                          const trdk::Qty &,
+                          const boost::optional<trdk::Price> &,
+                          const trdk::TimeInForce &);
+  void OperationOrderSubmitted(const boost::uuids::uuid &operationId,
+                               int64_t subOperationId,
+                               const trdk::OrderId &,
+                               const boost::posix_time::ptime &,
+                               const trdk::Security *,
+                               const trdk::Lib::Currency &,
+                               const trdk::TradingSystem *,
+                               const trdk::OrderSide &,
+                               const trdk::Qty &,
+                               const boost::optional<trdk::Price> &,
+                               const trdk::TimeInForce &);
   void OrderUpdated(const trdk::OrderId &,
                     const trdk::TradingSystem *,
                     const boost::posix_time::ptime &,
@@ -58,12 +69,20 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                      const trdk::Volume &available,
                      const trdk::Volume &locked);
 
+  void OperationStart(const boost::uuids::uuid &,
+                      const boost::posix_time::ptime &,
+                      const trdk::Strategy *);
+  void OperationUpdate(const boost::uuids::uuid &, const trdk::Pnl::Data &);
+  void OperationEnd(const boost::uuids::uuid &,
+                    const boost::posix_time::ptime &,
+                    const boost::shared_ptr<const trdk::Pnl> &);
+
  public:
   //! Tries to flush buffered Drop Copy data.
   /** The method doesn't guarantee to store all records, it just initiates
-    * new send attempt. Synchronous. Can be interrupted from another
-    * thread.
-    */
+   * new send attempt. Synchronous. Can be interrupted from another
+   * thread.
+   */
   virtual void Flush() override;
 
   //! Dumps all buffer data and removes it from buffer.
@@ -84,6 +103,14 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                                   const trdk::Security &,
                                   const trdk::Lib::Currency &,
                                   const trdk::TradingSystem &,
+                                  const trdk::OrderSide &,
+                                  const trdk::Qty &,
+                                  const boost::optional<trdk::Price> &,
+                                  const trdk::TimeInForce &) override;
+  virtual void CopySubmittedOrder(const trdk::OrderId &,
+                                  const boost::posix_time::ptime &,
+                                  const trdk::Position &,
+                                  const trdk::Lib::Currency &,
                                   const trdk::OrderSide &,
                                   const trdk::Qty &,
                                   const boost::optional<trdk::Price> &,
@@ -113,15 +140,14 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
       const trdk::Price &,
       const trdk::Qty &) override;
 
-  virtual void ReportOperationStart(const trdk::Strategy &,
-                                    const boost::uuids::uuid &id,
-                                    const boost::posix_time::ptime &) override;
-  virtual void ReportOperationEnd(const boost::uuids::uuid &id,
+  virtual void CopyOperationStart(const boost::uuids::uuid &,
                                   const boost::posix_time::ptime &,
-                                  const trdk::CloseReason &,
-                                  const trdk::OperationResult &,
-                                  const trdk::Volume &pnl,
-                                  trdk::FinancialResult &&) override;
+                                  const trdk::Strategy &) override;
+  virtual void CopyOperationUpdate(const boost::uuids::uuid &,
+                                   const trdk::Pnl::Data &) override;
+  virtual void CopyOperationEnd(const boost::uuids::uuid &,
+                                const boost::posix_time::ptime &,
+                                std::unique_ptr<trdk::Pnl> &&) override;
 
   virtual void CopyBook(const trdk::Security &,
                         const trdk::PriceBook &) override;
@@ -173,6 +199,6 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   const boost::posix_time::time_duration m_pollingInterval;
   boost::posix_time::ptime m_lastSignalTime;
 };
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

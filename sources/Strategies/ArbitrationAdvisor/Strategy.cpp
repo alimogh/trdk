@@ -81,7 +81,7 @@ class SignalSession : private boost::noncopyable {
   boost::unordered_map<const Security *, Qty> m_usedQtyToBuy;
   boost::unordered_map<const Security *, Qty> m_usedQtyToSell;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -106,7 +106,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_controller(m_self),
+        m_controller(OperationReport(m_self)),
         m_minPriceDifferenceRatioToAdvice(0),
         m_isCrossMode(conf.ReadBoolKey("cross_arbitrage_mode", false)) {
     if (conf.ReadBoolKey("stop_loss", false)) {
@@ -262,10 +262,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     }
 
-    std::sort(signalSet.begin(), signalSet.end(), [](const SignalData &lhs,
-                                                     const SignalData &rhs) {
-      return std::fabsl(lhs.spreadRatio) > std::fabsl(rhs.spreadRatio);
-    });
+    std::sort(signalSet.begin(), signalSet.end(),
+              [](const SignalData &lhs, const SignalData &rhs) {
+                return std::fabsl(lhs.spreadRatio) >
+                       std::fabsl(rhs.spreadRatio);
+              });
 
     SignalSession session;
     for (const auto &signal : signalSet) {
@@ -422,8 +423,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     ReportSignal("trade", "start", sellTarget, buyTarget, spreadRatio,
                  bestSpreadRatio);
 
-    const auto operation = boost::make_shared<Operation>(
-        sellTarget, buyTarget, qty, sellPrice, buyPrice, m_stopLossDelay);
+    const auto operation =
+        boost::make_shared<Operation>(m_self, sellTarget, buyTarget, qty,
+                                      sellPrice, buyPrice, m_stopLossDelay);
 
     qtys.Return(qty);
 
@@ -613,8 +615,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          const Double &spreadRatio,
                          const Double &bestSpreadRatio,
                          const Milestones &delayMeasurement) {
-    const boost::function<Position &(int64_t, Security &)> &openPosition = [&](
-        int64_t leg, Security &target) -> Position & {
+    const boost::function<Position &(int64_t, Security &)> &openPosition =
+        [&](int64_t leg, Security &target) -> Position & {
       return m_controller.OpenPosition(operation, leg, target,
                                        delayMeasurement);
     };
@@ -712,11 +714,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         pt::not_a_date_time,       // openStartTime;
         pt::not_a_date_time,       // openEndTime
         operation.GetOpenOrderPolicy().GetOpenOrderPrice(
-            !openedPosition.IsLong()),  // openStartPrice
-        0,                              // openedQty
-        CLOSE_REASON_OPEN_FAILED,       // closeReason
-        operation.GetTradingSystem(m_self,
-                                   failedPositionTarget),  // signalTarget
+            !openedPosition.IsLong()),                     // openStartPrice
+        0,                                                 // openedQty
+        CLOSE_REASON_OPEN_FAILED,                          // closeReason
+        operation.GetTradingSystem(failedPositionTarget),  // signalTarget
         0,                                                 // openedVolume
         0));                                               // closedVolume
     try {
@@ -854,7 +855,7 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
 }
 
 void aa::Strategy::OnPostionsCloseRequest() {
-  m_pimpl->m_controller.OnPostionsCloseRequest();
+  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
 }
 
 bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/21 16:12:09
+ *   Created: 2018/01/24 23:17:47
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -17,14 +17,14 @@ namespace trdk {
 namespace FrontEnd {
 namespace Lib {
 
-class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
+class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
   Q_OBJECT
 
  public:
   typedef QTreeView Base;
 
  public:
-  explicit BalanceListView(Engine &, QWidget *parent);
+  explicit OperationListView(Engine &, QWidget *parent);
 
  public slots:
   void ShowContextMenu(const QPoint &);

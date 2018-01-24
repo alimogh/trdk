@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "OrderListModel.hpp"
-#include "Core/Security.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
 #include "Util.hpp"
@@ -21,6 +20,7 @@ using namespace trdk::FrontEnd::Lib;
 
 namespace pt = boost::posix_time;
 namespace mi = boost::multi_index;
+namespace lib = trdk::FrontEnd::Lib;
 
 namespace {
 
@@ -73,17 +73,18 @@ typedef boost::multi_index_container<
                 mi::member<Order, QString, &Order::id>>>,
         mi::random_access<mi::tag<BySequence>>>>
     OrderList;
-}
+}  // namespace
 
 class OrderListModel::Implementation : private boost::noncopyable {
  public:
   OrderList m_orders;
 };
 
-OrderListModel::OrderListModel(Engine &engine, QWidget *parent)
+OrderListModel::OrderListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderSubmitted, this,
-                 &OrderListModel::OnOrderSubmitted, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitted,
+                 this, &OrderListModel::OnOrderSubmitted,
+                 Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
                  &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::Order, this,
@@ -135,8 +136,8 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
   auto &orders = m_pimpl->m_orders.get<ById>();
   auto it = orders.find(
       boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
-  Assert(it != orders.cend());
   if (it == orders.cend()) {
+    // Maybe this is operation order.
     return;
   }
   it->status = ConvertToPch(status);
@@ -149,8 +150,9 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
     const auto &sequence = m_pimpl->m_orders.get<BySequence>();
     const auto index = static_cast<int>(std::distance(
         sequence.cbegin(), m_pimpl->m_orders.project<BySequence>(it)));
-    dataChanged(createIndex(index, 0), createIndex(index, numberOfColumns - 1),
-                {Qt::DisplayRole});
+    emit dataChanged(createIndex(index, 0),
+                     createIndex(index, numberOfColumns - 1),
+                     {Qt::DisplayRole});
   }
 }
 
@@ -183,7 +185,7 @@ void OrderListModel::OnOrder(const OrderId &id,
                       ConvertQtyToText(qty, precision),
                       ConvertPriceToText(price, precision),
                       QString(ConvertToPch(tif)).toUpper(),
-                      ConvertToPch(status),
+                      ConvertToUiString(status),
                       ConvertPriceToText(qty - remainingQty, precision),
                       ConvertPriceToText(remainingQty, precision),
                       ConvertToQDateTime(updateTime)};
@@ -205,8 +207,9 @@ void OrderListModel::OnOrder(const OrderId &id,
       const auto &sequence = m_pimpl->m_orders.get<BySequence>();
       const auto index = static_cast<int>(std::distance(
           sequence.cbegin(), m_pimpl->m_orders.project<BySequence>(it)));
-      dataChanged(createIndex(index, 0),
-                  createIndex(index, numberOfColumns - 1), {Qt::DisplayRole});
+      emit dataChanged(createIndex(index, 0),
+                       createIndex(index, numberOfColumns - 1),
+                       {Qt::DisplayRole});
     }
   }
 }
@@ -219,8 +222,8 @@ QVariant OrderListModel::headerData(int section,
   }
   static_assert(numberOfColumns == 12, "List changed.");
   switch (section) {
-    default:
-      return Base::headerData(section, orientation, role);
+    case COLUMN_TIME:
+      return tr("Time");
     case COLUMN_SYMBOL:
       return tr("Symbol");
     case COLUMN_EXCHANGE:
@@ -232,20 +235,19 @@ QVariant OrderListModel::headerData(int section,
     case COLUMN_PRICE:
       return tr("Price");
     case COLUMN_QTY:
-      return tr("Quantity");
+      return tr("Order qty.");
     case COLUMN_FILLED_QTY:
-      return tr("Filled Qty.");
+      return tr("Filled qty.");
     case COLUMN_REMAINING_QTY:
-      return tr("Remaining Qty.");
-    case COLUMN_TIME:
-      return tr("Time");
+      return tr("Remaining qty.");
     case COLUMN_LAST_TIME:
       return tr("Update");
     case COLUMN_TIF:
-      return tr("Time in Force");
+      return tr("Time In Force");
     case COLUMN_ID:
       return tr("ID");
   }
+  return "";
 }
 
 QVariant OrderListModel::data(const QModelIndex &index, int role) const {

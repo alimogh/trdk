@@ -9,10 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Engine/Engine.hpp"
-#include "Core/RiskControl.hpp"
-#include "DropCopy.hpp"
 #include "Engine.hpp"
+#include "DropCopy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

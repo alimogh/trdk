@@ -12,6 +12,7 @@
 #include "MainWindow.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/Engine.hpp"
+#include "Lib/OperationListModel.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
 #include "Lib/Util.hpp"
@@ -26,24 +27,37 @@ MainWindow::MainWindow(Engine &engine,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
-      m_orderList(m_engine, this),
+      m_operationListView(m_engine, this),
+      m_standaloneOrderList(m_engine, this),
       m_balanceList(m_engine, this),
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
   {
-    auto *model = new SortFilterProxyModel(&m_orderList);
-    model->setSourceModel(new OrderListModel(m_engine, &m_orderList));
-    m_orderList.setModel(model);
+    auto *model = new OperationListModel(m_engine, &m_operationListView);
+    m_operationListView.setModel(model);
     Verify(connect(model, &QAbstractItemModel::rowsInserted,
                    [this](const QModelIndex &index, int, int) {
-                     m_orderList.sortByColumn(0, Qt::DescendingOrder);
-                     m_orderList.scrollTo(index);
+                     m_operationListView.expand(index);
                    }));
     auto *layout = new QVBoxLayout;
-    layout->addWidget(&m_orderList);
-    m_ui.orders->setLayout(layout);
+    layout->addWidget(&m_operationListView);
+    m_ui.operations->setLayout(layout);
+  }
+
+  {
+    auto *model = new SortFilterProxyModel(&m_standaloneOrderList);
+    model->setSourceModel(new OrderListModel(m_engine, &m_standaloneOrderList));
+    m_standaloneOrderList.setModel(model);
+    Verify(connect(model, &QAbstractItemModel::rowsInserted,
+                   [this](const QModelIndex &index, int, int) {
+                     m_standaloneOrderList.sortByColumn(0, Qt::DescendingOrder);
+                     m_standaloneOrderList.scrollTo(index);
+                   }));
+    auto *layout = new QVBoxLayout;
+    layout->addWidget(&m_standaloneOrderList);
+    m_ui.standaloneOrders->setLayout(layout);
   }
 
   {
@@ -84,8 +98,6 @@ MainWindow::MainWindow(Engine &engine,
                           QMessageBox::Ignore);
     throw;
   }
-
-  m_orderList.showMaximized();
 }
 
 MainWindow::~MainWindow() = default;

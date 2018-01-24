@@ -10,8 +10,6 @@
 
 #include "Prec.hpp"
 #include "BalanceListModel.hpp"
-#include "Core/Balances.hpp"
-#include "Core/Context.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
 #include "Util.hpp"
@@ -21,7 +19,7 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 
 namespace pt = boost::posix_time;
-namespace mi = boost::multi_index;
+namespace lib = trdk::FrontEnd::Lib;
 
 namespace {
 
@@ -148,7 +146,7 @@ class DataItem : public Item {
  private:
   const boost::shared_ptr<const Balance> m_data;
 };
-}
+}  // namespace
 
 class BalanceListModel::Implementation : private boost::noncopyable {
  public:
@@ -160,18 +158,19 @@ class BalanceListModel::Implementation : private boost::noncopyable {
       m_data;
 };
 
-BalanceListModel::BalanceListModel(Engine &engine, QWidget *parent)
+BalanceListModel::BalanceListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
   if (engine.IsStarted()) {
     const auto &size = engine.GetContext().GetNumberOfTradingSystems();
     for (size_t i = 0; i < size; ++i) {
       const auto &tradingSystem =
           engine.GetContext().GetTradingSystem(i, TRADING_MODE_LIVE);
-      tradingSystem.GetBalances().ForEach([this, &tradingSystem](
-          const std::string &symbol, const Volume &available,
-          const Volume &locked) {
-        OnUpdate(&tradingSystem, symbol, available, locked);
-      });
+      tradingSystem.GetBalances().ForEach(
+          [this, &tradingSystem](const std::string &symbol,
+                                 const Volume &available,
+                                 const Volume &locked) {
+            OnUpdate(&tradingSystem, symbol, available, locked);
+          });
     }
   }
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::BalanceUpdate, this,

@@ -23,5 +23,14 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
 
+#include "Core/Balances.hpp"
+#include "Core/Context.hpp"
+#include "Core/MarketDataSource.hpp"
+#include "Core/Operation.hpp"
+#include "Core/Position.hpp"
+#include "Core/RiskControl.hpp"
+#include "Core/Security.hpp"
+#include "Core/Strategy.hpp"
+#include "Engine/Engine.hpp"
 #include "Std.hpp"
 #include "Types.hpp"

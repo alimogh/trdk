@@ -250,6 +250,7 @@
   <ItemGroup>
     <ClCompile Include="Algo.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
+    <ClCompile Include="PnlContainer.cpp" />
     <ClCompile Include="PositionController.cpp" />
     <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -306,6 +307,7 @@
     <ClInclude Include="Algo.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="OrderPolicy.hpp" />
+    <ClInclude Include="PnlContainer.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
