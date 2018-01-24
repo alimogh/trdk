@@ -20,9 +20,14 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="orders">
+      <widget class="QWidget" name="operations">
        <attribute name="title">
-        <string>Orders</string>
+        <string>Strategy operations</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="standaloneOrders">
+       <attribute name="title">
+        <string>Standalone orders</string>
        </attribute>
       </widget>
      </widget>
@@ -34,7 +39,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>943</width>
      <height>21</height>
     </rect>
    </property>

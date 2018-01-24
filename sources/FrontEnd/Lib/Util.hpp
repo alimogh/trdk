@@ -28,6 +28,9 @@ TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const trdk::Qty &,
 
 TRDK_FRONTEND_LIB_API QDateTime
 ConvertToQDateTime(const boost::posix_time::ptime &);
-}
-}
-}
+
+TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
+
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

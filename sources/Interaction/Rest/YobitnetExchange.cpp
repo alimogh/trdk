@@ -346,7 +346,7 @@ class YobitBalancesContainer : public BalancesContainer {
     // Yobit.net sends new rests at order transaction reply.
   }
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -762,7 +762,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             continue;
           }
           auto available = boost::lexical_cast<Volume>(node.second.data());
-          AssertLt(available, balance->second);
+          AssertLe(available, balance->second);
           auto locked = balance->second - available;
           m_balances.Set(balance->first, std::move(available),
                          std::move(locked));
@@ -1130,7 +1130,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 

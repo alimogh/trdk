@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/21 16:12:09
+ *   Created: 2018/01/23 11:04:09
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,29 +10,18 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
+#include "Pnl.hpp"
 
 namespace trdk {
-namespace FrontEnd {
-namespace Lib {
 
-class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
-  Q_OBJECT
+class PnlContainer : public trdk::Pnl {
+ public:
+  virtual ~PnlContainer() = default;
 
  public:
-  typedef QTreeView Base;
-
- public:
-  explicit BalanceListView(Engine &, QWidget *parent);
-
- public slots:
-  void ShowContextMenu(const QPoint &);
-
- private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+  //! Registers a new result.
+  /** @sa CalcOperationResult
+    */
+  virtual void Update(const trdk::Security &, const trdk::Volume &) = 0;
 };
-}  // namespace Lib
-}  // namespace FrontEnd
-}  // namespace trdk
+}

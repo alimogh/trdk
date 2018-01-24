@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/21 16:12:09
+ *   Created: 2018/01/23 11:02:17
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,29 +10,17 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
-namespace FrontEnd {
-namespace Lib {
 
-class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
-  Q_OBJECT
+class Pnl : private boost::noncopyable {
+ public:
+  typedef boost::unordered_map<trdk::Lib::Symbol, trdk::Volume> Data;
 
  public:
-  typedef QTreeView Base;
+  virtual ~Pnl() = default;
 
  public:
-  explicit BalanceListView(Engine &, QWidget *parent);
-
- public slots:
-  void ShowContextMenu(const QPoint &);
-
- private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+  virtual bool IsProfit() const = 0;
+  virtual const trdk::Pnl::Data& GetData() const = 0;
 };
-}  // namespace Lib
-}  // namespace FrontEnd
-}  // namespace trdk
+}

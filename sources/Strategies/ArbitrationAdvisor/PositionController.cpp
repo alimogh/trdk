@@ -20,16 +20,15 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-aa::PositionController::PositionController(Strategy &strategy)
-    : Base(strategy),
-      m_report(boost::make_unique<OperationReport>(GetStrategy())) {}
+aa::PositionController::PositionController(OperationReport &&report)
+    : m_report(std::move(report)) {}
 
 void aa::PositionController::OnPositionUpdate(Position &position) {
   if (position.IsCompleted()) {
     auto &reportData =
         position.GetTypedOperation<aa::Operation>().GetReportData();
     if (reportData.Add(position)) {
-      m_report->Append(reportData);
+      m_report.Append(reportData);
     }
     return;
   }
@@ -130,8 +129,7 @@ class BestSecurityChecker : private boost::noncopyable {
     try {
       m_position.ReplaceTradingSystem(
           *m_bestSecurity,
-          m_position.GetOperation()->GetTradingSystem(m_position.GetStrategy(),
-                                                      *m_bestSecurity));
+          m_position.GetOperation()->GetTradingSystem(*m_bestSecurity));
     } catch (...) {
       AssertFailNoException();
       terminate();

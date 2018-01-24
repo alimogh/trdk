@@ -13,6 +13,7 @@
 #include "Balances.hpp"
 #include "DropCopy.hpp"
 #include "OrderStatusHandler.hpp"
+#include "Position.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
 #include "Timer.hpp"
@@ -63,7 +64,7 @@ typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::ReadLock
     ActiveOrderReadLock;
 typedef ActiveOrderConcurrencyPolicy<TRDK_CONCURRENCY_PROFILE>::WriteLock
     ActiveOrderWriteLock;
-}
+}  // namespace
 
 bool TradingSystem::Order::IsChanged(
     const OrderStatus &rhsStatus,
@@ -116,9 +117,55 @@ class TradingSystem::Implementation : private boost::noncopyable {
     }
   }
 
-  void ReportNewOrder(const Order &order,
-                      const char *status,
-                      const boost::optional<Price> &orderPrice) {
+  void SendOrder(const boost::shared_ptr<Order> &order,
+                 const OrderParams &params) {
+    ReportNewOrder(*order, "sending");
+
+    order->riskControlOperationId = CheckNewOrder(*order);
+
+    try {
+      {
+        const ActiveOrderWriteLock lock(m_activeOrdersMutex);
+        order->transactionContext = m_self.SendOrderTransaction(
+            order->security, order->currency, order->qty, order->price, params,
+            order->side, order->tif);
+        Assert(order->transactionContext);
+        ReportNewOrder(*order, ConvertToPch(ORDER_STATUS_SENT));
+        RegisterCallback(order);
+      }
+      m_self.OnTransactionSent(*order->transactionContext);
+    } catch (const std::exception &ex) {
+      m_tradingLog.Write(
+          "{'order': {'sendError': {'reason': '%1%'}}}",
+          [&ex](TradingRecord &record) { record % std::string(ex.what()); });
+      try {
+        throw;
+      } catch (const CommunicationError &ex) {
+        m_log.Debug(
+            "Communication error while sending order transaction: \"%1%\".",
+            ex.what());
+      } catch (const std::exception &ex) {
+        m_log.Error("Error while sending order transaction: \"%1%\".",
+                    ex.what());
+      }
+      ConfirmOrder(*order, ORDER_STATUS_ERROR, order->remainingQty,
+                   boost::none);
+      throw;
+    } catch (...) {
+      m_tradingLog.Write(
+          "{'order': {'sendError': {'reason': 'Unknown exception'}}}");
+      m_log.Error("Unknown error while sending order transaction.");
+      AssertFailNoException();
+      ConfirmOrder(*order, ORDER_STATUS_ERROR, order->remainingQty,
+                   boost::none);
+      throw;
+    }
+
+    m_self.GetBalancesStorage().ReduceAvailableToTradeByOrder(
+        order->security, order->qty, order->actualPrice, order->side, m_self);
+  }
+
+  void ReportNewOrder(const Order &order, const char *status) {
     m_tradingLog.Write(
         !order.transactionContext
             ? "{'order': {'new': {'status': '%1%'), 'side': '%2%', 'security': "
@@ -128,14 +175,14 @@ class TradingSystem::Implementation : private boost::noncopyable {
               "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6$.8f, "
               "'qty': %7$.8f, 'tif': '%8%', 'id': '%9%'}}",
         [&](TradingRecord &record) {
-          record % status                                            // 1
-              % order.side                                           // 2
-              % order.security                                       // 3
-              % order.currency                                       // 4
-              % (orderPrice ? ORDER_TYPE_LIMIT : ORDER_TYPE_MARKET)  // 5
-              % order.actualPrice                                    // 6
-              % order.remainingQty                                   // 7
-              % order.tif;                                           // 8
+          record % status                                             // 1
+              % order.side                                            // 2
+              % order.security                                        // 3
+              % order.currency                                        // 4
+              % (order.price ? ORDER_TYPE_LIMIT : ORDER_TYPE_MARKET)  // 5
+              % order.actualPrice                                     // 6
+              % order.remainingQty                                    // 7
+              % order.tif;                                            // 8
           if (order.transactionContext) {
             record % order.transactionContext->GetOrderId();  // 9
           }
@@ -631,62 +678,55 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     const Milestones &delayMeasurement) {
   Assert(handler);
   const auto &time = GetContext().GetCurrentTime();
-  auto order = boost::make_shared<Order>(
+  const auto &order = boost::make_shared<Order>(
       Order{security, currency, side, std::move(handler), qty, qty, price,
             price ? *price
                   : side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                            : security.GetBidPrice(),
             ORDER_STATUS_SENT, tif, delayMeasurement, riskControlScope});
 
-  m_pimpl->ReportNewOrder(*order, "sending", price);
+  m_pimpl->SendOrder(order, params);
 
-  order->riskControlOperationId = m_pimpl->CheckNewOrder(*order);
-
-  try {
-    {
-      const ActiveOrderWriteLock lock(m_pimpl->m_activeOrdersMutex);
-      order->transactionContext =
-          SendOrderTransaction(order->security, order->currency, order->qty,
-                               price, params, order->side, order->tif);
-      Assert(order->transactionContext);
-      m_pimpl->ReportNewOrder(*order, ConvertToPch(ORDER_STATUS_SENT), price);
-      m_pimpl->RegisterCallback(order);
-    }
-    OnTransactionSent(*order->transactionContext);
-  } catch (const std::exception &ex) {
-    GetTradingLog().Write(
-        "{'order': {'sendError': {'reason': '%1%'}}}",
-        [&ex](TradingRecord &record) { record % std::string(ex.what()); });
-    try {
-      throw;
-    } catch (const CommunicationError &ex) {
-      GetLog().Debug(
-          "Communication error while sending order transaction: \"%1%\".",
-          ex.what());
-    } catch (const std::exception &ex) {
-      GetLog().Error("Error while sending order transaction: \"%1%\".",
-                     ex.what());
-    }
-    m_pimpl->ConfirmOrder(*order, ORDER_STATUS_ERROR, order->remainingQty,
-                          boost::none);
-    throw;
-  } catch (...) {
-    GetTradingLog().Write(
-        "{'order': {'sendError': {'reason': 'Unknown exception'}}}");
-    GetLog().Error("Unknown error while sending order transaction.");
-    AssertFailNoException();
-    m_pimpl->ConfirmOrder(*order, ORDER_STATUS_ERROR, order->remainingQty,
-                          boost::none);
-    throw;
-  }
-
-  GetBalancesStorage().ReduceAvailableToTradeByOrder(
-      security, order->qty, order->actualPrice, order->side, *this);
-
-  GetContext().InvokeDropCopy([&](DropCopy &dropCopy) {
+  GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
     dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
                                 order->security, order->currency, *this,
-                                order->side, order->qty, price, order->tif);
+                                order->side, order->qty, order->price,
+                                order->tif);
+  });
+
+  return order->transactionContext;
+}
+boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
+    boost::shared_ptr<Position> &&position,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderParams &params,
+    std::unique_ptr<OrderStatusHandler> &&handler,
+    RiskControlScope &riskControlScope,
+    const OrderSide &side,
+    const TimeInForce &tif,
+    const Milestones &delayMeasurement) {
+  Assert(handler);
+  const auto &time = GetContext().GetCurrentTime();
+  auto &security = position->GetSecurity();
+  const auto &order = boost::make_shared<Order>(
+      Order{security, currency, side, std::move(handler), qty, qty, price,
+            price ? *price
+                  : side == ORDER_SIDE_BUY ? security.GetAskPrice()
+                                           : security.GetBidPrice(),
+            ORDER_STATUS_SENT, tif, delayMeasurement, riskControlScope,
+            // Order record should hold position object to guarantee that
+            // operation end event will be raised only after last order will
+            // be canceled or filled:
+            std::move(position)});
+
+  m_pimpl->SendOrder(order, params);
+
+  GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
+    dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
+                                *order->position, order->currency, order->side,
+                                order->qty, order->price, order->tif);
   });
 
   return order->transactionContext;

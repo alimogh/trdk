@@ -37,6 +37,11 @@ lib::DropCopy::DropCopy(QObject *parent)
   qRegisterMetaType<boost::optional<trdk::Price>>(
       "boost::optional<trdk::Price>");
   qRegisterMetaType<trdk::TimeInForce>("trdk::TimeInForce");
+  qRegisterMetaType<boost::uuids::uuid>("boost::uuids::uuid");
+  qRegisterMetaType<boost::shared_ptr<const trdk::Pnl>>(
+      "boost::shared_ptr<const trdk::Pnl>");
+  qRegisterMetaType<trdk::Pnl::Data>("trdk::Pnl::Data");
+  qRegisterMetaType<int64_t>("int64_t");
 }
 
 void lib::DropCopy::Flush() {}
@@ -67,8 +72,21 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
                                        const Qty &qty,
                                        const boost::optional<Price> &price,
                                        const TimeInForce &tif) {
-  emit OrderSubmitted(id, time, &security, currency, &tradingSystem, sid, qty,
-                      price, tif);
+  emit FreeOrderSubmitted(id, time, &security, currency, &tradingSystem, sid,
+                          qty, price, tif);
+}
+void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
+                                       const pt::ptime &time,
+                                       const Position &position,
+                                       const Currency &currency,
+                                       const OrderSide &sid,
+                                       const Qty &qty,
+                                       const boost::optional<Price> &price,
+                                       const TimeInForce &tif) {
+  emit OperationOrderSubmitted(
+      position.GetOperation()->GetId(), position.GetSubOperationId(), id, time,
+      &position.GetSecurity(), currency, &position.GetTradingSystem(), sid, qty,
+      price, tif);
 }
 
 void lib::DropCopy::CopyOrderStatus(const OrderId &id,
@@ -100,17 +118,6 @@ void lib::DropCopy::CopyTrade(const pt::ptime &,
                               const TradingSystem &,
                               const Price &,
                               const Qty &) {}
-
-void lib::DropCopy::ReportOperationStart(const Strategy &,
-                                         const ids::uuid &,
-                                         const pt::ptime &) {}
-
-void lib::DropCopy::ReportOperationEnd(const ids::uuid &,
-                                       const pt::ptime &,
-                                       const CloseReason &,
-                                       const OperationResult &,
-                                       const Volume &,
-                                       FinancialResult &&) {}
 
 void lib::DropCopy::CopyBook(const Security &, const PriceBook &) {}
 
@@ -173,4 +180,19 @@ void lib::DropCopy::CopyBalance(const TradingSystem &tradingSystem,
                                 const Volume &available,
                                 const Volume &locked) {
   emit BalanceUpdate(&tradingSystem, symbol, available, locked);
+}
+
+void lib::DropCopy::CopyOperationStart(const ids::uuid &id,
+                                       const pt::ptime &time,
+                                       const Strategy &strategy) {
+  emit OperationStart(id, time, &strategy);
+}
+void lib::DropCopy::CopyOperationUpdate(const ids::uuid &id,
+                                        const Pnl::Data &pnl) {
+  emit OperationUpdate(id, pnl);
+}
+void lib::DropCopy::CopyOperationEnd(const ids::uuid &id,
+                                     const pt::ptime &time,
+                                     std::unique_ptr<Pnl> &&pnl) {
+  emit OperationEnd(id, time, boost::shared_ptr<Pnl>(pnl.release()));
 }

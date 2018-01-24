@@ -46,6 +46,8 @@ class Position;
 class LongPosition;
 class ShortPosition;
 class PositionReporter;
+class Pnl;
+class PnlContainer;
 
 class Settings;
 

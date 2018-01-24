@@ -83,10 +83,14 @@ struct OperationReportData : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class OperationReport : private boost::noncopyable {
+class OperationReport {
  public:
   explicit OperationReport(const trdk::Strategy &);
-  virtual ~OperationReport() = default;
+  OperationReport(OperationReport &&) = default;
+
+ private:
+  OperationReport(const OperationReport &);
+  const OperationReport &operator=(const OperationReport &);
 
  public:
   virtual void Append(const OperationReportData &);

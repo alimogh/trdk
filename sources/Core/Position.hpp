@@ -49,16 +49,8 @@ class TRDK_CORE_API Position
   };
 
  public:
-  explicit Position(trdk::Strategy &,
-                    trdk::TradingSystem &,
-                    trdk::Security &,
-                    const trdk::Lib::Currency &,
-                    const trdk::Qty &,
-                    const trdk::Price &startPrice,
-                    const trdk::Lib::TimeMeasurement::Milestones &);
   explicit Position(const boost::shared_ptr<trdk::Operation> &,
                     int64_t subOperationId,
-                    trdk::Strategy &,
                     trdk::Security &,
                     const trdk::Lib::Currency &,
                     const trdk::Qty &,
@@ -427,16 +419,8 @@ class TRDK_CORE_API Position
 
 class TRDK_CORE_API LongPosition : public Position {
  public:
-  explicit LongPosition(trdk::Strategy &,
-                        trdk::TradingSystem &,
-                        trdk::Security &,
-                        const trdk::Lib::Currency &,
-                        const trdk::Qty &,
-                        const trdk::Price &startPrice,
-                        const trdk::Lib::TimeMeasurement::Milestones &);
   explicit LongPosition(const boost::shared_ptr<trdk::Operation> &,
                         int64_t subOperationId,
-                        trdk::Strategy &,
                         trdk::Security &,
                         const trdk::Lib::Currency &,
                         const trdk::Qty &,
@@ -496,16 +480,8 @@ class TRDK_CORE_API LongPosition : public Position {
 
 class TRDK_CORE_API ShortPosition : public Position {
  public:
-  explicit ShortPosition(trdk::Strategy &,
-                         trdk::TradingSystem &,
-                         trdk::Security &,
-                         const trdk::Lib::Currency &,
-                         const trdk::Qty &,
-                         const trdk::Price &startPrice,
-                         const trdk::Lib::TimeMeasurement::Milestones &);
   explicit ShortPosition(const boost::shared_ptr<trdk::Operation> &,
                          int64_t subOperationId,
-                         trdk::Strategy &,
                          trdk::Security &,
                          const trdk::Lib::Currency &,
                          const trdk::Qty &,

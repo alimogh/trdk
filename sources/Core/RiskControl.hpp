@@ -102,11 +102,6 @@ class TRDK_CORE_API RiskControlScope : private boost::noncopyable {
                                   size_t operationsCount) const = 0;
 
  public:
-  virtual void ResetStatistics() = 0;
-  virtual trdk::FinancialResult GetStatistics() const = 0;
-  virtual trdk::FinancialResult TakeStatistics() = 0;
-
- public:
   virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &) = 0;
 
  private:
@@ -154,11 +149,6 @@ class TRDK_CORE_API EmptyRiskControlScope : public trdk::RiskControlScope {
 
   virtual void CheckTotalWinRatio(size_t totalWinRatio,
                                   size_t operationsCount) const;
-
- public:
-  virtual void ResetStatistics();
-  virtual trdk::FinancialResult GetStatistics() const;
-  virtual trdk::FinancialResult TakeStatistics();
 
  public:
   virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Api.h"
+#include "Pnl.hpp"
 #include "TradingSystem.hpp"
 
 namespace trdk {
@@ -60,6 +61,14 @@ class TRDK_CORE_API DropCopy {
                                   const trdk::Qty &,
                                   const boost::optional<trdk::Price> &,
                                   const trdk::TimeInForce &) = 0;
+  virtual void CopySubmittedOrder(const trdk::OrderId &,
+                                  const boost::posix_time::ptime &,
+                                  const trdk::Position &,
+                                  const trdk::Lib::Currency &,
+                                  const trdk::OrderSide &,
+                                  const trdk::Qty &,
+                                  const boost::optional<trdk::Price> &,
+                                  const trdk::TimeInForce &) = 0;
   virtual void CopyOrderStatus(const trdk::OrderId &,
                                const trdk::TradingSystem &,
                                const boost::posix_time::ptime &,
@@ -85,15 +94,14 @@ class TRDK_CORE_API DropCopy {
       const trdk::Price &,
       const trdk::Qty &) = 0;
 
-  virtual void ReportOperationStart(const trdk::Strategy &,
-                                    const boost::uuids::uuid &id,
-                                    const boost::posix_time::ptime &) = 0;
-  virtual void ReportOperationEnd(const boost::uuids::uuid &id,
+  virtual void CopyOperationStart(const boost::uuids::uuid &,
                                   const boost::posix_time::ptime &,
-                                  const trdk::CloseReason &,
-                                  const trdk::OperationResult &,
-                                  const trdk::Volume &pnl,
-                                  trdk::FinancialResult &&) = 0;
+                                  const trdk::Strategy &) = 0;
+  virtual void CopyOperationUpdate(const boost::uuids::uuid &,
+                                   const trdk::Pnl::Data &) = 0;
+  virtual void CopyOperationEnd(const boost::uuids::uuid &,
+                                const boost::posix_time::ptime &,
+                                std::unique_ptr<trdk::Pnl> &&) = 0;
 
   virtual void CopyBook(const trdk::Security &, const trdk::PriceBook &) = 0;
 
@@ -137,4 +145,4 @@ class TRDK_CORE_API DropCopy {
                            const trdk::Volume &available,
                            const trdk::Volume &locked) = 0;
 };
-}
+}  // namespace trdk

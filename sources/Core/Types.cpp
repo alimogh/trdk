@@ -23,7 +23,7 @@ const char *trdk::ConvertToPch(const OrderSide &side) {
     default:
       AssertEq(int(ORDER_SIDE_BUY),
                int(side));  // "to int" - to avoid recursion
-      return "unknown";
+      return "undefined";
     case ORDER_SIDE_BUY:
       return "buy";
     case ORDER_SIDE_SELL:
@@ -38,7 +38,7 @@ const char *trdk::ConvertToPch(const PositionSide &type) {
   switch (type) {
     default:
       AssertEq(POSITION_SIDE_LONG, type);
-      return "unknown";
+      return "undefined";
     case POSITION_SIDE_LONG:
       return "long";
     case POSITION_SIDE_SHORT:
@@ -64,7 +64,7 @@ void DumpOrderParam(const char *paramName,
   os << paramName << "=\"" << *paramVal << '"';
   ++count;
 }
-}
+}  // namespace
 
 std::ostream &trdk::operator<<(std::ostream &os, const OrderParams &params) {
   size_t count = 0;
@@ -82,7 +82,7 @@ const char *trdk::ConvertToPch(const Level1TickType &tickType) {
     default:
       AssertEq(int(LEVEL1_TICK_LAST_PRICE),
                int(tickType));  // "to int" - to avoid recursion
-      return "UNKNOWN";
+      return "undefined";
     case LEVEL1_TICK_LAST_PRICE:
       return "last price";
     case LEVEL1_TICK_LAST_QTY:
@@ -163,7 +163,7 @@ const std::string tradingModePaper = ConvertToPch(TRADING_MODE_PAPER);
 const std::string tradingModeBacktesting =
     ConvertToPch(TRADING_MODE_BACKTESTING);
 const std::string tradingModeUnknown = "UNKNOWN";
-}
+}  // namespace
 
 const std::string &trdk::ConvertToString(const TradingMode &mode) {
   static_assert(numberOfTradingModes, "List changed.");
@@ -189,7 +189,7 @@ const char *trdk::ConvertToPch(const OrderStatus &status) {
     default:
       AssertEq(int(ORDER_STATUS_SENT),
                int(status));  // "to int" - to avoid recursion
-      return "unknown";
+      return "undefined";
     case ORDER_STATUS_SENT:
       return "sent";
     case ORDER_STATUS_OPENED:
@@ -215,7 +215,7 @@ const char *trdk::ConvertToPch(const CloseReason &closeReason) {
     default:
       AssertEq(int(CLOSE_REASON_NONE),
                int(closeReason));  // "to int" - to avoid recursion
-      return "unknown";
+      return "undefined";
     case CLOSE_REASON_NONE:
       return "none";
     case CLOSE_REASON_SIGNAL:

@@ -140,7 +140,11 @@ class TRDK_CORE_API Context : private boost::noncopyable {
     if (!dropCopy) {
       return;
     }
-    method(*dropCopy);
+    try {
+      method(*dropCopy);
+    } catch (const std::exception &ex) {
+      GetLog().Error("Failed to invoke drop copy: \"%1%\".", ex.what());
+    }
   }
 
   //! User context parameters. No predefined key list. Any key can be

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/21 16:12:09
+ *   Created: 2018/01/23 11:21:51
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,29 +10,24 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
+#include "Core/PnlContainer.hpp"
 
 namespace trdk {
-namespace FrontEnd {
-namespace Lib {
+namespace TradingLib {
 
-class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
-  Q_OBJECT
+class PnlOneSymbolContainer : public trdk::PnlContainer {
+ public:
+  PnlOneSymbolContainer();
+  virtual ~PnlOneSymbolContainer() override;
 
  public:
-  typedef QTreeView Base;
-
- public:
-  explicit BalanceListView(Engine &, QWidget *parent);
-
- public slots:
-  void ShowContextMenu(const QPoint &);
+  virtual void Update(const trdk::Security &, const trdk::Volume &) override;
+  virtual bool IsProfit() const override;
+  virtual const trdk::Pnl::Data &GetData() const override;
 
  private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
-}  // namespace Lib
-}  // namespace FrontEnd
-}  // namespace trdk
+}
+}
