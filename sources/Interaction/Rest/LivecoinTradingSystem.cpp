@@ -192,7 +192,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
                                              const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_balances(GetLog(), GetTradingLog()),
+      m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateSession("api.livecoin.net", m_settings, true)),
       m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),
@@ -409,8 +409,20 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
     throw Exception("Market order is not supported");
   }
 
-  const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+  const auto &symbol = security.GetSymbol().GetSymbol();
+  const auto &product = m_products.find(symbol);
   if (product == m_products.cend()) {
+    std::string productList;
+    for (const auto &productItem : m_products) {
+      if (!productList.empty()) {
+        productList += ", ";
+      }
+      productList += productItem.first + " (" + productItem.second.id + ")";
+    }
+    GetLog().Debug(
+        "Requested to trade symbol: \"%1%\". Available to trade: %2%.",
+        symbol,        // 1
+        productList);  // 2
     throw Exception("Symbol is not supported by exchange");
   }
 

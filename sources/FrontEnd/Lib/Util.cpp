@@ -59,6 +59,10 @@ QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
   return QString::number(source, 'f', precision);
 }
 
+QString lib::ConvertVolumeToText(const Price &source, uint8_t precision) {
+  return ConvertPriceToText(source, precision);
+}
+
 QString lib::ConvertPriceToText(const boost::optional<Price> &source,
                                 uint8_t precision) {
   return ConvertPriceToText(
@@ -77,4 +81,26 @@ QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
   const auto &time = source.time_of_day();
   return {{date.year(), date.month().as_number(), date.day()},
           {time.hours(), time.minutes(), time.seconds()}};
+}
+
+QString lib::ConvertToUiString(const OrderStatus &status) {
+  static_assert(numberOfOrderStatuses == 7, "List changed.");
+  switch (status) {
+    case ORDER_STATUS_SENT:
+      return QObject::tr("sent");
+    case ORDER_STATUS_OPENED:
+      return QObject::tr("opened");
+    case ORDER_STATUS_CANCELED:
+      return QObject::tr("canceled");
+    case ORDER_STATUS_FILLED_FULLY:
+      return QObject::tr("filled");
+    case ORDER_STATUS_FILLED_PARTIALLY:
+      return QObject::tr("filled partially");
+    case ORDER_STATUS_REJECTED:
+      return QObject::tr("rejected");
+    case ORDER_STATUS_ERROR:
+      return QObject::tr("error");
+  }
+  AssertEq(ORDER_STATUS_SENT, status);
+  return QObject::tr("undefined");
 }

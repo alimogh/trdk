@@ -110,9 +110,10 @@ QSize StrategyWindow::sizeHint() const {
 }
 
 void StrategyWindow::ConnectSignals() {
-  Verify(connect(m_ui.symbol, static_cast<void (QComboBox::*)(int)>(
-                                  &QComboBox::currentIndexChanged),
-                 this, &StrategyWindow::OnCurrentSymbolChange));
+  Verify(connect(
+      m_ui.symbol,
+      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+      this, &StrategyWindow::OnCurrentSymbolChange));
 
   Verify(connect(m_ui.highlightLevel,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -127,8 +128,9 @@ void StrategyWindow::ConnectSignals() {
                  [this](double level) {
                    UpdateAutoTradingLevel(level, m_ui.maxQty->value());
                  }));
-  Verify(connect(m_ui.maxQty, static_cast<void (QDoubleSpinBox::*)(double)>(
-                                  &QDoubleSpinBox::valueChanged),
+  Verify(connect(m_ui.maxQty,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
                  [this](double qty) {
                    UpdateAutoTradingLevel(m_ui.autoTradeLevel->value(), qty);
                  }));
@@ -188,7 +190,6 @@ void StrategyWindow::InitBySelectedSymbol() {
       os << key << " = " << conf.ReadKey("General", key) << std::endl;
     };
     copyKey("lowest_spread_percentage");
-    copyKey("cross_arbitrage_mode");
     copyKey("stop_loss");
     copyKey("stop_loss_delay_sec");
     m_engine.GetContext().Add(IniString(os.str()));
@@ -355,15 +356,15 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
   }
 
   {
-    const auto &setSideSignal = [this, &advice](
-        TargetSideWidget &sideWidget, bool isBest, Security &security,
-        TradingSystem *&bestTradingSystem) {
-      sideWidget.Highlight(isBest, advice.isSignaled);
-      if (isBest) {
-        bestTradingSystem = &security.GetContext().GetTradingSystem(
-            security.GetSource().GetIndex(), m_tradingMode);
-      }
-    };
+    const auto &setSideSignal =
+        [this, &advice](TargetSideWidget &sideWidget, bool isBest,
+                        Security &security, TradingSystem *&bestTradingSystem) {
+          sideWidget.Highlight(isBest, advice.isSignaled);
+          if (isBest) {
+            bestTradingSystem = &security.GetContext().GetTradingSystem(
+                security.GetSource().GetIndex(), m_tradingMode);
+          }
+        };
     const auto &targetIndex = m_targets.get<BySecurity>();
     for (const auto &signal : advice.securitySignals) {
       const auto signalTargetIt = targetIndex.find(signal.security);
@@ -380,15 +381,18 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
 }
 
 void StrategyWindow::OnBlocked(const QString &reason) {
-  m_ui.autoTrade->setChecked(false);
-
+  {
+    const QSignalBlocker blocker(*m_ui.autoTrade);
+    m_ui.autoTrade->setChecked(false);
+  }
   m_ui.symbol->setEnabled(false);
   m_ui.highlightLevel->setEnabled(false);
   m_ui.autoTrade->setEnabled(false);
   m_ui.autoTradeLevel->setEnabled(false);
   m_ui.maxQty->setEnabled(false);
 
-  QString message;
+  QString message = tr("Strategy instance is blocked!");
+  message += "\n\n";
   if (!reason.isEmpty()) {
     message += tr("The reason for the blocking is: \"") + reason + "\".";
   } else {
@@ -404,7 +408,7 @@ void StrategyWindow::OnBlocked(const QString &reason) {
          "application.");
   message += "\n\n";
   message += tr("Please notify the software vendor about this incident.");
-  QMessageBox::critical(this, tr("Strategy instance is blocked"), message,
+  QMessageBox::critical(this, tr("Strategy is blocked"), message,
                         QMessageBox::Ok);
 }
 
@@ -468,10 +472,9 @@ void StrategyWindow::ToggleAutoTrading(bool activate) {
   try {
     m_strategy->Invoke<aa::Strategy>([this, activate](aa::Strategy &advisor) {
       AssertNe(activate, advisor.GetAutoTradingSettings() ? true : false);
-      activate
-          ? advisor.ActivateAutoTrading(
-                {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
-          : advisor.DeactivateAutoTrading();
+      activate ? advisor.ActivateAutoTrading(
+                     {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
+               : advisor.DeactivateAutoTrading();
     });
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to enable auto-trading"),

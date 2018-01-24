@@ -255,7 +255,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_isConnected(false),
         m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
         m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
-        m_balances(GetTsLog(), GetTsTradingLog()),
+        m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())),
         m_orderListRequest("orders",
@@ -541,8 +541,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       const auto response = boost::get<1>(request.Send(*m_tradingSession));
       for (const auto &node : response) {
         const auto &account = node.second;
-        m_balances.SetAvailableToTrade(account.get<std::string>("currency"),
-                                       account.get<Volume>("available"));
+        m_balances.Set(account.get<std::string>("currency"),
+                       account.get<Volume>("available"),
+                       account.get<Volume>("hold"));
       }
     } catch (const std::exception &ex) {
       boost::format error("Failed to request accounts: \"%1%\"");

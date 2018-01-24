@@ -413,6 +413,8 @@
     <ClInclude Include="Operation.hpp" />
     <ClInclude Include="OrderHandler.hpp" />
     <ClInclude Include="OrderStatusHandler.hpp" />
+    <ClInclude Include="Pnl.hpp" />
+    <ClInclude Include="PnlContainer.hpp" />
     <ClInclude Include="Trade.hpp" />
     <ClInclude Include="TransactionContext.hpp" />
     <ClInclude Include="PriceBook.hpp" />

@@ -144,6 +144,57 @@
     <ClCompile Include="OrderStatusNotifier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="BalanceListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalanceListView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_BalanceListView.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_BalanceListView.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_BalanceListView.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationListModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderModelUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListView.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListView.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListView.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationListView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -171,6 +222,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderModelUtils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -330,6 +384,18 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="OrderStatusNotifier.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="BalanceListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="BalanceListView.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OperationListModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OperationListView.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

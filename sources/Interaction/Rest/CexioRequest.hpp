@@ -32,6 +32,9 @@ class CexioRequest : public Request {
                         ModuleTradingLog * = nullptr);
   virtual ~CexioRequest() override = default;
 
+ public:
+  virtual Response Send(Poco::Net::HTTPClientSession &) override;
+
  protected:
   virtual FloodControl &GetFloodControl() override;
   virtual void SetUri(const std::string &uri,

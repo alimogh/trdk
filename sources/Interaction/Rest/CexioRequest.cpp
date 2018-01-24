@@ -12,6 +12,7 @@
 #include "CexioRequest.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
 namespace net = Poco::Net;
@@ -39,9 +40,25 @@ FloodControl &CexioRequest::GetFloodControl() {
 void CexioRequest::SetUri(const std::string &uri,
                           net::HTTPRequest &request) const {
   const auto &params = GetUriParams();
-  if (params.empty()) {
+  if (params.empty() || request.getMethod() == net::HTTPRequest::HTTP_POST) {
     request.setURI(uri);
   } else {
     request.setURI(uri + '?' + params);
   }
+}
+
+CexioRequest::Response CexioRequest::Send(net::HTTPClientSession &session) {
+  const auto result = Base::Send(session);
+  {
+    const auto &response = boost::get<1>(result);
+    const auto &errorMessage = response.get_optional<std::string>("error");
+    if (errorMessage) {
+      std::ostringstream error;
+      error << "The server returned an error in response to the request \""
+            << GetName() << "\" (" << GetRequest().getURI() << "): "
+            << "\"" << *errorMessage << "\"";
+      throw Exception(error.str().c_str());
+    }
+  }
+  return result;
 }

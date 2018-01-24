@@ -18,7 +18,7 @@ namespace trdk {
 //! Describes one or more operations with position.
 class TRDK_CORE_API Operation {
  public:
-  Operation();
+  explicit Operation(trdk::Strategy &, std::unique_ptr<trdk::PnlContainer> &&);
   Operation(Operation &&);
   virtual ~Operation();
 
@@ -28,12 +28,13 @@ class TRDK_CORE_API Operation {
 
  public:
   const boost::uuids::uuid &GetId() const;
+  const trdk::Strategy &GetStrategy() const;
+  trdk::Strategy &GetStrategy();
 
  public:
-  virtual trdk::TradingSystem &GetTradingSystem(trdk::Strategy &,
-                                                trdk::Security &);
+  virtual trdk::TradingSystem &GetTradingSystem(trdk::Security &);
   virtual const trdk::TradingSystem &GetTradingSystem(
-      const trdk::Strategy &, const trdk::Security &) const;
+      const trdk::Security &) const;
 
   //! Order policy for position opening.
   virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
@@ -74,6 +75,8 @@ class TRDK_CORE_API Operation {
     */
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &);
+
+  void UpdatePnl(const trdk::Security &, const trdk::Volume &);
 
  private:
   class Implementation;

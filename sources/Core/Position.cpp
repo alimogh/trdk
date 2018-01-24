@@ -420,7 +420,6 @@ class Position::Implementation : private boost::noncopyable {
   explicit Implementation(Position &position,
                           const boost::shared_ptr<Operation> &operation,
                           TradingSystem &tradingSystem,
-                          Strategy &strategy,
                           int64_t subOperationId,
                           Security &security,
                           const Currency &currency,
@@ -430,7 +429,7 @@ class Position::Implementation : private boost::noncopyable {
       : m_self(position),
         m_operation(operation),
         m_tradingSystem(&tradingSystem),
-        m_strategy(strategy),
+        m_strategy(operation->GetStrategy()),
         m_subOperationId(subOperationId),
         m_isRegistered(false),
         m_security(&security),
@@ -814,57 +813,8 @@ class Position::Implementation : private boost::noncopyable {
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace {
-
-class DummyOperation : public Operation {
- public:
-  virtual ~DummyOperation() override = default;
-
- public:
-  virtual const OrderPolicy &GetOpenOrderPolicy(
-      const Position &) const override {
-    throw LogicError("Position instance does not use operation context");
-  }
-  virtual const OrderPolicy &GetCloseOrderPolicy(
-      const Position &) const override {
-    throw LogicError("Position instance does not use operation context");
-  }
-  virtual void Setup(Position &, PositionController &) const override {
-    throw LogicError("Position instance does not use operation context");
-  }
-  virtual bool IsLong(const Security &) const override {
-    throw LogicError("Position instance does not use operation context");
-  }
-  virtual Qty GetPlannedQty() const override {
-    throw LogicError("Position instance does not use operation context");
-  }
-};
-}
-Position::Position(Strategy &strategy,
-                   TradingSystem &tradingSystem,
-                   Security &security,
-                   const Currency &currency,
-                   const Qty &qty,
-                   const Price &startPrice,
-                   const TimeMeasurement::Milestones &timeMeasurement)
-    : m_pimpl(
-          std::make_unique<Implementation>(*this,
-                                           boost::make_shared<DummyOperation>(),
-                                           tradingSystem,
-                                           strategy,
-                                           0,
-                                           security,
-                                           currency,
-                                           qty,
-                                           startPrice,
-                                           timeMeasurement)) {
-  Assert(!strategy.IsBlocked());
-  ++objectsCounter;
-}
-
 Position::Position(const boost::shared_ptr<Operation> &operation,
                    int64_t subOperationId,
-                   Strategy &strategy,
                    Security &security,
                    const Currency &currency,
                    const Qty &qty,
@@ -873,15 +823,13 @@ Position::Position(const boost::shared_ptr<Operation> &operation,
     : m_pimpl(std::make_unique<Implementation>(
           *this,
           operation,
-          operation->GetTradingSystem(strategy, security),
-          strategy,
+          operation->GetTradingSystem(security),
           subOperationId,
           security,
           currency,
           qty,
           startPrice,
           timeMeasurement)) {
-  Assert(!strategy.IsBlocked());
   ++objectsCounter;
 }
 
@@ -1495,46 +1443,8 @@ bool Position::CancelAllOrders() {
 
 //////////////////////////////////////////////////////////////////////////
 
-LongPosition::LongPosition(Strategy &strategy,
-                           TradingSystem &tradingSystem,
-                           Security &security,
-                           const Currency &currency,
-                           const Qty &qty,
-                           const Price &startPrice,
-                           const TimeMeasurement::Milestones &timeMeasurement)
-    : Position(strategy,
-               tradingSystem,
-               security,
-               currency,
-               qty,
-               startPrice,
-               timeMeasurement) {
-  GetStrategy().GetTradingLog().Write(
-      "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\toperation=%7%/%8%\tparent=%9%",
-      [this](TradingRecord &record) {
-        record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
-            % GetTradingSystem().GetInstanceName().c_str()      // 2
-            % GetTradingSystem().GetMode()                      // 3
-            % GetOpenStartPrice()                               // 4
-            % GetCurrency()                                     // 5
-            % GetPlanedQty()                                    // 6
-            % GetOperation()->GetId()                           // 7
-            % GetSubOperationId();                              // 8
-        {
-          const auto &parent = GetOperation()->GetParent();
-          if (parent) {
-            record % parent->GetId();  // 9
-          } else {
-            record % '-';  // 9
-          }
-        }
-      });
-}
-
 LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                            int64_t subOperationId,
-                           Strategy &strategy,
                            Security &security,
                            const Currency &currency,
                            const Qty &qty,
@@ -1542,7 +1452,6 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                            const TimeMeasurement::Milestones &timeMeasurement)
     : Position(operation,
                subOperationId,
-               strategy,
                security,
                currency,
                qty,
@@ -1637,7 +1546,7 @@ LongPosition::DoOpenAtMarketPrice(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, boost::none, params,
+      shared_from_this(), GetCurrency(), qty, boost::none, params,
       std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY,
       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
@@ -1650,7 +1559,7 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoOpen(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
       GetTimeMeasurement());
 }
@@ -1664,7 +1573,7 @@ LongPosition::DoOpenImmediatelyOrCancel(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
       GetTimeMeasurement());
 }
@@ -1677,7 +1586,7 @@ LongPosition::DoCloseAtMarketPrice(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, boost::none, params,
+      shared_from_this(), GetCurrency(), qty, boost::none, params,
       std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL,
       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
@@ -1690,7 +1599,7 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoClose(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
 
       GetTimeMeasurement());
@@ -1706,53 +1615,15 @@ LongPosition::DoCloseImmediatelyOrCancel(
   Assert(!IsClosed());
   AssertLt(0, qty);
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
       GetTimeMeasurement());
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-ShortPosition::ShortPosition(Strategy &strategy,
-                             TradingSystem &tradingSystem,
-                             Security &security,
-                             const Currency &currency,
-                             const Qty &qty,
-                             const Price &startPrice,
-                             const TimeMeasurement::Milestones &timeMeasurement)
-    : Position(strategy,
-               tradingSystem,
-               security,
-               currency,
-               qty,
-               startPrice,
-               timeMeasurement) {
-  GetStrategy().GetTradingLog().Write(
-      "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\toperation=%7%/%8%\tparent=%9%",
-      [this](TradingRecord &record) {
-        record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
-            % GetTradingSystem().GetInstanceName().c_str()      // 2
-            % GetTradingSystem().GetMode()                      // 3
-            % GetOpenStartPrice()                               // 4
-            % GetCurrency()                                     // 5
-            % GetPlanedQty()                                    // 6
-            % GetOperation()->GetId()                           // 7
-            % GetSubOperationId();                              // 8
-        {
-          const auto &parent = GetOperation()->GetParent();
-          if (parent) {
-            record % parent->GetId();  // 9
-          } else {
-            record % '-';  // 9
-          }
-        }
-      });
-}
-
 ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                              int64_t subOperationId,
-                             Strategy &strategy,
                              Security &security,
                              const Currency &currency,
                              const Qty &qty,
@@ -1760,7 +1631,6 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                              const TimeMeasurement::Milestones &timeMeasurement)
     : Position(operation,
                subOperationId,
-               strategy,
                security,
                currency,
                qty,
@@ -1849,7 +1719,7 @@ ShortPosition::DoOpenAtMarketPrice(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, boost::none, params,
+      shared_from_this(), GetCurrency(), qty, boost::none, params,
       std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL,
       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
@@ -1862,7 +1732,7 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoOpen(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
       GetTimeMeasurement());
 }
@@ -1876,7 +1746,7 @@ ShortPosition::DoOpenImmediatelyOrCancel(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
       GetTimeMeasurement());
 }
@@ -1889,7 +1759,7 @@ ShortPosition::DoCloseAtMarketPrice(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, boost::none, params,
+      shared_from_this(), GetCurrency(), qty, boost::none, params,
       std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY,
       TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
@@ -1900,7 +1770,7 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoClose(
     const OrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler) {
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
       GetTimeMeasurement());
 }
@@ -1914,7 +1784,7 @@ ShortPosition::DoCloseImmediatelyOrCancel(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      GetSecurity(), GetCurrency(), qty, price, params, std::move(handler),
+      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
       GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
       GetTimeMeasurement());
 }

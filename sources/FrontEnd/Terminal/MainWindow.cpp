@@ -10,7 +10,9 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
+#include "Lib/BalanceListModel.hpp"
 #include "Lib/Engine.hpp"
+#include "Lib/OperationListModel.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
 #include "Lib/Util.hpp"
@@ -25,22 +27,49 @@ MainWindow::MainWindow(Engine &engine,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
-      m_orderList(m_engine, this),
+      m_operationListView(m_engine, this),
+      m_standaloneOrderList(m_engine, this),
+      m_balanceList(m_engine, this),
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
   {
-    auto *model = new SortFilterProxyModel(&m_orderList);
-    model->setSourceModel(new OrderListModel(m_engine, &m_orderList));
-    m_orderList.setModel(model);
+    auto *model = new OperationListModel(m_engine, &m_operationListView);
+    m_operationListView.setModel(model);
     Verify(connect(model, &QAbstractItemModel::rowsInserted,
                    [this](const QModelIndex &index, int, int) {
-                     m_orderList.sortByColumn(0, Qt::DescendingOrder);
-                     m_orderList.scrollTo(index);
+                     m_operationListView.expand(index);
                    }));
+    auto *layout = new QVBoxLayout;
+    layout->addWidget(&m_operationListView);
+    m_ui.operations->setLayout(layout);
   }
-  m_ui.area->addSubWindow(&m_orderList);
+
+  {
+    auto *model = new SortFilterProxyModel(&m_standaloneOrderList);
+    model->setSourceModel(new OrderListModel(m_engine, &m_standaloneOrderList));
+    m_standaloneOrderList.setModel(model);
+    Verify(connect(model, &QAbstractItemModel::rowsInserted,
+                   [this](const QModelIndex &index, int, int) {
+                     m_standaloneOrderList.sortByColumn(0, Qt::DescendingOrder);
+                     m_standaloneOrderList.scrollTo(index);
+                   }));
+    auto *layout = new QVBoxLayout;
+    layout->addWidget(&m_standaloneOrderList);
+    m_ui.standaloneOrders->setLayout(layout);
+  }
+
+  {
+    auto *model = new SortFilterProxyModel(&m_balanceList);
+    model->setSourceModel(new BalanceListModel(m_engine, &m_balanceList));
+    m_balanceList.setModel(model);
+    Verify(connect(model, &QAbstractItemModel::rowsInserted,
+                   [this](const QModelIndex &index, int, int) {
+                     m_balanceList.expand(index);
+                   }));
+    m_ui.balances->setWidget(&m_balanceList);
+  }
 
   Verify(connect(&m_engine, &Lib::Engine::Message,
                  [this](const QString &message, bool isCritical) {
@@ -56,15 +85,8 @@ MainWindow::MainWindow(Engine &engine,
   Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
                  &MainWindow::CreateNewArbitrageStrategy));
 
-  Verify(connect(m_ui.showOrderList, &QAction::triggered, [this]() {
-    m_orderList.activateWindow();
-    m_orderList.showNormal();
-  }));
-
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
-  Verify(connect(m_ui.pinToTop, &QAction::triggered,
-                 [this](bool pin) { PinToTop(*this, pin); }));
 
   try {
     m_moduleDlls.emplace_back(
@@ -76,8 +98,6 @@ MainWindow::MainWindow(Engine &engine,
                           QMessageBox::Ignore);
     throw;
   }
-
-  m_orderList.showMaximized();
 }
 
 MainWindow::~MainWindow() = default;

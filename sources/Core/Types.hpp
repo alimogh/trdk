@@ -317,20 +317,6 @@ inline std::ostream &operator<<(std::ostream &oss,
 }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-namespace trdk {
-
-enum OperationResult {
-  OPERATION_RESULT_UNCOMPLETED = 0,
-  OPERATION_RESULT_PROFIT = 1,
-  OPERATION_RESULT_LOSS = 2,
-  numberOfOperationResults = 3
-};
-
-typedef std::vector<std::pair<trdk::Lib::Currency, Volume>> FinancialResult;
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 namespace trdk {

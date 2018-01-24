@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "OrderListView.hpp"
-#include "Core/Context.hpp"
 #include "Engine.hpp"
 
 using namespace trdk::FrontEnd::Lib;
@@ -23,6 +22,7 @@ OrderListView::OrderListView(Engine &engine, QWidget *parent)
   setAlternatingRowColors(true);
   setSelectionBehavior(QAbstractItemView::SelectRows);
   setSelectionMode(QAbstractItemView::ExtendedSelection);
+  verticalHeader()->setVisible(false);
 
   m_contextMenu.addAction(tr("&Cancel"), this,
                           &OrderListView::CancelSelectedOrders);
@@ -30,8 +30,6 @@ OrderListView::OrderListView(Engine &engine, QWidget *parent)
   setContextMenuPolicy(Qt::CustomContextMenu);
   Verify(connect(this, &OrderListView::customContextMenuRequested, this,
                  &OrderListView::ShowContextMenu));
-  Verify(connect(this, &OrderListView::doubleClicked, this,
-                 &OrderListView::CancelOrder));
 }
 
 void OrderListView::ShowContextMenu(const QPoint &pos) {

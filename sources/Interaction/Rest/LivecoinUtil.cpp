@@ -59,5 +59,15 @@ Rest::RequestLivecoinProductList(net::HTTPClientSession &session,
   if (result.empty()) {
     throw Exception("Exchange doesn't have products");
   }
+  {
+    std::string listStr;
+    for (const auto &item : result) {
+      if (!listStr.empty()) {
+        listStr += ", ";
+      }
+      listStr += item.first + " (" + item.second.id + ")";
+    }
+    log.Debug("Supported symbol list: %1%.", listStr);
+  }
   return result;
 }
