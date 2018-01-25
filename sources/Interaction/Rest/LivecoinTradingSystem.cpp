@@ -37,7 +37,7 @@ class LivecoinOrderTransactionContext : public OrderTransactionContext {
  private:
   const std::string &m_productRequestId;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -360,8 +360,13 @@ LivecoinTradingSystem::CheckOrder(const trdk::Security &security,
   const auto &minBtcVolume = productIt->second.minBtcVolume;
   const auto &vol = *price * qty;
 
-  if (security.GetSymbol().GetCurrency() == CURRENCY_BTC) {
+  const auto &symbol = security.GetSymbol();
+  if (symbol.GetCurrency() == CURRENCY_BTC) {
     if (vol < minBtcVolume) {
+      return OrderCheckError{boost::none, boost::none, minBtcVolume};
+    }
+  } else if (symbol.GetBaseSymbol() == "BTC") {
+    if (qty < minBtcVolume) {
       return OrderCheckError{boost::none, boost::none, minBtcVolume};
     }
   } else {
