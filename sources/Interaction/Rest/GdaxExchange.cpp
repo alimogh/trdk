@@ -89,9 +89,11 @@ std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
 
 struct Product {
   std::string id;
+  Qty minQty;
+  Qty maxQty;
   uintmax_t precisionPower;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -213,7 +215,7 @@ std::string NormilizeProductId(std::string source) {
 std::string RestoreSymbol(const std::string &source) {
   return boost::replace_first_copy(source, "-", "_");
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -368,6 +370,42 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
+  boost::optional<OrderCheckError> CheckOrder(
+      const trdk::Security &security,
+      const Currency &currency,
+      const Qty &qty,
+      const boost::optional<Price> &price,
+      const OrderSide &side) const {
+    {
+      const auto result =
+          TradingSystem::CheckOrder(security, currency, qty, price, side);
+      if (result) {
+        return result;
+      }
+    }
+
+    if (!price) {
+      return boost::none;
+    }
+
+    const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
+    if (productIt == m_products.cend()) {
+      GetTsLog().Warn("Failed find product for \"%1%\" to check order.",
+                      security);
+      return boost::none;
+    }
+
+    const auto &product = productIt->second;
+
+    if (product.minQty < qty) {
+      return OrderCheckError{product.minQty};
+    } else if (qty > product.maxQty) {
+      return OrderCheckError{product.maxQty};
+    }
+
+    return boost::none;
+  }
+
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
@@ -507,7 +545,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     std::vector<std::string> log;
     for (const auto &node : response) {
       const auto &productNode = node.second;
-      Product product = {productNode.get<std::string>("id")};
+      Product product = {productNode.get<std::string>("id"),
+                         productNode.get<Qty>("base_min_size"),
+                         productNode.get<Qty>("base_max_size")};
       const auto &quoteIncrement =
           productNode.get<std::string>("quote_increment");
       const auto dotPos = quoteIncrement.find('.');
@@ -608,10 +648,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     {
       const auto &statusField = order.get<std::string>("status");
       if (statusField == "open" || statusField == "pending") {
-        status = filledQty > 0
-                     ? remainingQty > 0 ? ORDER_STATUS_FILLED_PARTIALLY
-                                        : ORDER_STATUS_FILLED_FULLY
-                     : ORDER_STATUS_OPENED;
+        status = filledQty > 0 ? remainingQty > 0
+                                     ? ORDER_STATUS_FILLED_PARTIALLY
+                                     : ORDER_STATUS_FILLED_FULLY
+                               : ORDER_STATUS_OPENED;
       } else if (statusField == "done") {
         status =
             remainingQty ? ORDER_STATUS_CANCELED : ORDER_STATUS_FILLED_FULLY;
@@ -759,7 +799,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
   boost::unordered_map<std::string, Product> m_products;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
