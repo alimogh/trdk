@@ -224,6 +224,30 @@ CexioTradingSystem::CheckOrder(const trdk::Security &security,
     }
   }
 
+  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
+  if (productIt == m_products.cend()) {
+    GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
+    return boost::none;
+  }
+  const auto &product = productIt->second;
+
+  if (product.minSize && qty < *product.minSize) {
+    return OrderCheckError{product.minSize};
+  }
+
+  if (product.maxSize && *product.maxSize < qty) {
+    return OrderCheckError{product.maxSize};
+  }
+
+  if (price) {
+    if (product.minPrice && *price < *product.minPrice) {
+      return OrderCheckError{boost::none, product.minPrice};
+    }
+    if (product.maxPrice && *product.maxPrice < *price) {
+      return OrderCheckError{boost::none, product.maxPrice};
+    }
+  }
+
   return boost::none;
 }
 

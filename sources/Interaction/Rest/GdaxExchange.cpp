@@ -390,7 +390,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                       security);
       return boost::none;
     }
-
     const auto &product = productIt->second;
 
     if (product.minQty < qty) {
