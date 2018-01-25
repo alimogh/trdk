@@ -384,10 +384,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    if (!price) {
-      return boost::none;
-    }
-
     const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
     if (productIt == m_products.cend()) {
       GetTsLog().Warn("Failed find product for \"%1%\" to check order.",
