@@ -27,13 +27,13 @@ namespace lib = trdk::FrontEnd::Lib;
 namespace {
 
 enum Column {
-  COLUMN_OPERATION_TIME,
-  COLUMN_OPERATION_END_TIME_OR_ORDER_TIME,
-  COLUMN_OPERATION_STATUS_OR_ORDER_LEG,
-  COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_SYMBOL,
-  COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_EXCHANGE,
-  COLUMN_OPERATION_ID_OR_ORDER_STATUS,
-  COLUMN_ORDER_SIDE,
+  COLUMN_OPERATION_NUMBER,
+  COLUMN_OPERATION_TIME_OR_ORDER_TIME,
+  COLUMN_OPERATION_END_TIME_OR_ORDER_LEG,
+  COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL,
+  COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_EXCHANGE,
+  COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_STATUS,
+  COLUMN_OPERATION_ID_OR_ORDER_SIDE,
   COLUMN_ORDER_PRICE,
   COLUMN_ORDER_QTY,
   COLUMN_ORDER_FILLED_QTY,
@@ -124,17 +124,19 @@ class OperationItem : public Item {
   virtual QVariant GetData(int column) const override {
     static_assert(numberOfColumns == 14, "List changed.");
     switch (column) {
-      case COLUMN_OPERATION_TIME:
+      case COLUMN_OPERATION_NUMBER:
+        return GetRow();
+      case COLUMN_OPERATION_TIME_OR_ORDER_TIME:
         return GetRecord().startTime;
-      case COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+      case COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
         return GetRecord().endTime;
-      case COLUMN_OPERATION_STATUS_OR_ORDER_LEG:
+      case COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
         return GetRecord().status;
-      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_SYMBOL:
+      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_EXCHANGE:
         return GetRecord().strategyName;
-      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_EXCHANGE:
+      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_STATUS:
         return GetRecord().strategyInstance;
-      case COLUMN_OPERATION_ID_OR_ORDER_STATUS:
+      case COLUMN_OPERATION_ID_OR_ORDER_SIDE:
         return GetRecord().id;
     }
     return QVariant();
@@ -152,17 +154,17 @@ class OrderHeadItem : public Item {
   virtual QVariant GetData(int column) const override {
     static_assert(numberOfColumns == 14, "List changed.");
     switch (column) {
-      case COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+      case COLUMN_OPERATION_TIME_OR_ORDER_TIME:
         return QObject::tr("Time");
-      case COLUMN_OPERATION_STATUS_OR_ORDER_LEG:
+      case COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
         return QObject::tr("Leg");
-      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_SYMBOL:
+      case COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
         return QObject::tr("Symbol");
-      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_EXCHANGE:
+      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_EXCHANGE:
         return QObject::tr("Exchange");
-      case COLUMN_OPERATION_ID_OR_ORDER_STATUS:
+      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_STATUS:
         return QObject::tr("Status");
-      case COLUMN_ORDER_SIDE:
+      case COLUMN_OPERATION_ID_OR_ORDER_SIDE:
         return QObject::tr("Side");
       case COLUMN_ORDER_PRICE:
         return QObject::tr("Order price");
@@ -195,17 +197,17 @@ class OrderItem : public Item {
   virtual QVariant GetData(int column) const override {
     static_assert(numberOfColumns == 14, "List changed.");
     switch (column) {
-      case COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+      case COLUMN_OPERATION_TIME_OR_ORDER_TIME:
         return GetRecord().orderTime;
-      case COLUMN_OPERATION_STATUS_OR_ORDER_LEG:
+      case COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
         return *GetRecord().subOperationId;
-      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_SYMBOL:
+      case COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
         return GetRecord().symbol;
-      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_EXCHANGE:
+      case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_EXCHANGE:
         return GetRecord().exchangeName;
-      case COLUMN_OPERATION_ID_OR_ORDER_STATUS:
+      case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_STATUS:
         return GetRecord().status;
-      case COLUMN_ORDER_SIDE:
+      case COLUMN_OPERATION_ID_OR_ORDER_SIDE:
         return GetRecord().side;
       case COLUMN_ORDER_PRICE:
         return GetRecord().price;
@@ -273,17 +275,19 @@ QVariant OperationListModel::headerData(int section,
   }
   static_assert(numberOfColumns == 14, "List changed.");
   switch (section) {
-    case COLUMN_OPERATION_TIME:
+    case COLUMN_OPERATION_NUMBER:
+      return tr("#");
+    case COLUMN_OPERATION_TIME_OR_ORDER_TIME:
       return tr("Start time");
-    case COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+    case COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
       return tr("End time");
-    case COLUMN_OPERATION_STATUS_OR_ORDER_LEG:
+    case COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return tr("Status");
-    case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_SYMBOL:
+    case COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_EXCHANGE:
       return tr("Strategy");
-    case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_EXCHANGE:
+    case COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_STATUS:
       return tr("Strategy instance");
-    case COLUMN_OPERATION_ID_OR_ORDER_STATUS:
+    case COLUMN_OPERATION_ID_OR_ORDER_SIDE:
       return tr("ID");
   }
   return "";
