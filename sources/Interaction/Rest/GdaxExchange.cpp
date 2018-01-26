@@ -392,9 +392,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
     const auto &product = productIt->second;
 
-    if (product.minQty < qty) {
+    if (qty < product.minQty) {
       return OrderCheckError{product.minQty};
-    } else if (qty > product.maxQty) {
+    } else if (product.maxQty < qty) {
       return OrderCheckError{product.maxQty};
     }
 
