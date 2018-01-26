@@ -125,7 +125,7 @@ class OperationItem : public Item {
     static_assert(numberOfColumns == 14, "List changed.");
     switch (column) {
       case COLUMN_OPERATION_NUMBER:
-        return GetRow();
+        return GetRow() + 1;
       case COLUMN_OPERATION_TIME_OR_ORDER_TIME:
         return GetRecord().startTime;
       case COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
