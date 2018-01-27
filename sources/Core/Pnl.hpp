@@ -14,7 +14,7 @@ namespace trdk {
 
 class Pnl : private boost::noncopyable {
  public:
-  typedef boost::unordered_map<trdk::Lib::Symbol, trdk::Volume> Data;
+  typedef boost::unordered_map<std::string, trdk::Volume> Data;
 
  public:
   virtual ~Pnl() = default;
@@ -23,4 +23,4 @@ class Pnl : private boost::noncopyable {
   virtual bool IsProfit() const = 0;
   virtual const trdk::Pnl::Data& GetData() const = 0;
 };
-}
+}  // namespace trdk

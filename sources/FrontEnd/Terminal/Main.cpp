@@ -34,7 +34,7 @@ class SplashScreen : public QSplashScreen {
  protected:
   virtual void mousePressEvent(QMouseEvent *) override{};
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
     mainWindow.show();
     splash->finish(&mainWindow);
     splash.reset();
+
+    engine.Test();
 
     return application.exec();
   } catch (const std::exception &ex) {

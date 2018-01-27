@@ -34,3 +34,10 @@
 #include "Engine/Engine.hpp"
 #include "Std.hpp"
 #include "Types.hpp"
+
+#ifdef _DEBUG
+#include "TradingLib/PnlContainer.hpp"
+#include "Core/StrategyDummy.hpp"
+#include <boost/thread.hpp>
+#include <boost/uuid/random_generator.hpp>
+#endif

@@ -100,6 +100,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
+    <ClCompile Include="..\..\Core\StrategyDummy.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="BalanceListModel.cpp" />
     <ClCompile Include="BalanceListView.cpp" />
     <ClCompile Include="DropCopy.cpp" />
@@ -435,6 +439,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Version\Version.vcxproj">
       <Project>{6884dfb9-d84c-4f37-853f-79565671a1e3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\TradingLib\TradingLib.vcxproj">
+      <Project>{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

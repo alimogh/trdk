@@ -34,9 +34,9 @@ class TRDK_CORE_API DropCopy {
  public:
   //! Tries to flush buffered Drop Copy data.
   /** The method doesn't guarantee to store all records, it just initiates
-    * new send attempt. Synchronous. Can be interrupted from another
-    * thread.
-    */
+   * new send attempt. Synchronous. Can be interrupted from another
+   * thread.
+   */
   virtual void Flush() = 0;
 
   //! Dumps all buffer data and removes it from buffer.
@@ -64,7 +64,6 @@ class TRDK_CORE_API DropCopy {
   virtual void CopySubmittedOrder(const trdk::OrderId &,
                                   const boost::posix_time::ptime &,
                                   const trdk::Position &,
-                                  const trdk::Lib::Currency &,
                                   const trdk::OrderSide &,
                                   const trdk::Qty &,
                                   const boost::optional<trdk::Price> &,

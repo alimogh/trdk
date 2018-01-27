@@ -73,7 +73,7 @@ enum OrderStatusStep {
   ORDER_STATUS_STEP_OPENED,
   ORDER_STATUS_STEP_CLOSED,
 };
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1042,7 +1042,7 @@ const boost::shared_ptr<const OrderTransactionContext> &GetOrderContext(
   }
   return result;
 }
-}
+}  // namespace
 const boost::shared_ptr<const OrderTransactionContext>
     &Position::GetOpeningContext(size_t index) const {
   return GetOrderContext(m_pimpl->m_open, index);
@@ -1544,9 +1544,8 @@ LongPosition::DoOpenAtMarketPrice(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, boost::none, params,
-      std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY,
-      TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      shared_from_this(), qty, boost::none, params, std::move(handler),
+      ORDER_SIDE_BUY, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> LongPosition::DoOpen(
@@ -1556,10 +1555,9 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoOpen(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_BUY,
+                                      TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1570,10 +1568,9 @@ LongPosition::DoOpenImmediatelyOrCancel(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_BUY,
+                                      TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1584,9 +1581,8 @@ LongPosition::DoCloseAtMarketPrice(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, boost::none, params,
-      std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL,
-      TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      shared_from_this(), qty, boost::none, params, std::move(handler),
+      ORDER_SIDE_SELL, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> LongPosition::DoClose(
@@ -1596,11 +1592,11 @@ boost::shared_ptr<const OrderTransactionContext> LongPosition::DoClose(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_SELL,
+                                      TIME_IN_FORCE_GTC,
 
-      GetTimeMeasurement());
+                                      GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1612,10 +1608,9 @@ LongPosition::DoCloseImmediatelyOrCancel(
   Assert(IsOpened());
   Assert(!IsClosed());
   AssertLt(0, qty);
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_SELL,
+                                      TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1717,9 +1712,8 @@ ShortPosition::DoOpenAtMarketPrice(
   Assert(!IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, boost::none, params,
-      std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL,
-      TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      shared_from_this(), qty, boost::none, params, std::move(handler),
+      ORDER_SIDE_SELL, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoOpen(
@@ -1729,10 +1723,9 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoOpen(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_GTC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_SELL,
+                                      TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1743,10 +1736,9 @@ ShortPosition::DoOpenImmediatelyOrCancel(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(!IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_SELL, TIME_IN_FORCE_IOC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_SELL,
+                                      TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1757,9 +1749,8 @@ ShortPosition::DoCloseAtMarketPrice(
   Assert(IsOpened());
   Assert(!IsClosed());
   return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, boost::none, params,
-      std::move(handler), GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY,
-      TIME_IN_FORCE_GTC, GetTimeMeasurement());
+      shared_from_this(), qty, boost::none, params, std::move(handler),
+      ORDER_SIDE_BUY, TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoClose(
@@ -1767,10 +1758,9 @@ boost::shared_ptr<const OrderTransactionContext> ShortPosition::DoClose(
     const Price &price,
     const OrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler) {
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_GTC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_BUY,
+                                      TIME_IN_FORCE_GTC, GetTimeMeasurement());
 }
 
 boost::shared_ptr<const OrderTransactionContext>
@@ -1781,10 +1771,9 @@ ShortPosition::DoCloseImmediatelyOrCancel(
     std::unique_ptr<OrderStatusHandler> &&handler) {
   Assert(IsOpened());
   Assert(!IsClosed());
-  return GetTradingSystem().SendOrder(
-      shared_from_this(), GetCurrency(), qty, price, params, std::move(handler),
-      GetStrategy().GetRiskControlScope(), ORDER_SIDE_BUY, TIME_IN_FORCE_IOC,
-      GetTimeMeasurement());
+  return GetTradingSystem().SendOrder(shared_from_this(), qty, price, params,
+                                      std::move(handler), ORDER_SIDE_BUY,
+                                      TIME_IN_FORCE_IOC, GetTimeMeasurement());
 }
 
 //////////////////////////////////////////////////////////////////////////

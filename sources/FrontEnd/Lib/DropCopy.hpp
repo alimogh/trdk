@@ -110,7 +110,6 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   virtual void CopySubmittedOrder(const trdk::OrderId &,
                                   const boost::posix_time::ptime &,
                                   const trdk::Position &,
-                                  const trdk::Lib::Currency &,
                                   const trdk::OrderSide &,
                                   const trdk::Qty &,
                                   const boost::optional<trdk::Price> &,
