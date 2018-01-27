@@ -23,13 +23,15 @@ struct OrderRecord {
   const QString symbol;
   const QString currency;
   const QString exchangeName;
-  const QString side;
+  const OrderSide side;
+  const QString sideName;
   const double qty;
   const double price;
   const QString tif;
-  QString status;
-  double filledQty;
-  double remainingQty;
+  OrderStatus status;
+  QString statusName;
+  Qty filledQty;
+  Qty remainingQty;
   QTime lastTime;
 
   explicit OrderRecord(const OrderId &,

@@ -27,7 +27,7 @@ MainWindow::MainWindow(Engine &engine,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
-      m_operationListView(m_engine, this),
+      m_operationListView(this),
       m_standaloneOrderList(m_engine, this),
       m_balanceList(m_engine, this),
       m_moduleDlls(moduleDlls) {
@@ -37,10 +37,6 @@ MainWindow::MainWindow(Engine &engine,
   {
     auto *model = new OperationListModel(m_engine, &m_operationListView);
     m_operationListView.setModel(model);
-    Verify(connect(model, &QAbstractItemModel::rowsInserted,
-                   [this](const QModelIndex &index, int, int) {
-                     m_operationListView.expand(index);
-                   }));
     auto *layout = new QVBoxLayout;
     layout->addWidget(&m_operationListView);
     m_ui.operations->setLayout(layout);

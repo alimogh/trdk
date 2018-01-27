@@ -16,7 +16,6 @@ using namespace trdk::FrontEnd::Lib;
 
 OrderListView::OrderListView(Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
-  setWindowTitle(tr("Order List"));
   setSortingEnabled(true);
   sortByColumn(0, Qt::AscendingOrder);
   setAlternatingRowColors(true);

@@ -79,8 +79,11 @@ QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
 QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
   const auto &date = source.date();
   const auto &time = source.time_of_day();
-  return {{date.year(), date.month().as_number(), date.day()},
-          {time.hours(), time.minutes(), time.seconds()}};
+  const auto &ms =
+      time - pt::time_duration(time.hours(), time.minutes(), time.seconds());
+  return {QDate(date.year(), date.month().as_number(), date.day()),
+          QTime(time.hours(), time.minutes(), time.seconds(),
+                static_cast<int>(ms.total_milliseconds()))};
 }
 
 QString lib::ConvertToUiString(const OrderStatus &status) {

@@ -17,6 +17,7 @@
 #include <QtWidgets>
 #pragma warning(pop)
 
+#include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>

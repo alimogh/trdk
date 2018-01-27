@@ -240,9 +240,9 @@ class Position::Implementation : private boost::noncopyable {
       AssertLe(order.executedQty + trade.qty, order.qty);
       order.status = ORDER_STATUS_STEP_OPENED;
       GetDirection().AddTrade(trade);
-      if (!GetPositionImpl().m_defaultOrderParams.position) {
-        GetPositionImpl().m_defaultOrderParams.position =
-            &*GetOrder().transactionContext;
+      auto &impl = GetPositionImpl();
+      if (!impl.m_defaultOrderParams.position) {
+        impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
       }
       if (!isFull) {
         Report(ORDER_STATUS_FILLED_PARTIALLY);
@@ -252,6 +252,8 @@ class Position::Implementation : private boost::noncopyable {
         Report(ORDER_STATUS_FILLED_FULLY);
         SignalUpdate(lock);
       }
+      impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), trade.qty,
+                                  trade.price);
     }
 
     virtual void OnReject() override {
@@ -311,7 +313,8 @@ class Position::Implementation : private boost::noncopyable {
       return orders.back();
     }
 
-    virtual const char *GetSide() const = 0;
+    virtual const char *GetAction() const = 0;
+    virtual OrderSide GetOrderSide() const = 0;
     virtual const Qty &GetFilledQty() const = 0;
 
    private:
@@ -335,7 +338,7 @@ class Position::Implementation : private boost::noncopyable {
     }
 
     void Report(const OrderStatus &status) {
-      GetPositionImpl().ReportAction(GetSide(), ConvertToPch(status),
+      GetPositionImpl().ReportAction(GetAction(), ConvertToPch(status),
                                      GetOrder(), GetFilledQty());
     }
 
@@ -356,7 +359,10 @@ class Position::Implementation : private boost::noncopyable {
     virtual DirectionData &GetDirection() override {
       return GetPositionImpl().m_open;
     }
-    virtual const char *GetSide() const override { return "open"; }
+    virtual const char *GetAction() const override { return "open"; }
+    virtual OrderSide GetOrderSide() const override {
+      return GetPosition().GetOpenOrderSide();
+    }
     virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetOpenedQty();
     }
@@ -375,7 +381,10 @@ class Position::Implementation : private boost::noncopyable {
     virtual DirectionData &GetDirection() override {
       return GetPositionImpl().m_close;
     }
-    virtual const char *GetSide() const override { return "close"; }
+    virtual const char *GetAction() const override { return "close"; }
+    virtual OrderSide GetOrderSide() const override {
+      return GetPosition().GetCloseOrderSide();
+    }
     virtual const Qty &GetFilledQty() const override {
       return GetPosition().GetClosedQty();
     }

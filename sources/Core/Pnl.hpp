@@ -20,7 +20,7 @@ class Pnl : private boost::noncopyable {
   virtual ~Pnl() = default;
 
  public:
-  virtual bool IsProfit() const = 0;
+  virtual boost::tribool IsProfit() const = 0;
   virtual const trdk::Pnl::Data& GetData() const = 0;
 };
 }  // namespace trdk

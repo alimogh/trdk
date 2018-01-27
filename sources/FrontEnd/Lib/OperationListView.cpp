@@ -10,21 +10,67 @@
 
 #include "Prec.hpp"
 #include "OperationListView.hpp"
-#include "Engine.hpp"
+#include "OpeartionItemDelegate.hpp"
 
 using namespace trdk::FrontEnd::Lib;
 
-OperationListView::OperationListView(Engine &engine, QWidget *parent)
-    : Base(parent), m_engine(engine) {
-  setWindowTitle(tr("Operations"));
+OperationListView::OperationListView(QWidget *parent) : Base(parent) {
   setAlternatingRowColors(true);
   setSelectionBehavior(QAbstractItemView::SelectItems);
   setSelectionMode(QAbstractItemView::ExtendedSelection);
-  setContextMenuPolicy(Qt::CustomContextMenu);
-  Verify(connect(this, &OperationListView::customContextMenuRequested, this,
-                 &OperationListView::ShowContextMenu));
+  setItemDelegate(new OpeartionItemDelegate(this));
+  InitContextMenu();
 }
 
-void OperationListView::ShowContextMenu(const QPoint &pos) {
-  m_contextMenu.exec(mapToGlobal(pos));
+void OperationListView::InitContextMenu() {
+  setContextMenuPolicy(Qt::ActionsContextMenu);
+  {
+    auto *action = new QAction(tr("&Copy\tCtrl+C"), this);
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
+    Verify(connect(action, &QAction::triggered, this,
+                   &OperationListView::CopySelectedValuesToClipboard));
+    addAction(action);
+  }
+  {
+    QAction *separator = new QAction(this);
+    separator->setSeparator(true);
+    addAction(separator);
+  }
+  {
+    auto *action = new QAction(tr("C&ollapse All"), this);
+    Verify(connect(action, &QAction::triggered, this,
+                   &OperationListView::collapseAll));
+    addAction(action);
+  }
+  {
+    auto *action = new QAction(tr("&Expand All"), this);
+    Verify(connect(action, &QAction::triggered, this,
+                   &OperationListView::expandAll));
+    addAction(action);
+  }
+}
+
+void OperationListView::CopySelectedValuesToClipboard() {
+  QItemSelectionModel *selection = selectionModel();
+  QModelIndexList indexes = selection->selectedIndexes();
+  const QModelIndex *previous = nullptr;
+  QString result;
+  for (const auto &current : indexes) {
+    if (previous) {
+      current.row() != previous->row() ? result.append('\n')
+                                       : result.append(", ");
+    }
+    result.append(model()->data(current).toString());
+    previous = &current;
+  }
+  QApplication::clipboard()->setText(result);
+}
+
+void OperationListView::rowsInserted(const QModelIndex &index,
+                                     int start,
+                                     int end) {
+  if (index.isValid() && !index.parent().isValid()) {
+    expand(index);
+  }
+  Base::rowsInserted(index, start, end);
 }
