@@ -19,9 +19,9 @@ class PnlContainer : public trdk::Pnl {
   virtual ~PnlContainer() = default;
 
  public:
-  //! Registers a new result.
-  /** @sa CalcOperationResult
-    */
-  virtual void Update(const trdk::Security &, const trdk::Volume &) = 0;
+  virtual void Update(const trdk::Security &,
+                      const trdk::OrderSide &,
+                      const trdk::Qty &,
+                      const trdk::Price &) = 0;
 };
-}
+}  // namespace trdk

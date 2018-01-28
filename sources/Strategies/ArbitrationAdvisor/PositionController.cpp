@@ -12,7 +12,6 @@
 #include "PositionController.hpp"
 #include "Operation.hpp"
 #include "Strategy.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -256,7 +255,7 @@ std::unique_ptr<BestSecurityChecker> CreateBestSecurityChecker(
     return boost::make_unique<BestSecurityCheckerForShortPosition>(positon);
   }
 }
-}
+}  // namespace
 
 void aa::PositionController::ClosePosition(Position &position) {
   {

@@ -15,7 +15,6 @@
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
-#include "Lib/Util.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
@@ -27,9 +26,9 @@ MainWindow::MainWindow(Engine &engine,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
-      m_operationListView(m_engine, this),
+      m_operationListView(this),
       m_standaloneOrderList(m_engine, this),
-      m_balanceList(m_engine, this),
+      m_balanceList(this),
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
@@ -37,10 +36,6 @@ MainWindow::MainWindow(Engine &engine,
   {
     auto *model = new OperationListModel(m_engine, &m_operationListView);
     m_operationListView.setModel(model);
-    Verify(connect(model, &QAbstractItemModel::rowsInserted,
-                   [this](const QModelIndex &index, int, int) {
-                     m_operationListView.expand(index);
-                   }));
     auto *layout = new QVBoxLayout;
     layout->addWidget(&m_operationListView);
     m_ui.operations->setLayout(layout);
@@ -64,10 +59,6 @@ MainWindow::MainWindow(Engine &engine,
     auto *model = new SortFilterProxyModel(&m_balanceList);
     model->setSourceModel(new BalanceListModel(m_engine, &m_balanceList));
     m_balanceList.setModel(model);
-    Verify(connect(model, &QAbstractItemModel::rowsInserted,
-                   [this](const QModelIndex &index, int, int) {
-                     m_balanceList.expand(index);
-                   }));
     m_ui.balances->setWidget(&m_balanceList);
   }
 

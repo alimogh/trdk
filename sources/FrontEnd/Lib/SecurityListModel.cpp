@@ -12,7 +12,6 @@
 #include "SecurityListModel.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

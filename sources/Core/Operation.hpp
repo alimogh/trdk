@@ -45,7 +45,7 @@ class TRDK_CORE_API Operation {
 
   //! Setups new position.
   /** Place to attach stop-orders and so on.
-    */
+   */
   virtual void Setup(trdk::Position &,
                      trdk::TradingLib::PositionController &) const;
 
@@ -60,7 +60,7 @@ class TRDK_CORE_API Operation {
 
   //! Will be called before each closing state changing.
   /** @return True, if reason can be changed, false otherwise.
-    */
+   */
   virtual bool OnCloseReasonChange(trdk::Position &,
                                    const trdk::CloseReason &newReason);
 
@@ -71,15 +71,18 @@ class TRDK_CORE_API Operation {
 
   //! Returns object for inverted position.
   /** @return Pointer to an operation for inverted position or empty pointer if
-    *         the position can be inverted.
-    */
+   *          the position can be inverted.
+   */
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &);
 
-  void UpdatePnl(const trdk::Security &, const trdk::Volume &);
+  void UpdatePnl(const trdk::Security &,
+                 const trdk::OrderSide &,
+                 const trdk::Qty &,
+                 const trdk::Price &);
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
+}  // namespace trdk

@@ -21,6 +21,7 @@ namespace lib = trdk::FrontEnd::Lib;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
+namespace ids = boost::uuids;
 
 class lib::Engine::Implementation : private boost::noncopyable {
  public:
@@ -92,6 +93,86 @@ class lib::Engine::Implementation : private boost::noncopyable {
     oss << message;
     emit m_self.LogRecord(QString::fromStdString(oss.str()));
   }
+
+#ifndef _DEBUG
+  void Test() {}
+#else
+
+  boost::shared_future<void> m_testFuture;
+  boost::shared_ptr<Dummies::Strategy> m_testStrategy;
+
+  void Test() {
+    m_testFuture = boost::async([this]() {
+      try {
+        return RunTest();
+      } catch (const std::exception &ex) {
+        QMessageBox::critical(nullptr, tr("Debug test error"), ex.what(),
+                              QMessageBox::Ok);
+      }
+    });
+  }
+  void RunTest() {
+    ids::random_generator generateUuid;
+    const auto operationId = generateUuid();
+    m_testStrategy = boost::make_shared<Dummies::Strategy>(m_self.GetContext());
+    Security *security1 = nullptr;
+    Security *security2 = nullptr;
+    m_self.GetContext().GetMarketDataSource(0).ForEachSecurity(
+        [&security1, &security2](Security &source) {
+          if (!security1) {
+            security1 = &source;
+          } else if (!security2) {
+            security2 = &source;
+          }
+        });
+    Assert(security1);
+    Assert(security2);
+
+    for (size_t i = 0; i < 3; ++i) {
+      boost::this_thread::sleep(pt::seconds(1));
+      const auto &operation = boost::make_shared<Operation>(
+          *m_testStrategy,
+          boost::make_unique<TradingLib::PnlOneSymbolContainer>());
+      if (i && !(i % 3)) {
+        continue;
+      }
+      operation->UpdatePnl(*security1, ORDER_SIDE_BUY, 10, 1);
+      operation->UpdatePnl(*security1, ORDER_SIDE_SELL, 10, i % 2 ? 0.9 : 1.1);
+      operation->UpdatePnl(*security2, ORDER_SIDE_BUY, 1.23124 * i,
+                           1.23124 * i);
+      operation->UpdatePnl(*security2, ORDER_SIDE_SELL, 1.23124 * i,
+                           1.23124 * i);
+      for (size_t j = 0; j < 6; ++j) {
+        const auto &tradingSystem =
+            m_self.GetContext().GetTradingSystem(0, TRADING_MODE_LIVE);
+        const auto position = boost::make_shared<LongPosition>(
+            operation, j + 1, *security1, security1->GetSymbol().GetCurrency(),
+            2312313, 62423, TimeMeasurement::Milestones());
+        const auto &orderId = boost::lexical_cast<std::string>(generateUuid());
+        const auto qty = 100.00 * (j + 1) * (i + 1);
+        m_dropCopy.CopySubmittedOrder(
+            orderId, m_self.GetContext().GetCurrentTime(), *position,
+            j % 2 ? ORDER_SIDE_SELL : ORDER_SIDE_BUY, qty, Price(12.345678901),
+            j % 2 ? TIME_IN_FORCE_GTC : TIME_IN_FORCE_IOC);
+        boost::this_thread::sleep(pt::seconds(1));
+        if (j < 5) {
+          m_dropCopy.CopyOrderStatus(
+              orderId, tradingSystem, m_self.GetContext().GetCurrentTime(),
+              j <= 1 || (j == 2 && (i != 2 || i % 5))
+                  ? ORDER_STATUS_FILLED_FULLY
+                  : j == 2 ? ORDER_STATUS_ERROR
+                           : j == 3 ? ORDER_STATUS_CANCELED
+                                    : ORDER_STATUS_REJECTED,
+              j == 0 ? 0 : 55.55 * (i + 1));
+        } else {
+          m_dropCopy.CopyOrderStatus(
+              orderId, tradingSystem, m_self.GetContext().GetCurrentTime(),
+              j == 4 ? ORDER_STATUS_CANCELED : ORDER_STATUS_REJECTED, qty);
+        }
+      }
+    }
+  }
+#endif
 };
 
 lib::Engine::Engine(const fs::path &path, QWidget *parent)
@@ -159,3 +240,5 @@ const lib::DropCopy &lib::Engine::GetDropCopy() const {
 RiskControlScope &lib::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }
+
+void lib::Engine::Test() { m_pimpl->Test(); }

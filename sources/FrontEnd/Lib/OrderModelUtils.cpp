@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "OrderModelUtils.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -40,12 +39,15 @@ OrderRecord::OrderRecord(const OrderId &id,
       symbol(QString::fromStdString(security.GetSymbol().GetSymbol())),
       currency(QString::fromStdString(ConvertToIso(currency))),
       exchangeName(QString::fromStdString(tradingSystem.GetInstanceName())),
-      side(side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell")),
+      side(side),
+      sideName(side == ORDER_SIDE_BUY ? QObject::tr("buy")
+                                      : QObject::tr("sell")),
       qty(qty),
       price(boost::get_optional_value_or(
           price, std::numeric_limits<double>::quiet_NaN())),
       tif(QString(ConvertToPch(tif)).toUpper()),
-      status(ConvertToUiString(ORDER_STATUS_SENT)),
+      status(ORDER_STATUS_SENT),
+      statusName(ConvertToUiString(status)),
       filledQty(0),
       remainingQty(qty) {
   AssertGe(qty, remainingQty);
@@ -55,7 +57,8 @@ void OrderRecord::Update(const pt::ptime &time,
                          const OrderStatus &newStatus,
                          const Qty &newRemainingQty) {
   lastTime = ConvertToQDateTime(time).time();
-  status = ConvertToUiString(newStatus);
+  status = newStatus;
+  statusName = ConvertToUiString(status);
   remainingQty = newRemainingQty;
   AssertGe(qty, remainingQty);
   filledQty = qty - remainingQty;

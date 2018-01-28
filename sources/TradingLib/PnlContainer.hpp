@@ -21,13 +21,16 @@ class PnlOneSymbolContainer : public trdk::PnlContainer {
   virtual ~PnlOneSymbolContainer() override;
 
  public:
-  virtual void Update(const trdk::Security &, const trdk::Volume &) override;
-  virtual bool IsProfit() const override;
+  virtual void Update(const trdk::Security &,
+                      const trdk::OrderSide &,
+                      const trdk::Qty &,
+                      const trdk::Price &) override;
+  virtual boost::tribool IsProfit() const override;
   virtual const trdk::Pnl::Data &GetData() const override;
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk

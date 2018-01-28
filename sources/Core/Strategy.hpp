@@ -146,7 +146,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   //! Safely invokes an action with the instance of the strategy.
   /** Applied only for non-system calls.
-    */
+   */
   template <typename StrategyImplementation, typename Callback>
   void Invoke(const Callback &callback) {
     const auto lock = LockForOtherThreads();
@@ -162,7 +162,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
     callback(*impl);
   }
   /** Applied only for non-system calls.
-    */
+   */
   template <typename StrategyImplementation, typename Callback>
   void Invoke(const Callback &callback) const {
     const auto &lock = LockForOtherThreads();
@@ -218,13 +218,13 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
  public:
   //! Registers position for this strategy.
   /** Thread-unsafe method! Must be called only from event-methods, or if
-    * strategy locked by GetMutex().
-    */
+   * strategy locked by GetMutex().
+   */
   virtual void Register(Position &);
   //! Unregisters position for this strategy.
   /** Thread-unsafe method! Must be called only from event-methods, or if
-    * strategy locked by GetMutex().
-    */
+   * strategy locked by GetMutex().
+   */
   virtual void Unregister(Position &) noexcept;
 
   PositionList &GetPositions();
@@ -255,17 +255,17 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   //! Will be called after position blocking.
   /** @param[in] Blocking reason, if existent (maybe nullptr).
-    * @return True, if position blocking event should be broadcasted through the
-    *         engine subscription, false otherwise (position still be blocked
-    *         in any case).
-    */
+   * @return True, if position blocking event should be broadcasted through the
+   *         engine subscription, false otherwise (position still be blocked
+   *         in any case).
+   */
   virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
+}  // namespace trdk
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -287,7 +287,7 @@ inline trdk::Strategy::PositionList::ConstIterator range_end(
     const trdk::Strategy::PositionList &list) {
   return list.GetEnd();
 }
-}
+}  // namespace trdk
 
 namespace boost {
 template <>
@@ -298,7 +298,7 @@ template <>
 struct range_const_iterator<trdk::Strategy::PositionList> {
   typedef trdk::Strategy::PositionList::ConstIterator type;
 };
-}
+}  // namespace boost
 
 namespace std {
 template <>
@@ -311,6 +311,6 @@ inline void swap(trdk::Strategy::PositionList::ConstIterator &lhs,
                  trdk::Strategy::PositionList::ConstIterator &rhs) {
   lhs.Swap(rhs);
 }
-}
+}  // namespace std
 
 //////////////////////////////////////////////////////////////////////////

@@ -10,8 +10,10 @@
 
 #include "Prec.hpp"
 #include "PnlContainer.hpp"
+#include "Core/Security.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,15 +21,58 @@ using namespace trdk::TradingLib;
 class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
  public:
   Data m_data;
+
+ public:
+  void Update(const std::string &symbol, const Double &delta) {
+    if (!delta) {
+      return;
+    }
+    const auto &result = m_data.emplace(symbol, delta);
+    if (!result.second) {
+      result.first->second += delta;
+      if (!result.first->second) {
+        m_data.erase(result.first);
+      }
+    }
+  }
 };
 
 PnlOneSymbolContainer::PnlOneSymbolContainer()
     : m_pimpl(boost::make_unique<Implementation>()) {}
 PnlOneSymbolContainer::~PnlOneSymbolContainer() = default;
 
-void PnlOneSymbolContainer::Update(const Security &, const Volume &) {}
+void PnlOneSymbolContainer::Update(const Security &security,
+                                   const OrderSide &side,
+                                   const Qty &qty,
+                                   const Price &price) {
+  const auto &symbol = security.GetSymbol();
+  switch (symbol.GetSecurityType()) {
+    default:
+      throw MethodIsNotImplementedException(
+          "Security type is not supported by P&L container");
+    case SECURITY_TYPE_CRYPTO: {
+      m_pimpl->Update(symbol.GetBaseSymbol(),
+                      qty * (side == ORDER_SIDE_BUY ? 1 : -1));
+      m_pimpl->Update(symbol.GetQuoteSymbol(),
+                      (qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1));
+    }
+  }
+}
 
-bool PnlOneSymbolContainer::IsProfit() const { return false; }
+boost::tribool PnlOneSymbolContainer::IsProfit() const {
+  if (m_pimpl->m_data.empty()) {
+    return boost::indeterminate;
+  }
+  boost::tribool result(false);
+  for (const auto &symbol : m_pimpl->m_data) {
+    if (symbol.second < 0) {
+      return false;
+    } else if (symbol.second > 0) {
+      result = true;
+    }
+  }
+  return result;
+}
 
 const PnlOneSymbolContainer::Data &PnlOneSymbolContainer::GetData() const {
   return m_pimpl->m_data;

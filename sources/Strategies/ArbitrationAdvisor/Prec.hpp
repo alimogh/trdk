@@ -34,6 +34,7 @@
 #include "FrontEnd/Lib/OrderStatusNotifier.hpp"
 #include "FrontEnd/Lib/Types.hpp"
 #include "FrontEnd/Lib/Util.hpp"
+#include "Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
 #include <boost/algorithm/string.hpp>

@@ -78,15 +78,14 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
 void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
                                        const pt::ptime &time,
                                        const Position &position,
-                                       const Currency &currency,
                                        const OrderSide &sid,
                                        const Qty &qty,
                                        const boost::optional<Price> &price,
                                        const TimeInForce &tif) {
   emit OperationOrderSubmitted(
       position.GetOperation()->GetId(), position.GetSubOperationId(), id, time,
-      &position.GetSecurity(), currency, &position.GetTradingSystem(), sid, qty,
-      price, tif);
+      &position.GetSecurity(), position.GetCurrency(),
+      &position.GetTradingSystem(), sid, qty, price, tif);
 }
 
 void lib::DropCopy::CopyOrderStatus(const OrderId &id,
