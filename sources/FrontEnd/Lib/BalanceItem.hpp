@@ -68,7 +68,7 @@ class BalanceItem : private boost::noncopyable {
   virtual ~BalanceItem() = default;
 
  public:
-  void AppendChild(std::unique_ptr<BalanceItem> &&);
+  void AppendChild(boost::shared_ptr<BalanceItem> &&);
   int GetRow() const;
   int GetNumberOfChilds() const;
   BalanceItem *GetChild(int row);
@@ -109,13 +109,14 @@ class BalanceDataItem : public BalanceItem {
   virtual ~BalanceDataItem() override = default;
 
  public:
+  BalanceRecord &GetRecord();
   virtual QVariant GetData(int column) const override;
   virtual bool HasEmpty() const override;
   virtual bool HasLocked() const override;
   virtual bool IsUsed() const;
 
  private:
-  const boost::shared_ptr<const BalanceRecord> m_data;
+  const boost::shared_ptr<BalanceRecord> m_data;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

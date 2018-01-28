@@ -40,9 +40,9 @@ class BalanceListModel::Implementation : private boost::noncopyable {
   RootItem m_root;
   boost::unordered_map<
       const TradingSystem *,
-      std::pair<
-          BalanceTradingSystemItem *,
-          boost::unordered_map<std::string, boost::shared_ptr<BalanceRecord>>>>
+      std::pair<BalanceTradingSystemItem *,
+                boost::unordered_map<std::string,
+                                     boost::shared_ptr<BalanceDataItem>>>>
       m_data;
   boost::unordered_set<std::string> m_defaultSymbols;
 };
@@ -213,17 +213,23 @@ void BalanceListModel::OnUpdate(const TradingSystem *tradingSystem,
       const auto index = tradingSystemIt->second.first->GetNumberOfChilds();
       const auto &data =
           boost::make_shared<BalanceRecord>(symbol, available, locked, isUsed);
+      const auto &item = boost::make_shared<BalanceDataItem>(data);
       beginInsertRows(createIndex(tradingSystemIt->second.first->GetRow(), 0,
                                   tradingSystemIt->second.first),
                       index, index);
-      tradingSystemIt->second.first->AppendChild(
-          boost::make_unique<BalanceDataItem>(data));
-      symbolList.emplace(std::make_pair(symbol, data));
+      tradingSystemIt->second.first->AppendChild(item);
+      symbolList.emplace(std::make_pair(symbol, item));
       AssertEq(index, tradingSystemIt->second.first->GetNumberOfChilds() - 1);
       endInsertRows();
       return;
     }
 
-    { symbolIt->second->Update(available, locked); }
+    {
+      auto &data = *symbolIt->second;
+      data.GetRecord().Update(available, locked);
+      emit dataChanged(
+          createIndex(data.GetRow(), 0, &data),
+          createIndex(data.GetRow(), numberOfBalanceColumns - 1, &data));
+    }
   }
 }

@@ -39,13 +39,12 @@ Volume BalanceRecord::GetTotal() const { return available + locked; }
 
 BalanceItem::BalanceItem() : m_parent(nullptr), m_row(-1) {}
 
-void BalanceItem::AppendChild(std::unique_ptr<BalanceItem> &&child) {
+void BalanceItem::AppendChild(boost::shared_ptr<BalanceItem> &&child) {
   Assert(!child->m_parent);
   AssertEq(-1, child->m_row);
-  boost::shared_ptr<BalanceItem> ptr(child.release());
-  m_childItems.emplace_back(ptr);
-  ptr->m_parent = this;
-  ptr->m_row = static_cast<int>(m_childItems.size()) - 1;
+  m_childItems.emplace_back(child);
+  child->m_parent = this;
+  child->m_row = static_cast<int>(m_childItems.size()) - 1;
 }
 
 int BalanceItem::GetRow() const {
@@ -113,6 +112,8 @@ QVariant BalanceTradingSystemItem::GetData(int column) const {
 
 BalanceDataItem::BalanceDataItem(const boost::shared_ptr<BalanceRecord> &data)
     : m_data(data) {}
+
+BalanceRecord &BalanceDataItem::GetRecord() { return *m_data; }
 
 QVariant BalanceDataItem::GetData(int column) const {
   static_assert(numberOfBalanceColumns == 6, "List changed.");
