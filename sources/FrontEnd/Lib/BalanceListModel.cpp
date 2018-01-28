@@ -185,7 +185,8 @@ void BalanceListModel::OnUpdate(const TradingSystem *tradingSystem,
                                 const Volume &locked) {
   auto tradingSystemIt = m_pimpl->m_data.find(tradingSystem);
   if (tradingSystemIt == m_pimpl->m_data.cend()) {
-    if (available == 0 && locked == 0) {
+    const bool isUsed = m_pimpl->m_defaultSymbols.count(symbol) > 0;
+    if (!isUsed && available == 0 && locked == 0) {
       return;
     }
     const auto index = m_pimpl->m_root.GetNumberOfChilds();
