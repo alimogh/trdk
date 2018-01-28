@@ -16,11 +16,11 @@ using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Lib::Detail;
 
-OpeartionItemDelegate::OpeartionItemDelegate(QWidget *parent) : Base(parent) {}
+OperationItemDelegate::OperationItemDelegate(QWidget *parent) : Base(parent) {}
 
-void OpeartionItemDelegate::initStyleOption(QStyleOptionViewItem *options,
+void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
                                             const QModelIndex &index) const {
-  static const QColor colorOfInactive(90, 90, 90);
+  static const QColor colorOfInactive(125, 125, 125);
   static const QColor backgoundColorOfError(Qt::yellow);
   static const QColor textColorOfError(Qt::red);
   static const QColor colorOfProfit(0, 128, 0);
@@ -35,28 +35,22 @@ void OpeartionItemDelegate::initStyleOption(QStyleOptionViewItem *options,
 
   Base::initStyleOption(options, index);
 
-  const auto &item =
-      *static_cast<const OperationItem *>(index.internalPointer());
+  const auto &item = ResolveModelIndexItem<OperationItem>(index);
+
   {
     const auto *const operation =
         dynamic_cast<const OperationNodeItem *>(&item);
     if (operation) {
       if (operation->HasErrors()) {
-        options->palette.setColor(QPalette::Base, backgoundColorOfError);
-        options->palette.setColor(QPalette::AlternateBase,
-                                  backgoundColorOfError);
+        options->backgroundBrush = backgoundColorOfError;
         options->palette.setColor(QPalette::Text, textColorOfError);
         options->font.setBold(true);
       } else if (operation->GetRecord().isCompelted) {
         if (!boost::indeterminate(operation->GetRecord().isProfit)) {
-          if (operation->GetRecord().isProfit) {
-            options->palette.setColor(QPalette::Base, colorOfProfit);
-            options->palette.setColor(QPalette::AlternateBase,
-                                      colorOfProfitAlt);
-          } else {
-            options->palette.setColor(QPalette::Base, colorOfLoss);
-            options->palette.setColor(QPalette::AlternateBase, colorOfLossAlt);
-          }
+          options->backgroundBrush =
+              operation->GetRecord().isProfit
+                  ? index.row() % 2 ? colorOfProfitAlt : colorOfProfit
+                  : index.row() % 2 ? colorOfLossAlt : colorOfLoss;
           options->palette.setColor(QPalette::Text, textColorOfActive);
         } else {
           options->palette.setColor(QPalette::Text, colorOfInactive);
@@ -78,8 +72,7 @@ void OpeartionItemDelegate::initStyleOption(QStyleOptionViewItem *options,
     const auto &record = order->GetRecord();
     static_assert(numberOfOrderStatuses == 7, "List changed.");
     if (order->HasErrors()) {
-      options->palette.setColor(QPalette::Base, backgoundColorOfError);
-      options->palette.setColor(QPalette::AlternateBase, backgoundColorOfError);
+      options->backgroundBrush = backgoundColorOfError;
       options->palette.setColor(QPalette::Text, textColorOfError);
       options->font.setBold(true);
     } else {
@@ -100,9 +93,7 @@ void OpeartionItemDelegate::initStyleOption(QStyleOptionViewItem *options,
                                         : colorOfSellClosed);
           break;
         case ORDER_STATUS_ERROR:
-          options->palette.setColor(QPalette::Base, backgoundColorOfError);
-          options->palette.setColor(QPalette::AlternateBase,
-                                    backgoundColorOfError);
+          options->backgroundBrush = backgoundColorOfError;
           options->palette.setColor(QPalette::Text, textColorOfError);
           options->font.setBold(true);
           break;
@@ -120,21 +111,9 @@ void OpeartionItemDelegate::initStyleOption(QStyleOptionViewItem *options,
       }
     }
   }
-
-  if (orderHead || order) {
-    static_assert(numberOfOperationColumns == 14, "List changed.");
-    switch (index.column()) {
-      case OPERATION_COLUMN_OPERATION_ID_OPERATION_COLUMN_ORDER_PRICE:
-      case OPERATION_COLUMN_ORDER_QTY:
-      case OPERATION_COLUMN_ORDER_FILLED_QTY:
-      case OPERATION_COLUMN_ORDER_REMAINING_QTY:
-        options->displayAlignment = Qt::AlignRight;
-        break;
-    }
-  }
 }
 
-QString OpeartionItemDelegate::displayText(const QVariant &source,
+QString OperationItemDelegate::displayText(const QVariant &source,
                                            const QLocale &locale) const {
   switch (source.type()) {
     case QVariant::Time:

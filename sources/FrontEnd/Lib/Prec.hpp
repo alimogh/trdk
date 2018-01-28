@@ -23,6 +23,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"
@@ -42,3 +43,5 @@
 #include <boost/thread.hpp>
 #include <boost/uuid/random_generator.hpp>
 #endif
+
+#include "Util.hpp"

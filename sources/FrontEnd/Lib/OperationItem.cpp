@@ -62,13 +62,13 @@ OperationRecord &OperationNodeItem::GetRecord() { return m_record; }
 const OperationRecord &OperationNodeItem::GetRecord() const { return m_record; }
 
 QVariant OperationNodeItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 14, "List changed.");
+  static_assert(numberOfOperationColumns == 13, "List changed.");
   switch (column) {
-    case OPERATION_COLUMN_OPERATION_NUMBER:
+    case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return GetRow() + 1;
-    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_TIME:
+    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
       return GetRecord().startTime;
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
       return GetRecord().endTime;
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return GetRecord().status;
@@ -76,9 +76,9 @@ QVariant OperationNodeItem::GetData(int column) const {
       return GetRecord().financialResult;
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
       return GetRecord().strategyName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_SIDE:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
       return GetRecord().strategyInstance;
-    case OPERATION_COLUMN_OPERATION_ID_OPERATION_COLUMN_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
   }
   return QVariant();
@@ -87,34 +87,34 @@ QVariant OperationNodeItem::GetData(int column) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 QVariant OperationOrderHeadItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 14, "List changed.");
+  static_assert(numberOfOperationColumns == 13, "List changed.");
   switch (column) {
-    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_TIME:
-      return QObject::tr("Time");
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
+    case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return QObject::tr("Leg");
+    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
+      return QObject::tr("Side");
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+      return QObject::tr("Time");
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return QObject::tr("Symbol");
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return QObject::tr("Exchange");
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
       return QObject::tr("Status");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_SIDE:
-      return QObject::tr("Side");
-    case OPERATION_COLUMN_OPERATION_ID_OPERATION_COLUMN_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
       return QObject::tr("Order price");
     case OPERATION_COLUMN_ORDER_QTY:
       return QObject::tr("Order qty.");
-    case OPERATION_COLUMN_ORDER_FILLED_QTY:
-      return QObject::tr("Filled qty.");
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return QObject::tr("Remaining qty.");
+    case OPERATION_COLUMN_ORDER_FILLED_QTY:
+      return QObject::tr("Filled qty.");
     case OPERATION_COLUMN_ORDER_TIF:
       return QObject::tr("Time In Force");
     case OPERATION_COLUMN_ORDER_LAST_TIME:
       return QObject::tr("Update");
-    case OPERATION_COLUMN_ORDER_ID:
-      return QObject::tr("ID");
+    case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
+      return QObject::tr("Order ID");
   }
   return "";
 }
@@ -128,33 +128,33 @@ OrderRecord &OperationOrderItem::GetRecord() { return m_record; }
 const OrderRecord &OperationOrderItem::GetRecord() const { return m_record; }
 
 QVariant OperationOrderItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 14, "List changed.");
+  static_assert(numberOfOperationColumns == 13, "List changed.");
   switch (column) {
-    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_TIME:
-      return GetRecord().orderTime;
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
+    case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return *GetRecord().subOperationId;
+    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
+      return GetRecord().sideName;
+    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+      return GetRecord().orderTime;
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return GetRecord().symbol;
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return GetRecord().exchangeName;
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
       return GetRecord().statusName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_SIDE:
-      return GetRecord().sideName;
-    case OPERATION_COLUMN_OPERATION_ID_OPERATION_COLUMN_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
       return GetRecord().price;
     case OPERATION_COLUMN_ORDER_QTY:
       return GetRecord().qty;
-    case OPERATION_COLUMN_ORDER_FILLED_QTY:
-      return GetRecord().filledQty.Get();
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return GetRecord().remainingQty.Get();
+    case OPERATION_COLUMN_ORDER_FILLED_QTY:
+      return GetRecord().filledQty.Get();
     case OPERATION_COLUMN_ORDER_TIF:
       return GetRecord().tif;
     case OPERATION_COLUMN_ORDER_LAST_TIME:
       return GetRecord().lastTime;
-    case OPERATION_COLUMN_ORDER_ID:
+    case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
   }
   return QVariant();

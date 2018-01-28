@@ -133,7 +133,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
       const auto &operation = boost::make_shared<Operation>(
           *m_testStrategy,
           boost::make_unique<TradingLib::PnlOneSymbolContainer>());
-      if (!(i % 4)) {
+      if (i && !(i % 3)) {
         continue;
       }
       operation->UpdatePnl(*security1, ORDER_SIDE_BUY, 10, 1);
@@ -154,14 +154,15 @@ class lib::Engine::Implementation : private boost::noncopyable {
             orderId, m_self.GetContext().GetCurrentTime(), *position,
             j % 2 ? ORDER_SIDE_SELL : ORDER_SIDE_BUY, qty, Price(12.345678901),
             j % 2 ? TIME_IN_FORCE_GTC : TIME_IN_FORCE_IOC);
-        boost::this_thread::sleep(pt::milliseconds(250));
+        boost::this_thread::sleep(pt::seconds(1));
         if (j < 5) {
           m_dropCopy.CopyOrderStatus(
               orderId, tradingSystem, m_self.GetContext().GetCurrentTime(),
-              j <= 1 ? ORDER_STATUS_FILLED_FULLY
-                     : j == 2 ? ORDER_STATUS_ERROR
-                              : j == 3 ? ORDER_STATUS_CANCELED
-                                       : ORDER_STATUS_REJECTED,
+              j <= 1 || (j == 2 && (i != 2 || i % 5))
+                  ? ORDER_STATUS_FILLED_FULLY
+                  : j == 2 ? ORDER_STATUS_ERROR
+                           : j == 3 ? ORDER_STATUS_CANCELED
+                                    : ORDER_STATUS_REJECTED,
               j == 0 ? 0 : 55.55 * (i + 1));
         } else {
           m_dropCopy.CopyOrderStatus(

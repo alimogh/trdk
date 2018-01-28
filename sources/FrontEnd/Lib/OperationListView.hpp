@@ -34,6 +34,14 @@ class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
 
  private:
   void InitContextMenu();
+  void FollowNewRecords(bool isEnabled);
+
+ private:
+  bool m_isFollowingEnabled;
+  QAction* m_followNewOperationsAction;
+  bool m_isExpandingEnabled;
+  size_t m_numberOfResizesForOperations;
+  size_t m_numberOfResizesForOrder;
 };
 }  // namespace Lib
 }  // namespace FrontEnd

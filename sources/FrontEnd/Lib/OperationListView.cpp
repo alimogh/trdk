@@ -14,11 +14,17 @@
 
 using namespace trdk::FrontEnd::Lib;
 
-OperationListView::OperationListView(QWidget *parent) : Base(parent) {
+OperationListView::OperationListView(QWidget *parent)
+    : Base(parent),
+      m_isFollowingEnabled(true),
+      m_isExpandingEnabled(false),
+      m_numberOfResizesForOperations(),
+      m_numberOfResizesForOrder(0) {
   setAlternatingRowColors(true);
   setSelectionBehavior(QAbstractItemView::SelectItems);
   setSelectionMode(QAbstractItemView::ExtendedSelection);
-  setItemDelegate(new OpeartionItemDelegate(this));
+  setItemDelegate(new OperationItemDelegate(this));
+  setIndentation(10);
   InitContextMenu();
 }
 
@@ -37,13 +43,36 @@ void OperationListView::InitContextMenu() {
     addAction(separator);
   }
   {
+    auto *action = new QAction(tr("&Follow New Operations\tF"), this);
+    action->setShortcut(QKeySequence(Qt::Key_F));
+    action->setCheckable(true);
+    action->setChecked(m_isFollowingEnabled);
+    Verify(connect(action, &QAction::toggled, this,
+                   &OperationListView::FollowNewRecords));
+    addAction(action);
+  }
+  {
+    auto *action = new QAction(tr("&Expand New Operations"), this);
+    action->setCheckable(true);
+    action->setChecked(m_isExpandingEnabled);
+    Verify(connect(action, &QAction::toggled, this, [this](bool isEnabled) {
+      m_isExpandingEnabled = isEnabled;
+    }));
+    addAction(action);
+  }
+  {
+    QAction *separator = new QAction(this);
+    separator->setSeparator(true);
+    addAction(separator);
+  }
+  {
     auto *action = new QAction(tr("C&ollapse All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &OperationListView::collapseAll));
     addAction(action);
   }
   {
-    auto *action = new QAction(tr("&Expand All"), this);
+    auto *action = new QAction(tr("E&xpand All"), this);
     Verify(connect(action, &QAction::triggered, this,
                    &OperationListView::expandAll));
     addAction(action);
@@ -69,8 +98,32 @@ void OperationListView::CopySelectedValuesToClipboard() {
 void OperationListView::rowsInserted(const QModelIndex &index,
                                      int start,
                                      int end) {
-  if (index.isValid() && !index.parent().isValid()) {
+  Base::rowsInserted(index, start, end);
+  if (start == 0) {
+    if (m_numberOfResizesForOperations < 3) {
+      for (int i = 0; i < header()->count(); ++i) {
+        resizeColumnToContents(i);
+      }
+      ++m_numberOfResizesForOperations;
+    }
+  } else if (m_numberOfResizesForOrder < 3) {
+    for (int i = 0; i < header()->count(); ++i) {
+      resizeColumnToContents(i);
+    }
+    ++m_numberOfResizesForOrder;
+  }
+  if (m_isFollowingEnabled) {
+    ScrollToLastChild(*this, index);
+    m_isExpandingEnabled ? expand(index) : collapse(index);
+  } else if (m_isExpandingEnabled) {
     expand(index);
   }
-  Base::rowsInserted(index, start, end);
+}
+
+void OperationListView::FollowNewRecords(bool isEnabled) {
+  m_isFollowingEnabled = isEnabled;
+  if (!m_isFollowingEnabled) {
+    return;
+  }
+  ScrollToLastChild(*this);
 }

@@ -31,6 +31,23 @@ ConvertToQDateTime(const boost::posix_time::ptime &);
 
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
 
+template <typename Result>
+const Result &ResolveModelIndexItem(const QModelIndex &source) {
+  Assert(source.isValid());
+  const auto *const proxy =
+      dynamic_cast<const QAbstractProxyModel *>(source.model());
+  if (!proxy) {
+    Assert(source.internalPointer());
+    return *static_cast<const Result *>(source.internalPointer());
+  }
+  const auto &index = proxy->mapToSource(source);
+  Assert(index.internalPointer());
+  return *static_cast<const Result *>(index.internalPointer());
+}
+
+void ScrollToLastChild(QAbstractItemView &, const QModelIndex &);
+void ScrollToLastChild(QAbstractItemView &);
+
 }  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

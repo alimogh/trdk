@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::FrontEnd;
@@ -106,4 +105,17 @@ QString lib::ConvertToUiString(const OrderStatus &status) {
   }
   AssertEq(ORDER_STATUS_SENT, status);
   return QObject::tr("undefined");
+}
+
+void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
+  const auto &subRowCount = view.model()->rowCount(index);
+  if (subRowCount) {
+    view.scrollTo(index.child(subRowCount - 1, index.column()));
+  } else {
+    view.scrollTo(index);
+  }
+}
+
+void lib::ScrollToLastChild(QAbstractItemView &view) {
+  ScrollToLastChild(view, view.model()->index(view.model()->rowCount() - 1, 0));
 }

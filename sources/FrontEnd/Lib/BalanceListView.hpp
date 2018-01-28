@@ -24,14 +24,12 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
   typedef QTreeView Base;
 
  public:
-  explicit BalanceListView(Engine &, QWidget *parent);
-
- public slots:
-  void ShowContextMenu(const QPoint &);
+  explicit BalanceListView(QWidget *parent);
 
  private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+  void InitContextMenu();
+  void CopySelectedValuesToClipboard();
+  virtual void rowsInserted(const QModelIndex &, int start, int end) override;
 };
 }  // namespace Lib
 }  // namespace FrontEnd

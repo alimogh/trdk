@@ -13,7 +13,6 @@
 #include "DropCopy.hpp"
 #include "Engine.hpp"
 #include "OperationItem.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -65,37 +64,50 @@ OperationListModel::~OperationListModel() = default;
 QVariant OperationListModel::headerData(int section,
                                         Qt::Orientation orientation,
                                         int role) const {
-  if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
+  if (orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfOperationColumns == 14, "List changed.");
-  switch (section) {
-    case OPERATION_COLUMN_OPERATION_NUMBER:
-      return tr("#");
-    case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_TIME:
-      return tr("Start time");
-    case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_LEG:
-      return tr("End time");
-    case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
-      return tr("Status");
-    case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
-      return tr("Financial result");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
-      return tr("Strategy");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_SIDE:
-      return tr("Strategy instance");
-    case OPERATION_COLUMN_OPERATION_ID_OPERATION_COLUMN_ORDER_PRICE:
-      return tr("ID");
+  if (role == Qt::TextAlignmentRole) {
+    return GetOperationFieldAligment(static_cast<OperationColumn>(section));
+  } else if (role == Qt::DisplayRole) {
+    static_assert(numberOfOperationColumns == 13, "List changed.");
+    switch (section) {
+      case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
+        return tr("#");
+      case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
+        return tr("Start time");
+      case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
+        return tr("End time");
+      case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
+        return tr("Status");
+      case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
+        return tr("Financial result");
+      case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
+        return tr("Strategy");
+      case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
+        return tr("Strategy instance");
+      case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
+        return tr("ID");
+    }
+    return "";
   }
-  return "";
+  return Base::headerData(section, orientation, role);
 }
 
 QVariant OperationListModel::data(const QModelIndex &index, int role) const {
-  if (!index.isValid() || role != Qt::DisplayRole) {
+  if (!index.isValid()) {
     return QVariant();
   }
-  return static_cast<OperationItem *>(index.internalPointer())
-      ->GetData(index.column());
+  auto &item = *static_cast<OperationItem *>(index.internalPointer());
+  if (role == Qt::DisplayRole) {
+    return item.GetData(index.column());
+  } else if (role == Qt::TextAlignmentRole &&
+             (dynamic_cast<const OperationOrderItem *>(&item) ||
+              dynamic_cast<const OperationOrderHeadItem *>(&item))) {
+    return GetOperationFieldAligment(
+        static_cast<OperationColumn>(index.column()));
+  }
+  return QVariant();
 }
 
 QModelIndex OperationListModel::index(int row,
