@@ -15,5 +15,6 @@
 
 #include "Common/Common.hpp"
 #include "Engine/Fwd.hpp"
+#include "Lib/Util.hpp"
 #include "Fwd.hpp"
 #include "Lib/Fwd.hpp"

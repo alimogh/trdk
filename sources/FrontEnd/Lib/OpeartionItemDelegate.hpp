@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/21 16:12:09
+ *   Created: 2018/01/27 15:31:15
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,26 +10,25 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace trdk {
 namespace FrontEnd {
 namespace Lib {
 
-class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
+class OperationItemDelegate : public QStyledItemDelegate {
   Q_OBJECT
+ public:
+  typedef QStyledItemDelegate Base;
 
  public:
-  typedef QTreeView Base;
+  explicit OperationItemDelegate(QWidget *parent);
+  virtual ~OperationItemDelegate() override = default;
 
  public:
-  explicit BalanceListView(QWidget *parent);
+  virtual QString displayText(const QVariant &, const QLocale &) const override;
 
- private:
-  void InitContextMenu();
-  void CopySelectedValuesToClipboard();
-  virtual void rowsInserted(const QModelIndex &, int start, int end) override;
+ protected:
+  virtual void initStyleOption(QStyleOptionViewItem *,
+                               const QModelIndex &) const override;
 };
 }  // namespace Lib
 }  // namespace FrontEnd

@@ -36,6 +36,8 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   RiskControlScope &GetRiskControl(const TradingMode &);
 
+  void Test();
+
  signals:
   void StateChanged(bool isStarted);
   void Message(const QString &, bool isCritical);
@@ -50,6 +52,6 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

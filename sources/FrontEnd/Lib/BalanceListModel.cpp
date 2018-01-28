@@ -10,111 +10,21 @@
 
 #include "Prec.hpp"
 #include "BalanceListModel.hpp"
+#include "BalanceItem.hpp"
 #include "DropCopy.hpp"
 #include "Engine.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd::Lib::Detail;
 
 namespace pt = boost::posix_time;
 namespace lib = trdk::FrontEnd::Lib;
 
 namespace {
 
-enum Column {
-  COLUMN_EXCHANGE,
-  COLUMN_SYMBOL,
-  COLUMN_AVAILABLE,
-  COLUMN_LOCKED,
-  COLUMN_UPDATE_TIME,
-  numberOfColumns
-};
-
-struct Balance {
-  QString symbol;
-  double available;
-  double locked;
-  QTime time;
-
-  explicit Balance(const std::string &symbol,
-                   const Volume &available,
-                   const Volume &locked)
-      : symbol(QString::fromStdString(symbol)),
-        available(available),
-        locked(locked),
-        time(QDateTime::currentDateTime().time()) {}
-
-  void Update(const Volume &newAvailable, const Volume &newLocked) {
-    available = newAvailable;
-    locked = newLocked;
-    time = QDateTime::currentDateTime().time();
-  }
-};
-
-class Item : private boost::noncopyable {
- public:
-  Item() : m_parent(nullptr), m_row(-1) {}
-  virtual ~Item() = default;
-
- public:
-  void AppendChild(std::unique_ptr<Item> &&child) {
-    Assert(!child->m_parent);
-    AssertEq(-1, child->m_row);
-    boost::shared_ptr<Item> ptr(child.release());
-    m_childItems.emplace_back(ptr);
-    ptr->m_parent = this;
-    ptr->m_row = static_cast<int>(m_childItems.size()) - 1;
-  }
-
-  int GetRow() const {
-    AssertLe(0, m_row);
-    return m_row;
-  }
-
-  int GetNumberOfColumns() const { return numberOfColumns; }
-  int GetNumberOfChilds() const {
-    return static_cast<int>(m_childItems.size());
-  }
-
-  Item *GetChild(int row) {
-    AssertGt(m_childItems.size(), row);
-    if (m_childItems.size() <= row) {
-      return nullptr;
-    }
-    return &*m_childItems[row];
-  }
-
-  Item *GetParent() { return m_parent; }
-
-  virtual QVariant GetData(int column) const = 0;
-
- private:
-  Item *m_parent;
-  int m_row;
-  std::vector<boost::shared_ptr<Item>> m_childItems;
-};
-
-class TradingSystemItem : public Item {
- public:
-  explicit TradingSystemItem(const TradingSystem &tradingSystem)
-      : m_data(QString::fromStdString(tradingSystem.GetInstanceName())) {}
-  virtual ~TradingSystemItem() override = default;
-
- public:
-  virtual QVariant GetData(int column) const override {
-    if (column != COLUMN_EXCHANGE) {
-      return QVariant();
-    }
-    return m_data;
-  }
-
- private:
-  QVariant m_data;
-};
-
-class RootItem : public Item {
+class RootItem : public BalanceItem {
  public:
   explicit RootItem() {}
   virtual ~RootItem() override = default;
@@ -123,29 +33,6 @@ class RootItem : public Item {
   virtual QVariant GetData(int) const override { return QVariant(); }
 };
 
-class DataItem : public Item {
- public:
-  explicit DataItem(const boost::shared_ptr<Balance> &data) : m_data(data) {}
-  virtual ~DataItem() override = default;
-
- public:
-  virtual QVariant GetData(int column) const override {
-    switch (column) {
-      case COLUMN_SYMBOL:
-        return m_data->symbol;
-      case COLUMN_AVAILABLE:
-        return m_data->available;
-      case COLUMN_LOCKED:
-        return m_data->locked;
-      case COLUMN_UPDATE_TIME:
-        return m_data->time;
-    }
-    return QVariant();
-  }
-
- private:
-  const boost::shared_ptr<const Balance> m_data;
-};
 }  // namespace
 
 class BalanceListModel::Implementation : private boost::noncopyable {
@@ -153,9 +40,11 @@ class BalanceListModel::Implementation : private boost::noncopyable {
   RootItem m_root;
   boost::unordered_map<
       const TradingSystem *,
-      std::pair<TradingSystemItem *,
-                boost::unordered_map<std::string, boost::shared_ptr<Balance>>>>
+      std::pair<BalanceTradingSystemItem *,
+                boost::unordered_map<std::string,
+                                     boost::shared_ptr<BalanceDataItem>>>>
       m_data;
+  boost::unordered_set<std::string> m_defaultSymbols;
 };
 
 BalanceListModel::BalanceListModel(lib::Engine &engine, QWidget *parent)
@@ -173,6 +62,21 @@ BalanceListModel::BalanceListModel(lib::Engine &engine, QWidget *parent)
           });
     }
   }
+  {
+    const IniFile conf(engine.GetConfigFilePath());
+    const IniSectionRef defaults(conf, "Defaults");
+    for (const std::string &symbol :
+         defaults.ReadList("symbol_list", ",", true)) {
+      for (auto it = boost::make_split_iterator(
+               symbol, boost::first_finder("_", boost::is_iequal()));
+           !it.eof(); ++it) {
+        auto subSymbol = boost::copy_range<std::string>(*it);
+        if (!subSymbol.empty()) {
+          m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
+        }
+      }
+    }
+  }
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::BalanceUpdate, this,
                  &BalanceListModel::OnUpdate, Qt::QueuedConnection));
 }
@@ -182,31 +86,46 @@ BalanceListModel::~BalanceListModel() = default;
 QVariant BalanceListModel::headerData(int section,
                                       Qt::Orientation orientation,
                                       int role) const {
-  if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
+  if (orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfColumns == 5, "List changed.");
-  switch (section) {
-    default:
-      return Base::headerData(section, orientation, role);
-    case COLUMN_EXCHANGE:
-      return tr("Exchange");
-    case COLUMN_SYMBOL:
-      return tr("Symbol");
-    case COLUMN_AVAILABLE:
-      return tr("Available");
-    case COLUMN_LOCKED:
-      return tr("Locked");
-    case COLUMN_UPDATE_TIME:
-      return tr("Time");
+
+  if (role == Qt::TextAlignmentRole) {
+    return GetBalanceFieldAligment(static_cast<BalanceColumn>(section));
+  } else if (role == Qt::DisplayRole) {
+    static_assert(numberOfBalanceColumns == 6, "List changed.");
+    switch (section) {
+      case BALANCE_COLUMN_EXCHANGE_OR_SYMBOL:
+        return tr("Symbol");
+      case BALANCE_COLUMN_AVAILABLE:
+        return tr("Available");
+      case BALANCE_COLUMN_LOCKED:
+        return tr("Locked");
+      case BALANCE_COLUMN_TOTAL:
+        return tr("Total");
+      case BALANCE_COLUMN_UPDATE_TIME:
+        return tr("Time");
+      case BALANCE_COLUMN_USED:
+        return tr("Used");
+    }
   }
+
+  return Base::headerData(section, orientation, role);
 }
 
 QVariant BalanceListModel::data(const QModelIndex &index, int role) const {
-  if (!index.isValid() || role != Qt::DisplayRole) {
+  if (!index.isValid()) {
     return QVariant();
   }
-  return static_cast<Item *>(index.internalPointer())->GetData(index.column());
+  switch (role) {
+    case Qt::TextAlignmentRole:
+      return GetBalanceFieldAligment(
+          static_cast<BalanceColumn>(index.column()));
+    case Qt::DisplayRole:
+      return static_cast<BalanceItem *>(index.internalPointer())
+          ->GetData(index.column());
+  }
+  return QVariant();
 }
 
 QModelIndex BalanceListModel::index(int row,
@@ -215,10 +134,11 @@ QModelIndex BalanceListModel::index(int row,
   if (!hasIndex(row, column, parentIndex)) {
     return QModelIndex();
   }
-  auto &parentItem = !parentIndex.isValid()
-                         ? m_pimpl->m_root
-                         : *static_cast<Item *>(parentIndex.internalPointer());
-  Item *const childItem = parentItem.GetChild(row);
+  auto &parentItem =
+      !parentIndex.isValid()
+          ? m_pimpl->m_root
+          : *static_cast<BalanceItem *>(parentIndex.internalPointer());
+  BalanceItem *const childItem = parentItem.GetChild(row);
   if (!childItem) {
     return QModelIndex();
   }
@@ -229,7 +149,8 @@ QModelIndex BalanceListModel::parent(const QModelIndex &index) const {
   if (!index.isValid()) {
     return QModelIndex();
   }
-  auto &parent = *static_cast<Item *>(index.internalPointer())->GetParent();
+  auto &parent =
+      *static_cast<BalanceItem *>(index.internalPointer())->GetParent();
   if (&parent == &m_pimpl->m_root) {
     return QModelIndex();
   }
@@ -240,17 +161,15 @@ int BalanceListModel::rowCount(const QModelIndex &parentIndex) const {
   if (parentIndex.column() > 0) {
     return 0;
   }
-  auto &parentItem = !parentIndex.isValid()
-                         ? m_pimpl->m_root
-                         : *static_cast<Item *>(parentIndex.internalPointer());
+  auto &parentItem =
+      !parentIndex.isValid()
+          ? m_pimpl->m_root
+          : *static_cast<BalanceItem *>(parentIndex.internalPointer());
   return parentItem.GetNumberOfChilds();
 }
 
-int BalanceListModel::columnCount(const QModelIndex &parent) const {
-  if (!parent.isValid()) {
-    return m_pimpl->m_root.GetNumberOfColumns();
-  }
-  return static_cast<Item *>(parent.internalPointer())->GetNumberOfColumns();
+int BalanceListModel::columnCount(const QModelIndex &) const {
+  return numberOfBalanceColumns;
 }
 
 Qt::ItemFlags BalanceListModel::flags(const QModelIndex &index) const {
@@ -266,13 +185,14 @@ void BalanceListModel::OnUpdate(const TradingSystem *tradingSystem,
                                 const Volume &locked) {
   auto tradingSystemIt = m_pimpl->m_data.find(tradingSystem);
   if (tradingSystemIt == m_pimpl->m_data.cend()) {
-    if (available == 0 && locked == 0) {
+    const bool isUsed = m_pimpl->m_defaultSymbols.count(symbol) > 0;
+    if (!isUsed && available == 0 && locked == 0) {
       return;
     }
     const auto index = m_pimpl->m_root.GetNumberOfChilds();
     beginInsertRows(QModelIndex(), index, index);
     auto tradingSystemItem =
-        boost::make_unique<TradingSystemItem>(*tradingSystem);
+        boost::make_unique<BalanceTradingSystemItem>(*tradingSystem);
     tradingSystemIt =
         m_pimpl->m_data
             .emplace(std::make_pair(tradingSystem,
@@ -287,22 +207,30 @@ void BalanceListModel::OnUpdate(const TradingSystem *tradingSystem,
     auto &symbolList = tradingSystemIt->second.second;
     const auto &symbolIt = symbolList.find(symbol);
     if (symbolIt == symbolList.cend()) {
-      if (available == 0 && locked == 0) {
+      const bool isUsed = m_pimpl->m_defaultSymbols.count(symbol) > 0;
+      if (!isUsed && available == 0 && locked == 0) {
         return;
       }
       const auto index = tradingSystemIt->second.first->GetNumberOfChilds();
+      const auto &data =
+          boost::make_shared<BalanceRecord>(symbol, available, locked, isUsed);
+      const auto &item = boost::make_shared<BalanceDataItem>(data);
       beginInsertRows(createIndex(tradingSystemIt->second.first->GetRow(), 0,
                                   tradingSystemIt->second.first),
                       index, index);
-      const auto &data = boost::make_shared<Balance>(symbol, available, locked);
-      tradingSystemIt->second.first->AppendChild(
-          boost::make_unique<DataItem>(data));
-      symbolList.emplace(std::make_pair(symbol, data));
+      tradingSystemIt->second.first->AppendChild(item);
+      symbolList.emplace(std::make_pair(symbol, item));
       AssertEq(index, tradingSystemIt->second.first->GetNumberOfChilds() - 1);
       endInsertRows();
       return;
     }
 
-    { symbolIt->second->Update(available, locked); }
+    {
+      auto &data = *symbolIt->second;
+      data.GetRecord().Update(available, locked);
+      emit dataChanged(
+          createIndex(data.GetRow(), 0, &data),
+          createIndex(data.GetRow(), numberOfBalanceColumns - 1, &data));
+    }
   }
 }

@@ -17,11 +17,13 @@
 #include <QtWidgets>
 #pragma warning(pop)
 
+#include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"
@@ -34,3 +36,12 @@
 #include "Engine/Engine.hpp"
 #include "Std.hpp"
 #include "Types.hpp"
+
+#ifdef _DEBUG
+#include "TradingLib/PnlContainer.hpp"
+#include "Core/StrategyDummy.hpp"
+#include <boost/thread.hpp>
+#include <boost/uuid/random_generator.hpp>
+#endif
+
+#include "Util.hpp"

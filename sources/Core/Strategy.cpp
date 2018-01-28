@@ -103,7 +103,7 @@ typedef boost::multi_index_container<
                                              const Position *,
                                              &PositionHolder::GetPtr>>>>
     PositionHolderList;
-}
+}  // namespace
 
 class Strategy::PositionList::Iterator::Implementation {
  public:
@@ -209,7 +209,6 @@ class Strategy::Implementation : private boost::noncopyable {
     void Insert(const PositionHolder &&holder) {
       Verify(m_impl.emplace(std::move(holder)).second);
     }
-
     void Erase(const Position &position) {
       AssertLt(0, m_impl.get<ByPtr>().count(&position));
       m_impl.get<ByPtr>().erase(&position);
@@ -398,11 +397,10 @@ class Strategy::Implementation : private boost::noncopyable {
       return;
     }
     try {
-      reason
-          ? m_strategy.GetContext().RaiseStateUpdate(
-                Context::STATE_STRATEGY_BLOCKED, *reason)
-          : m_strategy.GetContext().RaiseStateUpdate(
-                Context::STATE_STRATEGY_BLOCKED);
+      reason ? m_strategy.GetContext().RaiseStateUpdate(
+                   Context::STATE_STRATEGY_BLOCKED, *reason)
+             : m_strategy.GetContext().RaiseStateUpdate(
+                   Context::STATE_STRATEGY_BLOCKED);
     } catch (...) {
       AssertFailNoException();
     }

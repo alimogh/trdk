@@ -16,6 +16,7 @@
 #include "Position.hpp"
 #include "RiskControl.hpp"
 #include "Security.hpp"
+#include "Strategy.hpp"
 #include "Timer.hpp"
 #include "Trade.hpp"
 #include "TradingLog.hpp"
@@ -698,12 +699,10 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
 }
 boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     boost::shared_ptr<Position> &&position,
-    const Currency &currency,
     const Qty &qty,
     const boost::optional<Price> &price,
     const OrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler,
-    RiskControlScope &riskControlScope,
     const OrderSide &side,
     const TimeInForce &tif,
     const Milestones &delayMeasurement) {
@@ -711,11 +710,13 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
   const auto &time = GetContext().GetCurrentTime();
   auto &security = position->GetSecurity();
   const auto &order = boost::make_shared<Order>(
-      Order{security, currency, side, std::move(handler), qty, qty, price,
+      Order{security, position->GetCurrency(), side, std::move(handler), qty,
+            qty, price,
             price ? *price
                   : side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                            : security.GetBidPrice(),
-            ORDER_STATUS_SENT, tif, delayMeasurement, riskControlScope,
+            ORDER_STATUS_SENT, tif, delayMeasurement,
+            position->GetStrategy().GetRiskControlScope(),
             // Order record should hold position object to guarantee that
             // operation end event will be raised only after last order will
             // be canceled or filled:
@@ -725,8 +726,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
 
   GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
     dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
-                                *order->position, order->currency, order->side,
-                                order->qty, order->price, order->tif);
+                                *order->position, order->side, order->qty,
+                                order->price, order->tif);
   });
 
   return order->transactionContext;

@@ -47,7 +47,16 @@
     <property name="title">
      <string>&amp;Trade</string>
     </property>
-    <addaction name="createNewArbitrageStrategy"/>
+    <widget class="QMenu" name="menuStrategies">
+     <property name="title">
+      <string>Strategies</string>
+     </property>
+     <addaction name="createNewArbitrageStrategy"/>
+     <addaction name="createNewMarketMakingStrategy"/>
+    </widget>
+    <addaction name="menuStrategies"/>
+    <addaction name="separator"/>
+    <addaction name="actionStartStatisticsMeasurement"/>
     <addaction name="separator"/>
     <addaction name="exit"/>
    </widget>
@@ -95,7 +104,26 @@
   </action>
   <action name="createNewArbitrageStrategy">
    <property name="text">
-    <string>&amp;Start new Arbitrage</string>
+    <string>&amp;Arbitrage...</string>
+   </property>
+   <property name="toolTip">
+    <string>Arbitrage strategy and advisor.</string>
+   </property>
+  </action>
+  <action name="createNewMarketMakingStrategy">
+   <property name="text">
+    <string>Market Making...</string>
+   </property>
+   <property name="toolTip">
+    <string>Market making strategy.</string>
+   </property>
+  </action>
+  <action name="actionStartStatisticsMeasurement">
+   <property name="text">
+    <string>Start statistics measurement...</string>
+   </property>
+   <property name="toolTip">
+    <string>Statistics.</string>
    </property>
   </action>
  </widget>

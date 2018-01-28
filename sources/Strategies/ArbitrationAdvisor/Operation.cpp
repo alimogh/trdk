@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Operation.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::TradingLib;

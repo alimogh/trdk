@@ -24,14 +24,24 @@ class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
   typedef QTreeView Base;
 
  public:
-  explicit OperationListView(Engine &, QWidget *parent);
+  explicit OperationListView(QWidget* parent);
 
- public slots:
-  void ShowContextMenu(const QPoint &);
+ private slots:
+  void CopySelectedValuesToClipboard();
+
+ protected:
+  virtual void rowsInserted(const QModelIndex&, int start, int end) override;
 
  private:
-  Engine &m_engine;
-  QMenu m_contextMenu;
+  void InitContextMenu();
+  void FollowNewRecords(bool isEnabled);
+
+ private:
+  bool m_isFollowingEnabled;
+  QAction* m_followNewOperationsAction;
+  bool m_isExpandingEnabled;
+  size_t m_numberOfResizesForOperations;
+  size_t m_numberOfResizesForOrder;
 };
 }  // namespace Lib
 }  // namespace FrontEnd

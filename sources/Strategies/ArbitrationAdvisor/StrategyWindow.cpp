@@ -404,8 +404,8 @@ void StrategyWindow::OnBlocked(const QString &reason) {
   message +=
       tr("To prevent uncontrolled funds losing, the trading engine had to "
          "block trading by this strategy instance. To resume trading please "
-         "carefully check all trading and application settings and restart the "
-         "application.");
+         "carefully check all trading and application settings and start new "
+         "strategy instance. Application restart is not required.");
   message += "\n\n";
   message += tr("Please notify the software vendor about this incident.");
   QMessageBox::critical(this, tr("Strategy is blocked"), message,

@@ -15,6 +15,6 @@ namespace FrontEnd {
 namespace Lib {
 class DropCopy;
 class Engine;
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

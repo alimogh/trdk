@@ -45,11 +45,10 @@ class DropCopy : public trdk::DropCopy {
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
                     const trdk::TimeInForce &));
-  MOCK_METHOD8(CopySubmittedOrder,
+  MOCK_METHOD7(CopySubmittedOrder,
                void(const trdk::OrderId &,
                     const boost::posix_time::ptime &,
                     const trdk::Position &,
-                    const trdk::Lib::Currency &,
                     const trdk::OrderSide &,
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
