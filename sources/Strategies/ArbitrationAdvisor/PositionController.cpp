@@ -15,6 +15,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
@@ -176,12 +177,7 @@ class BestSecurityChecker : private boost::noncopyable {
             GetBalanceSymbol(checkSecurity)) < GetRequiredBalance()) {
       return false;
     }
-    if (tradingSystem.CheckOrder(checkSecurity, m_position.GetCurrency(),
-                                 m_position.GetActiveQty(),
-                                 GetPrice(checkSecurity), GetSide())) {
-      return false;
-    }
-    return true;
+    return CheckPositionRestAsOrder(m_position, checkSecurity, tradingSystem);
   }
 
  private:
@@ -264,7 +260,7 @@ void aa::PositionController::ClosePosition(Position &position) {
         ->ForEachSecurity(
             position.GetSecurity().GetSymbol(),
             [&checker](Security &security) { checker->Check(security); });
-    if (!checker->HasSuitableSecurity() && position.GetClosedQty() > 0) {
+    if (!checker->HasSuitableSecurity()) {
       position.GetStrategy().GetLog().Error(
           "Failed to find suitable security for the position \"%1%/%2%\" "
           "(actual security is \"%3%\") to close the rest of the position "
@@ -274,8 +270,7 @@ void aa::PositionController::ClosePosition(Position &position) {
           position.GetSecurity(),            // 3
           position.GetOpenedQty(),           // 4
           position.GetActiveQty());          // 5
-      position.AddVirtualTrade(position.GetActiveQty(),
-                               position.GetLastTradePrice());
+      position.MarkAsCompleted();
       return;
     }
   }

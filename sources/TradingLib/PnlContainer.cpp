@@ -30,9 +30,6 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
     const auto &result = m_data.emplace(symbol, delta);
     if (!result.second) {
       result.first->second += delta;
-      if (!result.first->second) {
-        m_data.erase(result.first);
-      }
     }
   }
 };

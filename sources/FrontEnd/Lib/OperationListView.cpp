@@ -107,6 +107,7 @@ void OperationListView::rowsInserted(const QModelIndex &index,
       ++m_numberOfResizesForOperations;
     }
   } else if (m_numberOfResizesForOrder < 3) {
+    expand(index);
     for (int i = 0; i < header()->count(); ++i) {
       resizeColumnToContents(i);
     }
@@ -114,10 +115,8 @@ void OperationListView::rowsInserted(const QModelIndex &index,
   }
   if (m_isFollowingEnabled) {
     ScrollToLastChild(*this, index);
-    m_isExpandingEnabled ? expand(index) : collapse(index);
-  } else if (m_isExpandingEnabled) {
-    expand(index);
   }
+  m_isExpandingEnabled ? expand(index) : collapse(index);
 }
 
 void OperationListView::FollowNewRecords(bool isEnabled) {
