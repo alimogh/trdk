@@ -451,9 +451,11 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
     return boost::make_unique<LivecoinOrderTransactionContext>(
         *this, product->second.requestId, response.get<std::string>("orderId"));
   } catch (const ptr::ptree_error &ex) {
-    std::ostringstream error;
-    error << "Failed to read server response for new order request \""
-          << ex.what() << "\"";
+    boost::format error(
+        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+    error % request.GetName()            // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
     throw Exception(error.str().c_str());
   }
 }
@@ -467,10 +469,10 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
           ->GetProductRequestId()  // 1
       % transaction.GetOrderId();  // 2
 
-  const auto response = boost::get<1>(
-      TradingRequest("/exchange/cancellimit", m_settings, requestParams.str(),
-                     GetContext(), GetLog(), &GetTradingLog())
-          .Send(*m_tradingSession));
+  TradingRequest request("/exchange/cancellimit", m_settings,
+                         requestParams.str(), GetContext(), GetLog(),
+                         &GetTradingLog());
+  const auto response = boost::get<1>(request.Send(*m_tradingSession));
 
   try {
     if (!response.get<bool>("cancelled")) {
@@ -485,9 +487,11 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
           : throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {
-    std::ostringstream error;
-    error << "Failed to read server response for order cancel request \""
-          << ex.what() << "\"";
+    boost::format error(
+        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+    error % request.GetName()            // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
     throw Exception(error.str().c_str());
   }
 }

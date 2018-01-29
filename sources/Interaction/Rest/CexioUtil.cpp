@@ -32,7 +32,7 @@ boost::optional<Value> ParseOptionalValue(const ptr::ptree &source,
   }
   return boost::lexical_cast<Value>(value);
 }
-}
+}  // namespace
 
 boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
     net::HTTPClientSession &session,
@@ -52,13 +52,23 @@ boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
       const auto &pair = node.second;
       const auto &symbol1 = pair.get<std::string>("symbol1");
       const auto &symbol2 = pair.get<std::string>("symbol2");
+      //! @sa https://blog.cex.io/news/price-precision-16718
+      std::string requestParamsFormat = "type=%1%&amount=%2$.8f&price=%3$.";
+      requestParamsFormat +=
+          symbol1 == "BTC" &&
+                  (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP")
+              ? "2f"
+              : symbol1 == "ETH" && (symbol2 == "USD" || symbol2 == "EUR")
+                    ? "4f"
+                    : "8f";
       result.emplace(symbol1 + '_' + symbol2,
                      CexioProduct{symbol1 + '/' + symbol2,
                                   ParseOptionalValue<Qty>(pair, "minLotSize"),
                                   ParseOptionalValue<Qty>(pair, "minLotSizeS2"),
                                   ParseOptionalValue<Qty>(pair, "maxLotSize"),
                                   ParseOptionalValue<Price>(pair, "minPrice"),
-                                  ParseOptionalValue<Price>(pair, "maxPrice")});
+                                  ParseOptionalValue<Price>(pair, "maxPrice"),
+                                  std::move(requestParamsFormat)});
     }
   } catch (const std::exception &ex) {
     log.Error(

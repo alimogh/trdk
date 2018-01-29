@@ -276,24 +276,34 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
     throw Exception("Market order is not supported");
   }
 
-  const auto &product = m_products.find(security.GetSymbol().GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
+  if (productIt == m_products.cend()) {
     throw Exception("Symbol is not supported by exchange");
   }
+  const auto &product = productIt->second;
 
-  boost::format requestParams("type=%1%&amount=%2$.8f&price=%3$.8f");
+  boost::format requestParams(product.requestParamsFormat);
   requestParams % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 1
       % qty                                                  // 2
       % *price;                                              // 3
 
-  OrderRequest request("place_order/" + product->second.id, requestParams.str(),
+  OrderRequest request("place_order/" + product.id, requestParams.str(),
                        m_settings, m_nonces, GetContext(), GetLog(),
                        GetTradingLog());
 
   const auto response = boost::get<1>(request.Send(*m_tradingSession));
 
-  return boost::make_unique<OrderTransactionContext>(
-      *this, response.get<OrderId>("id"));
+  try {
+    return boost::make_unique<OrderTransactionContext>(
+        *this, response.get<OrderId>("id"));
+  } catch (const ptr::ptree_error &ex) {
+    boost::format error(
+        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+    error % request.GetName()            // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
+    throw Exception(error.str().c_str());
+  }
 }
 
 void CexioTradingSystem::SendCancelOrderTransaction(

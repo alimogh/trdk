@@ -84,7 +84,7 @@ struct CcexOrder {
 struct Product {
   std::string id;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -234,7 +234,7 @@ std::string NormilizeProductId(const std::string &source) {
 std::string RestoreSymbol(const std::string &source) {
   return boost::replace_first_copy(source, "-", "_");
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -470,9 +470,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("uuid"));
-    } catch (const std::exception &ex) {
-      boost::format error("Failed to read order transaction reply: \"%1%\"");
-      error % ex.what();
+    } catch (const ptr::ptree_error &ex) {
+      boost::format error(
+          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+      error % request.GetName()            // 1
+          % request.GetRequest().getURI()  // 2
+          % ex.what();                     // 3
       throw Exception(error.str().c_str());
     }
   }
@@ -793,7 +796,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   trdk::Timer::Scope m_timerScope;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
