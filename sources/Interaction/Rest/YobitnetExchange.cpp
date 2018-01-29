@@ -465,8 +465,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         return OrderCheckError{boost::none, boost::none, minVolume};
       }
     }
-    if (security.GetSymbol().GetSymbol() == "ETH_BTC") {
-      const auto minQty = 0.005;
+    {
+      const auto &symbol = security.GetSymbol().GetSymbol();
+      const auto &minQty =
+          symbol == "ETH_BTC" ? 0.005 : symbol == "LTC_ETH" ? 0.0001 : 0;
       if (qty < minQty) {
         return OrderCheckError{minQty};
       }

@@ -78,7 +78,8 @@ void aa::Operation::Setup(Position &position,
     }
 
     virtual bool IsWatching() const override {
-      if (!GetPosition().HasOpenedOpenOrders()) {
+      if (!GetPosition().HasOpenedOpenOrders() ||
+          !CheckPositionRestAsOrder(GetPosition())) {
         return false;
       }
       {
