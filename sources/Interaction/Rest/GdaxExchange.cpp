@@ -510,9 +510,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
-    } catch (const std::exception &ex) {
-      boost::format error("Failed to read order transaction reply: \"%1%\"");
-      error % ex.what();
+    } catch (const ptr::ptree_error &ex) {
+      boost::format error(
+          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+      error % request.GetName()            // 1
+          % request.GetRequest().getURI()  // 2
+          % ex.what();                     // 3
       throw Exception(error.str().c_str());
     }
   }

@@ -589,11 +589,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     ptr::ptree response;
     const auto &startTime = GetContext().GetCurrentTime();
+    TradeRequest request("Trade", m_tradingAuth, true, requestParams.str(),
+                         GetContext(), GetTsLog(), &GetTsTradingLog());
     try {
-      response = boost::get<1>(TradeRequest("Trade", m_tradingAuth, true,
-                                            requestParams.str(), GetContext(),
-                                            GetTsLog(), &GetTsTradingLog())
-                                   .Send(*m_tradingSession));
+      response = boost::get<1>(request.Send(*m_tradingSession));
     } catch (
         const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
       GetTsLog().Debug(
@@ -614,27 +613,31 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       SetBalances(response);
       return boost::make_unique<YobitnetOrderTransactionContext>(
           *this, response.get<OrderId>("order_id"));
-    } catch (const std::exception &ex) {
-      boost::format error("Failed to read order transaction response: \"%1%\"");
-      error % ex.what();
+    } catch (const ptr::ptree_error &ex) {
+      boost::format error(
+          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+      error % request.GetName()            // 1
+          % request.GetRequest().getURI()  // 2
+          % ex.what();                     // 3
       throw Exception(error.str().c_str());
     }
   }
 
   virtual void SendCancelOrderTransaction(
       const OrderTransactionContext &transaction) override {
-    const auto response = boost::get<1>(
-        TradeRequest("CancelOrder", m_tradingAuth, true,
-                     "order_id=" + boost::lexical_cast<std::string>(
-                                       transaction.GetOrderId()),
-                     GetContext(), GetTsLog(), &GetTsTradingLog())
-            .Send(*m_tradingSession));
+    TradeRequest request("CancelOrder", m_tradingAuth, true,
+                         "order_id=" + boost::lexical_cast<std::string>(
+                                           transaction.GetOrderId()),
+                         GetContext(), GetTsLog(), &GetTsTradingLog());
+    const auto response = boost::get<1>(request.Send(*m_tradingSession));
     try {
       SetBalances(response);
-    } catch (const std::exception &ex) {
+    } catch (const ptr::ptree_error &ex) {
       boost::format error(
-          "Failed to read order cancel request response: \"%1%\"");
-      error % ex.what();
+          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+      error % request.GetName()            // 1
+          % request.GetRequest().getURI()  // 2
+          % ex.what();                     // 3
       throw Exception(error.str().c_str());
     }
   }

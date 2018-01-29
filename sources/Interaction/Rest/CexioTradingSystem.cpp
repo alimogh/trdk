@@ -293,8 +293,17 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   const auto response = boost::get<1>(request.Send(*m_tradingSession));
 
-  return boost::make_unique<OrderTransactionContext>(
-      *this, response.get<OrderId>("id"));
+  try {
+    return boost::make_unique<OrderTransactionContext>(
+        *this, response.get<OrderId>("id"));
+  } catch (const ptr::ptree_error &ex) {
+    boost::format error(
+        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+    error % request.GetName()            // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
+    throw Exception(error.str().c_str());
+  }
 }
 
 void CexioTradingSystem::SendCancelOrderTransaction(
