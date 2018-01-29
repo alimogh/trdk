@@ -23,6 +23,7 @@ struct CexioProduct {
   boost::optional<Qty> maxSize;
   boost::optional<Price> minPrice;
   boost::optional<Price> maxPrice;
+  std::string requestParamsFormat;
 };
 
 boost::unordered_map<std::string, CexioProduct> RequestCexioProductList(
@@ -34,6 +35,6 @@ boost::posix_time::ptime ParseCexioTimeStamp(
 
 std::unique_ptr<Poco::Net::HTTPClientSession> CreateCexioSession(
     const Settings &, bool isTrading);
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

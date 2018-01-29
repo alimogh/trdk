@@ -1335,9 +1335,13 @@ void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
   if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close.orders.back(),
                           GetClosedQty());
+    m_pimpl->m_operation->UpdatePnl(*m_pimpl->m_security, GetCloseOrderSide(),
+                                    qty, price);
   } else if (m_pimpl->m_open.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open.orders.back(),
                           GetOpenedQty());
+    m_pimpl->m_operation->UpdatePnl(*m_pimpl->m_security, GetOpenOrderSide(),
+                                    qty, price);
   } else {
     throw Exception("There are no active orders to add virtual trade");
   }

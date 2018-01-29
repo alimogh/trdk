@@ -249,6 +249,7 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Algo.cpp" />
+    <ClCompile Include="GeneralAlgos.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PnlContainer.cpp" />
     <ClCompile Include="PositionController.cpp" />
@@ -319,6 +320,7 @@
     <ClInclude Include="TrailingStop.hpp" />
     <ClInclude Include="Trend.hpp" />
     <ClInclude Include="Util.hpp" />
+    <ClInclude Include="GeneralAlgos.hpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

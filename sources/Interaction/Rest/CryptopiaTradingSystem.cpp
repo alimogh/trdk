@@ -44,7 +44,7 @@ class CryptopiaOrderTransactionContext : public OrderTransactionContext {
  private:
   const bool m_isImmediatelyFilled;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -361,26 +361,36 @@ CryptopiaTradingSystem::SendOrderTransaction(
         *this, std::move(*orderId), false);
   }
 
-  auto orderId = response.get<OrderId>("OrderId");
-  const bool isImmediatelyFilled = orderId.GetValue() == "null";
-  if (isImmediatelyFilled) {
-    const auto &now = GetContext().GetCurrentTime();
-    static size_t virtualOrderId = 1;
-    orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
-    GetContext().GetTimer().Schedule(
-        [this, orderId, now]() {
-          try {
-            OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED_FULLY, 0);
-          } catch (const OrderIsUnknown &) {
-          }
-        },
-        m_timerScope);
-  } else {
-    SubscribeToOrderUpdates(product);
-  }
+  try {
+    auto orderId = response.get<OrderId>("OrderId");
+    const bool isImmediatelyFilled = orderId.GetValue() == "null";
+    if (isImmediatelyFilled) {
+      const auto &now = GetContext().GetCurrentTime();
+      static size_t virtualOrderId = 1;
+      orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
+      GetContext().GetTimer().Schedule(
+          [this, orderId, now]() {
+            try {
+              OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED_FULLY, 0);
+            } catch (const OrderIsUnknown &) {
+            }
+          },
+          m_timerScope);
+    } else {
+      SubscribeToOrderUpdates(product);
+    }
 
-  return boost::make_unique<CryptopiaOrderTransactionContext>(
-      *this, std::move(orderId), isImmediatelyFilled);
+    return boost::make_unique<CryptopiaOrderTransactionContext>(
+        *this, std::move(orderId), isImmediatelyFilled);
+
+  } catch (const ptr::ptree_error &ex) {
+    boost::format error(
+        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+    error % request.GetName()            // 1
+        % request.GetRequest().getURI()  // 2
+        % ex.what();                     // 3
+    throw Exception(error.str().c_str());
+  }
 }
 
 void CryptopiaTradingSystem::SendCancelOrderTransaction(

@@ -218,7 +218,16 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
    public:
     OrderId SendOrderTransaction(net::HTTPClientSession &session) {
       const auto response = boost::get<1>(Base::Send(session));
-      return response.get<std::string>("uuid");
+      try {
+        return response.get<std::string>("uuid");
+      } catch (const ptr::ptree_error &ex) {
+        boost::format error(
+            "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+        error % GetName()            // 1
+            % GetRequest().getURI()  // 2
+            % ex.what();             // 3
+        throw Exception(error.str().c_str());
+      }
     }
 
    private:
@@ -234,12 +243,11 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
   };
 
   return boost::make_unique<OrderTransactionContext>(
-      *this,
-      NewOrderRequest(
-          side == ORDER_SIDE_BUY ? "/market/buylimit" : "/market/selllimit",
-          productId, qty, actualPrice, m_settings, GetContext(), GetLog(),
-          GetTradingLog())
-          .SendOrderTransaction(*m_tradingSession));
+      *this, NewOrderRequest(side == ORDER_SIDE_BUY ? "/market/buylimit"
+                                                    : "/market/selllimit",
+                             productId, qty, actualPrice, m_settings,
+                             GetContext(), GetLog(), GetTradingLog())
+                 .SendOrderTransaction(*m_tradingSession));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(
@@ -291,7 +299,7 @@ std::string RestoreSymbol(const std::string &source) {
   RestoreCurrency(subs[1]);
   return boost::join(subs, "-");
 }
-}
+}  // namespace
 
 void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
                                        const ptr::ptree &order) {
