@@ -104,24 +104,4 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\output\x86\lib\Release Standalone\ArbitrationAdvisor.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Release Standalone\ArbitrationAdvisor.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Debug Standalone\ArbitrationAdvisor_dbg.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Debug Standalone\ArbitrationAdvisor_dbg.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-    <Library Include="..\..\output\x64\lib\Test Standalone\ArbitrationAdvisor_test.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-    <Library Include="..\..\output\x86\lib\Test Standalone\ArbitrationAdvisor_test.lib">
-      <Filter>Libs\Arbitration advisor</Filter>
-    </Library>
-  </ItemGroup>
 </Project>

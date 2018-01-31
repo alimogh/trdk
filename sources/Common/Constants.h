@@ -17,8 +17,8 @@ namespace Lib {
 namespace Concurrency {
 enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 }
-}
-}
+}  // namespace Lib
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +116,10 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_STRATEGY_ARBITRATIONADVISOR_DLL_FILE_NAME \
   TRDK_STRATEGY_ARBITRATIONADVISOR_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
+#define TRDK_STRATEGY_MARKETMAKER_FILE_NAME "MarketMaker"
+#define TRDK_STRATEGY_MARKETMAKER_DLL_FILE_NAME \
+  TRDK_STRATEGY_MARKETMAKER_FILE_NAME TRDK_FILE_MODIFICATOR ".DLL"
+
 #define TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME "FixProtocol"
 #define TRDK_INTERACTION_FIXPROTOCOL_DLL_FILE_NAME \
   TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
@@ -140,15 +144,16 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_FRONTEND_TERMINAL_EXE_FILE_NAME \
   TRDK_FRONTEND_TERMINAL_FILE_NAME TRDK_FILE_MODIFICATOR ".exe"
 
-#define TRDK_GET_MODUE_FILE_NAME_LIST()                                  \
-  {                                                                      \
-    TRDK_CORE_FILE_NAME, TRDK_SERVICES_FILE_NAME, TRDK_ENGINE_FILE_NAME, \
-        TRDK_ENGINE_SERVER_FILE_NAME, TRDK_TESTS_FILE_NAME,              \
-        TRDK_INTERACTION_TEST_FILE_NAME, TRDK_INTERACTION_CSV_FILE_NAME, \
-        TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME,                          \
-        TRDK_INTERACTION_REST_FILE_NAME, TRDK_STRATEGY_TEST_FILE_NAME,   \
-        TRDK_STRATEGY_ARBITRATIONADVISOR_FILE_NAME,                      \
-        TRDK_FRONTEND_LIB_FILE_NAME, TRDK_FRONTEND_SHELL_LIB_FILE_NAME,  \
+#define TRDK_GET_MODUE_FILE_NAME_LIST()                                   \
+  {                                                                       \
+    TRDK_CORE_FILE_NAME, TRDK_SERVICES_FILE_NAME, TRDK_ENGINE_FILE_NAME,  \
+        TRDK_ENGINE_SERVER_FILE_NAME, TRDK_TESTS_FILE_NAME,               \
+        TRDK_INTERACTION_TEST_FILE_NAME, TRDK_INTERACTION_CSV_FILE_NAME,  \
+        TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME,                           \
+        TRDK_INTERACTION_REST_FILE_NAME, TRDK_STRATEGY_TEST_FILE_NAME,    \
+        TRDK_STRATEGY_ARBITRATIONADVISOR_FILE_NAME,                       \
+        TRDK_STRATEGY_MARKETMAKER_FILE_NAME, TRDK_FRONTEND_LIB_FILE_NAME, \
+        TRDK_FRONTEND_SHELL_LIB_FILE_NAME                                 \
   }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/22 17:12:06
+ *   Created: 2018/01/30 10:51:19
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -16,12 +16,6 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
-#include "TradingLib/GeneralAlgos.hpp"
-#include "TradingLib/OrderPolicy.hpp"
-#include "TradingLib/PnlContainer.hpp"
-#include "TradingLib/PositionController.hpp"
-#include "TradingLib/PositionReport.hpp"
-#include "TradingLib/StopLoss.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -36,16 +30,6 @@
 #include "FrontEnd/Lib/OrderStatusNotifier.hpp"
 #include "FrontEnd/Lib/Types.hpp"
 #include "FrontEnd/Lib/Util.hpp"
-#include "Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
-// #include "Common/Accumulators.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/thread/future.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/uuid/uuid_generators.hpp>

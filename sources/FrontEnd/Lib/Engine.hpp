@@ -36,7 +36,9 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   RiskControlScope &GetRiskControl(const TradingMode &);
 
+#ifdef DEV_VER
   void Test();
+#endif
 
  signals:
   void StateChanged(bool isStarted);

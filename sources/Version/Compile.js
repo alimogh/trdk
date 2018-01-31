@@ -33,6 +33,7 @@ var requiredModules = [
 	, 'Services'
 	, 'TestStrategy'
 	, 'ArbitrationAdvisor'
+	, 'MarketMaker'
 ]
 
 //////////////////////////////////////////////////////////////////////////

@@ -299,8 +299,7 @@ void StrategyWindow::OnCurrentSymbolChange(int newSymbolIndex) {
     const auto &response = QMessageBox::question(
         this, tr("Strategy symbol change"),
         tr("Are you sure you want to change the symbol of strategy from %1 "
-           "to "
-           "%2?\n\nIf symbol will be changed - automatic trading will be "
+           "to %2?\n\nIf symbol will be changed - automatic trading will be "
            "stopped.\n\nClick Yes to continue and change symbol for this "
            "strategy  instance, choose No to start new strategy instance for "
            "%2, or click Cancel to cancel the action.")
@@ -385,31 +384,14 @@ void StrategyWindow::OnBlocked(const QString &reason) {
     const QSignalBlocker blocker(*m_ui.autoTrade);
     m_ui.autoTrade->setChecked(false);
   }
-  m_ui.symbol->setEnabled(false);
-  m_ui.highlightLevel->setEnabled(false);
-  m_ui.autoTrade->setEnabled(false);
-  m_ui.autoTradeLevel->setEnabled(false);
-  m_ui.maxQty->setEnabled(false);
-
-  QString message = tr("Strategy instance is blocked!");
-  message += "\n\n";
-  if (!reason.isEmpty()) {
-    message += tr("The reason for the blocking is: \"") + reason + "\".";
-  } else {
-    message +=
-        tr("The reason for the blocking is unknown. It may be internal error, "
-           "unterminated behavior or something else.");
+  {
+    m_ui.symbol->setEnabled(false);
+    m_ui.highlightLevel->setEnabled(false);
+    m_ui.autoTrade->setEnabled(false);
+    m_ui.autoTradeLevel->setEnabled(false);
+    m_ui.maxQty->setEnabled(false);
   }
-  message += "\n\n";
-  message +=
-      tr("To prevent uncontrolled funds losing, the trading engine had to "
-         "block trading by this strategy instance. To resume trading please "
-         "carefully check all trading and application settings and start new "
-         "strategy instance. Application restart is not required.");
-  message += "\n\n";
-  message += tr("Please notify the software vendor about this incident.");
-  QMessageBox::critical(this, tr("Strategy is blocked"), message,
-                        QMessageBox::Ok);
+  ShowBlockedStrategyMessage(reason, this);
 }
 
 void StrategyWindow::SendOrder(const OrderSide &side,
@@ -520,9 +502,15 @@ void StrategyWindow::UpdateAdviceLevel(double level) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<QWidget> CreateStrategyWidgets(Engine &engine,
-                                               QWidget *parent) {
-  return boost::make_unique<StrategyWindow>(engine, boost::none, parent);
+StrategyMenuActionList CreateMenuActions(Engine &engine) {
+  return {1,
+          {QObject::tr("Arbitrage..."),
+           [&engine](QWidget *parent) -> StrategyWidgetList {
+             StrategyWidgetList result;
+             result.emplace_back(boost::make_unique<StrategyWindow>(
+                 engine, boost::none, parent));
+             return result;
+           }}};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

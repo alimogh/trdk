@@ -29,9 +29,7 @@ class MainWindow : public QMainWindow {
 
  public:
   Lib::Engine &GetEngine() { return m_engine; }
-
- public slots:
-  void CreateNewArbitrageStrategy();
+  void LoadModule(const boost::filesystem::path &);
 
  private:
   Lib::Engine &m_engine;

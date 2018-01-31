@@ -94,9 +94,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
     emit m_self.LogRecord(QString::fromStdString(oss.str()));
   }
 
-#ifndef _DEBUG
-  void Test() {}
-#else
+#ifdef DEV_VER
 
   boost::shared_future<void> m_testFuture;
   boost::shared_ptr<Dummies::Strategy> m_testStrategy;
@@ -241,4 +239,6 @@ RiskControlScope &lib::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }
 
+#ifdef DEV_VER
 void lib::Engine::Test() { m_pimpl->Test(); }
+#endif
