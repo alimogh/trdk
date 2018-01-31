@@ -39,64 +39,69 @@ CexioTradingSystem::Settings::Settings(const IniSectionRef &conf,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CexioTradingSystem::PrivateRequest::PrivateRequest(const std::string &name,
-                                                   const std::string &params,
-                                                   const Settings &settings,
-                                                   NonceStorage &nonces,
-                                                   bool isPriority,
-                                                   const Context &context,
-                                                   ModuleEventsLog &log,
-                                                   ModuleTradingLog *tradingLog)
+CexioTradingSystem::PrivateRequest::PrivateRequest(
+    const std::string &name,
+    const std::string &params,
+    const Settings &settings,
+    NonceStorage::TakenValue &&nonce,
+    bool isPriority,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog *tradingLog)
     : Base(name, net::HTTPRequest::HTTP_POST, params, context, log, tradingLog),
       m_settings(settings),
       m_isPriority(isPriority),
-      m_nonces(nonces) {}
+      m_nonce(std::move(nonce)) {}
 
 CexioTradingSystem::PrivateRequest::Response
 CexioTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session) {
-  Assert(!m_nonce);
   const auto result = Base::Send(session);
-  Assert(m_nonce);
-  m_nonce = boost::none;
+  m_nonce.Use();
   return result;
 }
 
 void CexioTradingSystem::PrivateRequest::CreateBody(
     const net::HTTPClientSession &session, std::string &result) const {
-  m_nonce = boost::none;
-  m_nonce.emplace(m_nonces.TakeNonce());
-
   {
     using namespace trdk::Lib::Crypto;
-    const auto &digest = Hmac::CalcSha256Digest(
-        boost::lexical_cast<std::string>(m_nonce->Get()) + m_settings.username +
-            m_settings.apiKey,
-        m_settings.apiSecret);
+
+    const auto &digest =
+        Hmac::CalcSha256Digest(boost::lexical_cast<std::string>(m_nonce.Get()) +
+                                   m_settings.username + m_settings.apiKey,
+                               m_settings.apiSecret);
     boost::format auth("key=%1%&signature=%2%&nonce=%3%");
     auth % m_settings.apiKey                                            // 1
         % boost::to_upper_copy(EncodeToHex(&digest[0], digest.size()))  // 2
-        % m_nonce->Get();                                               // 3
+        % m_nonce.Get();                                                // 3
     AppendUriParams(auth.str(), result);
   }
 
   Base::CreateBody(session, result);
 }
 
-CexioTradingSystem::BalancesRequest::BalancesRequest(const Settings &settings,
-                                                     NonceStorage &nonces,
-                                                     const Context &context,
-                                                     ModuleEventsLog &log)
-    : PrivateRequest("balance", "", settings, nonces, false, context, log) {}
+CexioTradingSystem::BalancesRequest::BalancesRequest(
+    const Settings &settings,
+    NonceStorage::TakenValue &&nonce,
+    const Context &context,
+    ModuleEventsLog &log)
+    : PrivateRequest(
+          "balance", "", settings, std::move(nonce), false, context, log) {}
 
 CexioTradingSystem::OrderRequest::OrderRequest(const std::string &name,
                                                const std::string &params,
                                                const Settings &settings,
-                                               NonceStorage &nonces,
+                                               NonceStorage::TakenValue &&nonce,
                                                const Context &context,
                                                ModuleEventsLog &log,
                                                ModuleTradingLog &tradingLog)
-    : PrivateRequest(
-          name, params, settings, nonces, true, context, log, &tradingLog) {}
+    : PrivateRequest(name,
+                     params,
+                     settings,
+                     std::move(nonce),
+                     true,
+                     context,
+                     log,
+                     &tradingLog) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -111,7 +116,6 @@ CexioTradingSystem::CexioTradingSystem(const App &,
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_nonces(m_settings.nonces, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),
-      m_balancesRequest(m_settings, m_nonces, GetContext(), GetLog()),
       m_tradingSession(CreateCexioSession(m_settings, true)),
       m_pollingSession(CreateCexioSession(m_settings, false)),
       m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
@@ -151,8 +155,9 @@ Volume CexioTradingSystem::CalcCommission(const Volume &volume,
 }
 
 void CexioTradingSystem::UpdateBalances() {
-  const auto response =
-      boost::get<1>(m_balancesRequest.Send(*m_pollingSession));
+  BalancesRequest request(m_settings, m_nonces.TakeNonce(), GetContext(),
+                          GetLog());
+  const auto response = boost::get<1>(request.Send(*m_pollingSession));
   for (const auto &node : response) {
     if (node.first == "timestamp" || node.first == "username") {
       continue;
@@ -171,9 +176,10 @@ void CexioTradingSystem::UpdateBalances() {
 
 void CexioTradingSystem::UpdateOrders() {
   for (const auto &orderId : GetActiveOrderIdList()) {
-    PrivateRequest request(
-        "get_order", "id=" + boost::lexical_cast<std::string>(orderId),
-        m_settings, m_nonces, false, GetContext(), GetLog(), &GetTradingLog());
+    PrivateRequest request("get_order",
+                           "id=" + boost::lexical_cast<std::string>(orderId),
+                           m_settings, m_nonces.TakeNonce(), false,
+                           GetContext(), GetLog(), &GetTradingLog());
     const auto response = boost::get<1>(request.Send(*m_tradingSession));
     UpdateOrder(orderId, response);
   }
@@ -288,7 +294,7 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
       % *price;                                              // 3
 
   OrderRequest request("place_order/" + product.id, requestParams.str(),
-                       m_settings, m_nonces, GetContext(), GetLog(),
+                       m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),
                        GetTradingLog());
 
   const auto response = boost::get<1>(request.Send(*m_tradingSession));
@@ -311,7 +317,8 @@ void CexioTradingSystem::SendCancelOrderTransaction(
   OrderRequest request(
       "cancel_order",
       "id=" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
-      m_settings, m_nonces, GetContext(), GetLog(), GetTradingLog());
+      m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),
+      GetTradingLog());
   request.Send(*m_tradingSession);
 }
 
