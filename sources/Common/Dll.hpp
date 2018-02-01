@@ -36,7 +36,7 @@ class Dll : private boost::noncopyable {
  public:
   class Error : public Exception {
    public:
-    explicit Error(const char *what) throw() : Exception(what) {}
+    explicit Error(const char *what) noexcept : Exception(what) {}
   };
 
   //! Could load DLL.
@@ -136,10 +136,10 @@ class Dll : private boost::noncopyable {
 #endif
   }
 
-  ~Dll() throw() { Reset(); }
+  ~Dll() noexcept { Reset(); }
 
  public:
-  void Reset() throw() {
+  void Reset() noexcept {
     if (m_handle) {
 #ifdef BOOST_WINDOWS
       FreeLibrary(m_handle);
@@ -150,7 +150,7 @@ class Dll : private boost::noncopyable {
     m_handle = NULL;
   }
 
-  void Release() throw() { m_handle = NULL; }
+  void Release() noexcept { m_handle = NULL; }
 
  public:
   const boost::filesystem::path &GetFile() const { return m_file; }
@@ -187,8 +187,8 @@ class Dll : private boost::noncopyable {
 
 //! Holder for object pointer, that was received from a DLL.
 /** Closes dll only after object will be destroyed.
-        * @sa: ::TunnelEx::Helpers::Dll;
-        */
+ * @sa: ::TunnelEx::Helpers::Dll;
+ */
 template <typename Tx>
 class DllObjectPtr {
  public:
@@ -206,7 +206,7 @@ class DllObjectPtr {
     Assert(operator bool());
   }
 
-  void Swap(DllObjectPtr &rhs) throw() {
+  void Swap(DllObjectPtr &rhs) noexcept {
     m_dll.swap(rhs.m_dll);
     m_objFormDll.swap(rhs.m_objFormDll);
   }
@@ -277,5 +277,5 @@ class DllObjectPtr {
 };
 
 //////////////////////////////////////////////////////////////////////////
-}
-}
+}  // namespace Lib
+}  // namespace trdk

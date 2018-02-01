@@ -37,7 +37,7 @@
 #include "Std.hpp"
 #include "Types.hpp"
 
-#ifdef _DEBUG
+#ifdef DEV_VER
 #include "TradingLib/PnlContainer.hpp"
 #include "Core/StrategyDummy.hpp"
 #include <boost/thread.hpp>

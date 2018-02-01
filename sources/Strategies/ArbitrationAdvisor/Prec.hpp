@@ -32,12 +32,14 @@
 #include "Core/TradingLog.hpp"
 #include "FrontEnd/Lib/Adapters.hpp"
 #include "FrontEnd/Lib/Engine.hpp"
+#include "FrontEnd/Lib/ModuleApi.hpp"
 #include "FrontEnd/Lib/OrderStatusNotifier.hpp"
 #include "FrontEnd/Lib/Types.hpp"
 #include "FrontEnd/Lib/Util.hpp"
 #include "Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
+// #include "Common/Accumulators.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>

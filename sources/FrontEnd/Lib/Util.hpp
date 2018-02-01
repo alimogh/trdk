@@ -48,6 +48,9 @@ const Result &ResolveModelIndexItem(const QModelIndex &source) {
 void ScrollToLastChild(QAbstractItemView &, const QModelIndex &);
 void ScrollToLastChild(QAbstractItemView &);
 
+TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
+                                                      QWidget *parent);
+
 }  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

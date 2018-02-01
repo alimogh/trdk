@@ -863,11 +863,10 @@ bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<trdk::Strategy> CreateStrategy(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &conf) {
-  return boost::make_shared<aa::Strategy>(context, instanceName, conf);
+std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
+                                               const std::string &instanceName,
+                                               const IniSectionRef &conf) {
+  return boost::make_unique<aa::Strategy>(context, instanceName, conf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
