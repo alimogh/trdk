@@ -78,8 +78,7 @@ void aa::Operation::Setup(Position &position,
     }
 
     virtual bool IsWatching() const override {
-      if (!GetPosition().HasOpenedOpenOrders() ||
-          !CheckPositionRestAsOrder(GetPosition())) {
+      if (!GetPosition().HasOpenedOpenOrders()) {
         return false;
       }
       {
@@ -87,6 +86,11 @@ void aa::Operation::Setup(Position &position,
             FindOppositePosition(GetPosition());
         if (oppositePosition && oppositePosition->HasActiveOpenOrders() &&
             !oppositePosition->HasOpenedOpenOrders()) {
+          // Opposite position sent orders, but engine doesn't know - is it
+          // placed and waits for execution or already filled:
+          // HasActiveOpenOrders - sent or opened, HasOpenedOpenOrders - only
+          // opened. If check only HasOpenedOpenOrders - we will lose case when
+          // it sent, but not confirmed.
           return false;
         }
       }
