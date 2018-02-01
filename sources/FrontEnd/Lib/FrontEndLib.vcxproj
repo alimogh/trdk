@@ -101,7 +101,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\Common\Assert.cpp" />
     <ClCompile Include="..\..\Core\StrategyDummy.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="BalanceItem.cpp" />
