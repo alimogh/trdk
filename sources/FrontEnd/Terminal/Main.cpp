@@ -30,9 +30,6 @@ class SplashScreen : public QSplashScreen {
     showMessage(QString::fromStdString(message),
                 Qt::AlignRight | Qt::AlignBottom, QColor(240, 240, 240));
   }
-
- protected:
-  virtual void mousePressEvent(QMouseEvent *) override{};
 };
 }  // namespace
 
@@ -61,6 +58,17 @@ int main(int argc, char *argv[]) {
     std::vector<std::unique_ptr<trdk::Lib::Dll>> moduleDlls;
 
     MainWindow mainWindow(engine, moduleDlls, nullptr);
+    mainWindow.setEnabled(false);
+    mainWindow.show();
+    splash->setWindowModality(Qt::ApplicationModal);
+    splash->activateWindow();
+
+    {
+      splash->ShowMessage(
+          application.tr("Loading strategy modules...").toStdString());
+      mainWindow.LoadModule("ArbitrationAdvisor");
+      mainWindow.LoadModule("MarketMaker");
+    }
 
     for (;;) {
       try {
@@ -78,20 +86,9 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    mainWindow.CreateNewArbitrageStrategy();
-    // Custom branch modification:
-    /*
-#ifdef DEV_VER
-    mainWindow.CreateNewArbitrageStrategy();
-    mainWindow.CreateNewArbitrageStrategy();
-#endif
-    */
-
-    mainWindow.show();
+    mainWindow.setEnabled(true);
     splash->finish(&mainWindow);
     splash.reset();
-
-    engine.Test();
 
     return application.exec();
   } catch (const std::exception &ex) {

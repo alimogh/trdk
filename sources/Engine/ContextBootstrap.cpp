@@ -135,7 +135,7 @@ bool GetTradingSystemSection(const std::string &sectionName,
 
   return true;
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -275,8 +275,8 @@ class ContextBootstrapper : private boost::noncopyable {
 
   //! Loads Trading Systems.
   /** Reads all sections from configuration, filters Trading Systems
-    * sections and loads service for it.
-    */
+   * sections and loads service for it.
+   */
   void LoadTradingSystems() {
     for (const auto &section : m_conf.ReadSectionsList()) {
       std::string instanceName;
@@ -381,8 +381,8 @@ class ContextBootstrapper : private boost::noncopyable {
 
   //! Loads Market Data Sources.
   /** Reads all sections from configuration, filters Marker Data Source
-    * sections and loads service for it.
-    */
+   * sections and loads service for it.
+   */
   void LoadMarketDataSources() {
     for (const auto &section : m_conf.ReadSectionsList()) {
       std::string instanceName;
@@ -430,9 +430,9 @@ enum SystemService {
 
 //! Module type.
 /** The order is important, it affects the boot priority. Services must be
-  * checked last - service can be required by other, at last stage it
-  * binds with systems service "by current strategy".
-  */
+ * checked last - service can be required by other, at last stage it
+ * binds with systems service "by current strategy".
+ */
 enum ModuleType {
   MODULE_TYPE_STRATEGY,
   MODULE_TYPE_OBSERVER,
@@ -451,9 +451,9 @@ struct ModuleTrait {};
 template <>
 struct ModuleTrait<Strategy> {
   enum { Type = MODULE_TYPE_STRATEGY };
-  typedef boost::shared_ptr<Strategy>(Factory)(trdk::Context &,
-                                               const std::string &instanceName,
-                                               const IniSectionRef &);
+  typedef std::unique_ptr<Strategy>(Factory)(trdk::Context &,
+                                             const std::string &instanceName,
+                                             const IniSectionRef &);
   static ModuleType GetType() { return static_cast<ModuleType>(Type); }
   static const char *GetName(bool capital) {
     return capital ? "Strategy" : "strategy";
@@ -578,7 +578,7 @@ void ForEachModuleInstance(ModuleDll<Module> &module,
 typedef std::map<std::string, ModuleDll<Strategy>> StrategyModules;
 typedef std::map<std::string, ModuleDll<Observer>> ObserverModules;
 typedef std::map<std::string, ModuleDll<Service>> ServiceModules;
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1174,9 +1174,9 @@ class ContextStateBootstrapper : private boost::noncopyable {
       }
       ModuleDll<Service> &requredModule = requredModulePos->second;
       for (const std::set<Symbol> &symbols : requirement.second) {
-        const auto createBySymbolSet = [&](
-            const std::set<Symbol> &symbols,
-            std::string &symbolsStrList) -> boost::shared_ptr<Service> {
+        const auto createBySymbolSet =
+            [&](const std::set<Symbol> &symbols,
+                std::string &symbolsStrList) -> boost::shared_ptr<Service> {
           std::list<std::string> symbolsStr;
           for (const Symbol &symbol : symbols) {
             Assert(symbol);

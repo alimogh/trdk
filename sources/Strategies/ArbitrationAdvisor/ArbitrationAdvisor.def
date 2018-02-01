@@ -1,4 +1,4 @@
 EXPORTS
 	CreateStrategy
-	CreateStrategyWidgets
+	CreateMenuActions
 	GetTrdkModuleVersionInfoV1

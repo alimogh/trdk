@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Front-end library", "FrontE
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Arbitration advisor", "Strategies\ArbitrationAdvisor\ArbitrationAdvisor.vcxproj", "{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Market maker", "Strategies\MarketMaker\MarketMaker.vcxproj", "{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug DLL|Mixed Platforms = Debug DLL|Mixed Platforms
@@ -421,6 +423,42 @@ Global
 		{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
 		{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
 		{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}.Test Standalone|x64.Build.0 = Test Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|Mixed Platforms.ActiveCfg = Debug DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|Mixed Platforms.Build.0 = Debug DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|Win32.ActiveCfg = Debug DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|Win32.Build.0 = Debug DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|x64.ActiveCfg = Debug DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug DLL|x64.Build.0 = Debug DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|Mixed Platforms.ActiveCfg = Debug Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|Mixed Platforms.Build.0 = Debug Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|Win32.ActiveCfg = Debug Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|Win32.Build.0 = Debug Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|x64.ActiveCfg = Debug Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Debug Standalone|x64.Build.0 = Debug Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|Mixed Platforms.ActiveCfg = Release DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|Mixed Platforms.Build.0 = Release DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|Win32.ActiveCfg = Release DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|Win32.Build.0 = Release DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|x64.ActiveCfg = Release DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release DLL|x64.Build.0 = Release DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|Mixed Platforms.ActiveCfg = Release Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|Mixed Platforms.Build.0 = Release Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|Win32.ActiveCfg = Release Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|Win32.Build.0 = Release Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|x64.ActiveCfg = Release Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Release Standalone|x64.Build.0 = Release Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|Mixed Platforms.ActiveCfg = Test DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|Mixed Platforms.Build.0 = Test DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|Win32.ActiveCfg = Test DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|Win32.Build.0 = Test DLL|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|x64.ActiveCfg = Test DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test DLL|x64.Build.0 = Test DLL|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|Mixed Platforms.ActiveCfg = Test Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|Mixed Platforms.Build.0 = Test Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|Win32.ActiveCfg = Test Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6}.Test Standalone|x64.Build.0 = Test Standalone|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -431,5 +469,6 @@ Global
 		{7DEF1DE9-34BE-4706-B828-41F8BBDDB6D1} = {88EE3328-50D8-4A68-89C4-CADC752CAABF}
 		{5C1475B4-256B-4154-A714-EE4C531A781B} = {88EE3328-50D8-4A68-89C4-CADC752CAABF}
 		{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C} = {5CA346C1-8234-4485-8B30-89ADE810555C}
+		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 	EndGlobalSection
 EndGlobal

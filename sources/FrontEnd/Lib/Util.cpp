@@ -119,3 +119,28 @@ void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
 void lib::ScrollToLastChild(QAbstractItemView &view) {
   ScrollToLastChild(view, view.model()->index(view.model()->rowCount() - 1, 0));
 }
+
+void lib::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
+  QString message = QObject::tr("Strategy instance is blocked!");
+  message += "\n\n";
+  if (!reason.isEmpty()) {
+    message +=
+        QObject::tr("The reason for the blocking is: \"") + reason + "\".";
+  } else {
+    message += QObject::tr(
+        "The reason for the blocking is unknown. It may be internal error, "
+        "unterminated behavior or something else.");
+  }
+  message += "\n\n";
+  message += QObject::tr(
+      "To prevent uncontrolled funds losing, the trading engine had to "
+      "block trading by this strategy instance.\n\nTo resume trading please "
+      "carefully check all trading and application settings, review opened "
+      "positions, and start new strategy instance. Application restart is not "
+      "required.");
+  message += "\n\n";
+  message +=
+      QObject::tr("Please notify the software vendor about this incident.");
+  QMessageBox::critical(parent, QObject::tr("Strategy is blocked"), message,
+                        QMessageBox::Ok);
+}

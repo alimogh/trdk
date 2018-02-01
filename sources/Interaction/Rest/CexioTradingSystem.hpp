@@ -42,7 +42,7 @@ class CexioTradingSystem : public TradingSystem {
     explicit PrivateRequest(const std::string &name,
                             const std::string &params,
                             const Settings &,
-                            NonceStorage &nonces,
+                            NonceStorage::TakenValue &&,
                             bool isPriority,
                             const Context &,
                             ModuleEventsLog &,
@@ -60,14 +60,13 @@ class CexioTradingSystem : public TradingSystem {
    private:
     const Settings &m_settings;
     const bool m_isPriority;
-    NonceStorage &m_nonces;
-    mutable boost::optional<NonceStorage::TakenValue> m_nonce;
+    NonceStorage::TakenValue m_nonce;
   };
 
   class BalancesRequest : public PrivateRequest {
    public:
     explicit BalancesRequest(const Settings &settings,
-                             NonceStorage &nonces,
+                             NonceStorage::TakenValue &&,
                              const Context &context,
                              ModuleEventsLog &);
   };
@@ -77,7 +76,7 @@ class CexioTradingSystem : public TradingSystem {
     explicit OrderRequest(const std::string &name,
                           const std::string &params,
                           const Settings &settings,
-                          NonceStorage &nonces,
+                          NonceStorage::TakenValue &&,
                           const Context &context,
                           ModuleEventsLog &,
                           ModuleTradingLog &);
@@ -138,13 +137,12 @@ class CexioTradingSystem : public TradingSystem {
   boost::unordered_map<std::string, CexioProduct> m_products;
 
   BalancesContainer m_balances;
-  BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

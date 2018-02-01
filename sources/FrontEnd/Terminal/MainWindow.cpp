@@ -12,6 +12,7 @@
 #include "MainWindow.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/Engine.hpp"
+#include "Lib/ModuleApi.hpp"
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
@@ -21,7 +22,10 @@ using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
-MainWindow::MainWindow(Engine &engine,
+namespace fs = boost::filesystem;
+namespace lib = trdk::FrontEnd::Lib;
+
+MainWindow::MainWindow(lib::Engine &engine,
                        std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
                        QWidget *parent)
     : QMainWindow(parent),
@@ -32,6 +36,15 @@ MainWindow::MainWindow(Engine &engine,
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
+
+#ifdef DEV_VER
+  {
+    auto &action = *new QAction("Test operation list");
+    m_ui.mainMenu->addAction(&action);
+    Verify(
+        connect(&action, &QAction::triggered, [this]() { m_engine.Test(); }));
+  }
+#endif  // DEV_VER
 
   {
     auto *model = new OperationListModel(m_engine, &m_operationListView);
@@ -73,39 +86,40 @@ MainWindow::MainWindow(Engine &engine,
                    }
                  }));
 
-  Verify(connect(m_ui.createNewArbitrageStrategy, &QAction::triggered, this,
-                 &MainWindow::CreateNewArbitrageStrategy));
-
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
-
-  try {
-    m_moduleDlls.emplace_back(
-        std::make_unique<Dll>("ArbitrationAdvisor", true));
-  } catch (const std::exception &ex) {
-    const auto &error =
-        QString("Failed to load module: \"%1\".").arg(ex.what());
-    QMessageBox::critical(this, tr("Failed to load module."), error,
-                          QMessageBox::Ignore);
-    throw;
-  }
 }
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::CreateNewArbitrageStrategy() {
+void MainWindow::LoadModule(const fs::path &path) {
   try {
-    typedef std::unique_ptr<QWidget>(Factory)(Lib::Engine &, QWidget *);
-    auto *const widget =
-        m_moduleDlls.back()
-            ->GetFunction<Factory>("CreateStrategyWidgets")(m_engine, this)
-            .release();
-    widget->adjustSize();
-    widget->show();
+    m_moduleDlls.emplace_back(std::make_unique<Dll>(path, true));
+  } catch (const Dll::Error &ex) {
+    qDebug() << "Failed to load module: \"" << ex.what() << "\".";
+    return;
+  }
+  StrategyMenuActionList actions;
+  try {
+    actions =
+        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(lib::Engine &)>(
+            "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =
         QString("Failed to load module front-end: \"%1\".").arg(ex.what());
     QMessageBox::critical(this, tr("Failed to load module."), error,
                           QMessageBox::Ignore);
+  }
+  for (auto &actionDesc : actions) {
+    const auto &callback = actionDesc.second;
+    auto &action = *new QAction(actionDesc.first, this);
+    m_ui.strategiesMenu->addAction(&action);
+    Verify(connect(&action, &QAction::triggered, [this, callback]() {
+      for (auto &widgetPtr : callback(this)) {
+        auto &widget = *widgetPtr.release();
+        widget.adjustSize();
+        widget.show();
+      }
+    }));
   }
 }

@@ -30,5 +30,5 @@
 #define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::PROFILE_RELAX)
 #define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::PROFILE_RELAX)
 
-#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "FixProtocol", "Rest", "ArbitrationAdvisor", };
+#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {"Core", "Engine", "FrontEnd", "FixProtocol", "Rest", "ArbitrationAdvisor", "MarketMaker", };
 
