@@ -52,15 +52,18 @@ boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
       const auto &pair = node.second;
       const auto &symbol1 = pair.get<std::string>("symbol1");
       const auto &symbol2 = pair.get<std::string>("symbol2");
-      //! @sa https://blog.cex.io/news/price-precision-16718
       std::string requestParamsFormat = "type=%1%&amount=%2$.8f&price=%3$.";
-      requestParamsFormat +=
-          symbol1 == "BTC" &&
-                  (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP")
-              ? "2f"
-              : symbol1 == "ETH" && (symbol2 == "USD" || symbol2 == "EUR")
-                    ? "4f"
-                    : "8f";
+      if (symbol1 == "BTC") {
+        requestParamsFormat += symbol2 == "USD" || symbol2 == "EUR" ||
+                                       symbol2 == "GBP" || symbol2 == "RUB"
+                                   ? "1f"
+                                   : "8f";
+      } else if (symbol1 == "ETH" || symbol1 == "DASH") {
+        requestParamsFormat +=
+            symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GPB"
+                ? "2f"
+                : symbol2 == "BTC" ? "6f" : "8f";
+      }
       result.emplace(symbol1 + '_' + symbol2,
                      CexioProduct{symbol1 + '/' + symbol2,
                                   ParseOptionalValue<Qty>(pair, "minLotSize"),
