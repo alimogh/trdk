@@ -24,6 +24,22 @@ class TrendRepeatingStrategy : public trdk::Strategy {
                                   const Lib::IniSectionRef &);
   virtual ~TrendRepeatingStrategy() override;
 
+ public:
+  void EnableTrading(bool);
+  void EnableActivePositionsControl(bool);
+
+  void SetNumberOfFastMaPeriods(size_t);
+  size_t GetNumberOfFastMaPeriods() const;
+  void SetNumberOfSlowMaPeriods(size_t);
+  size_t GetNumberOfSlowMaPeriods() const;
+
+  void SetPositionSize(const Qty &);
+
+  void SetStopLoss(const Lib::Double &);
+  Lib::Double GetStopLoss() const;
+  void SetTakeProfit(const Lib::Double &);
+  Lib::Double GetTakeProfit() const;
+
  protected:
   virtual void OnSecurityStart(trdk::Security &,
                                trdk::Security::Request &) override;

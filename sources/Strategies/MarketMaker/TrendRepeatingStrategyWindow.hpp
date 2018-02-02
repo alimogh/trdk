@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #pragma once
+
 #include "ui_TrendRepeatingStrategyWindow.h"
 
 namespace trdk {
@@ -32,8 +33,6 @@ class TrendRepeatingStrategyWindow : public QMainWindow {
 
  private slots:
   void OnBlocked(const QString &reason);
-  void EnablePositionsOpening(bool isEnabed);
-  void EnablePositionsClosing(bool isEnabed);
 
  signals:
   void Blocked(const QString &reason);
@@ -45,7 +44,7 @@ class TrendRepeatingStrategyWindow : public QMainWindow {
  private:
   FrontEnd::Lib::Engine &m_engine;
   Ui::TrendRepeatingStrategyWindow m_ui;
-  // Strategy &m_strategy;
+  TrendRepeatingStrategy &m_strategy;
 };
 }  // namespace MarketMaker
 }  // namespace Strategies

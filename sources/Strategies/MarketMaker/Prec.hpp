@@ -16,6 +16,8 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
+#include "TradingLib/StopLoss.hpp"
+#include "TradingLib/TakeProfit.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
@@ -32,4 +34,10 @@
 #include "FrontEnd/Lib/Util.hpp"
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+#include <boost/accumulators/statistics/rolling_mean.hpp>
+#include <boost/circular_buffer.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+
+#include "Common/Accumulators.hpp"

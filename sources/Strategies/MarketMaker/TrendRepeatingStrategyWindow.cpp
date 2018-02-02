@@ -19,11 +19,17 @@ using namespace trdk::Strategies::MarketMaker;
 
 TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
     Engine &engine, const QString &symbol, QWidget *parent)
-    : Base(parent), m_engine(engine) /*, m_strategy(CreateStrategy(symbol))*/ {
+    : Base(parent), m_engine(engine), m_strategy(CreateStrategy(symbol)) {
   m_ui.setupUi(this);
   setWindowTitle(symbol + " " + tr("Market Making by Trend Strategy") + " - " +
                  QCoreApplication::applicationName());
   m_ui.symbol->setText(symbol);
+  m_ui.takeProfit->setValue(m_strategy.GetTakeProfit());
+  m_ui.stopLoss->setValue(m_strategy.GetStopLoss());
+  m_ui.fastMaPeriods->setValue(
+      static_cast<int>(m_strategy.GetNumberOfFastMaPeriods()));
+  m_ui.slowMaPeriods->setValue(
+      static_cast<int>(m_strategy.GetNumberOfSlowMaPeriods()));
   ConnectSignals();
 }
 
@@ -49,25 +55,35 @@ void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
 }
 
 void TrendRepeatingStrategyWindow::ConnectSignals() {
-  Verify(connect(m_ui.isPositionsOpeningEnabled, &QCheckBox::toggled, this,
-                 &TrendRepeatingStrategyWindow::EnablePositionsOpening));
-  Verify(connect(m_ui.isPositionsClosingEnabled, &QCheckBox::toggled, this,
-                 &TrendRepeatingStrategyWindow::EnablePositionsClosing));
+  Verify(connect(m_ui.isPositionsOpeningEnabled, &QCheckBox::toggled,
+                 [this](bool isEnabled) {
+                   m_ui.isPositionsClosingEnabled->setEnabled(!isEnabled);
+                   m_strategy.EnableTrading(isEnabled);
+                   if (isEnabled) {
+                     m_ui.isPositionsClosingEnabled->setChecked(true);
+                   }
+                 }));
+  Verify(connect(m_ui.isPositionsClosingEnabled, &QCheckBox::toggled,
+                 [this](bool isEnabled) {
+                   m_strategy.EnableActivePositionsControl(isEnabled);
+                 }));
+
+  Verify(connect(m_ui.positionQty,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) { m_strategy.SetPositionSize(value); }));
+  Verify(connect(m_ui.takeProfit,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) { m_strategy.SetTakeProfit(value); }));
+  Verify(connect(m_ui.stopLoss,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) { m_strategy.SetStopLoss(value); }));
 
   Verify(connect(this, &TrendRepeatingStrategyWindow::Blocked, this,
                  &TrendRepeatingStrategyWindow::OnBlocked,
                  Qt::QueuedConnection));
-}
-
-void TrendRepeatingStrategyWindow::EnablePositionsOpening(bool isEnabed) {
-  m_ui.isPositionsClosingEnabled->setEnabled(!isEnabed);
-  if (isEnabed) {
-    m_ui.isPositionsClosingEnabled->setChecked(true);
-  }
-}
-
-void TrendRepeatingStrategyWindow::EnablePositionsClosing(bool isEnabed) {
-  isEnabed;
 }
 
 TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
