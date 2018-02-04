@@ -95,7 +95,8 @@ LivecoinTradingSystem::TradingRequest::TradingRequest(
                      tradingLog) {}
 
 LivecoinTradingSystem::TradingRequest::Response
-LivecoinTradingSystem::TradingRequest::Send(net::HTTPClientSession &session) {
+LivecoinTradingSystem::TradingRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   const auto &result = Base::Send(session);
   const auto &content = boost::get<1>(result);
   try {
@@ -204,7 +205,7 @@ void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestLivecoinProductList(*m_tradingSession, GetContext(), GetLog());
+        RequestLivecoinProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -233,8 +234,7 @@ Volume LivecoinTradingSystem::CalcCommission(const Volume &volume,
 }
 
 void LivecoinTradingSystem::UpdateBalances() {
-  const auto response =
-      boost::get<1>(m_balancesRequest.Send(*m_pollingSession));
+  const auto response = boost::get<1>(m_balancesRequest.Send(m_pollingSession));
   for (const auto &node : response) {
     const auto &balance = node.second;
     const auto &type = balance.get<std::string>("type");
@@ -275,7 +275,7 @@ void LivecoinTradingSystem::UpdateOrders() {
   for (const auto &orderId : GetActiveOrderIdList()) {
     const auto response = OrderStatusRequest(orderId, m_settings, GetContext(),
                                              GetLog(), GetTradingLog())
-                              .Send(*m_pollingSession);
+                              .Send(m_pollingSession);
     const auto &time = boost::get<0>(response);
     const auto &order = boost::get<1>(response);
     OrderStatus status;
@@ -441,7 +441,7 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
       side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",
       m_settings, requestParams.str(), GetContext(), GetLog(),
       &GetTradingLog());
-  const auto response = boost::get<1>(request.Send(*m_tradingSession));
+  const auto response = boost::get<1>(request.Send(m_tradingSession));
   try {
     if (!response.get<bool>("added")) {
       throw Exception(
@@ -472,7 +472,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
   TradingRequest request("/exchange/cancellimit", m_settings,
                          requestParams.str(), GetContext(), GetLog(),
                          &GetTradingLog());
-  const auto response = boost::get<1>(request.Send(*m_tradingSession));
+  const auto response = boost::get<1>(request.Send(m_tradingSession));
 
   try {
     if (!response.get<bool>("cancelled")) {

@@ -63,9 +63,10 @@ inline size_t hash_value(const CryptopiaProductList::iterator &iterator) {
   return stdext::hash_value(iterator->id);
 }
 
-CryptopiaProductList RequestCryptopiaProductList(Poco::Net::HTTPClientSession &,
-                                                 const Context &,
-                                                 ModuleEventsLog &);
-}
-}
-}
+CryptopiaProductList RequestCryptopiaProductList(
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

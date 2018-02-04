@@ -57,7 +57,7 @@ LivecoinMarketDataSource::~LivecoinMarketDataSource() {
 void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestLivecoinProductList(*m_session, GetContext(), GetLog());
+    m_products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -125,7 +125,7 @@ trdk::Security &LivecoinMarketDataSource::CreateNewSecurityObject(
 
 void LivecoinMarketDataSource::UpdatePrices() {
   try {
-    const auto &response = m_allOrderBooksRequest.Send(*m_session);
+    const auto &response = m_allOrderBooksRequest.Send(m_session);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {
       const boost::mutex::scoped_lock lock(m_securitiesMutex);

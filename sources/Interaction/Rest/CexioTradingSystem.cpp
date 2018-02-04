@@ -54,7 +54,8 @@ CexioTradingSystem::PrivateRequest::PrivateRequest(
       m_nonce(std::move(nonce)) {}
 
 CexioTradingSystem::PrivateRequest::Response
-CexioTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session) {
+CexioTradingSystem::PrivateRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   const auto result = Base::Send(session);
   m_nonce.Use();
   return result;
@@ -126,7 +127,7 @@ void CexioTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestCexioProductList(*m_tradingSession, GetContext(), GetLog());
+        RequestCexioProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -157,7 +158,7 @@ Volume CexioTradingSystem::CalcCommission(const Volume &volume,
 void CexioTradingSystem::UpdateBalances() {
   BalancesRequest request(m_settings, m_nonces.TakeNonce(), GetContext(),
                           GetLog());
-  const auto response = boost::get<1>(request.Send(*m_pollingSession));
+  const auto response = boost::get<1>(request.Send(m_pollingSession));
   for (const auto &node : response) {
     if (node.first == "timestamp" || node.first == "username") {
       continue;
@@ -180,7 +181,7 @@ void CexioTradingSystem::UpdateOrders() {
                            "id=" + boost::lexical_cast<std::string>(orderId),
                            m_settings, m_nonces.TakeNonce(), false,
                            GetContext(), GetLog(), &GetTradingLog());
-    const auto response = boost::get<1>(request.Send(*m_tradingSession));
+    const auto response = boost::get<1>(request.Send(m_tradingSession));
     UpdateOrder(orderId, response);
   }
 }
@@ -297,7 +298,7 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
                        m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),
                        GetTradingLog());
 
-  const auto response = boost::get<1>(request.Send(*m_tradingSession));
+  const auto response = boost::get<1>(request.Send(m_tradingSession));
 
   try {
     return boost::make_unique<OrderTransactionContext>(
@@ -319,7 +320,7 @@ void CexioTradingSystem::SendCancelOrderTransaction(
       "id=" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
       m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),
       GetTradingLog());
-  request.Send(*m_tradingSession);
+  request.Send(m_tradingSession);
 }
 
 void CexioTradingSystem::OnTransactionSent(

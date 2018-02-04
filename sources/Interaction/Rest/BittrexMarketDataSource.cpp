@@ -52,7 +52,7 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
 void BittrexMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestBittrexProductList(*m_session, GetContext(), GetLog());
+    m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -118,7 +118,7 @@ void BittrexMarketDataSource::UpdatePrices() {
     Request &request = *subscribtion.second;
 
     try {
-      const auto &response = request.Send(*m_session);
+      const auto &response = request.Send(m_session);
       UpdatePrices(boost::get<0>(response), boost::get<1>(response), security,
                    boost::get<2>(response));
     } catch (const std::exception &ex) {

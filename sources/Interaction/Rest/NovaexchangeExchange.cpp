@@ -63,8 +63,9 @@ void ReadTopOfBook(const pt::ptime &time,
     const auto &bid = bidNode.second;
     for (const auto &askNode : asks) {
       const auto &ask = askNode.second;
-      security.SetLevel1(time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                                   bid.get<double>("price")),
+      security.SetLevel1(time,
+                         Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+                             bid.get<double>("price")),
                          Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(
                              bid.get<double>("amount")),
                          Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
@@ -75,8 +76,9 @@ void ReadTopOfBook(const pt::ptime &time,
       return;
     }
     security.SetLevel1(
-        time, Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
-                  bid.get<double>("price")),
+        time,
+        Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(
+            bid.get<double>("price")),
         Level1TickValue::Create<LEVEL1_TICK_BID_QTY>(bid.get<double>("amount")),
         delayMeasurement);
     return;
@@ -84,8 +86,9 @@ void ReadTopOfBook(const pt::ptime &time,
   for (const auto &askNode : asks) {
     const auto &ask = askNode.second;
     security.SetLevel1(
-        time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
-                  ask.get<double>("price")),
+        time,
+        Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(
+            ask.get<double>("price")),
         Level1TickValue::Create<LEVEL1_TICK_ASK_QTY>(ask.get<double>("amount")),
         delayMeasurement);
     return;
@@ -102,7 +105,7 @@ std::string NormilizeProductId(const std::string &source) {
   subs[0].swap(subs[1]);
   return boost::join(subs, "_");
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -126,7 +129,7 @@ class Request : public Rest::Request {
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPClientSession &session) override {
+      std::unique_ptr<net::HTTPSClientSession> &session) override {
     auto result = Base::Send(session);
     auto &responseTree = boost::get<1>(result);
     CheckResponseError(responseTree);
@@ -259,7 +262,7 @@ class OpenOrdersRequest : public PublicRequest {
     return responseTree;
   }
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -351,7 +354,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
             try {
-              const auto &response = request.Send(*m_marketDataSession);
+              const auto &response = request.Send(m_marketDataSession);
               const auto &time = boost::get<0>(response);
               const auto &delayMeasurement = boost::get<2>(response);
               const auto &update = boost::get<1>(response);
@@ -385,7 +388,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
                            m_settings, false, std::string(), GetContext(),
                            GetTsLog());
     try {
-      const auto &response = request.Send(*m_marketDataSession);
+      const auto &response = request.Send(m_marketDataSession);
       for (const auto &currency : boost::get<1>(response)) {
         const Volume totalAmount = currency.second.get<double>("amount_total");
         if (!totalAmount) {
@@ -479,7 +482,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             NormilizeProductId(security.GetSymbol().GetSymbol()) + "/",
         "tradeitems", m_settings, true, requestParams.str(), GetContext(),
         GetTsLog());
-    const auto &result = request.Send(*m_tradingSession);
+    const auto &result = request.Send(m_tradingSession);
 
     boost::optional<OrderId> orderId;
     std::vector<Trade> trades;
@@ -529,7 +532,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
             boost::lexical_cast<std::string>(transaction.GetOrderId()) + "/",
         "cancelorder", m_settings, true, std::string(), GetContext(),
         GetTsLog())
-        .Send(*m_tradingSession);
+        .Send(m_tradingSession);
   }
 
   void OnTradesInfo(const OrderId &orderId,
@@ -548,8 +551,8 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
-  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
@@ -557,7 +560,7 @@ class NovaexchangeExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
   trdk::Timer::Scope m_timerScope;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -20,7 +20,7 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 
 CryptopiaProductList Rest::RequestCryptopiaProductList(
-    net::HTTPClientSession &session,
+    std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
   CryptopiaProductList result;

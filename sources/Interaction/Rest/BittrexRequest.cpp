@@ -17,7 +17,8 @@ using namespace trdk::Interaction::Rest;
 
 namespace net = Poco::Net;
 
-BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session) {
+BittrexRequest::Response BittrexRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   auto result = Base::Send(session);
   const auto &responseTree = boost::get<1>(result);
 

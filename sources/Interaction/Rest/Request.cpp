@@ -29,7 +29,7 @@ void CopyToString(std::istream &source, std::string &result) {
                               [](char ch) { return ch == '\r' || ch == '\n'; }),
                result.end());
 }
-}
+}  // namespace
 
 void Request::AppendUriParams(const std::string &newParams,
                               std::string &result) {
@@ -80,12 +80,14 @@ void Request::PrepareRequest(const net::HTTPClientSession &,
                              net::HTTPRequest &) const {}
 
 boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
-Request::Send(net::HTTPClientSession &session) {
+Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
+  Assert(session);
+
   SetUri(m_uri, *m_request);
 
   std::string body = m_body;
-  CreateBody(session, body);
-  PrepareRequest(session, body, *m_request);
+  CreateBody(*session, body);
+  PrepareRequest(*session, body, *m_request);
   m_request->setContentLength(body.size());
 
   GetFloodControl().Check(IsPriority());
@@ -93,9 +95,9 @@ Request::Send(net::HTTPClientSession &session) {
   for (size_t attempt = 1;; ++attempt) {
     try {
       if (!body.empty()) {
-        session.sendRequest(*m_request) << body;
+        session->sendRequest(*m_request) << body;
       } else {
-        session.sendRequest(*m_request);
+        session->sendRequest(*m_request);
       }
     } catch (const std::exception &ex) {
       const auto &getError = [this](const std::exception &ex) -> std::string {
@@ -126,7 +128,7 @@ Request::Send(net::HTTPClientSession &session) {
 
     try {
       net::HTTPResponse response;
-      std::istream &responseStream = session.receiveResponse(response);
+      std::istream &responseStream = session->receiveResponse(response);
       std::string responseBuffer;
       if (m_tradingLog) {
         m_tradingLog->Write(
@@ -167,6 +169,7 @@ Request::Send(net::HTTPClientSession &session) {
 
       return {updateTime, result, delayMeasurement};
     } catch (const Poco::Exception &ex) {
+      session = RecreateSession(*session);
       if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
@@ -245,4 +248,13 @@ void Request::SetUri(const std::string &uri, net::HTTPRequest &request) const {
     fullUri += '&' + m_uriParams;
   }
   request.setURI(std::move(fullUri));
+}
+
+std::unique_ptr<net::HTTPSClientSession> Request::RecreateSession(
+    const net::HTTPSClientSession &source) {
+  auto result = boost::make_unique<net::HTTPSClientSession>(source.getHost());
+  result->setKeepAlive(source.getKeepAlive());
+  result->setKeepAliveTimeout(source.getKeepAliveTimeout());
+  result->setTimeout(source.getTimeout());
+  return result;
 }

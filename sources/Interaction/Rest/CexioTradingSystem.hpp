@@ -50,7 +50,7 @@ class CexioTradingSystem : public TradingSystem {
     virtual ~PrivateRequest() override = default;
 
    public:
-    virtual Response Send(Poco::Net::HTTPClientSession &);
+    virtual Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &);
 
    protected:
     virtual bool IsPriority() const override { return m_isPriority; }
@@ -138,8 +138,8 @@ class CexioTradingSystem : public TradingSystem {
 
   BalancesContainer m_balances;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 };
