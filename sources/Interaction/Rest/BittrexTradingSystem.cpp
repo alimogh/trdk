@@ -103,7 +103,7 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestBittrexProductList(*m_tradingSession, GetContext(), GetLog());
+        RequestBittrexProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -216,7 +216,8 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                                   tradingLog) {}
 
    public:
-    OrderId SendOrderTransaction(net::HTTPClientSession &session) {
+    OrderId SendOrderTransaction(
+        std::unique_ptr<net::HTTPSClientSession> &session) {
       const auto response = boost::get<1>(Base::Send(session));
       try {
         return response.get<std::string>("uuid");
@@ -247,7 +248,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                                                     : "/market/selllimit",
                              productId, qty, actualPrice, m_settings,
                              GetContext(), GetLog(), GetTradingLog())
-                 .SendOrderTransaction(*m_tradingSession));
+                 .SendOrderTransaction(m_tradingSession));
 }
 
 void BittrexTradingSystem::SendCancelOrderTransaction(
@@ -256,7 +257,7 @@ void BittrexTradingSystem::SendCancelOrderTransaction(
       "/market/cancel",
       "uuid=" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
       m_settings, GetContext(), GetLog(), GetTradingLog())
-      .Send(*m_tradingSession);
+      .Send(m_tradingSession);
 }
 
 void BittrexTradingSystem::OnTransactionSent(
@@ -266,7 +267,7 @@ void BittrexTradingSystem::OnTransactionSent(
 }
 
 void BittrexTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pollingSession);
+  const auto response = m_balancesRequest.Send(m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balanceNode = node.second;
     auto symbol = balanceNode.get<std::string>("Currency");
@@ -386,7 +387,7 @@ void BittrexTradingSystem::UpdateOrders() {
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
                            m_settings, GetContext(), GetLog(),
                            &GetTradingLog());
-    UpdateOrder(orderId, boost::get<1>(request.Send(*m_pollingSession)));
+    UpdateOrder(orderId, boost::get<1>(request.Send(m_pollingSession)));
   }
 }
 

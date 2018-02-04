@@ -332,7 +332,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
             try {
-              const auto &response = request.Send(*m_marketDataSession);
+              const auto &response = request.Send(m_marketDataSession);
               const auto &time = boost::get<0>(response);
               const auto &update = boost::get<1>(response);
               const auto &delayMeasurement = boost::get<2>(response);
@@ -506,7 +506,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       request.SetBody(requestParams.str());
     }
 
-    const auto &result = request.Send(*m_tradingSession);
+    const auto &result = request.Send(m_tradingSession);
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
@@ -526,7 +526,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         "orders/" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
         net::HTTPRequest::HTTP_DELETE, m_settings, true, std::string(),
         GetContext(), GetTsLog(), &GetTsTradingLog())
-        .Send(*m_tradingSession);
+        .Send(m_tradingSession);
   }
 
   virtual void OnTransactionSent(
@@ -539,7 +539,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("products", GetContext(), GetTsLog());
-    const auto response = boost::get<1>(request.Send(*m_marketDataSession));
+    const auto response = boost::get<1>(request.Send(m_marketDataSession));
     std::vector<std::string> log;
     for (const auto &node : response) {
       const auto &productNode = node.second;
@@ -576,7 +576,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false, std::string(), GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(*m_tradingSession));
+      const auto response = boost::get<1>(request.Send(m_tradingSession));
       for (const auto &node : response) {
         const auto &account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
@@ -697,7 +697,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     const bool isInitial = m_orders.empty();
     try {
       const auto orders =
-          boost::get<1>(m_orderListRequest.Send(*m_marketDataSession));
+          boost::get<1>(m_orderListRequest.Send(m_marketDataSession));
       for (const auto &order : orders) {
         const Order notifiedOrder = UpdateOrder(order.second);
         if (notifiedOrder.status != ORDER_STATUS_CANCELED &&
@@ -765,7 +765,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {
-        UpdateOrder(boost::get<1>(request.Send(*m_marketDataSession)));
+        UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
       } catch (const OrderIsUnknown &) {
         OnOrderCancel(GetContext().GetCurrentTime(), orderId);
       } catch (const std::exception &ex) {
@@ -780,8 +780,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
-  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;

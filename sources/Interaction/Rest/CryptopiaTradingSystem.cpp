@@ -85,7 +85,8 @@ CryptopiaTradingSystem::PrivateRequest::PrivateRequest(
 }
 
 CryptopiaTradingSystem::PrivateRequest::Response
-CryptopiaTradingSystem::PrivateRequest::Send(net::HTTPClientSession &session) {
+CryptopiaTradingSystem::PrivateRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   Assert(!m_nonce);
   m_nonce.emplace(m_nonces.TakeNonce());
 
@@ -178,7 +179,7 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
   try {
     UpdateBalances();
     m_products =
-        RequestCryptopiaProductList(*m_tradingSession, GetContext(), GetLog());
+        RequestCryptopiaProductList(m_tradingSession, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -345,7 +346,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
   ptr::ptree response;
   const auto &startTime = GetContext().GetCurrentTime();
   try {
-    response = boost::get<1>(request.Send(*m_tradingSession));
+    response = boost::get<1>(request.Send(m_tradingSession));
   } catch (const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
     GetLog().Debug(
         "Got error \"%1%\" at the new-order request sending. Trying to "
@@ -408,7 +409,7 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
       GetContext(), GetLog(), GetTradingLog());
 
   const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-  request.Send(*m_tradingSession);
+  request.Send(m_tradingSession);
   Verify(m_cancelingOrders.emplace(transaction.GetOrderId()).second);
 }
 
@@ -419,7 +420,7 @@ void CryptopiaTradingSystem::OnTransactionSent(
 }
 
 void CryptopiaTradingSystem::UpdateBalances() {
-  const auto response = m_balancesRequest.Send(*m_pollingSession);
+  const auto response = m_balancesRequest.Send(m_pollingSession);
   for (const auto &node : boost::get<1>(response)) {
     const auto &balance = node.second;
     m_balances.Set(balance.get<std::string>("Symbol"),
@@ -446,8 +447,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
-    const auto response =
-        boost::get<1>(request.second->Send(*m_pollingSession));
+    const auto response = boost::get<1>(request.second->Send(m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
         Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
@@ -549,7 +549,7 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
   OpenOrdersRequest request(productId, m_nonces, m_settings, true, GetContext(),
                             GetLog(), GetTradingLog());
   try {
-    const auto response = boost::get<1>(request.Send(*m_tradingSession));
+    const auto response = boost::get<1>(request.Send(m_tradingSession));
     for (const auto &node : response) {
       const auto &order = node.second;
       const auto &id = ParseOrderId(order);
@@ -588,7 +588,7 @@ pt::ptime CryptopiaTradingSystem::ParseTimeStamp(
 
 void CryptopiaTradingSystem::ForEachRemoteTrade(
     const CryptopiaProductId &product,
-    net::HTTPClientSession &session,
+    std::unique_ptr<net::HTTPSClientSession> &session,
     bool isPriority,
     const boost::function<void(const ptr::ptree &)> &callback) const {
   TradesRequest request(product, 500, m_nonces, m_settings, isPriority,

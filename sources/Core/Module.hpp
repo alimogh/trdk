@@ -72,13 +72,17 @@ class TRDK_CORE_API Module : private boost::noncopyable {
   virtual void OnServiceStart(const trdk::Service &);
 
  protected:
+  Lock LockForOtherThreads() const {
+    return const_cast<Module *>(this)->LockForOtherThreads();
+  }
+
   virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////
 

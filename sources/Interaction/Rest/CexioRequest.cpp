@@ -47,7 +47,8 @@ void CexioRequest::SetUri(const std::string &uri,
   }
 }
 
-CexioRequest::Response CexioRequest::Send(net::HTTPClientSession &session) {
+CexioRequest::Response CexioRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   const auto result = Base::Send(session);
   {
     const auto &response = boost::get<1>(result);

@@ -195,7 +195,7 @@ class TradeRequest : public Request {
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPClientSession &session) override {
+      std::unique_ptr<net::HTTPSClientSession> &session) override {
     if (!m_nonce) {
       throw LogicError("Nonce value already used");
     }
@@ -594,7 +594,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     TradeRequest request("Trade", m_tradingAuth, true, requestParams.str(),
                          GetContext(), GetTsLog(), &GetTsTradingLog());
     try {
-      response = boost::get<1>(request.Send(*m_tradingSession));
+      response = boost::get<1>(request.Send(m_tradingSession));
     } catch (
         const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
       GetTsLog().Debug(
@@ -631,7 +631,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                          "order_id=" + boost::lexical_cast<std::string>(
                                            transaction.GetOrderId()),
                          GetContext(), GetTsLog(), &GetTsTradingLog());
-    const auto response = boost::get<1>(request.Send(*m_tradingSession));
+    const auto response = boost::get<1>(request.Send(m_tradingSession));
     try {
       SetBalances(response);
     } catch (const ptr::ptree_error &ex) {
@@ -651,7 +651,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const auto response =
           boost::get<1>(PublicRequest("/api/3/info", "Info", std::string(),
                                       GetContext(), GetTsLog())
-                            .Send(*m_marketDataSession));
+                            .Send(m_marketDataSession));
       for (const auto &node : response.get_child("pairs")) {
         const auto &exchangeSymbol = boost::to_upper_copy(node.first);
         const auto &symbol = NormilizeSymbol(exchangeSymbol);
@@ -691,7 +691,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       const auto response =
           boost::get<1>(TradeRequest("getInfo", auth, false, std::string(),
                                      GetContext(), GetTsLog())
-                            .Send(*m_tradingSession));
+                            .Send(m_tradingSession));
 
       SetBalances(response);
       {
@@ -741,7 +741,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto response =
         boost::get<1>(TradeRequest("getInfo", m_generalAuth, false,
                                    std::string(), GetContext(), GetTsLog())
-                          .Send(*m_marketDataSession));
+                          .Send(m_marketDataSession));
     SetBalances(response);
   }
 
@@ -778,7 +778,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   void UpdatePrices(PublicRequest &depthRequest) {
     try {
-      const auto &response = depthRequest.Send(*m_marketDataSession);
+      const auto &response = depthRequest.Send(m_marketDataSession);
       const auto &time = boost::get<0>(response);
       const auto &delayMeasurement = boost::get<2>(response);
       for (const auto &updateRecord : boost::get<1>(response)) {
@@ -846,7 +846,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                   "OrderInfo", m_generalAuth, false,
                   "order_id=" + boost::lexical_cast<std::string>(orderId),
                   GetContext(), GetTsLog(), &GetTsTradingLog())
-                  .Send(*m_marketDataSession)));
+                  .Send(m_marketDataSession)));
         } catch (const Exception &ex) {
           boost::format error("Failed to request state for order %1%: \"%2%\"");
           error % orderId   // 1
@@ -883,7 +883,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         trades;
     for (const auto &request : tradesRequest) {
       ForEachRemoteTrade(
-          request.first, request.second, *m_marketDataSession, m_generalAuth,
+          request.first, request.second, m_marketDataSession, m_generalAuth,
           false, [&](const std::string &id, const ptr::ptree &data) {
             trades[data.get<size_t>("order_id")].emplace(
                 boost::lexical_cast<size_t>(id),
@@ -1007,7 +1007,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       boost::unordered_set<OrderId> orderIds;
 
       ForEachRemoteActiveOrder(
-          productId, *m_tradingSession, m_tradingAuth, true,
+          productId, m_tradingSession, m_tradingAuth, true,
           [&](const std::string &orderId, const ptr::ptree &order) {
             if (GetActiveOrders().count(orderId) ||
                 order.get<std::string>("type") != side ||
@@ -1020,7 +1020,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             Verify(orderIds.emplace(std::move(orderId)).second);
           });
       ForEachRemoteTrade(productId, startTime - pt::minutes(2),
-                         *m_tradingSession, m_tradingAuth, true,
+                         m_tradingSession, m_tradingAuth, true,
                          [&](const std::string &, const ptr::ptree &trade) {
                            const auto &orderId = trade.get<OrderId>("order_id");
                            if (GetActiveOrders().count(orderId) ||
@@ -1035,7 +1035,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
             "OrderInfo", m_tradingAuth, true,
             "order_id=" + boost::lexical_cast<std::string>(orderId),
             GetContext(), GetTsLog(), &GetTsTradingLog());
-        const auto response = boost::get<1>(request.Send(*m_tradingSession));
+        const auto response = boost::get<1>(request.Send(m_tradingSession));
         for (const auto &node : response) {
           const auto &order = node.second;
           AssertEq(orderId, node.first);
@@ -1066,11 +1066,12 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   }
 
   template <typename Callback>
-  void ForEachRemoteActiveOrder(const std::string &productId,
-                                net::HTTPClientSession &session,
-                                Auth &auth,
-                                bool isPriority,
-                                const Callback &callback) const {
+  void ForEachRemoteActiveOrder(
+      const std::string &productId,
+      std::unique_ptr<net::HTTPSClientSession> &session,
+      Auth &auth,
+      bool isPriority,
+      const Callback &callback) const {
     TradeRequest request("ActiveOrders", auth, isPriority, "pair=" + productId,
                          GetContext(), GetTsLog(), &GetTsTradingLog());
     ptr::ptree response;
@@ -1087,7 +1088,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   template <typename Callback>
   void ForEachRemoteTrade(const std::string &productId,
                           const pt::ptime &tradeListStartTime,
-                          net::HTTPClientSession &session,
+                          std::unique_ptr<net::HTTPSClientSession> &session,
                           Auth &auth,
                           bool isPriority,
                           const Callback &callback) const {
@@ -1124,8 +1125,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   mutable Auth m_generalAuth;
   mutable Auth m_tradingAuth;
 
-  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
-  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
+  mutable std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;
+  mutable std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
 

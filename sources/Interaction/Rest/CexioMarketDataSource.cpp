@@ -53,7 +53,7 @@ CexioMarketDataSource::~CexioMarketDataSource() {
 void CexioMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCexioProductList(*m_session, GetContext(), GetLog());
+    m_products = RequestCexioProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -133,7 +133,7 @@ void CexioMarketDataSource::UpdatePrices() {
     auto &request = *subscribtion.second.request;
 
     try {
-      const auto &response = request.Send(*m_session);
+      const auto &response = request.Send(m_session);
       UpdatePrices(boost::get<1>(response), subscribtion.second,
                    boost::get<2>(response));
     } catch (const std::exception &ex) {

@@ -115,7 +115,7 @@ class Request : public Rest::Request {
 
  public:
   virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
-      net::HTTPClientSession &session) override {
+      std::unique_ptr<net::HTTPSClientSession> &session) override {
     auto result = Base::Send(session);
     const auto &responseTree = boost::get<1>(result);
 
@@ -466,7 +466,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                            requestParams.str(), GetContext(), GetTsLog(),
                            &GetTsTradingLog());
 
-    const auto &result = request.Send(*m_tradingSession);
+    const auto &result = request.Send(m_tradingSession);
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("uuid"));
@@ -513,7 +513,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
     } request(orderId, m_settings, m_endpoint.floodControl, GetContext(),
               GetTsLog(), GetTsTradingLog());
-    request.Send(*m_tradingSession);
+    request.Send(m_tradingSession);
 
     //! @todo Bug here, move canceling to the update thread.
     GetContext().GetTimer().Schedule(
@@ -541,7 +541,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                            false, std::string(), GetContext(), GetTsLog());
     ptr::ptree response;
     try {
-      response = boost::get<1>(request.Send(*m_marketDataSession));
+      response = boost::get<1>(request.Send(m_marketDataSession));
     } catch (const std::exception &ex) {
       boost::format error("Failed to request balance list: \"%1%\"");
       error % ex.what();
@@ -572,7 +572,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     PublicRequest request("getmarkets", m_endpoint.floodControl, std::string(),
                           GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(*m_marketDataSession));
+      const auto response = boost::get<1>(request.Send(m_marketDataSession));
       for (const auto &node : response) {
         const auto &data = node.second;
         Product product = {data.get<std::string>("MarketName")};
@@ -674,7 +674,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                              m_endpoint.floodControl, false, std::string(),
                              GetContext(), GetTsLog(), &GetTsTradingLog());
       try {
-        const auto orders = boost::get<1>(request.Send(*m_marketDataSession));
+        const auto orders = boost::get<1>(request.Send(m_marketDataSession));
         for (const auto &order : orders) {
           const auto notifiedOrder = UpdateOrder(order.second, false);
           if (notifiedOrder.status != ORDER_STATUS_CANCELED &&
@@ -707,7 +707,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       auto &security = *subscribtion.second.security;
       auto &request = *subscribtion.second.request;
       try {
-        const auto &response = request.Send(*m_marketDataSession);
+        const auto &response = request.Send(m_marketDataSession);
         const auto &time = boost::get<0>(response);
         const auto &delayMeasurement = boost::get<2>(response);
         for (const auto &updateRecord :
@@ -754,7 +754,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           GetTsLog(), &GetTsTradingLog());
       ptr::ptree response;
       try {
-        response = boost::get<1>(request.Send(*m_marketDataSession));
+        response = boost::get<1>(request.Send(m_marketDataSession));
       } catch (const OrderIsUnknown &) {
         OnOrderStatusUpdate(GetContext().GetCurrentTime(), orderId,
                             ORDER_STATUS_FILLED_FULLY, 0, Trade{});
@@ -780,8 +780,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   bool m_isConnected;
   Endpoint &m_endpoint;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_marketDataSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_marketDataSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
 
   boost::unordered_map<std::string, Product> m_products;
 

@@ -50,9 +50,9 @@ class BittrexMarketDataSource : public MarketDataSource {
   std::vector<std::pair<boost::shared_ptr<Rest::Security>,
                         std::unique_ptr<BittrexPublicRequest>>>
       m_securities;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
   std::unique_ptr<PollingTask> m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

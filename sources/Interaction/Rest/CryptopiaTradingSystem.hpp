@@ -56,7 +56,8 @@ class CryptopiaTradingSystem : public TradingSystem {
     virtual ~PrivateRequest() override = default;
 
    public:
-    virtual Response Send(Poco::Net::HTTPClientSession &) override;
+    virtual Response Send(
+        std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
     virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
@@ -184,7 +185,7 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   void ForEachRemoteTrade(
       const CryptopiaProductId &,
-      Poco::Net::HTTPClientSession &,
+      std::unique_ptr<Poco::Net::HTTPSClientSession> &,
       bool isPriority,
       const boost::function<void(const boost::property_tree::ptree &)> &) const;
 
@@ -209,13 +210,13 @@ class CryptopiaTradingSystem : public TradingSystem {
   CancelOrderMutex m_cancelOrderMutex;
   boost::unordered_set<OrderId> m_cancelingOrders;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 
   Timer::Scope m_timerScope;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk
