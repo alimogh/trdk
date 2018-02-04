@@ -45,11 +45,11 @@ class CloseOrderPolicy : public TradingLib::LimitIocOrderPolicy {
   virtual ~CloseOrderPolicy() override = default;
 
  public:
-  virtual Price GetOpenOrderPrice(Position &) const;
-  virtual Price GetCloseOrderPrice(Position &) const;
+  virtual Price GetOpenOrderPrice(Position &) const override;
+  virtual Price GetCloseOrderPrice(Position &) const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

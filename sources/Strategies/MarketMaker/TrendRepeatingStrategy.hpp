@@ -26,7 +26,10 @@ class TrendRepeatingStrategy : public trdk::Strategy {
 
  public:
   void EnableTrading(bool);
+  bool IsTradingEnabled() const;
+
   void EnableActivePositionsControl(bool);
+  bool IsActivePositionsControlEnabled() const;
 
   void SetNumberOfFastMaPeriods(size_t);
   size_t GetNumberOfFastMaPeriods() const;
@@ -34,11 +37,19 @@ class TrendRepeatingStrategy : public trdk::Strategy {
   size_t GetNumberOfSlowMaPeriods() const;
 
   void SetPositionSize(const Qty &);
+  Qty GetPositionSize() const;
 
   void SetStopLoss(const Lib::Double &);
   Lib::Double GetStopLoss() const;
   void SetTakeProfit(const Lib::Double &);
   Lib::Double GetTakeProfit() const;
+
+  boost::signals2::scoped_connection SubscribeToEvents(
+      const boost::function<void(const std::string &)> &);
+  boost::signals2::scoped_connection SubscribeToBlocking(
+      const boost::function<void(const std::string *reason)> &);
+
+  const TradingLib::Trend &GetTrend() const;
 
  protected:
   virtual void OnSecurityStart(trdk::Security &,

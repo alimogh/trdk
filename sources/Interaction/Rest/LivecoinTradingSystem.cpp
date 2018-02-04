@@ -417,17 +417,6 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
   const auto &symbol = security.GetSymbol().GetSymbol();
   const auto &product = m_products.find(symbol);
   if (product == m_products.cend()) {
-    std::string productList;
-    for (const auto &productItem : m_products) {
-      if (!productList.empty()) {
-        productList += ", ";
-      }
-      productList += productItem.first + " (" + productItem.second.id + ")";
-    }
-    GetLog().Debug(
-        "Requested to trade symbol: \"%1%\". Available to trade: %2%.",
-        symbol,        // 1
-        productList);  // 2
     throw Exception("Symbol is not supported by exchange");
   }
 

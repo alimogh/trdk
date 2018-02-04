@@ -2,21 +2,10 @@
 <ui version="4.0">
  <class>SymbolSelectionDialog</class>
  <widget class="QDialog" name="SymbolSelectionDialog">
-  <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
-  </property>
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>216</width>
-    <height>273</height>
-   </rect>
-  </property>
   <property name="windowTitle">
-   <string>Choose strategy target symbol</string>
+   <string>Market Making by Trend Strategy Traget Symbol</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="_2">
    <item>
     <widget class="QLabel" name="symbolLabel">
      <property name="text">

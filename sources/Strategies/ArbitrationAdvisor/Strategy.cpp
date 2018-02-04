@@ -856,7 +856,7 @@ bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {
     m_pimpl->m_blockSignal(reason);
   } catch (...) {
     AssertFailNoException();
-    return true;
+    return Base::OnBlocked(reason);
   }
   return false;
 }

@@ -83,14 +83,14 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
-        <widget class="QLabel" name="positionQtyLabel">
+        <widget class="QLabel" name="positionSizeLabel">
          <property name="text">
           <string>Total size:</string>
          </property>
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QDoubleSpinBox" name="positionQty">
+        <widget class="QDoubleSpinBox" name="positionSize">
          <property name="decimals">
           <number>4</number>
          </property>
@@ -101,9 +101,6 @@
           <double>1000000000.000000000000000</double>
          </property>
          <property name="singleStep">
-          <double>0.100000000000000</double>
-         </property>
-         <property name="value">
           <double>0.100000000000000</double>
          </property>
         </widget>
