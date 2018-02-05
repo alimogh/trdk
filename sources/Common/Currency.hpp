@@ -28,21 +28,22 @@ enum Currency {
   CURRENCY_LTC,
   CURRENCY_USDT,
   CURRENCY_EURT,
+  CURRENCY_XRP,
   numberOfCurrencies
 };
 
 //! Convert currency to string in ISO 4217 code.
 /** http://en.wikipedia.org/wiki/ISO_4217
-  * @sa ConvertCurrencyFromIso
-  */
+ * @sa ConvertCurrencyFromIso
+ */
 const std::string &ConvertToIso(const trdk::Lib::Currency &);
 
 //! Convert currency from ISO 4217 code.
 /** http://en.wikipedia.org/wiki/ISO_4217
-  * Throws an exception if currency is unknown.
-  * @sa ConvertToIso
-  * @throw trdk::Lib::Exception
-  */
+ * Throws an exception if currency is unknown.
+ * @sa ConvertToIso
+ * @throw trdk::Lib::Exception
+ */
 trdk::Lib::Currency ConvertCurrencyFromIso(const std::string &);
 
 inline std::ostream &operator<<(std::ostream &oss,
@@ -50,5 +51,5 @@ inline std::ostream &operator<<(std::ostream &oss,
   oss << trdk::Lib::ConvertToIso(currency);
   return oss;
 }
-}
-}
+}  // namespace Lib
+}  // namespace trdk

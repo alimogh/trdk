@@ -19,7 +19,7 @@ namespace trdk {
 namespace Lib {
 const char *ConvertToIsoPch(const Currency &);
 }
-}
+}  // namespace trdk
 
 namespace {
 namespace Iso4217 {
@@ -36,12 +36,13 @@ const std::string eth = ConvertToIsoPch(CURRENCY_ETH);
 const std::string ltc = ConvertToIsoPch(CURRENCY_LTC);
 const std::string usdt = ConvertToIsoPch(CURRENCY_USDT);
 const std::string eurt = ConvertToIsoPch(CURRENCY_EURT);
-}
-}
+const std::string xrp = ConvertToIsoPch(CURRENCY_XRP);
+}  // namespace Iso4217
+}  // namespace
 
 const std::string &Lib::ConvertToIso(const Currency &currency) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 13, "Currency list changed.");
+  static_assert(numberOfCurrencies == 14, "Currency list changed.");
   switch (currency) {
     case CURRENCY_USD:
       return usd;
@@ -69,6 +70,8 @@ const std::string &Lib::ConvertToIso(const Currency &currency) {
       return usdt;
     case CURRENCY_EURT:
       return eurt;
+    case CURRENCY_XRP:
+      return xrp;
     default:
       AssertEq(CURRENCY_USD, currency);
       throw Exception("Internal error: Unknown currency ID");
@@ -77,7 +80,7 @@ const std::string &Lib::ConvertToIso(const Currency &currency) {
 
 const char *Lib::ConvertToIsoPch(const Currency &currency) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 13, "Currency list changed.");
+  static_assert(numberOfCurrencies == 14, "Currency list changed.");
   switch (currency) {
     case CURRENCY_USD:
       return "USD";
@@ -105,6 +108,8 @@ const char *Lib::ConvertToIsoPch(const Currency &currency) {
       return "USDT";
     case CURRENCY_EURT:
       return "EURT";
+    case CURRENCY_XRP:
+      return "XRP";
     default:
       AssertEq(CURRENCY_USD, currency);
       throw Exception("Internal error: Unknown currency ID");
@@ -113,7 +118,7 @@ const char *Lib::ConvertToIsoPch(const Currency &currency) {
 
 Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
   using namespace Iso4217;
-  static_assert(numberOfCurrencies == 13, "Currency list changed.");
+  static_assert(numberOfCurrencies == 14, "Currency list changed.");
   if (boost::iequals(code, usd)) {
     return CURRENCY_USD;
   } else if (boost::iequals(code, eur)) {
@@ -140,6 +145,8 @@ Currency Lib::ConvertCurrencyFromIso(const std::string &code) {
     return CURRENCY_USDT;
   } else if (boost::iequals(code, eurt)) {
     return CURRENCY_EURT;
+  } else if (boost::iequals(code, xrp)) {
+    return CURRENCY_XRP;
   } else {
     boost::format message("Currency code \"%1%\" is unknown");
     message % code;
