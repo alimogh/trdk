@@ -16,6 +16,7 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
+#include "TradingLib/BestSecurityChecker.hpp"
 #include "TradingLib/GeneralAlgos.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"

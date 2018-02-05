@@ -79,6 +79,8 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
 
   Trend m_trend;
 
+  boost::unordered_set<Security *> m_securities;
+
  public:
   explicit Implementation(TrendRepeatingStrategy &self)
       : m_self(self),
@@ -131,13 +133,16 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
     return ma.numberOfPeriods;
   }
 
-  void CheckSignal(Security &security, const Milestones &delayMeasurement) {
+  void CheckSignal(Security &sourceSecurity,
+                   const Milestones &delayMeasurement) {
     if (!m_isTradingEnabled || !m_slowMa.IsFilled() || !m_fastMa.IsFilled()) {
       return;
     }
+
     if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat)) {
       return;
     }
+
     m_self.GetTradingLog().Write(
         "trend\tchanged\tslow_ema=%1%\tfast_ema=%2%\ttrend=%3%",
         [&](TradingRecord &record) {
@@ -145,13 +150,32 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
               % accs::ema(*m_fastMa.stat)                     // 2
               % (m_trend.IsRising() ? "rising" : "falling");  // 3
         });
-    m_eventsSignal("Trend changed to \"" +
-                   std::string(m_trend.IsRising() ? "rising" : "falling") +
-                   "\".");
-    m_controller.OnSignal(boost::make_shared<TrendRepeatingOperation>(
-                              m_self, m_positionSize, m_trend.IsRising(),
-                              m_takeProfit, m_stopLoss),
-                          0, security, delayMeasurement);
+    m_self.RaiseEvent("Trend changed to \"" +
+                      std::string(m_trend.IsRising() ? "rising" : "falling") +
+                      "\".");
+
+    const bool isLong = m_trend.IsRising();
+
+    const auto &bestTargetChecker =
+        tl::BestSecurityCheckerForOrder::Create(m_self, isLong, m_positionSize);
+    for (const auto &security : m_securities) {
+      bestTargetChecker->Check(*security);
+    }
+    auto *const targetSecurity = bestTargetChecker->GetSuitableSecurity();
+    if (!targetSecurity) {
+      m_self.GetLog().Warn(
+          "Failed to find suitable security for the new position (source "
+          "security is \"%1%\").",
+          sourceSecurity);
+      m_self.RaiseEvent("Failed to find suitable exchange to open " +
+                        std::string(isLong ? "long" : "short") + " position.");
+      return;
+    }
+
+    m_controller.OnSignal(
+        boost::make_shared<TrendRepeatingOperation>(
+            m_self, m_positionSize, isLong, m_takeProfit, m_stopLoss),
+        0, *targetSecurity, delayMeasurement);
   }
 };
 
@@ -167,33 +191,46 @@ TrendRepeatingStrategy::TrendRepeatingStrategy(Context &context,
 
 TrendRepeatingStrategy::~TrendRepeatingStrategy() = default;
 
-void TrendRepeatingStrategy::OnSecurityStart(Security &, Security::Request &) {}
+void TrendRepeatingStrategy::OnSecurityStart(Security &security,
+                                             Security::Request &request) {
+  if (!m_pimpl->m_securities.empty() &&
+      (*m_pimpl->m_securities.begin())->GetSymbol() != security.GetSymbol()) {
+    throw Exception("Strategy works only with one symbol, but more is set");
+  }
+  Verify(m_pimpl->m_securities.emplace(&security).second);
+  Base::OnSecurityStart(security, request);
+}
 
 void TrendRepeatingStrategy::OnLevel1Update(
     Security &security, const Milestones &delayMeasurement) {
+  if (!m_pimpl->m_securities.count(&security)) {
+    return;
+  }
+
   const auto &bid = security.GetBidPriceValue();
   const auto &ask = security.GetAskPriceValue();
   const auto &spread = ask - bid;
   const auto &statValue = bid + (spread / 2);
   m_pimpl->m_marketDataBuffer.push_back(statValue);
+
   (*m_pimpl->m_fastMa.stat)(statValue);
   (*m_pimpl->m_slowMa.stat)(statValue);
+
   if (!m_pimpl->m_slowMa.isReported || !m_pimpl->m_fastMa.isReported) {
     if (m_pimpl->m_slowMa.IsFilled() && m_pimpl->m_slowMa.IsFilled()) {
-      m_pimpl->m_eventsSignal("Both MA are filled, starting signal checks...");
+      RaiseEvent("Both MA are filled, starting signal checks...");
       m_pimpl->m_slowMa.isReported = m_pimpl->m_fastMa.isReported = true;
     }
     if (!m_pimpl->m_slowMa.isReported && m_pimpl->m_slowMa.IsFilled()) {
-      m_pimpl->m_eventsSignal(
-          "Slow MA is filled, waiting for fast MA filling.");
+      RaiseEvent("Slow MA is filled, waiting for fast MA filling.");
       m_pimpl->m_slowMa.isReported = true;
     }
     if (!m_pimpl->m_fastMa.isReported && m_pimpl->m_fastMa.IsFilled()) {
-      m_pimpl->m_eventsSignal(
-          "Fast MA is filled, waiting for slow MA filling.");
+      RaiseEvent("Fast MA is filled, waiting for slow MA filling.");
       m_pimpl->m_fastMa.isReported = true;
     }
   }
+
   m_pimpl->CheckSignal(security, delayMeasurement);
 }
 
@@ -214,7 +251,7 @@ bool TrendRepeatingStrategy::OnBlocked(const std::string *reason) noexcept {
       } else {
         message % "Unknown error";
       }
-      m_pimpl->m_eventsSignal(message.str());
+      RaiseEvent(message.str());
     }
     m_pimpl->m_blockSignal(reason);
   } catch (...) {
@@ -240,6 +277,12 @@ void TrendRepeatingStrategy::EnableTrading(bool isEnabled) {
   }
   m_pimpl->m_isTradingEnabled = isEnabled;
   if (isEnabled) {
+    if (m_pimpl->m_securities.empty()) {
+      RaiseEvent(
+          "Failed to enable trading as no one selected exchange supports "
+          "specified symbol.");
+      return;
+    }
     m_pimpl->m_controller.EnableClosing(true);
   }
   GetTradingLog().Write("%1% trading", [isEnabled](TradingRecord &record) {
@@ -326,6 +369,17 @@ sig::scoped_connection TrendRepeatingStrategy::SubscribeToBlocking(
 
 const tl::Trend &TrendRepeatingStrategy::GetTrend() const {
   return m_pimpl->m_trend;
+}
+
+void TrendRepeatingStrategy::ForEachSecurity(
+    const boost::function<void(Security &)> &callback) {
+  for (auto &security : m_pimpl->m_securities) {
+    callback(*security);
+  }
+}
+
+void TrendRepeatingStrategy::RaiseEvent(const std::string &message) {
+  m_pimpl->m_eventsSignal(message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

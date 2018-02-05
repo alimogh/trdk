@@ -10,9 +10,6 @@
 
 #include "Prec.hpp"
 #include "PositionReport.hpp"
-#include "Core/Operation.hpp"
-#include "Core/Security.hpp"
-#include "Core/Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
