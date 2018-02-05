@@ -135,11 +135,12 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
 
   void CheckSignal(Security &sourceSecurity,
                    const Milestones &delayMeasurement) {
-    if (!m_isTradingEnabled || !m_slowMa.IsFilled() || !m_fastMa.IsFilled()) {
+    if (!m_slowMa.IsFilled() || !m_fastMa.IsFilled()) {
       return;
     }
 
-    if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat)) {
+    if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat) ||
+        (m_self.GetPositions().IsEmpty() && !m_isTradingEnabled)) {
       return;
     }
 
