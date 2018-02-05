@@ -173,10 +173,16 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    m_controller.OnSignal(
-        boost::make_shared<TrendRepeatingOperation>(
-            m_self, m_positionSize, isLong, m_takeProfit, m_stopLoss),
-        0, *targetSecurity, delayMeasurement);
+    try {
+      m_controller.OnSignal(
+          boost::make_shared<TrendRepeatingOperation>(
+              m_self, m_positionSize, isLong, m_takeProfit, m_stopLoss),
+          0, *targetSecurity, delayMeasurement);
+    } catch (const CommunicationError &ex) {
+      m_self.GetLog().Debug(
+          "Communication error at position update handling: \"%1%\".",
+          ex.what());
+    }
   }
 };
 
@@ -236,7 +242,12 @@ void TrendRepeatingStrategy::OnLevel1Update(
 }
 
 void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
-  m_pimpl->m_controller.OnPositionUpdate(position);
+  try {
+    m_pimpl->m_controller.OnPositionUpdate(position);
+  } catch (const CommunicationError &ex) {
+    GetLog().Debug("Communication error at position update handling: \"%1%\".",
+                   ex.what());
+  }
 }
 
 void TrendRepeatingStrategy::OnPostionsCloseRequest() {
