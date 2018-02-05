@@ -10,12 +10,6 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Operation.hpp"
-#include "Core/Position.hpp"
-#include "Core/Strategy.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
 #include "OrderPolicy.hpp"
 #include "PositionReport.hpp"
 

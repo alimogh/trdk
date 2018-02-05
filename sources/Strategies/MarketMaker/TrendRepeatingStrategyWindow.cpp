@@ -138,6 +138,27 @@ void TrendRepeatingStrategyWindow::ConnectSignals() {
                    }
                  }));
 
+  Verify(connect(m_ui.fastMaPeriods,
+                 static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+                 [this](int value) {
+                   m_strategy.SetNumberOfFastMaPeriods(value);
+                   {
+                     const QSignalBlocker blocker(*m_ui.fastMaPeriods);
+                     m_ui.fastMaPeriods->setValue(static_cast<int>(
+                         m_strategy.GetNumberOfFastMaPeriods()));
+                   }
+                 }));
+  Verify(connect(m_ui.slowMaPeriods,
+                 static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+                 [this](int value) {
+                   m_strategy.SetNumberOfSlowMaPeriods(value);
+                   {
+                     const QSignalBlocker blocker(*m_ui.slowMaPeriods);
+                     m_ui.slowMaPeriods->setValue(static_cast<int>(
+                         m_strategy.GetNumberOfSlowMaPeriods()));
+                   }
+                 }));
+
   Verify(connect(this, &TrendRepeatingStrategyWindow::Blocked, this,
                  &TrendRepeatingStrategyWindow::OnBlocked,
                  Qt::QueuedConnection));

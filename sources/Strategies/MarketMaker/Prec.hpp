@@ -16,6 +16,7 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
+#include "TradingLib/BestSecurityChecker.hpp"
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
@@ -42,6 +43,7 @@
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/statistics/rolling_mean.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 
 #include "Common/Accumulators.hpp"

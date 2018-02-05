@@ -249,6 +249,7 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Algo.cpp" />
+    <ClCompile Include="BestSecurityChecker.cpp" />
     <ClCompile Include="GeneralAlgos.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PnlContainer.cpp" />
@@ -306,6 +307,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algo.hpp" />
+    <ClInclude Include="BestSecurityChecker.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PnlContainer.hpp" />

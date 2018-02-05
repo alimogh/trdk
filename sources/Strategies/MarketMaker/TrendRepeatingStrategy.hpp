@@ -51,6 +51,10 @@ class TrendRepeatingStrategy : public trdk::Strategy {
 
   const TradingLib::Trend &GetTrend() const;
 
+  void ForEachSecurity(const boost::function<void(Security &)> &);
+
+  void RaiseEvent(const std::string &);
+
  protected:
   virtual void OnSecurityStart(trdk::Security &,
                                trdk::Security::Request &) override;

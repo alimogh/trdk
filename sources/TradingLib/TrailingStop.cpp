@@ -10,9 +10,6 @@
 
 #include "Prec.hpp"
 #include "TrailingStop.hpp"
-#include "Core/Operation.hpp"
-#include "Core/Strategy.hpp"
-#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

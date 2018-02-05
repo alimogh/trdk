@@ -59,6 +59,9 @@
     <ClCompile Include="GeneralAlgos.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BestSecurityChecker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -107,6 +110,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneralAlgos.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BestSecurityChecker.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
