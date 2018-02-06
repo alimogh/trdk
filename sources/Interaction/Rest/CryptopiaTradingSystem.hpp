@@ -150,6 +150,8 @@ class CryptopiaTradingSystem : public TradingSystem {
       const boost::optional<Price> &,
       const OrderSide &) const override;
 
+  bool CheckSymbol(const std::string &) const override;
+
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
 

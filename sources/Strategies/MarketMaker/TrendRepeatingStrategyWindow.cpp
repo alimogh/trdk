@@ -27,6 +27,11 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
 
   m_ui.symbol->setText(symbol);
 
+  if (!LoadExchanges()) {
+    Disable(false);
+    return;
+  }
+
   m_ui.isPositionsOpeningEnabled->setChecked(m_strategy.IsTradingEnabled());
   m_ui.isPositionsClosingEnabled->setChecked(
       m_strategy.IsActivePositionsControlEnabled());
@@ -56,7 +61,56 @@ TrendRepeatingStrategyWindow::~TrendRepeatingStrategyWindow() {
   }
 }
 
-void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
+bool TrendRepeatingStrategyWindow::LoadExchanges() {
+  auto &leftBox = *new QVBoxLayout(this);
+  leftBox.setAlignment(Qt::AlignTop);
+  auto &rightBox = *new QVBoxLayout(this);
+  rightBox.setAlignment(Qt::AlignTop);
+
+  size_t numberOfExchanges = 0;
+  const auto &context = m_engine.GetContext();
+  for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
+    const boost::tribool &isEnabled = m_strategy.IsTradingSystemEnabled(i);
+    if (isEnabled == boost::indeterminate) {
+      continue;
+    }
+    auto *const checkBox = new QCheckBox(this);
+    checkBox->setChecked(isEnabled);
+    checkBox->setText(QString::fromStdString(
+        context.GetTradingSystem(i, TRADING_MODE_LIVE).GetInstanceName()));
+    //     Verify(connect(checkBox, &QCheckBox::toggled,
+    //                    [this, i, checkBox](bool isEnabled) {
+    //                      m_strategy.EnableTradingSystem(i, isEnabled);
+    //                      {
+    //                        const QSignalBlocker blocker(*checkBox);
+    //                        const boost::tribool &isActuallyEnabled =
+    //                            m_strategy.IsTradingSystemEnabled(i);
+    //                        Assert(isActuallyEnabled != boost::indeterminate);
+    //                        checkBox->setChecked(isActuallyEnabled == true);
+    //                      }
+    //                    }));
+    (numberOfExchanges++ % 2 ? rightBox : leftBox).addWidget(checkBox);
+  }
+
+  if (numberOfExchanges) {
+    auto &box = *new QHBoxLayout(this);
+    box.addLayout(&leftBox);
+    box.addLayout(&rightBox);
+    m_ui.exchangesGroup->setLayout(&box);
+    return true;
+  } else {
+    auto &label = *new QLabel(this);
+    label.setText(tr("There are no exchanges that support symbol %1.")
+                      .arg(m_ui.symbol->text()));
+    label.setAlignment(Qt::AlignCenter);
+    auto &box = *new QVBoxLayout(this);
+    box.addWidget(&label);
+    m_ui.exchangesGroup->setLayout(&box);
+    return false;
+  }
+}
+
+void TrendRepeatingStrategyWindow::Disable(bool hasExchanges) {
   {
     const QSignalBlocker blocker(*m_ui.isPositionsOpeningEnabled);
     m_ui.isPositionsOpeningEnabled->setChecked(false);
@@ -66,10 +120,17 @@ void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
     m_ui.isPositionsClosingEnabled->setChecked(false);
   }
   {
+    if (hasExchanges) {
+      m_ui.exchangesGroup->setEnabled(false);
+    }
     m_ui.controlGroup->setEnabled(false);
     m_ui.positionGroup->setEnabled(false);
     m_ui.trendDetectionGroup->setEnabled(false);
   }
+}
+
+void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
+  Disable(true);
   ShowBlockedStrategyMessage(reason, this);
 }
 

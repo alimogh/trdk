@@ -130,6 +130,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const boost::optional<trdk::Price> &,
       const trdk::OrderSide &) const;
 
+  //! Returns true if the symbol is supported by the trading system.
+  virtual bool CheckSymbol(const std::string &) const;
+
   //! Sends order synchronously.
   /** @return Order transaction pointer in any case.
    */

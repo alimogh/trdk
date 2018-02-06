@@ -37,8 +37,11 @@ class TrendRepeatingStrategyWindow : public QMainWindow {
   void StrategyEvent(const QString &);
 
  private:
+  bool LoadExchanges();
   void ConnectSignals();
   TrendRepeatingStrategy &CreateStrategy(const QString &symbol);
+
+  void Disable(bool hasExchanges);
 
  private:
   FrontEnd::Lib::Engine &m_engine;

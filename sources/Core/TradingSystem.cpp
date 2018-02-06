@@ -645,6 +645,8 @@ boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
   return boost::none;
 }
 
+bool TradingSystem::CheckSymbol(const std::string &) const { return true; }
+
 std::vector<OrderId> TradingSystem::GetActiveOrderIdList() const {
   std::vector<OrderId> result;
   const ActiveOrderReadLock lock(m_pimpl->m_activeOrdersMutex);

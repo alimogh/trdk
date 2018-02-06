@@ -389,6 +389,10 @@ LivecoinTradingSystem::CheckOrder(const trdk::Security &security,
   return boost::none;
 }
 
+bool LivecoinTradingSystem::CheckSymbol(const std::string &symbol) const {
+  return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+}
+
 std::unique_ptr<OrderTransactionContext>
 LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
                                             const Currency &currency,

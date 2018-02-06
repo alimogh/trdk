@@ -258,6 +258,10 @@ CexioTradingSystem::CheckOrder(const trdk::Security &security,
   return boost::none;
 }
 
+bool CexioTradingSystem::CheckSymbol(const std::string &symbol) const {
+  return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+}
+
 std::unique_ptr<OrderTransactionContext>
 CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
                                          const Currency &currency,
