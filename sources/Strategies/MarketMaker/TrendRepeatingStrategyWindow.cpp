@@ -27,8 +27,9 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
 
   m_ui.symbol->setText(symbol);
 
-  if (!LoadExchanges()) {
-    Disable(false);
+  m_hasExchanges = LoadExchanges();
+  if (!m_hasExchanges) {
+    Disable();
     return;
   }
 
@@ -71,46 +72,50 @@ bool TrendRepeatingStrategyWindow::LoadExchanges() {
   const auto &context = m_engine.GetContext();
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
     const boost::tribool &isEnabled = m_strategy.IsTradingSystemEnabled(i);
-    if (isEnabled == boost::indeterminate) {
-      continue;
+    auto *const checkBox = new QCheckBox(
+        QString::fromStdString(
+            context.GetTradingSystem(i, TRADING_MODE_LIVE).GetInstanceName()),
+        this);
+    if (!boost::indeterminate(isEnabled)) {
+      ++numberOfExchanges;
+      checkBox->setChecked(isEnabled);
+    } else {
+      checkBox->setEnabled(false);
     }
-    auto *const checkBox = new QCheckBox(this);
-    checkBox->setChecked(isEnabled);
-    checkBox->setText(QString::fromStdString(
-        context.GetTradingSystem(i, TRADING_MODE_LIVE).GetInstanceName()));
-    //     Verify(connect(checkBox, &QCheckBox::toggled,
-    //                    [this, i, checkBox](bool isEnabled) {
-    //                      m_strategy.EnableTradingSystem(i, isEnabled);
-    //                      {
-    //                        const QSignalBlocker blocker(*checkBox);
-    //                        const boost::tribool &isActuallyEnabled =
-    //                            m_strategy.IsTradingSystemEnabled(i);
-    //                        Assert(isActuallyEnabled != boost::indeterminate);
-    //                        checkBox->setChecked(isActuallyEnabled == true);
-    //                      }
-    //                    }));
-    (numberOfExchanges++ % 2 ? rightBox : leftBox).addWidget(checkBox);
+    Verify(connect(checkBox, &QCheckBox::toggled,
+                   [this, i, checkBox](bool isEnabled) {
+                     m_strategy.EnableTradingSystem(i, isEnabled);
+                     {
+                       const QSignalBlocker blocker(*checkBox);
+                       const boost::tribool &isActuallyEnabled =
+                           m_strategy.IsTradingSystemEnabled(i);
+                       Assert(!boost::indeterminate(isActuallyEnabled));
+                       checkBox->setChecked(isActuallyEnabled == true);
+                     }
+                   }));
+    (i % 2 ? rightBox : leftBox).addWidget(checkBox);
   }
 
+  auto &exchangesBox = *new QHBoxLayout(this);
+  exchangesBox.addLayout(&leftBox);
+  exchangesBox.addLayout(&rightBox);
   if (numberOfExchanges) {
-    auto &box = *new QHBoxLayout(this);
-    box.addLayout(&leftBox);
-    box.addLayout(&rightBox);
-    m_ui.exchangesGroup->setLayout(&box);
-    return true;
+    m_ui.exchangesGroup->setLayout(&exchangesBox);
   } else {
     auto &label = *new QLabel(this);
-    label.setText(tr("There are no exchanges that support symbol %1.")
+    label.setText(tr("There are no exchanges that support symbol %1!")
                       .arg(m_ui.symbol->text()));
     label.setAlignment(Qt::AlignCenter);
     auto &box = *new QVBoxLayout(this);
     box.addWidget(&label);
+    box.addLayout(&exchangesBox);
     m_ui.exchangesGroup->setLayout(&box);
-    return false;
   }
+
+  return numberOfExchanges > 0;
 }
 
-void TrendRepeatingStrategyWindow::Disable(bool hasExchanges) {
+void TrendRepeatingStrategyWindow::Disable() {
   {
     const QSignalBlocker blocker(*m_ui.isPositionsOpeningEnabled);
     m_ui.isPositionsOpeningEnabled->setChecked(false);
@@ -120,7 +125,7 @@ void TrendRepeatingStrategyWindow::Disable(bool hasExchanges) {
     m_ui.isPositionsClosingEnabled->setChecked(false);
   }
   {
-    if (hasExchanges) {
+    if (m_hasExchanges) {
       m_ui.exchangesGroup->setEnabled(false);
     }
     m_ui.controlGroup->setEnabled(false);
@@ -130,7 +135,7 @@ void TrendRepeatingStrategyWindow::Disable(bool hasExchanges) {
 }
 
 void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
-  Disable(true);
+  Disable();
   ShowBlockedStrategyMessage(reason, this);
 }
 
