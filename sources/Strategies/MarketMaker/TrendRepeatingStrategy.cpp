@@ -134,13 +134,16 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   }
 
   void CheckSignal(Security &sourceSecurity,
+                   bool isTradingSystemEnabled,
                    const Milestones &delayMeasurement) {
     if (!m_slowMa.IsFilled() || !m_fastMa.IsFilled()) {
       return;
     }
-
-    if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat) ||
-        (m_self.GetPositions().IsEmpty() && !m_isTradingEnabled)) {
+    if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat)) {
+      return;
+    }
+    if ((m_self.GetPositions().IsEmpty() && !m_isTradingEnabled) ||
+        !isTradingSystemEnabled) {
       return;
     }
 
@@ -211,11 +214,10 @@ void TrendRepeatingStrategy::OnSecurityStart(Security &security,
 
 void TrendRepeatingStrategy::OnLevel1Update(
     Security &security, const Milestones &delayMeasurement) {
-  {
-    const auto &it = m_pimpl->m_securities.find(&security);
-    if (it == m_pimpl->m_securities.cend() || !it->second) {
-      return;
-    }
+  const auto &securityIt = m_pimpl->m_securities.find(&security);
+  Assert(securityIt != m_pimpl->m_securities.cend());
+  if (securityIt == m_pimpl->m_securities.cend()) {
+    return;
   }
 
   const auto &bid = security.GetBidPriceValue();
@@ -242,7 +244,7 @@ void TrendRepeatingStrategy::OnLevel1Update(
     }
   }
 
-  m_pimpl->CheckSignal(security, delayMeasurement);
+  m_pimpl->CheckSignal(security, securityIt->second, delayMeasurement);
 }
 
 void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
@@ -402,8 +404,13 @@ void TrendRepeatingStrategy::EnableTradingSystem(size_t tradingSystemIndex,
                                                  bool isEnabled) {
   const auto lock = LockForOtherThreads();
   for (auto &security : m_pimpl->m_securities) {
-    if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
+    if (security.first->GetSource().GetIndex() == tradingSystemIndex &&
+        security.second != isEnabled) {
       security.second = isEnabled;
+      GetTradingLog().Write("%1% %2%", [&](TradingRecord &record) {
+        record % *security.first                           // 1
+            % (security.second ? "enabled" : "disabled");  // 2
+      });
     }
   }
 }
@@ -412,7 +419,7 @@ boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
     size_t tradingSystemIndex) const {
   for (const auto &security : m_pimpl->m_securities) {
     if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
-      return true;
+      return security.second;
     }
   }
   return boost::indeterminate;

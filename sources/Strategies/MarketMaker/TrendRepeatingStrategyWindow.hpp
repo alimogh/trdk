@@ -41,11 +41,12 @@ class TrendRepeatingStrategyWindow : public QMainWindow {
   void ConnectSignals();
   TrendRepeatingStrategy &CreateStrategy(const QString &symbol);
 
-  void Disable(bool hasExchanges);
+  void Disable();
 
  private:
   FrontEnd::Lib::Engine &m_engine;
   Ui::TrendRepeatingStrategyWindow m_ui;
+  bool m_hasExchanges;
 
   boost::signals2::scoped_connection m_blockConnection;
   boost::signals2::scoped_connection m_eventsConnection;
