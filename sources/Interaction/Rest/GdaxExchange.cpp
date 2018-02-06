@@ -401,6 +401,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return boost::none;
   }
 
+  virtual bool CheckSymbol(const std::string &symbol) const override {
+    return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+  }
+
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {

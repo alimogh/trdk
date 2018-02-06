@@ -269,6 +269,11 @@ CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
   return boost::none;
 }
 
+bool CryptopiaTradingSystem::CheckSymbol(const std::string &symbol) const {
+  return Base::CheckSymbol(symbol) &&
+         m_products.get<BySymbol>().count(symbol) > 0;
+}
+
 std::unique_ptr<OrderTransactionContext>
 CryptopiaTradingSystem::SendOrderTransaction(
     trdk::Security &security,

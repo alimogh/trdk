@@ -79,7 +79,7 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
 
   Trend m_trend;
 
-  boost::unordered_set<Security *> m_securities;
+  boost::unordered_map<Security *, bool> m_securities;
 
  public:
   explicit Implementation(TrendRepeatingStrategy &self)
@@ -160,7 +160,7 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
     const auto &bestTargetChecker =
         tl::BestSecurityCheckerForOrder::Create(m_self, isLong, m_positionSize);
     for (const auto &security : m_securities) {
-      bestTargetChecker->Check(*security);
+      bestTargetChecker->Check(*security.first);
     }
     auto *const targetSecurity = bestTargetChecker->GetSuitableSecurity();
     if (!targetSecurity) {
@@ -201,17 +201,21 @@ TrendRepeatingStrategy::~TrendRepeatingStrategy() = default;
 void TrendRepeatingStrategy::OnSecurityStart(Security &security,
                                              Security::Request &request) {
   if (!m_pimpl->m_securities.empty() &&
-      (*m_pimpl->m_securities.begin())->GetSymbol() != security.GetSymbol()) {
+      m_pimpl->m_securities.begin()->first->GetSymbol() !=
+          security.GetSymbol()) {
     throw Exception("Strategy works only with one symbol, but more is set");
   }
-  Verify(m_pimpl->m_securities.emplace(&security).second);
+  Verify(m_pimpl->m_securities.emplace(std::make_pair(&security, true)).second);
   Base::OnSecurityStart(security, request);
 }
 
 void TrendRepeatingStrategy::OnLevel1Update(
     Security &security, const Milestones &delayMeasurement) {
-  if (!m_pimpl->m_securities.count(&security)) {
-    return;
+  {
+    const auto &it = m_pimpl->m_securities.find(&security);
+    if (it == m_pimpl->m_securities.cend() || !it->second) {
+      return;
+    }
   }
 
   const auto &bid = security.GetBidPriceValue();
@@ -386,12 +390,32 @@ const tl::Trend &TrendRepeatingStrategy::GetTrend() const {
 void TrendRepeatingStrategy::ForEachSecurity(
     const boost::function<void(Security &)> &callback) {
   for (auto &security : m_pimpl->m_securities) {
-    callback(*security);
+    callback(*security.first);
   }
 }
 
 void TrendRepeatingStrategy::RaiseEvent(const std::string &message) {
   m_pimpl->m_eventsSignal(message);
+}
+
+void TrendRepeatingStrategy::EnableTradingSystem(size_t tradingSystemIndex,
+                                                 bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  for (auto &security : m_pimpl->m_securities) {
+    if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
+      security.second = isEnabled;
+    }
+  }
+}
+
+boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
+    size_t tradingSystemIndex) const {
+  for (const auto &security : m_pimpl->m_securities) {
+    if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
+      return true;
+    }
+  }
+  return boost::indeterminate;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

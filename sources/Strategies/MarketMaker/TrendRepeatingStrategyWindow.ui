@@ -77,6 +77,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QGroupBox" name="exchangesGroup">
+      <property name="title">
+       <string>Exchanges</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QGroupBox" name="positionGroup">
       <property name="title">
        <string>Position</string>

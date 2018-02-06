@@ -165,6 +165,10 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
   return boost::none;
 }
 
+bool BittrexTradingSystem::CheckSymbol(const std::string &symbol) const {
+  return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+}
+
 std::unique_ptr<OrderTransactionContext>
 BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
                                            const Currency &currency,

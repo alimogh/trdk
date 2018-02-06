@@ -55,6 +55,9 @@ class TrendRepeatingStrategy : public trdk::Strategy {
 
   void RaiseEvent(const std::string &);
 
+  void EnableTradingSystem(size_t tradingSystemIndex, bool isEnabled);
+  boost::tribool IsTradingSystemEnabled(size_t tradingSystemIndex) const;
+
  protected:
   virtual void OnSecurityStart(trdk::Security &,
                                trdk::Security::Request &) override;
