@@ -20,7 +20,7 @@ TrendRepeatingOperation::TrendRepeatingOperation(
     Strategy &strategy,
     const Qty &qty,
     bool isLong,
-    const boost::shared_ptr<TakeProfit::Params> &takeProfit,
+    const boost::shared_ptr<TakeProfitShare::Params> &takeProfit,
     const boost::shared_ptr<StopLossShare::Params> &stopLoss)
     : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
       m_qty(qty),
@@ -42,8 +42,8 @@ void TrendRepeatingOperation::Setup(Position &position,
                                     PositionController &controller) const {
   position.AddAlgo(
       boost::make_unique<StopLossShare>(m_stopLoss, position, controller));
-  //   position.AddAlgo(
-  //       boost::make_unique<TakeProfit>(m_takeProfit, position, controller));
+  position.AddAlgo(
+      boost::make_unique<TakeProfitShare>(m_takeProfit, position, controller));
 }
 
 bool TrendRepeatingOperation::IsLong(const Security &) const {

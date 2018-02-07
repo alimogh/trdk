@@ -15,7 +15,34 @@
 namespace trdk {
 namespace TradingLib {
 
+////////////////////////////////////////////////////////////////////////////////
+
 class TrailingStop : public trdk::TradingLib::StopOrder {
+ public:
+  explicit TrailingStop(trdk::Position &,
+                        trdk::TradingLib::PositionController &);
+  virtual ~TrailingStop() override = default;
+
+ public:
+  virtual void Run() override;
+
+ protected:
+  virtual trdk::Lib::Double CalcProfitToActivate() const = 0;
+  virtual trdk::Lib::Double CalcProfitToClose() const = 0;
+
+ private:
+  bool CheckSignal();
+  bool Activate(const trdk::Volume &plannedPnl);
+
+ private:
+  bool m_isActivated;
+  boost::optional<trdk::Lib::Double> m_maxProfit;
+  boost::optional<trdk::Lib::Double> m_minProfit;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class TrailingStopPrice : public trdk::TradingLib::TrailingStop {
  public:
   class Params {
    public:
@@ -32,27 +59,20 @@ class TrailingStop : public trdk::TradingLib::StopOrder {
   };
 
  public:
-  explicit TrailingStop(const boost::shared_ptr<const Params> &,
-                        trdk::Position &,
-                        trdk::TradingLib::PositionController &);
-  virtual ~TrailingStop();
-
- public:
-  virtual void Run() override;
+  explicit TrailingStopPrice(const boost::shared_ptr<const Params> &,
+                             trdk::Position &,
+                             trdk::TradingLib::PositionController &);
+  virtual ~TrailingStopPrice() override = default;
 
  protected:
   virtual const char *GetName() const override;
-
- private:
-  bool CheckSignal();
-  bool Activate(const trdk::Volume &plannedPnl);
+  virtual trdk::Lib::Double CalcProfitToActivate() const override;
+  virtual trdk::Lib::Double CalcProfitToClose() const override;
 
  private:
   const boost::shared_ptr<const Params> m_params;
-
-  bool m_isActivated;
-  boost::optional<trdk::Lib::Double> m_maxProfit;
-  boost::optional<trdk::Lib::Double> m_minProfit;
 };
-}
-}
+
+////////////////////////////////////////////////////////////////////////////////
+}  // namespace TradingLib
+}  // namespace trdk

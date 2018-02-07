@@ -24,7 +24,7 @@ namespace sig = boost::signals2;
 namespace tl = trdk::TradingLib;
 
 using tl::StopLossShare;
-using tl::TakeProfit;
+using tl::TakeProfitShare;
 
 namespace {
 struct Ma {
@@ -80,7 +80,7 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   size_t m_fastMaSize;
   size_t m_slowMaSize;
 
-  boost::shared_ptr<TakeProfit::Params> m_takeProfit;
+  boost::shared_ptr<TakeProfitShare::Params> m_takeProfit;
   boost::shared_ptr<StopLossShare::Params> m_stopLoss;
 
   sig::signal<void(const std::string &)> m_eventsSignal;
@@ -97,7 +97,8 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
         m_positionSize(.01),
         m_fastMaSize(12),
         m_slowMaSize(26),
-        m_takeProfit(boost::make_shared<TakeProfit::Params>(.002, 0)),
+        m_takeProfit(
+            boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
         m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)) {}
 
   template <typename GetMa>
@@ -390,18 +391,37 @@ Double TrendRepeatingStrategy::GetStopLoss() const {
 }
 void TrendRepeatingStrategy::SetTakeProfit(const Double &takeProfit) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate() == takeProfit) {
+  if (m_pimpl->m_takeProfit->GetProfitShareToActivate() == takeProfit) {
     return;
   }
-  GetTradingLog().Write("take profit: %1% -> %2%", [&](TradingRecord &record) {
-    record % m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate()  // 1
-        % takeProfit;                                               // 2
-  });
-  *m_pimpl->m_takeProfit = TakeProfit::Params{takeProfit, 0};
+  GetTradingLog().Write(
+      "take profit: %1$.8f -> %2$.8f", [&](TradingRecord &record) {
+        record % m_pimpl->m_takeProfit->GetProfitShareToActivate()  // 1
+            % takeProfit;                                           // 2
+      });
+  *m_pimpl->m_takeProfit = TakeProfitShare::Params{
+      takeProfit, m_pimpl->m_takeProfit->GetTrailingShareToClose()};
 }
 Double TrendRepeatingStrategy::GetTakeProfit() const {
   const auto lock = LockForOtherThreads();
-  return m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate();
+  return m_pimpl->m_takeProfit->GetProfitShareToActivate();
+}
+void TrendRepeatingStrategy::SetTakeProfitTrailing(const Double &trailing) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_takeProfit->GetTrailingShareToClose() == trailing) {
+    return;
+  }
+  GetTradingLog().Write(
+      "take profit trailing: %1$.8f-> %2$.8f", [&](TradingRecord &record) {
+        record % m_pimpl->m_takeProfit->GetTrailingShareToClose()  // 1
+            % trailing;                                            // 2
+      });
+  *m_pimpl->m_takeProfit = TakeProfitShare::Params{
+      m_pimpl->m_takeProfit->GetProfitShareToActivate(), trailing};
+}
+Double TrendRepeatingStrategy::GetTakeProfitTrailing() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_takeProfit->GetTrailingShareToClose();
 }
 
 sig::scoped_connection TrendRepeatingStrategy::SubscribeToEvents(

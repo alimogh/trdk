@@ -42,7 +42,9 @@ class TrendRepeatingStrategy : public trdk::Strategy {
   void SetStopLoss(const Lib::Double &);
   Lib::Double GetStopLoss() const;
   void SetTakeProfit(const Lib::Double &);
+  void SetTakeProfitTrailing(const Lib::Double &);
   Lib::Double GetTakeProfit() const;
+  Lib::Double GetTakeProfitTrailing() const;
 
   boost::signals2::scoped_connection SubscribeToEvents(
       const boost::function<void(const std::string &)> &);

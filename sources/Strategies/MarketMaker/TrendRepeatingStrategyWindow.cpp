@@ -39,7 +39,8 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
 
   m_ui.positionSize->setValue(m_strategy.GetPositionSize());
 
-  m_ui.takeProfit->setValue(m_strategy.GetTakeProfit());
+  m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() * 100);
+  m_ui.takeProfitTrailling->setValue(m_strategy.GetTakeProfitTrailing() * 100);
   m_ui.stopLoss->setValue(m_strategy.GetStopLoss() * 100);
 
   m_ui.fastMaPeriods->setValue(
@@ -187,10 +188,22 @@ void TrendRepeatingStrategyWindow::ConnectSignals() {
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
                  [this](double value) {
-                   m_strategy.SetTakeProfit(value);
+                   m_strategy.SetTakeProfit(value / 100);
                    {
                      const QSignalBlocker blocker(*m_ui.takeProfit);
-                     m_ui.takeProfit->setValue(m_strategy.GetTakeProfit());
+                     m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() *
+                                               100);
+                   }
+                 }));
+  Verify(connect(m_ui.takeProfitTrailling,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) {
+                   m_strategy.SetTakeProfitTrailing(value / 100);
+                   {
+                     const QSignalBlocker blocker(*m_ui.takeProfitTrailling);
+                     m_ui.takeProfitTrailling->setValue(
+                         m_strategy.GetTakeProfitTrailing() * 100);
                    }
                  }));
   Verify(connect(m_ui.stopLoss,

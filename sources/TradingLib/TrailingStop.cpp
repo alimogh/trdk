@@ -17,35 +17,8 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TrailingStop::Params::Params(const Volume &minProfitPerLotToActivate,
-                             const Volume &minProfitPerLotToClose)
-    : m_minProfitPerLotToActivate(minProfitPerLotToActivate),
-      m_minProfitPerLotToClose(minProfitPerLotToClose) {
-  if (m_minProfitPerLotToActivate < m_minProfitPerLotToClose) {
-    throw Exception(
-        "Min profit to activate trailing stop must be greater than"
-        " min profit to close position by trailing stop");
-  }
-}
-
-const Volume &TrailingStop::Params::GetMinProfitPerLotToActivate() const {
-  return m_minProfitPerLotToActivate;
-}
-
-const Volume &TrailingStop::Params::GetMinProfitPerLotToClose() const {
-  return m_minProfitPerLotToClose;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-TrailingStop::TrailingStop(const boost::shared_ptr<const Params> &params,
-                           Position &position,
-                           PositionController &controller)
-    : StopOrder(position, controller), m_params(params), m_isActivated(false) {}
-
-TrailingStop::~TrailingStop() = default;
-
-const char *TrailingStop::GetName() const { return "trailing stop"; }
+TrailingStop::TrailingStop(Position &position, PositionController &controller)
+    : StopOrder(position, controller), m_isActivated(false) {}
 
 void TrailingStop::Run() {
   if (!GetPosition().IsOpened()) {
@@ -79,9 +52,7 @@ bool TrailingStop::CheckSignal() {
     return false;
   }
 
-  const auto &profitToClose = RoundByPrecision(
-      m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  const auto &profitToClose = CalcProfitToClose();
 
   if (m_minProfit && plannedPnl >= *m_minProfit) {
     return false;
@@ -89,6 +60,7 @@ bool TrailingStop::CheckSignal() {
 
   const bool isSignal = plannedPnl <= profitToClose;
 
+#if 0
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
@@ -115,6 +87,7 @@ bool TrailingStop::CheckSignal() {
             % GetPosition().GetOperation()->GetId()           // 11
             % GetPosition().GetSubOperationId();              // 12
       });
+#endif
 
   m_minProfit = plannedPnl;
 
@@ -126,9 +99,7 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
     return true;
   }
 
-  const Double &profitToActivate = RoundByPrecision(
-      m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  const auto &profitToActivate = CalcProfitToActivate();
 
   m_isActivated = plannedPnl >= profitToActivate;
 
@@ -136,6 +107,7 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
     return m_isActivated;
   }
 
+#if 0
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
@@ -162,10 +134,52 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
             % GetPosition().GetOperation()->GetId()           // 11
             % GetPosition().GetSubOperationId();              // 12
       });
+#endif
 
   m_maxProfit = plannedPnl;
 
   return m_isActivated;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TrailingStopPrice::Params::Params(const Volume &minProfitPerLotToActivate,
+                                  const Volume &minProfitPerLotToClose)
+    : m_minProfitPerLotToActivate(minProfitPerLotToActivate),
+      m_minProfitPerLotToClose(minProfitPerLotToClose) {
+  if (m_minProfitPerLotToActivate < m_minProfitPerLotToClose) {
+    throw Exception(
+        "Min profit to activate trailing stop must be greater than"
+        " min profit to close position by trailing stop");
+  }
+}
+
+const Volume &TrailingStopPrice::Params::GetMinProfitPerLotToActivate() const {
+  return m_minProfitPerLotToActivate;
+}
+
+const Volume &TrailingStopPrice::Params::GetMinProfitPerLotToClose() const {
+  return m_minProfitPerLotToClose;
+}
+
+TrailingStopPrice::TrailingStopPrice(
+    const boost::shared_ptr<const Params> &params,
+    Position &position,
+    PositionController &controller)
+    : TrailingStop(position, controller), m_params(params) {}
+
+const char *TrailingStopPrice::GetName() const { return "trailing stop price"; }
+
+Double TrailingStopPrice::CalcProfitToActivate() const {
+  return RoundByPrecision(
+      m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
+      GetPosition().GetSecurity().GetPricePrecisionPower());
+}
+
+Double TrailingStopPrice::CalcProfitToClose() const {
+  return RoundByPrecision(
+      m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty(),
+      GetPosition().GetSecurity().GetPricePrecisionPower());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
