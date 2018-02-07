@@ -242,15 +242,14 @@ TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
     const IniFile conf(m_engine.GetConfigFilePath());
     const IniSectionRef defaults(conf, "Defaults");
     std::ostringstream os;
-    os << "[Strategy.TrendRepeatingMarketMaker/" << symbol.toStdString() << '/'
+    os << "[Strategy.PingPong/" << symbol.toStdString() << '/'
        << ++instanceNumber << "]" << std::endl
        << "module = MarketMaker" << std::endl
        << "factory = CreateMaTrendRepeatingStrategy" << std::endl
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
-       << "title = " << symbol.toStdString() << " Market Making by Trend"
-       << std::endl
+       << "title = " << symbol.toStdString() << " Ping Pong" << std::endl
        << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
        << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));

@@ -117,6 +117,7 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
       } catch (const Poco::Exception &ex) {
+        session = RecreateSession(*session);
         throw CommunicationError(getError(ex).c_str());
       } catch (const std::exception &) {
         throw Exception(getError(ex).c_str());

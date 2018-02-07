@@ -570,8 +570,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     Position *firstLeg = nullptr;
     try {
-      firstLeg = &m_controller.OpenPosition(operation, 1, *legTargets.first,
-                                            delayMeasurement);
+      firstLeg = m_controller.OpenPosition(operation, 1, *legTargets.first,
+                                           delayMeasurement);
+      if (!firstLeg) {
+        return false;
+      }
       m_controller.OpenPosition(operation, 2, *legTargets.second,
                                 delayMeasurement);
 
@@ -610,8 +613,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          const Double &spreadRatio,
                          const Double &bestSpreadRatio,
                          const Milestones &delayMeasurement) {
-    const boost::function<Position &(int64_t, Security &)> &openPosition =
-        [&](int64_t leg, Security &target) -> Position & {
+    const boost::function<Position *(int64_t, Security &)> &openPosition =
+        [&](int64_t leg, Security &target) -> Position * {
       return m_controller.OpenPosition(operation, leg, target,
                                        delayMeasurement);
     };
@@ -625,7 +628,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto secondLegPositionsTransaction =
           m_self.StartThreadPositionsTransaction();
       auto firstLegFuture =
-          boost::async([&openPosition, &firstLegTarget]() -> Position & {
+          boost::async([&openPosition, &firstLegTarget]() -> Position * {
             try {
               return openPosition(1, firstLegTarget);
             } catch (const CommunicationError &ex) {
@@ -637,7 +640,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             }
           });
       try {
-        secondLeg = &openPosition(2, secondLegTarget);
+        secondLeg = openPosition(2, secondLegTarget);
       } catch (const CommunicationError &ex) {
         ReportSignal("error", "async 2nd leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);
@@ -645,7 +648,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             "Failed to start trading (async 2nd leg): \"%1%\".", ex.what());
       }
       try {
-        firstLeg = &firstLegFuture.get();
+        firstLeg = firstLegFuture.get();
       } catch (const CommunicationError &ex) {
         ReportSignal("error", "async 1st leg", sellTarget, buyTarget,
                      spreadRatio, bestSpreadRatio);

@@ -21,7 +21,7 @@ class BestSecurityChecker : private boost::noncopyable {
   virtual ~BestSecurityChecker() = default;
 
  public:
-  void Check(trdk::Security &);
+  bool Check(trdk::Security &);
 
   bool HasSuitableSecurity() const noexcept;
   trdk::Security *GetSuitableSecurity() const noexcept;

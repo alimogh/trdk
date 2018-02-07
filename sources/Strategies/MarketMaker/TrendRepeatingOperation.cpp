@@ -56,7 +56,7 @@ bool TrendRepeatingOperation::HasCloseSignal(const Position &position) const {
   const auto &isRising =
       boost::polymorphic_downcast<const TrendRepeatingStrategy *>(
           &GetStrategy())
-          ->GetTrend()
+          ->GetTrend(position.GetSecurity())
           .IsRising();
   return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
 }
