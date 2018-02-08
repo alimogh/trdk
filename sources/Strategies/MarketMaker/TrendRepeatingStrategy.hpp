@@ -25,6 +25,8 @@ class TrendRepeatingStrategy : public trdk::Strategy {
   virtual ~TrendRepeatingStrategy() override;
 
  public:
+  void Stop() noexcept;
+
   void EnableTrading(bool);
   bool IsTradingEnabled() const;
 

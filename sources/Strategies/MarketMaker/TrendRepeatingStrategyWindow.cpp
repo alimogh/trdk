@@ -20,6 +20,8 @@ using namespace trdk::Strategies::MarketMaker;
 TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
     Engine &engine, const QString &symbol, QWidget *parent)
     : Base(parent), m_engine(engine), m_strategy(CreateStrategy(symbol)) {
+  setAttribute(Qt::WA_DeleteOnClose);
+
   m_ui.setupUi(this);
 
   setWindowTitle(symbol + " " + tr("Market Making by Trend Strategy") + " - " +
@@ -52,15 +54,7 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
 }
 
 TrendRepeatingStrategyWindow::~TrendRepeatingStrategyWindow() {
-  try {
-    if (!m_strategy.IsBlocked()) {
-      m_strategy.EnableTrading(false);
-      m_strategy.EnableActivePositionsControl(false);
-    }
-  } catch (...) {
-    AssertFailNoException();
-    terminate();
-  }
+  m_strategy.Stop();
 }
 
 bool TrendRepeatingStrategyWindow::LoadExchanges() {
