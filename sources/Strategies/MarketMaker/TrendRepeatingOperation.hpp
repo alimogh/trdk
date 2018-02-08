@@ -23,7 +23,7 @@ class TrendRepeatingOperation : public Operation {
       Strategy &,
       const Qty &,
       bool isLong,
-      const boost::shared_ptr<TradingLib::TakeProfit::Params> &,
+      const boost::shared_ptr<TradingLib::TakeProfitShare::Params> &,
       const boost::shared_ptr<TradingLib::StopLossShare::Params> &);
   virtual ~TrendRepeatingOperation() override = default;
 
@@ -45,7 +45,8 @@ class TrendRepeatingOperation : public Operation {
   TradingLib::LimitIocOrderPolicy m_orderPolicy;
   const Qty m_qty;
   const bool m_isLong;
-  const boost::shared_ptr<const TradingLib::TakeProfit::Params> m_takeProfit;
+  const boost::shared_ptr<const TradingLib::TakeProfitShare::Params>
+      m_takeProfit;
   const boost::shared_ptr<const TradingLib::StopLossShare::Params> m_stopLoss;
 };
 

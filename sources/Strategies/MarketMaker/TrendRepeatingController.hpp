@@ -23,10 +23,20 @@ class TrendRepeatingController : public TradingLib::PositionController {
   virtual ~TrendRepeatingController() override = default;
 
  public:
-  bool IsClosedEnabled() const;
+  void EnableOpening(bool);
+  bool IsOpeningEnabled() const;
+
   void EnableClosing(bool);
+  bool IsClosingEnabled() const;
 
  public:
+  virtual trdk::Position *OpenPosition(
+      const boost::shared_ptr<trdk::Operation> &,
+      int64_t subOperationId,
+      trdk::Security &,
+      bool isLong,
+      const trdk::Qty &,
+      const trdk::Lib::TimeMeasurement::Milestones &) override;
   virtual bool ClosePosition(trdk::Position &,
                              const trdk::CloseReason &) override;
 
@@ -34,6 +44,7 @@ class TrendRepeatingController : public TradingLib::PositionController {
   virtual void ClosePosition(trdk::Position &) override;
 
  private:
+  bool m_isOpeningEnabled;
   bool m_isClosingEnabled;
 };
 }  // namespace MarketMaker

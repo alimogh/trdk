@@ -20,13 +20,14 @@ using namespace trdk::TradingLib;
 
 BestSecurityChecker::BestSecurityChecker() : m_bestSecurity(nullptr) {}
 
-void BestSecurityChecker::Check(Security &checkSecurity) {
+bool BestSecurityChecker::Check(Security &checkSecurity) {
   AssertNe(m_bestSecurity, &checkSecurity);
   if (!CheckGeneral(checkSecurity) || !CheckExchange(checkSecurity) ||
       !(!m_bestSecurity || CheckPrice(*m_bestSecurity, checkSecurity))) {
-    return;
+    return false;
   }
   m_bestSecurity = &checkSecurity;
+  return true;
 }
 
 bool BestSecurityChecker::HasSuitableSecurity() const noexcept {

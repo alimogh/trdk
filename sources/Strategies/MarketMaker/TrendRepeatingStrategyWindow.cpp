@@ -39,7 +39,8 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
 
   m_ui.positionSize->setValue(m_strategy.GetPositionSize());
 
-  m_ui.takeProfit->setValue(m_strategy.GetTakeProfit());
+  m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() * 100);
+  m_ui.takeProfitTrailling->setValue(m_strategy.GetTakeProfitTrailing() * 100);
   m_ui.stopLoss->setValue(m_strategy.GetStopLoss() * 100);
 
   m_ui.fastMaPeriods->setValue(
@@ -187,10 +188,22 @@ void TrendRepeatingStrategyWindow::ConnectSignals() {
                  static_cast<void (QDoubleSpinBox::*)(double)>(
                      &QDoubleSpinBox::valueChanged),
                  [this](double value) {
-                   m_strategy.SetTakeProfit(value);
+                   m_strategy.SetTakeProfit(value / 100);
                    {
                      const QSignalBlocker blocker(*m_ui.takeProfit);
-                     m_ui.takeProfit->setValue(m_strategy.GetTakeProfit());
+                     m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() *
+                                               100);
+                   }
+                 }));
+  Verify(connect(m_ui.takeProfitTrailling,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) {
+                   m_strategy.SetTakeProfitTrailing(value / 100);
+                   {
+                     const QSignalBlocker blocker(*m_ui.takeProfitTrailling);
+                     m_ui.takeProfitTrailling->setValue(
+                         m_strategy.GetTakeProfitTrailing() * 100);
                    }
                  }));
   Verify(connect(m_ui.stopLoss,
@@ -242,15 +255,14 @@ TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
     const IniFile conf(m_engine.GetConfigFilePath());
     const IniSectionRef defaults(conf, "Defaults");
     std::ostringstream os;
-    os << "[Strategy.TrendRepeatingMarketMaker/" << symbol.toStdString() << '/'
+    os << "[Strategy.PingPong/" << symbol.toStdString() << '/'
        << ++instanceNumber << "]" << std::endl
        << "module = MarketMaker" << std::endl
        << "factory = CreateMaTrendRepeatingStrategy" << std::endl
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
-       << "title = " << symbol.toStdString() << " Market Making by Trend"
-       << std::endl
+       << "title = " << symbol.toStdString() << " Ping Pong" << std::endl
        << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
        << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));

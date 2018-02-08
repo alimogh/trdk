@@ -17,29 +17,13 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TakeProfit::Params::Params(const Volume &minProfitPerLotToActivate,
-                           const Volume &maxPriceOffsetPerLotToClose)
-    : m_minProfitPerLotToActivate(minProfitPerLotToActivate),
-      m_maxPriceOffsetPerLotToClose(maxPriceOffsetPerLotToClose) {}
+TakeProfit::TakeProfit(Position &position, PositionController &controller)
+    : StopOrder(position, controller), m_isActivated(false) {}
 
-const Volume &TakeProfit::Params::GetMinProfitPerLotToActivate() const {
-  return m_minProfitPerLotToActivate;
+const Volume &TakeProfit::GetMaxProfit() const {
+  Assert(m_maxProfit);
+  return *m_maxProfit;
 }
-
-const Volume &TakeProfit::Params::GetMaxPriceOffsetPerLotToClose() const {
-  return m_maxPriceOffsetPerLotToClose;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-TakeProfit::TakeProfit(const boost::shared_ptr<const Params> &params,
-                       Position &position,
-                       PositionController &controller)
-    : StopOrder(position, controller), m_params(params), m_isActivated(false) {
-  Assert(m_params);
-}
-
-const char *TakeProfit::GetName() const { return "take profit"; }
 
 void TakeProfit::Run() {
   if (!GetPosition().IsOpened()) {
@@ -71,9 +55,7 @@ bool TakeProfit::CheckSignal() {
   Assert(m_maxProfit);
 
   auto profitToClose = *m_maxProfit;
-  profitToClose -= RoundByPrecision(
-      m_params->GetMaxPriceOffsetPerLotToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  profitToClose -= CalcOffsetToClose();
 
   if (m_minProfit && plannedPnl >= *m_minProfit) {
     return false;
@@ -81,6 +63,7 @@ bool TakeProfit::CheckSignal() {
 
   const bool isSignal = plannedPnl <= profitToClose;
 
+#if 0
   GetTradingLog().Write(
       "%1%\t%2%"
       "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f-%7$.8f*%8$.8f=%9$.8f)"
@@ -108,6 +91,7 @@ bool TakeProfit::CheckSignal() {
             % GetPosition().GetOperation()->GetId()           // 12
             % GetPosition().GetSubOperationId();              // 13
       });
+#endif
 
   m_minProfit = plannedPnl;
 
@@ -115,9 +99,7 @@ bool TakeProfit::CheckSignal() {
 }
 
 bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
-  const Double &profitToActivate = RoundByPrecision(
-      m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  const auto &profitToActivate = CalcProfitToActivate();
 
   bool isSignal = false;
   if (!m_isActivated) {
@@ -167,3 +149,101 @@ bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
 
   return m_isActivated;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+TakeProfitPrice::Params::Params(const Volume &profitPerLotToActivate,
+                                const Volume &trailingToClose)
+    : m_profitPerLotToActivate(profitPerLotToActivate),
+      m_trailingToClose(trailingToClose) {}
+const Volume &TakeProfitPrice::Params::GetProfitPerLotToActivate() const {
+  return m_profitPerLotToActivate;
+}
+const Volume &TakeProfitPrice::Params::GetTrailingToClose() const {
+  return m_trailingToClose;
+}
+
+TakeProfitPrice::TakeProfitPrice(const boost::shared_ptr<const Params> &params,
+                                 Position &position,
+                                 PositionController &controller)
+    : TakeProfit(position, controller), m_params(params) {
+  Assert(m_params);
+}
+
+void TakeProfitPrice::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3$.8f, "
+      "'trailing': %4$.8f}, 'operation': '%5%/%6%'}}",
+      [this, action](TradingRecord &record) {
+        record % action                              // 1
+            % GetName()                              // 2
+            % m_params->GetProfitPerLotToActivate()  // 3
+            % m_params->GetTrailingToClose()         // 4
+            % GetPosition().GetOperation()->GetId()  // 5
+            % GetPosition().GetSubOperationId();     // 6
+      });
+}
+
+const char *TakeProfitPrice::GetName() const { return "take profit price"; }
+
+Volume TakeProfitPrice::CalcProfitToActivate() const {
+  return RoundByPrecision(
+      m_params->GetProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
+      GetPosition().GetSecurity().GetPricePrecisionPower());
+}
+
+Volume TakeProfitPrice::CalcOffsetToClose() const {
+  return RoundByPrecision(
+      m_params->GetTrailingToClose() * GetPosition().GetOpenedQty(),
+      GetPosition().GetSecurity().GetPricePrecisionPower());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TakeProfitShare::Params::Params(const Volume &profitShareToActivate,
+                                const Volume &trailingShareToClose)
+    : m_profitShareToActivate(profitShareToActivate),
+      m_trailingShareToClose(trailingShareToClose) {}
+const Volume &TakeProfitShare::Params::GetProfitShareToActivate() const {
+  return m_profitShareToActivate;
+}
+const Volume &TakeProfitShare::Params::GetTrailingShareToClose() const {
+  return m_trailingShareToClose;
+}
+
+TakeProfitShare::TakeProfitShare(const boost::shared_ptr<const Params> &params,
+                                 Position &position,
+                                 PositionController &controller)
+    : TakeProfit(position, controller), m_params(params) {
+  Assert(m_params);
+}
+
+void TakeProfitShare::Report(const char *action) const {
+  GetTradingLog().Write(
+      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3$.8f, "
+      "'trailing': %4$.8f}, 'operation': '%5%/%6%'}}",
+      [this, action](TradingRecord &record) {
+        record % action                              // 1
+            % GetName()                              // 2
+            % m_params->GetProfitShareToActivate()   // 3
+            % m_params->GetTrailingShareToClose()    // 4
+            % GetPosition().GetOperation()->GetId()  // 5
+            % GetPosition().GetSubOperationId();     // 6
+      });
+}
+
+const char *TakeProfitShare::GetName() const { return "take profit share"; }
+
+Volume TakeProfitShare::CalcProfitToActivate() const {
+  const auto &initialVol = GetPosition().GetOpenedVolume();
+  return RoundByPrecision(
+      initialVol + (initialVol * m_params->GetProfitShareToActivate()),
+      GetPosition().GetSecurity().GetPricePrecisionPower());
+}
+
+Volume TakeProfitShare::CalcOffsetToClose() const {
+  return RoundByPrecision(GetMaxProfit() * m_params->GetTrailingShareToClose(),
+                          GetPosition().GetSecurity().GetPricePrecisionPower());
+}
+
+////////////////////////////////////////////////////////////////////////////////

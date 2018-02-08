@@ -42,7 +42,7 @@ PositionController::PositionController(
 
 PositionController::~PositionController() = default;
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -51,7 +51,7 @@ trdk::Position &PositionController::OpenPosition(
                       operationContext->IsLong(security), delayMeasurement);
 }
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -61,7 +61,7 @@ trdk::Position &PositionController::OpenPosition(
                       operationContext->GetPlannedQty(), delayMeasurement);
 }
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -73,7 +73,7 @@ trdk::Position &PositionController::OpenPosition(
                      isLong ? security.GetAskPrice() : security.GetBidPrice(),
                      delayMeasurement);
   ContinuePosition(*result);
-  return *result;
+  return &*result;
 }
 
 Position &PositionController::RestorePosition(
@@ -185,8 +185,11 @@ Position *PositionController::OnSignal(
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
-    position = &OpenPosition(newOperationContext, subOperationId, security,
-                             delayMeasurement);
+    position = OpenPosition(newOperationContext, subOperationId, security,
+                            delayMeasurement);
+    if (!position) {
+      return nullptr;
+    }
   } else if (!ClosePosition(*position, CLOSE_REASON_SIGNAL)) {
     return nullptr;
   }

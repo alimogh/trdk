@@ -325,11 +325,8 @@ class Position::Implementation : private boost::noncopyable {
       if (!order.qty) {
         return;
       }
-      auto &startTime = GetDirection().time;
-      if (startTime != pt::not_a_date_time) {
-        return;
-      }
-      startTime = GetPosition().GetSecurity().GetContext().GetCurrentTime();
+      GetDirection().time =
+          GetPosition().GetSecurity().GetContext().GetCurrentTime();
     }
 
     void SignalUpdate(Module::Lock &lock) {
@@ -993,7 +990,6 @@ void Position::MarkAsCompleted() {
     return;
   }
   ReportAboutGeneralAction(*this, "forcing", "completed");
-  AssertEq(m_pimpl->m_close.time, pt::not_a_date_time);
   m_pimpl->m_close.time = GetSecurity().GetContext().GetCurrentTime();
   m_pimpl->m_isMarketAsCompleted = true;
   m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);

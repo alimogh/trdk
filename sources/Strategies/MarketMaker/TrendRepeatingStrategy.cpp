@@ -24,7 +24,7 @@ namespace sig = boost::signals2;
 namespace tl = trdk::TradingLib;
 
 using tl::StopLossShare;
-using tl::TakeProfit;
+using tl::TakeProfitShare;
 
 namespace {
 struct Ma {
@@ -54,137 +54,143 @@ class Trend : public tl::Trend {
     return SetIsRising(accs::ema(slowMa) < accs::ema(fastMa));
   }
 };
+
+struct Subscribtion {
+  bool isEnabled;
+  Ma fastMa;
+  Ma slowMa;
+  boost::circular_buffer<Price> marketDataBuffer;
+  Trend trend;
+
+  explicit Subscribtion(size_t fastMaSize, size_t slowMaSize)
+      : isEnabled(true),
+        fastMa("fast", fastMaSize),
+        slowMa("slow", slowMaSize),
+        marketDataBuffer(
+            std::max(fastMa.numberOfPeriods, slowMa.numberOfPeriods)) {}
+};
 }  // namespace
 
 class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
  public:
   TrendRepeatingStrategy &m_self;
 
-  bool m_isTradingEnabled;
-
   Qty m_positionSize;
 
-  Ma m_fastMa;
-  Ma m_slowMa;
+  size_t m_fastMaSize;
+  size_t m_slowMaSize;
 
-  boost::shared_ptr<TakeProfit::Params> m_takeProfit;
+  boost::shared_ptr<TakeProfitShare::Params> m_takeProfit;
   boost::shared_ptr<StopLossShare::Params> m_stopLoss;
-
-  boost::circular_buffer<Price> m_marketDataBuffer;
 
   sig::signal<void(const std::string &)> m_eventsSignal;
   sig::signal<void(const std::string *)> m_blockSignal;
 
   TrendRepeatingController m_controller;
 
-  Trend m_trend;
-
-  boost::unordered_map<Security *, bool> m_securities;
+  boost::unordered_map<const Security *, boost::shared_ptr<Subscribtion>>
+      m_securities;
 
  public:
   explicit Implementation(TrendRepeatingStrategy &self)
       : m_self(self),
-        m_isTradingEnabled(false),
         m_positionSize(.01),
-        m_fastMa("fast", 12),
-        m_slowMa("slow", 26),
-        m_takeProfit(boost::make_shared<TakeProfit::Params>(.002, 0)),
-        m_stopLoss(boost::make_shared<StopLossShare::Params>(5.0 / 100)),
-        m_marketDataBuffer(
-            std::max(m_fastMa.numberOfPeriods, m_slowMa.numberOfPeriods)) {}
+        m_fastMaSize(12),
+        m_slowMaSize(26),
+        m_takeProfit(
+            boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
+        m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)) {}
 
-  void SetNumberOfMaPeriods(Ma &ma, size_t newNumberOfPeriods) {
+  template <typename GetMa>
+  void SetNumberOfMaPeriods(const GetMa &getMa,
+                            size_t &currentNumberOfPeriods,
+                            size_t newNumberOfPeriods) {
     const auto lock = m_self.LockForOtherThreads();
-    if (ma.numberOfPeriods == newNumberOfPeriods) {
-      return;
-    }
-    const auto prevNumberOfPeriods = ma.numberOfPeriods;
-    const auto prevFilledSize = accs::rolling_count(*ma.stat);
-    ma.numberOfPeriods = newNumberOfPeriods;
-    ma.Reset();
-    for (auto it = m_marketDataBuffer.size() <= newNumberOfPeriods
-                       ? m_marketDataBuffer.begin()
-                       : m_marketDataBuffer.end() - newNumberOfPeriods;
-         it != m_marketDataBuffer.end(); ++it) {
-      (*ma.stat)(*it);
-    }
-    ma.isReported = false;
+    for (auto &security : m_securities) {
+      Subscribtion &subscribtion = *security.second;
+      Ma &ma = getMa(subscribtion);
 
-    m_self.GetTradingLog().Write("%1% MA size: %2% (%3%) -> %4% (%5%)",
-                                 [&](TradingRecord &record) {
-                                   record % ma.name                      // 1
-                                       % prevNumberOfPeriods             // 2
-                                       % prevFilledSize                  // 3
-                                       % ma.numberOfPeriods              // 4
-                                       % accs::rolling_count(*ma.stat);  // 5
-                                 });
+      if (ma.numberOfPeriods == newNumberOfPeriods) {
+        return;
+      }
 
-    if (m_marketDataBuffer.capacity() < newNumberOfPeriods) {
+      const auto prevNumberOfPeriods = ma.numberOfPeriods;
+      const auto prevFilledSize = accs::rolling_count(*ma.stat);
+      ma.numberOfPeriods = newNumberOfPeriods;
+      ma.Reset();
+
+      for (auto it =
+               subscribtion.marketDataBuffer.size() <= newNumberOfPeriods
+                   ? subscribtion.marketDataBuffer.begin()
+                   : subscribtion.marketDataBuffer.end() - newNumberOfPeriods;
+           it != subscribtion.marketDataBuffer.end(); ++it) {
+        (*ma.stat)(*it);
+      }
+
+      ma.isReported = false;
+
       m_self.GetTradingLog().Write(
-          "MA buffer size: %1% -> %2%", [&](TradingRecord &record) {
-            record % m_marketDataBuffer.capacity()  // 1
-                % newNumberOfPeriods;               // 2
+          "%1% MA size for \"%2%\": %3% (%4%) -> %5% (%6%)",
+          [&](TradingRecord &record) {
+            record % ma.name                      // 1
+                % *security.first                 // 2
+                % prevNumberOfPeriods             // 3
+                % prevFilledSize                  // 4
+                % ma.numberOfPeriods              // 5
+                % accs::rolling_count(*ma.stat);  // 6
           });
-      m_marketDataBuffer.set_capacity(newNumberOfPeriods);
+
+      if (subscribtion.marketDataBuffer.capacity() < newNumberOfPeriods) {
+        m_self.GetTradingLog().Write(
+            "MA buffer size: %1% -> %2%", [&](TradingRecord &record) {
+              record % subscribtion.marketDataBuffer.capacity()  // 1
+                  % newNumberOfPeriods;                          // 2
+            });
+        subscribtion.marketDataBuffer.set_capacity(newNumberOfPeriods);
+      }
     }
-  }
-  size_t GetNumberOfMaPeriods(const Ma &ma) const {
-    const auto lock = m_self.LockForOtherThreads();
-    return ma.numberOfPeriods;
+    currentNumberOfPeriods = newNumberOfPeriods;
   }
 
   void CheckSignal(Security &sourceSecurity,
-                   bool isTradingSystemEnabled,
+                   Subscribtion &subscribtion,
                    const Milestones &delayMeasurement) {
-    if (!m_slowMa.IsFilled() || !m_fastMa.IsFilled()) {
+    if (!subscribtion.slowMa.IsFilled() || !subscribtion.fastMa.IsFilled()) {
       return;
     }
-    if (!m_trend.Update(*m_slowMa.stat, *m_fastMa.stat)) {
+    if (!subscribtion.trend.Update(*subscribtion.slowMa.stat,
+                                   *subscribtion.fastMa.stat)) {
       return;
     }
-    if ((m_self.GetPositions().IsEmpty() && !m_isTradingEnabled) ||
-        !isTradingSystemEnabled) {
+    if (!subscribtion.isEnabled) {
       return;
     }
+
+    const auto &tradingSystem =
+        m_self.GetTradingSystem(sourceSecurity.GetSource().GetIndex())
+            .GetInstanceName();
 
     m_self.GetTradingLog().Write(
-        "trend\tchanged\tslow_ema=%1%\tfast_ema=%2%\ttrend=%3%",
+        "trend\tchanged\t%1%\tslow_ema=%2%\tfast_ema=%3%\ttrend=%4%",
         [&](TradingRecord &record) {
-          record % accs::ema(*m_slowMa.stat)                  // 1
-              % accs::ema(*m_fastMa.stat)                     // 2
-              % (m_trend.IsRising() ? "rising" : "falling");  // 3
+          record % sourceSecurity                                        // 1
+              % accs::ema(*subscribtion.slowMa.stat)                     // 2
+              % accs::ema(*subscribtion.fastMa.stat)                     // 3
+              % (subscribtion.trend.IsRising() ? "rising" : "falling");  // 4
         });
-    m_self.RaiseEvent("Trend changed to \"" +
-                      std::string(m_trend.IsRising() ? "rising" : "falling") +
+    m_self.RaiseEvent(tradingSystem + " changed trend to \"" +
+                      (subscribtion.trend.IsRising() ? "rising" : "falling") +
                       "\".");
-
-    const bool isLong = m_trend.IsRising();
-
-    const auto &bestTargetChecker =
-        tl::BestSecurityCheckerForOrder::Create(m_self, isLong, m_positionSize);
-    for (const auto &security : m_securities) {
-      bestTargetChecker->Check(*security.first);
-    }
-    auto *const targetSecurity = bestTargetChecker->GetSuitableSecurity();
-    if (!targetSecurity) {
-      m_self.GetLog().Warn(
-          "Failed to find suitable security for the new position (source "
-          "security is \"%1%\").",
-          sourceSecurity);
-      m_self.RaiseEvent("Failed to find suitable exchange to open " +
-                        std::string(isLong ? "long" : "short") + " position.");
-      return;
-    }
 
     try {
       m_controller.OnSignal(
           boost::make_shared<TrendRepeatingOperation>(
-              m_self, m_positionSize, isLong, m_takeProfit, m_stopLoss),
-          0, *targetSecurity, delayMeasurement);
+              m_self, m_positionSize, subscribtion.trend.IsRising(),
+              m_takeProfit, m_stopLoss),
+          0, sourceSecurity, delayMeasurement);
     } catch (const CommunicationError &ex) {
-      m_self.GetLog().Debug(
-          "Communication error at position update handling: \"%1%\".",
-          ex.what());
+      m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
+                            ex.what());
     }
   }
 };
@@ -194,7 +200,7 @@ TrendRepeatingStrategy::TrendRepeatingStrategy(Context &context,
                                                const IniSectionRef &conf)
     : Base(context,
            "{C9C4282A-C620-45DA-9071-A6F9E5224BE9}",
-           "MaTrendRepeatingMarketMaker",
+           "PingPong",
            instanceName,
            conf),
       m_pimpl(boost::make_unique<Implementation>(*this)) {}
@@ -208,7 +214,11 @@ void TrendRepeatingStrategy::OnSecurityStart(Security &security,
           security.GetSymbol()) {
     throw Exception("Strategy works only with one symbol, but more is set");
   }
-  Verify(m_pimpl->m_securities.emplace(std::make_pair(&security, true)).second);
+  Verify(m_pimpl->m_securities
+             .emplace(std::make_pair(
+                 &security, boost::make_shared<Subscribtion>(
+                                m_pimpl->m_fastMaSize, m_pimpl->m_slowMaSize)))
+             .second);
   Base::OnSecurityStart(security, request);
 }
 
@@ -219,32 +229,42 @@ void TrendRepeatingStrategy::OnLevel1Update(
   if (securityIt == m_pimpl->m_securities.cend()) {
     return;
   }
+  Subscribtion &subscribtion = *securityIt->second;
 
   const auto &bid = security.GetBidPriceValue();
   const auto &ask = security.GetAskPriceValue();
   const auto &spread = ask - bid;
   const auto &statValue = bid + (spread / 2);
-  m_pimpl->m_marketDataBuffer.push_back(statValue);
 
-  (*m_pimpl->m_fastMa.stat)(statValue);
-  (*m_pimpl->m_slowMa.stat)(statValue);
+  subscribtion.marketDataBuffer.push_back(statValue);
 
-  if (!m_pimpl->m_slowMa.isReported || !m_pimpl->m_fastMa.isReported) {
-    if (m_pimpl->m_slowMa.IsFilled() && m_pimpl->m_slowMa.IsFilled()) {
-      RaiseEvent("Both MA are filled, starting signal checks...");
-      m_pimpl->m_slowMa.isReported = m_pimpl->m_fastMa.isReported = true;
+  Ma &fastMa = subscribtion.fastMa;
+  Ma &slowMa = subscribtion.slowMa;
+  (*fastMa.stat)(statValue);
+  (*slowMa.stat)(statValue);
+  if (subscribtion.isEnabled && (!slowMa.isReported || !fastMa.isReported)) {
+    if (slowMa.IsFilled() && slowMa.IsFilled()) {
+      RaiseEvent(
+          "Both " +
+          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
+          " MAs are filled, starting signal checks...");
+      slowMa.isReported = fastMa.isReported = true;
     }
-    if (!m_pimpl->m_slowMa.isReported && m_pimpl->m_slowMa.IsFilled()) {
-      RaiseEvent("Slow MA is filled, waiting for fast MA filling.");
-      m_pimpl->m_slowMa.isReported = true;
+    if (!slowMa.isReported && slowMa.IsFilled()) {
+      RaiseEvent(
+          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
+          " slow MA is filled, waiting for fast MA filling...");
+      slowMa.isReported = true;
     }
-    if (!m_pimpl->m_fastMa.isReported && m_pimpl->m_fastMa.IsFilled()) {
-      RaiseEvent("Fast MA is filled, waiting for slow MA filling.");
-      m_pimpl->m_fastMa.isReported = true;
+    if (!fastMa.isReported && fastMa.IsFilled()) {
+      RaiseEvent(
+          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
+          " fast MA is filled, waiting for slow MA filling...");
+      fastMa.isReported = true;
     }
   }
 
-  m_pimpl->CheckSignal(security, securityIt->second, delayMeasurement);
+  m_pimpl->CheckSignal(security, subscribtion, delayMeasurement);
 }
 
 void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
@@ -290,10 +310,10 @@ Qty TrendRepeatingStrategy::GetPositionSize() const {
 
 void TrendRepeatingStrategy::EnableTrading(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_isTradingEnabled == isEnabled) {
+  if (m_pimpl->m_controller.IsOpeningEnabled() == isEnabled) {
     return;
   }
-  m_pimpl->m_isTradingEnabled = isEnabled;
+  m_pimpl->m_controller.EnableOpening(isEnabled);
   if (isEnabled) {
     if (m_pimpl->m_securities.empty()) {
       RaiseEvent(
@@ -309,15 +329,15 @@ void TrendRepeatingStrategy::EnableTrading(bool isEnabled) {
 }
 bool TrendRepeatingStrategy::IsTradingEnabled() const {
   const auto lock = LockForOtherThreads();
-  return m_pimpl->m_isTradingEnabled;
+  return m_pimpl->m_controller.IsOpeningEnabled();
 }
 
 void TrendRepeatingStrategy::EnableActivePositionsControl(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_controller.IsClosedEnabled() == isEnabled) {
+  if (m_pimpl->m_controller.IsClosingEnabled() == isEnabled) {
     return;
   }
-  if (!isEnabled && m_pimpl->m_isTradingEnabled) {
+  if (!isEnabled && m_pimpl->m_controller.IsOpeningEnabled()) {
     return;
   }
   m_pimpl->m_controller.EnableClosing(isEnabled);
@@ -328,20 +348,30 @@ void TrendRepeatingStrategy::EnableActivePositionsControl(bool isEnabled) {
 }
 bool TrendRepeatingStrategy::IsActivePositionsControlEnabled() const {
   const auto lock = LockForOtherThreads();
-  return m_pimpl->m_controller.IsClosedEnabled();
+  return m_pimpl->m_controller.IsClosingEnabled();
 }
 
 void TrendRepeatingStrategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
-  m_pimpl->SetNumberOfMaPeriods(m_pimpl->m_fastMa, numberOfPeriods);
+  m_pimpl->SetNumberOfMaPeriods(
+      [this](Subscribtion &subscribtion) -> Ma & {
+        return subscribtion.fastMa;
+      },
+      m_pimpl->m_fastMaSize, numberOfPeriods);
 }
 size_t TrendRepeatingStrategy::GetNumberOfFastMaPeriods() const {
-  return m_pimpl->GetNumberOfMaPeriods(m_pimpl->m_fastMa);
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_fastMaSize;
 }
 void TrendRepeatingStrategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
-  m_pimpl->SetNumberOfMaPeriods(m_pimpl->m_slowMa, numberOfPeriods);
+  m_pimpl->SetNumberOfMaPeriods(
+      [this](Subscribtion &subscribtion) -> Ma & {
+        return subscribtion.slowMa;
+      },
+      m_pimpl->m_slowMaSize, numberOfPeriods);
 }
 size_t TrendRepeatingStrategy::GetNumberOfSlowMaPeriods() const {
-  return m_pimpl->GetNumberOfMaPeriods(m_pimpl->m_slowMa);
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_slowMaSize;
 }
 
 void TrendRepeatingStrategy::SetStopLoss(const Double &stopLoss) {
@@ -361,18 +391,37 @@ Double TrendRepeatingStrategy::GetStopLoss() const {
 }
 void TrendRepeatingStrategy::SetTakeProfit(const Double &takeProfit) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate() == takeProfit) {
+  if (m_pimpl->m_takeProfit->GetProfitShareToActivate() == takeProfit) {
     return;
   }
-  GetTradingLog().Write("take profit: %1% -> %2%", [&](TradingRecord &record) {
-    record % m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate()  // 1
-        % takeProfit;                                               // 2
-  });
-  *m_pimpl->m_takeProfit = TakeProfit::Params{takeProfit, 0};
+  GetTradingLog().Write(
+      "take profit: %1$.8f -> %2$.8f", [&](TradingRecord &record) {
+        record % m_pimpl->m_takeProfit->GetProfitShareToActivate()  // 1
+            % takeProfit;                                           // 2
+      });
+  *m_pimpl->m_takeProfit = TakeProfitShare::Params{
+      takeProfit, m_pimpl->m_takeProfit->GetTrailingShareToClose()};
 }
 Double TrendRepeatingStrategy::GetTakeProfit() const {
   const auto lock = LockForOtherThreads();
-  return m_pimpl->m_takeProfit->GetMinProfitPerLotToActivate();
+  return m_pimpl->m_takeProfit->GetProfitShareToActivate();
+}
+void TrendRepeatingStrategy::SetTakeProfitTrailing(const Double &trailing) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_takeProfit->GetTrailingShareToClose() == trailing) {
+    return;
+  }
+  GetTradingLog().Write(
+      "take profit trailing: %1$.8f-> %2$.8f", [&](TradingRecord &record) {
+        record % m_pimpl->m_takeProfit->GetTrailingShareToClose()  // 1
+            % trailing;                                            // 2
+      });
+  *m_pimpl->m_takeProfit = TakeProfitShare::Params{
+      m_pimpl->m_takeProfit->GetProfitShareToActivate(), trailing};
+}
+Double TrendRepeatingStrategy::GetTakeProfitTrailing() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_takeProfit->GetTrailingShareToClose();
 }
 
 sig::scoped_connection TrendRepeatingStrategy::SubscribeToEvents(
@@ -385,15 +434,14 @@ sig::scoped_connection TrendRepeatingStrategy::SubscribeToBlocking(
   return m_pimpl->m_blockSignal.connect(slot);
 }
 
-const tl::Trend &TrendRepeatingStrategy::GetTrend() const {
-  return m_pimpl->m_trend;
-}
-
-void TrendRepeatingStrategy::ForEachSecurity(
-    const boost::function<void(Security &)> &callback) {
-  for (auto &security : m_pimpl->m_securities) {
-    callback(*security.first);
+const tl::Trend &TrendRepeatingStrategy::GetTrend(
+    const Security &security) const {
+  const auto &securityIt = m_pimpl->m_securities.find(&security);
+  Assert(securityIt != m_pimpl->m_securities.cend());
+  if (securityIt == m_pimpl->m_securities.cend()) {
+    throw LogicError("Request trend for unknown security");
   }
+  return securityIt->second->trend;
 }
 
 void TrendRepeatingStrategy::RaiseEvent(const std::string &message) {
@@ -404,14 +452,19 @@ void TrendRepeatingStrategy::EnableTradingSystem(size_t tradingSystemIndex,
                                                  bool isEnabled) {
   const auto lock = LockForOtherThreads();
   for (auto &security : m_pimpl->m_securities) {
-    if (security.first->GetSource().GetIndex() == tradingSystemIndex &&
-        security.second != isEnabled) {
-      security.second = isEnabled;
-      GetTradingLog().Write("%1% %2%", [&](TradingRecord &record) {
-        record % *security.first                           // 1
-            % (security.second ? "enabled" : "disabled");  // 2
-      });
+    if (security.first->GetSource().GetIndex() != tradingSystemIndex) {
+      continue;
     }
+    Subscribtion &subscribtion = *security.second;
+    if (subscribtion.isEnabled == isEnabled) {
+      continue;
+    }
+    subscribtion.isEnabled = isEnabled;
+    subscribtion.fastMa.isReported = subscribtion.slowMa.isReported = false;
+    GetTradingLog().Write("%1% %2%", [&](TradingRecord &record) {
+      record % *security.first                           // 1
+          % (security.second ? "enabled" : "disabled");  // 2
+    });
   }
 }
 
@@ -419,7 +472,7 @@ boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
     size_t tradingSystemIndex) const {
   for (const auto &security : m_pimpl->m_securities) {
     if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
-      return security.second;
+      return security.second->isEnabled;
     }
   }
   return boost::indeterminate;
