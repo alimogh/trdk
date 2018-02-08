@@ -91,6 +91,8 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   boost::unordered_map<const Security *, boost::shared_ptr<Subscribtion>>
       m_securities;
 
+  bool m_isStopped;
+
  public:
   explicit Implementation(TrendRepeatingStrategy &self)
       : m_self(self),
@@ -99,7 +101,8 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
         m_slowMaSize(26),
         m_takeProfit(
             boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
-        m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)) {}
+        m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)),
+        m_isStopped(false) {}
 
   template <typename GetMa>
   void SetNumberOfMaPeriods(const GetMa &getMa,
@@ -182,6 +185,10 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
                       (subscribtion.trend.IsRising() ? "rising" : "falling") +
                       "\".");
 
+    if (!m_controller.IsOpeningEnabled()) {
+      return;
+    }
+
     try {
       m_controller.OnSignal(
           boost::make_shared<TrendRepeatingOperation>(
@@ -224,6 +231,10 @@ void TrendRepeatingStrategy::OnSecurityStart(Security &security,
 
 void TrendRepeatingStrategy::OnLevel1Update(
     Security &security, const Milestones &delayMeasurement) {
+  if (m_pimpl->m_isStopped) {
+    return;
+  }
+
   const auto &securityIt = m_pimpl->m_securities.find(&security);
   Assert(securityIt != m_pimpl->m_securities.cend());
   if (securityIt == m_pimpl->m_securities.cend()) {
@@ -268,6 +279,9 @@ void TrendRepeatingStrategy::OnLevel1Update(
 }
 
 void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
+  if (m_pimpl->m_isStopped) {
+    return;
+  }
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const CommunicationError &ex) {
@@ -277,10 +291,16 @@ void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
 }
 
 void TrendRepeatingStrategy::OnPostionsCloseRequest() {
+  if (m_pimpl->m_isStopped) {
+    return;
+  }
   m_pimpl->m_controller.OnPostionsCloseRequest(*this);
 }
 
 bool TrendRepeatingStrategy::OnBlocked(const std::string *reason) noexcept {
+  if (m_pimpl->m_isStopped) {
+    return Base::OnBlocked(reason);
+  }
   try {
     {
       boost::format message("Blocked by error: \"%1%\".");
@@ -476,6 +496,17 @@ boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
     }
   }
   return boost::indeterminate;
+}
+
+void TrendRepeatingStrategy::Stop() noexcept {
+  m_pimpl->m_isStopped = true;
+  try {
+    EnableTrading(false);
+    EnableActivePositionsControl(false);
+  } catch (...) {
+    AssertFailNoException();
+    terminate();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

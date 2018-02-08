@@ -88,7 +88,6 @@ void TrendRepeatingController::ClosePosition(Position &position) {
         position.GetOperation()->GetId(),  // 2
         position.GetSubOperationId());     // 3
     position.MarkAsCompleted();
-    position.MarkAsCompleted();
     boost::polymorphic_downcast<TrendRepeatingStrategy *>(
         &position.GetStrategy())
         ->RaiseEvent(
