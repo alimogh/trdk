@@ -580,7 +580,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false, std::string(), GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(m_tradingSession));
+      const auto response = boost::get<1>(request.Send(m_marketDataSession));
       for (const auto &node : response) {
         const auto &account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
