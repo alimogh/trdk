@@ -31,7 +31,11 @@ class TradingSystem : public trdk::TradingSystem {
  public:
   virtual bool IsConnected() const override;
 
- protected:
+  virtual trdk::Volume CalcCommission(const trdk::Qty &,
+                                      const trdk::Price &,
+                                      const trdk::OrderSide &,
+                                      const trdk::Security &) const override;
+
  protected:
   virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       Security &,
@@ -54,6 +58,6 @@ class TradingSystem : public trdk::TradingSystem {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
-}
+}  // namespace Test
+}  // namespace Interaction
+}  // namespace trdk

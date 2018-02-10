@@ -11,7 +11,6 @@
 #pragma once
 
 #include "OrderPolicy.hpp"
-#include "Report.hpp"
 
 namespace trdk {
 namespace Strategies {
@@ -36,11 +35,6 @@ class Operation : public trdk::Operation {
 
  public:
   bool IsSame(const Security &sellTarget, const Security &buyTarget) const;
-
-  OperationReportData &GetReportData() { return m_reportData; }
-  const OperationReportData &GetReportData() const {
-    return const_cast<Operation *>(this)->GetReportData();
-  }
 
  public:
   virtual void Setup(Position &,
@@ -71,9 +65,8 @@ class Operation : public trdk::Operation {
   Security &m_sellTarget;
   Security &m_buyTarget;
   const Qty m_maxQty;
-  OperationReportData m_reportData;
   const boost::optional<boost::posix_time::time_duration> m_stopLossDelay;
 };
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

@@ -23,13 +23,13 @@ class TRDK_FRONTEND_LIB_API OrderStatusNotifier
   virtual ~OrderStatusNotifier() override = default;
 
  public:
-  virtual void OnOpen() override;
-  virtual void OnCancel() override;
-  virtual void OnTrade(const trdk::Trade &, bool isFull) override;
-  virtual void OnReject() override;
-  virtual void OnError() override;
-  virtual void OnCommission(const trdk::Volume &) override;
+  virtual void OnOpened() override;
+  virtual void OnTrade(const trdk::Trade &) override;
+  virtual void OnFilled(const trdk::Volume &comission) override;
+  virtual void OnCanceled(const trdk::Volume &comission) override;
+  virtual void OnRejected(const trdk::Volume &comission) override;
+  virtual void OnError(const trdk::Volume &comission) override;
 };
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

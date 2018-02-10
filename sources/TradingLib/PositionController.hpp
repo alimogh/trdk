@@ -18,7 +18,6 @@ namespace TradingLib {
 class PositionController : private boost::noncopyable {
  public:
   PositionController();
-  explicit PositionController(const boost::shared_ptr<PositionReport> &);
   virtual ~PositionController();
 
  public:

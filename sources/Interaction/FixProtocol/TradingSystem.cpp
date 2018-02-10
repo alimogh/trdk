@@ -55,6 +55,13 @@ ModuleEventsLog &fix::TradingSystem::GetLog() const {
 
 bool fix::TradingSystem::IsConnected() const { return m_client.IsConnected(); }
 
+Volume fix::TradingSystem::CalcCommission(const Qty &,
+                                          const Price &,
+                                          const OrderSide &,
+                                          const trdk::Security &) const {
+  return 0;
+}
+
 void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
   GetLog().Debug("Connecting...");
   m_client.Connect();
@@ -128,9 +135,10 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
       GetLog().Error("Received Reject for order %1%: \"%2%\" .",
                      orderId,  // 1
                      text);    // 2
-      OnOrderCancel(message.GetTime(), orderId);
+      OnOrderCanceled(message.GetTime(), orderId, boost::none, boost::none);
     } else {
-      OnOrderError(message.GetTime(), orderId, std::move(text));
+      OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
+                   std::move(text));
     }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
@@ -160,9 +168,10 @@ void fix::TradingSystem::OnBusinessMessageReject(
           "Received Business Message Reject for order %1%: \"%2%\" .",
           orderId,  // 1
           reason);  // 2
-      OnOrderCancel(message.GetTime(), orderId);
+      OnOrderCanceled(message.GetTime(), orderId, boost::none, boost::none);
     } else {
-      OnOrderError(message.GetTime(), orderId, std::move(reason));
+      OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
+                   std::move(reason));
     }
   } catch (const OrderIsUnknown &ex) {
     message.ResetReadingState();
@@ -199,55 +208,62 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             orderId);  // 2
         break;
       case EXEC_TYPE_NEW:
-        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_OPENED,
-                            message.ReadLeavesQty(), setPositionId);
+        OnOrderOpened(message.GetTime(), orderId, setPositionId);
         break;
       case EXEC_TYPE_CANCELED:
       case EXEC_TYPE_REPLACE:
-        OnOrderStatusUpdate(message.GetTime(), orderId, ORDER_STATUS_CANCELED,
-                            message.ReadLeavesQty());
+        OnOrderCanceled(message.GetTime(), orderId, message.ReadLeavesQty(),
+                        boost::none);
         break;
       case EXEC_TYPE_REJECTED:
       case EXEC_TYPE_EXPIRED:
         message.ResetReadingState();
-        OnOrderReject(message.GetTime(), orderId, message.ReadText());
+        OnOrderRejected(message.GetTime(), orderId, boost::none, boost::none);
         break;
       case EXEC_TYPE_TRADE: {
         Assert(orderStatus == ORDER_STATUS_FILLED_PARTIALLY ||
                orderStatus == ORDER_STATUS_FILLED_FULLY);
         message.ResetReadingState();
         Trade trade = {message.ReadAvgPx()};
-        OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
-                            message.ReadLeavesQty(), std::move(trade),
-                            setPositionId);
+        if (orderStatus == ORDER_STATUS_FILLED_FULLY) {
+          OnOrderFilled(message.GetTime(), orderId, std::move(trade),
+                        boost::none, setPositionId);
+        } else {
+          OnTrade(message.GetTime(), orderId, std::move(trade), setPositionId);
+        }
         break;
       }
       case EXEC_TYPE_ORDER_STATUS:
         switch (orderStatus) {
           case ORDER_STATUS_OPENED:
-            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
-                                message.ReadLeavesQty(), setPositionId);
+            OnOrderOpened(message.GetTime(), orderId, setPositionId);
             break;
           case ORDER_STATUS_CANCELED:
-            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
-                                message.ReadLeavesQty());
+            OnOrderCanceled(message.GetTime(), orderId, message.ReadLeavesQty(),
+                            boost::none);
             break;
           case ORDER_STATUS_FILLED_FULLY:
           case ORDER_STATUS_FILLED_PARTIALLY: {
             message.ResetReadingState();
             Trade trade = {message.ReadAvgPx()};
-            OnOrderStatusUpdate(message.GetTime(), orderId, orderStatus,
-                                message.ReadLeavesQty(), std::move(trade),
-                                setPositionId);
+            if (orderStatus == ORDER_STATUS_FILLED_FULLY) {
+              OnOrderFilled(message.GetTime(), orderId, std::move(trade),
+                            message.ReadLeavesQty(), setPositionId);
+            } else {
+              OnTrade(message.GetTime(), orderId, std::move(trade),
+                      setPositionId);
+            }
             break;
           }
           case ORDER_STATUS_REJECTED:
             message.ResetReadingState();
-            OnOrderReject(message.GetTime(), orderId, message.ReadText());
+            OnOrderRejected(message.GetTime(), orderId, boost::none,
+                            boost::none);
             break;
           case ORDER_STATUS_ERROR:
             message.ResetReadingState();
-            OnOrderError(message.GetTime(), orderId, message.ReadText());
+            OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
+                         message.ReadText());
             break;
         }
     }

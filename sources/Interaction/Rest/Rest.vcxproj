@@ -328,7 +328,6 @@
     <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
-    <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="PollingSettings.cpp" />
     <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">

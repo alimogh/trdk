@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "Report.hpp"
-
 namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
@@ -21,7 +19,6 @@ class PositionController : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  explicit PositionController(OperationReport &&);
   virtual ~PositionController() override = default;
 
  public:
@@ -32,10 +29,7 @@ class PositionController : public TradingLib::PositionController {
  protected:
   virtual void HoldPosition(Position &) override;
   virtual void ClosePosition(Position &) override;
-
- private:
-  OperationReport m_report;
 };
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

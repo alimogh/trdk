@@ -196,13 +196,17 @@ void CryptopiaTradingSystem::CreateConnection(const IniSectionRef &) {
 }
 
 Volume CryptopiaTradingSystem::CalcCommission(
-    const Volume &volume, const trdk::Security &security) const {
+    const Qty &qty,
+    const Price &price,
+    const OrderSide &,
+    const trdk::Security &security) const {
   const auto &productIndex = m_products.get<BySymbol>();
   const auto &productIt = productIndex.find(security.GetSymbol().GetSymbol());
   if (productIt == productIndex.cend()) {
     return 0;
   }
-  return volume * productIt->feeRatio;
+  return RoundByPrecision((qty * price) * productIt->feeRatio,
+                          security.GetPricePrecisionPower());
 }
 
 boost::optional<CryptopiaTradingSystem::OrderCheckError>
@@ -377,8 +381,9 @@ CryptopiaTradingSystem::SendOrderTransaction(
       GetContext().GetTimer().Schedule(
           [this, orderId, now]() {
             try {
-              OnOrderStatusUpdate(now, orderId, ORDER_STATUS_FILLED_FULLY, 0);
+              OnOrderFilled(now, orderId, boost::none);
             } catch (const OrderIsUnknown &) {
+              // Maybe already filled by periodic task.
             }
           },
           m_timerScope);
@@ -477,13 +482,15 @@ bool CryptopiaTradingSystem::UpdateOrders() {
         cancelOrderLock.unlock();
         // There are no other places which can remove the order from the active
         // list so this status update doesn't catch OrderIsUnknown-exception.
-        OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_CANCELED);
+        // No way to get remaining quantity. Support ticked waits for answer:
+        // https://www.cryptopia.co.nz/Support/SupportTicket?ticketId=135514
+        OnOrderCanceled(now, activeOrder, boost::none, boost::none);
         continue;
       }
     }
     // There are no other places which can remove the order from the active
     // list so this status update doesn't catch OrderIsUnknown-exception.
-    OnOrderStatusUpdate(now, activeOrder, ORDER_STATUS_FILLED_FULLY);
+    OnOrderFilled(now, activeOrder, boost::none);
   }
 
   {
@@ -519,7 +526,7 @@ OrderId CryptopiaTradingSystem::UpdateOrder(
   // remainingQty = product.NormalizeQty(, remainingQty, );
 
   try {
-    OnOrderStatusUpdate(time, id, ORDER_STATUS_OPENED, remainingQty);
+    OnOrderOpened(time, id);
   } catch (const OrderIsUnknown &) {
   }
 

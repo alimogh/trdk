@@ -14,10 +14,9 @@ namespace trdk {
 namespace Strategies {
 namespace ArbitrageAdvisor {
 class Strategy;
-class OperationReport;
 struct Advice;
 struct AdviceSide;
 struct AdviceSecuritySignal;
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

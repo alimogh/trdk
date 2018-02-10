@@ -30,7 +30,7 @@ struct Balance {
 };
 
 typedef boost::unordered_map<std::string, Balance> Storage;
-}
+}  // namespace
 
 class BalancesContainer::Implementation : private boost::noncopyable {
  public:
@@ -203,7 +203,7 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
     case ORDER_SIDE_BUY: {
       const auto &symbol = security.GetSymbol().GetQuoteSymbol();
       auto delta = qty * price;
-      delta += tradingSystem.CalcCommission(delta, security);
+      delta += tradingSystem.CalcCommission(qty, price, side, security);
 
       const WriteLock lock(m_pimpl->m_mutex);
       const auto &it = m_pimpl->m_storage.find(symbol);

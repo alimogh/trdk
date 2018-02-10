@@ -42,7 +42,7 @@ struct Order {
 typedef boost::shared_mutex SettingsMutex;
 typedef boost::shared_lock<SettingsMutex> SettingsReadLock;
 typedef boost::unique_lock<SettingsMutex> SettingsWriteLock;
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -447,6 +447,13 @@ void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {
   const SettingsWriteLock lock(m_pimpl->m_settingsMutex);
   m_pimpl->m_delayGenerator = delayGenerator;
   delayGenerator.Report(GetLog());
+}
+
+Volume Test::TradingSystem::CalcCommission(const Qty &,
+                                           const Price &,
+                                           const OrderSide &,
+                                           const Security &) const {
+  return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -140,7 +140,9 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &,
+  virtual Volume CalcCommission(const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderSide &,
                                 const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(

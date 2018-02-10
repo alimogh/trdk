@@ -12,7 +12,6 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
-#include "TradingLib/PositionReport.hpp"
 #include "Core/Operation.hpp"
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
@@ -92,7 +91,6 @@ class TestStrategy : public Strategy {
               name,
               instanceName,
               conf),
-        m_positionController(boost::make_shared<PositionReport>(*this)),
         m_direction(0),
         m_prevPrice(0) {}
 
@@ -171,9 +169,9 @@ boost::optional<bool> Operation::GetIsRising() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace Test
+}  // namespace Strategies
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////
 

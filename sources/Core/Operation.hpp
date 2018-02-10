@@ -79,7 +79,8 @@ class TRDK_CORE_API Operation {
   void UpdatePnl(const trdk::Security &,
                  const trdk::OrderSide &,
                  const trdk::Qty &,
-                 const trdk::Price &);
+                 const trdk::Price &,
+                 const trdk::Volume &commission);
 
  private:
   class Implementation;

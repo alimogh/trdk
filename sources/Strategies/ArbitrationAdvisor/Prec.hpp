@@ -21,7 +21,6 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
-#include "TradingLib/PositionReport.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"

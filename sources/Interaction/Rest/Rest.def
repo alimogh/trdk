@@ -1,7 +1,5 @@
 
 EXPORTS
-	CreateNovaexchange
-	CreateNovaexchangeMarketDataSource
 	CreateYobitnet
 	CreateYobitnetMarketDataSource
 	CreateCcex

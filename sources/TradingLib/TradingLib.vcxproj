@@ -254,7 +254,6 @@
     <ClCompile Include="OrderPolicy.cpp" />
     <ClCompile Include="PnlContainer.cpp" />
     <ClCompile Include="PositionController.cpp" />
-    <ClCompile Include="PositionReport.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Create</PrecompiledHeader>
@@ -312,7 +311,6 @@
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PnlContainer.hpp" />
     <ClInclude Include="PositionController.hpp" />
-    <ClInclude Include="PositionReport.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SourcesSynchronizer.hpp" />
     <ClInclude Include="StopLimit.hpp" />
