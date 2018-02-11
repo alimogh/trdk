@@ -76,8 +76,8 @@ void BalanceListView::rowsInserted(const QModelIndex &index,
   Base::rowsInserted(index, start, end);
   if (start == 0) {
     expand(index);
-    for (int i = 0; i < header()->count(); ++i) {
-      resizeColumnToContents(i);
-    }
+  }
+  for (int i = 0; i < header()->count(); ++i) {
+    resizeColumnToContents(i);
   }
 }

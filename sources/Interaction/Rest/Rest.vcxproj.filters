@@ -68,6 +68,18 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="ExcambioRex">
+      <UniqueIdentifier>{2233fd13-5e15-455a-b000-fdfa1471b47c}</UniqueIdentifier>
+      <Extensions>Excambiorex</Extensions>
+    </Filter>
+    <Filter Include="ExcambioRex\Header Files">
+      <UniqueIdentifier>{31c82640-f2a0-44a0-b49b-fcecda58abd6}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="ExcambioRex\Source Files">
+      <UniqueIdentifier>{4a0badc8-eb45-479d-b7f9-10f0c1f957a5}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -169,6 +181,21 @@
     <ClCompile Include="CcexExchange.cpp">
       <Filter>C-CEX</Filter>
     </ClCompile>
+    <ClCompile Include="ExcambiorexUtil.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexMarketDataSource.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexRequest.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexTradingSystem.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CexioMarketDataSource.hpp">
@@ -251,6 +278,18 @@
     </ClInclude>
     <ClInclude Include="Settings.hpp">
       <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexMarketDataSource.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexRequest.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexTradingSystem.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexUtil.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
