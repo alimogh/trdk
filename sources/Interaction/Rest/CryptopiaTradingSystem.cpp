@@ -378,15 +378,16 @@ CryptopiaTradingSystem::SendOrderTransaction(
       const auto &now = GetContext().GetCurrentTime();
       static size_t virtualOrderId = 1;
       orderId = "v" + boost::lexical_cast<std::string>(virtualOrderId++);
-      GetContext().GetTimer().Schedule(
-          [this, orderId, now]() {
-            try {
-              OnOrderFilled(now, orderId, boost::none);
-            } catch (const OrderIsUnknown &) {
-              // Maybe already filled by periodic task.
-            }
-          },
-          m_timerScope);
+      m_pollingTask.AddTask(boost::lexical_cast<std::string>(orderId), 0,
+                            [this, orderId, now]() {
+                              try {
+                                OnOrderFilled(now, orderId, boost::none);
+                              } catch (const OrderIsUnknown &) {
+                                // Maybe already filled by periodic task.
+                              }
+                              return false;
+                            },
+                            0, true);
     } else {
       SubscribeToOrderUpdates(product);
     }
