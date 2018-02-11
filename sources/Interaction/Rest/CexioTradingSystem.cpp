@@ -155,7 +155,7 @@ Volume CexioTradingSystem::CalcCommission(
     const Price &price,
     const OrderSide &,
     const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (25 / 100),
+  return RoundByPrecision((qty * price) * (0.25 / 100),
                           security.GetPricePrecisionPower());
 }
 
@@ -172,8 +172,8 @@ void CexioTradingSystem::UpdateBalances() {
                      node.second.get<Volume>("orders"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read balance: \"%1%\" (%2%)");
-      error % ex.what()  // 1
-          % ConvertToString(response, false);
+      error % ex.what()                        // 1
+          % ConvertToString(response, false);  // 2
       throw CommunicationError(error.str().c_str());
     }
   }

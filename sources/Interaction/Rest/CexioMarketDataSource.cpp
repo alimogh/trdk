@@ -106,12 +106,12 @@ trdk::Security &CexioMarketDataSource::CreateNewSecurityObject(
   }
 
   const auto &result =
-      boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
-                                         Rest::Security::SupportedLevel1Types()
-                                             .set(LEVEL1_TICK_BID_PRICE)
-                                             .set(LEVEL1_TICK_BID_QTY)
-                                             .set(LEVEL1_TICK_ASK_PRICE)
-                                             .set(LEVEL1_TICK_BID_QTY));
+      boost::make_shared<r::Security>(GetContext(), symbol, *this,
+                                      r::Security::SupportedLevel1Types()
+                                          .set(LEVEL1_TICK_BID_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY)
+                                          .set(LEVEL1_TICK_ASK_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
   {
