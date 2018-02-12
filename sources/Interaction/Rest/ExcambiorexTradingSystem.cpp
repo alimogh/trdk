@@ -72,11 +72,8 @@ bool ExcambiorexTradingSystem::PrivateRequest::IsPriority() const {
 }
 
 ExcambiorexTradingSystem::BalancesRequest::BalancesRequest(
-    const Settings &settings,
-    const Context &context,
-    ModuleEventsLog &log,
-    ModuleTradingLog &lll)
-    : PrivateRequest("GetInfo", "", settings, false, context, log, &lll) {}
+    const Settings &settings, const Context &context, ModuleEventsLog &log)
+    : PrivateRequest("GetInfo", "", settings, false, context, log) {}
 
 ExcambiorexTradingSystem::OrderRequest::OrderRequest(
     const std::string &name,
@@ -86,6 +83,15 @@ ExcambiorexTradingSystem::OrderRequest::OrderRequest(
     ModuleEventsLog &log,
     ModuleTradingLog &tradingLog)
     : PrivateRequest(name, params, settings, true, context, log, &tradingLog) {}
+
+ExcambiorexTradingSystem::ActiveOrdersRequest::ActiveOrdersRequest(
+    const std::string &params,
+    const Settings &settings,
+    const Context &context,
+    ModuleEventsLog &log,
+    ModuleTradingLog &tradinLog)
+    : PrivateRequest(
+          "ActiveOrders", params, settings, false, context, log, &tradinLog) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -100,7 +106,7 @@ ExcambiorexTradingSystem::ExcambiorexTradingSystem(
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_balances(*this, GetLog(), GetTradingLog()),
-      m_balancesRequest(m_settings, GetContext(), GetLog(), GetTradingLog()),
+      m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateExcambiorexSession(m_settings, true)),
       m_pollingSession(CreateExcambiorexSession(m_settings, false)),
       m_orderRequestListVersion(0),
@@ -118,9 +124,42 @@ void ExcambiorexTradingSystem::CreateConnection(const IniSectionRef &) {
         RequestExcambiorexProductAndCurrencyList(m_tradingSession, GetContext(),
                                                  GetLog());
     UpdateBalances();
+#if 0
+    ActiveOrdersRequest("", m_settings, GetContext(), GetLog(), GetTradingLog())
+        .Send(m_tradingSession);
+#endif
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
+
+  for (auto &product : m_products) {
+    Assert(!product.second.oppositeProduct);
+    for (const auto &oppositeProduct : m_products) {
+      if (oppositeProduct.second.directId == product.second.oppositeId) {
+        if (product.second.oppositeProduct) {
+          GetLog().Error(
+              "Duplicate opposite product \"%1%\" object found for product "
+              "\"%2%\" that already has opposite product object.",
+              oppositeProduct.second.directId,  // 1
+              product.second.directId);         // 2
+          throw ConnectError("Failed to build product list");
+        }
+        product.second.oppositeProduct = &oppositeProduct.second;
+      }
+    }
+    if (!product.second.oppositeProduct) {
+      GetLog().Error(
+          "Opposite product object was not found for product \"%1%\".",
+          product.second.directId);
+      throw ConnectError("Failed to build product list");
+    }
+  }
+
+#if 0
+     OrderRequest("CancelOrder", "order_id=4456419", m_settings, GetContext(),
+                  GetLog(), GetTradingLog())
+         .Send(m_tradingSession);
+#endif
 
   m_pollingTask.AddTask(
       "Orders", 0,
@@ -165,7 +204,7 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
       if (!requestList.empty()) {
         requestList.push_back(',');
       }
-      requestList += product->id;
+      requestList += product->directId;
     }
     orderRequestListVersion = m_orderRequestListVersion;
   }
@@ -177,8 +216,8 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
   pt::ptime time;
   try {
     const auto response =
-        PrivateRequest("ActiveOrders", "pairs=" + requestList, m_settings,
-                       false, GetContext(), GetLog(), &GetTradingLog())
+        ActiveOrdersRequest("pairs=" + requestList, m_settings, GetContext(),
+                            GetLog(), GetTradingLog())
             .Send(m_pollingSession);
     time = boost::get<0>(response) - m_serverTimeDiff;
     for (const auto &node : boost::get<1>(response).get_child("orders")) {
@@ -283,18 +322,24 @@ ExcambiorexTradingSystem::SendOrderTransaction(
 
   boost::format requestParams(
       "pair=%1%&type=%2%&amount=%3%&rate=%4%&feecoin=%5%&allowpartial=1");
-  requestParams % product.id                       // 1
-      % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 2
-      % qty                                        // 3
+  requestParams % product.directId                       // 1
+      % (side == ORDER_SIDE_BUY ? "buy" : "sell")        // 2
+      % qty                                              // 3
       % *price                                     // 4
-      % security.GetSymbol().GetQuoteSymbol();     // 5
+      % security.GetSymbol().GetQuoteSymbol();           // 5
 
   OrderRequest request("SubmitOrder", requestParams.str(), m_settings,
                        GetContext(), GetLog(), GetTradingLog());
 
   const auto response = boost::get<1>(request.Send(m_tradingSession));
 
-  SubsctibeAtOrderUpdates(product);
+  SubsctibeAtOrderUpdates(
+      (side == ORDER_SIDE_BUY &&
+       product.buyCoinAlias == security.GetSymbol().GetBaseSymbol()) ||
+              (side == ORDER_SIDE_SELL &&
+               product.sellCoinAlias == security.GetSymbol().GetBaseSymbol())
+          ? product
+          : *product.oppositeProduct);
   SetBalances(response);
 
   try {

@@ -33,7 +33,7 @@ const std::string &ExcambiorexMarketDataSource::Subscribtion::GetSymbol()
 
 const std::string &ExcambiorexMarketDataSource::Subscribtion::GetProductId()
     const {
-  return product->id;
+  return product->directId;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

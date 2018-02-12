@@ -17,8 +17,11 @@ namespace Rest {
 typedef std::string ExcambiorexProductId;
 
 struct ExcambiorexProduct {
-  ExcambiorexProductId id;
-  std::string symbol;
+  ExcambiorexProductId directId;
+  std::string buyCoinAlias;
+  std::string sellCoinAlias;
+  ExcambiorexProductId oppositeId;
+  const ExcambiorexProduct *oppositeProduct;
 };
 
 std::pair<boost::unordered_map<std::string, ExcambiorexProduct>,

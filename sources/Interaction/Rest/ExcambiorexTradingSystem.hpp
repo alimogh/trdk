@@ -59,8 +59,7 @@ class ExcambiorexTradingSystem : public TradingSystem {
    public:
     explicit BalancesRequest(const Settings &settings,
                              const Context &context,
-                             ModuleEventsLog &,
-                             ModuleTradingLog &);
+                             ModuleEventsLog &);
   };
 
   class OrderRequest : public PrivateRequest {
@@ -71,6 +70,15 @@ class ExcambiorexTradingSystem : public TradingSystem {
                           const Context &context,
                           ModuleEventsLog &,
                           ModuleTradingLog &);
+  };
+
+  class ActiveOrdersRequest : public PrivateRequest {
+   public:
+    explicit ActiveOrdersRequest(const std::string &params,
+                                 const Settings &,
+                                 const Context &,
+                                 ModuleEventsLog &,
+                                 ModuleTradingLog &);
   };
 
  public:
