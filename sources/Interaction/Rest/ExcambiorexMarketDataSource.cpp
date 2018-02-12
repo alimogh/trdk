@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/18 00:25:31
+ *   Created: 2018/02/11 18:00:09
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "CexioMarketDataSource.hpp"
-#include "CexioRequest.hpp"
+#include "ExcambiorexMarketDataSource.hpp"
+#include "ExcambiorexRequest.hpp"
 #include "PollingTask.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -26,19 +26,32 @@ namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CexioMarketDataSource::CexioMarketDataSource(const App &,
-                                             Context &context,
-                                             const std::string &instanceName,
-                                             const IniSectionRef &conf)
+const std::string &ExcambiorexMarketDataSource::Subscribtion::GetSymbol()
+    const {
+  return security->GetSymbol().GetSymbol();
+}
+
+const std::string &ExcambiorexMarketDataSource::Subscribtion::GetProductId()
+    const {
+  return product->id;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+ExcambiorexMarketDataSource::ExcambiorexMarketDataSource(
+    const App &,
+    Context &context,
+    const std::string &instanceName,
+    const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_session(CreateCexioSession(m_settings, false)),
+      m_session(CreateExcambiorexSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
 
-CexioMarketDataSource::~CexioMarketDataSource() {
+ExcambiorexMarketDataSource::~ExcambiorexMarketDataSource() {
   try {
     m_pollingTask.reset();
   } catch (...) {
@@ -50,43 +63,36 @@ CexioMarketDataSource::~CexioMarketDataSource() {
   GetTradingLog().WaitForFlush();
 }
 
-void CexioMarketDataSource::Connect(const IniSectionRef &) {
+void ExcambiorexMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCexioProductList(m_session, GetContext(), GetLog());
+    m_products = RequestExcambiorexProductAndCurrencyList(
+                     m_session, GetContext(), GetLog())
+                     .first;
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
 }
 
-void CexioMarketDataSource::SubscribeToSecurities() {
-  if (m_products.empty()) {
-    return;
+void ExcambiorexMarketDataSource::SubscribeToSecurities() {
+  const boost::mutex::scoped_lock lock(m_subscribtionMutex);
+  std::vector<std::string> requestList;
+  for (const auto &security : m_subscribtionList) {
+    requestList.emplace_back(security.GetProductId());
   }
-
-  {
-    const boost::mutex::scoped_lock lock(m_securitiesMutex);
-    for (auto &subscribtion : m_securities) {
-      if (subscribtion.second.request) {
-        continue;
-      }
-      subscribtion.second.request = boost::make_shared<CexioPublicRequest>(
-          "order_book/" + subscribtion.first->id, "depth=1", GetContext(),
-          GetLog());
-    }
-  }
-
-  m_pollingTask->AddTask(
+  const auto &request = boost::make_shared<ExcambiorexPublicRequest>(
+      "OrderBook", "pairs=" + boost::join(requestList, ","), GetContext(),
+      GetLog());
+  m_pollingTask->ReplaceTask(
       "Prices", 1,
-      [this]() {
-        UpdatePrices();
+      [this, request]() {
+        UpdatePrices(*request);
         return true;
       },
       m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
-  m_pollingTask->AccelerateNextPolling();
 }
 
-trdk::Security &CexioMarketDataSource::CreateNewSecurityObject(
+trdk::Security &ExcambiorexMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
   const auto &product = m_products.find(symbol.GetSymbol());
   if (product == m_products.cend()) {
@@ -94,14 +100,11 @@ trdk::Security &CexioMarketDataSource::CreateNewSecurityObject(
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());
   }
-
-  // Two locks as only one thread can add new securities.
-
   {
-    const boost::mutex::scoped_lock lock(m_securitiesMutex);
-    const auto &it = m_securities.find(&product->second);
-    if (it != m_securities.cend()) {
-      return *it->second.security;
+    const auto &it = m_subscribtionList.find(symbol.GetSymbol());
+    if (it != m_subscribtionList.cend()) {
+      Assert(it->product == &product->second);
+      return *it->security;
     }
   }
 
@@ -115,38 +118,48 @@ trdk::Security &CexioMarketDataSource::CreateNewSecurityObject(
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
   {
-    const boost::mutex::scoped_lock lock(m_securitiesMutex);
-    Verify(m_securities.emplace(&product->second, Subscribtion{result}).second);
+    const boost::mutex::scoped_lock lock(m_subscribtionMutex);
+    Verify(m_subscribtionList.emplace(Subscribtion{result, &product->second})
+               .second);
   }
 
   return *result;
 }
 
-void CexioMarketDataSource::UpdatePrices() {
-  const boost::mutex::scoped_lock lock(m_securitiesMutex);
-
-  for (auto &subscribtion : m_securities) {
-    if (!subscribtion.second.request) {
-      continue;
-    }
-    auto &security = *subscribtion.second.security;
-    auto &request = *subscribtion.second.request;
-
-    try {
-      const auto &response = request.Send(m_session);
-      UpdatePrices(boost::get<1>(response), subscribtion.second,
+void ExcambiorexMarketDataSource::UpdatePrices(Request &request) {
+  const boost::mutex::scoped_lock lock(m_subscribtionMutex);
+  const auto &subscribtionIndex = m_subscribtionList.get<ByProductId>();
+  try {
+    const auto &response = request.Send(m_session);
+    const auto &time = boost::get<0>(response) - m_serverTimeDiff;
+    for (const auto &node : boost::get<1>(response)) {
+      const auto &security = subscribtionIndex.find(node.first);
+      if (security == subscribtionIndex.cend()) {
+        GetLog().Error(
+            "Failed to find security by product ID \"%1%\" to update prices.",
+            node.first);
+        continue;
+      }
+      UpdatePrices(time, node.second, *security->security,
                    boost::get<2>(response));
-    } catch (const std::exception &ex) {
+    }
+  } catch (const std::exception &ex) {
+    for (auto &security : m_subscribtionList) {
       try {
-        security.SetOnline(pt::not_a_date_time, false);
+        security.security->SetOnline(pt::not_a_date_time, false);
       } catch (...) {
         AssertFailNoException();
         throw;
       }
-      boost::format error("Failed to read order book for \"%1%\": \"%2%\"");
-      error % security  // 1
-          % ex.what();  // 2
+    }
+    boost::format error("Failed to read prices: \"%1%\"");
+    error % ex.what();
+    try {
+      throw;
+    } catch (const CommunicationError &) {
       throw CommunicationError(error.str().c_str());
+    } catch (...) {
+      throw Exception(error.str().c_str());
     }
   }
 }
@@ -185,41 +198,29 @@ boost::optional<std::pair<Level1TickValue, Level1TickValue>> ReadTopPrice(
 #pragma warning(pop)
 }
 
-void CexioMarketDataSource::UpdatePrices(const ptr::ptree &source,
-                                         Subscribtion &subscribtion,
-                                         const Milestones &delayMeasurement) {
+void ExcambiorexMarketDataSource::UpdatePrices(
+    const pt::ptime &time,
+    const ptr::ptree &source,
+    r::Security &security,
+    const Milestones &delayMeasurement) {
   try {
-    const auto &id = source.get<decltype(subscribtion.lastBookId)>("id");
-    if (id == subscribtion.lastBookId) {
-      return;
-    }
-    AssertLt(subscribtion.lastBookId, id);
-
-    const auto &time = ParseTimeStamp(source);
-
     const auto &bid = ReadTopPrice<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
         source.get_child_optional("bids"));
     const auto &ask = ReadTopPrice<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
         source.get_child_optional("asks"));
 
     if (bid && ask) {
-      subscribtion.security->SetLevel1(time, bid->first, bid->second,
-                                       ask->first, ask->second,
-                                       delayMeasurement);
-      subscribtion.security->SetOnline(pt::not_a_date_time, true);
+      security.SetLevel1(time, bid->first, bid->second, ask->first, ask->second,
+                         delayMeasurement);
+      security.SetOnline(pt::not_a_date_time, true);
     } else {
-      subscribtion.security->SetOnline(pt::not_a_date_time, false);
+      security.SetOnline(pt::not_a_date_time, false);
       if (bid) {
-        subscribtion.security->SetLevel1(time, bid->first, bid->second,
-                                         delayMeasurement);
+        security.SetLevel1(time, bid->first, bid->second, delayMeasurement);
       } else if (ask) {
-        subscribtion.security->SetLevel1(time, ask->first, ask->second,
-                                         delayMeasurement);
+        security.SetLevel1(time, ask->first, ask->second, delayMeasurement);
       }
     }
-
-    subscribtion.lastBookId = std::move(id);
-
   } catch (const std::exception &ex) {
     boost::format error("Failed to read order book: \"%1%\" (\"%2%\").");
     error % ex.what()                      // 1
@@ -228,18 +229,14 @@ void CexioMarketDataSource::UpdatePrices(const ptr::ptree &source,
   }
 }
 
-pt::ptime CexioMarketDataSource::ParseTimeStamp(const ptr::ptree &source) {
-  return ParseCexioTimeStamp(source, m_serverTimeDiff);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<MarketDataSource> CreateCexioMarketDataSource(
+boost::shared_ptr<MarketDataSource> CreateExcambiorexMarketDataSource(
     Context &context,
     const std::string &instanceName,
     const IniSectionRef &configuration) {
-  return boost::make_shared<CexioMarketDataSource>(App::GetInstance(), context,
-                                                   instanceName, configuration);
+  return boost::make_shared<ExcambiorexMarketDataSource>(
+      App::GetInstance(), context, instanceName, configuration);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

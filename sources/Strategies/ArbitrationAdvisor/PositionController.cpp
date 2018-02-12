@@ -20,16 +20,8 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-aa::PositionController::PositionController(OperationReport &&report)
-    : m_report(std::move(report)) {}
-
 void aa::PositionController::OnPositionUpdate(Position &position) {
   if (position.IsCompleted()) {
-    auto &reportData =
-        position.GetTypedOperation<aa::Operation>().GetReportData();
-    if (reportData.Add(position)) {
-      m_report.Append(reportData);
-    }
     return;
   }
 

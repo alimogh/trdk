@@ -14,14 +14,14 @@
 using namespace trdk;
 using namespace trdk::FrontEnd::Lib;
 
-void OrderStatusNotifier::OnOpen() {}
+void OrderStatusNotifier::OnOpened() {}
 
-void OrderStatusNotifier::OnCancel() {}
+void OrderStatusNotifier::OnTrade(const Trade &) {}
 
-void OrderStatusNotifier::OnTrade(const Trade &, bool) {}
+void OrderStatusNotifier::OnFilled(const Volume &) {}
 
-void OrderStatusNotifier::OnReject() {}
+void OrderStatusNotifier::OnCanceled(const Volume &) {}
 
-void OrderStatusNotifier::OnError() {}
+void OrderStatusNotifier::OnRejected(const Volume &) {}
 
-void OrderStatusNotifier::OnCommission(const Volume &) {}
+void OrderStatusNotifier::OnError(const Volume &) {}

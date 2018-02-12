@@ -150,9 +150,13 @@ void CexioTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume CexioTradingSystem::CalcCommission(const Volume &volume,
-                                          const trdk::Security &) const {
-  return volume * (25 / 100);
+Volume CexioTradingSystem::CalcCommission(
+    const Qty &qty,
+    const Price &price,
+    const OrderSide &,
+    const trdk::Security &security) const {
+  return RoundByPrecision((qty * price) * (0.25 / 100),
+                          security.GetPricePrecisionPower());
 }
 
 void CexioTradingSystem::UpdateBalances() {
@@ -168,8 +172,8 @@ void CexioTradingSystem::UpdateBalances() {
                      node.second.get<Volume>("orders"));
     } catch (const std::exception &ex) {
       boost::format error("Failed to read balance: \"%1%\" (%2%)");
-      error % ex.what()  // 1
-          % ConvertToString(response, false);
+      error % ex.what()                        // 1
+          % ConvertToString(response, false);  // 2
       throw CommunicationError(error.str().c_str());
     }
   }
@@ -188,33 +192,21 @@ void CexioTradingSystem::UpdateOrders() {
 
 void CexioTradingSystem::UpdateOrder(const OrderId &id,
                                      const ptr::ptree &order) {
-  OrderStatus status;
-  {
-    const auto &field = order.get<std::string>("status");
-    if (field == "a") {
-      status = ORDER_STATUS_OPENED;
-    } else if (field == "d") {
-      // done(fully executed)
-      status = ORDER_STATUS_FILLED_FULLY;
-    } else if (field == "c" || field == "cd") {
-      // canceled(not executed)
-      // cancel - done(partially executed)
-      status = ORDER_STATUS_CANCELED;
-    } else {
-      GetLog().Error("Unknown order status received: %1%.",
-                     ConvertToString(order, false));
-      status = ORDER_STATUS_ERROR;
-    }
-  }
-
+  AssertEq(id, order.get<OrderId>("orderId"));
   const auto &time = ParseTimeStamp("lastTxTime", order);
-
-  if (status != ORDER_STATUS_OPENED) {
-    const auto &remains = order.get<Qty>("remains");
-    AssertLe(remains, order.get<Qty>("amount"));
-    OnOrderStatusUpdate(time, id, status, remains);
+  const auto &field = order.get<std::string>("status");
+  if (field == "a") {
+    OnOrderOpened(time, id);
+  } else if (field == "d") {
+    // done(fully executed)
+    OnOrderFilled(time, id, boost::none);
+  } else if (field == "c" || field == "cd") {
+    // canceled(not executed)
+    // cancel - done(partially executed)
+    OnOrderCanceled(time, id, order.get<Qty>("remains"), boost::none);
   } else {
-    OnOrderStatusUpdate(time, id, status);
+    OnOrderError(time, id, boost::none, boost::none,
+                 "Unknown order status received");
   }
 }
 

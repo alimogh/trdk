@@ -124,8 +124,6 @@ class Position::Implementation : private boost::noncopyable {
 
     Qty executedQty;
 
-    Volume commission;
-
     explicit Order(const pt::ptime &&time,
                    boost::optional<Price> &&price,
                    const Qty &qty)
@@ -135,8 +133,7 @@ class Position::Implementation : private boost::noncopyable {
           isRejected(false),
           price(std::move(price)),
           qty(qty),
-          executedQty(0),
-          commission(0) {}
+          executedQty(0) {}
   };
 
   struct DirectionData {
@@ -206,7 +203,7 @@ class Position::Implementation : private boost::noncopyable {
     virtual ~StatusHandler() override = default;
 
    public:
-    virtual void OnOpen() override {
+    virtual void OnOpened() override {
       const auto lock = Lock();
       Assert(!m_position->IsClosed());
       Assert(!m_position->IsCompleted());
@@ -217,20 +214,26 @@ class Position::Implementation : private boost::noncopyable {
       Report(ORDER_STATUS_OPENED);
     }
 
-    virtual void OnCancel() override {
+    virtual void OnFilled(const Volume &comission) override {
       auto lock = Lock();
       Assert(!m_position->IsClosed());
       Assert(!m_position->IsCompleted());
       auto &order = GetOrder();
-      AssertLe(order.executedQty, order.qty);
       AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
+      AssertLe(order.executedQty, order.qty);
+      auto &impl = GetPositionImpl();
+      if (!impl.m_defaultOrderParams.position) {
+        impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
+      }
       order.status = ORDER_STATUS_STEP_CLOSED;
       UpdateStat();
-      Report(ORDER_STATUS_CANCELED);
+      Report(ORDER_STATUS_FILLED_FULLY);
       SignalUpdate(lock);
+      impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
+                                  comission);
     }
 
-    virtual void OnTrade(const Trade &trade, bool isFull) override {
+    virtual void OnTrade(const Trade &trade) override {
       auto lock = Lock();
       Assert(!m_position->IsClosed());
       Assert(!m_position->IsCompleted());
@@ -244,19 +247,30 @@ class Position::Implementation : private boost::noncopyable {
       if (!impl.m_defaultOrderParams.position) {
         impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
       }
-      if (!isFull) {
-        Report(ORDER_STATUS_FILLED_PARTIALLY);
-      } else {
-        order.status = ORDER_STATUS_STEP_CLOSED;
-        UpdateStat();
-        Report(ORDER_STATUS_FILLED_FULLY);
-        SignalUpdate(lock);
-      }
+      Report(ORDER_STATUS_FILLED_PARTIALLY);
       impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), trade.qty,
-                                  trade.price);
+                                  trade.price, 0);
     }
 
-    virtual void OnReject() override {
+    virtual void OnCanceled(const Volume &comission) override {
+      auto lock = Lock();
+      Assert(!m_position->IsClosed());
+      Assert(!m_position->IsCompleted());
+      auto &order = GetOrder();
+      AssertLe(order.executedQty, order.qty);
+      AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
+      order.status = ORDER_STATUS_STEP_CLOSED;
+      UpdateStat();
+      Report(ORDER_STATUS_CANCELED);
+      SignalUpdate(lock);
+      {
+        auto &impl = GetPositionImpl();
+        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
+                                    comission);
+      }
+    }
+
+    virtual void OnRejected(const Volume &comission) override {
       auto lock = Lock();
       Assert(!m_position->IsClosed());
       Assert(!m_position->IsCompleted());
@@ -269,9 +283,14 @@ class Position::Implementation : private boost::noncopyable {
       UpdateStat();
       Report(ORDER_STATUS_REJECTED);
       SignalUpdate(lock);
+      {
+        auto &impl = GetPositionImpl();
+        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
+                                    comission);
+      }
     }
 
-    virtual void OnError() override {
+    virtual void OnError(const Volume &comission) override {
       auto lock = Lock();
       Assert(!m_position->IsClosed());
       Assert(!m_position->IsCompleted());
@@ -283,11 +302,11 @@ class Position::Implementation : private boost::noncopyable {
       UpdateStat();
       Report(ORDER_STATUS_ERROR);
       SignalUpdate(lock);
-    }
-
-    virtual void OnCommission(const Volume &commission) override {
-      const auto lock = Lock();
-      GetOrder().commission = commission;
+      {
+        auto &impl = GetPositionImpl();
+        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
+                                    comission);
+      }
     }
 
    protected:
@@ -1149,17 +1168,6 @@ bool Position::IsProfit() const {
   return ratio > 1.0 && !IsEqual(ratio, 1.0);
 }
 
-Volume Position::CalcCommission() const {
-  Volume result = 0;
-  for (const auto &order : m_pimpl->m_open.orders) {
-    result += order.commission;
-  }
-  for (const auto &order : m_pimpl->m_close.orders) {
-    result += order.commission;
-  }
-  return result;
-}
-
 size_t Position::GetNumberOfOpenOrders() const {
   return m_pimpl->m_open.orders.size();
 }
@@ -1329,13 +1337,17 @@ void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
   if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close.orders.back(),
                           GetClosedQty());
-    m_pimpl->m_operation->UpdatePnl(*m_pimpl->m_security, GetCloseOrderSide(),
-                                    qty, price);
+    m_pimpl->m_operation->UpdatePnl(
+        *m_pimpl->m_security, GetCloseOrderSide(), qty, price,
+        GetTradingSystem().CalcCommission(qty, price, GetCloseOrderSide(),
+                                          GetSecurity()));
   } else if (m_pimpl->m_open.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open.orders.back(),
                           GetOpenedQty());
-    m_pimpl->m_operation->UpdatePnl(*m_pimpl->m_security, GetOpenOrderSide(),
-                                    qty, price);
+    m_pimpl->m_operation->UpdatePnl(
+        *m_pimpl->m_security, GetOpenOrderSide(), qty, price,
+        GetTradingSystem().CalcCommission(qty, price, GetOpenOrderSide(),
+                                          GetSecurity()));
   } else {
     throw Exception("There are no active orders to add virtual trade");
   }

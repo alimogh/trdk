@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/18 01:12:08
+ *   Created: 2018/02/11 21:47:56
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,9 +10,8 @@
 
 #pragma once
 
-#include "CexioRequest.hpp"
-#include "CexioUtil.hpp"
-#include "NonceStorage.hpp"
+#include "ExcambiorexRequest.hpp"
+#include "ExcambiorexUtil.hpp"
 #include "PollingTask.hpp"
 #include "Settings.hpp"
 
@@ -20,55 +19,48 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class CexioTradingSystem : public TradingSystem {
+class ExcambiorexTradingSystem : public TradingSystem {
  public:
   typedef TradingSystem Base;
 
  private:
   struct Settings : public Rest::Settings {
-    std::string username;
     std::string apiKey;
     std::string apiSecret;
-    NonceStorage::Settings nonces;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
   };
 
-  class PrivateRequest : public CexioRequest {
+  class PrivateRequest : public ExcambiorexRequest {
    public:
-    typedef CexioRequest Base;
+    typedef ExcambiorexRequest Base;
 
    public:
     explicit PrivateRequest(const std::string &name,
                             const std::string &params,
                             const Settings &,
-                            NonceStorage::TakenValue &&,
                             bool isPriority,
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
     virtual ~PrivateRequest() override = default;
 
-   public:
-    virtual Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &);
-
    protected:
-    virtual bool IsPriority() const override { return m_isPriority; }
     virtual void CreateBody(const Poco::Net::HTTPClientSession &,
-                            std::string &result) const override;
+                            std::string &) const override;
+    virtual bool IsPriority() const override;
 
    private:
     const Settings &m_settings;
     const bool m_isPriority;
-    NonceStorage::TakenValue m_nonce;
   };
 
   class BalancesRequest : public PrivateRequest {
    public:
     explicit BalancesRequest(const Settings &settings,
-                             NonceStorage::TakenValue &&,
                              const Context &context,
-                             ModuleEventsLog &);
+                             ModuleEventsLog &,
+                             ModuleTradingLog &);
   };
 
   class OrderRequest : public PrivateRequest {
@@ -76,22 +68,21 @@ class CexioTradingSystem : public TradingSystem {
     explicit OrderRequest(const std::string &name,
                           const std::string &params,
                           const Settings &settings,
-                          NonceStorage::TakenValue &&,
                           const Context &context,
                           ModuleEventsLog &,
                           ModuleTradingLog &);
   };
 
  public:
-  explicit CexioTradingSystem(const App &,
-                              const TradingMode &,
-                              Context &,
-                              const std::string &instanceName,
-                              const Lib::IniSectionRef &);
-  virtual ~CexioTradingSystem() override = default;
+  explicit ExcambiorexTradingSystem(const App &,
+                                    const TradingMode &,
+                                    Context &,
+                                    const std::string &instanceName,
+                                    const Lib::IniSectionRef &);
+  virtual ~ExcambiorexTradingSystem() override = default;
 
  public:
-  virtual bool IsConnected() const override { return !m_products.empty(); }
+  virtual bool IsConnected() const override;
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
@@ -128,22 +119,32 @@ class CexioTradingSystem : public TradingSystem {
 
  private:
   void UpdateBalances();
-  void UpdateOrders();
-  void UpdateOrder(const OrderId &, const boost::property_tree::ptree &);
 
-  boost::posix_time::ptime ParseTimeStamp(
-      const std::string &key, const boost::property_tree::ptree &) const;
+  bool UpdateOrders();
+  void FinalizeOrder(const boost::posix_time::ptime &, const OrderId &);
+
+  void SetBalances(const boost::property_tree::ptree &);
+
+  void SubsctibeAtOrderUpdates(const ExcambiorexProduct &);
 
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
-  mutable NonceStorage m_nonces;
-  boost::unordered_map<std::string, CexioProduct> m_products;
+  boost::unordered_map<std::string, ExcambiorexProduct> m_products;
+  boost::unordered_map<std::string, std::string> m_currencies;
 
   BalancesContainer m_balances;
+  BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
+
+  boost::mutex m_ordersRequestMutex;
+  boost::unordered_set<const ExcambiorexProduct *> m_orderRequestList;
+  size_t m_orderRequestListVersion;
+
+  boost::mutex m_orderCancelingMutex;
+  boost::unordered_set<OrderId> m_canceledOrders;
 
   PollingTask m_pollingTask;
 };

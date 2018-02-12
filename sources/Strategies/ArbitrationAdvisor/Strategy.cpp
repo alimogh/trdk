@@ -12,7 +12,6 @@
 #include "Strategy.hpp"
 #include "Operation.hpp"
 #include "PositionController.hpp"
-#include "Report.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -104,9 +103,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   boost::unordered_set<const Security *> m_errors;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
-      : m_self(self),
-        m_controller(OperationReport(m_self)),
-        m_minPriceDifferenceRatioToAdvice(0) {
+      : m_self(self), m_minPriceDifferenceRatioToAdvice(0) {
     if (conf.ReadBoolKey("stop_loss", false)) {
       const_cast<boost::optional<pt::time_duration> &>(m_stopLossDelay) =
           pt::seconds(conf.ReadTypedKey("stop_loss_delay_sec", 0));
@@ -455,11 +452,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         buyTradingSystem.GetBalances().FindAvailableToTrade(
             buy.GetSymbol().GetQuoteSymbol());
 
-    const auto calcByBuyBalance = [&]() -> Qty {
-      const auto result = buyBalance / buyPrice;
-      return result - buyTradingSystem.CalcCommission(result, buy);
-    };
-    const auto &resultByBuyBalance = calcByBuyBalance();
+    auto resultByBuyBalance = buyBalance / buyPrice;
+    resultByBuyBalance -= buyTradingSystem.CalcCommission(
+        resultByBuyBalance, buyPrice, ORDER_SIDE_BUY, buy);
 
     if (sellBalance <= resultByBuyBalance) {
       return {sellBalance, &sell};
@@ -587,8 +582,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                            ex.what());
 
       if (firstLeg) {
-        CloseLegPositionByOperationStartError(*firstLeg, *legTargets.second,
-                                              *operation);
+        CloseLegPositionByOperationStartError(*firstLeg);
       }
 
       const auto &errorLeg =
@@ -680,13 +674,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     if (firstLeg) {
       Assert(!secondLeg);
       errorLeg = &secondLegTarget;
-      CloseLegPositionByOperationStartError(*firstLeg, secondLegTarget,
-                                            *operation);
+      CloseLegPositionByOperationStartError(*firstLeg);
     } else {
       Assert(secondLeg);
       errorLeg = &firstLegTarget;
-      CloseLegPositionByOperationStartError(*secondLeg, firstLegTarget,
-                                            *operation);
+      CloseLegPositionByOperationStartError(*secondLeg);
     }
     m_self.GetLog().Debug(
         "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
@@ -699,25 +691,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     return false;
   }
 
-  void CloseLegPositionByOperationStartError(
-      Position &openedPosition,
-      const Security &failedPositionTarget,
-      Operation &operation) {
-    operation.GetReportData().Add(OperationReportData::PositionReport(
-        operation.GetId(),                                // operation
-        openedPosition.GetSubOperationId() == 1 ? 2 : 1,  // subOperation
-        openedPosition.GetSide() == POSITION_SIDE_LONG
-            ? POSITION_SIDE_SHORT
-            : POSITION_SIDE_LONG,  // side
-        pt::not_a_date_time,       // openStartTime;
-        pt::not_a_date_time,       // openEndTime
-        operation.GetOpenOrderPolicy().GetOpenOrderPrice(
-            !openedPosition.IsLong()),                     // openStartPrice
-        0,                                                 // openedQty
-        CLOSE_REASON_OPEN_FAILED,                          // closeReason
-        operation.GetTradingSystem(failedPositionTarget),  // signalTarget
-        0,                                                 // openedVolume
-        0));                                               // closedVolume
+  void CloseLegPositionByOperationStartError(Position &openedPosition) {
     try {
       m_controller.ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
     } catch (const CommunicationError &ex) {

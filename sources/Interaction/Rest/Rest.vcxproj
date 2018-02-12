@@ -319,6 +319,11 @@
     <ClCompile Include="CryptopiaTradingSystem.cpp" />
     <ClCompile Include="CryptopiaTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="CryptopiaUtil.cpp" />
+    <ClCompile Include="ExcambiorexMarketDataSource.cpp" />
+    <ClCompile Include="ExcambiorexRequest.cpp" />
+    <ClCompile Include="ExcambiorexTradingSystem.cpp" />
+    <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="ExcambiorexUtil.cpp" />
     <ClCompile Include="FloodControl.cpp" />
     <ClCompile Include="GdaxExchange.cpp" />
     <ClCompile Include="BittrexMarketDataSource.cpp" />
@@ -328,7 +333,6 @@
     <ClCompile Include="LivecoinTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="LivecoinUtil.cpp" />
     <ClCompile Include="NonceStorage.cpp" />
-    <ClCompile Include="NovaexchangeExchange.cpp" />
     <ClCompile Include="PollingSettings.cpp" />
     <ClCompile Include="PollingTask.cpp" />
     <ClCompile Include="Prec.cpp">
@@ -365,6 +369,10 @@
     <ClInclude Include="CryptopiaRequest.hpp" />
     <ClInclude Include="CryptopiaTradingSystem.hpp" />
     <ClInclude Include="CryptopiaUtil.hpp" />
+    <ClInclude Include="ExcambiorexMarketDataSource.hpp" />
+    <ClInclude Include="ExcambiorexRequest.hpp" />
+    <ClInclude Include="ExcambiorexTradingSystem.hpp" />
+    <ClInclude Include="ExcambiorexUtil.hpp" />
     <ClInclude Include="FloodControl.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="LivecoinMarketDataSource.hpp" />

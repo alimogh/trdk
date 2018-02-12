@@ -134,12 +134,13 @@ class lib::Engine::Implementation : private boost::noncopyable {
       if (i && !(i % 3)) {
         continue;
       }
-      operation->UpdatePnl(*security1, ORDER_SIDE_BUY, 10, 1);
-      operation->UpdatePnl(*security1, ORDER_SIDE_SELL, 10, i % 2 ? 0.9 : 1.1);
-      operation->UpdatePnl(*security2, ORDER_SIDE_BUY, 1.23124 * i,
-                           1.23124 * i);
+      operation->UpdatePnl(*security1, ORDER_SIDE_BUY, 10, 1, 0.00001);
+      operation->UpdatePnl(*security1, ORDER_SIDE_SELL, 10, i % 2 ? 0.9 : 1.1,
+                           0.00001);
+      operation->UpdatePnl(*security2, ORDER_SIDE_BUY, 1.23124 * i, 1.23124 * i,
+                           0.00001);
       operation->UpdatePnl(*security2, ORDER_SIDE_SELL, 1.23124 * i,
-                           1.23124 * i);
+                           1.23124 * i, 0.00001);
       for (size_t j = 0; j < 6; ++j) {
         const auto &tradingSystem =
             m_self.GetContext().GetTradingSystem(0, TRADING_MODE_LIVE);

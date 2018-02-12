@@ -1,7 +1,5 @@
 
 EXPORTS
-	CreateNovaexchange
-	CreateNovaexchangeMarketDataSource
 	CreateYobitnet
 	CreateYobitnetMarketDataSource
 	CreateCcex
@@ -20,4 +18,7 @@ EXPORTS
 	CreateCexioMarketDataSource
 	CreateCexioTradingSystem
 	CreateCexio
+	CreateExcambiorexMarketDataSource
+	CreateExcambiorexTradingSystem
+	CreateExcambiorex
 	GetTrdkModuleVersionInfoV1

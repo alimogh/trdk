@@ -99,11 +99,10 @@ class BittrexTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &vol,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision(vol * (0.25 / 100),
-                            security.GetPricePrecisionPower());
-  }
+  virtual Volume CalcCommission(const Qty &,
+                                const Price &,
+                                const OrderSide &,
+                                const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
       const trdk::Security &,

@@ -694,7 +694,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Report.cpp" />
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyWindow.cpp" />
     <ClCompile Include="TargetActionsWidget.cpp" />
@@ -863,7 +862,6 @@
     <ClInclude Include="Operation.hpp" />
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="PositionController.hpp" />
-    <ClInclude Include="Report.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="Prec.hpp" />

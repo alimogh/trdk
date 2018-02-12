@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "PositionController.hpp"
 #include "OrderPolicy.hpp"
-#include "PositionReport.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -25,20 +24,12 @@ class PositionController::Implementation : private boost::noncopyable {
  public:
   PositionController &m_self;
 
-  const boost::shared_ptr<PositionReport> m_report;
-
  public:
-  explicit Implementation(PositionController &self,
-                          const boost::shared_ptr<PositionReport> &report)
-      : m_self(self), m_report(report) {}
+  explicit Implementation(PositionController &self) : m_self(self) {}
 };
 
 PositionController::PositionController()
-    : m_pimpl(std::make_unique<Implementation>(*this, nullptr)) {}
-
-PositionController::PositionController(
-    const boost::shared_ptr<PositionReport> &report)
-    : m_pimpl(std::make_unique<Implementation>(*this, report)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this)) {}
 
 PositionController::~PositionController() = default;
 
@@ -213,9 +204,6 @@ void PositionController::OnPositionUpdate(Position &position) {
 
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
-      if (m_pimpl->m_report) {
-        m_pimpl->m_report->Append(position);
-      }
       auto &operation = *position.GetOperation();
       if (operation.HasCloseSignal(position)) {
         const auto &newOperation = operation.StartInvertedPosition(position);

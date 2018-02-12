@@ -34,12 +34,12 @@ class PollingTask : private boost::noncopyable {
   ~PollingTask();
 
  public:
-  void AddTask(const std::string &&name,
+  void AddTask(std::string &&name,
                size_t priority,
                const boost::function<bool()> &&,
                size_t frequency,
                bool isAccelerable);
-  void ReplaceTask(const std::string &&name,
+  void ReplaceTask(std::string &&name,
                    size_t priority,
                    const boost::function<bool()> &&,
                    size_t frequency,
@@ -50,7 +50,7 @@ class PollingTask : private boost::noncopyable {
   void RunTasks();
   bool RunTask(Task &, bool isAccelerated) const;
 
-  void ScheduleTaskSetting(const std::string &&name,
+  void ScheduleTaskSetting(std::string &&name,
                            size_t priority,
                            const boost::function<bool()> &&,
                            size_t frequency,
@@ -69,6 +69,6 @@ class PollingTask : private boost::noncopyable {
   boost::optional<boost::thread> m_thread;
   bool m_isAccelerated;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

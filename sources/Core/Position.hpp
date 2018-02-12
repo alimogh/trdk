@@ -295,8 +295,6 @@ class TRDK_CORE_API Position
    */
   bool IsProfit() const;
 
-  trdk::Volume CalcCommission() const;
-
   virtual trdk::Price GetMarketOpenPrice() const = 0;
   virtual trdk::Price GetMarketClosePrice() const = 0;
   virtual trdk::Price GetMarketOpenOppositePrice() const = 0;

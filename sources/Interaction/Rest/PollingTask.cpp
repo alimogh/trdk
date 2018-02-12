@@ -46,7 +46,7 @@ PollingTask::~PollingTask() {
   }
 }
 
-void PollingTask::AddTask(const std::string &&name,
+void PollingTask::AddTask(std::string &&name,
                           size_t priority,
                           const boost::function<bool()> &&task,
                           size_t frequency,
@@ -55,7 +55,7 @@ void PollingTask::AddTask(const std::string &&name,
                       isAccelerable, false);
 }
 
-void PollingTask::ReplaceTask(const std::string &&name,
+void PollingTask::ReplaceTask(std::string &&name,
                               size_t priority,
                               const boost::function<bool()> &&task,
                               size_t frequency,
@@ -64,7 +64,7 @@ void PollingTask::ReplaceTask(const std::string &&name,
                       isAccelerable, true);
 }
 
-void PollingTask::ScheduleTaskSetting(const std::string &&name,
+void PollingTask::ScheduleTaskSetting(std::string &&name,
                                       size_t priority,
                                       const boost::function<bool()> &&task,
                                       size_t frequency,

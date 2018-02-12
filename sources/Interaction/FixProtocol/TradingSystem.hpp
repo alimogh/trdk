@@ -37,6 +37,11 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  public:
   virtual bool IsConnected() const override;
 
+  virtual trdk::Volume CalcCommission(const trdk::Qty &,
+                                      const trdk::Price &,
+                                      const trdk::OrderSide &,
+                                      const trdk::Security &) const override;
+
  public:
   virtual void OnConnectionRestored() override;
 
@@ -73,6 +78,6 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  private:
   Client m_client;
 };
-}
-}
-}
+}  // namespace FixProtocol
+}  // namespace Interaction
+}  // namespace trdk
