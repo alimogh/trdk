@@ -18,7 +18,8 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BestSecurityChecker::BestSecurityChecker() : m_bestSecurity(nullptr) {}
+BestSecurityChecker::BestSecurityChecker(bool checkOpportunity)
+    : m_bestSecurity(nullptr), m_checkOpportunity(checkOpportunity) {}
 
 bool BestSecurityChecker::Check(Security &checkSecurity) {
   AssertNe(m_bestSecurity, &checkSecurity);
@@ -40,7 +41,8 @@ Security *BestSecurityChecker::GetSuitableSecurity() const noexcept {
 
 bool BestSecurityChecker::CheckGeneral(const Security &checkSecurity) const {
   return checkSecurity.IsOnline() &&
-         GetOpportunityQty(checkSecurity) >= GetRequiredQty();
+         (!m_checkOpportunity ||
+          GetOpportunityQty(checkSecurity) >= GetRequiredQty());
 }
 
 bool BestSecurityChecker::CheckExchange(const Security &checkSecurity) const {
@@ -55,8 +57,9 @@ bool BestSecurityChecker::CheckExchange(const Security &checkSecurity) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 BestSecurityCheckerForOrder::BestSecurityCheckerForOrder(Strategy &strategy,
-                                                         const Qty &qty)
-    : m_strategy(strategy), m_qty(qty) {}
+                                                         const Qty &qty,
+                                                         bool checkOpportunity)
+    : BestSecurityChecker(checkOpportunity), m_strategy(strategy), m_qty(qty) {}
 
 const TradingSystem &BestSecurityCheckerForOrder::GetTradingSystem(
     const Security &security) const {
@@ -75,8 +78,9 @@ bool BestSecurityCheckerForOrder::CheckOrder(
 class BestSecurityCheckerForSellOrder : public BestSecurityCheckerForOrder {
  public:
   explicit class BestSecurityCheckerForSellOrder(Strategy &strategy,
-                                                 const Qty &qty)
-      : BestSecurityCheckerForOrder(strategy, qty) {}
+                                                 const Qty &qty,
+                                                 bool checkOpportunity)
+      : BestSecurityCheckerForOrder(strategy, qty, checkOpportunity) {}
   virtual ~BestSecurityCheckerForSellOrder() override = default;
 
  protected:
@@ -102,8 +106,10 @@ class BestSecurityCheckerForSellOrder : public BestSecurityCheckerForOrder {
 
 class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
  public:
-  explicit BestSecurityCheckerForBuyOrder(Strategy &strategy, const Qty &qty)
-      : BestSecurityCheckerForOrder(strategy, qty) {}
+  explicit BestSecurityCheckerForBuyOrder(Strategy &strategy,
+                                          const Qty &qty,
+                                          bool checkOpportunity)
+      : BestSecurityCheckerForOrder(strategy, qty, checkOpportunity) {}
   virtual ~BestSecurityCheckerForBuyOrder() override = default;
 
  protected:
@@ -137,19 +143,22 @@ class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
 std::unique_ptr<BestSecurityCheckerForOrder>
 BestSecurityCheckerForOrder::Create(Strategy &strategy,
                                     bool isLong,
-                                    const Qty &qty) {
+                                    const Qty &qty,
+                                    bool checkOpportunity) {
   if (isLong) {
-    return boost::make_unique<BestSecurityCheckerForBuyOrder>(strategy, qty);
+    return boost::make_unique<BestSecurityCheckerForBuyOrder>(strategy, qty,
+                                                              checkOpportunity);
   } else {
-    return boost::make_unique<BestSecurityCheckerForSellOrder>(strategy, qty);
+    return boost::make_unique<BestSecurityCheckerForSellOrder>(
+        strategy, qty, checkOpportunity);
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 BestSecurityCheckerForPosition::BestSecurityCheckerForPosition(
-    Position &position)
-    : m_position(position) {}
+    Position &position, bool checkOpportunity)
+    : BestSecurityChecker(checkOpportunity), m_position(position) {}
 
 BestSecurityCheckerForPosition::~BestSecurityCheckerForPosition() {
   if (!HasSuitableSecurity()) {
@@ -187,8 +196,9 @@ bool BestSecurityCheckerForPosition::CheckOrder(
 class BestSecurityCheckerForLongPosition
     : public BestSecurityCheckerForPosition {
  public:
-  explicit BestSecurityCheckerForLongPosition(Position &position)
-      : BestSecurityCheckerForPosition(position) {
+  explicit BestSecurityCheckerForLongPosition(Position &position,
+                                              bool checkOpportunity)
+      : BestSecurityCheckerForPosition(position, checkOpportunity) {
     Assert(position.IsLong());
   }
   virtual ~BestSecurityCheckerForLongPosition() override = default;
@@ -217,8 +227,9 @@ class BestSecurityCheckerForLongPosition
 class BestSecurityCheckerForShortPosition
     : public BestSecurityCheckerForPosition {
  public:
-  explicit BestSecurityCheckerForShortPosition(Position &position)
-      : BestSecurityCheckerForPosition(position) {
+  explicit BestSecurityCheckerForShortPosition(Position &position,
+                                               bool checkOpportunity)
+      : BestSecurityCheckerForPosition(position, checkOpportunity) {
     Assert(!position.IsLong());
   }
   virtual ~BestSecurityCheckerForShortPosition() override = default;
@@ -246,11 +257,14 @@ class BestSecurityCheckerForShortPosition
 };
 
 std::unique_ptr<BestSecurityCheckerForPosition>
-BestSecurityCheckerForPosition::Create(Position &positon) {
+BestSecurityCheckerForPosition::Create(Position &positon,
+                                       bool checkOpportunity) {
   if (positon.IsLong()) {
-    return boost::make_unique<BestSecurityCheckerForLongPosition>(positon);
+    return boost::make_unique<BestSecurityCheckerForLongPosition>(
+        positon, checkOpportunity);
   } else {
-    return boost::make_unique<BestSecurityCheckerForShortPosition>(positon);
+    return boost::make_unique<BestSecurityCheckerForShortPosition>(
+        positon, checkOpportunity);
   }
 }
 

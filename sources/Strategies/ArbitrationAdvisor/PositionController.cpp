@@ -110,7 +110,8 @@ bool aa::PositionController::ClosePosition(Position &position,
 
 void aa::PositionController::ClosePosition(Position &position) {
   {
-    const auto &checker = BestSecurityCheckerForPosition::Create(position);
+    const auto &checker =
+        BestSecurityCheckerForPosition::Create(position, true);
     boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
         ->ForEachSecurity(
             position.GetSecurity().GetSymbol(),
