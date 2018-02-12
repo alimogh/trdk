@@ -323,7 +323,7 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
     pt::ptime time;
     {
       auto closeTimeField = order.get_optional<std::string>("Closed");
-      if (closeTimeField && !closeTimeField->empty()) {
+      if (closeTimeField && *closeTimeField != "null") {
         time = ParseTime(std::move(*closeTimeField));
         if (time == pt::not_a_date_time) {
           OnOrderError(GetContext().GetCurrentTime(), orderId, boost::none,
