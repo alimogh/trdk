@@ -17,7 +17,7 @@ namespace TradingLib {
 
 class BestSecurityChecker : private boost::noncopyable {
  public:
-  BestSecurityChecker();
+  explicit BestSecurityChecker(bool checkOpportunity);
   virtual ~BestSecurityChecker() = default;
 
  public:
@@ -45,6 +45,7 @@ class BestSecurityChecker : private boost::noncopyable {
 
  private:
   trdk::Security *m_bestSecurity;
+  const bool m_checkOpportunity;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,13 +53,14 @@ class BestSecurityChecker : private boost::noncopyable {
 //! Choses best security for order.
 class BestSecurityCheckerForOrder : public BestSecurityChecker {
  public:
-  explicit BestSecurityCheckerForOrder(trdk::Strategy &, const trdk::Qty &);
+  explicit BestSecurityCheckerForOrder(trdk::Strategy &,
+                                       const trdk::Qty &,
+                                       bool checkOpportunity);
   virtual ~BestSecurityCheckerForOrder() override = default;
 
  public:
-  static std::unique_ptr<BestSecurityCheckerForOrder> Create(trdk::Strategy &,
-                                                             bool isLong,
-                                                             const trdk::Qty &);
+  static std::unique_ptr<BestSecurityCheckerForOrder> Create(
+      trdk::Strategy &, bool isLong, const trdk::Qty &, bool checkOpportunity);
 
  protected:
   virtual const trdk::TradingSystem &GetTradingSystem(
@@ -81,12 +83,13 @@ class BestSecurityCheckerForPosition
   typedef trdk::TradingLib::BestSecurityChecker Base;
 
  public:
-  explicit BestSecurityCheckerForPosition(trdk::Position &);
+  explicit BestSecurityCheckerForPosition(trdk::Position &,
+                                          bool checkOpportunity);
   virtual ~BestSecurityCheckerForPosition() override;
 
  public:
   static std::unique_ptr<BestSecurityCheckerForPosition> Create(
-      trdk::Position &);
+      trdk::Position &, bool checkOpportunity);
 
  public:
   const Position &GetPosition() const;

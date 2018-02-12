@@ -45,7 +45,7 @@ Position *TrendRepeatingController::OpenPosition(
     return nullptr;
   }
   if (!BestSecurityCheckerForOrder::Create(operation->GetStrategy(), isLong,
-                                           qty)
+                                           qty, false)
            ->Check(security)) {
     operation->GetStrategy().GetLog().Warn(
         "%1% is not suitable target to open %2%-position with qty %3%.",
@@ -80,8 +80,8 @@ void TrendRepeatingController::ClosePosition(Position &position) {
   if (!m_isClosingEnabled) {
     return;
   }
-  if (!BestSecurityCheckerForPosition::Create(position)->Check(
-          position.GetSecurity())) {
+  if (!BestSecurityCheckerForPosition::Create(position, false)
+           ->Check(position.GetSecurity())) {
     position.GetStrategy().GetLog().Error(
         "%1% is not suitable target to close position %2%/%3%.",
         position.GetSecurity(),            // 1
