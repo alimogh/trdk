@@ -36,12 +36,13 @@ Rest::RequestExcambiorexProductAndCurrencyList(
                                             const std::string &symbol) {
     const auto &it = result.second.emplace(id, symbol);
     if (!it.second && it.first->second != symbol) {
-      log.Warn(
+      log.Error(
           "Duplicate currency ID \"%1%\": received for symbol \"%2%\", but "
           "already added for \"%3%\".",
           id,                 // 1
           symbol,             // 2
           it.first->second);  // 3
+      AssertEq(symbol, it.first->second);
     }
   };
 
@@ -54,15 +55,17 @@ Rest::RequestExcambiorexProductAndCurrencyList(
       const auto &buyCoinAlias = pairData.get<std::string>("buy_coin_alias");
       const auto &sellCoinAlias = pairData.get<std::string>("sell_coin_alias");
       const auto &symbol = buyCoinAlias + "_" + sellCoinAlias;
-      const ExcambiorexProduct product = {node.first, symbol};
+      const ExcambiorexProduct product = {node.first, buyCoinAlias,
+                                          sellCoinAlias};
       const auto &productIt = result.first.emplace(symbol, product);
       if (!productIt.second) {
-        log.Warn(
+        log.Error(
             "Duplicate symbol \"%1%\": received with ID \"%2%\", but already "
             "added with ID \"%3%\".",
-            symbol,                       // 1
-            product.id,                   // 2
-            productIt.first->second.id);  // 3
+            symbol,                             // 1
+            product.directId,                   // 2
+            productIt.first->second.directId);  // 3
+        Assert(productIt.second);
       }
       addCurrency(pairData.get<std::string>("buy_coin"), buyCoinAlias);
       addCurrency(pairData.get<std::string>("sell_coin"), sellCoinAlias);
@@ -77,6 +80,31 @@ Rest::RequestExcambiorexProductAndCurrencyList(
   if (result.first.empty() || result.second.empty()) {
     throw Exception("Exchange doesn't have products");
   }
+
+  for (auto &product : result.first) {
+    AssertEq(std::string(), product.second.oppositeId);
+    for (const auto &oppositeProduct : result.first) {
+      if (oppositeProduct.second.buyCoinAlias == product.second.sellCoinAlias &&
+          oppositeProduct.second.sellCoinAlias == product.second.buyCoinAlias) {
+        if (!product.second.oppositeId.empty()) {
+          log.Error(
+              "Duplicate opposite product \"%1%\" found for product \"%2%\" "
+              "that already has opposite product \"%3%\".",
+              oppositeProduct.second.directId,  // 1
+              product.second.directId,          // 2
+              product.second.oppositeId);       // 3
+          throw Exception("Failed to build product list");
+        }
+        product.second.oppositeId = oppositeProduct.second.directId;
+      }
+    }
+    if (product.second.oppositeId.empty()) {
+      log.Error("Opposite product was not found for product \"%1%\".",
+                product.second.directId);
+      throw Exception("Failed to build product list");
+    }
+  }
+
   return result;
 }
 
