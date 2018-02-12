@@ -274,7 +274,9 @@ class TradingSystem::Implementation : private boost::noncopyable {
     ActiveOrderWriteLock lock(m_activeOrdersMutex);
     auto result = m_activeOrders.find(orderId);
     if (result == m_activeOrders.cend()) {
-      throw OrderIsUnknown("Failed to get order as order is unknown");
+      boost::format error("Failed to get order as order ID \"%1%\" is unknown");
+      error % orderId;
+      throw OrderIsUnknown(error.str().c_str());
     }
     return result->second;
   }
@@ -282,7 +284,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
     ActiveOrderWriteLock lock(m_activeOrdersMutex);
     auto it = m_activeOrders.find(orderId);
     if (it == m_activeOrders.cend()) {
-      throw OrderIsUnknown("Failed to take order is unknown");
+      boost::format error(
+          "Failed to take order as order ID \"%1%\" is unknown");
+      error % orderId;
+      throw OrderIsUnknown(error.str().c_str());
     }
     auto result = it->second;
     m_activeOrders.erase(it);
@@ -751,8 +756,8 @@ void TradingSystem::OnTrade(
     trade.qty = order->remainingQty;
   } else if (trade.qty > order->remainingQty) {
     boost::format error(
-        "Wrong trade quantity received. Order remaining quantity %1$.8f and "
-        "trade quantity %2$.8f (more than order remaining quantity)");
+        "Wrong trade quantity received. Order remaining quantity %1$.10f and "
+        "trade quantity %2$.10(more than order remaining quantity)");
     error % order->remainingQty  // 1
         % trade.qty;             // 2
     OnOrderError(time, orderId, Qty(0), boost::none, error.str());
