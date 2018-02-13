@@ -271,7 +271,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   }
 
   boost::shared_ptr<Order> GetOrder(const OrderId &orderId) {
-    ActiveOrderWriteLock lock(m_activeOrdersMutex);
+    ActiveOrderReadLock lock(m_activeOrdersMutex);
     auto result = m_activeOrders.find(orderId);
     if (result == m_activeOrders.cend()) {
       boost::format error("Failed to get order as order ID \"%1%\" is unknown");
