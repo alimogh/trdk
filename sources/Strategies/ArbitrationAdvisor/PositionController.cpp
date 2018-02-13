@@ -76,36 +76,76 @@ void aa::PositionController::HoldPosition(Position &position) {
   oppositePosition->MarkAsCompleted();
 }
 
-bool aa::PositionController::ClosePosition(Position &position,
+bool aa::PositionController::PrepareOperationClose(Position &position,
+                                                   const CloseReason &reason) {
+  IsPassive(reason) ? position.SetCloseReason(reason)
+                    : position.ResetCloseReason(reason);
+  if (!position.HasActiveOpenOrders()) {
+    return true;
+  }
+  if (position.IsCancelling()) {
+    return false;
+  }
+  Verify(position.CancelAllOrders());
+  return false;
+}
+
+bool aa::PositionController::ClosePosition(Position &signalPosition,
                                            const CloseReason &reason) {
-  boost::shared_future<void> oppositePositionClosingFuture;
-  std::unique_ptr<const Strategy::PositionListTransaction> listTransaction;
+  auto *oppositePosition = FindOppositePosition(signalPosition);
+  if (!oppositePosition) {
+    return Base::ClosePosition(signalPosition, reason);
+  }
+  Assert(oppositePosition->HasActiveCloseOrders());
+
   {
-    auto *const oppositePosition = FindOppositePosition(position);
-    if (oppositePosition &&
-        oppositePosition->GetCloseReason() == CLOSE_REASON_NONE) {
-      listTransaction =
-          position.GetStrategy().StartThreadPositionsTransaction();
-      oppositePositionClosingFuture =
-          boost::async([this, &oppositePosition, &reason] {
-            try {
-              Base::ClosePosition(*oppositePosition, reason);
-            } catch (const CommunicationError &ex) {
-              throw boost::enable_current_exception(ex);
-            } catch (const Exception &ex) {
-              throw boost::enable_current_exception(ex);
-            } catch (const std::exception &ex) {
-              throw boost::enable_current_exception(ex);
-            }
-          });
+    const auto listTransaction =
+        signalPosition.GetStrategy().StartThreadPositionsTransaction();
+    auto oppositePositionClosePreparingFuture =
+        boost::async([this, oppositePosition, &reason]() -> bool {
+          try {
+            return PrepareOperationClose(*oppositePosition, reason);
+          } catch (const CommunicationError &ex) {
+            throw boost::enable_current_exception(ex);
+          } catch (const Exception &ex) {
+            throw boost::enable_current_exception(ex);
+          } catch (const std::exception &ex) {
+            throw boost::enable_current_exception(ex);
+          }
+        });
+    if (!PrepareOperationClose(signalPosition, reason) ||
+        !oppositePositionClosePreparingFuture.get()) {
+      return false;
     }
   }
-  const auto &result = Base::ClosePosition(position, reason);
 
-  if (oppositePositionClosingFuture.valid()) {
-    oppositePositionClosingFuture.get();
+  Assert(!oppositePosition->HasActiveOrders());
+  Assert(!signalPosition.HasActiveOrders());
+
+  {
+    auto &longPosition =
+        signalPosition.IsLong() ? signalPosition : *oppositePosition;
+    auto &shortPosition =
+        &longPosition == oppositePosition ? signalPosition : *oppositePosition;
+    const Qty &absolutePositionSize =
+        longPosition.GetActiveQty() - shortPosition.GetActiveQty();
+
+    if (!absolutePositionSize) {
+      longPosition.MarkAsCompleted();
+      shortPosition.MarkAsCompleted();
+      return false;
+    }
+
+    struct Positions {
+      Position &active;
+      const Position &completed;
+    } positions = absolutePositionSize < 0
+                      ? Positions{shortPosition, longPosition}
+                      : Positions{longPosition, shortPosition};
+    positions.active.SetClosedQty(positions.completed.GetActiveQty());
+
+    return Base::ClosePosition(positions.active, reason);
   }
-  return result;
 }
 
 void aa::PositionController::ClosePosition(Position &position) {

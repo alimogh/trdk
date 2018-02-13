@@ -29,6 +29,9 @@ class PositionController : public TradingLib::PositionController {
  protected:
   virtual void HoldPosition(Position &) override;
   virtual void ClosePosition(Position &) override;
+
+ private:
+  bool PrepareOperationClose(Position &, const CloseReason &);
 };
 }  // namespace ArbitrageAdvisor
 }  // namespace Strategies
