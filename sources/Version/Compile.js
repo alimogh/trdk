@@ -22,8 +22,8 @@ var copyright = "Copyright 2018 (C) " + vendorName + ", " + domain + ". All righ
 var concurrencyProfileDebug = "PROFILE_RELAX"
 var concurrencyProfileTest = "PROFILE_RELAX"
 var concurrencyProfileRelease = "PROFILE_RELAX"
-var guaranteedUsageDaysNumber = 14
-var numberOfDaysBeforeUsageStop = guaranteedUsageDaysNumber + 60;
+var guaranteedUsageDaysNumber = 0
+var numberOfDaysBeforeUsageStop = guaranteedUsageDaysNumber + 0;
 var requiredModules = [
 	'Core'
 	, 'Engine'
