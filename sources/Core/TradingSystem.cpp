@@ -365,8 +365,12 @@ class TradingSystem::Implementation : private boost::noncopyable {
       const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
     AssertLe(remaningQty, order.remainingQty);
     const auto &tradeQty = order.remainingQty - remaningQty;
+    boost::optional<Trade> trade;
+    if (tradeQty) {
+      trade.emplace(Trade{order.actualPrice, std::move(tradeQty)});
+    }
     FinalizeOrder(time, id, order, status, statusName, remaningQty, commission,
-                  Trade{order.actualPrice, tradeQty}, handler, callback);
+                  std::move(trade), handler, callback);
   }
 
   void FinalizeOrder(
