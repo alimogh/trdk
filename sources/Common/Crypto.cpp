@@ -59,8 +59,10 @@ std::vector<unsigned char> Base64::Decode(const std::string &source) {
                BIO_new_mem_buf(const_cast<char *>(source.c_str()), -1)),
       free);
   BIO_set_flags(&*bio, BIO_FLAGS_BASE64_NO_NL);
-  Verify(resultLen == static_cast<size_t>(BIO_read(
-                          &*bio, &result[0], static_cast<int>(source.size()))));
+  resultLen = static_cast<size_t>(
+      BIO_read(&*bio, &result[0], static_cast<int>(source.size())));
+  AssertGe(result.size(), resultLen);
+  result.resize(resultLen);
   return result;
 }
 
