@@ -46,7 +46,7 @@ struct DispatcherConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 
 typedef DispatcherConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
     DispatcherConcurrencyPolicy;
-}
+}  // namespace Details
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -166,8 +166,7 @@ class Dispatcher : private boost::noncopyable {
         }
         if (!(m_current->size() % m_queueSizeConstrolLevel)) {
           const char *const message =
-              "Dispatcher queue \"%1%\""
-              " is too long (%2% events)!";
+              "Dispatcher queue \"%1%\" is too long (%2% events)!";
           if (m_current->size() <= 100) {
             m_context.GetLog().Info(message, m_name, m_current->size());
           } else if (m_current->size() <= 200) {
@@ -192,8 +191,7 @@ class Dispatcher : private boost::noncopyable {
       while (!m_current->empty() && m_taksState == TASK_STATE_ACTIVE) {
         if (!(++heavyLoadsCount % 500)) {
           m_context.GetLog().Warn(
-              "Dispatcher task \"%1%\" is heavy loaded"
-              " (%2% iterations)!",
+              "Dispatcher task \"%1%\" is heavy loaded (%2% iterations)!",
               m_name, heavyLoadsCount);
         }
 
@@ -1169,5 +1167,5 @@ inline void Dispatcher::RaiseEvent(BookUpdateTickEvent &bookUpdateTickEvent) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
+}  // namespace Engine
+}  // namespace trdk
