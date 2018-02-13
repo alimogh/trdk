@@ -196,6 +196,9 @@ class CryptopiaTradingSystem : public TradingSystem {
   boost::posix_time::ptime ParseTimeStamp(
       const boost::property_tree::ptree &) const;
 
+  void RegisterLastOrder(const boost::posix_time::ptime &, const OrderId &);
+  bool IsIdRegisterInLastOrders(const OrderId &) const;
+
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
@@ -213,6 +216,8 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   CancelOrderMutex m_cancelOrderMutex;
   boost::unordered_set<OrderId> m_cancelingOrders;
+
+  std::deque<std::pair<boost::posix_time::ptime, OrderId>> m_lastOrders;
 
   mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;

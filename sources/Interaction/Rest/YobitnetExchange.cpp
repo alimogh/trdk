@@ -33,6 +33,8 @@ namespace fs = boost::filesystem;
 
 namespace {
 
+const auto newOrderSeachPeriod = pt::minutes(2);
+
 struct Settings : public Rest::Settings {
   struct Auth {
     std::string key;
@@ -619,8 +621,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     try {
       SetBalances(response);
-      return boost::make_unique<YobitnetOrderTransactionContext>(
+      auto result = boost::make_unique<YobitnetOrderTransactionContext>(
           *this, response.get<OrderId>("order_id"));
+      RegisterLastOrder(startTime, result->GetOrderId());
+      return result;
     } catch (const ptr::ptree_error &ex) {
       boost::format error(
           "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
@@ -1037,17 +1041,19 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       ForEachRemoteActiveOrder(
           productId, m_tradingSession, m_tradingAuth, true,
           [&](const std::string &orderId, const ptr::ptree &order) {
-            if (GetActiveOrders().count(orderId) ||
+            if (IsIdRegisterInLastOrders(orderId) ||
+                GetActiveOrders().count(orderId) ||
                 order.get<std::string>("type") != side ||
                 order.get<Qty>("amount") > qty ||
                 order.get<Price>("rate") != price ||
-                ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
+                ParseTimeStamp(order, "timestamp_created") +
+                        newOrderSeachPeriod <
                     startTime) {
               return;
             }
             Verify(orderIds.emplace(std::move(orderId)).second);
           });
-      ForEachRemoteTrade(productId, startTime - pt::minutes(2),
+      ForEachRemoteTrade(productId, startTime - newOrderSeachPeriod,
                          m_tradingSession, m_tradingAuth, true,
                          [&](const std::string &, const ptr::ptree &trade) {
                            const auto &orderId = trade.get<OrderId>("order_id");
@@ -1071,7 +1077,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           AssertEq(side, order.get<std::string>("type"));
           if (order.get<Qty>("start_amount") != qty ||
               order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
+              ParseTimeStamp(order, "timestamp_created") + newOrderSeachPeriod <
                   startTime) {
             continue;
           }
@@ -1143,6 +1149,22 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
+  void RegisterLastOrder(const pt::ptime &startTime, const OrderId &id) {
+    const auto &start = startTime - newOrderSeachPeriod;
+    while (m_lastOrders.front().first < start) {
+      m_lastOrders.pop_front();
+    }
+    m_lastOrders.emplace_back(startTime, id.GetValue());
+  }
+  bool IsIdRegisterInLastOrders(const std::string &id) const {
+    for (const auto &order : m_lastOrders) {
+      if (order.second == id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
@@ -1161,6 +1183,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
   YobitBalancesContainer m_balances;
+
+  std::deque<std::pair<pt::ptime, std::string>> m_lastOrders;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };

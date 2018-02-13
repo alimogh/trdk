@@ -25,6 +25,9 @@ namespace gr = boost::gregorian;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+const auto newOrderSeachPeriod = pt::minutes(2);
+
 OrderId ParseOrderId(const ptr::ptree &source) {
   return source.get<OrderId>("OrderId");
 }
@@ -390,6 +393,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                             0, true);
     } else {
       SubscribeToOrderUpdates(product);
+      RegisterLastOrder(startTime, orderId);
     }
 
     return boost::make_unique<CryptopiaOrderTransactionContext>(
@@ -566,11 +570,11 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
     for (const auto &node : response) {
       const auto &order = node.second;
       const auto &id = ParseOrderId(order);
-      if (GetActiveOrders().count(id) ||
+      if (IsIdRegisterInLastOrders(id) || GetActiveOrders().count(id) ||
           order.get<std::string>("Type") != side ||
           order.get<Qty>("Amount") != qty ||
           order.get<Price>("Rate") != price ||
-          ParseTimeStamp(order) + pt::minutes(2) < startTime) {
+          ParseTimeStamp(order) + newOrderSeachPeriod < startTime) {
         continue;
       }
       if (result) {
@@ -610,6 +614,23 @@ void CryptopiaTradingSystem::ForEachRemoteTrade(
   for (const auto &node : response) {
     callback(node.second);
   }
+}
+
+void CryptopiaTradingSystem::RegisterLastOrder(const pt::ptime &startTime,
+                                               const OrderId &id) {
+  const auto &start = startTime - newOrderSeachPeriod;
+  while (m_lastOrders.front().first < start) {
+    m_lastOrders.pop_front();
+  }
+  m_lastOrders.emplace_back(startTime, id);
+}
+bool CryptopiaTradingSystem::IsIdRegisterInLastOrders(const OrderId &id) const {
+  for (const auto &order : m_lastOrders) {
+    if (order.second == id) {
+      return true;
+    }
+  }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
