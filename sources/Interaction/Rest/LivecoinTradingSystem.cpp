@@ -290,20 +290,20 @@ void LivecoinTradingSystem::UpdateOrders() {
         AssertGe(qty, remainingQty);
         boost::optional<Volume> commission;
         if (qty != remainingQty) {
-          commission = order.get<Volume>("commission_rate");
+          commission = order.get<Volume>("trades.commission");
           OnTrade(time, orderId, Trade{order.get<Price>("trades.avg_price")});
         } else {
-          commission = order.get_optional<Volume>("commission_rate");
+          commission = order.get_optional<Volume>("trades.commission");
         }
         OnOrderCanceled(time, orderId, remainingQty, commission);
       } else if (status == "EXECUTED") {
         AssertEq(0, order.get<Price>("remaining_quantity"));
         OnOrderFilled(time, orderId,
                       Trade{order.get<Price>("trades.avg_price")},
-                      order.get<Volume>("commission_rate"));
+                      order.get<Volume>("trades.commission"));
       } else if (status != "OPEN" && status != "PARTIALLY_FILLED") {
         OnOrderError(time, orderId, remainingQty,
-                     order.get_optional<Volume>("commission_rate"),
+                     order.get_optional<Volume>("trades.commission"),
                      "Unknown order status");
       } else {
         OnOrderOpened(time, orderId);
