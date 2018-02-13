@@ -58,20 +58,17 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     trdk::Qty remainingQty;
     boost::optional<trdk::Price> price;
     trdk::Price actualPrice;
-    trdk::OrderStatus status;
+    bool isOpened;
     trdk::TimeInForce tif;
     trdk::Lib::TimeMeasurement::Milestones delayMeasurement;
     trdk::RiskControlScope &riskControlScope;
     boost::shared_ptr<const trdk::Position> position;
     trdk::RiskControlOperationId riskControlOperationId;
-    boost::posix_time::ptime updateTime;
     std::unique_ptr<trdk::TimerScope> timerScope;
     boost::shared_ptr<trdk::OrderTransactionContext> transactionContext;
     bool isCancelRequestSent;
-
-    bool IsChanged(const trdk::OrderStatus &,
-                   const boost::optional<trdk::Qty> &,
-                   const boost::optional<trdk::Trade> &) const;
+    size_t numberOfTrades;
+    trdk::Lib::Double sumOfTradePrices;
   };
 
   typedef boost::unordered_map<trdk::OrderId,
@@ -117,8 +114,10 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   const trdk::Balances &GetBalances() const;
 
-  virtual trdk::Volume CalcCommission(const trdk::Volume &,
-                                      const trdk::Security &) const;
+  virtual trdk::Volume CalcCommission(const trdk::Qty &,
+                                      const trdk::Price &,
+                                      const trdk::OrderSide &,
+                                      const trdk::Security &) const = 0;
 
   std::vector<trdk::OrderId> GetActiveOrderIdList() const;
 
@@ -129,6 +128,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::Qty &,
       const boost::optional<trdk::Price> &,
       const trdk::OrderSide &) const;
+
+  //! Returns true if the symbol is supported by the trading system.
+  virtual bool CheckSymbol(const std::string &) const;
 
   //! Sends order synchronously.
   /** @return Order transaction pointer in any case.
@@ -189,144 +191,111 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual void OnTransactionSent(const trdk::OrderTransactionContext &);
 
  protected:
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+  //! Reports order opened state.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           const trdk::Qty &remainingQty,
-                           trdk::Trade &&,
-                           const trdk::Volume &commission);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+  void OnOrderOpened(const boost::posix_time::ptime &, const trdk::OrderId &);
+  //! Reports order opened state.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           const trdk::Qty &remainingQty);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           const trdk::Qty &remainingQty,
-                           const trdk::Volume &commission);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           const trdk::Qty &remainingQty,
-                           trdk::Trade &&);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderStatusUpdate(
+  void OnOrderOpened(
       const boost::posix_time::ptime &,
       const trdk::OrderId &,
-      const trdk::OrderStatus &,
-      const trdk::Qty &remainingQty,
       const boost::function<bool(trdk::OrderTransactionContext &)> &);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+
+  //! Reports new trade. Doesn't finalize the order even no more remaining
+  //! quantity is left.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
-  void OnOrderStatusUpdate(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const trdk::OrderStatus &,
-      const trdk::Qty &remainingQty,
-      trdk::Trade &&,
-      const boost::function<bool(trdk::OrderTransactionContext &)> &);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+  void OnTrade(const boost::posix_time::ptime &,
+               const trdk::OrderId &,
+               trdk::Trade &&);
+  //! Reports new trade. Doesn't finalize the order even no more remaining
+  //! quantity is left.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+  void OnTrade(const boost::posix_time::ptime &,
+               const trdk::OrderId &,
+               trdk::Trade &&,
+               const boost::function<bool(trdk::OrderTransactionContext &)> &);
+
+  //! Finalize the order by filling.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           trdk::Trade &&);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderStatusUpdate(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const trdk::OrderStatus &,
-      trdk::Trade &&,
-      const boost::function<bool(trdk::OrderTransactionContext &)> &);
-  //! Notifies trading system about order status change.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderStatusUpdate(const boost::posix_time::ptime &,
-                           const trdk::OrderId &,
-                           const trdk::OrderStatus &,
-                           trdk::Trade &&,
-                           const trdk::Volume &commission);
-  //! Notifies trading system about order canceling.
-  void OnOrderCancel(const boost::posix_time::ptime &, const trdk::OrderId &);
-  //! Notifies trading system about order canceling.
-  void OnOrderCancel(const boost::posix_time::ptime &,
+  void OnOrderFilled(const boost::posix_time::ptime &,
                      const trdk::OrderId &,
-                     const trdk::Qty &remainingQty);
-  //! Notifies trading system about order error.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
+                     const boost::optional<trdk::Volume> &commission);
+  //! Finalize the order by filling.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
+   */
+  void OnOrderFilled(
+      const boost::posix_time::ptime &,
+      const trdk::OrderId &,
+      const boost::optional<trdk::Volume> &commission,
+      const boost::function<bool(trdk::OrderTransactionContext &)> &);
+  //! Finalize the order by filling with trade info.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
+   */
+  void OnOrderFilled(const boost::posix_time::ptime &,
+                     const trdk::OrderId &,
+                     trdk::Trade &&,
+                     const boost::optional<trdk::Volume> &commission);
+  //! Finalize the order by filling with trade info.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
+   */
+  void OnOrderFilled(
+      const boost::posix_time::ptime &,
+      const trdk::OrderId &,
+      trdk::Trade &&,
+      const boost::optional<trdk::Volume> &commission,
+      const boost::function<bool(trdk::OrderTransactionContext &)> &);
+
+  //! Finalize the order by canceling.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
+   */
+  void OnOrderCanceled(const boost::posix_time::ptime &,
+                       const trdk::OrderId &,
+                       const boost::optional<trdk::Qty> &remainingQty,
+                       const boost::optional<trdk::Volume> &commission);
+
+  //! Finalize the order by rejecting.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
+   */
+  void OnOrderRejected(const boost::posix_time::ptime &,
+                       const trdk::OrderId &,
+                       const boost::optional<trdk::Qty> &remainingQty,
+                       const boost::optional<trdk::Volume> &commission);
+
+  //! Finalize the order by error.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - order state will be corrupted or/and
+   *  subscribers may receive notifications in the wrong order.
    */
   void OnOrderError(const boost::posix_time::ptime &,
                     const trdk::OrderId &,
-                    const std::string &&error);
-  //! Notifies trading system about order reject.
-  /** The method is not thread-safe. Each who will call it should provide
-   * correct sequence of calls or do it from one thread.
-   * @throw  OrderIsUnknown  Order handler is not registered.
-   */
-  void OnOrderReject(const boost::posix_time::ptime &,
-                     const trdk::OrderId &,
-                     const std::string &&reason);
-
-  //! General order update notification.
-  /** May be used for any order. The method is not thread-safe. Each who will
-   * call it should provide correct sequence of calls or do it from one thread.
-   */
-  void OnOrder(const trdk::OrderId &,
-               const std::string &symbol,
-               const trdk::OrderStatus &,
-               const trdk::Qty &qty,
-               const trdk::Qty &remainingQty,
-               const boost::optional<trdk::Price> &,
-               const trdk::OrderSide &,
-               const trdk::TimeInForce &,
-               const boost::posix_time::ptime &openTime,
-               const boost::posix_time::ptime &updateTime);
+                    const boost::optional<trdk::Qty> &remainingQty,
+                    const boost::optional<trdk::Volume> &commission,
+                    const std::string &error);
 
   std::unique_ptr<trdk::OrderTransactionContext>
   SendOrderTransactionAndEmulateIoc(trdk::Security &,

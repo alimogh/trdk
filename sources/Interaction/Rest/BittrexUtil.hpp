@@ -19,7 +19,9 @@ struct BittrexProduct {
 };
 
 boost::unordered_map<std::string, BittrexProduct> RequestBittrexProductList(
-    Poco::Net::HTTPClientSession &, const Context &, ModuleEventsLog &);
-}
-}
-}
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

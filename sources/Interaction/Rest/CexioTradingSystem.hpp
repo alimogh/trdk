@@ -50,7 +50,7 @@ class CexioTradingSystem : public TradingSystem {
     virtual ~PrivateRequest() override = default;
 
    public:
-    virtual Response Send(Poco::Net::HTTPClientSession &);
+    virtual Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &);
 
    protected:
     virtual bool IsPriority() const override { return m_isPriority; }
@@ -95,7 +95,9 @@ class CexioTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &,
+  virtual Volume CalcCommission(const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderSide &,
                                 const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -104,6 +106,8 @@ class CexioTradingSystem : public TradingSystem {
       const Qty &,
       const boost::optional<Price> &,
       const OrderSide &) const override;
+
+  virtual bool CheckSymbol(const std::string &) const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
@@ -138,8 +142,8 @@ class CexioTradingSystem : public TradingSystem {
 
   BalancesContainer m_balances;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 };

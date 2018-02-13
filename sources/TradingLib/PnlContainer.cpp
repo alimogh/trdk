@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "PnlContainer.hpp"
-#include "Core/Security.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -38,10 +37,14 @@ PnlOneSymbolContainer::PnlOneSymbolContainer()
     : m_pimpl(boost::make_unique<Implementation>()) {}
 PnlOneSymbolContainer::~PnlOneSymbolContainer() = default;
 
-void PnlOneSymbolContainer::Update(const Security &security,
+bool PnlOneSymbolContainer::Update(const Security &security,
                                    const OrderSide &side,
                                    const Qty &qty,
-                                   const Price &price) {
+                                   const Price &price,
+                                   const Volume &comission) {
+  if (qty == 0 && price == 0 && comission == 0) {
+    return false;
+  }
   const auto &symbol = security.GetSymbol();
   switch (symbol.GetSecurityType()) {
     default:
@@ -50,10 +53,12 @@ void PnlOneSymbolContainer::Update(const Security &security,
     case SECURITY_TYPE_CRYPTO: {
       m_pimpl->Update(symbol.GetBaseSymbol(),
                       qty * (side == ORDER_SIDE_BUY ? 1 : -1));
-      m_pimpl->Update(symbol.GetQuoteSymbol(),
-                      (qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1));
+      m_pimpl->Update(
+          symbol.GetQuoteSymbol(),
+          ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)) - comission);
     }
   }
+  return true;
 }
 
 boost::tribool PnlOneSymbolContainer::IsProfit() const {

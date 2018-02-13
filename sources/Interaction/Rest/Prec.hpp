@@ -16,6 +16,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/property_tree/json_parser.hpp>

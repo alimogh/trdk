@@ -46,7 +46,7 @@ class Request {
   const std::string &GetName() const { return m_name; }
   void SetBody(const std::string &body) { m_body = body; }
 
-  virtual Response Send(Poco::Net::HTTPClientSession &);
+  virtual Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &);
 
   const Poco::Net::HTTPRequest &GetRequest() const { return *m_request; }
 
@@ -77,6 +77,10 @@ class Request {
   virtual void SetUri(const std::string &uri, Poco::Net::HTTPRequest &) const;
 
  private:
+  std::unique_ptr<Poco::Net::HTTPSClientSession> RecreateSession(
+      const Poco::Net::HTTPSClientSession &);
+
+ private:
   const Context &m_context;
   ModuleEventsLog &m_log;
   ModuleTradingLog *const m_tradingLog;
@@ -86,6 +90,6 @@ class Request {
   const std::string m_name;
   std::string m_body;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

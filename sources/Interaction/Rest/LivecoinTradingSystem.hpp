@@ -62,7 +62,7 @@ class LivecoinTradingSystem : public TradingSystem {
     virtual ~TradingRequest() override = default;
 
    public:
-    Response Send(Poco::Net::HTTPClientSession &) override;
+    Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
     virtual bool IsPriority() const override { return true; }
@@ -92,7 +92,9 @@ class LivecoinTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &,
+  virtual Volume CalcCommission(const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderSide &,
                                 const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -101,6 +103,8 @@ class LivecoinTradingSystem : public TradingSystem {
       const Qty &,
       const boost::optional<Price> &,
       const OrderSide &) const override;
+
+  virtual bool CheckSymbol(const std::string &) const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
@@ -130,11 +134,11 @@ class LivecoinTradingSystem : public TradingSystem {
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

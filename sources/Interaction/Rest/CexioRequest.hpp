@@ -33,7 +33,8 @@ class CexioRequest : public Request {
   virtual ~CexioRequest() override = default;
 
  public:
-  virtual Response Send(Poco::Net::HTTPClientSession &) override;
+  virtual Response Send(
+      std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
   virtual FloodControl &GetFloodControl() override;
@@ -58,6 +59,6 @@ class CexioPublicRequest : public CexioRequest {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

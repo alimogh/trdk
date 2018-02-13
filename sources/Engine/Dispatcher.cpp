@@ -79,7 +79,7 @@ struct SyncVisitor : public boost::static_visitor<> {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -100,6 +100,34 @@ Dispatcher::Dispatcher(Engine::Context &context)
   m_queues.emplace_back(&m_newBars);
   m_queues.emplace_back(&m_bookUpdateTicks);
   m_queues.shrink_to_fit();
+
+#if TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS || TRDK_USAGE_STOP_TIMESTAMP_MS
+  {
+    if (context.GetCurrentTime() >=
+        ConvertToPTimeFromMicroseconds(TRDK_USAGE_STOP_TIMESTAMP_MS * 1000)) {
+      return;
+    }
+    if (context.GetCurrentTime() >=
+        ConvertToPTimeFromMicroseconds(TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS *
+                                       1000)) {
+      const auto &period = TRDK_USAGE_STOP_TIMESTAMP_MS -
+                           TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS;
+      const auto &now = (context.GetCurrentTime() -
+                         ConvertToPTimeFromMicroseconds(
+                             TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS * 1000))
+                            .total_milliseconds();
+      const size_t chance = (now * 100) / period;
+      boost::mt19937 random;
+      boost::uniform_int<decltype(chance)> range(0, 100);
+      boost::variate_generator<boost::mt19937,
+                               boost::uniform_int<decltype(chance)>>
+          generator(random, range);
+      if (generator() <= chance) {
+        return;
+      }
+    }
+  }
+#endif
 
   unsigned int threadsCount = 2;
   boost::shared_ptr<boost::barrier> startBarrier(

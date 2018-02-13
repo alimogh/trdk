@@ -130,8 +130,14 @@ const OrderRecord &OperationOrderItem::GetRecord() const { return m_record; }
 QVariant OperationOrderItem::GetData(int column) const {
   static_assert(numberOfOperationColumns == 13, "List changed.");
   switch (column) {
-    case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
-      return *GetRecord().subOperationId;
+    case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG: {
+      const auto &value = GetRecord().subOperationId;
+      if (value && *value) {
+        return *value;
+      } else {
+        return QVariant();
+      }
+    }
     case OPERATION_COLUMN_OPERATION_TIME_OR_ORDER_SIDE:
       return GetRecord().sideName;
     case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:

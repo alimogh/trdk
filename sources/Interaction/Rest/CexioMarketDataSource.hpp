@@ -19,7 +19,7 @@ namespace Rest {
 
 //! CEX.IO market data source.
 /** @sa https://cex.io/rest-api#public-api-calls
-  */
+ */
 class CexioMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
@@ -58,7 +58,7 @@ class CexioMarketDataSource : public MarketDataSource {
   const Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   boost::unordered_map<std::string, CexioProduct> m_products;
 
@@ -67,6 +67,6 @@ class CexioMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

@@ -122,9 +122,11 @@ boost::shared_ptr<Operation> Operation::StartInvertedPosition(
 void Operation::UpdatePnl(const Security &security,
                           const OrderSide &side,
                           const Qty &qty,
-                          const Price &price) {
-  m_pimpl->m_pnl->Update(security, side, qty, price);
-  GetStrategy().GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
-    dropCopy.CopyOperationUpdate(GetId(), m_pimpl->m_pnl->GetData());
-  });
+                          const Price &price,
+                          const Volume &comission) {
+  if (m_pimpl->m_pnl->Update(security, side, qty, price, comission)) {
+    GetStrategy().GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
+      dropCopy.CopyOperationUpdate(GetId(), m_pimpl->m_pnl->GetData());
+    });
+  }
 }

@@ -18,7 +18,7 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 
 CryptopiaRequest::Response CryptopiaRequest::Send(
-    net::HTTPClientSession &session) {
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   auto result = Base::Send(session);
   const auto &responseTree = boost::get<1>(result);
 

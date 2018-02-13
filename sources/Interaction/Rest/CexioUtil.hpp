@@ -27,13 +27,15 @@ struct CexioProduct {
 };
 
 boost::unordered_map<std::string, CexioProduct> RequestCexioProductList(
-    Poco::Net::HTTPClientSession &, const Context &, ModuleEventsLog &);
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
 
 boost::posix_time::ptime ParseCexioTimeStamp(
     const boost::property_tree::ptree &source,
     const boost::posix_time::time_duration &serverTimeDiff);
 
-std::unique_ptr<Poco::Net::HTTPClientSession> CreateCexioSession(
+std::unique_ptr<Poco::Net::HTTPSClientSession> CreateCexioSession(
     const Settings &, bool isTrading);
 }  // namespace Rest
 }  // namespace Interaction

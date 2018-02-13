@@ -20,16 +20,8 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
-aa::PositionController::PositionController(OperationReport &&report)
-    : m_report(std::move(report)) {}
-
 void aa::PositionController::OnPositionUpdate(Position &position) {
   if (position.IsCompleted()) {
-    auto &reportData =
-        position.GetTypedOperation<aa::Operation>().GetReportData();
-    if (reportData.Add(position)) {
-      m_report.Append(reportData);
-    }
     return;
   }
 
@@ -84,178 +76,82 @@ void aa::PositionController::HoldPosition(Position &position) {
   oppositePosition->MarkAsCompleted();
 }
 
-bool aa::PositionController::ClosePosition(Position &position,
-                                           const CloseReason &reason) {
-  boost::shared_future<void> oppositePositionClosingFuture;
-  std::unique_ptr<const Strategy::PositionListTransaction> listTransaction;
-  {
-    auto *const oppositePosition = FindOppositePosition(position);
-    if (oppositePosition &&
-        oppositePosition->GetCloseReason() == CLOSE_REASON_NONE) {
-      listTransaction =
-          position.GetStrategy().StartThreadPositionsTransaction();
-      oppositePositionClosingFuture =
-          boost::async([this, &oppositePosition, &reason] {
-            try {
-              Base::ClosePosition(*oppositePosition, reason);
-            } catch (const CommunicationError &ex) {
-              throw boost::enable_current_exception(ex);
-            } catch (const Exception &ex) {
-              throw boost::enable_current_exception(ex);
-            } catch (const std::exception &ex) {
-              throw boost::enable_current_exception(ex);
-            }
-          });
-    }
+bool aa::PositionController::PrepareOperationClose(Position &position,
+                                                   const CloseReason &reason) {
+  IsPassive(reason) ? position.SetCloseReason(reason)
+                    : position.ResetCloseReason(reason);
+  if (!position.HasActiveOpenOrders()) {
+    return true;
   }
-  const auto &result = Base::ClosePosition(position, reason);
-
-  if (oppositePositionClosingFuture.valid()) {
-    oppositePositionClosingFuture.get();
+  if (position.IsCancelling()) {
+    return false;
   }
-  return result;
+  Verify(position.CancelAllOrders());
+  return false;
 }
 
-namespace {
-class BestSecurityChecker : private boost::noncopyable {
- public:
-  explicit BestSecurityChecker(Position &position)
-      : m_position(position), m_bestSecurity(nullptr) {}
-
-  virtual ~BestSecurityChecker() {
-    if (!HasSuitableSecurity()) {
-      return;
-    }
-    try {
-      m_position.ReplaceTradingSystem(
-          *m_bestSecurity,
-          m_position.GetOperation()->GetTradingSystem(*m_bestSecurity));
-    } catch (...) {
-      AssertFailNoException();
-      terminate();
-    }
+bool aa::PositionController::ClosePosition(Position &signalPosition,
+                                           const CloseReason &reason) {
+  auto *oppositePosition = FindOppositePosition(signalPosition);
+  if (!oppositePosition) {
+    return Base::ClosePosition(signalPosition, reason);
   }
+  Assert(oppositePosition->HasActiveCloseOrders());
 
- public:
-  void Check(Security &checkSecurity) {
-    AssertNe(m_bestSecurity, &checkSecurity);
-    AssertEq(GetPosition().GetSecurity().GetSymbol().GetSymbol(),
-             checkSecurity.GetSymbol().GetSymbol());
-    if (!CheckGeneral(checkSecurity) || !CheckExchange(checkSecurity) ||
-        !(!m_bestSecurity || CheckPrice(*m_bestSecurity, checkSecurity))) {
-      return;
-    }
-    m_bestSecurity = &checkSecurity;
-  }
-
-  bool HasSuitableSecurity() const noexcept {
-    return m_bestSecurity ? true : false;
-  }
-
- protected:
-  virtual bool CheckPrice(const Security &bestSecurity,
-                          const Security &checkSecurity) const = 0;
-  virtual Qty GetQty(const Security &) const = 0;
-  virtual Price GetPrice(const Security &) const = 0;
-  virtual const std::string &GetBalanceSymbol(
-      const Security &checkSecurity) const = 0;
-  virtual Double GetRequiredBalance() const = 0;
-  virtual OrderSide GetSide() const = 0;
-
-  const Position &GetPosition() const { return m_position; }
-
- private:
-  bool CheckGeneral(const Security &checkSecurity) const {
-    return checkSecurity.IsOnline() &&
-           GetQty(checkSecurity) >= m_position.GetActiveQty();
-  }
-
-  bool CheckExchange(const Security &checkSecurity) const {
-    const auto &tradingSystem = m_position.GetStrategy().GetTradingSystem(
-        checkSecurity.GetSource().GetIndex());
-    if (tradingSystem.GetBalances().FindAvailableToTrade(
-            GetBalanceSymbol(checkSecurity)) < GetRequiredBalance()) {
+  {
+    const auto listTransaction =
+        signalPosition.GetStrategy().StartThreadPositionsTransaction();
+    auto oppositePositionClosePreparingFuture =
+        boost::async([this, oppositePosition, &reason]() -> bool {
+          try {
+            return PrepareOperationClose(*oppositePosition, reason);
+          } catch (const CommunicationError &ex) {
+            throw boost::enable_current_exception(ex);
+          } catch (const Exception &ex) {
+            throw boost::enable_current_exception(ex);
+          } catch (const std::exception &ex) {
+            throw boost::enable_current_exception(ex);
+          }
+        });
+    if (!PrepareOperationClose(signalPosition, reason) ||
+        !oppositePositionClosePreparingFuture.get()) {
       return false;
     }
-    return CheckPositionRestAsOrder(m_position, checkSecurity, tradingSystem);
   }
 
- private:
-  Position &m_position;
-  Security *m_bestSecurity;
-};
+  Assert(!oppositePosition->HasActiveOrders());
+  Assert(!signalPosition.HasActiveOrders());
 
-class BestSecurityCheckerForLongPosition : public BestSecurityChecker {
- public:
-  explicit BestSecurityCheckerForLongPosition(Position &position)
-      : BestSecurityChecker(position) {
-    Assert(position.IsLong());
-  }
-  virtual ~BestSecurityCheckerForLongPosition() override = default;
+  {
+    auto &longPosition =
+        signalPosition.IsLong() ? signalPosition : *oppositePosition;
+    auto &shortPosition =
+        &longPosition == oppositePosition ? signalPosition : *oppositePosition;
+    const Qty &absolutePositionSize =
+        longPosition.GetActiveQty() - shortPosition.GetActiveQty();
 
- protected:
-  virtual bool CheckPrice(const Security &bestSecurity,
-                          const Security &checkSecurity) const override {
-    return bestSecurity.GetBidPrice() < GetPrice(checkSecurity);
-  }
-  virtual Qty GetQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetBidQty();
-  }
-  virtual Price GetPrice(const Security &checkSecurity) const {
-    return checkSecurity.GetBidPrice();
-  }
-  virtual const std::string &GetBalanceSymbol(
-      const Security &checkSecurity) const {
-    return checkSecurity.GetSymbol().GetBaseSymbol();
-  }
-  virtual Double GetRequiredBalance() const {
-    return GetPosition().GetActiveQty();
-  }
-  virtual OrderSide GetSide() const { return ORDER_SIDE_SELL; }
-};
+    if (!absolutePositionSize) {
+      longPosition.MarkAsCompleted();
+      shortPosition.MarkAsCompleted();
+      return false;
+    }
 
-class BestSecurityCheckerForShortPosition : public BestSecurityChecker {
- public:
-  explicit BestSecurityCheckerForShortPosition(Position &position)
-      : BestSecurityChecker(position) {
-    Assert(!position.IsLong());
-  }
-  virtual ~BestSecurityCheckerForShortPosition() override = default;
+    struct Positions {
+      Position &active;
+      const Position &completed;
+    } positions = absolutePositionSize < 0
+                      ? Positions{shortPosition, longPosition}
+                      : Positions{longPosition, shortPosition};
+    positions.active.SetClosedQty(positions.completed.GetActiveQty());
 
- protected:
-  virtual bool CheckPrice(const Security &bestSecurity,
-                          const Security &checkSecurity) const override {
-    return bestSecurity.GetAskPrice() > GetPrice(checkSecurity);
-  }
-  virtual Qty GetQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetAskQty();
-  }
-  virtual Price GetPrice(const Security &checkSecurity) const {
-    return checkSecurity.GetAskPrice();
-  }
-  virtual const std::string &GetBalanceSymbol(
-      const Security &checkSecurity) const {
-    return checkSecurity.GetSymbol().GetQuoteSymbol();
-  }
-  virtual Double GetRequiredBalance() const {
-    return GetPosition().GetActiveVolume();
-  }
-  virtual OrderSide GetSide() const { return ORDER_SIDE_BUY; }
-};
-
-std::unique_ptr<BestSecurityChecker> CreateBestSecurityChecker(
-    Position &positon) {
-  if (positon.IsLong()) {
-    return boost::make_unique<BestSecurityCheckerForLongPosition>(positon);
-  } else {
-    return boost::make_unique<BestSecurityCheckerForShortPosition>(positon);
+    return Base::ClosePosition(positions.active, reason);
   }
 }
-}  // namespace
 
 void aa::PositionController::ClosePosition(Position &position) {
   {
-    const auto &checker = CreateBestSecurityChecker(position);
+    const auto &checker =
+        BestSecurityCheckerForPosition::Create(position, true);
     boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
         ->ForEachSecurity(
             position.GetSecurity().GetSymbol(),

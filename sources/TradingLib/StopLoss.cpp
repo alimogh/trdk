@@ -10,9 +10,6 @@
 
 #include "Prec.hpp"
 #include "StopLoss.hpp"
-#include "Core/Operation.hpp"
-#include "Core/Position.hpp"
-#include "Core/TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

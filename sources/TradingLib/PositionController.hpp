@@ -18,20 +18,19 @@ namespace TradingLib {
 class PositionController : private boost::noncopyable {
  public:
   PositionController();
-  explicit PositionController(const boost::shared_ptr<PositionReport> &);
   virtual ~PositionController();
 
  public:
   //! Handles trading signal event.
   /** Works only with one active position per strategy instance.
-    * @param newOperationContext  New position operation context. Will be used
-    *                             only if new position instance will be created.
-    * @param security             New position security. Will be used only if
-    *                             new position instance will be created.
-    * @return A pointer to position object if a new position is started or if an
-    *         existing position is changed. nullptr - if no position was
-    *         started or changed.
-    */
+   * @param newOperationContext  New position operation context. Will be used
+   *                             only if new position instance will be created.
+   * @param security             New position security. Will be used only if
+   *                             new position instance will be created.
+   * @return A pointer to position object if a new position is started or if an
+   *         existing position is changed. nullptr - if no position was
+   *         started or changed.
+   */
   trdk::Position *OnSignal(
       const boost::shared_ptr<trdk::Operation> &newOperationContext,
       int64_t subOperationId,
@@ -48,18 +47,18 @@ class PositionController : private boost::noncopyable {
                               bool isInitial);
 
  public:
-  virtual trdk::Position &OpenPosition(
+  virtual trdk::Position *OpenPosition(
       const boost::shared_ptr<trdk::Operation> &,
       int64_t subOperationId,
       trdk::Security &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual trdk::Position &OpenPosition(
+  virtual trdk::Position *OpenPosition(
       const boost::shared_ptr<trdk::Operation> &,
       int64_t subOperationId,
       trdk::Security &,
       bool isLong,
       const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual trdk::Position &OpenPosition(
+  virtual trdk::Position *OpenPosition(
       const boost::shared_ptr<trdk::Operation> &,
       int64_t subOperationId,
       trdk::Security &,
@@ -82,8 +81,8 @@ class PositionController : private boost::noncopyable {
 
   //! Cancels active open-order, if exists, and closes position.
   /** @return true, if did some action to close position, if not (for ex.: there
-    *         is no opened position) - false.
-    */
+   *         is no opened position) - false.
+   */
   virtual bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
   //! Cancels all active open-orders, if exists, and closes all positions.
   void CloseAllPositions(trdk::Strategy &, const trdk::CloseReason &);
@@ -117,5 +116,5 @@ class PositionController : private boost::noncopyable {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk

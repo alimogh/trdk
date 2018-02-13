@@ -10,14 +10,7 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Operation.hpp"
-#include "Core/Position.hpp"
-#include "Core/Strategy.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
 #include "OrderPolicy.hpp"
-#include "PositionReport.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -31,24 +24,16 @@ class PositionController::Implementation : private boost::noncopyable {
  public:
   PositionController &m_self;
 
-  const boost::shared_ptr<PositionReport> m_report;
-
  public:
-  explicit Implementation(PositionController &self,
-                          const boost::shared_ptr<PositionReport> &report)
-      : m_self(self), m_report(report) {}
+  explicit Implementation(PositionController &self) : m_self(self) {}
 };
 
 PositionController::PositionController()
-    : m_pimpl(std::make_unique<Implementation>(*this, nullptr)) {}
-
-PositionController::PositionController(
-    const boost::shared_ptr<PositionReport> &report)
-    : m_pimpl(std::make_unique<Implementation>(*this, report)) {}
+    : m_pimpl(std::make_unique<Implementation>(*this)) {}
 
 PositionController::~PositionController() = default;
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -57,7 +42,7 @@ trdk::Position &PositionController::OpenPosition(
                       operationContext->IsLong(security), delayMeasurement);
 }
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -67,7 +52,7 @@ trdk::Position &PositionController::OpenPosition(
                       operationContext->GetPlannedQty(), delayMeasurement);
 }
 
-trdk::Position &PositionController::OpenPosition(
+Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
     Security &security,
@@ -79,7 +64,7 @@ trdk::Position &PositionController::OpenPosition(
                      isLong ? security.GetAskPrice() : security.GetBidPrice(),
                      delayMeasurement);
   ContinuePosition(*result);
-  return *result;
+  return &*result;
 }
 
 Position &PositionController::RestorePosition(
@@ -191,8 +176,11 @@ Position *PositionController::OnSignal(
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
-    position = &OpenPosition(newOperationContext, subOperationId, security,
-                             delayMeasurement);
+    position = OpenPosition(newOperationContext, subOperationId, security,
+                            delayMeasurement);
+    if (!position) {
+      return nullptr;
+    }
   } else if (!ClosePosition(*position, CLOSE_REASON_SIGNAL)) {
     return nullptr;
   }
@@ -216,9 +204,6 @@ void PositionController::OnPositionUpdate(Position &position) {
 
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
-      if (m_pimpl->m_report) {
-        m_pimpl->m_report->Append(position);
-      }
       auto &operation = *position.GetOperation();
       if (operation.HasCloseSignal(position)) {
         const auto &newOperation = operation.StartInvertedPosition(position);

@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "StopOrder.hpp"
-#include "Core/Strategy.hpp"
 #include "PositionController.hpp"
 
 using namespace trdk;

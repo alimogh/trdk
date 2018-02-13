@@ -39,7 +39,7 @@ std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
   return result;
 }
 
-std::unique_ptr<net::HTTPClientSession> Rest::CreateSession(
+std::unique_ptr<net::HTTPSClientSession> Rest::CreateSession(
     const std::string &host, const Settings &, bool isTrading) {
   auto result = boost::make_unique<net::HTTPSClientSession>(host);
   result->setKeepAlive(true);

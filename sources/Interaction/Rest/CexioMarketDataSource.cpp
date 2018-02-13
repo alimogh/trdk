@@ -53,7 +53,7 @@ CexioMarketDataSource::~CexioMarketDataSource() {
 void CexioMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products = RequestCexioProductList(*m_session, GetContext(), GetLog());
+    m_products = RequestCexioProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -106,12 +106,12 @@ trdk::Security &CexioMarketDataSource::CreateNewSecurityObject(
   }
 
   const auto &result =
-      boost::make_shared<Rest::Security>(GetContext(), symbol, *this,
-                                         Rest::Security::SupportedLevel1Types()
-                                             .set(LEVEL1_TICK_BID_PRICE)
-                                             .set(LEVEL1_TICK_BID_QTY)
-                                             .set(LEVEL1_TICK_ASK_PRICE)
-                                             .set(LEVEL1_TICK_BID_QTY));
+      boost::make_shared<r::Security>(GetContext(), symbol, *this,
+                                      r::Security::SupportedLevel1Types()
+                                          .set(LEVEL1_TICK_BID_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY)
+                                          .set(LEVEL1_TICK_ASK_PRICE)
+                                          .set(LEVEL1_TICK_BID_QTY));
   result->SetTradingSessionState(pt::not_a_date_time, true);
 
   {
@@ -133,7 +133,7 @@ void CexioMarketDataSource::UpdatePrices() {
     auto &request = *subscribtion.second.request;
 
     try {
-      const auto &response = request.Send(*m_session);
+      const auto &response = request.Send(m_session);
       UpdatePrices(boost::get<1>(response), subscribtion.second,
                    boost::get<2>(response));
     } catch (const std::exception &ex) {

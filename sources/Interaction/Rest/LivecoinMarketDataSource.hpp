@@ -20,7 +20,7 @@ namespace Rest {
 
 //! Livecoin market data source.
 /** @sa https://www.livecoin.net/api/public
-  */
+ */
 class LivecoinMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
@@ -57,10 +57,10 @@ class LivecoinMarketDataSource : public MarketDataSource {
       m_securities;
   LivecoinPublicRequest m_allOrderBooksRequest;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

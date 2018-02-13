@@ -10,8 +10,6 @@
 
 #include "Prec.hpp"
 #include "GeneralAlgos.hpp"
-#include "Core/Position.hpp"
-#include "Core/TradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::TradingLib;

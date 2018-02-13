@@ -22,9 +22,10 @@ namespace net = Poco::Net;
 namespace ptr = boost::property_tree;
 
 boost::unordered_map<std::string, LivecoinProduct>
-Rest::RequestLivecoinProductList(net::HTTPClientSession &session,
-                                 const Context &context,
-                                 ModuleEventsLog &log) {
+Rest::RequestLivecoinProductList(
+    std::unique_ptr<net::HTTPSClientSession> &session,
+    const Context &context,
+    ModuleEventsLog &log) {
   boost::unordered_map<std::string, LivecoinProduct> result;
 
   ptr::ptree response;
@@ -58,16 +59,6 @@ Rest::RequestLivecoinProductList(net::HTTPClientSession &session,
   }
   if (result.empty()) {
     throw Exception("Exchange doesn't have products");
-  }
-  {
-    std::string listStr;
-    for (const auto &item : result) {
-      if (!listStr.empty()) {
-        listStr += ", ";
-      }
-      listStr += item.first + " (" + item.second.id + ")";
-    }
-    log.Debug("Supported symbol list: %1%.", listStr);
   }
   return result;
 }

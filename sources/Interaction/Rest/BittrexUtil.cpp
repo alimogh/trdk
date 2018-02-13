@@ -32,12 +32,13 @@ std::string NormilizeSymbol(std::string source) {
   subs[0].swap(subs[1]);
   return boost::join(subs, "_");
 }
-}
+}  // namespace
 
 boost::unordered_map<std::string, Rest::BittrexProduct>
-Rest::RequestBittrexProductList(net::HTTPClientSession &session,
-                                const Context &context,
-                                ModuleEventsLog &log) {
+Rest::RequestBittrexProductList(
+    std::unique_ptr<net::HTTPSClientSession> &session,
+    const Context &context,
+    ModuleEventsLog &log) {
   boost::unordered_map<std::string, BittrexProduct> result;
   BittrexPublicRequest request("getmarkets", std::string(), context, log);
   try {

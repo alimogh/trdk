@@ -27,9 +27,6 @@
     <Filter Include="GDAX">
       <UniqueIdentifier>{510c3443-c472-4d68-a48a-4d244724fd12}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Novaexchange">
-      <UniqueIdentifier>{ef3a298f-efc1-4b38-9161-c470b7b3d563}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Yobit.net">
       <UniqueIdentifier>{d7468aca-8e21-4be5-8316-dd66cebda89d}</UniqueIdentifier>
     </Filter>
@@ -70,6 +67,18 @@
     <Filter Include="General\Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="ExcambioRex">
+      <UniqueIdentifier>{2233fd13-5e15-455a-b000-fdfa1471b47c}</UniqueIdentifier>
+      <Extensions>Excambiorex</Extensions>
+    </Filter>
+    <Filter Include="ExcambioRex\Header Files">
+      <UniqueIdentifier>{31c82640-f2a0-44a0-b49b-fcecda58abd6}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="ExcambioRex\Source Files">
+      <UniqueIdentifier>{4a0badc8-eb45-479d-b7f9-10f0c1f957a5}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -121,9 +130,6 @@
     <ClCompile Include="YobitnetExchange.cpp">
       <Filter>Yobit.net</Filter>
     </ClCompile>
-    <ClCompile Include="NovaexchangeExchange.cpp">
-      <Filter>Novaexchange</Filter>
-    </ClCompile>
     <ClCompile Include="GdaxExchange.cpp">
       <Filter>GDAX</Filter>
     </ClCompile>
@@ -174,6 +180,21 @@
     </ClCompile>
     <ClCompile Include="CcexExchange.cpp">
       <Filter>C-CEX</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexUtil.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexMarketDataSource.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexRequest.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexTradingSystem.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp">
+      <Filter>ExcambioRex\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -257,6 +278,18 @@
     </ClInclude>
     <ClInclude Include="Settings.hpp">
       <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexMarketDataSource.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexRequest.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexTradingSystem.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExcambiorexUtil.hpp">
+      <Filter>ExcambioRex\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

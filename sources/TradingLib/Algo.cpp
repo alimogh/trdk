@@ -1,17 +1,15 @@
 /*******************************************************************************
-*   Created: 2017/12/21 14:24:16
-*    Author: Eugene V. Palchukovsky
-*    E-mail: eugene@palchukovsky.com
-* -------------------------------------------------------------------
-*   Project: Trading Robot Development Kit
-*       URL: http://robotdk.com
-* Copyright: Eugene V. Palchukovsky
-******************************************************************************/
+ *   Created: 2017/12/21 14:24:16
+ *    Author: Eugene V. Palchukovsky
+ *    E-mail: eugene@palchukovsky.com
+ * -------------------------------------------------------------------
+ *   Project: Trading Robot Development Kit
+ *       URL: http://robotdk.com
+ * Copyright: Eugene V. Palchukovsky
+ ******************************************************************************/
 
 #include "Prec.hpp"
 #include "Algo.hpp"
-#include "Core/Position.hpp"
-#include "Core/Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::TradingLib;

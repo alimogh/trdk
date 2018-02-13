@@ -56,7 +56,8 @@ class CryptopiaTradingSystem : public TradingSystem {
     virtual ~PrivateRequest() override = default;
 
    public:
-    virtual Response Send(Poco::Net::HTTPClientSession &) override;
+    virtual Response Send(
+        std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
     virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
@@ -139,7 +140,9 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &,
+  virtual Volume CalcCommission(const trdk::Qty &,
+                                const trdk::Price &,
+                                const trdk::OrderSide &,
                                 const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -148,6 +151,8 @@ class CryptopiaTradingSystem : public TradingSystem {
       const Qty &,
       const boost::optional<Price> &,
       const OrderSide &) const override;
+
+  bool CheckSymbol(const std::string &) const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
@@ -184,12 +189,15 @@ class CryptopiaTradingSystem : public TradingSystem {
 
   void ForEachRemoteTrade(
       const CryptopiaProductId &,
-      Poco::Net::HTTPClientSession &,
+      std::unique_ptr<Poco::Net::HTTPSClientSession> &,
       bool isPriority,
       const boost::function<void(const boost::property_tree::ptree &)> &) const;
 
   boost::posix_time::ptime ParseTimeStamp(
       const boost::property_tree::ptree &) const;
+
+  void RegisterLastOrder(const boost::posix_time::ptime &, const OrderId &);
+  bool IsIdRegisterInLastOrders(const OrderId &) const;
 
  private:
   Settings m_settings;
@@ -209,13 +217,15 @@ class CryptopiaTradingSystem : public TradingSystem {
   CancelOrderMutex m_cancelOrderMutex;
   boost::unordered_set<OrderId> m_cancelingOrders;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  std::deque<std::pair<boost::posix_time::ptime, OrderId>> m_lastOrders;
+
+  mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  mutable std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 
   Timer::Scope m_timerScope;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

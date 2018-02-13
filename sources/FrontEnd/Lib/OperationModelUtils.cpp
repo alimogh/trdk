@@ -18,13 +18,21 @@ using namespace trdk::FrontEnd::Lib::Detail;
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 
+namespace {
+QString ShortenStrategyInstance(const std::string &source) {
+  const auto &start = source.find('/');
+  return QString::fromStdString(
+      start == std::string::npos ? source : source.substr(start + 1));
+}
+}  // namespace
+
 OperationRecord::OperationRecord(const ids::uuid &id,
                                  const pt::ptime &startTime,
                                  const Strategy &strategy)
     : id(QString::fromStdString(boost::lexical_cast<std::string>(id))),
       startTime(ConvertToQDateTime(startTime).time()),
-      strategyName(QString::fromStdString(strategy.GetImplementationName())),
-      strategyInstance(QString::fromStdString(strategy.GetInstanceName())),
+      strategyName(QString::fromStdString(strategy.GetTitle())),
+      strategyInstance(ShortenStrategyInstance(strategy.GetInstanceName())),
       status(QObject::tr("active")),
       isProfit(boost::indeterminate),
       isCompelted(false) {}
@@ -32,6 +40,9 @@ OperationRecord::OperationRecord(const ids::uuid &id,
 void OperationRecord::Update(const Pnl::Data &data) {
   QString buffer;
   for (const auto &item : data) {
+    if (!item.second) {
+      continue;
+    }
     if (!buffer.isEmpty()) {
       buffer += ", ";
     }
@@ -47,7 +58,7 @@ void OperationRecord::Update(const Pnl::Data &data) {
         vol.pop_back();
       }
       if (vol.empty()) {
-        vol = "0";
+        vol = "0.00000001";
       }
       buffer += QString::fromStdString(std::move(vol));
     }

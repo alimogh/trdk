@@ -63,10 +63,10 @@ class TRDK_CORE_API Position
 
   //! Adds algorithm to the position.
   /** Will try to execute algorithm at each price update, but only if position
-    * is not in the "canceling state".
-    * @sa IsCancelling
-    * @sa IsCompleted
-    */
+   * is not in the "canceling state".
+   * @sa IsCancelling
+   * @sa IsCompleted
+   */
   void AddAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
   //! Removes all algorithms.
   void RemoveAlgos();
@@ -112,20 +112,20 @@ class TRDK_CORE_API Position
 
   //! Has opened quantity equals or more than planned quantity.
   /** @sa GetPlanedQty
-    * @sa GetActiveQty
-    * @sa IsOpened
-    */
+   * @sa GetActiveQty
+   * @sa IsOpened
+   */
   bool IsFullyOpened() const;
   //! Has opened qty and doesn't have active open-orders.
   /** @sa IsClosed
-    * @sa IsFullyOpened
-    */
+   * @sa IsFullyOpened
+   */
   bool IsOpened() const noexcept;
   //! Closed.
   /** First was opened, then closed, doesn't have active quantity and
-    * active orders.
-    * @sa IsOpened
-    */
+   * active orders.
+   * @sa IsOpened
+   */
   bool IsClosed() const noexcept;
 
   //! Started.
@@ -136,14 +136,14 @@ class TRDK_CORE_API Position
   //! Started and now doesn't have any orders and active qty or market as
   //! completed.
   /** @sa IsStarted
-    * @sa MarkAsCompleted
-    */
+   * @sa MarkAsCompleted
+   */
   bool IsCompleted() const noexcept;
   //! Marks position as completed without real closing.
   /** Call not thread-safe! Must be called only from event-methods, or if
-    * strategy locked by GetMutex().
-    * @sa IsCompleted
-    */
+   * strategy locked by GetMutex().
+   * @sa IsCompleted
+   */
   void MarkAsCompleted();
 
   //! Open operation started, but error occurred at opening or closing.
@@ -151,7 +151,7 @@ class TRDK_CORE_API Position
 
   //! Last order was rejected.
   /** @sa ResetRejected
-    */
+   */
   bool IsRejected() const;
 
   bool HasActiveOrders() const noexcept;
@@ -166,49 +166,49 @@ class TRDK_CORE_API Position
   const trdk::Price &GetOpenStartPrice() const;
   //! Returns time of first order.
   /** Throws an exception if there is no open-order at this moment.
-    * @sa GetCloseStartTime()
-    * @sa GetActiveOrderTime()
-    */
+   * @sa GetCloseStartTime()
+   * @sa GetActiveOrderTime()
+   */
   const boost::posix_time::ptime &GetOpenStartTime() const;
 
   const trdk::Qty &GetOpenedQty() const noexcept;
   trdk::Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
-    * @sa GetActiveOrderPrice
-    * @sa GetActiveCloseOrderPrice
-    * @sa GetActiveOpenOrderTime
-    * @return Active order price or boost::none if the order is an order by
-    *         market price.
-    */
+   * @sa GetActiveOrderPrice
+   * @sa GetActiveCloseOrderPrice
+   * @sa GetActiveOpenOrderTime
+   * @return Active order price or boost::none if the order is an order by
+   *         market price.
+   */
   const boost::optional<trdk::Price> &GetActiveOpenOrderPrice() const;
   //! Returns time of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
-    * @sa GetActiveOrderTime
-    * @sa GetOpenStartTime
-    * @sa GetActiveCloseOrderTime
-    */
+   * @sa GetActiveOrderTime
+   * @sa GetOpenStartTime
+   * @sa GetActiveCloseOrderTime
+   */
   const boost::posix_time::ptime &GetActiveOpenOrderTime() const;
   //! Returns price of last open-trade.
   /** Throws an exception if there are no open-trades yet.
-    * @sa GetLastTradePrice
-    * @sa GetLastCloseTradePrice
-    */
+   * @sa GetLastTradePrice
+   * @sa GetLastCloseTradePrice
+   */
   const trdk::Price &GetLastOpenTradePrice() const;
   trdk::Volume GetOpenedVolume() const;
-  //! Time of first trade.
+  //! Time of first open-trade.
   const boost::posix_time::ptime &GetOpenTime() const;
 
   //! Returns position opening context if exists or throws an exception if
   //! doesn't have it.
   /** @sa GetNumberOfOpenOrders
-    */
+   */
   const boost::shared_ptr<const trdk::OrderTransactionContext>
       &GetOpeningContext(size_t index) const;
   //! Returns position closing context if exists or throws an exception if
   //! doesn't have it.
   /** @sa GetNumberOfCloseOrders
-    */
+   */
   const boost::shared_ptr<const trdk::OrderTransactionContext>
       &GetClosingContext(size_t index) const;
 
@@ -219,33 +219,33 @@ class TRDK_CORE_API Position
   const trdk::Price &GetCloseStartPrice() const;
   //! Returns time of first close-order.
   /** Throws an exception if there is no close-order at this moment.
-    * @sa GetOpenStartTime()
-    * @sa GetActiveCloseTime()
-    */
+   * @sa GetOpenStartTime()
+   * @sa GetActiveCloseTime()
+   */
   const boost::posix_time::ptime &GetCloseStartTime() const;
   trdk::Price GetCloseAvgPrice() const;
   //! Returns price of active close-order.
   /** Throws an exception if there is no active close-order at this moment.
-    * @sa GetActiveOrderPrice
-    * @sa GetActiveOpenOrderPrice
-    * @sa GetActiveCloseOrderTime
-    * @return Active order price or boost::none if the order is an order by
-    *         market price.
-    */
+   * @sa GetActiveOrderPrice
+   * @sa GetActiveOpenOrderPrice
+   * @sa GetActiveCloseOrderTime
+   * @return Active order price or boost::none if the order is an order by
+   *         market price.
+   */
   const boost::optional<trdk::Price> &GetActiveCloseOrderPrice() const;
   //! Returns time of active close-order.
   /** Throws an exception if there is no active close-order at this
-    * moment.
-    * @sa GetActiveOrderTime
-    * @sa GetActiveOpenOrderTime
-    * @sa GetActiveCloseTime
-    */
+   * moment.
+   * @sa GetActiveOrderTime
+   * @sa GetActiveOpenOrderTime
+   * @sa GetActiveCloseTime
+   */
   const boost::posix_time::ptime &GetActiveCloseOrderTime() const;
   //! Returns price of last close-trade.
   /** Throws an exception if there are no close-trades yet.
-    * @sa GetLastTradePrice
-    * @sa GetLastOpenTradePrice
-    */
+   * @sa GetLastTradePrice
+   * @sa GetLastOpenTradePrice
+   */
   const trdk::Price &GetLastCloseTradePrice() const;
   const trdk::Qty &GetClosedQty() const noexcept;
   void SetClosedQty(const trdk::Qty &);
@@ -255,47 +255,45 @@ class TRDK_CORE_API Position
 
   //! Returns price of active order.
   /** Throws an exception if there is no active order at this moment.
-    * @sa GetActiveOpenOrderPrice
-    * @sa GetActiveOpenClosePrice
-    * @return Active order price or boost::none if the order is an order by
-    *         market price.
-    */
+   * @sa GetActiveOpenOrderPrice
+   * @sa GetActiveOpenClosePrice
+   * @return Active order price or boost::none if the order is an order by
+   *         market price.
+   */
   const boost::optional<trdk::Price> &GetActiveOrderPrice() const;
   //! Returns time of active order.
   /** Throws an exception if there is no active order at this moment.
-    * @sa GetActiveOpenOrderTime
-    * @sa GetActiveOpenCloseTime
-    */
+   * @sa GetActiveOpenOrderTime
+   * @sa GetActiveOpenCloseTime
+   */
   const boost::posix_time::ptime &GetActiveOrderTime() const;
   //! Returns price of last trade.
   /** Throws an exception if there are no trades yet.
-    * @sa GetLastOpenTradePrice
-    * @sa GetLastCloseTradePrice
-    */
+   * @sa GetLastOpenTradePrice
+   * @sa GetLastCloseTradePrice
+   */
   const trdk::Price &GetLastTradePrice() const;
 
   virtual trdk::Volume GetRealizedPnl() const = 0;
   trdk::Volume GetRealizedPnlVolume() const;
   //! Returns realized PnL ratio.
   /** @return If the value is 1.0 - no profit and no loss,
-    *         if less then 1.0 - loss, if greater then 1.0 - profit.
-    */
+   *         if less then 1.0 - loss, if greater then 1.0 - profit.
+   */
   virtual trdk::Lib::Double GetRealizedPnlRatio() const = 0;
   //! Returns percentage of profit.
   /** @return If the value is zero - no profit and no loss,
-    *         if less then zero - loss, if greater then zero - profit.
-    */
+   *         if less then zero - loss, if greater then zero - profit.
+   */
   trdk::Lib::Double GetRealizedPnlPercentage() const;
   virtual trdk::Volume GetUnrealizedPnl() const = 0;
   //! Realized PnL + unrealized PnL.
   trdk::Volume GetPlannedPnl() const;
   //! Returns true if position has profit by realized P&L.
   /** @return False if position has loss or does not have profit and does not
-    *         have loss. True if position has profit.
-    */
+   *         have loss. True if position has profit.
+   */
   bool IsProfit() const;
-
-  trdk::Volume CalcCommission() const;
 
   virtual trdk::Price GetMarketOpenPrice() const = 0;
   virtual trdk::Price GetMarketClosePrice() const = 0;
@@ -312,10 +310,10 @@ class TRDK_CORE_API Position
  public:
   //! Restores position in open-state.
   /** Sets position in open state at current strategy, doesn't make any trading
-    * actions.
-    * @param[in] openPrice      Position opening price.
-    * @param[in] openingContext Position opening context, if exists.
-    */
+   * actions.
+   * @param[in] openPrice      Position opening price.
+   * @param[in] openingContext Position opening context, if exists.
+   */
   void RestoreOpenState(
       const boost::posix_time::ptime &openStartTime,
       const boost::posix_time::ptime &openTime,
@@ -325,7 +323,7 @@ class TRDK_CORE_API Position
 
   //! Adds virtual trade to the last order.
   /** Raises an exception if order conditions will be violated by this trade.
-    */
+   */
   void AddVirtualTrade(const trdk::Qty &, const trdk::Price &);
 
  public:
@@ -360,12 +358,12 @@ class TRDK_CORE_API Position
  public:
   //! Cancels all active orders.
   /** @sa IsCancelling
-    * @return True if sent cancel request for one or more orders.
-    */
+   * @return True if sent cancel request for one or more orders.
+   */
   bool CancelAllOrders();
   //! Cancel request was sent by it is not executed yet.
   /** @sa CancelAllOrders
-    */
+   */
   bool IsCancelling() const;
 
  public:
@@ -373,8 +371,8 @@ class TRDK_CORE_API Position
 
   //! Runs each attached algorithm.
   /** @sa AttachAlgo
-    * @sa Algo
-    */
+   * @sa Algo
+   */
   void RunAlgos();
 
   void ScheduleUpdateEvent(const boost::posix_time::time_duration &);
@@ -538,4 +536,4 @@ class TRDK_CORE_API ShortPosition : public Position {
 };
 
 //////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

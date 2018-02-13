@@ -24,7 +24,9 @@ struct LivecoinProduct {
 };
 
 boost::unordered_map<std::string, LivecoinProduct> RequestLivecoinProductList(
-    Poco::Net::HTTPClientSession &, const Context &, ModuleEventsLog &);
-}
-}
-}
+    std::unique_ptr<Poco::Net::HTTPSClientSession> &,
+    const Context &,
+    ModuleEventsLog &);
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

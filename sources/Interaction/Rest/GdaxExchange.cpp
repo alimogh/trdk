@@ -93,6 +93,25 @@ struct Product {
   Qty maxQty;
   uintmax_t precisionPower;
 };
+
+pt::ptime ParseTime(const ptr::ptree &order) {
+  {
+    const auto &doneTimeField = order.get_optional<std::string>("done_at");
+    if (doneTimeField) {
+      const std::string &value = *doneTimeField;
+      return {gr::from_string(value.substr(0, 10)),
+              pt::duration_from_string(value.substr(11, 8))};
+    }
+  }
+  {
+    const auto &timeField = order.get<std::string>("created_at");
+    return {gr::from_string(timeField.substr(0, 10)),
+            pt::duration_from_string(timeField.substr(11, 8))};
+  }
+}
+Volume ParseFee(const ptr::ptree &order) {
+  return order.get<Volume>("fill_fees");
+}
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,19 +251,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     bool isSubscribed;
   };
 
-  struct Order {
-    OrderId id;
-    boost::optional<trdk::Price> price;
-    Qty qty;
-    Qty remainingQty;
-    std::string symbol;
-    OrderSide side;
-    TimeInForce tif;
-    pt::ptime creationTime;
-    pt::ptime doneTime;
-    OrderStatus status;
-  };
-
  public:
   explicit GdaxExchange(const App &,
                         const TradingMode &mode,
@@ -259,14 +265,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
         m_balances(*this, GetTsLog(), GetTsTradingLog()),
         m_pollingTask(boost::make_unique<PollingTask>(
-            m_settings.pollingSetttings, GetMdsLog())),
-        m_orderListRequest("orders",
-                           net::HTTPRequest::HTTP_GET,
-                           m_settings,
-                           false,
-                           "status=open&status=pending",
-                           GetContext(),
-                           GetTsLog()) {}
+            m_settings.pollingSetttings, GetMdsLog())) {}
 
   virtual ~GdaxExchange() override {
     try {
@@ -332,7 +331,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
             auto &security = *subscribtion.second.security;
             auto &request = *subscribtion.second.request;
             try {
-              const auto &response = request.Send(*m_marketDataSession);
+              const auto &response = request.Send(m_marketDataSession);
               const auto &time = boost::get<0>(response);
               const auto &update = boost::get<1>(response);
               const auto &delayMeasurement = boost::get<2>(response);
@@ -401,6 +400,24 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return boost::none;
   }
 
+  virtual bool CheckSymbol(const std::string &symbol) const override {
+    return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
+  }
+
+  virtual Volume CalcCommission(const Qty &qty,
+                                const Price &price,
+                                const OrderSide &,
+                                const trdk::Security &security) const override {
+    const auto &symbol = security.GetSymbol().GetSymbol();
+    const auto &fee =
+        (symbol == "BTC_USD" || symbol == "BCH_BTC" || symbol == "BCH_EUR" ||
+         symbol == "BCH_USD" || symbol == "BTC_EUR" || symbol == "BTC_GBP")
+            ? .25
+            : .3;
+    return RoundByPrecision((qty * price) * (fee / 100),
+                            security.GetPricePrecisionPower());
+  }
+
  protected:
   virtual void CreateConnection(const IniSectionRef &) override {
     try {
@@ -424,9 +441,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           return true;
         },
         m_settings.pollingSetttings.GetBalancesRequestFrequency(), true);
-    m_pollingTask->AddTask(
-        "Opened orders", 100, [this]() { return UpdateOpenedOrders(); },
-        m_settings.pollingSetttings.GetAllOrdersRequestFrequency(), false);
 
     m_isConnected = true;
   }
@@ -506,7 +520,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       request.SetBody(requestParams.str());
     }
 
-    const auto &result = request.Send(*m_tradingSession);
+    const auto &result = request.Send(m_tradingSession);
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
@@ -526,7 +540,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         "orders/" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
         net::HTTPRequest::HTTP_DELETE, m_settings, true, std::string(),
         GetContext(), GetTsLog(), &GetTsTradingLog())
-        .Send(*m_tradingSession);
+        .Send(m_tradingSession);
   }
 
   virtual void OnTransactionSent(
@@ -539,7 +553,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
     PublicRequest request("products", GetContext(), GetTsLog());
-    const auto response = boost::get<1>(request.Send(*m_marketDataSession));
+    const auto response = boost::get<1>(request.Send(m_marketDataSession));
     std::vector<std::string> log;
     for (const auto &node : response) {
       const auto &productNode = node.second;
@@ -576,7 +590,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     PrivateRequest request("accounts", net::HTTPRequest::HTTP_GET, m_settings,
                            false, std::string(), GetContext(), GetTsLog());
     try {
-      const auto response = boost::get<1>(request.Send(*m_tradingSession));
+      const auto response = boost::get<1>(request.Send(m_marketDataSession));
       for (const auto &node : response) {
         const auto &account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
@@ -590,136 +604,28 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  void UpdateOrder(const Order &order, const OrderStatus &status) {
-    OnOrder(order.id, order.symbol, status, order.qty, order.remainingQty,
-            order.price, order.side, order.tif, order.creationTime,
-            order.doneTime);
-  }
-
-  Order UpdateOrder(const ptr::ptree &order) {
+  void UpdateOrder(const ptr::ptree &order) {
     const auto &orderId = order.get<OrderId>("id");
 
-    OrderSide side;
-    {
-      const auto &sideField = order.get<std::string>("side");
-      if (sideField == "sell") {
-        side = ORDER_SIDE_SELL;
-      } else if (sideField == "buy") {
-        side = ORDER_SIDE_BUY;
-      }
-    }
-
-    boost::optional<Price> price;
-    {
-      const auto &type = order.get<std::string>("type");
-      if (type == "limit" || type == "stop") {
-        price = order.get<double>("price");
-      } else if (type != "market") {
-        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", type,
-                         orderId);
-        throw Exception("Failed to request order status");
-      }
-    }
-
-    TimeInForce tif;
-    {
-      const auto &tifField = order.get<std::string>("time_in_force");
-      if (tifField == "GTC" || tifField == "GTT") {
-        tif = TIME_IN_FORCE_GTC;
-      } else if (tifField == "IOC") {
-        tif = TIME_IN_FORCE_IOC;
-      } else if (tifField == "FOR") {
-        tif = TIME_IN_FORCE_FOK;
-      } else {
-        GetTsLog().Error("Unknown order type \"%1%\" for order %2%.", tifField,
-                         orderId);
-        throw Exception("Failed to request order status");
-      }
-    }
-
-    const Qty qty = order.get<double>("size");
-    const Qty filledQty = order.get<double>("filled_size");
+    const auto &qty = order.get<Qty>("size");
+    const auto &filledQty = order.get<Qty>("filled_size");
     AssertGe(qty, filledQty);
-    Qty remainingQty = qty - filledQty;
+    const auto &remainingQty = qty - filledQty;
 
-    OrderStatus status;
-    {
-      const auto &statusField = order.get<std::string>("status");
-      if (statusField == "open" || statusField == "pending") {
-        status = filledQty > 0 ? remainingQty > 0
-                                     ? ORDER_STATUS_FILLED_PARTIALLY
-                                     : ORDER_STATUS_FILLED_FULLY
-                               : ORDER_STATUS_OPENED;
-      } else if (statusField == "done") {
-        status =
-            remainingQty ? ORDER_STATUS_CANCELED : ORDER_STATUS_FILLED_FULLY;
-      } else {
-        GetTsLog().Error("Unknown order status \"%1%\" for order %2%.",
-                         statusField, orderId);
-        throw Exception("Failed to request order status");
-      }
+    const auto &time = ParseTime(order);
+
+    const auto &status = order.get<std::string>("status");
+    if (status == "open" || status == "pending") {
+      remainingQty == 0 ? OnOrderFilled(time, orderId, ParseFee(order))
+                        : OnOrderOpened(time, orderId);
+    } else if (status == "done") {
+      const auto &fee = ParseFee(order);
+      remainingQty ? OnOrderCanceled(time, orderId, remainingQty, fee)
+                   : OnOrderFilled(time, orderId, fee);
+    } else {
+      OnOrderError(time, orderId, remainingQty, ParseFee(order),
+                   "Unknown order status");
     }
-
-    pt::ptime time;
-    {
-      const auto &timeField = order.get<std::string>("created_at");
-      time = {gr::from_string(timeField.substr(0, 10)),
-              pt::duration_from_string(timeField.substr(11, 8))};
-    }
-    pt::ptime doneTime;
-    {
-      const auto &doneTimeField = order.get_optional<std::string>("done_at");
-      if (doneTimeField) {
-        const std::string &value = *doneTimeField;
-        doneTime = {gr::from_string(value.substr(0, 10)),
-                    pt::duration_from_string(value.substr(11, 8))};
-      } else {
-        doneTime = time;
-      }
-    }
-
-    const Order result = {std::move(orderId),
-                          std::move(price),
-                          std::move(qty),
-                          remainingQty,
-                          order.get<std::string>("product_id"),
-                          std::move(side),
-                          std::move(tif),
-                          time,
-                          doneTime,
-                          status};
-    UpdateOrder(result, result.status);
-    return result;
-  }
-
-  bool UpdateOpenedOrders() {
-    boost::unordered_map<OrderId, Order> notifiedOrderOrders;
-    const bool isInitial = m_orders.empty();
-    try {
-      const auto orders =
-          boost::get<1>(m_orderListRequest.Send(*m_marketDataSession));
-      for (const auto &order : orders) {
-        const Order notifiedOrder = UpdateOrder(order.second);
-        if (notifiedOrder.status != ORDER_STATUS_CANCELED &&
-            (isInitial || m_orders.count(notifiedOrder.id))) {
-          const auto id = notifiedOrder.id;
-          notifiedOrderOrders.emplace(id, std::move(notifiedOrder));
-        }
-        m_orders.erase(notifiedOrder.id);
-      }
-    } catch (const std::exception &ex) {
-      boost::format error("Failed to request order list: \"%1%\"");
-      error % ex.what();
-      throw Exception(error.str().c_str());
-    }
-
-    for (const auto &canceledOrder : m_orders) {
-      UpdateOrder(canceledOrder.second, ORDER_STATUS_CANCELED);
-    }
-
-    m_orders.swap(notifiedOrderOrders);
-
-    return !m_orders.empty();
   }
 
   void UpdateOrders() {
@@ -765,9 +671,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {
-        UpdateOrder(boost::get<1>(request.Send(*m_marketDataSession)));
-      } catch (const OrderIsUnknown &) {
-        OnOrderCancel(GetContext().GetCurrentTime(), orderId);
+        UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
       } catch (const std::exception &ex) {
         boost::format error("Failed to update order list: \"%1%\"");
         error % ex.what();
@@ -780,8 +684,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   Settings m_settings;
 
   bool m_isConnected;
-  std::unique_ptr<net::HTTPClientSession> m_marketDataSession;
-  std::unique_ptr<net::HTTPClientSession> m_tradingSession;
+  std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;
+  std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
   boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
@@ -789,9 +693,6 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   BalancesContainer m_balances;
 
   std::unique_ptr<PollingTask> m_pollingTask;
-
-  PrivateRequest m_orderListRequest;
-  boost::unordered_map<OrderId, Order> m_orders;
 
   trdk::Timer::Scope m_timerScope;
 

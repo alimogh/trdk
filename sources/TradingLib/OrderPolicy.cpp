@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "OrderPolicy.hpp"
-#include "Core/Position.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;

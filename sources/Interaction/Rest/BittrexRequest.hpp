@@ -40,7 +40,7 @@ class BittrexRequest : public Request {
   virtual ~BittrexRequest() override = default;
 
  public:
-  Response Send(Poco::Net::HTTPClientSession &) override;
+  Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
   virtual FloodControl &GetFloodControl() override;
@@ -62,6 +62,6 @@ class BittrexPublicRequest : public BittrexRequest {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

@@ -42,7 +42,7 @@ class CryptopiaRequest : public Request {
   virtual ~CryptopiaRequest() override = default;
 
  public:
-  Response Send(Poco::Net::HTTPClientSession &) override;
+  Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
   virtual FloodControl &GetFloodControl() override;
@@ -69,6 +69,6 @@ class CryptopiaPublicRequest : public CryptopiaRequest {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

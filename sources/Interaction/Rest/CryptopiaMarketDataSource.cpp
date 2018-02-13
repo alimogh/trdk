@@ -53,8 +53,7 @@ CryptopiaMarketDataSource::~CryptopiaMarketDataSource() {
 void CryptopiaMarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
   try {
-    m_products =
-        RequestCryptopiaProductList(*m_session, GetContext(), GetLog());
+    m_products = RequestCryptopiaProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
@@ -119,7 +118,7 @@ trdk::Security &CryptopiaMarketDataSource::CreateNewSecurityObject(
 
 void CryptopiaMarketDataSource::UpdatePrices(Request &request) {
   try {
-    const auto &response = request.Send(*m_session);
+    const auto &response = request.Send(m_session);
     const auto &time = boost::get<0>(response);
     const auto &delayMeasurement = boost::get<2>(response);
     for (const auto &record : boost::get<1>(response)) {

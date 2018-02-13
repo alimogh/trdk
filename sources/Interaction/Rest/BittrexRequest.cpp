@@ -17,14 +17,15 @@ using namespace trdk::Interaction::Rest;
 
 namespace net = Poco::Net;
 
-BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session) {
+BittrexRequest::Response BittrexRequest::Send(
+    std::unique_ptr<net::HTTPSClientSession> &session) {
   auto result = Base::Send(session);
-  const auto &responseTree = boost::get<1>(result);
+  const auto &response = boost::get<1>(result);
 
   {
-    const auto &status = responseTree.get_optional<bool>("success");
+    const auto &status = response.get_optional<bool>("success");
     if (!status || !*status) {
-      const auto &message = responseTree.get_optional<std::string>("message");
+      const auto &message = response.get_optional<std::string>("message");
       std::ostringstream error;
       error << "The server returned an error in response to the request \""
             << GetName() << "\" (" << GetRequest().getURI() << "): ";
@@ -51,15 +52,9 @@ BittrexRequest::Response BittrexRequest::Send(net::HTTPClientSession &session) {
     }
   }
 
-  const auto &resultNode = responseTree.get_child_optional("result");
-  if (!resultNode) {
-    boost::format error(
-        "The server did not return response to the request \"%1%\"");
-    error % GetName();
-    throw Exception(error.str().c_str());
-  }
+  boost::get<1>(result) = response.get_child("result");
 
-  return {boost::get<0>(result), *resultNode, boost::get<2>(result)};
+  return result;
 }
 
 FloodControl &BittrexRequest::GetFloodControl() {

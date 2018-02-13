@@ -19,7 +19,7 @@ namespace Rest {
 
 //! Cryptopia market data source.
 /** @sa https://www.cryptopia.co.nz/Forum/Thread/255
-  */
+ */
 class CryptopiaMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
@@ -57,10 +57,10 @@ class CryptopiaMarketDataSource : public MarketDataSource {
                                  boost::shared_ptr<Rest::Security>>>
       m_securities;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_session;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

@@ -35,7 +35,7 @@ boost::optional<Value> ParseOptionalValue(const ptr::ptree &source,
 }  // namespace
 
 boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
-    net::HTTPClientSession &session,
+    std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
   boost::unordered_map<std::string, CexioProduct> result;
@@ -93,7 +93,7 @@ pt::ptime Rest::ParseCexioTimeStamp(const ptr::ptree &source,
   return result;
 }
 
-std::unique_ptr<net::HTTPClientSession> Rest::CreateCexioSession(
+std::unique_ptr<net::HTTPSClientSession> Rest::CreateCexioSession(
     const Settings &settings, bool isTrading) {
   return CreateSession("cex.io", settings, isTrading);
 }

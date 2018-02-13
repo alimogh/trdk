@@ -22,6 +22,8 @@ var copyright = "Copyright 2018 (C) " + vendorName + ", " + domain + ". All righ
 var concurrencyProfileDebug = "PROFILE_RELAX"
 var concurrencyProfileTest = "PROFILE_RELAX"
 var concurrencyProfileRelease = "PROFILE_RELAX"
+var guaranteedUsageDaysNumber = 14
+var numberOfDaysBeforeUsageStop = guaranteedUsageDaysNumber + 60;
 var requiredModules = [
 	'Core'
 	, 'Engine'
@@ -101,30 +103,30 @@ function CreateVersionCppHeaderFile() {
 		return;
 	}
 
-	var versionReleaseLine		= "#define TRDK_VERSION_RELEASE\t" + version.release;
-	var versionBuildLine		= "#define TRDK_VERSION_BUILD\t" + version.build;
-	var versionStatusLine		= "#define TRDK_VERSION_STATUS\t" + version.status;
+	var versionReleaseLine		= "#define TRDK_VERSION_RELEASE " + version.release;
+	var versionBuildLine		= "#define TRDK_VERSION_BUILD " + version.build;
+	var versionStatusLine		= "#define TRDK_VERSION_STATUS " + version.status;
 
-	var versionBranchLine		= "#define TRDK_VERSION_BRANCH\t\t\"" + branch + "\"";
-	var versionBranchLineW		= "#define TRDK_VERSION_BRANCH_W\tL\"" + branch + "\"";
+	var versionBranchLine		= "#define TRDK_VERSION_BRANCH \"" + branch + "\"";
+	var versionBranchLineW		= "#define TRDK_VERSION_BRANCH_W L\"" + branch + "\"";
 
-	var vendorLine				= "#define TRDK_VENDOR\t\t\"" + vendorName + "\"";
-	var vendorLineW				= "#define TRDK_VENDOR_W\tL\"" + vendorName + "\"";
+	var vendorLine				= "#define TRDK_VENDOR \"" + vendorName + "\"";
+	var vendorLineW				= "#define TRDK_VENDOR_W L\"" + vendorName + "\"";
 
-	var domainLine				= "#define TRDK_DOMAIN\t\t\"" + domain + "\"";
-	var domainLineW				= "#define TRDK_DOMAIN_W\tL\"" + domain + "\"";
+	var domainLine				= "#define TRDK_DOMAIN \"" + domain + "\"";
+	var domainLineW				= "#define TRDK_DOMAIN_W L\"" + domain + "\"";
 
-	var supportEmailLine		= "#define TRDK_SUPPORT_EMAIL\t\t\"" + supportEmail + "\"";
-	var supportEmailLineW		= "#define TRDK_SUPPORT_EMAIL_W\tL\"" + supportEmail + "\"";
+	var supportEmailLine		= "#define TRDK_SUPPORT_EMAIL \"" + supportEmail + "\"";
+	var supportEmailLineW		= "#define TRDK_SUPPORT_EMAIL_W L\"" + supportEmail + "\"";
 
-	var licenseServiceSubdomainLine = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN\t\t\"" + licenseServiceSubdomain + "\"";
-	var licenseServiceSubdomainLineW = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W\tL\"" + licenseServiceSubdomain + "\"";
+	var licenseServiceSubdomainLine = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN \"" + licenseServiceSubdomain + "\"";
+	var licenseServiceSubdomainLineW = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W L\"" + licenseServiceSubdomain + "\"";
 	
-	var nameLine				= "#define TRDK_NAME\t\"" + productName + "\"";
-	var nameLineW				= "#define TRDK_NAME_W\tL\"" + productName + "\"";
+	var nameLine				= "#define TRDK_NAME \"" + productName + "\"";
+	var nameLineW				= "#define TRDK_NAME_W L\"" + productName + "\"";
 	
-	var copyrightLine			= "#define TRDK_COPYRIGHT\t\t\"" + copyright + "\"";
-	var copyrightLineW = "#define TRDK_COPYRIGHT_W\tL\"" + copyright + "\"";
+	var copyrightLine			= "#define TRDK_COPYRIGHT \"" + copyright + "\"";
+	var copyrightLineW = "#define TRDK_COPYRIGHT_W L\"" + copyright + "\"";
 
 	var concurrencyProfileLineDebug = "#define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::" + concurrencyProfileDebug + ")"
 	var concurrencyProfileLineTest = "#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::" + concurrencyProfileTest + ")"
@@ -136,60 +138,79 @@ function CreateVersionCppHeaderFile() {
 	}
 	requiredModulesLine = '#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {' + requiredModulesLine + '};';
 
-	var fullFileName = outputDir + "Version.h";
+	var versionFilePath = outputDir + "Version.h";
 	if (
-			IsExistsInFile(fullFileName, versionReleaseLine)
-			&& IsExistsInFile(fullFileName, versionBuildLine)
-			&& IsExistsInFile(fullFileName, versionStatusLine)
-			&& IsExistsInFile(fullFileName, versionBranchLine)
-			&& IsExistsInFile(fullFileName, vendorLine)
-			&& IsExistsInFile(fullFileName, domainLine)
-			&& IsExistsInFile(fullFileName, supportEmailLine)
-			&& IsExistsInFile(fullFileName, licenseServiceSubdomainLine)
-			&& IsExistsInFile(fullFileName, nameLine)
-			&& IsExistsInFile(fullFileName, copyrightLine)
-			&& IsExistsInFile(fullFileName, concurrencyProfileLineDebug)
-			&& IsExistsInFile(fullFileName, concurrencyProfileLineTest)
-			&& IsExistsInFile(fullFileName, concurrencyProfileLineRelease)
-			&& IsExistsInFile(fullFileName, requiredModulesLine)) {
+			IsExistsInFile(versionFilePath, versionReleaseLine)
+			&& IsExistsInFile(versionFilePath, versionBuildLine)
+			&& IsExistsInFile(versionFilePath, versionStatusLine)
+			&& IsExistsInFile(versionFilePath, versionBranchLine)
+			&& IsExistsInFile(versionFilePath, vendorLine)
+			&& IsExistsInFile(versionFilePath, domainLine)
+			&& IsExistsInFile(versionFilePath, supportEmailLine)
+			&& IsExistsInFile(versionFilePath, licenseServiceSubdomainLine)
+			&& IsExistsInFile(versionFilePath, nameLine)
+			&& IsExistsInFile(versionFilePath, copyrightLine)
+			&& IsExistsInFile(versionFilePath, concurrencyProfileLineDebug)
+			&& IsExistsInFile(versionFilePath, concurrencyProfileLineTest)
+			&& IsExistsInFile(versionFilePath, concurrencyProfileLineRelease)
+			&& IsExistsInFile(versionFilePath, requiredModulesLine)) {
 		return;
 	}
 
-	var f = fileSystem.CreateTextFile(fullFileName, true);
-	f.WriteLine("");
-	f.WriteLine("#pragma once");
-	f.WriteLine("");
-	f.WriteLine(versionReleaseLine);
-	f.WriteLine(versionBuildLine);
-	f.WriteLine(versionStatusLine);
-	f.WriteLine("");
-	f.WriteLine(versionBranchLine);
-	f.WriteLine(versionBranchLineW);
-	f.WriteLine("");
-	f.WriteLine(vendorLine);
-	f.WriteLine(vendorLineW);
-	f.WriteLine("");
-	f.WriteLine(domainLine);
-	f.WriteLine(domainLineW);
-	f.WriteLine("");
-	f.WriteLine(supportEmailLine);
-	f.WriteLine(supportEmailLineW);
-	f.WriteLine("");
-	f.WriteLine(licenseServiceSubdomainLine);
-	f.WriteLine(licenseServiceSubdomainLineW);
-	f.WriteLine("");
-	f.WriteLine(nameLine);
-	f.WriteLine(nameLineW);
-	f.WriteLine("");
-	f.WriteLine(copyrightLine);
-	f.WriteLine(copyrightLineW);
-	f.WriteLine("");
-	f.WriteLine(concurrencyProfileLineDebug);
-	f.WriteLine(concurrencyProfileLineTest);
-	f.WriteLine(concurrencyProfileLineRelease);
-	f.WriteLine("");
-	f.WriteLine(requiredModulesLine);
-	f.WriteLine("");
+	var versionFile = fileSystem.CreateTextFile(versionFilePath, true);
+	versionFile.WriteLine("");
+	versionFile.WriteLine("#pragma once");
+	versionFile.WriteLine("");
+	versionFile.WriteLine(versionReleaseLine);
+	versionFile.WriteLine(versionBuildLine);
+	versionFile.WriteLine(versionStatusLine);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(versionBranchLine);
+	versionFile.WriteLine(versionBranchLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(vendorLine);
+	versionFile.WriteLine(vendorLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(domainLine);
+	versionFile.WriteLine(domainLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(supportEmailLine);
+	versionFile.WriteLine(supportEmailLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(licenseServiceSubdomainLine);
+	versionFile.WriteLine(licenseServiceSubdomainLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(nameLine);
+	versionFile.WriteLine(nameLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(copyrightLine);
+	versionFile.WriteLine(copyrightLineW);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(concurrencyProfileLineDebug);
+	versionFile.WriteLine(concurrencyProfileLineTest);
+	versionFile.WriteLine(concurrencyProfileLineRelease);
+	versionFile.WriteLine("");
+	versionFile.WriteLine(requiredModulesLine);
+	versionFile.WriteLine("");
+
+	var restrictionsFile = fileSystem.CreateTextFile(outputDir + "Restrictions.h", true);
+	restrictionsFile.WriteLine("");
+	restrictionsFile.WriteLine("#pragma once");
+	restrictionsFile.WriteLine("");
+	if (branch != "master" && (guaranteedUsageDaysNumber != 0 || numberOfDaysBeforeUsageStop != 0)) {
+		var date = new Date;
+		date.setDate(date.getDate() + guaranteedUsageDaysNumber);
+		restrictionsFile.WriteLine("// " + date.toString());
+		restrictionsFile.WriteLine("#define TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
+		date = new Date;
+		date.setDate(date.getDate() + numberOfDaysBeforeUsageStop);
+		restrictionsFile.WriteLine("// " + date.toString());
+		restrictionsFile.WriteLine("#define TRDK_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
+	} else {
+		restrictionsFile.WriteLine("#define TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS 0");
+		restrictionsFile.WriteLine("#define TRDK_USAGE_STOP_TIMESTAMP_MS 0");
+	}
+	restrictionsFile.WriteLine("");
 
 }
 

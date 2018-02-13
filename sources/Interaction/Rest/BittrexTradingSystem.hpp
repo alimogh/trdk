@@ -99,11 +99,10 @@ class BittrexTradingSystem : public TradingSystem {
 
   virtual Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Volume &vol,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision(vol * (0.25 / 100),
-                            security.GetPricePrecisionPower());
-  }
+  virtual Volume CalcCommission(const Qty &,
+                                const Price &,
+                                const OrderSide &,
+                                const trdk::Security &) const override;
 
   virtual boost::optional<OrderCheckError> CheckOrder(
       const trdk::Security &,
@@ -111,6 +110,8 @@ class BittrexTradingSystem : public TradingSystem {
       const Qty &,
       const boost::optional<Price> &,
       const OrderSide &) const override;
+
+  virtual bool CheckSymbol(const std::string &) const override;
 
  protected:
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
@@ -145,11 +146,11 @@ class BittrexTradingSystem : public TradingSystem {
   BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_tradingSession;
-  std::unique_ptr<Poco::Net::HTTPClientSession> m_pollingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
+  std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;
 
   PollingTask m_pollingTask;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk
