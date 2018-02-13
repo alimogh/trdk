@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
 
     MainWindow mainWindow(engine, moduleDlls, nullptr);
     mainWindow.setEnabled(false);
+    mainWindow.setWindowState(Qt::WindowMaximized);
     mainWindow.show();
     splash->setWindowModality(Qt::ApplicationModal);
     splash->activateWindow();
