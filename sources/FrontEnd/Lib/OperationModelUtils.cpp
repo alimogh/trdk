@@ -40,6 +40,9 @@ OperationRecord::OperationRecord(const ids::uuid &id,
 void OperationRecord::Update(const Pnl::Data &data) {
   QString buffer;
   for (const auto &item : data) {
+    if (!item.second) {
+      continue;
+    }
     if (!buffer.isEmpty()) {
       buffer += ", ";
     }
@@ -55,7 +58,7 @@ void OperationRecord::Update(const Pnl::Data &data) {
         vol.pop_back();
       }
       if (vol.empty()) {
-        vol = "0";
+        vol = "0.00000001";
       }
       buffer += QString::fromStdString(std::move(vol));
     }
