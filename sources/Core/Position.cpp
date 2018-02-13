@@ -355,7 +355,7 @@ class Position::Implementation : private boost::noncopyable {
 
     void Report(const OrderStatus &status) {
       GetPositionImpl().ReportAction(GetAction(), ConvertToPch(status),
-                                     GetOrder(), GetFilledQty());
+                                     GetDirection(), GetFilledQty());
     }
 
    private:
@@ -572,14 +572,16 @@ class Position::Implementation : private boost::noncopyable {
 
   void ReportAction(const char *action,
                     const char *status,
-                    const Order &order,
+                    const DirectionData &direction,
                     const Qty &filledQty) {
+    AssertLt(0, direction.orders.size());
+    const auto &order = direction.orders.back();
     m_strategy.GetTradingLog().Write(
         "{'position': {'%1%': {'status': '%2%', 'orderPrice': %3$.8f, "
-        "'lastPrice': %4$.8f, 'orderQty': %5$.8f, 'filledQty': %6$.8f, "
-        "'remainingQty': %7$.8f, 'orderId': '%8%'}, 'startPrice': %9$.8f, "
-        "'plannedQty': %10$.8f, 'activeQty': %11$.8f, 'type': '%12%', "
-        "'security': '%13%', 'operation': '%14%/%15%'}}",
+        "'lastPrice': %4$.8f, 'orderQty': %6$.8f, 'filledQty': %7$.8f, "
+        "'remainingQty': %8$.8f, 'orderId': '%9%'}, 'startPrice': %10$.8f, "
+        "'plannedQty': %11$.8f, 'activeQty': %12$.8f, 'avgPrice': %5$.8f, "
+        "'type': '%13%', 'security': '%14%', 'operation': '%15%/%16%'}}",
         [&](TradingRecord &record) {
           record % action  // 1
               % status;    // 2
@@ -589,21 +591,24 @@ class Position::Implementation : private boost::noncopyable {
             record % "null";  // 3
           }
           if (filledQty) {
-            record % m_self.GetLastTradePrice();  // 4
+            record % direction.lastTradePrice  // 4
+                % RoundByPrecision(direction.volume / direction.qty,
+                                   m_security->GetPricePrecisionPower());  // 5
           } else {
-            record % "null";  // 4
+            record % "null"  // 4
+                % "null";    // 5
           }
-          record % order.qty                            // 5
-              % filledQty                               // 6
-              % (order.qty - filledQty)                 // 7
-              % order.transactionContext->GetOrderId()  // 8
-              % m_open.startPrice                       // 9
-              % m_planedQty                             // 10
-              % m_self.GetActiveQty()                   // 11
-              % m_self.GetSide()                        // 12
-              % *m_security                             // 13
-              % m_operation->GetId()                    // 14
-              % m_subOperationId;                       // 15
+          record % order.qty                            // 6
+              % filledQty                               // 7
+              % (order.qty - filledQty)                 // 8
+              % order.transactionContext->GetOrderId()  // 9
+              % m_open.startPrice                       // 10
+              % m_planedQty                             // 11
+              % m_self.GetActiveQty()                   // 12
+              % m_self.GetSide()                        // 13
+              % *m_security                             // 14
+              % m_operation->GetId()                    // 15
+              % m_subOperationId;                       // 16
         });
   }
 
@@ -1335,15 +1340,13 @@ void Position::RestoreOpenState(
 
 void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
   if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
-    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close.orders.back(),
-                          GetClosedQty());
+    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close, GetClosedQty());
     m_pimpl->m_operation->UpdatePnl(
         *m_pimpl->m_security, GetCloseOrderSide(), qty, price,
         GetTradingSystem().CalcCommission(qty, price, GetCloseOrderSide(),
                                           GetSecurity()));
   } else if (m_pimpl->m_open.CheckAndAddVirtualTrade(qty, price)) {
-    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open.orders.back(),
-                          GetOpenedQty());
+    m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_open, GetOpenedQty());
     m_pimpl->m_operation->UpdatePnl(
         *m_pimpl->m_security, GetOpenOrderSide(), qty, price,
         GetTradingSystem().CalcCommission(qty, price, GetOpenOrderSide(),
