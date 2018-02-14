@@ -605,7 +605,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       response = boost::get<1>(request.Send(m_tradingSession));
     } catch (
         const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
-      GetTsLog().Debug(
+      GetTsLog().Info(
           "Got error \"%1%\" at the new-order request sending. Trying to "
           "retrieve actual result...",
           ex.what());
@@ -1151,7 +1151,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
   void RegisterLastOrder(const pt::ptime &startTime, const OrderId &id) {
     const auto &start = startTime - newOrderSeachPeriod;
-    while (m_lastOrders.front().first < start) {
+    while (!m_lastOrders.empty() && m_lastOrders.front().first < start) {
       m_lastOrders.pop_front();
     }
     m_lastOrders.emplace_back(startTime, id.GetValue());
