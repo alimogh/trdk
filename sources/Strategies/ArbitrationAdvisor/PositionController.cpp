@@ -22,6 +22,10 @@ namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
 void aa::PositionController::OnPositionUpdate(Position &position) {
   if (position.IsCompleted()) {
+    auto *const oppositePosition = FindOppositePosition(position);
+    if (oppositePosition && !oppositePosition->IsCompleted()) {
+      OnPositionUpdate(*oppositePosition);
+    }
     return;
   }
 
@@ -92,11 +96,13 @@ bool aa::PositionController::PrepareOperationClose(Position &position,
 
 bool aa::PositionController::ClosePosition(Position &signalPosition,
                                            const CloseReason &reason) {
+  Assert(!signalPosition.IsCompleted());
+
   auto *oppositePosition = FindOppositePosition(signalPosition);
   if (!oppositePosition) {
     return Base::ClosePosition(signalPosition, reason);
   }
-  Assert(oppositePosition->HasActiveCloseOrders());
+  Assert(!oppositePosition->HasActiveCloseOrders());
 
   {
     const auto listTransaction =
@@ -131,19 +137,26 @@ bool aa::PositionController::ClosePosition(Position &signalPosition,
         longPosition.GetActiveQty() - shortPosition.GetActiveQty();
 
     if (!absolutePositionSize) {
-      longPosition.MarkAsCompleted();
-      shortPosition.MarkAsCompleted();
+      if (!oppositePosition->IsCompleted()) {
+        oppositePosition->MarkAsCompleted();
+      }
+      signalPosition.MarkAsCompleted();
       return false;
     }
 
     struct Positions {
       Position &active;
-      const Position &completed;
+      Position &completed;
     } positions = absolutePositionSize < 0
                       ? Positions{shortPosition, longPosition}
                       : Positions{longPosition, shortPosition};
+    Assert(!oppositePosition->IsCompleted() ||
+           oppositePosition != &positions.active);
     positions.active.SetClosedQty(positions.completed.GetActiveQty());
 
+    if (!positions.completed.IsCompleted()) {
+      positions.completed.MarkAsCompleted();
+    }
     return Base::ClosePosition(positions.active, reason);
   }
 }
