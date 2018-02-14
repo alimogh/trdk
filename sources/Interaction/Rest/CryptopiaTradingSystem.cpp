@@ -619,7 +619,7 @@ void CryptopiaTradingSystem::ForEachRemoteTrade(
 void CryptopiaTradingSystem::RegisterLastOrder(const pt::ptime &startTime,
                                                const OrderId &id) {
   const auto &start = startTime - newOrderSeachPeriod;
-  while (m_lastOrders.front().first < start) {
+  while (!m_lastOrders.empty() && m_lastOrders.front().first < start) {
     m_lastOrders.pop_front();
   }
   m_lastOrders.emplace_back(startTime, id);
