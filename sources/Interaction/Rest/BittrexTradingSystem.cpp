@@ -246,7 +246,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
     static std::string CreateUriParams(const std::string &productId,
                                        const Qty &qty,
                                        const Price &price) {
-      boost::format result("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+      boost::format result("market=%1%&quantity=%2%&rate=%3%");
       result % productId  // 1
           % qty           // 2
           % price;        // 3

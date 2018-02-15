@@ -343,8 +343,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                                     const Qty &qty,
                                     const Price &price) {
       boost::format result(
-          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3$.8f,\"Amount\":%4$"
-          ".8f}");
+          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3%,\"Amount\":%4%}");
       result % productId  // 1
           % side          // 2
           % price         // 3

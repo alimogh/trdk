@@ -408,10 +408,10 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
   }
 
   std::ostringstream requestParams;
-  requestParams << std::fixed << "currencyPair=" << product->second.requestId
-                << "&price="
-                << std::setprecision(product->second.pricePrecision) << *price
-                << "&quantity=" << std::setprecision(8) << qty;
+  requestParams << "currencyPair=" << product->second.requestId
+                << "&price=" << std::fixed
+                << std::setprecision(product->second.pricePrecision)
+                << price->Get() << "&quantity=" << qty;
 
   TradingRequest request(
       side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",

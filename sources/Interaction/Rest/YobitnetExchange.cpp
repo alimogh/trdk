@@ -590,7 +590,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto actualPrice =
         RoundByPrecisionPower(*price, product->second.precisionPower);
 
-    boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
+    boost::format requestParams("pair=%1%&type=%2%&rate=%3%&amount=%4%");
     requestParams % productId  // 1
         % actualSide           // 2
         % actualPrice          // 3

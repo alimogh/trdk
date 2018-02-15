@@ -445,7 +445,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Symbol is not supported by exchange");
     }
 
-    boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+    boost::format requestParams("market=%1%&quantity=%2%&rate=%3%");
     requestParams % product->second.id  // 1
         % qty                           // 2
         % *price;                       // 3
