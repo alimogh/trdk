@@ -169,11 +169,10 @@ bool BittrexTradingSystem::CheckSymbol(const std::string &symbol) const {
   return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
 }
 
-Volume BittrexTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
+Volume BittrexTradingSystem::CalcCommission(const Qty &qty,
+                                            const Price &price,
+                                            const OrderSide &,
+                                            const trdk::Security &) const {
   return (qty * price) * (0.25 / 100);
 }
 

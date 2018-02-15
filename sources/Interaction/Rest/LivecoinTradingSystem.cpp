@@ -228,11 +228,10 @@ void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume LivecoinTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
+Volume LivecoinTradingSystem::CalcCommission(const Qty &qty,
+                                             const Price &price,
+                                             const OrderSide &,
+                                             const trdk::Security &) const {
   return (qty * price) * (0.18 / 100);
 }
 

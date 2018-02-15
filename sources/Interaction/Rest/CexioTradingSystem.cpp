@@ -150,11 +150,10 @@ void CexioTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume CexioTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
+Volume CexioTradingSystem::CalcCommission(const Qty &qty,
+                                          const Price &price,
+                                          const OrderSide &,
+                                          const trdk::Security &) const {
   return (qty * price) * (0.25 / 100);
 }
 

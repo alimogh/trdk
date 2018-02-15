@@ -445,7 +445,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   virtual Volume CalcCommission(const Qty &qty,
                                 const Price &price,
                                 const OrderSide &,
-                                const trdk::Security &security) const override {
+                                const trdk::Security &) const override {
     return (qty * price) * (0.2 / 100);
   }
 
