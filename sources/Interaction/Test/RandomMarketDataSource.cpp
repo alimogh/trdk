@@ -86,13 +86,13 @@ void RandomMarketDataSource::NotificationThread() {
           PriceBook book(now);
 
           for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
-            book.GetAsk().Add(now, RoundByPrecision(ask, s->GetPriceScale()),
+            book.GetAsk().Add(now, RoundByPrecisionPower(ask, s->GetPriceScale()),
                               i * ((generateTopRandom() + 1) * 10000));
             ask += (double(generateStepRandom()) / 100) + 0.01;
           }
 
           for (int i = 1; i <= book.GetSideMaxSize(); ++i) {
-            book.GetBid().Add(now, RoundByPrecision(bid, s->GetPriceScale()),
+            book.GetBid().Add(now, RoundByPrecisionPower(bid, s->GetPriceScale()),
                               i * ((generateTopRandom() + 1) * 20000));
             bid -= (double(generateStepRandom()) / 100) + 0.01;
           }
@@ -114,9 +114,8 @@ void RandomMarketDataSource::NotificationThread() {
 #if 1
         {
           const auto tradePrice = bid < ask ? bid + (ask - bid / 2) : ask;
-          s->AddTrade(now,
-                      RoundByPrecision(tradePrice, s->GetPricePrecisionPower()),
-                      (generateTopRandom() + 1) * 10, timeMeasurement, true);
+          s->AddTrade(now, tradePrice, (generateTopRandom() + 1) * 10,
+                      timeMeasurement, true);
         }
 #endif
       }

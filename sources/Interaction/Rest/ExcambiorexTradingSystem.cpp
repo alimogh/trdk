@@ -184,8 +184,7 @@ Volume ExcambiorexTradingSystem::CalcCommission(
     const Price &price,
     const OrderSide &,
     const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.3 / 100),
-                          security.GetPricePrecisionPower());
+  return (qty * price) * (0.3 / 100);
 }
 
 void ExcambiorexTradingSystem::UpdateBalances() {
@@ -322,11 +321,11 @@ ExcambiorexTradingSystem::SendOrderTransaction(
 
   boost::format requestParams(
       "pair=%1%&type=%2%&amount=%3%&rate=%4%&feecoin=%5%&allowpartial=1");
-  requestParams % product.directId                       // 1
-      % (side == ORDER_SIDE_BUY ? "buy" : "sell")        // 2
-      % qty                                              // 3
+  requestParams % product.directId                 // 1
+      % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 2
+      % qty                                        // 3
       % *price                                     // 4
-      % security.GetSymbol().GetQuoteSymbol();           // 5
+      % security.GetSymbol().GetQuoteSymbol();     // 5
 
   OrderRequest request("SubmitOrder", requestParams.str(), m_settings,
                        GetContext(), GetLog(), GetTradingLog());

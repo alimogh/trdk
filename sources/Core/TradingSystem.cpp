@@ -175,11 +175,11 @@ class TradingSystem::Implementation : private boost::noncopyable {
     m_tradingLog.Write(
         !order.transactionContext
             ? "{'order': {'new': {'status': '%1%'), 'side': '%2%', 'security': "
-              "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6$.8f, "
-              "'qty': %7$.8f, 'tif': '%8%'}}"
+              "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': "
+              "%7%, 'tif': '%8%'}}"
             : "{'order': {'new': {'status': '%1%'), 'side': '%2%', 'security': "
-              "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6$.8f, "
-              "'qty': %7$.8f, 'tif': '%8%', 'id': '%9%'}}",
+              "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': "
+              "%7%, 'tif': '%8%', 'id': '%9%'}}",
         [&](TradingRecord &record) {
           record % status                                             // 1
               % order.side                                            // 2
@@ -200,14 +200,14 @@ class TradingSystem::Implementation : private boost::noncopyable {
                          const Volume &commission,
                          const boost::optional<Trade> &trade) {
     m_tradingLog.Write(
-        trade ? "{'order': {'trade': {'qty': %1$.8f, 'price': %2$.8f, "
-                "'remainingQty': %3$.8f, 'commission': %4$.8f, 'id': '%5%'}, "
+        trade ? "{'order': {'trade': {'qty': %1%, 'price': %2%, "
+                "'remainingQty': %3%, 'commission': %4%, 'id': '%5%'}, "
                 "'status': '%6%', 'side': '%7%', 'security': '%8%', "
-                "'currency': '%9%', 'qty': %10$.8f, 'price': %11$.8f, 'tif': "
+                "'currency': '%9%', 'qty': %10%, 'price': %11%, 'tif': "
                 "'%12%', 'id': '%13%'}}"
-              : "{'order': {'update': {'remainingQty': %1$.8f, 'commission': "
-                "%2$.8f}, 'status': '%3%', 'side': '%4%', 'security': '%5%', "
-                "'currency': '%6%', 'qty': %7$.8f, 'price': %8$.8f, 'tif': "
+              : "{'order': {'update': {'remainingQty': %1%, 'commission': "
+                "%2%}, 'status': '%3%', 'side': '%4%', 'security': '%5%', "
+                "'currency': '%6%', 'qty': %7%, 'price': %8%, 'tif': "
                 "'%9%', 'id': '%10%'}}",
         [&](TradingRecord &record) {
           if (trade) {
@@ -319,9 +319,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
         trade->qty = tradeQty;
       } else if (trade->qty != tradeQty) {
         boost::format error(
-            "Wrong trade quantity received. Order remaining quantity %1$.8f, "
-            " expected trade quantity %2$.8f and actual trade quantity "
-            "%3$.8f.");
+            "Wrong trade quantity received. Order remaining quantity %1%, "
+            " expected trade quantity %2% and actual trade quantity %3%.");
         error % order.remainingQty  // 1
             % tradeQty              // 2
             % trade->qty;           // 3
@@ -364,7 +363,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
       void (OrderStatusHandler::*handler)(const Volume &),
       const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
     AssertLe(remaningQty, order.remainingQty);
-    const auto &tradeQty = order.remainingQty - remaningQty;
+    const auto tradeQty = order.remainingQty - remaningQty;
     boost::optional<Trade> trade;
     if (tradeQty) {
       trade.emplace(Trade{order.actualPrice, std::move(tradeQty)});
@@ -760,8 +759,8 @@ void TradingSystem::OnTrade(
     trade.qty = order->remainingQty;
   } else if (trade.qty > order->remainingQty) {
     boost::format error(
-        "Wrong trade quantity received. Order remaining quantity %1$.10f and "
-        "trade quantity %2$.10(more than order remaining quantity)");
+        "Wrong trade quantity received. Order remaining quantity %1% and "
+        "trade quantity %2% (more than order remaining quantity)");
     error % order->remainingQty  // 1
         % trade.qty;             // 2
     OnOrderError(time, orderId, Qty(0), boost::none, error.str());

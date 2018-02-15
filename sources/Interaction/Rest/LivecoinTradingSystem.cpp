@@ -233,8 +233,7 @@ Volume LivecoinTradingSystem::CalcCommission(
     const Price &price,
     const OrderSide &,
     const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.18 / 100),
-                          security.GetPricePrecisionPower());
+  return (qty * price) * (0.18 / 100);
 }
 
 void LivecoinTradingSystem::UpdateBalances() {

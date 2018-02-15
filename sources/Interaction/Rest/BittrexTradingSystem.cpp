@@ -174,8 +174,7 @@ Volume BittrexTradingSystem::CalcCommission(
     const Price &price,
     const OrderSide &,
     const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.25 / 100),
-                          security.GetPricePrecisionPower());
+  return (qty * price) * (0.25 / 100);
 }
 
 std::unique_ptr<OrderTransactionContext>

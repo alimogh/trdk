@@ -414,8 +414,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
          symbol == "BCH_USD" || symbol == "BTC_EUR" || symbol == "BTC_GBP")
             ? .25
             : .3;
-    return RoundByPrecision((qty * price) * (fee / 100),
-                            security.GetPricePrecisionPower());
+    return (qty * price) * (fee / 100);
   }
 
  protected:
@@ -513,10 +512,10 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       boost::format requestParams(
           "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
           "\"size\": \"%4$.8f\"}");
-      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")      // 1
-          % product->second.id                                        // 2
-          % RoundByPrecision(*price, product->second.precisionPower)  // 3
-          % qty;                                                      // 4
+      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")           // 1
+          % product->second.id                                             // 2
+          % RoundByPrecisionPower(*price, product->second.precisionPower)  // 3
+          % qty;                                                           // 4
       request.SetBody(requestParams.str());
     }
 

@@ -15,7 +15,81 @@ namespace Lib {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
+namespace Detail {
+
+struct DoubleNumericPolicy {
+  template <typename T>
+  static bool IsEq(const T &lhs, const T &rhs) {
+    return trdk::Lib::IsEqual(lhs, rhs);
+  }
+  template <typename T>
+  static bool IsNe(const T &lhs, const T &rhs) {
+    return !trdk::Lib::IsEqual(lhs, rhs);
+  }
+
+  template <typename T>
+  static bool IsLt(const T &lhs, const T &rhs) {
+    return lhs < rhs && !trdk::Lib::IsEqual(lhs, rhs);
+  }
+  template <typename T>
+  static bool IsLe(const T &lhs, const T &rhs) {
+    return lhs < rhs || trdk::Lib::IsEqual(lhs, rhs);
+  }
+
+  template <typename T>
+  static bool IsGt(const T &lhs, const T &rhs) {
+    return lhs > rhs && !trdk::Lib::IsEqual(lhs, rhs);
+  }
+  template <typename T>
+  static bool IsGe(const T &lhs, const T &rhs) {
+    return lhs > rhs || trdk::Lib::IsEqual(lhs, rhs);
+  }
+
+  template <typename T>
+  static bool IsNan(const T &val) {
+    return isnan(val);
+  }
+  template <typename T>
+  static bool IsNotNan(const T &val) {
+    return !IsNan(val);
+  }
+
+  template <typename T>
+  static void Normalize(T &) {}
+
+  template <typename StreamElem, typename StreamTraits, typename Source>
+  static void Dump(std::basic_ostream<StreamElem, StreamTraits> &os,
+                   const Source &source) {
+    os << std::fixed << std::setprecision(8) << source;
+  }
+
+  template <typename StreamElem, typename StreamTraits, typename Result>
+  static void Load(std::basic_istream<StreamElem, StreamTraits> &is,
+                   Result &result) {
+    is >> result;
+  }
+};
+
+template <size_t precisionPower>
+struct DoubleWithFixedPrecisionNumericPolicy
+    : public trdk::Lib::Detail::DoubleNumericPolicy {
+  static_assert(precisionPower > 0, "Must be greater than zero.");
+  static_assert(precisionPower % 10 == 0, "Must be a multiple of ten.");
+
+  template <typename T>
+  static void Normalize(T &value) {
+    if (IsNan(value)) {
+      return;
+    }
+    value = boost::math::round(value * precisionPower) / precisionPower;
+  }
+};
+
+}  // namespace Detail
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T, typename Policy>
 class Numeric {
  public:
   typedef T ValueType;
@@ -23,8 +97,9 @@ class Numeric {
   static_assert(boost::is_pod<ValueType>::value, "Type should be POD.");
 
  public:
-  Numeric(const ValueType &value = 0) : m_value(value) {}
+  Numeric(const ValueType &value = 0) : m_value(value) { Normalize(); }
 
+ public:
   void Swap(Numeric &rhs) noexcept { std::swap(m_value, rhs.m_value); }
 
   operator ValueType() const noexcept { return Get(); }
@@ -33,22 +108,23 @@ class Numeric {
 
   Numeric &operator=(const ValueType &rhs) noexcept {
     m_value = rhs;
+    Normalize();
     return *this;
   }
 
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_ostream<StreamElem, StreamTraits> &operator<<(
       std::basic_ostream<StreamElem, StreamTraits> &os,
-      const trdk::Lib::Numeric<ValueType> &numeric) {
-    os << numeric.Get();
+      const trdk::Lib::Numeric<ValueType, Policy> &numeric) {
+    numeric.Dump(os);
     return os;
   }
 
   template <typename StreamElem, typename StreamTraits>
   friend std::basic_istream<StreamElem, StreamTraits> &operator>>(
       std::basic_istream<StreamElem, StreamTraits> &is,
-      trdk::Lib::Numeric<ValueType> &numeric) {
-    is >> numeric.m_value;
+      trdk::Lib::Numeric<ValueType, Policy> &numeric) {
+    numeric.Load(is);
     return is;
   }
 
@@ -58,7 +134,7 @@ class Numeric {
     return operator==(Numeric(rhs));
   }
   bool operator==(const Numeric &rhs) const {
-    return trdk::Lib::IsEqual(m_value, rhs.m_value);
+    return Policy::IsEq(m_value, rhs.m_value);
   }
 
   template <typename AnotherValueType>
@@ -66,7 +142,7 @@ class Numeric {
     return operator!=(Numeric(rhs));
   }
   bool operator!=(const Numeric &rhs) const {
-    return !trdk::Lib::IsEqual(m_value, rhs.m_value);
+    return Policy::IsNe(m_value, rhs.m_value);
   }
 
   template <typename AnotherValueType>
@@ -74,7 +150,7 @@ class Numeric {
     return operator<(Numeric(rhs));
   }
   bool operator<(const Numeric &rhs) const {
-    return m_value < rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
+    return Policy::IsLt(m_value, rhs.m_value);
   }
 
   template <typename AnotherValueType>
@@ -82,7 +158,7 @@ class Numeric {
     return operator<=(Numeric(rhs));
   }
   bool operator<=(const Numeric &rhs) const {
-    return m_value < rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
+    return Policy::IsLe(m_value, rhs.m_value);
   }
 
   template <typename AnotherValueType>
@@ -90,7 +166,7 @@ class Numeric {
     return operator>(Numeric(rhs));
   }
   bool operator>(const Numeric &rhs) const {
-    return m_value > rhs.m_value && !trdk::Lib::IsEqual(m_value, rhs);
+    return Policy::IsGt(m_value, rhs.m_value);
   }
 
   template <typename AnotherValueType>
@@ -98,50 +174,58 @@ class Numeric {
     return operator>=(Numeric(rhs));
   }
   bool operator>=(const Numeric &rhs) const {
-    return m_value > rhs.m_value || trdk::Lib::IsEqual(m_value, rhs);
+    return Policy::IsGe(m_value, rhs.m_value);
   }
 
-  bool IsNan() const { return isnan(m_value); }
-  bool IsNotNan() const { return !IsNan(); }
+  bool IsNan() const { return Policy::IsNan(m_value); }
+  bool IsNotNan() const { return Policy::IsNotNan(m_value); }
 
  public:
   template <typename AnotherValueType>
   Numeric &operator+=(const AnotherValueType &rhs) {
     m_value += rhs;
+    Normalize();
     return *this;
   }
   Numeric &operator+=(const Numeric &rhs) {
     m_value += rhs.m_value;
+    Normalize();
     return *this;
   }
 
   template <typename AnotherValueType>
   Numeric &operator-=(const AnotherValueType &rhs) {
     m_value -= rhs;
+    Normalize();
     return *this;
   }
   Numeric &operator-=(const Numeric &rhs) {
     m_value -= rhs.m_value;
+    Normalize();
     return *this;
   }
 
   template <typename AnotherValueType>
   Numeric &operator*=(const Numeric &rhs) {
     m_value *= rhs;
+    Normalize();
     return *this;
   }
   Numeric &operator*=(const Numeric &rhs) {
     m_value *= rhs.m_value;
+    Normalize();
     return *this;
   }
 
   template <typename AnotherValueType>
   Numeric &operator/=(const AnotherValueType &rhs) {
     m_value /= rhs;
+    Normalize();
     return *this;
   }
   Numeric &operator/=(const Numeric &rhs) {
     m_value /= rhs.m_value;
+    Normalize();
     return *this;
   }
 
@@ -171,11 +255,32 @@ class Numeric {
 
   template <typename AnotherValueType>
   Numeric operator/(const AnotherValueType &rhs) const {
+    if (rhs == 0) {
+      throw std::overflow_error("Division by zero");
+    }
     return Numeric(m_value / rhs);
   }
   Numeric operator/(const Numeric &rhs) const {
+    if (rhs == 0) {
+      throw std::overflow_error("Division by zero");
+    }
     return Numeric(m_value / rhs.m_value);
   }
+
+ protected:
+  template <typename StreamElem, typename StreamTraits>
+  void Dump(std::basic_ostream<StreamElem, StreamTraits> &os) const {
+    Policy::Dump(os, m_value);
+  }
+
+  template <typename StreamElem, typename StreamTraits>
+  void Load(std::basic_istream<StreamElem, StreamTraits> &is) {
+    Policy::Load(is, m_value);
+    Normalize();
+  }
+
+ private:
+  void Normalize() { Policy::Normalize(m_value); }
 
  private:
   ValueType m_value;
@@ -183,15 +288,174 @@ class Numeric {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-bool IsEqual(const trdk::Lib::Numeric<T> &, const trdk::Lib::Numeric<T> &) {
+template <typename T, typename Policy>
+bool IsEqual(const trdk::Lib::Numeric<T, Policy> &,
+             const trdk::Lib::Numeric<T, Policy> &) {
   static_assert(false, "Deprecated call, use operator \"==\" instead.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef trdk::Lib::Numeric<double> Double;
+typedef trdk::Lib::Numeric<double, trdk::Lib::Detail::DoubleNumericPolicy>
+    Double;
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
+
+template <typename T, typename Policy>
+class BusinessNumeric : public trdk::Lib::Numeric<T, Policy> {
+ public:
+  typedef trdk::Lib::Numeric<T, Policy> Base;
+  typedef typename Base::ValueType ValueType;
+
+ public:
+  BusinessNumeric(const ValueType &value = 0) noexcept : Base(value) {}
+  BusinessNumeric(const trdk::Lib::Double &value) : Base(value.Get()) {}
+
+ public:
+  operator trdk::Lib::Double() const { return Get(); }
+
+  template <typename StreamElem, typename StreamTraits>
+  friend std::basic_ostream<StreamElem, StreamTraits> &operator<<(
+      std::basic_ostream<StreamElem, StreamTraits> &os,
+      const trdk::Lib::BusinessNumeric<ValueType, Policy> &numeric) {
+    numeric.Dump(os);
+    return os;
+  }
+
+  template <typename StreamElem, typename StreamTraits>
+  friend std::basic_istream<StreamElem, StreamTraits> &operator>>(
+      std::basic_istream<StreamElem, StreamTraits> &is,
+      trdk::Lib::BusinessNumeric<ValueType, Policy> &numeric) {
+    numeric.Load(is);
+    return is;
+  }
+
+ public:
+  template <typename AnotherValueType>
+  bool operator==(const AnotherValueType &rhs) const {
+    return operator==(BusinessNumeric(rhs));
+  }
+  bool operator==(const BusinessNumeric &rhs) const {
+    return Base::operator==(rhs);
+  }
+
+  template <typename AnotherValueType>
+  bool operator!=(const AnotherValueType &rhs) const {
+    return operator!=(BusinessNumeric(rhs));
+  }
+  bool operator!=(const BusinessNumeric &rhs) const {
+    return Base::operator!=(rhs);
+  }
+
+  template <typename AnotherValueType>
+  bool operator<(const AnotherValueType &rhs) const {
+    return operator<(BusinessNumeric(rhs));
+  }
+  bool operator<(const BusinessNumeric &rhs) const {
+    return Base::operator<(rhs);
+  }
+
+  template <typename AnotherValueType>
+  bool operator<=(const AnotherValueType &rhs) const {
+    return operator<=(BusinessNumeric(rhs));
+  }
+  bool operator<=(const BusinessNumeric &rhs) const {
+    return Base::operator<=(rhs);
+  }
+
+  template <typename AnotherValueType>
+  bool operator>(const AnotherValueType &rhs) const {
+    return operator>(BusinessNumeric(rhs));
+  }
+  bool operator>(const BusinessNumeric &rhs) const {
+    return Base::operator>(rhs);
+  }
+
+  template <typename AnotherValueType>
+  bool operator>=(const AnotherValueType &rhs) const {
+    return operator>=(BusinessNumeric(rhs));
+  }
+  bool operator>=(const BusinessNumeric &rhs) const {
+    return Base::operator>=(rhs);
+  }
+
+ public:
+  template <typename AnotherValueType>
+  Numeric &operator+=(const AnotherValueType &rhs) {
+    return operator+=(BusinessNumeric(rhs));
+  }
+  BusinessNumeric &operator+=(const BusinessNumeric &rhs) {
+    Base::operator+=(rhs);
+    return *this;
+  }
+
+  template <typename AnotherValueType>
+  Numeric &operator-=(const AnotherValueType &rhs) {
+    return operator-=(BusinessNumeric(rhs));
+  }
+  BusinessNumeric &operator-=(const BusinessNumeric &rhs) {
+    Base::operator-=(rhs);
+    return *this;
+  }
+
+  template <typename AnotherValueType>
+  Numeric &operator*=(const AnotherValueType &rhs) {
+    return operator*=(BusinessNumeric(rhs));
+  }
+  BusinessNumeric &operator*=(const BusinessNumeric &rhs) {
+    Base::operator*=(rhs);
+    return *this;
+  }
+
+  template <typename AnotherValueType>
+  Numeric &operator/=(const AnotherValueType &rhs) {
+    return operator/=(BusinessNumeric(rhs));
+  }
+  BusinessNumeric &operator/=(const BusinessNumeric &rhs) {
+    Base::operator/=(rhs);
+    return *this;
+  }
+
+  template <typename AnotherValueType>
+  BusinessNumeric operator+(const AnotherValueType &rhs) const {
+    return operator+(BusinessNumeric(rhs));
+  }
+  BusinessNumeric operator+(const BusinessNumeric &rhs) const {
+    return BusinessNumeric(Get() + rhs.Get());
+  }
+
+  template <typename AnotherValueType>
+  BusinessNumeric operator-(const AnotherValueType &rhs) const {
+    return operator-(BusinessNumeric(rhs));
+  }
+  BusinessNumeric operator-(const BusinessNumeric &rhs) const {
+    return BusinessNumeric(Get() - rhs.Get());
+  }
+
+  template <typename AnotherValueType>
+  BusinessNumeric operator*(const AnotherValueType &rhs) const {
+    return BusinessNumeric(Get() * rhs);
+  }
+  BusinessNumeric operator*(const BusinessNumeric &rhs) const {
+    return BusinessNumeric(Get() * rhs.Get());
+  }
+
+  template <typename AnotherValueType>
+  BusinessNumeric operator/(const AnotherValueType &rhs) const {
+    if (rhs == 0) {
+      throw std::overflow_error("Division by zero");
+    }
+    return BusinessNumeric(Get() / rhs);
+  }
+  BusinessNumeric operator/(const BusinessNumeric &rhs) const {
+    if (rhs == 0) {
+      throw std::overflow_error("Division by zero");
+    }
+    return BusinessNumeric(Get() / rhs.Get());
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+}  // namespace Lib
+}  // namespace trdk

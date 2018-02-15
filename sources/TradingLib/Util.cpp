@@ -18,11 +18,11 @@ Price TradingLib::ReversePrice(const Price &price, const Security &security) {
   if (!price) {
     return 0;
   }
-  return RoundByPrecision(1 / price, security.GetPricePrecisionPower());
+  return RoundByPrecisionPower(1 / price, security.GetPricePrecisionPower());
 }
 
 Qty TradingLib::ReverseQty(const Price &price,
                            const Qty &qty,
                            const Security &security) {
-  return RoundByPrecision(price * qty, security.GetPricePrecisionPower());
+  return RoundByPrecisionPower(price * qty, security.GetPricePrecisionPower());
 }

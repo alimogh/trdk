@@ -312,8 +312,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                                 const Price &price,
                                 const OrderSide &,
                                 const trdk::Security &security) const override {
-    return RoundByPrecision((qty * price) * (0.2 / 100),
-                            security.GetPricePrecisionPower());
+    return (qty * price) * (0.2 / 100);
   }
 
   virtual boost::optional<OrderCheckError> CheckOrder(

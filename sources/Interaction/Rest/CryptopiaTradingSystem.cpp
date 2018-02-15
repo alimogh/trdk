@@ -208,8 +208,7 @@ Volume CryptopiaTradingSystem::CalcCommission(
   if (productIt == productIndex.cend()) {
     return 0;
   }
-  return RoundByPrecision((qty * price) * productIt->feeRatio,
-                          security.GetPricePrecisionPower());
+  return (qty * price) * productIt->feeRatio;
 }
 
 boost::optional<CryptopiaTradingSystem::OrderCheckError>

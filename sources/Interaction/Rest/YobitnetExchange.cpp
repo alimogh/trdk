@@ -446,8 +446,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
                                 const Price &price,
                                 const OrderSide &,
                                 const trdk::Security &security) const override {
-    return RoundByPrecision((qty * price) * (0.2 / 100),
-                            security.GetPricePrecisionPower());
+    return (qty * price) * (0.2 / 100);
   }
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -589,7 +588,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &productId = product->second.id;
     const std::string actualSide = side == ORDER_SIDE_SELL ? "sell" : "buy";
     const auto actualPrice =
-        RoundByPrecision(*price, product->second.precisionPower);
+        RoundByPrecisionPower(*price, product->second.precisionPower);
 
     boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
     requestParams % productId  // 1

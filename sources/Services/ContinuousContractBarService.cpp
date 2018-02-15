@@ -38,7 +38,7 @@ struct HistoryBar : public BarService::Bar {
   explicit HistoryBar(const ContractExpiration &expiration)
       : expiration(expiration) {}
 };
-}
+}  // namespace
 
 class ContinuousContractBarService::Implementation
     : private boost::noncopyable {
@@ -174,8 +174,6 @@ class ContinuousContractBarService::Implementation
 
     AssertEq(m_self.GetSecurity().GetExpiration(), m_meta.back().expiration);
 
-    const auto &precision = m_self.GetSecurity().GetPricePrecisionPower();
-
     size_t numberOfContracts = 0;
     size_t numberOfBarsForCurrentContracts = 0;
     size_t index = m_source.GetSize();
@@ -214,14 +212,10 @@ class ContinuousContractBarService::Implementation
       HistoryBar bar(meta.expiration);
       bar.startTime = source.startTime;
       bar.endTime = source.endTime;
-      bar.openTradePrice =
-          Price(RoundByPrecision(source.openTradePrice * ratio, precision));
-      bar.lowTradePrice =
-          Price(RoundByPrecision(source.lowTradePrice * ratio, precision));
-      bar.highTradePrice =
-          Price(RoundByPrecision(source.highTradePrice * ratio, precision));
-      bar.closeTradePrice =
-          Price(RoundByPrecision(source.closeTradePrice * ratio, precision));
+      bar.openTradePrice = source.openTradePrice * ratio;
+      bar.lowTradePrice = source.lowTradePrice * ratio;
+      bar.highTradePrice = source.highTradePrice * ratio;
+      bar.closeTradePrice = source.closeTradePrice * ratio;
       result.emplace_back(bar);
 
       return true;

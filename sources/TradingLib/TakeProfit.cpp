@@ -187,15 +187,11 @@ void TakeProfitPrice::Report(const char *action) const {
 const char *TakeProfitPrice::GetName() const { return "take profit price"; }
 
 Volume TakeProfitPrice::CalcProfitToActivate() const {
-  return RoundByPrecision(
-      m_params->GetProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  return m_params->GetProfitPerLotToActivate() * GetPosition().GetOpenedQty();
 }
 
 Volume TakeProfitPrice::CalcOffsetToClose() const {
-  return RoundByPrecision(
-      m_params->GetTrailingToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  return m_params->GetTrailingToClose() * GetPosition().GetOpenedQty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -236,14 +232,11 @@ const char *TakeProfitShare::GetName() const { return "take profit share"; }
 
 Volume TakeProfitShare::CalcProfitToActivate() const {
   const auto &initialVol = GetPosition().GetOpenedVolume();
-  return RoundByPrecision(
-      initialVol + (initialVol * m_params->GetProfitShareToActivate()),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  return initialVol + (initialVol * m_params->GetProfitShareToActivate());
 }
 
 Volume TakeProfitShare::CalcOffsetToClose() const {
-  return RoundByPrecision(GetMaxProfit() * m_params->GetTrailingShareToClose(),
-                          GetPosition().GetSecurity().GetPricePrecisionPower());
+  return GetMaxProfit() * m_params->GetTrailingShareToClose();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
