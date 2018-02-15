@@ -49,6 +49,26 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   };
 
  protected:
+  template <trdk::Lib::Concurrency::Profile profile>
+  struct ConcurrencyPolicyTrait {
+    static_assert(profile == trdk::Lib::Concurrency::PROFILE_RELAX,
+                  "Wrong concurrency profile");
+    typedef boost::shared_mutex SharedMutex;
+    typedef boost::mutex Mutex;
+    typedef boost::shared_lock<SharedMutex> ReadLock;
+    typedef boost::unique_lock<SharedMutex> WriteLock;
+    typedef Mutex::scoped_lock Lock;
+  };
+  template <>
+  struct ConcurrencyPolicyTrait<trdk::Lib::Concurrency::PROFILE_HFT> {
+    typedef trdk::Lib::Concurrency::SpinMutex SharedMutex;
+    typedef trdk::Lib::Concurrency::SpinMutex Mutex;
+    typedef Mutex::ScopedLock WriteLock;
+    typedef Mutex::ScopedLock ReadLock;
+    typedef Mutex::ScopedLock Lock;
+  };
+  typedef ConcurrencyPolicyTrait<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
+
   struct Order {
     trdk::Security &security;
     trdk::Lib::Currency currency;
@@ -69,6 +89,20 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     bool isCancelRequestSent;
     size_t numberOfTrades;
     trdk::Lib::Double sumOfTradePrices;
+    ConcurrencyPolicy::Mutex mutex;
+
+    explicit Order(trdk::Security &,
+                   const trdk::Lib::Currency &,
+                   const trdk::OrderSide &,
+                   std::unique_ptr<trdk::OrderStatusHandler> &&,
+                   const trdk::Qty &qty,
+                   const trdk::Qty &remainingQty,
+                   const boost::optional<trdk::Price> &price,
+                   trdk::Price actualPrice,
+                   const trdk::TimeInForce &,
+                   const trdk::Lib::TimeMeasurement::Milestones &,
+                   trdk::RiskControlScope &,
+                   boost::shared_ptr<const trdk::Position> &&);
   };
 
   typedef boost::unordered_map<trdk::OrderId,
@@ -173,6 +207,10 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   virtual trdk::Balances &GetBalancesStorage();
 
+  //! Direct access to active order list.
+  /** Maybe called only from overloaded methods SendOrderTransaction
+   *  and SendCancelOrderTransaction.
+   */
   const trdk::TradingSystem::Orders &GetActiveOrders() const;
 
  protected:
@@ -193,14 +231,14 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
  protected:
   //! Reports order opened state.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderOpened(const boost::posix_time::ptime &, const trdk::OrderId &);
   //! Reports order opened state.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderOpened(
       const boost::posix_time::ptime &,
@@ -210,8 +248,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! Reports new trade. Doesn't finalize the order even no more remaining
   //! quantity is left.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnTrade(const boost::posix_time::ptime &,
                const trdk::OrderId &,
@@ -219,8 +257,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! Reports new trade. Doesn't finalize the order even no more remaining
   //! quantity is left.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnTrade(const boost::posix_time::ptime &,
                const trdk::OrderId &,
@@ -229,16 +267,16 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderFilled(const boost::posix_time::ptime &,
                      const trdk::OrderId &,
                      const boost::optional<trdk::Volume> &commission);
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderFilled(
       const boost::posix_time::ptime &,
@@ -247,8 +285,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const boost::function<bool(trdk::OrderTransactionContext &)> &);
   //! Finalize the order by filling with trade info.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderFilled(const boost::posix_time::ptime &,
                      const trdk::OrderId &,
@@ -256,8 +294,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                      const boost::optional<trdk::Volume> &commission);
   //! Finalize the order by filling with trade info.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderFilled(
       const boost::posix_time::ptime &,
@@ -268,8 +306,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   //! Finalize the order by canceling.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderCanceled(const boost::posix_time::ptime &,
                        const trdk::OrderId &,
@@ -278,8 +316,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   //! Finalize the order by rejecting.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderRejected(const boost::posix_time::ptime &,
                        const trdk::OrderId &,
@@ -288,8 +326,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
   //! Finalize the order by error.
   /** All order-events methods should be called from one thread or call should
-   *  be synchronized. In another case - order state will be corrupted or/and
-   *  subscribers may receive notifications in the wrong order.
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
    */
   void OnOrderError(const boost::posix_time::ptime &,
                     const trdk::OrderId &,
