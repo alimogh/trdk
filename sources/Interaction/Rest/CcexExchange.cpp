@@ -581,15 +581,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       AssertEq(orderId, order.get<OrderId>("OrderUuid"));
       const auto &closedField = order.get<std::string>("Closed");
       remainingQty = order.get<Qty>("QuantityRemaining");
-      if (!boost::iequals(closedField, "null")) {
+      if (closedField != "null") {
         time = pt::time_from_string(closedField);
         status = remainingQty == 0 ? ORDER_STATUS_FILLED_FULLY
                                    : ORDER_STATUS_CANCELED;
       } else {
         time = pt::time_from_string(order.get<std::string>("Opened"));
-        if (order.get<bool>("CancelInitiated")) {
-          status = ORDER_STATUS_CANCELED;
-        }
+        status = order.get<bool>("CancelInitiated") ? ORDER_STATUS_CANCELED
+                                                    : ORDER_STATUS_OPENED;
       }
     } catch (const std::exception &ex) {
       boost::format error(
