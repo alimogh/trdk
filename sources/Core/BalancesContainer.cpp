@@ -63,6 +63,10 @@ class BalancesContainer::Implementation : private boost::noncopyable {
     auto available = availableSource ? std::move(*availableSource) : 0;
     auto locked = lockedSource ? std::move(*lockedSource) : 0;
 
+    if (available == 0 && locked == 0) {
+      return;
+    }
+
     const auto &result = m_storage.emplace(
         symbol, Balance{std::move(available), std::move(locked)});
     Assert(result.second);
