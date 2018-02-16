@@ -21,8 +21,8 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
 void aa::PositionController::OnPositionUpdate(Position &position) {
+  auto *const oppositePosition = FindOppositePosition(position);
   if (position.IsCompleted()) {
-    auto *const oppositePosition = FindOppositePosition(position);
     if (oppositePosition && !oppositePosition->IsCompleted()) {
       OnPositionUpdate(*oppositePosition);
     }
@@ -55,7 +55,10 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     return;
   }
 
-  Base::OnPositionUpdate(position);
+  position.GetCloseReason() == CLOSE_REASON_NONE &&oppositePosition &&
+          oppositePosition->GetCloseReason() != CLOSE_REASON_NONE
+      ? ClosePosition(position, oppositePosition->GetCloseReason())
+      : Base::OnPositionUpdate(position);
 }
 
 void aa::PositionController::HoldPosition(Position &position) {
@@ -80,10 +83,8 @@ void aa::PositionController::HoldPosition(Position &position) {
   oppositePosition->MarkAsCompleted();
 }
 
-bool aa::PositionController::PrepareOperationClose(Position &position,
-                                                   const CloseReason &reason) {
-  IsPassive(reason) ? position.SetCloseReason(reason)
-                    : position.ResetCloseReason(reason);
+namespace {
+bool PrepareOperationClose(Position &position) {
   if (!position.HasActiveOpenOrders()) {
     return true;
   }
@@ -94,23 +95,44 @@ bool aa::PositionController::PrepareOperationClose(Position &position,
   return false;
 }
 
-bool aa::PositionController::ClosePosition(Position &signalPosition,
-                                           const CloseReason &reason) {
+bool ChooseBestExchange(Position &position) {
+  const auto &checker = BestSecurityCheckerForPosition::Create(position, true);
+  boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
+      ->ForEachSecurity(
+          position.GetSecurity().GetSymbol(),
+          [&checker](Security &security) { checker->Check(security); });
+  if (!checker->HasSuitableSecurity()) {
+    position.GetStrategy().GetLog().Error(
+        "Failed to find suitable security for the position \"%1%/%2%\" (actual "
+        "security is \"%3%\") to close the rest of the position %4$.8f out of "
+        "%5$.8f.",
+        position.GetOperation()->GetId(),  // 1
+        position.GetSubOperationId(),      // 2
+        position.GetSecurity(),            // 3
+        position.GetOpenedQty(),           // 4
+        position.GetActiveQty());          // 5
+    position.MarkAsCompleted();
+    return false;
+  }
+  return true;
+}
+
+Position *GetAbsolutePosition(Position &signalPosition) {
   Assert(!signalPosition.IsCompleted());
 
-  auto *oppositePosition = FindOppositePosition(signalPosition);
+  auto *const oppositePosition = FindOppositePosition(signalPosition);
   if (!oppositePosition) {
-    return Base::ClosePosition(signalPosition, reason);
+    return &signalPosition;
   }
   Assert(!oppositePosition->HasActiveCloseOrders());
 
-  {
+  if (oppositePosition->HasActiveOpenOrders()) {
     const auto listTransaction =
         signalPosition.GetStrategy().StartThreadPositionsTransaction();
     auto oppositePositionClosePreparingFuture =
-        boost::async([this, oppositePosition, &reason]() -> bool {
+        boost::async([oppositePosition]() -> bool {
           try {
-            return PrepareOperationClose(*oppositePosition, reason);
+            return PrepareOperationClose(*oppositePosition);
           } catch (const CommunicationError &ex) {
             throw boost::enable_current_exception(ex);
           } catch (const Exception &ex) {
@@ -119,69 +141,62 @@ bool aa::PositionController::ClosePosition(Position &signalPosition,
             throw boost::enable_current_exception(ex);
           }
         });
-    if (!PrepareOperationClose(signalPosition, reason) ||
+    if (!PrepareOperationClose(signalPosition) ||
         !oppositePositionClosePreparingFuture.get()) {
-      return false;
+      return nullptr;
     }
+  } else if (!PrepareOperationClose(signalPosition)) {
+    return nullptr;
   }
 
   Assert(!oppositePosition->HasActiveOrders());
   Assert(!signalPosition.HasActiveOrders());
 
-  {
-    auto &longPosition =
-        signalPosition.IsLong() ? signalPosition : *oppositePosition;
-    auto &shortPosition =
-        &longPosition == oppositePosition ? signalPosition : *oppositePosition;
-    const Qty &absolutePositionSize =
-        longPosition.GetActiveQty() - shortPosition.GetActiveQty();
+  auto &longPosition =
+      signalPosition.IsLong() ? signalPosition : *oppositePosition;
+  auto &shortPosition =
+      &longPosition == oppositePosition ? signalPosition : *oppositePosition;
+  const Qty &absolutePositionSize =
+      longPosition.GetActiveQty() - shortPosition.GetActiveQty();
 
-    if (!absolutePositionSize) {
-      if (!oppositePosition->IsCompleted()) {
-        oppositePosition->MarkAsCompleted();
-      }
-      signalPosition.MarkAsCompleted();
-      return false;
+  if (!absolutePositionSize) {
+    if (!oppositePosition->IsCompleted()) {
+      oppositePosition->MarkAsCompleted();
     }
-
-    struct Positions {
-      Position &active;
-      Position &completed;
-    } positions = absolutePositionSize < 0
-                      ? Positions{shortPosition, longPosition}
-                      : Positions{longPosition, shortPosition};
-    Assert(!oppositePosition->IsCompleted() ||
-           oppositePosition != &positions.active);
-    positions.active.SetClosedQty(positions.completed.GetActiveQty());
-
-    if (!positions.completed.IsCompleted()) {
-      positions.completed.MarkAsCompleted();
-    }
-    return Base::ClosePosition(positions.active, reason);
+    signalPosition.MarkAsCompleted();
+    return false;
   }
+
+  struct Positions {
+    Position &active;
+    Position &completed;
+  } positions = absolutePositionSize < 0
+                    ? Positions{shortPosition, longPosition}
+                    : Positions{longPosition, shortPosition};
+  Assert(!oppositePosition->IsCompleted() ||
+         oppositePosition != &positions.active);
+  positions.active.SetClosedQty(positions.completed.GetActiveQty());
+
+  if (!positions.completed.IsCompleted()) {
+    positions.completed.MarkAsCompleted();
+  }
+
+  return &positions.active;
 }
+}  // namespace
 
 void aa::PositionController::ClosePosition(Position &position) {
   {
-    const auto &checker =
-        BestSecurityCheckerForPosition::Create(position, true);
-    boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
-        ->ForEachSecurity(
-            position.GetSecurity().GetSymbol(),
-            [&checker](Security &security) { checker->Check(security); });
-    if (!checker->HasSuitableSecurity()) {
-      position.GetStrategy().GetLog().Error(
-          "Failed to find suitable security for the position \"%1%/%2%\" "
-          "(actual security is \"%3%\") to close the rest of the position "
-          "%4$.8f out of %5$.8f.",
-          position.GetOperation()->GetId(),  // 1
-          position.GetSubOperationId(),      // 2
-          position.GetSecurity(),            // 3
-          position.GetOpenedQty(),           // 4
-          position.GetActiveQty());          // 5
-      position.MarkAsCompleted();
+    auto *const absolutePosition = GetAbsolutePosition(position);
+    if (!absolutePosition) {
+      return;
+    } else if (&position != absolutePosition) {
+      ClosePosition(*absolutePosition, absolutePosition->GetCloseReason());
       return;
     }
+  }
+  if (!ChooseBestExchange(position)) {
+    return;
   }
   Base::ClosePosition(position);
 }
