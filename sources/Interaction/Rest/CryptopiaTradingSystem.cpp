@@ -464,8 +464,19 @@ bool CryptopiaTradingSystem::UpdateOrders() {
     const auto response = boost::get<1>(request.second->Send(m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
-        Verify(actualOrders.emplace(UpdateOrder(*request.first, node.second))
-                   .second);
+        const auto &order = node.second;
+        try {
+          const auto &it = actualOrders.emplace(ParseOrderId(order));
+          Assert(it.second);
+          OnOrderRemainingQtyUpdated(ParseTimeStamp(order), *it.first,
+                                     order.get<Qty>("Remaining"));
+        } catch (const std::exception &ex) {
+          boost::format error(
+              "Failed to read order: \"%1%\". Message: \"%2%\"");
+          error % ex.what()                     // 1
+              % ConvertToString(order, false);  // 2
+          throw Exception(error.str().c_str());
+        }
       }
     } else {
       emptyRequests.emplace_back(request.first);
@@ -509,33 +520,6 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
     return !m_openOrdersRequests.empty();
   }
-}
-
-OrderId CryptopiaTradingSystem::UpdateOrder(
-    const CryptopiaProduct & /*product*/, const ptr::ptree &node) {
-  OrderId id;
-  Qty remainingQty;
-  pt::ptime time;
-
-  try {
-    id = ParseOrderId(node);
-    remainingQty = node.get<Price>("Remaining");
-    time = ParseTimeStamp(node);
-  } catch (const std::exception &ex) {
-    boost::format error("Failed to parse order : \"%1%\". Message: \"%2%\"");
-    error % ex.what()                    // 1
-        % ConvertToString(node, false);  // 2
-    throw Exception(error.str().c_str());
-  }
-
-  // remainingQty = product.NormalizeQty(, remainingQty, );
-
-  try {
-    OnOrderOpened(time, id);
-  } catch (const OrderIsUnknown &) {
-  }
-
-  return id;
 }
 
 void CryptopiaTradingSystem::SubscribeToOrderUpdates(
@@ -601,19 +585,6 @@ pt::ptime CryptopiaTradingSystem::ParseTimeStamp(
                    pt::duration_from_string(field.substr(11, 8)));
   result -= m_serverTimeDiff;
   return result;
-}
-
-void CryptopiaTradingSystem::ForEachRemoteTrade(
-    const CryptopiaProductId &product,
-    std::unique_ptr<net::HTTPSClientSession> &session,
-    bool isPriority,
-    const boost::function<void(const ptr::ptree &)> &callback) const {
-  TradesRequest request(product, 500, m_nonces, m_settings, isPriority,
-                        GetContext(), GetLog(), GetTradingLog());
-  const auto response = boost::get<1>(request.Send(session));
-  for (const auto &node : response) {
-    callback(node.second);
-  }
 }
 
 void CryptopiaTradingSystem::RegisterLastOrder(const pt::ptime &startTime,

@@ -114,17 +114,16 @@ class CryptopiaTradingSystem : public TradingSystem {
                            const Context &context,
                            ModuleEventsLog &log,
                            ModuleTradingLog &tradingLog)
-        : PrivateRequest(
-              "GetTradeHistory",
-              nonces,
-              settings,
-              (boost::format("{\"TradePairId\": %1%, \"Count\": %2%}") %
-               product % count)
-                  .str(),
-              isPriority,
-              context,
-              log,
-              &tradingLog) {}
+        : PrivateRequest("GetTradeHistory",
+                         nonces,
+                         settings,
+                         (boost::format("{\"TradePairId\":%1%,\"Count\":%2%}") %
+                          product % count)
+                             .str(),
+                         isPriority,
+                         context,
+                         log,
+                         &tradingLog) {}
   };
 
  public:
@@ -173,10 +172,7 @@ class CryptopiaTradingSystem : public TradingSystem {
 
  private:
   void UpdateBalances();
-
   bool UpdateOrders();
-  OrderId UpdateOrder(const CryptopiaProduct &,
-                      const boost::property_tree::ptree &);
 
   void SubscribeToOrderUpdates(const CryptopiaProductList::const_iterator &);
 
@@ -186,12 +182,6 @@ class CryptopiaTradingSystem : public TradingSystem {
       const std::string &side,
       const Qty &,
       const Price &) const;
-
-  void ForEachRemoteTrade(
-      const CryptopiaProductId &,
-      std::unique_ptr<Poco::Net::HTTPSClientSession> &,
-      bool isPriority,
-      const boost::function<void(const boost::property_tree::ptree &)> &) const;
 
   boost::posix_time::ptime ParseTimeStamp(
       const boost::property_tree::ptree &) const;

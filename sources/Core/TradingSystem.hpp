@@ -265,6 +265,26 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                trdk::Trade &&,
                const boost::function<bool(trdk::OrderTransactionContext &)> &);
 
+  //! Reports about remaining quantity update if it was changed.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
+   */
+  void OnOrderRemainingQtyUpdated(
+      const boost::posix_time::ptime &,
+      const trdk::OrderId &,
+      const trdk::Qty &remainingQty);
+  //! Reports about remaining quantity update if it was changed.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
+   */
+  void OnOrderRemainingQtyUpdated(
+      const boost::posix_time::ptime &,
+      const trdk::OrderId &,
+      const trdk::Qty &remainingQty,
+      const boost::function<bool(OrderTransactionContext &)> &);
+
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
