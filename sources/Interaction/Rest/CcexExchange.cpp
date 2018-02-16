@@ -115,7 +115,7 @@ class Request : public Rest::Request {
               << GetName() << "\" (" << GetRequest().getURI() << "): ";
         if (message) {
           if (boost::iequals(*message, "UUID_INVALID")) {
-            throw OrderIsUnknown(message->c_str());
+            throw OrderIsUnknownException(message->c_str());
           }
           error << "\"" << *message << "\"";
         } else {
@@ -680,7 +680,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       ptr::ptree response;
       try {
         response = boost::get<1>(request.Send(m_marketDataSession));
-      } catch (const OrderIsUnknown &) {
+      } catch (const OrderIsUnknownException &) {
         boost::mutex::scoped_lock lock(m_canceledMutex);
         const auto &it = m_canceled.find(orderId);
         if (it == m_canceled.cend()) {

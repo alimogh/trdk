@@ -103,7 +103,7 @@ bool PositionController::ClosePosition(Position &position,
     try {
       Verify(position.CancelAllOrders());
       return true;
-    } catch (const OrderIsUnknown &) {
+    } catch (const OrderIsUnknownException &) {
       return false;
     }
   } else if (position.HasActiveCloseOrders()) {

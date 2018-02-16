@@ -225,7 +225,7 @@ class TradeRequest : public Request {
           if (boost::istarts_with(*message,
                                   "The given order has already been "
                                   "closed and cannot be cancel")) {
-            throw OrderIsUnknown(error.str().c_str());
+            throw OrderIsUnknownException(error.str().c_str());
           } else if (boost::istarts_with(*message,
                                          "Insufficient funds in wallet of the "
                                          "second currency of the pair")) {
@@ -1010,7 +1010,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case ORDER_STATUS_CANCELED:
         try {
           OnOrderCanceled(time, id, boost::none, boost::none);
-        } catch (OrderIsUnknown &) {
+        } catch (OrderIsUnknownException &) {
           // This is workaround for Yobit bug. See also
           // https://yobit.net/en/support/e7f3cdb97d7dd1fa200f8b0dc8593f573fa07f9bdf309d43711c72381d39121d
           // and https://trello.com/c/luVuGQH2 for details.

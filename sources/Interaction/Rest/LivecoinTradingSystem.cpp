@@ -459,7 +459,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
                           "Failed to cancel order: can't find order") ||
               (boost::starts_with(message, "Order[orderId={") &&
                boost::contains(message, "}] isn't in OrderBook: status={"))
-          ? throw OrderIsUnknown(error.str().c_str())
+          ? throw OrderIsUnknownException(error.str().c_str())
           : throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {

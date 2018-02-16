@@ -69,9 +69,16 @@ class CommunicationError : public trdk::Lib::Exception {
   CommunicationError(const char *what) noexcept : Exception(what) {}
 };
 
-class OrderIsUnknown : public trdk::Lib::Exception {
+class InsufficientFundsException : public trdk::Lib::CommunicationError {
  public:
-  explicit OrderIsUnknown(const char *what) noexcept : Exception(what) {}
+  explicit InsufficientFundsException(const char *what) noexcept
+      : CommunicationError(what) {}
+};
+
+class OrderIsUnknownException : public trdk::Lib::Exception {
+ public:
+  explicit OrderIsUnknownException(const char *what) noexcept
+      : Exception(what) {}
 };
 
 class SymbolIsNotSupportedException : public trdk::Lib::Exception {
@@ -79,5 +86,6 @@ class SymbolIsNotSupportedException : public trdk::Lib::Exception {
   explicit SymbolIsNotSupportedException(const char *what) noexcept
       : Exception(what) {}
 };
-}
-}
+
+}  // namespace Lib
+}  // namespace trdk

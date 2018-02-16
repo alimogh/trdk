@@ -148,7 +148,9 @@ class Request : public Rest::Request {
           ReadJson(responseContent).get<std::string>("message");
       if (boost::iequals(message, "Order already done") ||
           boost::iequals(message, "order not found")) {
-        throw OrderIsUnknown(message.c_str());
+        throw OrderIsUnknownException(message.c_str());
+      } else if (boost::iequals(message, "Insufficient funds")) {
+        throw InsufficientFundsException(message.c_str());
       } else if (!message.empty()) {
         throw Exception(message.c_str());
       }
@@ -657,7 +659,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           const auto &message =
               ReadJson(responseContent).get<std::string>("message");
           if (message == "NotFound") {
-            throw OrderIsUnknown(message.c_str());
+            throw OrderIsUnknownException(message.c_str());
           } else if (!message.empty()) {
             throw Exception(message.c_str());
           }

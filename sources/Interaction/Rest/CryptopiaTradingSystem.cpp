@@ -383,7 +383,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                             [this, orderId, now]() {
                               try {
                                 OnOrderFilled(now, orderId, boost::none);
-                              } catch (const OrderIsUnknown &) {
+                              } catch (const OrderIsUnknownException &) {
                                 // Maybe already filled by periodic task.
                               }
                               return false;
@@ -412,7 +412,7 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
   if (boost::polymorphic_downcast<const CryptopiaOrderTransactionContext *>(
           &transaction)
           ->IsImmediatelyFilled()) {
-    throw OrderIsUnknown("Order was filled immediately at request");
+    throw OrderIsUnknownException("Order was filled immediately at request");
   }
 
   OrderTransactionRequest request(
@@ -497,15 +497,17 @@ bool CryptopiaTradingSystem::UpdateOrders() {
         m_cancelingOrders.erase(canceledOrderIt);
         cancelOrderLock.unlock();
         // There are no other places which can remove the order from the active
-        // list so this status update doesn't catch OrderIsUnknown-exception.
-        // No way to get remaining quantity. Support ticked waits for answer:
+        // list so this status update doesn't catch
+        // OrderIsUnknownException-exception. No way to get remaining quantity.
+        // Support ticked waits for answer:
         // https://www.cryptopia.co.nz/Support/SupportTicket?ticketId=135514
         OnOrderCanceled(now, id, boost::none, boost::none);
         continue;
       }
     }
     // There are no other places which can remove the order from the active
-    // list so this status update doesn't catch OrderIsUnknown-exception.
+    // list so this status update doesn't catch
+    // OrderIsUnknownException-exception.
     OnOrderFilled(now, id, boost::none);
   }
 
