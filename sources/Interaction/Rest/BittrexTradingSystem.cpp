@@ -345,7 +345,7 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
       const auto &qty = order.get<Qty>("Quantity");
       const auto &commission = order.get<Volume>("CommissionPaid");
       if (qty != remainingQty) {
-        Trade trade = {order.get<Price>("PricePerUnit", qty - remainingQty)};
+        Trade trade = {order.get<Price>("PricePerUnit"), qty - remainingQty};
         if (remainingQty == 0) {
           OnOrderFilled(time, orderId, std::move(trade), commission);
         } else {
