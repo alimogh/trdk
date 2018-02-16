@@ -256,7 +256,7 @@ TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
-       << "title = " << symbol.toStdString() << " Ping Pong" << std::endl
+       << "title = Ping Pong" << std::endl
        << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
        << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));

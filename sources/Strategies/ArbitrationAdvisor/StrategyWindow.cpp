@@ -186,7 +186,7 @@ void StrategyWindow::InitBySelectedSymbol() {
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
-       << "title = " << symbol << " Arbitrage" << std::endl
+       << "title = Arbitrage" << std::endl
        << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
     const auto &copyKey = [&os, &conf](const char *key) {
       if (!conf.IsKeyExist("General", key)) {
