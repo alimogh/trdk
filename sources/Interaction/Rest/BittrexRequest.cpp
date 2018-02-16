@@ -43,7 +43,7 @@ BittrexRequest::Response BittrexRequest::Send(
       error << ")";
       if (message) {
         if (*message == "ORDER_NOT_OPEN") {
-          throw OrderIsUnknown(error.str().c_str());
+          throw OrderIsUnknownException(error.str().c_str());
         } else if (*message == "INSUFFICIENT_FUNDS") {
           throw CommunicationError(error.str().c_str());
         }

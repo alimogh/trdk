@@ -171,15 +171,12 @@ TrailingStopPrice::TrailingStopPrice(
 const char *TrailingStopPrice::GetName() const { return "trailing stop price"; }
 
 Double TrailingStopPrice::CalcProfitToActivate() const {
-  return RoundByPrecision(
-      m_params->GetMinProfitPerLotToActivate() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  return m_params->GetMinProfitPerLotToActivate() *
+         GetPosition().GetOpenedQty();
 }
 
 Double TrailingStopPrice::CalcProfitToClose() const {
-  return RoundByPrecision(
-      m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty(),
-      GetPosition().GetSecurity().GetPricePrecisionPower());
+  return m_params->GetMinProfitPerLotToClose() * GetPosition().GetOpenedQty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

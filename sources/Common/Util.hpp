@@ -48,15 +48,15 @@ inline bool IsEmpty(const std::wstring &str) { return str.empty(); }
 
 //////////////////////////////////////////////////////////////////////////
 
-inline trdk::Lib::Double RoundByPrecision(double value,
-                                          uintmax_t precisionPower) {
+inline trdk::Lib::Double RoundByPrecisionPower(double value,
+                                               uintmax_t precisionPower) {
   return precisionPower
              ? boost::math::round(value * precisionPower) / precisionPower
              : boost::math::round(value);
 }
 
-inline trdk::Lib::Double RoundDownByPrecision(double value,
-                                              uintmax_t precisionPower) {
+inline trdk::Lib::Double RoundDownByPrecisionPower(double value,
+                                                   uintmax_t precisionPower) {
   return precisionPower ? std::floor(value * precisionPower) / precisionPower
                         : std::floor(value);
 }
@@ -147,5 +147,5 @@ trdk::Lib::ExcelTextFieldFormatter<T> ExcelTextField(const T &value) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
+}  // namespace Lib
+}  // namespace trdk

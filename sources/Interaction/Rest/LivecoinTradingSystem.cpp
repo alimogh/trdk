@@ -228,13 +228,11 @@ void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume LivecoinTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.18 / 100),
-                          security.GetPricePrecisionPower());
+Volume LivecoinTradingSystem::CalcCommission(const Qty &qty,
+                                             const Price &price,
+                                             const OrderSide &,
+                                             const trdk::Security &) const {
+  return (qty * price) * (0.18 / 100);
 }
 
 void LivecoinTradingSystem::UpdateBalances() {
@@ -290,20 +288,20 @@ void LivecoinTradingSystem::UpdateOrders() {
         AssertGe(qty, remainingQty);
         boost::optional<Volume> commission;
         if (qty != remainingQty) {
-          commission = order.get<Volume>("commission_rate");
+          commission = order.get<Volume>("trades.commission");
           OnTrade(time, orderId, Trade{order.get<Price>("trades.avg_price")});
         } else {
-          commission = order.get_optional<Volume>("commission_rate");
+          commission = order.get_optional<Volume>("trades.commission");
         }
         OnOrderCanceled(time, orderId, remainingQty, commission);
       } else if (status == "EXECUTED") {
         AssertEq(0, order.get<Price>("remaining_quantity"));
         OnOrderFilled(time, orderId,
                       Trade{order.get<Price>("trades.avg_price")},
-                      order.get<Volume>("commission_rate"));
+                      order.get<Volume>("trades.commission"));
       } else if (status != "OPEN" && status != "PARTIALLY_FILLED") {
         OnOrderError(time, orderId, remainingQty,
-                     order.get_optional<Volume>("commission_rate"),
+                     order.get_optional<Volume>("trades.commission"),
                      "Unknown order status");
       } else {
         OnOrderOpened(time, orderId);
@@ -410,10 +408,10 @@ LivecoinTradingSystem::SendOrderTransaction(trdk::Security &security,
   }
 
   std::ostringstream requestParams;
-  requestParams << std::fixed << "currencyPair=" << product->second.requestId
-                << "&price="
-                << std::setprecision(product->second.pricePrecision) << *price
-                << "&quantity=" << std::setprecision(8) << qty;
+  requestParams << "currencyPair=" << product->second.requestId
+                << "&price=" << std::fixed
+                << std::setprecision(product->second.pricePrecision)
+                << price->Get() << "&quantity=" << qty;
 
   TradingRequest request(
       side == ORDER_SIDE_BUY ? "/exchange/buylimit" : "/exchange/selllimit",
@@ -461,7 +459,7 @@ void LivecoinTradingSystem::SendCancelOrderTransaction(
                           "Failed to cancel order: can't find order") ||
               (boost::starts_with(message, "Order[orderId={") &&
                boost::contains(message, "}] isn't in OrderBook: status={"))
-          ? throw OrderIsUnknown(error.str().c_str())
+          ? throw OrderIsUnknownException(error.str().c_str())
           : throw Exception(error.str().c_str());
     }
   } catch (const ptr::ptree_error &ex) {

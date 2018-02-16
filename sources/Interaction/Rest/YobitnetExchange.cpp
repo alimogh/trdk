@@ -33,6 +33,8 @@ namespace fs = boost::filesystem;
 
 namespace {
 
+const auto newOrderSeachPeriod = pt::minutes(2);
+
 struct Settings : public Rest::Settings {
   struct Auth {
     std::string key;
@@ -223,7 +225,7 @@ class TradeRequest : public Request {
           if (boost::istarts_with(*message,
                                   "The given order has already been "
                                   "closed and cannot be cancel")) {
-            throw OrderIsUnknown(error.str().c_str());
+            throw OrderIsUnknownException(error.str().c_str());
           } else if (boost::istarts_with(*message,
                                          "Insufficient funds in wallet of the "
                                          "second currency of the pair")) {
@@ -443,9 +445,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   virtual Volume CalcCommission(const Qty &qty,
                                 const Price &price,
                                 const OrderSide &,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision((qty * price) * (0.2 / 100),
-                            security.GetPricePrecisionPower());
+                                const trdk::Security &) const override {
+    return (qty * price) * (0.2 / 100);
   }
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -587,9 +588,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &productId = product->second.id;
     const std::string actualSide = side == ORDER_SIDE_SELL ? "sell" : "buy";
     const auto actualPrice =
-        RoundByPrecision(*price, product->second.precisionPower);
+        RoundByPrecisionPower(*price, product->second.precisionPower);
 
-    boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
+    boost::format requestParams("pair=%1%&type=%2%&rate=%3%&amount=%4%");
     requestParams % productId  // 1
         % actualSide           // 2
         % actualPrice          // 3
@@ -603,7 +604,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       response = boost::get<1>(request.Send(m_tradingSession));
     } catch (
         const Request::CommunicationErrorWithUndeterminedRemoteResult &ex) {
-      GetTsLog().Debug(
+      GetTsLog().Info(
           "Got error \"%1%\" at the new-order request sending. Trying to "
           "retrieve actual result...",
           ex.what());
@@ -619,8 +620,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
 
     try {
       SetBalances(response);
-      return boost::make_unique<YobitnetOrderTransactionContext>(
+      auto result = boost::make_unique<YobitnetOrderTransactionContext>(
           *this, response.get<OrderId>("order_id"));
+      RegisterLastOrder(startTime, result->GetOrderId());
+      return result;
     } catch (const ptr::ptree_error &ex) {
       boost::format error(
           "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
@@ -1007,7 +1010,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case ORDER_STATUS_CANCELED:
         try {
           OnOrderCanceled(time, id, boost::none, boost::none);
-        } catch (OrderIsUnknown &) {
+        } catch (OrderIsUnknownException &) {
           // This is workaround for Yobit bug. See also
           // https://yobit.net/en/support/e7f3cdb97d7dd1fa200f8b0dc8593f573fa07f9bdf309d43711c72381d39121d
           // and https://trello.com/c/luVuGQH2 for details.
@@ -1037,17 +1040,19 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       ForEachRemoteActiveOrder(
           productId, m_tradingSession, m_tradingAuth, true,
           [&](const std::string &orderId, const ptr::ptree &order) {
-            if (GetActiveOrders().count(orderId) ||
+            if (IsIdRegisterInLastOrders(orderId) ||
+                GetActiveOrders().count(orderId) ||
                 order.get<std::string>("type") != side ||
                 order.get<Qty>("amount") > qty ||
                 order.get<Price>("rate") != price ||
-                ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
+                ParseTimeStamp(order, "timestamp_created") +
+                        newOrderSeachPeriod <
                     startTime) {
               return;
             }
             Verify(orderIds.emplace(std::move(orderId)).second);
           });
-      ForEachRemoteTrade(productId, startTime - pt::minutes(2),
+      ForEachRemoteTrade(productId, startTime - newOrderSeachPeriod,
                          m_tradingSession, m_tradingAuth, true,
                          [&](const std::string &, const ptr::ptree &trade) {
                            const auto &orderId = trade.get<OrderId>("order_id");
@@ -1071,7 +1076,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
           AssertEq(side, order.get<std::string>("type"));
           if (order.get<Qty>("start_amount") != qty ||
               order.get<Price>("rate") != price ||
-              ParseTimeStamp(order, "timestamp_created") + pt::minutes(2) <
+              ParseTimeStamp(order, "timestamp_created") + newOrderSeachPeriod <
                   startTime) {
             continue;
           }
@@ -1143,6 +1148,22 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     return result;
   }
 
+  void RegisterLastOrder(const pt::ptime &startTime, const OrderId &id) {
+    const auto &start = startTime - newOrderSeachPeriod;
+    while (!m_lastOrders.empty() && m_lastOrders.front().first < start) {
+      m_lastOrders.pop_front();
+    }
+    m_lastOrders.emplace_back(startTime, id.GetValue());
+  }
+  bool IsIdRegisterInLastOrders(const std::string &id) const {
+    for (const auto &order : m_lastOrders) {
+      if (order.second == id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
@@ -1161,6 +1182,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   boost::unordered_map<std::string, boost::shared_ptr<Rest::Security>>
       m_securities;
   YobitBalancesContainer m_balances;
+
+  std::deque<std::pair<pt::ptime, std::string>> m_lastOrders;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };

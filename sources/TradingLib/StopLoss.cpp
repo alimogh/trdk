@@ -207,7 +207,7 @@ bool StopLoss::Activate() {
 StopLossShare::Params::Params(const Double &maxLossShare)
     : m_maxLossShare(maxLossShare) {}
 
-const Volume &StopLossShare::Params::GetMaxLossShare() const {
+const Double &StopLossShare::Params::GetMaxLossShare() const {
   return m_maxLossShare;
 }
 

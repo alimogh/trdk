@@ -1334,7 +1334,7 @@ class ContextStateBootstrapper : private boost::noncopyable {
                                               &security);
               }
             } catch (const SymbolIsNotSupportedException &ex) {
-              m_context.GetLog().Warn(
+              m_context.GetLog().Debug(
                   "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
                   symbol,      // 1
                   source,      // 2

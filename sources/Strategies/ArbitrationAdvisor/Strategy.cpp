@@ -32,8 +32,8 @@ Price CaclSpread(const Price &bid, const Price &ask) { return bid - ask; }
 std::pair<Price, Double> CaclSpreadAndRatio(const Price &bid,
                                             const Price &ask) {
   const auto spread = CaclSpread(bid, ask);
-  auto ratio = 100 / (ask / spread);
-  ratio = RoundByPrecision(ratio, 100);
+  auto ratio = spread != 0 ? (100 / (ask / spread)) : 0;
+  ratio = RoundByPrecisionPower(ratio, 100);
   ratio /= 100;
   return {spread, ratio};
 }
@@ -317,8 +317,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       AssertEq(spreadRatio, CaclSpreadAndRatio(sellPrice, buyPrice).second);
     }
 
-    const auto qtyPrecisionPower = 1000000;
-
     struct Qtys : private boost::noncopyable {
       SignalSession *session;
       Security &sellTarget;
@@ -349,17 +347,14 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     } qtys(sellTarget, buyTarget, signalSession);
 
-    auto qty =
-        RoundDownByPrecision(std::min(m_tradingSettings->maxQty,
-                                      std::min(qtys.sellQty, qtys.buyQty)),
-                             qtyPrecisionPower);
+    auto qty = std::min(m_tradingSettings->maxQty,
+                        std::min(qtys.sellQty, qtys.buyQty));
 
     {
       auto balance =
           GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
       if (qty > balance.first) {
         Assert(balance.second);
-        balance.first = RoundDownByPrecision(balance.first, qtyPrecisionPower);
         AssertGt(qty, balance.first);
         m_self.GetTradingLog().Write(
             "{'pre-trade': {'balance reduces qty': {'prev': %1$.8f, 'new': "

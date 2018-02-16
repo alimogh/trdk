@@ -150,13 +150,11 @@ void CexioTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-Volume CexioTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.25 / 100),
-                          security.GetPricePrecisionPower());
+Volume CexioTradingSystem::CalcCommission(const Qty &qty,
+                                          const Price &price,
+                                          const OrderSide &,
+                                          const trdk::Security &) const {
+  return (qty * price) * (0.25 / 100);
 }
 
 void CexioTradingSystem::UpdateBalances() {
@@ -287,8 +285,8 @@ CexioTradingSystem::SendOrderTransaction(trdk::Security &security,
 
   boost::format requestParams(product.requestParamsFormat);
   requestParams % (side == ORDER_SIDE_BUY ? "buy" : "sell")  // 1
-      % qty                                                  // 2
-      % *price;                                              // 3
+      % qty.Get()                                            // 2
+      % price->Get();                                        // 3
 
   OrderRequest request("place_order/" + product.id, requestParams.str(),
                        m_settings, m_nonces.TakeNonce(), GetContext(), GetLog(),

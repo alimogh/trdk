@@ -33,8 +33,8 @@ class TRDK_CORE_API AsyncLogRecord {
     PT_INT64,
     PT_UINT64,
 
-    PT_FLOAT,
     PT_DOUBLE,
+    PT_DOUBLE_BUSINESS_8,
 
     PT_CHAR,
     PT_STRING,
@@ -74,12 +74,12 @@ class TRDK_CORE_API AsyncLogRecord {
  public:
   //! Schedules delayed formatting.
   /** Stores params for log record until it will be really written.
-    * WARNING! Pointer to C-string and all other not POD types must be available
-    * all time while module is active! Methods stores only pointers, not values.
-    *
-    * @sa trdk::AsyncLog::AsyncLogRecord::operator %
-    * @sa trdk::AsyncLog::WaitForFlush
-    */
+   *  WARNING! Pointer to C-string and all other not POD types must be available
+   *  all time while module is active! Methods stores only pointers, not values.
+   *
+   *  @sa trdk::AsyncLog::AsyncLogRecord::operator %
+   *  @sa trdk::AsyncLog::WaitForFlush
+   */
   template <typename... Params>
   void Format(const Params &... params) {
     SubFormat(params...);
@@ -87,12 +87,12 @@ class TRDK_CORE_API AsyncLogRecord {
 
   //! Schedules delayed formatting for one parameter.
   /** Stores params for log record until it will be really written.
-    * WARNING! Pointer to C-string and all other not POD types must be available
-    * all time while module is active! Methods stores only pointers, not values.
-    *
-    * @sa trdk::AsyncLog::AsyncLogRecord::Format
-    * @sa trdk::AsyncLog::WaitForFlush
-    */
+   *  WARNING! Pointer to C-string and all other not POD types must be available
+   *  all time while module is active! Methods stores only pointers, not values.
+   *
+   *  @sa trdk::AsyncLog::AsyncLogRecord::Format
+   *  @sa trdk::AsyncLog::WaitForFlush
+   */
   template <typename Param>
   AsyncLogRecord &operator%(const Param &param) {
     SubFormat(param);
@@ -166,11 +166,16 @@ class TRDK_CORE_API AsyncLogRecord {
           WriteToDumpStream(boost::any_cast<uint64_t>(val), os);
           break;
 
-        case PT_FLOAT:
-          WriteToDumpStream(boost::any_cast<float>(val), os);
-          break;
         case PT_DOUBLE:
-          WriteToDumpStream(boost::any_cast<double>(val), os);
+          WriteToDumpStream(boost::any_cast<trdk::Lib::Double>(val), os);
+          break;
+        case PT_DOUBLE_BUSINESS_8:
+          WriteToDumpStream(
+              boost::any_cast<trdk::Lib::BusinessNumeric<
+                  double,
+                  trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<
+                      100000000>>>(val),
+              os);
           break;
 
         case PT_CHAR: {
@@ -275,12 +280,34 @@ class TRDK_CORE_API AsyncLogRecord {
   void StoreParam(int64_t val) { StoreTypedParam(PT_INT64, val); }
   void StoreParam(uint64_t val) { StoreTypedParam(PT_UINT64, val); }
 
-  void StoreParam(float val) { StoreTypedParam(PT_FLOAT, val); }
-  void StoreParam(double val) { StoreTypedParam(PT_DOUBLE, val); }
+  void StoreParam(double val) { StoreParam(trdk::Lib::Double(val)); }
+  void StoreParam(const trdk::Lib::Double &val) {
+    StoreTypedParam(PT_DOUBLE, val);
+  }
+  void StoreParam(trdk::Lib::Double &&val) {
+    StoreTypedParam(PT_DOUBLE, std::move(val));
+  }
+  void StoreParam(
+      const trdk::Lib::BusinessNumeric<
+          double,
+          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+          &val) {
+    StoreTypedParam(PT_DOUBLE_BUSINESS_8, val);
+  }
+  void StoreParam(
+      trdk::Lib::BusinessNumeric<
+          double,
+          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+          &&val) {
+    StoreTypedParam(PT_DOUBLE_BUSINESS_8, std::move(val));
+  }
 
   void StoreParam(char val) { StoreTypedParam(PT_CHAR, val); }
   void StoreParam(const std::string &val) { StoreTypedParam(PT_STRING, val); }
-  void StoreParam(const boost::reference_wrapper<std::string> &val) {
+  void StoreParam(std::string &&val) {
+    StoreTypedParam(PT_STRING, std::move(val));
+  }
+  void StoreParam(boost::reference_wrapper<std::string> &&val) {
     StoreTypedParam(PT_STRING_REF, val);
   }
   void StoreParam(const char *val) { StoreTypedParam(PT_PCHAR, val); }
@@ -288,11 +315,20 @@ class TRDK_CORE_API AsyncLogRecord {
   void StoreParam(const boost::posix_time::ptime &time) {
     StoreTypedParam(PT_TIME, time);
   }
+  void StoreParam(boost::posix_time::ptime &&time) {
+    StoreTypedParam(PT_TIME, std::move(time));
+  }
   void StoreParam(const boost::posix_time::time_duration &time) {
     StoreTypedParam(PT_TIME_DURATION, time);
   }
+  void StoreParam(boost::posix_time::time_duration &&time) {
+    StoreTypedParam(PT_TIME_DURATION, std::move(time));
+  }
   void StoreParam(const boost::gregorian::date &date) {
     StoreTypedParam(PT_DATE, date);
+  }
+  void StoreParam(boost::gregorian::date &&date) {
+    StoreTypedParam(PT_DATE, std::move(date));
   }
 
   void StoreParam(const trdk::Lib::Currency &currency) {
@@ -318,6 +354,9 @@ class TRDK_CORE_API AsyncLogRecord {
   void StoreParam(const boost::uuids::uuid &val) {
     StoreTypedParam(PT_UUID, val);
   }
+  void StoreParam(boost::uuids::uuid &&val) {
+    StoreTypedParam(PT_UUID, std::move(val));
+  }
 
   void StoreParam(const trdk::CloseReason &closeReason) {
     StoreTypedParam(PT_CLOSE_REASON, closeReason);
@@ -335,14 +374,18 @@ class TRDK_CORE_API AsyncLogRecord {
     StoreTypedParam(PT_STRING, orderId.GetValue());
   }
 
-  template <typename T>
-  void StoreParam(const trdk::Lib::Numeric<T> &val) {
+  template <typename T, typename Policy>
+  void StoreParam(const trdk::Lib::Numeric<T, Policy> &val) {
     StoreParam(val.Get());
   }
 
   template <typename Param>
-  void StoreTypedParam(const ParamType &type, const Param &val) {
-    m_params.emplace_back(type, val);
+  void StoreTypedParam(ParamType &&type, const Param &val) {
+    m_params.emplace_back(std::move(type), std::move(val));
+  }
+  template <typename Param>
+  void StoreTypedParam(ParamType &&type, Param &&val) {
+    m_params.emplace_back(std::move(type), std::move(val));
   }
 
  private:
@@ -542,10 +585,10 @@ class AsyncLog : private boost::noncopyable {
  public:
   //! Waits until current queue will be empty.
   /** Needs to be called each time before any DLL will be unload as this
-    * queues may have pointers pointers to memory from this DLL.
-    * @sa trdk::AsyncLog::AsyncLogRecord::Format
-    * @sa trdk::AsyncLog::AsyncLogRecord::operator %
-    */
+   *  queues may have pointers pointers to memory from this DLL.
+   *  @sa trdk::AsyncLog::AsyncLogRecord::Format
+   *  @sa trdk::AsyncLog::AsyncLogRecord::operator %
+   */
   void WaitForFlush() const noexcept {
     try {
       m_writeTask->WaitForFlush();
@@ -600,4 +643,4 @@ class AsyncLog : private boost::noncopyable {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

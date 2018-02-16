@@ -25,6 +25,9 @@ namespace gr = boost::gregorian;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+const auto newOrderSeachPeriod = pt::minutes(2);
+
 OrderId ParseOrderId(const ptr::ptree &source) {
   return source.get<OrderId>("OrderId");
 }
@@ -205,8 +208,7 @@ Volume CryptopiaTradingSystem::CalcCommission(
   if (productIt == productIndex.cend()) {
     return 0;
   }
-  return RoundByPrecision((qty * price) * productIt->feeRatio,
-                          security.GetPricePrecisionPower());
+  return (qty * price) * productIt->feeRatio;
 }
 
 boost::optional<CryptopiaTradingSystem::OrderCheckError>
@@ -341,8 +343,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                                     const Qty &qty,
                                     const Price &price) {
       boost::format result(
-          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3$.8f,\"Amount\":%4$"
-          ".8f}");
+          "{\"TradePairId\":%1%,\"Type\":\"%2%\",\"Rate\":%3%,\"Amount\":%4%}");
       result % productId  // 1
           % side          // 2
           % price         // 3
@@ -382,7 +383,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                             [this, orderId, now]() {
                               try {
                                 OnOrderFilled(now, orderId, boost::none);
-                              } catch (const OrderIsUnknown &) {
+                              } catch (const OrderIsUnknownException &) {
                                 // Maybe already filled by periodic task.
                               }
                               return false;
@@ -390,6 +391,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
                             0, true);
     } else {
       SubscribeToOrderUpdates(product);
+      RegisterLastOrder(startTime, orderId);
     }
 
     return boost::make_unique<CryptopiaOrderTransactionContext>(
@@ -410,7 +412,7 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
   if (boost::polymorphic_downcast<const CryptopiaOrderTransactionContext *>(
           &transaction)
           ->IsImmediatelyFilled()) {
-    throw OrderIsUnknown("Order was filled immediately at request");
+    throw OrderIsUnknownException("Order was filled immediately at request");
   }
 
   OrderTransactionRequest request(
@@ -454,14 +456,27 @@ bool CryptopiaTradingSystem::UpdateOrders() {
     version = m_openOrdersRequestsVersion;
   }
 
-  boost::unordered_set<OrderId> orders;
+  const auto activeOrders = GetActiveOrderIdList();
+  boost::unordered_set<OrderId> actualOrders;
 
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response = boost::get<1>(request.second->Send(m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
-        Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
+        const auto &order = node.second;
+        try {
+          const auto &it = actualOrders.emplace(ParseOrderId(order));
+          Assert(it.second);
+          OnOrderRemainingQtyUpdated(ParseTimeStamp(order), *it.first,
+                                     order.get<Qty>("Remaining"));
+        } catch (const std::exception &ex) {
+          boost::format error(
+              "Failed to read order: \"%1%\". Message: \"%2%\"");
+          error % ex.what()                     // 1
+              % ConvertToString(order, false);  // 2
+          throw Exception(error.str().c_str());
+        }
       }
     } else {
       emptyRequests.emplace_back(request.first);
@@ -470,28 +485,30 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   const auto &now = GetContext().GetCurrentTime();
 
-  for (const auto &activeOrder : GetActiveOrderIdList()) {
-    if (orders.count(activeOrder)) {
+  for (const auto &id : activeOrders) {
+    if (actualOrders.count(id)) {
       continue;
     }
     {
       //! @todo Also see https://trello.com/c/Dmk5kjlA
       CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-      const auto &canceledOrderIt = m_cancelingOrders.find(activeOrder);
+      const auto &canceledOrderIt = m_cancelingOrders.find(id);
       if (canceledOrderIt != m_cancelingOrders.cend()) {
         m_cancelingOrders.erase(canceledOrderIt);
         cancelOrderLock.unlock();
         // There are no other places which can remove the order from the active
-        // list so this status update doesn't catch OrderIsUnknown-exception.
-        // No way to get remaining quantity. Support ticked waits for answer:
+        // list so this status update doesn't catch
+        // OrderIsUnknownException-exception. No way to get remaining quantity.
+        // Support ticked waits for answer:
         // https://www.cryptopia.co.nz/Support/SupportTicket?ticketId=135514
-        OnOrderCanceled(now, activeOrder, boost::none, boost::none);
+        OnOrderCanceled(now, id, boost::none, boost::none);
         continue;
       }
     }
     // There are no other places which can remove the order from the active
-    // list so this status update doesn't catch OrderIsUnknown-exception.
-    OnOrderFilled(now, activeOrder, boost::none);
+    // list so this status update doesn't catch
+    // OrderIsUnknownException-exception.
+    OnOrderFilled(now, id, boost::none);
   }
 
   {
@@ -505,33 +522,6 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
     return !m_openOrdersRequests.empty();
   }
-}
-
-OrderId CryptopiaTradingSystem::UpdateOrder(
-    const CryptopiaProduct & /*product*/, const ptr::ptree &node) {
-  OrderId id;
-  Qty remainingQty;
-  pt::ptime time;
-
-  try {
-    id = ParseOrderId(node);
-    remainingQty = node.get<Price>("Remaining");
-    time = ParseTimeStamp(node);
-  } catch (const std::exception &ex) {
-    boost::format error("Failed to parse order : \"%1%\". Message: \"%2%\"");
-    error % ex.what()                    // 1
-        % ConvertToString(node, false);  // 2
-    throw Exception(error.str().c_str());
-  }
-
-  // remainingQty = product.NormalizeQty(, remainingQty, );
-
-  try {
-    OnOrderOpened(time, id);
-  } catch (const OrderIsUnknown &) {
-  }
-
-  return id;
 }
 
 void CryptopiaTradingSystem::SubscribeToOrderUpdates(
@@ -566,11 +556,11 @@ boost::optional<OrderId> CryptopiaTradingSystem::FindNewOrderId(
     for (const auto &node : response) {
       const auto &order = node.second;
       const auto &id = ParseOrderId(order);
-      if (GetActiveOrders().count(id) ||
+      if (IsIdRegisterInLastOrders(id) || GetActiveOrders().count(id) ||
           order.get<std::string>("Type") != side ||
           order.get<Qty>("Amount") != qty ||
           order.get<Price>("Rate") != price ||
-          ParseTimeStamp(order) + pt::minutes(2) < startTime) {
+          ParseTimeStamp(order) + newOrderSeachPeriod < startTime) {
         continue;
       }
       if (result) {
@@ -599,17 +589,21 @@ pt::ptime CryptopiaTradingSystem::ParseTimeStamp(
   return result;
 }
 
-void CryptopiaTradingSystem::ForEachRemoteTrade(
-    const CryptopiaProductId &product,
-    std::unique_ptr<net::HTTPSClientSession> &session,
-    bool isPriority,
-    const boost::function<void(const ptr::ptree &)> &callback) const {
-  TradesRequest request(product, 500, m_nonces, m_settings, isPriority,
-                        GetContext(), GetLog(), GetTradingLog());
-  const auto response = boost::get<1>(request.Send(session));
-  for (const auto &node : response) {
-    callback(node.second);
+void CryptopiaTradingSystem::RegisterLastOrder(const pt::ptime &startTime,
+                                               const OrderId &id) {
+  const auto &start = startTime - newOrderSeachPeriod;
+  while (!m_lastOrders.empty() && m_lastOrders.front().first < start) {
+    m_lastOrders.pop_front();
   }
+  m_lastOrders.emplace_back(startTime, id);
+}
+bool CryptopiaTradingSystem::IsIdRegisterInLastOrders(const OrderId &id) const {
+  for (const auto &order : m_lastOrders) {
+    if (order.second == id) {
+      return true;
+    }
+  }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
