@@ -860,11 +860,11 @@ void TradingSystem::OnOrderCanceled(const pt::ptime &time,
                                     const boost::optional<Qty> &remainingQty,
                                     const boost::optional<Volume> &commission) {
   Assert(!remainingQty || *remainingQty > 0);
-  auto order = m_pimpl->TakeOrder(id);
   OrderStatus status = ORDER_STATUS_CANCELED;
   const char *statusName = "canceled";
   void (OrderStatusHandler::*handler)(const Volume &) =
       &OrderStatusHandler::OnCanceled;
+  auto order = m_pimpl->TakeOrder(id);
   if (!order->isCancelRequestSent) {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (order->tif) {

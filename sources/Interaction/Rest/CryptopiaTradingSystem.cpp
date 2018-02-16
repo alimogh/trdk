@@ -456,14 +456,16 @@ bool CryptopiaTradingSystem::UpdateOrders() {
     version = m_openOrdersRequestsVersion;
   }
 
-  boost::unordered_set<OrderId> orders;
+  const auto activeOrders = GetActiveOrderIdList();
+  boost::unordered_set<OrderId> actualOrders;
 
   std::vector<CryptopiaProductList::iterator> emptyRequests;
   for (auto &request : openOrdersRequests) {
     const auto response = boost::get<1>(request.second->Send(m_pollingSession));
     if (!response.empty()) {
       for (const auto &node : response) {
-        Verify(orders.emplace(UpdateOrder(*request.first, node.second)).second);
+        Verify(actualOrders.emplace(UpdateOrder(*request.first, node.second))
+                   .second);
       }
     } else {
       emptyRequests.emplace_back(request.first);
@@ -472,14 +474,14 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   const auto &now = GetContext().GetCurrentTime();
 
-  for (const auto &activeOrder : GetActiveOrderIdList()) {
-    if (orders.count(activeOrder)) {
+  for (const auto &id : activeOrders) {
+    if (actualOrders.count(id)) {
       continue;
     }
     {
       //! @todo Also see https://trello.com/c/Dmk5kjlA
       CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
-      const auto &canceledOrderIt = m_cancelingOrders.find(activeOrder);
+      const auto &canceledOrderIt = m_cancelingOrders.find(id);
       if (canceledOrderIt != m_cancelingOrders.cend()) {
         m_cancelingOrders.erase(canceledOrderIt);
         cancelOrderLock.unlock();
@@ -487,13 +489,13 @@ bool CryptopiaTradingSystem::UpdateOrders() {
         // list so this status update doesn't catch OrderIsUnknown-exception.
         // No way to get remaining quantity. Support ticked waits for answer:
         // https://www.cryptopia.co.nz/Support/SupportTicket?ticketId=135514
-        OnOrderCanceled(now, activeOrder, boost::none, boost::none);
+        OnOrderCanceled(now, id, boost::none, boost::none);
         continue;
       }
     }
     // There are no other places which can remove the order from the active
     // list so this status update doesn't catch OrderIsUnknown-exception.
-    OnOrderFilled(now, activeOrder, boost::none);
+    OnOrderFilled(now, id, boost::none);
   }
 
   {
