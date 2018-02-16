@@ -815,9 +815,9 @@ void TradingSystem::OnTrade(
     Trade &&trade,
     const boost::function<bool(OrderTransactionContext &)> &callback) {
   auto order = m_pimpl->GetOrder(orderId);
-  // You may remove assert from here, it here just to know who will return
-  // false.
-  Verify(callback(*order->transactionContext));
+  if (!callback(*order->transactionContext)) {
+    return;
+  }
 
   if (!trade.price) {
     trade.price = order->actualPrice;
