@@ -314,7 +314,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     if (result == m_activeOrders.cend()) {
       boost::format error("Failed to get order as order ID \"%1%\" is unknown");
       error % orderId;
-      throw OrderIsUnknown(error.str().c_str());
+      throw OrderIsUnknownException(error.str().c_str());
     }
     return {result->second};
   }
@@ -327,7 +327,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
         boost::format error(
             "Failed to take order as order ID \"%1%\" is unknown");
         error % orderId;
-        throw OrderIsUnknown(error.str().c_str());
+        throw OrderIsUnknownException(error.str().c_str());
       }
       result = it->second;
       {
@@ -713,7 +713,7 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
 
     try {
       SendCancelOrderTransaction(*transaction);
-    } catch (const OrderIsUnknown &ex) {
+    } catch (const OrderIsUnknownException &ex) {
       lock.unlock();
       GetTradingLog().Write(
           "{'order': {'cancelSendError': {'id': '%1%', 'reason': '%2%'}}}",
@@ -864,8 +864,9 @@ void TradingSystem::OnOrderRemainingQtyUpdated(
     OnOrderError(time, orderId, Qty(0), boost::none, error.str());
     return;
   }
-  m_pimpl->UpdateOrderByTrade(time, orderId, std::move(order),
-                              Trade{0, order->remainingQty - remainingQty});
+  m_pimpl->UpdateOrderByTrade(
+      time, orderId, std::move(order),
+      Trade{order->actualPrice, order->remainingQty - remainingQty});
 }
 
 void TradingSystem::OnOrderFilled(const pt::ptime &time,
