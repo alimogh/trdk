@@ -176,11 +176,7 @@ Position *GetAbsolutePosition(Position &signalPosition) {
   Assert(!oppositePosition->IsCompleted() ||
          oppositePosition != &positions.active);
   positions.active.SetClosedQty(positions.completed.GetActiveQty());
-
-  if (!positions.completed.IsCompleted()) {
-    positions.completed.MarkAsCompleted();
-  }
-
+  Assert(positions.completed.IsCompleted());
   return &positions.active;
 }
 }  // namespace
@@ -191,7 +187,7 @@ void aa::PositionController::ClosePosition(Position &position) {
     if (!absolutePosition) {
       return;
     } else if (&position != absolutePosition) {
-      ClosePosition(*absolutePosition, absolutePosition->GetCloseReason());
+      ClosePosition(*absolutePosition, position.GetCloseReason());
       return;
     }
   }
