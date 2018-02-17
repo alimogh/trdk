@@ -289,7 +289,9 @@ void LivecoinTradingSystem::UpdateOrders() {
         boost::optional<Volume> commission;
         if (qty != remainingQty) {
           commission = order.get<Volume>("trades.commission");
-          OnTrade(time, orderId, Trade{order.get<Price>("trades.avg_price")});
+          OnTrade(
+              time, orderId,
+              Trade{order.get<Price>("trades.avg_price"), qty - remainingQty});
         } else {
           commission = order.get_optional<Volume>("trades.commission");
         }
