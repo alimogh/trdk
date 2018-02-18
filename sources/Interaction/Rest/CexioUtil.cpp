@@ -32,6 +32,12 @@ boost::optional<Value> ParseOptionalValue(const ptr::ptree &source,
   }
   return boost::lexical_cast<Value>(value);
 }
+
+std::string FormatRequest(size_t qtyPrecision, size_t pricePrecision) {
+  return "type=%1%&amount=%2$." +
+         boost::lexical_cast<std::string>(qtyPrecision) + "f&price=%3$." +
+         boost::lexical_cast<std::string>(pricePrecision) + 'f';
+}
 }  // namespace
 
 boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
@@ -52,17 +58,36 @@ boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
       const auto &pair = node.second;
       const auto &symbol1 = pair.get<std::string>("symbol1");
       const auto &symbol2 = pair.get<std::string>("symbol2");
-      std::string requestParamsFormat = "type=%1%&amount=%2$.8f&price=%3$.";
+      std::string requestParamsFormat;
       if (symbol1 == "BTC") {
-        requestParamsFormat += symbol2 == "USD" || symbol2 == "EUR" ||
-                                       symbol2 == "GBP" || symbol2 == "RUB"
-                                   ? "1f"
-                                   : "8f";
-      } else if (symbol1 == "ETH" || symbol1 == "DASH") {
-        requestParamsFormat +=
-            symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GPB"
-                ? "2f"
-                : symbol2 == "BTC" ? "6f" : "8f";
+      } else if (symbol1 == "ETH") {
+        requestParamsFormat = FormatRequest(8, 1);
+      } else if (symbol1 == "BCH") {
+        if (symbol2 == "BTC") {
+          requestParamsFormat = FormatRequest(8, 6);
+        } else {
+          requestParamsFormat = FormatRequest(8, 2);
+        }
+      } else if (symbol1 == "BTG") {
+        if (symbol2 == "BTC") {
+          requestParamsFormat = FormatRequest(8, 6);
+        } else {
+          requestParamsFormat = FormatRequest(8, 2);
+        }
+      } else if (symbol1 == "DASH") {
+        if (symbol2 == "BTC") {
+          requestParamsFormat = FormatRequest(8, 6);
+        } else {
+          requestParamsFormat = FormatRequest(8, 2);
+        }
+      } else if (symbol1 == "XRP") {
+        if (symbol2 == "BTC") {
+          requestParamsFormat = FormatRequest(6, 8);
+        } else {
+          requestParamsFormat = FormatRequest(6, 4);
+        }
+      } else {
+        requestParamsFormat = FormatRequest(8, 8);
       }
       result.emplace(symbol1 + '_' + symbol2,
                      CexioProduct{symbol1 + '/' + symbol2,
