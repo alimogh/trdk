@@ -38,8 +38,9 @@ void ReportAboutGeneralAction(const Position &position,
                               const char *action,
                               const char *status) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3%, 'qty': %4%, "
-      "'type': '%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3%, "
+      "'plannedQty': %4%, 'type': '%5%', 'security': '%6%', 'operation': "
+      "'%7%/%8%'}}",
       [&](TradingRecord &record) {
         record % action                         // 1
             % status                            // 2
@@ -1100,8 +1101,8 @@ const Qty &Position::GetClosedQty() const noexcept {
 void Position::SetClosedQty(const Qty &newValue) {
   GetStrategy().GetTradingLog().Write(
       "{'position': {'forcing': {'status': 'closedQty', 'prevClosedQty': %1%, "
-      "'newClosedQty' %2%}, 'startPrice': %3%, 'qty': %4%, 'type': '%5%', "
-      "'security': '%6%', 'operation': '%7%/%8%'}}",
+      "'newClosedQty' %2%}, 'startPrice': %3%, 'plannedQty': %4%, 'type': "
+      "'%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
       [&](TradingRecord &record) {
         record % m_pimpl->m_close.qty  // 1
             % newValue                 // 2

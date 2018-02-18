@@ -176,7 +176,9 @@ Position *GetAbsolutePosition(Position &signalPosition) {
   Assert(!oppositePosition->IsCompleted() ||
          oppositePosition != &positions.active);
   positions.active.SetClosedQty(positions.completed.GetActiveQty());
-  Assert(positions.completed.IsCompleted());
+  if (!positions.completed.IsCompleted()) {
+    positions.completed.MarkAsCompleted();
+  }
   return &positions.active;
 }
 }  // namespace
