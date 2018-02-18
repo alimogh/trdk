@@ -39,28 +39,22 @@ struct Settings : public Rest::Settings {
   struct Auth {
     std::string key;
     std::string secret;
-    NonceStorage::Settings nonces;
 
     explicit Auth(const IniSectionRef &conf,
                   const char *apiKeyKey,
-                  const char *apiSecretKey,
-                  bool isTrading,
-                  ModuleEventsLog &log)
-        : key(conf.ReadKey(apiKeyKey)),
-          secret(conf.ReadKey(apiSecretKey)),
-          nonces(key, "Yobitnet", conf, log, isTrading) {}
+                  const char *apiSecretKey)
+        : key(conf.ReadKey(apiKeyKey)), secret(conf.ReadKey(apiSecretKey)) {}
   };
   Auth generalAuth;
   boost::optional<Auth> tradingAuth;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : Rest::Settings(conf, log),
-        generalAuth(conf, "api_key", "api_secret", false, log) {
+      : Rest::Settings(conf, log), generalAuth(conf, "api_key", "api_secret") {
     {
       const char *apiKeyKey = "api_trading_key";
       const char *apiSecretKey = "api_trading_secret";
       if (conf.IsKeyExist(apiKeyKey) || conf.IsKeyExist(apiSecretKey)) {
-        tradingAuth = Auth(conf, apiKeyKey, apiSecretKey, true, log);
+        tradingAuth = Auth(conf, apiKeyKey, apiSecretKey);
       }
     }
     Log(log);
@@ -78,12 +72,7 @@ struct Settings : public Rest::Settings {
     }
   }
 
-  void Validate() {
-    if (generalAuth.nonces.initialNonce <= 0 ||
-        (tradingAuth && tradingAuth->nonces.initialNonce <= 0)) {
-      throw Exception("Initial nonce could not be less than 1");
-    }
-  }
+  void Validate() {}
 };
 
 struct Auth {
@@ -322,14 +311,6 @@ std::string NormilizeCurrency(std::string source) {
   return source;
 }
 
-std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
-    const Settings &settings, ModuleEventsLog &log) {
-  if (!settings.tradingAuth) {
-    return nullptr;
-  }
-  return boost::make_unique<NonceStorage>(settings.tradingAuth->nonces, log);
-}
-
 class YobitBalancesContainer : public BalancesContainer {
  public:
  public:
@@ -365,8 +346,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-        m_generalNonces(m_settings.generalAuth.nonces, GetTsLog()),
-        m_tradingNonces(CreateTradingNoncesStorage(m_settings, GetTsLog())),
+        m_generalNonces(
+            boost::make_unique<NonceStorage::Int32TimedGenerator>()),
+        m_tradingNonces(
+            m_settings.tradingAuth
+                ? boost::make_unique<NonceStorage>(
+                      boost::make_unique<NonceStorage::Int32TimedGenerator>())
+                : nullptr),
         m_generalAuth({m_settings.generalAuth, m_generalNonces}),
         m_tradingAuth(m_settings.tradingAuth
                           ? Auth{*m_settings.tradingAuth, *m_tradingNonces}
