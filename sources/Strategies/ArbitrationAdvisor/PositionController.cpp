@@ -52,7 +52,6 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     Assert(!(position.GetNumberOfCloseOrders() == 0
                  ? !position.IsFullyOpened()
                  : position.GetActiveQty() > 0));
-    return;
   }
 
   position.GetCloseReason() == CLOSE_REASON_NONE &&oppositePosition &&
