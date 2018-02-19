@@ -16,37 +16,36 @@ namespace Rest {
 
 class NonceStorage : private boost::noncopyable {
  public:
-  typedef std::int32_t Value;
+  typedef std::uint64_t Value;
 
-  struct Settings {
-    bool isTrading;
-    Value initialNonce;
-    boost::filesystem::path nonceStorageFile;
+  class Generator : private boost::noncopyable {
+   public:
+    virtual ~Generator() = default;
 
-    explicit Settings(const std::string &keyName,
-                      const std::string &tag,
-                      const Lib::IniSectionRef &conf,
-                      ModuleEventsLog &log,
-                      bool isTrading = false)
-        : isTrading(isTrading),
-          initialNonce(conf.ReadTypedKey<Value>(
-              !isTrading ? "initial_nonce" : "initial_trading_nonce", 1)),
-          nonceStorageFile(conf.ReadFileSystemPath(
-                               !isTrading ? "nonce_storage_dir"
-                                          : "trading_nonce_storage_dir") /
-                           (tag + "_" + keyName + ".nonce")) {
-      Log(log);
-      Validate();
-    }
+   public:
+    virtual Value TakeNextNonce() = 0;
+  };
+  class Int32TimedGenerator : public Generator {
+   public:
+    Int32TimedGenerator();
+    virtual ~Int32TimedGenerator() override = default;
 
-    void Log(ModuleEventsLog &log) {
-      log.Debug("%1% nonce: %2%. Nonce storage file: %3%.",
-                !isTrading ? "Initial" : "Trading initial",  // 1
-                initialNonce,                                // 2
-                nonceStorageFile);                           // 3
-    }
+   public:
+    virtual Value TakeNextNonce() override { return m_nextValue++; }
 
-    void Validate() {}
+   private:
+    int32_t m_nextValue;
+  };
+  class UnsignedInt64TimedGenerator : public Generator {
+   public:
+    UnsignedInt64TimedGenerator();
+    virtual ~UnsignedInt64TimedGenerator() override = default;
+
+   public:
+    virtual Value TakeNextNonce() override { return m_nextValue++; }
+
+   private:
+    uint64_t m_nextValue;
   };
 
   typedef boost::mutex Mutex;
@@ -54,7 +53,7 @@ class NonceStorage : private boost::noncopyable {
 
   class TakenValue {
    public:
-    TakenValue(const Value &&value, Lock &&lock)
+    TakenValue(Value &&value, Lock &&lock)
         : m_value(std::move(value)), m_lock(std::move(lock)) {}
     TakenValue(TakenValue &&rhs)
         : m_value(std::move(rhs.m_value)), m_lock(std::move(rhs.m_lock)) {}
@@ -69,17 +68,16 @@ class NonceStorage : private boost::noncopyable {
   };
 
  public:
-  explicit NonceStorage(const Settings &, ModuleEventsLog &);
+  explicit NonceStorage(std::unique_ptr<Generator> &&);
   NonceStorage(NonceStorage &&) = default;
 
  public:
   TakenValue TakeNonce();
 
  private:
-  Value m_value;
-  std::ofstream m_storage;
+  std::unique_ptr<Generator> m_generator;
   Mutex m_mutex;
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

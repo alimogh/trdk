@@ -115,7 +115,7 @@ class Request : public Rest::Request {
               << GetName() << "\" (" << GetRequest().getURI() << "): ";
         if (message) {
           if (boost::iequals(*message, "UUID_INVALID")) {
-            throw OrderIsUnknown(message->c_str());
+            throw OrderIsUnknownException(message->c_str());
           }
           error << "\"" << *message << "\"";
         } else {
@@ -311,9 +311,8 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   virtual Volume CalcCommission(const Qty &qty,
                                 const Price &price,
                                 const OrderSide &,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision((qty * price) * (0.2 / 100),
-                            security.GetPricePrecisionPower());
+                                const trdk::Security &) const override {
+    return (qty * price) * (0.2 / 100);
   }
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -446,7 +445,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Symbol is not supported by exchange");
     }
 
-    boost::format requestParams("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+    boost::format requestParams("market=%1%&quantity=%2%&rate=%3%");
     requestParams % product->second.id  // 1
         % qty                           // 2
         % *price;                       // 3
@@ -582,15 +581,14 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       AssertEq(orderId, order.get<OrderId>("OrderUuid"));
       const auto &closedField = order.get<std::string>("Closed");
       remainingQty = order.get<Qty>("QuantityRemaining");
-      if (!boost::iequals(closedField, "null")) {
+      if (closedField != "null") {
         time = pt::time_from_string(closedField);
         status = remainingQty == 0 ? ORDER_STATUS_FILLED_FULLY
                                    : ORDER_STATUS_CANCELED;
       } else {
         time = pt::time_from_string(order.get<std::string>("Opened"));
-        if (order.get<bool>("CancelInitiated")) {
-          status = ORDER_STATUS_CANCELED;
-        }
+        status = order.get<bool>("CancelInitiated") ? ORDER_STATUS_CANCELED
+                                                    : ORDER_STATUS_OPENED;
       }
     } catch (const std::exception &ex) {
       boost::format error(
@@ -682,7 +680,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       ptr::ptree response;
       try {
         response = boost::get<1>(request.Send(m_marketDataSession));
-      } catch (const OrderIsUnknown &) {
+      } catch (const OrderIsUnknownException &) {
         boost::mutex::scoped_lock lock(m_canceledMutex);
         const auto &it = m_canceled.find(orderId);
         if (it == m_canceled.cend()) {

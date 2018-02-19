@@ -47,6 +47,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
       m_bestSellTradingSystem(nullptr) {
   setAttribute(Qt::WA_DeleteOnClose);
   m_ui.setupUi(this);
+  {
+    m_ui.highlightLevel->setValue(0.6);
+    m_ui.autoTradeLevel->setValue(0.6);
+    m_ui.maxQty->setValue(1000000000);
+  }
   LoadSymbolList();
   if (defaultSymbol) {
     m_ui.symbol->setCurrentText(*defaultSymbol);
@@ -181,7 +186,7 @@ void StrategyWindow::InitBySelectedSymbol() {
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
-       << "title = " << symbol << " Arbitrage" << std::endl
+       << "title = Arbitrage" << std::endl
        << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
     const auto &copyKey = [&os, &conf](const char *key) {
       if (!conf.IsKeyExist("General", key)) {

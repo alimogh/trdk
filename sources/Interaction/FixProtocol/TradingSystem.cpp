@@ -140,7 +140,7 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
       OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
                    std::move(text));
     }
-  } catch (const OrderIsUnknown &ex) {
+  } catch (const OrderIsUnknownException &ex) {
     message.ResetReadingState();
     GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
                   orderId,              // 1
@@ -173,7 +173,7 @@ void fix::TradingSystem::OnBusinessMessageReject(
       OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
                    std::move(reason));
     }
-  } catch (const OrderIsUnknown &ex) {
+  } catch (const OrderIsUnknownException &ex) {
     message.ResetReadingState();
     GetLog().Warn(
         "Received Business Message Reject for unknown order %1% (\"%2%\"): "
@@ -267,7 +267,7 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             break;
         }
     }
-  } catch (const OrderIsUnknown &ex) {
+  } catch (const OrderIsUnknownException &ex) {
     GetLog().Warn(
         "Received Execution Report for unknown order %1% (\"%2%\"): %3%.",
         orderId,    // 1

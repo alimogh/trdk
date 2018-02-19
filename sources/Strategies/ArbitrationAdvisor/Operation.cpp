@@ -63,7 +63,7 @@ void aa::Operation::Setup(Position &position,
     virtual void Report(const char *action) const override {
       GetTradingLog().Write(
           "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-          "'%7% %2$.8f'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
+          "'%7% %2%'}, 'delayTime': '%3%', 'position': {'side': '%8%', "
           "'operation': '%4%/%5%'}}}",
           [this, action](TradingRecord &record) {
             record % GetName()                           // 1
@@ -121,8 +121,8 @@ void aa::Operation::Setup(Position &position,
       }
 
       GetTradingLog().Write(
-          "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2$.8f %3% "
-          "%4$.8f', 'bid': %5$.8f, 'ask': %6$.8f, 'position': {'side': '%9%', "
+          "{'algo': {'action': 'hit', 'type': '%1%', 'price': '%2% %3% "
+          "%4%', 'bid': %5%, 'ask': %6%, 'position': {'side': '%9%', "
           "'operation': '%7%/%8%'}}}",
           [this, &currentPrice](TradingRecord &record) {
             record % GetName()                                    // 1

@@ -63,14 +63,18 @@ class BalancesContainer::Implementation : private boost::noncopyable {
     auto available = availableSource ? std::move(*availableSource) : 0;
     auto locked = lockedSource ? std::move(*lockedSource) : 0;
 
+    if (available == 0 && locked == 0) {
+      return;
+    }
+
     const auto &result = m_storage.emplace(
         symbol, Balance{std::move(available), std::move(locked)});
     Assert(result.second);
     auto &storage = result.first->second;
     m_tradingLog.Write(
         "{'balance': {'symbol': '%1%', 'available': {'prev': null, 'new': "
-        "%2$.8f, 'delta': %2$.8f}, 'locked': {'prev': null, 'new': %3$.8f, "
-        "'delta': %3$.8f}}}",
+        "%2%, 'delta': %2%}, 'locked': {'prev': null, 'new': %3%, 'delta': "
+        "%3%}}}",
         [&](TradingRecord &record) {
           record % result.first->first  // 1
               % storage.available       // 2
@@ -95,9 +99,9 @@ class BalancesContainer::Implementation : private boost::noncopyable {
     }
 
     m_tradingLog.Write(
-        "{'balance': {'symbol': '%1%', 'available': {'prev': %2$.8f, 'new': "
-        "%3$.8f, 'delta': %4$.8f}, 'locked': {'prev': %5$.8f, 'new': %6$.8f, "
-        "'delta': %7$.8f}}}",
+        "{'balance': {'symbol': '%1%', 'available': {'prev': %2%, 'new': "
+        "%3%, 'delta': %4%}, 'locked': {'prev': %5%, 'new': %6%, 'delta': "
+        "%7%}}}",
         [&](TradingRecord &record) {
           record % storage.first          // 1
               % storage.second.available  // 2
@@ -180,9 +184,9 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(
-          "{'balance': {'symbol': '%1%', 'available': {'prev': %2$.8f, 'new': "
-          "%3$.8f, 'delta': %4$.8f}, 'locked': {'prev': %5$.8f, 'new': %6$.8f, "
-          "'delta': %7$.8f}}}",
+          "{'balance': {'symbol': '%1%', 'available': {'prev': %2%, 'new': "
+          "%3%, 'delta': %4%}, 'locked': {'prev': %5%, 'new': %6%, 'delta': "
+          "%7%}}}",
           [&](TradingRecord &record) {
             record % symbol          // 1
                 % storage.available  // 2
@@ -215,9 +219,9 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(
-          "{'balance': {'symbol': '%1%', 'available': {'prev': %2$.8f, 'new': "
-          "%3$.8f, 'delta': %4$.8f}, 'locked': {'prev': %5$.8f, 'new': %6$.8f, "
-          "'delta': %7$.8f}}}",
+          "{'balance': {'symbol': '%1%', 'available': {'prev': %2%, 'new': "
+          "%3%, 'delta': %4%}, 'locked': {'prev': %5%, 'new': %6%, 'delta': "
+          "%7%}}}",
           [&](TradingRecord &record) {
             record % symbol          // 1
                 % storage.available  // 2

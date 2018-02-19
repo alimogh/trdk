@@ -39,28 +39,22 @@ struct Settings : public Rest::Settings {
   struct Auth {
     std::string key;
     std::string secret;
-    NonceStorage::Settings nonces;
 
     explicit Auth(const IniSectionRef &conf,
                   const char *apiKeyKey,
-                  const char *apiSecretKey,
-                  bool isTrading,
-                  ModuleEventsLog &log)
-        : key(conf.ReadKey(apiKeyKey)),
-          secret(conf.ReadKey(apiSecretKey)),
-          nonces(key, "Yobitnet", conf, log, isTrading) {}
+                  const char *apiSecretKey)
+        : key(conf.ReadKey(apiKeyKey)), secret(conf.ReadKey(apiSecretKey)) {}
   };
   Auth generalAuth;
   boost::optional<Auth> tradingAuth;
 
   explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
-      : Rest::Settings(conf, log),
-        generalAuth(conf, "api_key", "api_secret", false, log) {
+      : Rest::Settings(conf, log), generalAuth(conf, "api_key", "api_secret") {
     {
       const char *apiKeyKey = "api_trading_key";
       const char *apiSecretKey = "api_trading_secret";
       if (conf.IsKeyExist(apiKeyKey) || conf.IsKeyExist(apiSecretKey)) {
-        tradingAuth = Auth(conf, apiKeyKey, apiSecretKey, true, log);
+        tradingAuth = Auth(conf, apiKeyKey, apiSecretKey);
       }
     }
     Log(log);
@@ -78,12 +72,7 @@ struct Settings : public Rest::Settings {
     }
   }
 
-  void Validate() {
-    if (generalAuth.nonces.initialNonce <= 0 ||
-        (tradingAuth && tradingAuth->nonces.initialNonce <= 0)) {
-      throw Exception("Initial nonce could not be less than 1");
-    }
-  }
+  void Validate() {}
 };
 
 struct Auth {
@@ -225,7 +214,7 @@ class TradeRequest : public Request {
           if (boost::istarts_with(*message,
                                   "The given order has already been "
                                   "closed and cannot be cancel")) {
-            throw OrderIsUnknown(error.str().c_str());
+            throw OrderIsUnknownException(error.str().c_str());
           } else if (boost::istarts_with(*message,
                                          "Insufficient funds in wallet of the "
                                          "second currency of the pair")) {
@@ -322,14 +311,6 @@ std::string NormilizeCurrency(std::string source) {
   return source;
 }
 
-std::unique_ptr<NonceStorage> CreateTradingNoncesStorage(
-    const Settings &settings, ModuleEventsLog &log) {
-  if (!settings.tradingAuth) {
-    return nullptr;
-  }
-  return boost::make_unique<NonceStorage>(settings.tradingAuth->nonces, log);
-}
-
 class YobitBalancesContainer : public BalancesContainer {
  public:
  public:
@@ -365,8 +346,13 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
         m_settings(conf, GetTsLog()),
         m_serverTimeDiff(
             GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-        m_generalNonces(m_settings.generalAuth.nonces, GetTsLog()),
-        m_tradingNonces(CreateTradingNoncesStorage(m_settings, GetTsLog())),
+        m_generalNonces(
+            boost::make_unique<NonceStorage::Int32TimedGenerator>()),
+        m_tradingNonces(
+            m_settings.tradingAuth
+                ? boost::make_unique<NonceStorage>(
+                      boost::make_unique<NonceStorage::Int32TimedGenerator>())
+                : nullptr),
         m_generalAuth({m_settings.generalAuth, m_generalNonces}),
         m_tradingAuth(m_settings.tradingAuth
                           ? Auth{*m_settings.tradingAuth, *m_tradingNonces}
@@ -445,9 +431,8 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
   virtual Volume CalcCommission(const Qty &qty,
                                 const Price &price,
                                 const OrderSide &,
-                                const trdk::Security &security) const override {
-    return RoundByPrecision((qty * price) * (0.2 / 100),
-                            security.GetPricePrecisionPower());
+                                const trdk::Security &) const override {
+    return (qty * price) * (0.2 / 100);
   }
 
   virtual boost::optional<OrderCheckError> CheckOrder(
@@ -589,9 +574,9 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     const auto &productId = product->second.id;
     const std::string actualSide = side == ORDER_SIDE_SELL ? "sell" : "buy";
     const auto actualPrice =
-        RoundByPrecision(*price, product->second.precisionPower);
+        RoundByPrecisionPower(*price, product->second.precisionPower);
 
-    boost::format requestParams("pair=%1%&type=%2%&rate=%3$.8f&amount=%4$.8f");
+    boost::format requestParams("pair=%1%&type=%2%&rate=%3%&amount=%4%");
     requestParams % productId  // 1
         % actualSide           // 2
         % actualPrice          // 3
@@ -1011,7 +996,7 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
       case ORDER_STATUS_CANCELED:
         try {
           OnOrderCanceled(time, id, boost::none, boost::none);
-        } catch (OrderIsUnknown &) {
+        } catch (OrderIsUnknownException &) {
           // This is workaround for Yobit bug. See also
           // https://yobit.net/en/support/e7f3cdb97d7dd1fa200f8b0dc8593f573fa07f9bdf309d43711c72381d39121d
           // and https://trello.com/c/luVuGQH2 for details.

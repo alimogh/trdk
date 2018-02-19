@@ -38,8 +38,9 @@ void ReportAboutGeneralAction(const Position &position,
                               const char *action,
                               const char *status) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3$.8f, 'qty': "
-      "%4$.8f, 'type': '%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3%, "
+      "'plannedQty': %4%, 'type': '%5%', 'security': '%6%', 'operation': "
+      "'%7%/%8%'}}",
       [&](TradingRecord &record) {
         record % action                         // 1
             % status                            // 2
@@ -54,9 +55,8 @@ void ReportAboutGeneralAction(const Position &position,
 
 void ReportAboutDeletion(const Position &position) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'del': {'numberOfObjects': %1%}, 'startPrice': %2$.8f, "
-      "'qty': %3$.8f, 'type': '%4%', 'security': '%5%', 'operation': "
-      "'%6%/%7%'}}",
+      "{'position': {'del': {'numberOfObjects': %1%}, 'startPrice': %2%, "
+      "'qty': %3%, 'type': '%4%', 'security': '%5%', 'operation': '%6%/%7%'}}",
       [&](TradingRecord &record) {
         record % objectsCounter                 // 1
             % position.GetOpenStartPrice()      // 2
@@ -217,11 +217,11 @@ class Position::Implementation : private boost::noncopyable {
     virtual void OnFilled(const Volume &comission) override {
       auto lock = Lock();
       Assert(!m_position->IsClosed());
-      Assert(!m_position->IsCompleted());
+      auto &impl = GetPositionImpl();
+      Assert(!impl.m_isMarketAsCompleted);
       auto &order = GetOrder();
       AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
-      AssertLe(order.executedQty, order.qty);
-      auto &impl = GetPositionImpl();
+      AssertEq(order.executedQty, order.qty);
       if (!impl.m_defaultOrderParams.position) {
         impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
       }
@@ -477,7 +477,7 @@ class Position::Implementation : private boost::noncopyable {
     Assert(!m_open.orders.empty());
     m_strategy.GetTradingLog().Write(
         "position\trestored\t%1%\t%2%\t%3%.%4%\topen_start_time=%5%\topen_time="
-        "%6%\tprice=%7$.8f->%8$.8f\t%9%\tqty=%10$.8f\toperation=%11%/%12%",
+        "%6%\tprice=%7%->%8%\t%9%\tqty=%10%\toperation=%11%/%12%",
         [this](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % m_self.GetOpenOrderSide()                         // 1
@@ -503,9 +503,8 @@ class Position::Implementation : private boost::noncopyable {
                           const boost::optional<OrderId> &id) const noexcept {
     Assert(!m_open.orders.empty());
     m_strategy.GetTradingLog().Write(
-        "position\topen->%1%\t%2%\t%3%\t%4%.%5%\tprice=%6$.8f->%7$.8f\t%8%"
-        "\tqty=%9$.8f\tbid/ask=%10$.8f/%11$.8f\toperation=%12%/"
-        "%13%\torder=%14%/-",
+        "position\topen->%1%\t%2%\t%3%\t%4%.%5%\tprice=%6%->%7%\t%8%"
+        "\tqty=%9%\tbid/ask=%10%/%11%\toperation=%12%/%13%\torder=%14%/-",
         [this, eventDesc, &id](TradingRecord &record) {
           const auto &order = m_open.orders.back();
           record % eventDesc                                         // 1
@@ -537,10 +536,9 @@ class Position::Implementation : private boost::noncopyable {
                           const boost::optional<OrderId> &id,
                           const Qty &maxQty) const noexcept {
     m_strategy.GetTradingLog().Write(
-        "position\tclose->%1%\t%2%\t%3%\t%4%.%5%"
-        "\tclose_type=%6%\tprice=%7$.8f->%8$.8f\t%9%"
-        "\tmax_qty=%10$.8f\tactive_qty=%11$.8f\tbid/ask=%12$.8f/%13$.8f"
-        "\toperation=%14%/%15%\torder=%16%/-",
+        "position\tclose->%1%\t%2%\t%3%\t%4%.%5%\tclose_type=%6%\tprice=%7%->%"
+        "8%\t%9%\tmax_qty=%10%\tactive_qty=%11%\tbid/ask=%12%/"
+        "%13%\toperation=%14%/%15%\torder=%16%/-",
         [&](TradingRecord &record) {
           record % eventDesc                                         // 1
               % m_self.GetCloseOrderSide()                           // 2
@@ -577,11 +575,11 @@ class Position::Implementation : private boost::noncopyable {
     AssertLt(0, direction.orders.size());
     const auto &order = direction.orders.back();
     m_strategy.GetTradingLog().Write(
-        "{'position': {'%1%': {'status': '%2%', 'orderPrice': %3$.8f, "
-        "'lastPrice': %4$.8f, 'orderQty': %6$.8f, 'filledQty': %7$.8f, "
-        "'remainingQty': %8$.8f, 'orderId': '%9%'}, 'startPrice': %10$.8f, "
-        "'plannedQty': %11$.8f, 'activeQty': %12$.8f, 'avgPrice': %5$.8f, "
-        "'type': '%13%', 'security': '%14%', 'operation': '%15%/%16%'}}",
+        "{'position': {'%1%': {'status': '%2%', 'orderPrice': %3%, "
+        "'lastPrice': %4%, 'orderQty': %6%, 'filledQty': %7%, 'remainingQty': "
+        "%8%, 'orderId': '%9%'}, 'startPrice': %10%, 'plannedQty': %11%, "
+        "'activeQty': %12%, 'avgPrice': %5%, 'type': '%13%', 'security': "
+        "'%14%', 'operation': '%15%/%16%'}}",
         [&](TradingRecord &record) {
           record % action  // 1
               % status;    // 2
@@ -591,9 +589,8 @@ class Position::Implementation : private boost::noncopyable {
             record % "null";  // 3
           }
           if (filledQty) {
-            record % direction.lastTradePrice  // 4
-                % RoundByPrecision(direction.volume / direction.qty,
-                                   m_security->GetPricePrecisionPower());  // 5
+            record % direction.lastTradePrice          // 4
+                % (direction.volume / direction.qty);  // 5
           } else {
             record % "null"  // 4
                 % "null";    // 5
@@ -824,8 +821,8 @@ class Position::Implementation : private boost::noncopyable {
     AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
     Assert(!order.isCanceled);
     m_strategy.GetTradingLog().Write(
-        "position\tcancel_all\t%1%_order\t%2%\t%3%\t%4%"
-        "\toperation=%5%/%6%\torder=%7%",
+        "position\tcancel_all\t%1%_order\t%2%\t%3%\t%4%\toperation=%5%/"
+        "%6%\torder=%7%",
         [this, &order, &direction](TradingRecord &record) {
           record % direction                                         // 1
               % m_security->GetSymbol().GetSymbol().c_str()          // 2
@@ -931,10 +928,10 @@ void Position::ReplaceTradingSystem(Security &security,
   }
   GetStrategy().GetTradingLog().Write(
       "{'position': {'move': {'security': {'prev': {'security': '%1%', 'bid': "
-      "%2$.8f, 'ask':%3$.8f}, 'new': {'security': '%4%', 'bid': %5$.8f, 'ask': "
-      "%6$.8f}}, 'tradingSystem': {'prev': {'name': '%7%', 'mode': '%8%'}, "
-      "'new': 'name': '%9%', 'mode': '%10%'}}}, 'startPrice': %11$.8f, 'qty': "
-      "%12$.8f, 'type': '%13%', 'security': '%14%', 'operation': '%15%/%16%'}}",
+      "%2%, 'ask':%3%}, 'new': {'security': '%4%', 'bid': %5%, 'ask': %6%}}, "
+      "'tradingSystem': {'prev': {'name': '%7%', 'mode': '%8%'}, 'new': "
+      "'name': '%9%', 'mode': '%10%'}}}, 'startPrice': %11%, 'qty': %12%, "
+      "'type': '%13%', 'security': '%14%', 'operation': '%15%/%16%'}}",
       [&](TradingRecord &record) {
         record % *m_pimpl->m_security                              // 1
             % m_pimpl->m_security->GetBidPriceValue()              // 2
@@ -1097,18 +1094,33 @@ Volume Position::GetActiveVolume() const {
   if (!m_pimpl->m_open.qty) {
     return 0;
   }
-  // approximate:
-  return RoundByPrecision(activeQty * (GetOpenedVolume() / m_pimpl->m_open.qty),
-                          GetSecurity().GetPricePrecisionPower());
+  return activeQty * (GetOpenedVolume() / m_pimpl->m_open.qty);
 }
 
 const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
 }
 void Position::SetClosedQty(const Qty &newValue) {
+  GetStrategy().GetTradingLog().Write(
+      "{'position': {'forcing': {'status': 'closedQty', 'prevClosedQty': %1%, "
+      "'newClosedQty' %2%}, 'startPrice': %3%, 'plannedQty': %4%, 'type': "
+      "'%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+      [&](TradingRecord &record) {
+        record % m_pimpl->m_close.qty  // 1
+            % newValue                 // 2
+            % GetOpenStartPrice()      // 3
+            % GetPlanedQty()           // 4
+            % GetSide()                // 5
+            % GetSecurity()            // 6
+            % GetOperation()->GetId()  // 7
+            % GetSubOperationId();     // 8
+      });
   AssertGe(GetOpenedQty(), newValue);
+  const bool isCompelted = IsCompleted();
   m_pimpl->m_close.qty = newValue;
-  ReportAboutGeneralAction(*this, "forcing", "closedQty");
+  if (!isCompelted && IsCompleted()) {
+    m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
+  }
 }
 
 Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
@@ -1154,9 +1166,7 @@ const Price &Position::GetLastTradePrice() const {
 }
 
 Volume Position::GetRealizedPnlVolume() const {
-  return RoundByPrecision(
-      GetRealizedPnl() * GetSecurity().GetNumberOfItemsPerQty(),
-      GetSecurity().GetPricePrecisionPower());
+  return GetRealizedPnl() * GetSecurity().GetNumberOfItemsPerQty();
 }
 
 Double Position::GetRealizedPnlPercentage() const {
@@ -1166,8 +1176,7 @@ Double Position::GetRealizedPnlPercentage() const {
 }
 
 Volume Position::GetPlannedPnl() const {
-  return RoundByPrecision(GetUnrealizedPnl() + GetRealizedPnl(),
-                          GetSecurity().GetPricePrecisionPower());
+  return GetUnrealizedPnl() + GetRealizedPnl();
 }
 
 bool Position::IsProfit() const {
@@ -1249,8 +1258,7 @@ Price Position::GetOpenAvgPrice() const {
   if (!m_pimpl->m_open.qty) {
     throw Exception("Position has no open price");
   }
-  return RoundByPrecision(m_pimpl->m_open.volume / m_pimpl->m_open.qty,
-                          GetSecurity().GetPricePrecisionPower());
+  return m_pimpl->m_open.volume / m_pimpl->m_open.qty;
 }
 
 const boost::optional<Price> &Position::GetActiveOpenOrderPrice() const {
@@ -1301,8 +1309,7 @@ Price Position::GetCloseAvgPrice() const {
   if (!m_pimpl->m_close.qty) {
     throw Exception("Position has no close price");
   }
-  return RoundByPrecision(m_pimpl->m_close.volume / m_pimpl->m_close.qty,
-                          GetSecurity().GetPricePrecisionPower());
+  return m_pimpl->m_close.volume / m_pimpl->m_close.qty;
 }
 
 const boost::optional<Price> &Position::GetActiveCloseOrderPrice() const {
@@ -1341,6 +1348,7 @@ void Position::RestoreOpenState(
 }
 
 void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
+  const bool isCompeleted = IsCompleted();
   if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close, GetClosedQty());
     m_pimpl->m_operation->UpdatePnl(
@@ -1355,6 +1363,9 @@ void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
                                           GetSecurity()));
   } else {
     throw Exception("There are no active orders to add virtual trade");
+  }
+  if (!isCompeleted && IsCompleted()) {
+    m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
   }
 }
 
@@ -1482,8 +1493,8 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                startPrice,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
-      "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\toperation=%7%/%8%\tparent=%9%",
+      "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
+      "7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1515,12 +1526,10 @@ OrderSide LongPosition::GetCloseOrderSide() const { return ORDER_SIDE_SELL; }
 Volume LongPosition::GetRealizedPnl() const {
   const auto &activeQty = GetActiveQty();
   if (activeQty == 0) {
-    return RoundByPrecision(GetClosedVolume() - GetOpenedVolume(),
-                            GetSecurity().GetPricePrecisionPower());
+    return GetClosedVolume() - GetOpenedVolume();
   }
   const auto openedVolume = (GetOpenedQty() - activeQty) * GetOpenAvgPrice();
-  return RoundByPrecision(GetClosedVolume() - openedVolume,
-                          GetSecurity().GetPricePrecisionPower());
+  return GetClosedVolume() - openedVolume;
 }
 
 Double LongPosition::GetRealizedPnlRatio() const {
@@ -1541,9 +1550,7 @@ Double LongPosition::GetRealizedPnlRatio() const {
 }
 
 Volume LongPosition::GetUnrealizedPnl() const {
-  return RoundByPrecision(
-      (GetActiveQty() * GetSecurity().GetBidPrice()) - GetActiveVolume(),
-      GetSecurity().GetPricePrecisionPower());
+  return (GetActiveQty() * GetSecurity().GetBidPrice()) - GetActiveVolume();
 }
 
 Price LongPosition::GetMarketOpenPrice() const {
@@ -1656,8 +1663,8 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                startPrice,
                timeMeasurement) {
   GetStrategy().GetTradingLog().Write(
-      "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4$.8f\t%5%\tqty=%6$.8f"
-      "\toperation=%7%/%8%\tparent=%9%",
+      "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
+      "7%/%8%\tparent=%9%",
       [this](TradingRecord &record) {
         record % GetSecurity().GetSymbol().GetSymbol().c_str()  // 1
             % GetTradingSystem().GetInstanceName().c_str()      // 2
@@ -1688,13 +1695,11 @@ OrderSide ShortPosition::GetCloseOrderSide() const { return ORDER_SIDE_BUY; }
 
 Volume ShortPosition::GetRealizedPnl() const {
   if (GetActiveQty() == 0) {
-    return RoundByPrecision(GetOpenedVolume() - GetClosedVolume(),
-                            GetSecurity().GetPricePrecisionPower());
+    return GetOpenedVolume() - GetClosedVolume();
   }
   const auto openedVolume =
       (GetOpenedQty() - GetActiveQty()) * GetOpenAvgPrice();
-  return RoundByPrecision(openedVolume - GetClosedVolume(),
-                          GetSecurity().GetPricePrecisionPower());
+  return openedVolume - GetClosedVolume();
 }
 Double ShortPosition::GetRealizedPnlRatio() const {
   const auto closedVolume = GetClosedVolume();
@@ -1709,9 +1714,7 @@ Double ShortPosition::GetRealizedPnlRatio() const {
   return openedVolume / closedVolume;
 }
 Volume ShortPosition::GetUnrealizedPnl() const {
-  return RoundByPrecision(
-      GetActiveVolume() - (GetActiveQty() * GetSecurity().GetAskPrice()),
-      GetSecurity().GetPricePrecisionPower());
+  return GetActiveVolume() - (GetActiveQty() * GetSecurity().GetAskPrice());
 }
 
 Price ShortPosition::GetMarketOpenPrice() const {

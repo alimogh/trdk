@@ -17,9 +17,18 @@ namespace trdk {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef trdk::Lib::Double Qty;
-typedef trdk::Lib::Double Price;
-typedef trdk::Lib::Double Volume;
+typedef trdk::Lib::BusinessNumeric<
+    double,
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    Qty;
+typedef trdk::Lib::BusinessNumeric<
+    double,
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    Price;
+typedef trdk::Lib::BusinessNumeric<
+    double,
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    Volume;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -87,12 +96,12 @@ struct OrderParams {
 
   //! Good in Time.
   /** The order should be canceled if is not filled after this time.
-    */
+   */
   boost::optional<boost::posix_time::time_duration> goodInTime;
 
   //! Define forced expiration for order contract.
   /** If set - this expiration will be used, not from security object.
-    */
+   */
   const trdk::Lib::ContractExpiration *expiration;
 
   //! Trading system must try to work with position started by specified order
@@ -194,7 +203,7 @@ inline bool IsPassive(const CloseReason &reason) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -286,7 +295,7 @@ class Level1TickValue {
   Level1TickType m_type;
   trdk::Lib::Double m_value;
 };
-}
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -315,7 +324,7 @@ inline std::ostream &operator<<(std::ostream &oss,
   oss << trdk::ConvertToString(mode);
   return oss;
 }
-}
+}  // namespace trdk
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -347,19 +356,19 @@ class OrderId {
  private:
   std::string m_value;
 };
-}
+}  // namespace trdk
 
 namespace stdext {
 
 inline size_t hash_value(const trdk::OrderId &orderId) {
   return boost::hash_value(orderId.GetValue());
 }
-}
+}  // namespace stdext
 
 namespace trdk {
 inline size_t hash_value(const trdk::OrderId &orderId) {
   return stdext::hash_value(orderId);
 }
-}
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////

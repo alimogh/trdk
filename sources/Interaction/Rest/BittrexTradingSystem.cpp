@@ -169,13 +169,11 @@ bool BittrexTradingSystem::CheckSymbol(const std::string &symbol) const {
   return Base::CheckSymbol(symbol) && m_products.count(symbol) > 0;
 }
 
-Volume BittrexTradingSystem::CalcCommission(
-    const Qty &qty,
-    const Price &price,
-    const OrderSide &,
-    const trdk::Security &security) const {
-  return RoundByPrecision((qty * price) * (0.25 / 100),
-                          security.GetPricePrecisionPower());
+Volume BittrexTradingSystem::CalcCommission(const Qty &qty,
+                                            const Price &price,
+                                            const OrderSide &,
+                                            const trdk::Security &) const {
+  return (qty * price) * (0.25 / 100);
 }
 
 std::unique_ptr<OrderTransactionContext>
@@ -248,7 +246,7 @@ BittrexTradingSystem::SendOrderTransaction(trdk::Security &security,
     static std::string CreateUriParams(const std::string &productId,
                                        const Qty &qty,
                                        const Price &price) {
-      boost::format result("market=%1%&quantity=%2$.8f&rate=%3$.8f");
+      boost::format result("market=%1%&quantity=%2%&rate=%3%");
       result % productId  // 1
           % qty           // 2
           % price;        // 3
@@ -347,7 +345,7 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
       const auto &qty = order.get<Qty>("Quantity");
       const auto &commission = order.get<Volume>("CommissionPaid");
       if (qty != remainingQty) {
-        Trade trade = {order.get<Price>("PricePerUnit", qty - remainingQty)};
+        Trade trade = {order.get<Price>("PricePerUnit"), qty - remainingQty};
         if (remainingQty == 0) {
           OnOrderFilled(time, orderId, std::move(trade), commission);
         } else {

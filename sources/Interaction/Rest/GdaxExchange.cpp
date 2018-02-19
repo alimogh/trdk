@@ -148,7 +148,9 @@ class Request : public Rest::Request {
           ReadJson(responseContent).get<std::string>("message");
       if (boost::iequals(message, "Order already done") ||
           boost::iequals(message, "order not found")) {
-        throw OrderIsUnknown(message.c_str());
+        throw OrderIsUnknownException(message.c_str());
+      } else if (boost::iequals(message, "Insufficient funds")) {
+        throw InsufficientFundsException(message.c_str());
       } else if (!message.empty()) {
         throw Exception(message.c_str());
       }
@@ -414,8 +416,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
          symbol == "BCH_USD" || symbol == "BTC_EUR" || symbol == "BTC_GBP")
             ? .25
             : .3;
-    return RoundByPrecision((qty * price) * (fee / 100),
-                            security.GetPricePrecisionPower());
+    return (qty * price) * (fee / 100);
   }
 
  protected:
@@ -511,12 +512,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            &GetTsTradingLog());
     {
       boost::format requestParams(
-          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
-          "\"size\": \"%4$.8f\"}");
-      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")      // 1
-          % product->second.id                                        // 2
-          % RoundByPrecision(*price, product->second.precisionPower)  // 3
-          % qty;                                                      // 4
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3%\", "
+          "\"size\": \"%4%\"}");
+      requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
+          % product->second.id                                    // 2
+          % RoundByPrecisionPower(price->Get(),
+                                  product->second.precisionPower)  // 3
+          % qty;                                                   // 4
       request.SetBody(requestParams.str());
     }
 
@@ -657,7 +659,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
           const auto &message =
               ReadJson(responseContent).get<std::string>("message");
           if (message == "NotFound") {
-            throw OrderIsUnknown(message.c_str());
+            throw OrderIsUnknownException(message.c_str());
           } else if (!message.empty()) {
             throw Exception(message.c_str());
           }
