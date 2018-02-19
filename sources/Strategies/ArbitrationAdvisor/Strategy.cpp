@@ -441,16 +441,15 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         m_self.GetTradingSystem(sell.GetSource().GetIndex())
             .GetBalances()
             .FindAvailableToTrade(sell.GetSymbol().GetBaseSymbol());
+
     const auto &buyTradingSystem =
         m_self.GetTradingSystem(buy.GetSource().GetIndex());
-    const auto &buyBalance =
-        buyTradingSystem.GetBalances().FindAvailableToTrade(
-            buy.GetSymbol().GetQuoteSymbol());
+    auto buyBalance = buyTradingSystem.GetBalances().FindAvailableToTrade(
+        buy.GetSymbol().GetQuoteSymbol());
+    buyBalance -= buyTradingSystem.CalcCommission(
+        buyBalance / buyPrice, buyPrice, ORDER_SIDE_BUY, buy);
 
-    auto resultByBuyBalance = buyBalance / buyPrice;
-    resultByBuyBalance -= buyTradingSystem.CalcCommission(
-        resultByBuyBalance, buyPrice, ORDER_SIDE_BUY, buy);
-
+    const auto resultByBuyBalance = buyBalance / buyPrice;
     if (sellBalance <= resultByBuyBalance) {
       return {sellBalance, &sell};
     } else {
