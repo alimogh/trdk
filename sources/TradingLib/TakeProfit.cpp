@@ -66,8 +66,8 @@ bool TakeProfit::CheckSignal() {
 #if 0
   GetTradingLog().Write(
       "%1%\t%2%"
-      "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f-%7$.8f*%8$.8f=%9$.8f)"
-      "\tbid/ask=%10$.8f/%11$.8f\tpos=%12%/%13%",
+      "\tprofit=%3%->%4%%5%(%6%-%7%*%8%=%9%)"
+      "\tbid/ask=%10%/%11%\tpos=%12%/%13%",
       [&](TradingRecord &record) {
         record % GetName()                            // 1
             % (isSignal ? "signaling" : "trailing");  // 2
@@ -117,8 +117,8 @@ bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
 
   GetTradingLog().Write(
       "%1%\t%2%"
-      "\tprofit=%3$.8f->%4$.8f%5%%6$.8f\tmin-profit=%7$.8f"
-      "\tbid/ask=%8$.8f/%9$.8f\tpos=%10%/%11%",
+      "\tprofit=%3%->%4%%5%%6%\tmin-profit=%7%"
+      "\tbid/ask=%8%/%9%\tpos=%10%/%11%",
       [&](TradingRecord &record) {
         record % GetName() % (isSignal ? "activating" : "accumulating");
         if (m_maxProfit) {
@@ -172,8 +172,8 @@ TakeProfitPrice::TakeProfitPrice(const boost::shared_ptr<const Params> &params,
 
 void TakeProfitPrice::Report(const char *action) const {
   GetTradingLog().Write(
-      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3$.8f, "
-      "'trailing': %4$.8f}, 'operation': '%5%/%6%'}}",
+      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3%, "
+      "'trailing': %4%}, 'operation': '%5%/%6%'}}",
       [this, action](TradingRecord &record) {
         record % action                              // 1
             % GetName()                              // 2
@@ -216,8 +216,8 @@ TakeProfitShare::TakeProfitShare(const boost::shared_ptr<const Params> &params,
 
 void TakeProfitShare::Report(const char *action) const {
   GetTradingLog().Write(
-      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3$.8f, "
-      "'trailing': %4$.8f}, 'operation': '%5%/%6%'}}",
+      "{'algo': {'action': '%1%', 'type': '%2%', 'params': {'profit': %3%, "
+      "'trailing': %4%}, 'operation': '%5%/%6%'}}",
       [this, action](TradingRecord &record) {
         record % action                              // 1
             % GetName()                              // 2

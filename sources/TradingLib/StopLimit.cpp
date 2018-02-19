@@ -29,8 +29,8 @@ const char *TakeProfitStopLimit::GetName() const { return "stop limit"; }
 
 void TakeProfitStopLimit::Report(const char *action) const {
   GetTradingLog().Write(
-      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': "
-      "%2$.8f, 'time': '%3%'}, 'operation': '%4%/%5%'}}",
+      "{'algo': {'action': '%6%', 'type': '%1%', 'params': {'price': %2%, "
+      "'time': '%3%'}, 'operation': '%4%/%5%'}}",
       [this, action](TradingRecord &record) {
         record % GetName()                                     // 1
             % m_params->GetMaxPriceOffsetPerLotToClose()       // 2
@@ -70,8 +70,8 @@ bool TakeProfitStopLimit::CheckSignal() {
       const auto &controlPrice = openPrice + diff;
       if (controlPrice <= currentPrice) {
         GetTradingLog().Write(
-            "%1%\tsignaling by price\tprice=(%2$.8f+%3$.8f=%4$.8f)<=%5$.8f"
-            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
+            "%1%\tsignaling by "
+            "price\tprice=(%2%+%3%=%4%)<=%5%\tbid/ask=%6%/%7%\tpos=%8%/%9%",
             [&](TradingRecord &record) {
               record % GetName()                                    // 1
                   % openPrice                                       // 2
@@ -89,8 +89,8 @@ bool TakeProfitStopLimit::CheckSignal() {
       const auto &controlPrice = openPrice - diff;
       if (controlPrice <= currentPrice) {
         GetTradingLog().Write(
-            "%1%\tsignaling by price\tprice=(%2$.8f-%3$.8f=%4$.8f)>=%5$.8f"
-            "\tbid/ask=%6$.8f/%7$.8f\tpos=%8%/%9%",
+            "%1%\tsignaling by "
+            "price\tprice=(%2%-%3%=%4%)>=%5%\tbid/ask=%6%/%7%\tpos=%8%/%9%",
             [&](TradingRecord &record) {
               record % GetName()                                    // 1
                   % openPrice                                       // 2
@@ -114,8 +114,8 @@ bool TakeProfitStopLimit::CheckSignal() {
         GetPosition().GetSecurity().GetContext().GetCurrentTime();
     if (controlTime <= currentTime) {
       GetTradingLog().Write(
-          "%1%\tsignaling by time\tprice=(%2%+%3%=%4%)<=%5%\tbid/ask=%6$.8f/"
-          "%7$.8f\tpos=%8%/%9%",
+          "%1%\tsignaling by time\tprice=(%2%+%3%=%4%)<=%5%\tbid/ask=%6%/"
+          "%7%\tpos=%8%/%9%",
           [&](TradingRecord &record) {
             record % GetName()                                    // 1
                 % openTime.time_of_day()                          // 2

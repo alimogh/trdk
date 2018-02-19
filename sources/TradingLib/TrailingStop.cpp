@@ -63,8 +63,8 @@ bool TrailingStop::CheckSignal() {
 #if 0
   GetTradingLog().Write(
       "%1%\t%2%"
-      "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
-      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%/%12%",
+      "\tprofit=%3%->%4%%5%(%6%*%7%=%8%)"
+      "\tbid/ask=%9%/%10%\tpos=%11%/%12%",
       [&](TradingRecord &record) {
         record % GetName()                            // 1
             % (isSignal ? "signaling" : "trailing");  // 2
@@ -110,8 +110,8 @@ bool TrailingStop::Activate(const trdk::Volume &plannedPnl) {
 #if 0
   GetTradingLog().Write(
       "%1%\t%2%"
-      "\tprofit=%3$.8f->%4$.8f%5%(%6$.8f*%7$.8f=%8$.8f)"
-      "\tbid/ask=%9$.8f/%10$.8f\tpos=%11%/%12%",
+      "\tprofit=%3%->%4%%5%(%6%*%7%=%8%)"
+      "\tbid/ask=%9%/%10%\tpos=%11%/%12%",
       [&](TradingRecord &record) {
         record % GetName()                                      // 1
             % (m_isActivated ? "activating" : "accumulating");  // 2

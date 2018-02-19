@@ -357,8 +357,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         Assert(balance.second);
         AssertGt(qty, balance.first);
         m_self.GetTradingLog().Write(
-            "{'pre-trade': {'balance reduces qty': {'prev': %1$.8f, 'new': "
-            "%2$.8f, 'security': '%3%'}}",
+            "{'pre-trade': {'balance reduces qty': {'prev': %1%, 'new': %2%, "
+            "'security': '%3%'}}",
             [&](TradingRecord &record) {
               record % qty            // 1
                   % balance.first     // 2
@@ -477,9 +477,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                     const std::string &additional = std::string()) const {
     m_self.GetTradingLog().Write(
         "{'signal': {'%14%': {'reason': '%9%', 'sell': {'security': '%1%', "
-        "'bid': {'price': %2$.8f, 'qty': %10$.8f}, 'ask': {'price': %3$.8f, "
-        "'qty': %11$.8f}}, 'buy': {'security': '%4%', 'bid': {'price': %5$.8f, "
-        "'qty': %12$.8f}, 'ask': {'price': %6$.8f, 'qty': %13$.8f}}}, "
+        "'bid': {'price': %2%, 'qty': %10%}, 'ask': {'price': %3%, "
+        "'qty': %11%}}, 'buy': {'security': '%4%', 'bid': {'price': %5%, "
+        "'qty': %12%}, 'ask': {'price': %6%, 'qty': %13%}}}, "
         "'spread': {'used': %7$.3f, 'signal': %8$.3f}%15%}}",
         [&](TradingRecord &record) {
           record % sellTarget                  // 1
@@ -521,8 +521,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                         const Double &bestSpreadRatio) const {
     boost::format log(
         ", 'restriction': {'order': {'security': '%1%', 'side': '%2%', 'qty': "
-        "%3$.8f, 'price': %4$.8f, 'vol': %5$.8f}, 'error': {'qty': %6$.8f, "
-        "'price': %7$.8f, 'vol': %8$.8f}}");
+        "%3%, 'price': %4%, 'vol': %5%}, 'error': {'qty': %6%, 'price': %7%, "
+        "'vol': %8%}}");
     log % security        // 1
         % side            // 2
         % qty             // 3
@@ -723,7 +723,7 @@ sig::scoped_connection aa::Strategy::SubscribeToBlocking(
 
 void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
   GetTradingLog().Write(
-      "{'setup': {'advising': {'ratio': '%1$.8f->%2$.8f'}}}",
+      "{'setup': {'advising': {'ratio': '%1%->%2%'}}}",
       [this, &minPriceDifferenceRatio](TradingRecord &record) {
         record % m_pimpl->m_minPriceDifferenceRatioToAdvice  // 1
             % minPriceDifferenceRatio;                       // 2
@@ -757,8 +757,8 @@ void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
   bool shouldRechecked = true;
   if (m_pimpl->m_tradingSettings) {
     GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': '%1$.8f->%2$.8f', 'maxQty': "
-        "'%3$.8f->%4$.8f}}}",
+        "{'setup': {'trading': {'ratio': '%1%->%2%', 'maxQty': "
+        "'%3%->%4%}}}",
         [this, &settings](TradingRecord &record) {
           record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
               % settings.minPriceDifferenceRatio                        // 2
@@ -769,8 +769,8 @@ void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
                       settings.minPriceDifferenceRatio;
   } else {
     GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': 'null->%1$.8f', 'maxQty': "
-        "'null->%2$.8f'}}}",
+        "{'setup': {'trading': {'ratio': 'null->%1%', 'maxQty': "
+        "'null->%2%'}}}",
         [this, &settings](TradingRecord &record) {
           record % settings.minPriceDifferenceRatio  // 1
               % settings.maxQty;                     // 2
@@ -787,8 +787,8 @@ const boost::optional<aa::Strategy::TradingSettings>
 void aa::Strategy::DeactivateAutoTrading() {
   if (m_pimpl->m_tradingSettings) {
     GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': '%1$.8f->null', 'maxQty': "
-        "'%2$.8f->null'}}}",
+        "{'setup': {'trading': {'ratio': '%1%->null', 'maxQty': "
+        "'%2%->null'}}}",
         [this](TradingRecord &record) {
           record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
               % m_pimpl->m_tradingSettings->maxQty;                     // 2

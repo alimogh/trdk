@@ -279,8 +279,7 @@ void PositionController::OnBrokerPositionUpdate(
     bool isInitial) {
   if (!isInitial || qty == 0) {
     operation->GetStrategy().GetLog().Debug(
-        "Skipped broker position \"%5%\" %1% (volume %2$.8f) for \"%3%\" "
-        "(%4%).",
+        "Skipped broker position \"%5%\" %1% (volume %2%) for \"%3%\" (%4%).",
         qty,                               // 1
         volume,                            // 2
         security,                          // 3
@@ -293,8 +292,8 @@ void PositionController::OnBrokerPositionUpdate(
 
   const Price price = volume / qty;
   operation->GetStrategy().GetLog().Info(
-      "Accepting broker position \"%5%\" %1% (volume %2$.8f, start price "
-      "%3$.8f) for \"%4%\"...",
+      "Accepting broker position \"%5%\" %1% (volume %2%, start price %3%) for "
+      "\"%4%\"...",
       qty,                         // 1
       volume,                      // 2
       price,                       // 3

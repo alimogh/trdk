@@ -512,7 +512,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            &GetTsTradingLog());
     {
       boost::format requestParams(
-          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3$.8f\", "
+          "{\"side\": \"%1%\", \"product_id\": \"%2%\", \"price\": \"%3%\", "
           "\"size\": \"%4%\"}");
       requestParams % (side == ORDER_SIDE_SELL ? "sell" : "buy")  // 1
           % product->second.id                                    // 2

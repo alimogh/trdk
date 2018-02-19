@@ -103,8 +103,8 @@ bool ChooseBestExchange(Position &position) {
   if (!checker->HasSuitableSecurity()) {
     position.GetStrategy().GetLog().Error(
         "Failed to find suitable security for the position \"%1%/%2%\" (actual "
-        "security is \"%3%\") to close the rest of the position %4$.8f out of "
-        "%5$.8f.",
+        "security is \"%3%\") to close the rest of the position %4% out of "
+        "%5%.",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
