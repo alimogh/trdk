@@ -19,12 +19,12 @@ namespace pt = boost::posix_time;
 
 namespace {
 const pt::time_duration &minInterval = pt::seconds(3);
-const pt::time_duration &defailtInterval = pt::seconds(1);
+const pt::time_duration &defailtInterval = pt::seconds(3);
 const size_t defaultPriceRequestFrequency = 15;
 const size_t defaultActualOrdersRequestFrequency = 1;
 const size_t defaultAllOrdersRequestFrequency = 60;
 const size_t defaultBalancesRequestFrequency = 120;
-}
+}  // namespace
 
 PollingSetttings::PollingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
