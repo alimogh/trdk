@@ -12,20 +12,20 @@
 
 namespace trdk {
 namespace Strategies {
-namespace MarketMaker {
+namespace PingPong {
 
-class TrendRepeatingOperation : public Operation {
+class Operation : public trdk::Operation {
  public:
-  typedef Operation Base;
+  typedef trdk::Operation Base;
 
  public:
-  explicit TrendRepeatingOperation(
+  explicit Operation(
       Strategy &,
       const Qty &,
       bool isLong,
       const boost::shared_ptr<TradingLib::TakeProfitShare::Params> &,
       const boost::shared_ptr<TradingLib::StopLossShare::Params> &);
-  virtual ~TrendRepeatingOperation() override = default;
+  virtual ~Operation() override = default;
 
  public:
   virtual const TradingLib::OrderPolicy &GetOpenOrderPolicy(
@@ -38,7 +38,7 @@ class TrendRepeatingOperation : public Operation {
   virtual bool IsLong(const Security &) const override;
   virtual Qty GetPlannedQty() const override;
   virtual bool HasCloseSignal(const Position &) const override;
-  virtual boost::shared_ptr<Operation> StartInvertedPosition(
+  virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const Position &) override;
 
  private:
@@ -50,6 +50,6 @@ class TrendRepeatingOperation : public Operation {
   const boost::shared_ptr<const TradingLib::StopLossShare::Params> m_stopLoss;
 };
 
-}  // namespace MarketMaker
+}  // namespace PingPong
 }  // namespace Strategies
 }  // namespace trdk

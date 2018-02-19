@@ -4,6 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IncludePath>$(SolutionDir)..\externals\autobahn\;$(SolutionDir)..\externals\msgpack-c\include;$(IncludePath)</IncludePath>
+    <_PropertySheetDisplayName>Engine Server</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

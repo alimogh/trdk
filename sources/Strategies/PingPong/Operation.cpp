@@ -9,14 +9,16 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TrendRepeatingOperation.hpp"
-#include "TrendRepeatingStrategy.hpp"
+#include "Operation.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::TradingLib;
-using namespace trdk::Strategies::MarketMaker;
+using namespace trdk::Strategies::PingPong;
 
-TrendRepeatingOperation::TrendRepeatingOperation(
+namespace pp = trdk::Strategies::PingPong;
+
+pp::Operation::Operation(
     Strategy &strategy,
     const Qty &qty,
     bool isLong,
@@ -28,40 +30,35 @@ TrendRepeatingOperation::TrendRepeatingOperation(
       m_takeProfit(takeProfit),
       m_stopLoss(stopLoss) {}
 
-const OrderPolicy &TrendRepeatingOperation::GetOpenOrderPolicy(
-    const Position &) const {
+const OrderPolicy &pp::Operation::GetOpenOrderPolicy(const Position &) const {
   return m_orderPolicy;
 }
 
-const OrderPolicy &TrendRepeatingOperation::GetCloseOrderPolicy(
-    const Position &) const {
+const OrderPolicy &pp::Operation::GetCloseOrderPolicy(const Position &) const {
   return m_orderPolicy;
 }
 
-void TrendRepeatingOperation::Setup(Position &position,
-                                    PositionController &controller) const {
+void pp::Operation::Setup(Position &position,
+                          PositionController &controller) const {
   position.AddAlgo(
       boost::make_unique<StopLossShare>(m_stopLoss, position, controller));
   position.AddAlgo(
       boost::make_unique<TakeProfitShare>(m_takeProfit, position, controller));
 }
 
-bool TrendRepeatingOperation::IsLong(const Security &) const {
-  return m_isLong;
-}
+bool pp::Operation::IsLong(const Security &) const { return m_isLong; }
 
-Qty TrendRepeatingOperation::GetPlannedQty() const { return m_qty; }
+Qty pp::Operation::GetPlannedQty() const { return m_qty; }
 
-bool TrendRepeatingOperation::HasCloseSignal(const Position &position) const {
+bool pp::Operation::HasCloseSignal(const Position &position) const {
   const auto &isRising =
-      boost::polymorphic_downcast<const TrendRepeatingStrategy *>(
-          &GetStrategy())
+      boost::polymorphic_downcast<const pp::Strategy *>(&GetStrategy())
           ->GetTrend(position.GetSecurity())
           .IsRising();
   return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
 }
 
-boost::shared_ptr<Operation> TrendRepeatingOperation::StartInvertedPosition(
+boost::shared_ptr<trdk::Operation> pp::Operation::StartInvertedPosition(
     const Position &) {
   return nullptr;
 }

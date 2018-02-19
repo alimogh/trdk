@@ -54,7 +54,7 @@
     <ProjectGuid>{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}</ProjectGuid>
     <Keyword>Qt4VSv1.0</Keyword>
     <RootNamespace>ArbitrationAdvisor</RootNamespace>
-    <ProjectName>Arbitration advisor</ProjectName>
+    <ProjectName>Arbitration Advisor</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -162,7 +162,7 @@
     <Import Project="..\..\Qt Debug.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="ArbitrationAdvisor.props" />
@@ -176,7 +176,7 @@
     <Import Project="..\..\Qt Debug.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="ArbitrationAdvisor.props" />
@@ -216,7 +216,7 @@
     <Import Project="..\..\Qt Release.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="ArbitrationAdvisor.props" />
@@ -230,7 +230,7 @@
     <Import Project="..\..\Qt Release.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="ArbitrationAdvisor.props" />
@@ -270,7 +270,7 @@
     <Import Project="..\..\Qt Test.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="ArbitrationAdvisor.props" />
@@ -284,7 +284,7 @@
     <Import Project="..\..\Qt Test.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="ArbitrationAdvisor.props" />

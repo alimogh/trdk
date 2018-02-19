@@ -12,17 +12,17 @@
 
 namespace trdk {
 namespace Strategies {
-namespace MarketMaker {
+namespace PingPong {
 
-class TrendRepeatingStrategy : public trdk::Strategy {
+class Strategy : public trdk::Strategy {
  public:
-  typedef Strategy Base;
+  typedef trdk::Strategy Base;
 
  public:
-  explicit TrendRepeatingStrategy(Context &,
-                                  const std::string &instanceName,
-                                  const Lib::IniSectionRef &);
-  virtual ~TrendRepeatingStrategy() override;
+  explicit Strategy(Context &,
+                    const std::string &instanceName,
+                    const Lib::IniSectionRef &);
+  virtual ~Strategy() override;
 
  public:
   void Stop() noexcept;
@@ -74,6 +74,6 @@ class TrendRepeatingStrategy : public trdk::Strategy {
   std::unique_ptr<Implementation> m_pimpl;
 };
 
-}  // namespace MarketMaker
+}  // namespace PingPong
 }  // namespace Strategies
 }  // namespace trdk

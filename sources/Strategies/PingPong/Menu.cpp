@@ -9,21 +9,21 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TakerStrategyWindow.hpp"
+#include "StrategyWindow.hpp"
 
+using namespace trdk::Strategies::PingPong;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::Strategies::MarketMaker;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
-          {QObject::tr("Market Maker \"Taker\"..."),
+          {QObject::tr("Ping Pong..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
              const auto &symbol =
                  SymbolSelectionDialog(engine, parent).RequestSymbol();
              if (symbol) {
-               result.emplace_back(boost::make_unique<TakerStrategyWindow>(
-                   engine, *symbol, parent));
+               result.emplace_back(
+                   boost::make_unique<StrategyWindow>(engine, *symbol, parent));
              }
              return result;
            }}};

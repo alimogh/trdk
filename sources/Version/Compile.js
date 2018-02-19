@@ -36,6 +36,7 @@ var requiredModules = [
 	, 'TestStrategy'
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'
+	, 'PingPong'
 ]
 
 //////////////////////////////////////////////////////////////////////////

@@ -10,34 +10,37 @@
 
 #include "Prec.hpp"
 #include "SymbolSelectionDialog.hpp"
+#include "Engine.hpp"
+#include "ui_SymbolSelectionDialog.h"
 
 using namespace trdk::Lib;
-using namespace trdk::Strategies::MarketMaker;
 using namespace trdk::FrontEnd::Lib;
 
 SymbolSelectionDialog::SymbolSelectionDialog(Engine &engine, QWidget *parent)
-    : Base(parent) {
-  m_ui.setupUi(this);
+    : Base(parent), m_ui(boost::make_unique<Ui::SymbolSelectionDialog>()) {
+  m_ui->setupUi(this);
   {
     const IniFile conf(engine.GetConfigFilePath());
     const IniSectionRef defaults(conf, "Defaults");
     for (const std::string &symbol :
          defaults.ReadList("symbol_list", ",", true)) {
-      m_ui.symbol->addItem(QString::fromStdString(symbol));
+      m_ui->symbol->addItem(QString::fromStdString(symbol));
     }
   }
 }
+
+SymbolSelectionDialog::~SymbolSelectionDialog() = default;
 
 boost::optional<QString> SymbolSelectionDialog::RequestSymbol() {
   for (;;) {
     if (exec() != QDialog::Accepted) {
       return boost::none;
     }
-    if (!m_ui.symbol->selectedItems().size()) {
+    if (!m_ui->symbol->selectedItems().size()) {
       QMessageBox::warning(this, tr("Symbol is not set"),
                            tr("Please select a symbol."), QMessageBox::Ok);
       continue;
     }
-    return m_ui.symbol->selectedItems().first()->text();
+    return m_ui->symbol->selectedItems().first()->text();
   }
 }

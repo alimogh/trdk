@@ -9,22 +9,27 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TrendRepeatingStrategyWindow.hpp"
-#include "TrendRepeatingStrategy.hpp"
+#include "StrategyWindow.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Lib;
-using namespace trdk::Strategies::MarketMaker;
+using namespace trdk::Strategies::PingPong;
 
-TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
-    Engine &engine, const QString &symbol, QWidget *parent)
-    : Base(parent), m_engine(engine), m_strategy(CreateStrategy(symbol)) {
+namespace pp = trdk::Strategies::PingPong;
+
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const QString &symbol,
+                               QWidget *parent)
+    : Base(parent),
+      m_engine(engine),
+      m_strategy(CreateStrategyInstance(symbol)) {
   setAttribute(Qt::WA_DeleteOnClose);
 
   m_ui.setupUi(this);
 
-  setWindowTitle(symbol + " " + tr("Market Making by Trend Strategy") + " - " +
+  setWindowTitle(symbol + " " + tr("Ping Pong Strategy") + " - " +
                  QCoreApplication::applicationName());
 
   m_ui.symbol->setText(symbol);
@@ -53,11 +58,9 @@ TrendRepeatingStrategyWindow::TrendRepeatingStrategyWindow(
   ConnectSignals();
 }
 
-TrendRepeatingStrategyWindow::~TrendRepeatingStrategyWindow() {
-  m_strategy.Stop();
-}
+StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
 
-bool TrendRepeatingStrategyWindow::LoadExchanges() {
+bool StrategyWindow::LoadExchanges() {
   auto &leftBox = *new QVBoxLayout(this);
   leftBox.setAlignment(Qt::AlignTop);
   auto &rightBox = *new QVBoxLayout(this);
@@ -110,7 +113,7 @@ bool TrendRepeatingStrategyWindow::LoadExchanges() {
   return numberOfExchanges > 0;
 }
 
-void TrendRepeatingStrategyWindow::Disable() {
+void StrategyWindow::Disable() {
   {
     const QSignalBlocker blocker(*m_ui.isPositionsOpeningEnabled);
     m_ui.isPositionsOpeningEnabled->setChecked(false);
@@ -129,17 +132,17 @@ void TrendRepeatingStrategyWindow::Disable() {
   }
 }
 
-void TrendRepeatingStrategyWindow::OnBlocked(const QString &reason) {
+void StrategyWindow::OnBlocked(const QString &reason) {
   Disable();
   ShowBlockedStrategyMessage(reason, this);
 }
 
-void TrendRepeatingStrategyWindow::OnStrategyEvent(const QString &message) {
+void StrategyWindow::OnStrategyEvent(const QString &message) {
   m_ui.log->appendPlainText(QString("%1: %2").arg(
       QDateTime::currentDateTime().time().toString(), message));
 }
 
-void TrendRepeatingStrategyWindow::ConnectSignals() {
+void StrategyWindow::ConnectSignals() {
   Verify(
       connect(m_ui.isPositionsOpeningEnabled, &QCheckBox::toggled,
               [this](bool isEnabled) {
@@ -232,16 +235,13 @@ void TrendRepeatingStrategyWindow::ConnectSignals() {
                    }
                  }));
 
-  Verify(connect(this, &TrendRepeatingStrategyWindow::Blocked, this,
-                 &TrendRepeatingStrategyWindow::OnBlocked,
-                 Qt::QueuedConnection));
-  Verify(connect(this, &TrendRepeatingStrategyWindow::StrategyEvent, this,
-                 &TrendRepeatingStrategyWindow::OnStrategyEvent,
-                 Qt::QueuedConnection));
+  Verify(connect(this, &StrategyWindow::Blocked, this,
+                 &StrategyWindow::OnBlocked, Qt::QueuedConnection));
+  Verify(connect(this, &StrategyWindow::StrategyEvent, this,
+                 &StrategyWindow::OnStrategyEvent, Qt::QueuedConnection));
 }
 
-TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
-    const QString &symbol) {
+pp::Strategy &StrategyWindow::CreateStrategyInstance(const QString &symbol) {
   static boost::uuids::random_generator generateStrategyId;
   const auto &strategyId = generateStrategyId();
   {
@@ -251,8 +251,8 @@ TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
     std::ostringstream os;
     os << "[Strategy.PingPong/" << symbol.toStdString() << '/'
        << ++instanceNumber << "]" << std::endl
-       << "module = MarketMaker" << std::endl
-       << "factory = CreateMaTrendRepeatingStrategy" << std::endl
+       << "module = PingPong" << std::endl
+       << "factory = CreateStrategy" << std::endl
        << "id = " << strategyId << std::endl
        << "is_enabled = true" << std::endl
        << "trading_mode = live" << std::endl
@@ -262,11 +262,10 @@ TrendRepeatingStrategy &TrendRepeatingStrategyWindow::CreateStrategy(
     m_engine.GetContext().Add(IniString(os.str()));
   }
 
-  auto &result = *boost::polymorphic_downcast<TrendRepeatingStrategy *>(
+  auto &result = *boost::polymorphic_downcast<pp::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
 
-  result.Invoke<TrendRepeatingStrategy>([this](
-                                            TrendRepeatingStrategy &strategy) {
+  result.Invoke<pp::Strategy>([this](pp::Strategy &strategy) {
     m_blockConnection =
         strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
           QString reason;

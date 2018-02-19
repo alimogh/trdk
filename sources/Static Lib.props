@@ -4,6 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <OutDir>$(SolutionDir)..\output\$(PlatformShortName)\lib\$(Configuration)\</OutDir>
+    <_PropertySheetDisplayName>Static Lib</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Lib>

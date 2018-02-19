@@ -12,15 +12,15 @@
 
 namespace trdk {
 namespace Strategies {
-namespace MarketMaker {
+namespace PingPong {
 
-class TrendRepeatingController : public TradingLib::PositionController {
+class Controller : public TradingLib::PositionController {
  public:
   typedef TradingLib::PositionController Base;
 
  public:
-  TrendRepeatingController();
-  virtual ~TrendRepeatingController() override = default;
+  Controller();
+  virtual ~Controller() override = default;
 
  public:
   void EnableOpening(bool);
@@ -47,6 +47,6 @@ class TrendRepeatingController : public TradingLib::PositionController {
   bool m_isOpeningEnabled;
   bool m_isClosingEnabled;
 };
-}  // namespace MarketMaker
+}  // namespace PingPong
 }  // namespace Strategies
 }  // namespace trdk

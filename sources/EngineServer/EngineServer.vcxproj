@@ -53,7 +53,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{333A992A-036E-4C3B-A116-C44E748CBF21}</ProjectGuid>
     <RootNamespace>EngineServer</RootNamespace>
-    <ProjectName>Engine server</ProjectName>
+    <ProjectName>Engine Server</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">

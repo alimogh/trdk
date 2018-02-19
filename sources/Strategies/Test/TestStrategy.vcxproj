@@ -53,7 +53,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9EF13741-7C1B-4A58-B79C-3800B42847E7}</ProjectGuid>
     <RootNamespace>TestStrategy</RootNamespace>
-    <ProjectName>Test strategy</ProjectName>
+    <ProjectName>Test Strategy</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -154,7 +154,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="TestStrategy.props" />
@@ -166,7 +166,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="TestStrategy.props" />
@@ -200,7 +200,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="TestStrategy.props" />
@@ -212,7 +212,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="TestStrategy.props" />
@@ -246,7 +246,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="TestStrategy.props" />
@@ -258,7 +258,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Strategy.props" />
     <Import Project="TestStrategy.props" />

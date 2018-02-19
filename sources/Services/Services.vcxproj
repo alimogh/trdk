@@ -139,7 +139,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Debug.props" />
@@ -150,7 +150,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Debug.props" />
@@ -181,7 +181,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Release.props" />
@@ -192,7 +192,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Release.props" />
@@ -223,7 +223,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Test.props" />
@@ -234,7 +234,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="..\Module.props" />
     <Import Project="Services.props" />
     <Import Project="..\Distribution Dll Test.props" />
