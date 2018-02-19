@@ -414,11 +414,10 @@ void TrendRepeatingStrategy::SetTakeProfit(const Double &takeProfit) {
   if (m_pimpl->m_takeProfit->GetProfitShareToActivate() == takeProfit) {
     return;
   }
-  GetTradingLog().Write(
-      "take profit: %1$.8f -> %2$.8f", [&](TradingRecord &record) {
-        record % m_pimpl->m_takeProfit->GetProfitShareToActivate()  // 1
-            % takeProfit;                                           // 2
-      });
+  GetTradingLog().Write("take profit: %1% -> %2%", [&](TradingRecord &record) {
+    record % m_pimpl->m_takeProfit->GetProfitShareToActivate()  // 1
+        % takeProfit;                                           // 2
+  });
   *m_pimpl->m_takeProfit = TakeProfitShare::Params{
       takeProfit, m_pimpl->m_takeProfit->GetTrailingShareToClose()};
 }
@@ -432,7 +431,7 @@ void TrendRepeatingStrategy::SetTakeProfitTrailing(const Double &trailing) {
     return;
   }
   GetTradingLog().Write(
-      "take profit trailing: %1$.8f-> %2$.8f", [&](TradingRecord &record) {
+      "take profit trailing: %1%-> %2%", [&](TradingRecord &record) {
         record % m_pimpl->m_takeProfit->GetTrailingShareToClose()  // 1
             % trailing;                                            // 2
       });

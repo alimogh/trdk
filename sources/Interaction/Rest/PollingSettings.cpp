@@ -24,7 +24,7 @@ const size_t defaultPriceRequestFrequency = 1;
 const size_t defaultActualOrdersRequestFrequency = 1;
 const size_t defaultAllOrdersRequestFrequency = 60;
 const size_t defaultBalancesRequestFrequency = 120;
-}
+}  // namespace
 
 PollingSetttings::PollingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
