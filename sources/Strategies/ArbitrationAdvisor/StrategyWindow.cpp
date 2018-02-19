@@ -48,9 +48,9 @@ StrategyWindow::StrategyWindow(Engine &engine,
   setAttribute(Qt::WA_DeleteOnClose);
   m_ui.setupUi(this);
   {
-    m_ui.highlightLevel->setValue(0.6);
-    m_ui.autoTradeLevel->setValue(0.6);
-    m_ui.maxQty->setValue(1000000000);
+    m_ui.highlightLevel->setValue(1);
+    m_ui.autoTradeLevel->setValue(1);
+    m_ui.maxQty->setValue(0.015);
   }
   LoadSymbolList();
   if (defaultSymbol) {
