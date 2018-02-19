@@ -52,7 +52,6 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
     Assert(!(position.GetNumberOfCloseOrders() == 0
                  ? !position.IsFullyOpened()
                  : position.GetActiveQty() > 0));
-    return;
   }
 
   position.GetCloseReason() == CLOSE_REASON_NONE &&oppositePosition &&
@@ -176,11 +175,9 @@ Position *GetAbsolutePosition(Position &signalPosition) {
   Assert(!oppositePosition->IsCompleted() ||
          oppositePosition != &positions.active);
   positions.active.SetClosedQty(positions.completed.GetActiveQty());
-
   if (!positions.completed.IsCompleted()) {
     positions.completed.MarkAsCompleted();
   }
-
   return &positions.active;
 }
 }  // namespace
@@ -191,7 +188,7 @@ void aa::PositionController::ClosePosition(Position &position) {
     if (!absolutePosition) {
       return;
     } else if (&position != absolutePosition) {
-      ClosePosition(*absolutePosition, absolutePosition->GetCloseReason());
+      ClosePosition(*absolutePosition, position.GetCloseReason());
       return;
     }
   }

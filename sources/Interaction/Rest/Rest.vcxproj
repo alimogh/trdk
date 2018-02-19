@@ -314,6 +314,11 @@
     <ClCompile Include="CexioTradingSystem.cpp" />
     <ClCompile Include="CexioTradingSystemAndMarketDataSource.cpp" />
     <ClCompile Include="CexioUtil.cpp" />
+    <ClCompile Include="Crex24MarketDataSource.cpp" />
+    <ClCompile Include="Crex24Request.cpp" />
+    <ClCompile Include="Crex24TradingSystem.cpp" />
+    <ClCompile Include="Crex24TradingSystemAndMarketDataSource.cpp" />
+    <ClCompile Include="Crex24Util.cpp" />
     <ClCompile Include="CryptopiaMarketDataSource.cpp" />
     <ClCompile Include="CryptopiaRequest.cpp" />
     <ClCompile Include="CryptopiaTradingSystem.cpp" />
@@ -365,6 +370,10 @@
     <ClInclude Include="CexioRequest.hpp" />
     <ClInclude Include="CexioTradingSystem.hpp" />
     <ClInclude Include="CexioUtil.hpp" />
+    <ClInclude Include="Crex24MarketDataSource.hpp" />
+    <ClInclude Include="Crex24Request.hpp" />
+    <ClInclude Include="Crex24TradingSystem.hpp" />
+    <ClInclude Include="Crex24Util.hpp" />
     <ClInclude Include="CryptopiaMarketDataSource.hpp" />
     <ClInclude Include="CryptopiaRequest.hpp" />
     <ClInclude Include="CryptopiaTradingSystem.hpp" />

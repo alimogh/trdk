@@ -80,6 +80,18 @@
       <UniqueIdentifier>{4a0badc8-eb45-479d-b7f9-10f0c1f957a5}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="CREX24">
+      <UniqueIdentifier>{822a2d4e-d832-4d83-b4f9-d17a2d5b7625}</UniqueIdentifier>
+      <Extensions>CREX24</Extensions>
+    </Filter>
+    <Filter Include="CREX24\Header Files">
+      <UniqueIdentifier>{53ccbadc-c0b3-45f0-8be8-ca4c3970e808}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="CREX24\Source Files">
+      <UniqueIdentifier>{095e0295-c145-4730-9490-dde29d90c828}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prec.cpp">
@@ -196,6 +208,21 @@
     <ClCompile Include="ExcambiorexTradingSystemAndMarketDataSource.cpp">
       <Filter>ExcambioRex\Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Crex24Request.cpp">
+      <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crex24MarketDataSource.cpp">
+      <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crex24TradingSystem.cpp">
+      <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crex24Util.cpp">
+      <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crex24TradingSystemAndMarketDataSource.cpp">
+      <Filter>CREX24\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CexioMarketDataSource.hpp">
@@ -290,6 +317,18 @@
     </ClInclude>
     <ClInclude Include="ExcambiorexUtil.hpp">
       <Filter>ExcambioRex\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crex24MarketDataSource.hpp">
+      <Filter>CREX24\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crex24Request.hpp">
+      <Filter>CREX24\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crex24TradingSystem.hpp">
+      <Filter>CREX24\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crex24Util.hpp">
+      <Filter>CREX24\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

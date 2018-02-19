@@ -15,49 +15,23 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction::Rest;
 
-namespace fs = boost::filesystem;
+namespace pt = boost::posix_time;
+namespace gr = boost::gregorian;
 
-NonceStorage::NonceStorage(const Settings &settings, ModuleEventsLog &log) {
-  bool usedStoredValue = false;
-  {
-    std::ifstream nonceStorage(settings.nonceStorageFile.string().c_str());
-    if (!nonceStorage) {
-      log.Debug("Failed to open %1% to read.", settings.nonceStorageFile);
-    } else {
-      nonceStorage.read(reinterpret_cast<char *>(&m_value), sizeof(m_value));
-      if (nonceStorage) {
-        log.Debug("Restored %1%nonce-value %2% from %3%.",
-                  !settings.isTrading ? "" : "trading ",  // 1
-                  m_value,                                // 2
-                  settings.nonceStorageFile);             // 3
-        usedStoredValue = true;
-      }
-    }
-    if (!usedStoredValue || m_value < settings.initialNonce) {
-      log.Debug("Using %1%initial nonce-value %2%.",
-                !settings.isTrading ? "" : "trading ",  // 1
-                settings.initialNonce);                 // 2
-      m_value = settings.initialNonce;
-    }
-  }
-  {
-    fs::create_directories(settings.nonceStorageFile.branch_path());
-    m_storage = std::ofstream(settings.nonceStorageFile.string().c_str(),
-                              std::fstream::out | std::fstream::binary);
-    if (!m_storage) {
-      boost::format error("Failed to open %1% to store");
-      error % settings.nonceStorageFile;
-      throw Exception(error.str().c_str());
-    }
-  }
-}
+NonceStorage::Int32TimedGenerator::Int32TimedGenerator()
+    : m_nextValue(static_cast<int32_t>((pt::second_clock::universal_time() -
+                                        pt::ptime(gr::date(2018, 2, 18)))
+                                           .total_seconds())) {}
+
+NonceStorage::UnsignedInt64TimedGenerator::UnsignedInt64TimedGenerator()
+    : m_nextValue((pt::microsec_clock::universal_time() -
+                   pt::ptime(gr::date(2018, 2, 18)))
+                      .total_microseconds()) {}
+
+NonceStorage::NonceStorage(std::unique_ptr<Generator>&& generator)
+    : m_generator(std::move(generator)) {}
 
 NonceStorage::TakenValue NonceStorage::TakeNonce() {
   Lock lock(m_mutex);
-  m_value++;
-  m_storage.seekp(0);
-  m_storage.write(reinterpret_cast<const char *>(&m_value), sizeof(m_value));
-  m_storage.flush();
-  AssertEq(sizeof(m_value), m_storage.tellp());
-  return {m_value - 1, std::move(lock)};
+  return {m_generator->TakeNextNonce(), std::move(lock)};
 }

@@ -55,8 +55,7 @@ CryptopiaTradingSystem::Settings::Settings(const IniSectionRef &conf,
                                            ModuleEventsLog &log)
     : Rest::Settings(conf, log),
       apiKey(conf.ReadKey("api_key")),
-      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
-      nonces(apiKey, "Cryptopia", conf, log) {
+      apiSecret(Base64::Decode(conf.ReadKey("api_secret"))) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -168,7 +167,7 @@ CryptopiaTradingSystem::CryptopiaTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(m_settings.nonces, GetLog()),
+      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_nonces, m_settings, GetContext(), GetLog()),
       m_openOrdersRequestsVersion(0),

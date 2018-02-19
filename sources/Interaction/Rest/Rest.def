@@ -21,4 +21,7 @@ EXPORTS
 	CreateExcambiorexMarketDataSource
 	CreateExcambiorexTradingSystem
 	CreateExcambiorex
+	CreateCrex24MarketDataSource
+	CreateCrex24TradingSystem
+	CreateCrex24
 	GetTrdkModuleVersionInfoV1

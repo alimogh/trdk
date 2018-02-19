@@ -38,8 +38,9 @@ void ReportAboutGeneralAction(const Position &position,
                               const char *action,
                               const char *status) noexcept {
   position.GetStrategy().GetTradingLog().Write(
-      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3%, 'qty': %4%, "
-      "'type': '%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+      "{'position': {'%1%': {'status': '%2%'}, 'startPrice': %3%, "
+      "'plannedQty': %4%, 'type': '%5%', 'security': '%6%', 'operation': "
+      "'%7%/%8%'}}",
       [&](TradingRecord &record) {
         record % action                         // 1
             % status                            // 2
@@ -220,7 +221,7 @@ class Position::Implementation : private boost::noncopyable {
       Assert(!impl.m_isMarketAsCompleted);
       auto &order = GetOrder();
       AssertGe(ORDER_STATUS_STEP_OPENED, order.status);
-      AssertLe(order.executedQty, order.qty);
+      AssertEq(order.executedQty, order.qty);
       if (!impl.m_defaultOrderParams.position) {
         impl.m_defaultOrderParams.position = &*GetOrder().transactionContext;
       }
@@ -1098,9 +1099,26 @@ const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
 }
 void Position::SetClosedQty(const Qty &newValue) {
+  GetStrategy().GetTradingLog().Write(
+      "{'position': {'forcing': {'status': 'closedQty', 'prevClosedQty': %1%, "
+      "'newClosedQty' %2%}, 'startPrice': %3%, 'plannedQty': %4%, 'type': "
+      "'%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+      [&](TradingRecord &record) {
+        record % m_pimpl->m_close.qty  // 1
+            % newValue                 // 2
+            % GetOpenStartPrice()      // 3
+            % GetPlanedQty()           // 4
+            % GetSide()                // 5
+            % GetSecurity()            // 6
+            % GetOperation()->GetId()  // 7
+            % GetSubOperationId();     // 8
+      });
   AssertGe(GetOpenedQty(), newValue);
+  const bool isCompelted = IsCompleted();
   m_pimpl->m_close.qty = newValue;
-  ReportAboutGeneralAction(*this, "forcing", "closedQty");
+  if (!isCompelted && IsCompleted()) {
+    m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
+  }
 }
 
 Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
@@ -1328,6 +1346,7 @@ void Position::RestoreOpenState(
 }
 
 void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
+  const bool isCompeleted = IsCompleted();
   if (m_pimpl->m_close.CheckAndAddVirtualTrade(qty, price)) {
     m_pimpl->ReportAction("forcing", "trade", m_pimpl->m_close, GetClosedQty());
     m_pimpl->m_operation->UpdatePnl(
@@ -1342,6 +1361,9 @@ void Position::AddVirtualTrade(const Qty &qty, const Price &price) {
                                           GetSecurity()));
   } else {
     throw Exception("There are no active orders to add virtual trade");
+  }
+  if (!isCompeleted && IsCompleted()) {
+    m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
   }
 }
 

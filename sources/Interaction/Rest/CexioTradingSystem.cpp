@@ -29,8 +29,7 @@ CexioTradingSystem::Settings::Settings(const IniSectionRef &conf,
     : Rest::Settings(conf, log),
       username(conf.ReadKey("username")),
       apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")),
-      nonces(apiKey, "Cexio", conf, log) {
+      apiSecret(conf.ReadKey("api_secret")) {
   log.Info("Username: \"%1%\". API key: \"%2%\". API secret: %3%.",
            username,                                   // 1
            apiKey,                                     // 2
@@ -115,7 +114,7 @@ CexioTradingSystem::CexioTradingSystem(const App &,
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
           GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
-      m_nonces(m_settings.nonces, GetLog()),
+      m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_tradingSession(CreateCexioSession(m_settings, true)),
       m_pollingSession(CreateCexioSession(m_settings, false)),
