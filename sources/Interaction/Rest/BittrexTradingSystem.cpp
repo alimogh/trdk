@@ -144,22 +144,22 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
     if (price && qty * *price < minVolume) {
       return OrderCheckError{boost::none, boost::none, minVolume};
     }
-    if (symbol.GetBaseSymbol() == "ETH") {
-      const auto minQty = 0.015;
-      if (qty < minQty) {
-        return OrderCheckError{minQty};
-      }
+    const auto minQty = symbol.GetBaseSymbol() == "ETH"
+                            ? 0.015
+                            : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
+    if (qty < minQty) {
+      return OrderCheckError{minQty};
     }
   } else if (symbol.GetQuoteSymbol() == "ETH") {
     const auto minVolume = 0.0005;
     if (price && qty * *price < minVolume) {
       return OrderCheckError{boost::none, boost::none, minVolume};
     }
-    if (symbol.GetBaseSymbol() == "LTC") {
-      const auto minQty = 0.06;
-      if (qty < minQty) {
-        return OrderCheckError{minQty};
-      }
+    const auto minQty = symbol.GetBaseSymbol() == "LTC"
+                            ? 0.06
+                            : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
+    if (qty < minQty) {
+      return OrderCheckError{minQty};
     }
   }
   return boost::none;

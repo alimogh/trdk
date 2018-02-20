@@ -212,10 +212,10 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void ReportNewOrder(const Order &order, const char *status) {
     m_tradingLog.Write(
         !order.transactionContext
-            ? "{'order': {'new': {'status': '%1%'), 'side': '%2%', 'security': "
+            ? "{'order': {'new': {'status': '%1%', 'side': '%2%', 'security': "
               "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': "
               "%7%, 'tif': '%8%'}}"
-            : "{'order': {'new': {'status': '%1%'), 'side': '%2%', 'security': "
+            : "{'order': {'new': {'status': '%1%', 'side': '%2%', 'security': "
               "'%3%', 'currency': '%4%', 'type': '%5%', 'price': %6%, 'qty': "
               "%7%, 'tif': '%8%', 'id': '%9%'}}",
         [&](TradingRecord &record) {
