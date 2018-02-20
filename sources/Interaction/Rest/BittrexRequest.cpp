@@ -45,6 +45,8 @@ BittrexRequest::Response BittrexRequest::Send(
         if (*message == "ORDER_NOT_OPEN") {
           throw OrderIsUnknownException(error.str().c_str());
         } else if (*message == "INSUFFICIENT_FUNDS") {
+          throw InsufficientFundsException(error.str().c_str());
+        } else if (*message == "MIN_TRADE_REQUIREMENT_NOT_MET") {
           throw CommunicationError(error.str().c_str());
         }
       }

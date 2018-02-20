@@ -9,32 +9,27 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TrendRepeatingController.hpp"
-#include "TrendRepeatingStrategy.hpp"
+#include "Controller.hpp"
+#include "Strategy.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::TradingLib;
-using namespace trdk::Strategies::MarketMaker;
+using namespace trdk::Strategies::PingPong;
 
-TrendRepeatingController::TrendRepeatingController()
-    : m_isOpeningEnabled(true), m_isClosingEnabled(true) {}
+Controller::Controller() : m_isOpeningEnabled(true), m_isClosingEnabled(true) {}
 
-bool TrendRepeatingController::IsOpeningEnabled() const {
-  return m_isOpeningEnabled;
-}
-void TrendRepeatingController::EnableOpening(bool isEnabled) {
+bool Controller::IsOpeningEnabled() const { return m_isOpeningEnabled; }
+void Controller::EnableOpening(bool isEnabled) {
   m_isOpeningEnabled = isEnabled;
 }
 
-bool TrendRepeatingController::IsClosingEnabled() const {
-  return m_isClosingEnabled;
-}
-void TrendRepeatingController::EnableClosing(bool isEnabled) {
+bool Controller::IsClosingEnabled() const { return m_isClosingEnabled; }
+void Controller::EnableClosing(bool isEnabled) {
   m_isClosingEnabled = isEnabled;
 }
 
-Position *TrendRepeatingController::OpenPosition(
+Position *Controller::OpenPosition(
     const boost::shared_ptr<Operation> &operation,
     int64_t subOperationId,
     Security &security,
@@ -56,8 +51,7 @@ Position *TrendRepeatingController::OpenPosition(
         operation->GetStrategy()
             .GetTradingSystem(security.GetSource().GetIndex())
             .GetInstanceName();
-    boost::polymorphic_downcast<TrendRepeatingStrategy *>(
-        &operation->GetStrategy())
+    boost::polymorphic_downcast<Strategy *>(&operation->GetStrategy())
         ->RaiseEvent("Got signal from " + tradingSystem + " to open \"" +
                      std::string(isLong ? "long" : "short") +
                      "\", but funds insufficient or order does not meet "
@@ -68,15 +62,14 @@ Position *TrendRepeatingController::OpenPosition(
                             delayMeasurement);
 }
 
-bool TrendRepeatingController::ClosePosition(Position &position,
-                                             const CloseReason &reason) {
+bool Controller::ClosePosition(Position &position, const CloseReason &reason) {
   if (!m_isClosingEnabled) {
     return false;
   }
   return Base::ClosePosition(position, reason);
 }
 
-void TrendRepeatingController::ClosePosition(Position &position) {
+void Controller::ClosePosition(Position &position) {
   if (!m_isClosingEnabled) {
     return;
   }
@@ -88,8 +81,7 @@ void TrendRepeatingController::ClosePosition(Position &position) {
         position.GetOperation()->GetId(),  // 2
         position.GetSubOperationId());     // 3
     position.MarkAsCompleted();
-    boost::polymorphic_downcast<TrendRepeatingStrategy *>(
-        &position.GetStrategy())
+    boost::polymorphic_downcast<Strategy *>(&position.GetStrategy())
         ->RaiseEvent(
             "Got signal from " + position.GetTradingSystem().GetInstanceName() +
             " to close \"" + std::string(position.IsLong() ? "long" : "short") +

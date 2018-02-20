@@ -9,19 +9,20 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "TrendRepeatingStrategy.hpp"
-#include "TrendRepeatingController.hpp"
-#include "TrendRepeatingOperation.hpp"
+#include "Strategy.hpp"
+#include "Controller.hpp"
+#include "Operation.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace Lib::TimeMeasurement;
-using namespace trdk::Strategies::MarketMaker;
+using namespace trdk::Strategies::PingPong;
 
 namespace accs = boost::accumulators;
 namespace ma = trdk::Lib::Accumulators::MovingAverage;
 namespace sig = boost::signals2;
 namespace tl = trdk::TradingLib;
+namespace pp = trdk::Strategies::PingPong;
 
 using tl::StopLossShare;
 using tl::TakeProfitShare;
@@ -71,9 +72,9 @@ struct Subscribtion {
 };
 }  // namespace
 
-class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
+class pp::Strategy::Implementation : private boost::noncopyable {
  public:
-  TrendRepeatingStrategy &m_self;
+  pp::Strategy &m_self;
 
   Qty m_positionSize;
 
@@ -86,7 +87,7 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   sig::signal<void(const std::string &)> m_eventsSignal;
   sig::signal<void(const std::string *)> m_blockSignal;
 
-  TrendRepeatingController m_controller;
+  Controller m_controller;
 
   boost::unordered_map<const Security *, boost::shared_ptr<Subscribtion>>
       m_securities;
@@ -94,7 +95,7 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   bool m_isStopped;
 
  public:
-  explicit Implementation(TrendRepeatingStrategy &self)
+  explicit Implementation(Strategy &self)
       : m_self(self),
         m_positionSize(.01),
         m_fastMaSize(12),
@@ -191,9 +192,9 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
 
     try {
       m_controller.OnSignal(
-          boost::make_shared<TrendRepeatingOperation>(
-              m_self, m_positionSize, subscribtion.trend.IsRising(),
-              m_takeProfit, m_stopLoss),
+          boost::make_shared<Operation>(m_self, m_positionSize,
+                                        subscribtion.trend.IsRising(),
+                                        m_takeProfit, m_stopLoss),
           0, sourceSecurity, delayMeasurement);
     } catch (const CommunicationError &ex) {
       m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
@@ -202,9 +203,9 @@ class TrendRepeatingStrategy::Implementation : private boost::noncopyable {
   }
 };
 
-TrendRepeatingStrategy::TrendRepeatingStrategy(Context &context,
-                                               const std::string &instanceName,
-                                               const IniSectionRef &conf)
+pp::Strategy::Strategy(Context &context,
+                       const std::string &instanceName,
+                       const IniSectionRef &conf)
     : Base(context,
            "{C9C4282A-C620-45DA-9071-A6F9E5224BE9}",
            "PingPong",
@@ -212,10 +213,10 @@ TrendRepeatingStrategy::TrendRepeatingStrategy(Context &context,
            conf),
       m_pimpl(boost::make_unique<Implementation>(*this)) {}
 
-TrendRepeatingStrategy::~TrendRepeatingStrategy() = default;
+pp::Strategy::~Strategy() = default;
 
-void TrendRepeatingStrategy::OnSecurityStart(Security &security,
-                                             Security::Request &request) {
+void pp::Strategy::OnSecurityStart(Security &security,
+                                   Security::Request &request) {
   if (!m_pimpl->m_securities.empty() &&
       m_pimpl->m_securities.begin()->first->GetSymbol() !=
           security.GetSymbol()) {
@@ -229,8 +230,8 @@ void TrendRepeatingStrategy::OnSecurityStart(Security &security,
   Base::OnSecurityStart(security, request);
 }
 
-void TrendRepeatingStrategy::OnLevel1Update(
-    Security &security, const Milestones &delayMeasurement) {
+void pp::Strategy::OnLevel1Update(Security &security,
+                                  const Milestones &delayMeasurement) {
   if (m_pimpl->m_isStopped) {
     return;
   }
@@ -278,7 +279,7 @@ void TrendRepeatingStrategy::OnLevel1Update(
   m_pimpl->CheckSignal(security, subscribtion, delayMeasurement);
 }
 
-void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
+void pp::Strategy::OnPositionUpdate(Position &position) {
   if (m_pimpl->m_isStopped) {
     return;
   }
@@ -290,14 +291,14 @@ void TrendRepeatingStrategy::OnPositionUpdate(Position &position) {
   }
 }
 
-void TrendRepeatingStrategy::OnPostionsCloseRequest() {
+void pp::Strategy::OnPostionsCloseRequest() {
   if (m_pimpl->m_isStopped) {
     return;
   }
   m_pimpl->m_controller.OnPostionsCloseRequest(*this);
 }
 
-bool TrendRepeatingStrategy::OnBlocked(const std::string *reason) noexcept {
+bool pp::Strategy::OnBlocked(const std::string *reason) noexcept {
   if (m_pimpl->m_isStopped) {
     return Base::OnBlocked(reason);
   }
@@ -319,16 +320,16 @@ bool TrendRepeatingStrategy::OnBlocked(const std::string *reason) noexcept {
   return false;
 }
 
-void TrendRepeatingStrategy::SetPositionSize(const Qty &size) {
+void pp::Strategy::SetPositionSize(const Qty &size) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_positionSize = size;
 }
-Qty TrendRepeatingStrategy::GetPositionSize() const {
+Qty pp::Strategy::GetPositionSize() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_positionSize;
 }
 
-void TrendRepeatingStrategy::EnableTrading(bool isEnabled) {
+void pp::Strategy::EnableTrading(bool isEnabled) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_controller.IsOpeningEnabled() == isEnabled) {
     return;
@@ -347,12 +348,12 @@ void TrendRepeatingStrategy::EnableTrading(bool isEnabled) {
     record % (isEnabled ? "enabled" : "disabled");
   });
 }
-bool TrendRepeatingStrategy::IsTradingEnabled() const {
+bool pp::Strategy::IsTradingEnabled() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_controller.IsOpeningEnabled();
 }
 
-void TrendRepeatingStrategy::EnableActivePositionsControl(bool isEnabled) {
+void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_controller.IsClosingEnabled() == isEnabled) {
     return;
@@ -366,35 +367,35 @@ void TrendRepeatingStrategy::EnableActivePositionsControl(bool isEnabled) {
                           record % (isEnabled ? "enabled" : "disabled");
                         });
 }
-bool TrendRepeatingStrategy::IsActivePositionsControlEnabled() const {
+bool pp::Strategy::IsActivePositionsControlEnabled() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_controller.IsClosingEnabled();
 }
 
-void TrendRepeatingStrategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
+void pp::Strategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
   m_pimpl->SetNumberOfMaPeriods(
       [this](Subscribtion &subscribtion) -> Ma & {
         return subscribtion.fastMa;
       },
       m_pimpl->m_fastMaSize, numberOfPeriods);
 }
-size_t TrendRepeatingStrategy::GetNumberOfFastMaPeriods() const {
+size_t pp::Strategy::GetNumberOfFastMaPeriods() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_fastMaSize;
 }
-void TrendRepeatingStrategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
+void pp::Strategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
   m_pimpl->SetNumberOfMaPeriods(
       [this](Subscribtion &subscribtion) -> Ma & {
         return subscribtion.slowMa;
       },
       m_pimpl->m_slowMaSize, numberOfPeriods);
 }
-size_t TrendRepeatingStrategy::GetNumberOfSlowMaPeriods() const {
+size_t pp::Strategy::GetNumberOfSlowMaPeriods() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_slowMaSize;
 }
 
-void TrendRepeatingStrategy::SetStopLoss(const Double &stopLoss) {
+void pp::Strategy::SetStopLoss(const Double &stopLoss) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_stopLoss->GetMaxLossShare() == stopLoss) {
     return;
@@ -405,11 +406,11 @@ void TrendRepeatingStrategy::SetStopLoss(const Double &stopLoss) {
   });
   *m_pimpl->m_stopLoss = StopLossShare::Params{stopLoss};
 }
-Double TrendRepeatingStrategy::GetStopLoss() const {
+Double pp::Strategy::GetStopLoss() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_stopLoss->GetMaxLossShare();
 }
-void TrendRepeatingStrategy::SetTakeProfit(const Double &takeProfit) {
+void pp::Strategy::SetTakeProfit(const Double &takeProfit) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_takeProfit->GetProfitShareToActivate() == takeProfit) {
     return;
@@ -421,11 +422,11 @@ void TrendRepeatingStrategy::SetTakeProfit(const Double &takeProfit) {
   *m_pimpl->m_takeProfit = TakeProfitShare::Params{
       takeProfit, m_pimpl->m_takeProfit->GetTrailingShareToClose()};
 }
-Double TrendRepeatingStrategy::GetTakeProfit() const {
+Double pp::Strategy::GetTakeProfit() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_takeProfit->GetProfitShareToActivate();
 }
-void TrendRepeatingStrategy::SetTakeProfitTrailing(const Double &trailing) {
+void pp::Strategy::SetTakeProfitTrailing(const Double &trailing) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_takeProfit->GetTrailingShareToClose() == trailing) {
     return;
@@ -438,23 +439,22 @@ void TrendRepeatingStrategy::SetTakeProfitTrailing(const Double &trailing) {
   *m_pimpl->m_takeProfit = TakeProfitShare::Params{
       m_pimpl->m_takeProfit->GetProfitShareToActivate(), trailing};
 }
-Double TrendRepeatingStrategy::GetTakeProfitTrailing() const {
+Double pp::Strategy::GetTakeProfitTrailing() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_takeProfit->GetTrailingShareToClose();
 }
 
-sig::scoped_connection TrendRepeatingStrategy::SubscribeToEvents(
+sig::scoped_connection pp::Strategy::SubscribeToEvents(
     const boost::function<void(const std::string &)> &slot) {
   return m_pimpl->m_eventsSignal.connect(slot);
 }
 
-sig::scoped_connection TrendRepeatingStrategy::SubscribeToBlocking(
+sig::scoped_connection pp::Strategy::SubscribeToBlocking(
     const boost::function<void(const std::string *)> &slot) {
   return m_pimpl->m_blockSignal.connect(slot);
 }
 
-const tl::Trend &TrendRepeatingStrategy::GetTrend(
-    const Security &security) const {
+const tl::Trend &pp::Strategy::GetTrend(const Security &security) const {
   const auto &securityIt = m_pimpl->m_securities.find(&security);
   Assert(securityIt != m_pimpl->m_securities.cend());
   if (securityIt == m_pimpl->m_securities.cend()) {
@@ -463,12 +463,12 @@ const tl::Trend &TrendRepeatingStrategy::GetTrend(
   return securityIt->second->trend;
 }
 
-void TrendRepeatingStrategy::RaiseEvent(const std::string &message) {
+void pp::Strategy::RaiseEvent(const std::string &message) {
   m_pimpl->m_eventsSignal(message);
 }
 
-void TrendRepeatingStrategy::EnableTradingSystem(size_t tradingSystemIndex,
-                                                 bool isEnabled) {
+void pp::Strategy::EnableTradingSystem(size_t tradingSystemIndex,
+                                       bool isEnabled) {
   const auto lock = LockForOtherThreads();
   for (auto &security : m_pimpl->m_securities) {
     if (security.first->GetSource().GetIndex() != tradingSystemIndex) {
@@ -487,7 +487,7 @@ void TrendRepeatingStrategy::EnableTradingSystem(size_t tradingSystemIndex,
   }
 }
 
-boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
+boost::tribool pp::Strategy::IsTradingSystemEnabled(
     size_t tradingSystemIndex) const {
   for (const auto &security : m_pimpl->m_securities) {
     if (security.first->GetSource().GetIndex() == tradingSystemIndex) {
@@ -497,7 +497,7 @@ boost::tribool TrendRepeatingStrategy::IsTradingSystemEnabled(
   return boost::indeterminate;
 }
 
-void TrendRepeatingStrategy::Stop() noexcept {
+void pp::Strategy::Stop() noexcept {
   m_pimpl->m_isStopped = true;
   try {
     EnableTrading(false);
@@ -510,12 +510,10 @@ void TrendRepeatingStrategy::Stop() noexcept {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<trdk::Strategy> CreateMaTrendRepeatingStrategy(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &conf) {
-  return boost::make_unique<TrendRepeatingStrategy>(context, instanceName,
-                                                    conf);
+std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
+                                               const std::string &instanceName,
+                                               const IniSectionRef &conf) {
+  return boost::make_unique<pp::Strategy>(context, instanceName, conf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

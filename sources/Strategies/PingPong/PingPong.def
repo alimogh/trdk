@@ -1,4 +1,4 @@
 EXPORTS
-	CreateMenuActions
 	CreateStrategy
+	CreateMenuActions
 	GetTrdkModuleVersionInfoV1

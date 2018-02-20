@@ -1,17 +1,17 @@
-/**************************************************************************
- *   Created: 2017/10/09 15:05:31
+/*******************************************************************************
+ *   Created: 2018/01/30 10:52:52
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
  *   Project: Trading Robot Development Kit
  *       URL: http://robotdk.com
  * Copyright: Eugene V. Palchukovsky
- **************************************************************************/
+ ******************************************************************************/
 
 #include "Common/Constants.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
-#	include "windows.h"
+#  include "windows.h"
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,11 +38,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", TRDK_NAME " REST Interaction Module" TRDK_BUILD_IDENTITY_ADD
+            VALUE "FileDescription", TRDK_NAME " Ping Pong Strategy Module" TRDK_BUILD_IDENTITY_ADD
             VALUE "FileVersion", TRDK_VERSION_FULL
-            VALUE "InternalName", TRDK_VERSION_BRANCH ".Interaction.Rest"
+            VALUE "InternalName", TRDK_VERSION_BRANCH ".Strategies.PingPong"
             VALUE "LegalCopyright", TRDK_COPYRIGHT
-            VALUE "OriginalFilename", TRDK_INTERACTION_REST_DLL_FILE_NAME
+            VALUE "OriginalFilename", TRDK_STRATEGY_PINGPONG_DLL_FILE_NAME
             VALUE "ProductName", TRDK_NAME
             VALUE "ProductVersion", TRDK_VERSION_FULL
         END

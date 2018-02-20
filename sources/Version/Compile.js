@@ -32,6 +32,7 @@ var requiredModules = [
 	, 'Rest'
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'
+	, 'PingPong'
 ]
 
 //////////////////////////////////////////////////////////////////////////

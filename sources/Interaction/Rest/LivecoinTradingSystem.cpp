@@ -161,7 +161,7 @@ LivecoinTradingSystem::TradingRequest::Send(
         error << exception << "\"";
         if (boost::starts_with(exception,
                                "Not sufficient funds on the account")) {
-          throw CommunicationError(error.str().c_str());
+          throw InsufficientFundsException(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());

@@ -60,31 +60,37 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release DLL\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Release DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug DLL\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Debug DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test DLL\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Test DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_StrategyWindow.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="Strategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StrategyWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release DLL\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Release DLL</Filter>
-    </ClCompile>
-    <ClCompile Include="TakerStrategyWindow.cpp">
+    <ClCompile Include="Controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug DLL\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Debug DLL</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test DLL\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Test DLL</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TakerStrategyWindow.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="TakerStrategy.cpp">
+    <ClCompile Include="Operation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,25 +101,31 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_TakerStrategyWindow.h">
+    <ClInclude Include="Strategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_StrategyWindow.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="TakerStrategy.hpp">
+    <ClInclude Include="Controller.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Operation.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MarketMaker.rc" />
+    <ResourceCompile Include="PingPong.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="MarketMaker.def" />
+    <None Include="PingPong.def" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="TakerStrategyWindow.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="TakerStrategyWindow.hpp">
+    <CustomBuild Include="StrategyWindow.hpp">
       <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="StrategyWindow.ui">
+      <Filter>Form Files</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

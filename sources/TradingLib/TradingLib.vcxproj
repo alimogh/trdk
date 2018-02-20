@@ -53,7 +53,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{419CE21F-83CD-4BFB-AEF1-086C9B42C9F4}</ProjectGuid>
     <RootNamespace>Trading Library</RootNamespace>
-    <ProjectName>Trading library</ProjectName>
+    <ProjectName>Trading Library</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
@@ -132,7 +132,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -142,7 +142,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -152,7 +152,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -162,7 +162,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -172,7 +172,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -182,7 +182,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -192,7 +192,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -202,7 +202,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -212,7 +212,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -222,7 +222,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -232,7 +232,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -242,7 +242,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="TradingLib.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />

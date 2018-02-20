@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/30 10:54:39
+ *   Created: 2018/01/30 10:51:36
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,12 +8,11 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
+#include "Common/VersionInfo.hpp"
 
-namespace trdk {
-namespace Strategies {
-namespace MarketMaker {
-class TakerStrategy;
+using namespace trdk::Lib;
+
+extern "C" void GetTrdkModuleVersionInfoV1(VersionInfoV1 *result) {
+  *result = VersionInfoV1(TRDK_STRATEGY_PINGPONG_FILE_NAME);
 }
-}  // namespace Strategies
-}  // namespace trdk

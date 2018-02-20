@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2018/01/31 23:47:33
+ *   Created: 2018/01/30 10:54:39
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -10,26 +10,10 @@
 
 #pragma once
 
-#include "ui_SymbolSelectionDialog.h"
-
 namespace trdk {
 namespace Strategies {
-namespace MarketMaker {
-
-class SymbolSelectionDialog : public QDialog {
-  Q_OBJECT
- public:
-  typedef QDialog Base;
-
- public:
-  explicit SymbolSelectionDialog(FrontEnd::Lib::Engine &, QWidget *parent);
-
- public:
-  boost::optional<QString> RequestSymbol();
-
- private:
-  Ui::SymbolSelectionDialog m_ui;
-};
-}  // namespace MarketMaker
+namespace PingPong {
+class Strategy;
+}
 }  // namespace Strategies
 }  // namespace trdk

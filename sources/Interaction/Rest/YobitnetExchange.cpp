@@ -218,7 +218,7 @@ class TradeRequest : public Request {
           } else if (boost::istarts_with(*message,
                                          "Insufficient funds in wallet of the "
                                          "second currency of the pair")) {
-            throw CommunicationError(error.str().c_str());
+            throw InsufficientFundsException(error.str().c_str());
           }
         }
         throw Exception(error.str().c_str());
