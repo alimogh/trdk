@@ -51,7 +51,7 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
             boost::ends_with(*serverError, " does not exist")) {
           throw OrderIsUnknownException(error.str().c_str());
         } else if (*serverError == "Insufficient Funds.") {
-          throw CommunicationError(error.str().c_str());
+          throw InsufficientFundsException(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());
