@@ -149,6 +149,13 @@ void TakerStrategyWindow::OnStrategyEvent(const QString &message) {
 }
 
 void TakerStrategyWindow::ConnectSignals() {
+  qRegisterMetaType<trdk::Volume>("trdk::Volume");
+  qRegisterMetaType<trdk::Volume>("Volume");
+  qRegisterMetaType<trdk::Qty>("trdk::Qty");
+  qRegisterMetaType<trdk::Qty>("Qty");
+  qRegisterMetaType<trdk::Price>("trdk::Price");
+  qRegisterMetaType<trdk::Price>("Price");
+
   Verify(connect(
       m_ui.activationToggle, &QCheckBox::toggled, [this](bool isEnabled) {
         m_strategy.EnableTrading(isEnabled);

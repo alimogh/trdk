@@ -76,6 +76,8 @@ class TRDK_CORE_API Operation {
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &);
 
+  const trdk::Pnl &GetPnl() const;
+
   void UpdatePnl(const trdk::Security &,
                  const trdk::OrderSide &,
                  const trdk::Qty &,

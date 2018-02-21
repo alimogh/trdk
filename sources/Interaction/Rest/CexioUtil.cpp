@@ -60,33 +60,41 @@ boost::unordered_map<std::string, CexioProduct> Rest::RequestCexioProductList(
       const auto &symbol2 = pair.get<std::string>("symbol2");
       std::string requestParamsFormat;
       if (symbol1 == "BTC") {
+        if (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP") {
+          requestParamsFormat = FormatRequest(8, 1);
+        }
       } else if (symbol1 == "ETH") {
-        requestParamsFormat = FormatRequest(8, 1);
+        if (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP") {
+          requestParamsFormat = FormatRequest(8, 2);
+        } else if (symbol2 == "BTC") {
+          requestParamsFormat = FormatRequest(8, 6);
+        }
       } else if (symbol1 == "BCH") {
         if (symbol2 == "BTC") {
           requestParamsFormat = FormatRequest(8, 6);
-        } else {
+        } else if (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP") {
           requestParamsFormat = FormatRequest(8, 2);
         }
       } else if (symbol1 == "BTG") {
         if (symbol2 == "BTC") {
           requestParamsFormat = FormatRequest(8, 6);
-        } else {
+        } else if (symbol2 == "USD" || symbol2 == "EUR") {
           requestParamsFormat = FormatRequest(8, 2);
         }
       } else if (symbol1 == "DASH") {
         if (symbol2 == "BTC") {
           requestParamsFormat = FormatRequest(8, 6);
-        } else {
+        } else if (symbol2 == "USD" || symbol2 == "EUR" || symbol2 == "GBP") {
           requestParamsFormat = FormatRequest(8, 2);
         }
       } else if (symbol1 == "XRP") {
         if (symbol2 == "BTC") {
           requestParamsFormat = FormatRequest(6, 8);
-        } else {
+        } else if (symbol2 == "USD" || symbol2 == "EUR") {
           requestParamsFormat = FormatRequest(6, 4);
         }
-      } else {
+      }
+      if (requestParamsFormat.empty()) {
         requestParamsFormat = FormatRequest(8, 8);
       }
       result.emplace(symbol1 + '_' + symbol2,

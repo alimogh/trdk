@@ -111,8 +111,6 @@ struct OrderParams {
   //! Price that triggers a atop order.
   boost::optional<trdk::Price> stopPrice;
 
-  explicit OrderParams() : expiration(nullptr), position(nullptr) {}
-
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
                                                 const trdk::OrderParams &);
 };

@@ -130,3 +130,5 @@ void Operation::UpdatePnl(const Security &security,
     });
   }
 }
+
+const Pnl &Operation::GetPnl() const { return *m_pimpl->m_pnl; }

@@ -15,6 +15,7 @@
 #include "Security.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
+#include "Timer.hpp"
 #include "TradingLog.hpp"
 
 namespace fs = boost::filesystem;
@@ -132,7 +133,7 @@ std::string FormatStringId(const std::string &typeName,
   result << '.' << instanceId;
   return result.str();
 }
-}
+}  // namespace
 
 class Module::Implementation : private boost::noncopyable {
  public:

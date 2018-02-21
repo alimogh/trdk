@@ -476,6 +476,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TakerController.cpp" />
+    <ClCompile Include="TakerOperation.cpp" />
     <ClCompile Include="TakerStrategy.cpp" />
     <ClCompile Include="TakerStrategyWindow.cpp" />
     <ClCompile Include="Version.cpp" />
@@ -484,6 +486,8 @@
     <ClInclude Include="Fwd.hpp" />
     <ClInclude Include="GeneratedFiles\ui_TakerStrategyWindow.h" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="TakerController.hpp" />
+    <ClInclude Include="TakerOperation.hpp" />
     <ClInclude Include="TakerStrategy.hpp" />
     <CustomBuild Include="TakerStrategyWindow.hpp">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
