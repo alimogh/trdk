@@ -10,6 +10,8 @@
 
 #include "Prec.hpp"
 #include "TakerStrategy.hpp"
+#include "TakerController.hpp"
+#include "TakerOperation.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -49,39 +51,46 @@ class TakerStrategy::Implementation : private boost::noncopyable {
   Volume m_tradeMinVolume;
   Volume m_tradeMaxVolume;
 
-  boost::unordered_map<const Security *, Subscribtion> m_securities;
+  boost::unordered_map<Security *, Subscribtion> m_securities;
+  boost::unordered_map<Security *, Subscribtion>::iterator m_nextSecurity;
 
   boost::mt19937 m_random;
-  boost::variate_generator<boost::mt19937, boost::uniform_real<>>
-      m_positionVolumeGenerator;
 
   Volume m_completedVolume;
   Volume m_pnl;
+
+  TakerController m_controller;
+
+  boost::optional<Volume> m_nextVolume;
 
  public:
   explicit Implementation(TakerStrategy &self)
       : m_self(self),
         m_isStopped(false),
         m_numerOfPeriods(1),
-        m_goalVolume(1),
-        m_maxLoss(1),
+        m_goalVolume(0.001),
+        m_maxLoss(0.0001),
         m_periodSizeMinutes(15),
         m_minPrice(0),
         m_maxPrice(100000000),
-        m_tradeMinVolume(0),
-        m_tradeMaxVolume(100000000),
-        m_positionVolumeGenerator(CreatePositionVolumeGenerator()) {}
+        m_tradeMinVolume(0.0003),
+        m_tradeMaxVolume(0.0003),
+        m_nextSecurity(m_securities.end()) {}
 
   bool IsActive() const {
     return m_nextPeriodEnd != pt::not_a_date_time && !m_isStopped;
   }
 
-  boost::variate_generator<boost::mt19937, boost::uniform_real<>>
-  CreatePositionVolumeGenerator() const {
-    boost::uniform_real<> range(m_tradeMinVolume, m_tradeMaxVolume);
-    boost::variate_generator<boost::mt19937, boost::uniform_real<>> result(
+  Volume GeneratePositionVolume() const {
+    const auto min = std::min(m_tradeMinVolume, m_goalVolume);
+    const auto max = std::min(m_tradeMaxVolume, m_goalVolume);
+    if (min >= max) {
+      return std::min(min, max);
+    }
+    boost::uniform_real<> range(min, max);
+    boost::variate_generator<boost::mt19937, boost::uniform_real<>> generator(
         m_random, range);
-    return result;
+    return generator();
   }
 
   void SetCompletedVolume(const Volume &newVolume) {
@@ -112,6 +121,102 @@ class TakerStrategy::Implementation : private boost::noncopyable {
     m_pnl += pnl;
     m_pnlUpdateSignal(m_pnl, m_maxLoss);
   }
+
+  void StartNewPeriod() {
+    if (m_nextPeriodEnd == pt::not_a_date_time) {
+      return;
+    }
+    for (auto &position : m_self.GetPositions()) {
+      try {
+        m_controller.ClosePosition(position, CLOSE_REASON_SCHEDULE);
+      } catch (const CommunicationError &ex) {
+        m_self.GetLog().Debug(
+            "Communication error position closing start: \"%1%\".", ex.what());
+      }
+    }
+
+    if (m_nextVolume) {
+      m_self.GetLog().Warn("The previous iteration was not executed.");
+    }
+
+    m_nextVolume = GeneratePositionVolume();
+    if (!m_nextVolume) {
+      Complete();
+      return;
+    }
+    for (;;) {
+      const auto &now = m_self.GetContext().GetCurrentTime();
+      if (now >= m_nextPeriodEnd) {
+        if (Complete()) {
+          return;
+        } else {
+          continue;
+        }
+      }
+      const auto numberOfSubPeriods =
+          std::max(1, static_cast<int>(m_goalVolume / *m_nextVolume));
+      m_self.Schedule((m_nextPeriodEnd - now) / numberOfSubPeriods,
+                      [this]() { StartNewPeriod(); });
+      break;
+    }
+
+    if (!m_self.GetPositions().IsEmpty()) {
+      return;
+    }
+
+    StartNewOperation();
+  }
+
+  void StartNewOperation() {
+    if (!m_nextVolume) {
+      return;
+    }
+
+    auto *const security = ChooseSecurityForNewOperation();
+    if (!security) {
+      return;
+    }
+
+    const bool isLong = true;
+
+    const auto &price =
+        isLong ? security->GetAskPriceValue() : security->GetBidPriceValue();
+    if (price.IsNan() || !price) {
+      return;
+    }
+    const auto qty = (*m_nextVolume / 2) / price;
+    try {
+      m_controller.OnSignal(
+          boost::make_shared<TakerOperation>(m_self, isLong, qty), 0, *security,
+          Milestones());
+      m_nextVolume = boost::none;
+    } catch (const CommunicationError &ex) {
+      m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
+                            ex.what());
+    }
+  }
+
+  Security *ChooseSecurityForNewOperation() {
+    Assert(m_securities.cbegin() != m_securities.cend());
+    const auto end = m_nextSecurity;
+    do {
+      if (m_nextSecurity == m_securities.cend()) {
+        m_nextSecurity = m_securities.begin();
+      } else {
+        if (m_nextSecurity->second.isEnabled) {
+          return m_nextSecurity->first;
+        }
+        ++m_nextSecurity;
+      }
+    } while (m_nextSecurity != end);
+    return nullptr;
+  }
+
+  bool Complete() {
+    m_nextPeriodEnd = pt::not_a_date_time;
+    m_completedSignal();
+    return true;
+  }
 };
 
 TakerStrategy::TakerStrategy(Context &context,
@@ -134,6 +239,7 @@ void TakerStrategy::OnSecurityStart(Security &security,
     throw Exception("Strategy works only with one symbol, but more is set");
   }
   Verify(m_pimpl->m_securities.emplace(&security, Subscribtion{false}).second);
+  m_pimpl->m_nextSecurity = m_pimpl->m_securities.end();
   Base::OnSecurityStart(security, request);
 }
 
@@ -150,12 +256,41 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
   if (m_pimpl->m_isStopped) {
     return;
   }
-  position;
+
+  if (position.IsCompleted()) {
+    if (position.GetCloseReason() == CLOSE_REASON_NONE) {
+      m_pimpl->AddCompletedVolume(position.GetOpenedVolume());
+    }
+
+    m_pimpl->AddCompletedVolume(position.GetClosedVolume());
+    for (const auto &pnl : position.GetOperation()->GetPnl().GetData()) {
+      if (pnl.first == position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
+        GetLog().Error("Wrong currency in P&L: \"%1%\" = %2%.",
+                       pnl.first,    // 1
+                       pnl.second);  // 2
+        AssertEq(pnl.first,
+                 position.GetSecurity().GetSymbol().GetQuoteSymbol());
+      }
+      m_pimpl->AddPnl(pnl.second);
+    }
+
+    m_pimpl->StartNewOperation();
+
+    return;
+  }
+
+  const auto prevCloseReason = position.GetCloseReason();
+
   try {
-    // m_pimpl->m_controller.OnPositionUpdate(position);
+    m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const CommunicationError &ex) {
     GetLog().Debug("Communication error at position update handling: \"%1%\".",
                    ex.what());
+  }
+
+  if (prevCloseReason == CLOSE_REASON_NONE &&
+      prevCloseReason != position.GetCloseReason()) {
+    m_pimpl->AddCompletedVolume(position.GetOpenedVolume());
   }
 }
 
@@ -163,7 +298,7 @@ void TakerStrategy::OnPostionsCloseRequest() {
   if (m_pimpl->m_isStopped) {
     return;
   }
-  // m_pimpl->m_controller.OnPostionsCloseRequest(*this);
+  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
 }
 
 bool TakerStrategy::OnBlocked(const std::string *reason) noexcept {
@@ -195,8 +330,10 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
     return;
   }
   m_pimpl->m_nextPeriodEnd =
-      isEnabled ? GetContext().GetCurrentTime() + pt::minutes(isEnabled)
-                : pt::not_a_date_time;
+      isEnabled
+          ? GetContext().GetCurrentTime() +
+                pt::minutes(static_cast<long>(m_pimpl->m_periodSizeMinutes))
+          : pt::not_a_date_time;
   if (isEnabled) {
     if (m_pimpl->m_securities.empty()) {
       RaiseEvent(
@@ -213,6 +350,7 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
   }
   m_pimpl->SetCompletedVolume(0);
   m_pimpl->SetPnl(0);
+  m_pimpl->StartNewPeriod();
 }
 bool TakerStrategy::IsTradingEnabled() const {
   const auto lock = LockForOtherThreads();
@@ -319,7 +457,17 @@ Volume TakerStrategy::GetMaxLoss() const {
 
 void TakerStrategy::SetPeriodSize(size_t numberOfMinutes) {
   const auto lock = LockForOtherThreads();
-  m_pimpl->m_periodSizeMinutes = numberOfMinutes;
+  std::swap(numberOfMinutes, m_pimpl->m_periodSizeMinutes);
+  if (m_pimpl->m_nextPeriodEnd == pt::not_a_date_time) {
+    return;
+  }
+  m_pimpl->m_nextPeriodEnd =
+      m_pimpl->m_nextPeriodEnd -
+      pt::minutes(static_cast<long>(numberOfMinutes)) +
+      pt::minutes(static_cast<long>(m_pimpl->m_periodSizeMinutes));
+  if (GetContext().GetCurrentTime() >= m_pimpl->m_nextPeriodEnd) {
+    m_pimpl->Complete();
+  }
 }
 size_t TakerStrategy::GetPeriodSize() const {
   const auto lock = LockForOtherThreads();
@@ -347,7 +495,6 @@ Price TakerStrategy::GetMaxPrice() const {
 void TakerStrategy::SetTradeMinVolume(const Volume &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_tradeMinVolume = value;
-  m_pimpl->m_positionVolumeGenerator = m_pimpl->CreatePositionVolumeGenerator();
 }
 Volume TakerStrategy::GetTradeMinVolume() const {
   const auto lock = LockForOtherThreads();
@@ -357,7 +504,6 @@ Volume TakerStrategy::GetTradeMinVolume() const {
 void TakerStrategy::SetTradeMaxVolume(const Volume &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_tradeMaxVolume = value;
-  m_pimpl->m_positionVolumeGenerator = m_pimpl->CreatePositionVolumeGenerator();
 }
 Volume TakerStrategy::GetTradeMaxVolume() const {
   const auto lock = LockForOtherThreads();

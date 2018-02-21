@@ -465,7 +465,8 @@ class Position::Implementation : private boost::noncopyable {
         m_timeMeasurement(timeMeasurement),
         m_open(startPrice),
         m_close(0),
-        m_closeReason(CLOSE_REASON_NONE) {
+        m_closeReason(CLOSE_REASON_NONE),
+        m_defaultOrderParams(OrderParams{}) {
     AssertLt(0, m_planedQty);
   }
 
@@ -689,11 +690,7 @@ class Position::Implementation : private boost::noncopyable {
                                       boost::optional<Price> &&price) {
     const auto now = m_strategy.GetContext().GetCurrentTime();
 
-    if (!m_security->IsOnline()) {
-      throw Exception("Security is not online");
-    } else if (!m_security->IsTradingSessionOpened()) {
-      throw Exception("Security trading session is closed");
-    } else if (m_self.IsCancelling()) {
+    if (m_self.IsCancelling()) {
       throw Exception("Failed to start opening as canceling is not completed");
     } else if (!m_close.orders.empty()) {
       throw AlreadyStartedError();

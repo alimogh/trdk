@@ -66,9 +66,9 @@ class TRDK_CORE_API Timer {
 
  public:
   void Schedule(const boost::posix_time::time_duration &,
-                const boost::function<void()> &&,
+                boost::function<void()> &&,
                 Scope &) const;
-  void Schedule(const boost::function<void()> &&, Scope &) const;
+  void Schedule(boost::function<void()> &&, Scope &) const;
 
   void Stop();
 
@@ -78,4 +78,4 @@ class TRDK_CORE_API Timer {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

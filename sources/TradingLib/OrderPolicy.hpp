@@ -75,5 +75,5 @@ class MarketGtcOrderPolicy : public trdk::TradingLib::OrderPolicy {
   virtual void Open(trdk::Position &) const override;
   virtual void Close(trdk::Position &) const override;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk

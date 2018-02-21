@@ -15,6 +15,7 @@
 #include "RiskControl.hpp"
 #include "Service.hpp"
 #include "Settings.hpp"
+#include "Timer.hpp"
 #ifndef BOOST_WINDOWS
 #include <signal.h>
 #endif
@@ -345,6 +346,8 @@ class Strategy::Implementation : private boost::noncopyable {
   std::vector<Position *> m_delayedPositionToForget;
 
   DropCopyStrategyInstanceId m_dropCopyInstanceId;
+
+  TimerScope m_timerScope;
 
  public:
   explicit Implementation(Strategy &strategy,
@@ -948,5 +951,28 @@ void Strategy::ClosePositions() {
 }
 
 bool Strategy::OnBlocked(const std::string *) noexcept { return true; }
+
+void Strategy::Schedule(const pt::time_duration &delay,
+                        boost::function<void()> &&callback) {
+  GetContext().GetTimer().Schedule(delay,
+                                   [this, callback]() {
+                                     auto lock = LockForOtherThreads();
+                                     if (IsBlocked()) {
+                                       return;
+                                     }
+                                     try {
+                                       callback();
+                                     } catch (const RiskControlException &ex) {
+                                       m_pimpl->BlockByRiskControlEvent(
+                                           ex, "broker position update");
+                                       return;
+                                     } catch (const Exception &ex) {
+                                       Block(ex.what());
+                                       return;
+                                     }
+                                     m_pimpl->FlushDelayed(lock);
+                                   },
+                                   m_pimpl->m_timerScope);
+}
 
 ////////////////////////////////////////////////////////////////////////////////

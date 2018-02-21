@@ -87,6 +87,12 @@
     <ClCompile Include="TakerStrategy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TakerController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TakerOperation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -99,6 +105,12 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="TakerStrategy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TakerOperation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TakerController.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
