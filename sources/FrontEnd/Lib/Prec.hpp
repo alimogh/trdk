@@ -24,6 +24,8 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 
 #include "Core/Balances.hpp"
 #include "Core/Context.hpp"

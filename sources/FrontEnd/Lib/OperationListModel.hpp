@@ -62,6 +62,17 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
                 const trdk::Qty &,
                 const boost::optional<trdk::Price> &,
                 const trdk::TimeInForce &);
+  void AddOrderSumbitError(const boost::uuids::uuid &operationId,
+                           int64_t subOperationId,
+                           const boost::posix_time::ptime &,
+                           const trdk::Security *,
+                           const trdk::Lib::Currency &,
+                           const trdk::TradingSystem *,
+                           const trdk::OrderSide &,
+                           const trdk::Qty &,
+                           const boost::optional<trdk::Price> &,
+                           const trdk::TimeInForce &,
+                           const QString &error);
   void UpdateOrder(const trdk::OrderId &,
                    const trdk::TradingSystem *,
                    const boost::posix_time::ptime &,

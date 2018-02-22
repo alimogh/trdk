@@ -88,6 +88,32 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
       &position.GetTradingSystem(), sid, qty, price, tif);
 }
 
+void lib::DropCopy::CopyOrderSubmitError(const pt::ptime &time,
+                                         const Security &security,
+                                         const Currency &currency,
+                                         const TradingSystem &tradingSystem,
+                                         const OrderSide &sid,
+                                         const Qty &qty,
+                                         const boost::optional<Price> &price,
+                                         const TimeInForce &tif,
+                                         const std::string &error) {
+  emit FreeOrderSubmitError(time, &security, currency, &tradingSystem, sid, qty,
+                            price, tif, QString::fromStdString(error));
+}
+void lib::DropCopy::CopyOrderSubmitError(const pt::ptime &time,
+                                         const Position &position,
+                                         const OrderSide &sid,
+                                         const Qty &qty,
+                                         const boost::optional<Price> &price,
+                                         const TimeInForce &tif,
+                                         const std::string &error) {
+  emit OperationOrderSubmitError(
+      position.GetOperation()->GetId(), position.GetSubOperationId(), time,
+      &position.GetSecurity(), position.GetCurrency(),
+      &position.GetTradingSystem(), sid, qty, price, tif,
+      QString::fromStdString(error));
+}
+
 void lib::DropCopy::CopyOrderStatus(const OrderId &id,
                                     const TradingSystem &tradingSystem,
                                     const pt::ptime &time,

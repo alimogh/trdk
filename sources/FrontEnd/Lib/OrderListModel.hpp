@@ -49,6 +49,15 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
                         const trdk::Qty &,
                         const boost::optional<trdk::Price> &,
                         const trdk::TimeInForce &);
+  void OnOrderSubmitError(const boost::posix_time::ptime &,
+                          const trdk::Security *,
+                          const trdk::Lib::Currency &,
+                          const trdk::TradingSystem *,
+                          const trdk::OrderSide &,
+                          const trdk::Qty &,
+                          const boost::optional<trdk::Price> &,
+                          const trdk::TimeInForce &,
+                          const QString &error);
   void OnOrderUpdated(const trdk::OrderId &,
                       const trdk::TradingSystem *,
                       const boost::posix_time::ptime &,
@@ -70,6 +79,6 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

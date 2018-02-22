@@ -53,6 +53,8 @@ bool OperationItem::HasErrors() const {
   return false;
 }
 
+QVariant OperationItem::GetToolTip() const { return QVariant(); }
+
 ////////////////////////////////////////////////////////////////////////////////
 
 OperationNodeItem::OperationNodeItem(OperationRecord &&record)
@@ -166,8 +168,13 @@ QVariant OperationOrderItem::GetData(int column) const {
   return QVariant();
 }
 
+QVariant OperationOrderItem::GetToolTip() const {
+  return GetRecord().additionalInfo;
+}
+
 bool OperationOrderItem::HasErrors() const {
-  return m_record.status == ORDER_STATUS_ERROR || Base::HasErrors();
+  return (m_record.status == ORDER_STATUS_ERROR && !m_record.id.isEmpty()) ||
+         Base::HasErrors();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

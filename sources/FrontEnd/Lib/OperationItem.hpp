@@ -66,6 +66,7 @@ class OperationItem : private boost::noncopyable {
   OperationItem *GetChild(int row);
   OperationItem *GetParent();
   virtual QVariant GetData(int column) const = 0;
+  virtual QVariant GetToolTip() const;
   virtual bool HasErrors() const;
 
  private:
@@ -114,6 +115,7 @@ class OperationOrderItem : public OperationItem {
   OrderRecord &GetRecord();
   const OrderRecord &GetRecord() const;
   virtual QVariant GetData(int column) const override;
+  virtual QVariant GetToolTip() const override;
   virtual bool HasErrors() const override;
 
  private:
