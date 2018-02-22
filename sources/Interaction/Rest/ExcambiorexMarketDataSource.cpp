@@ -94,8 +94,9 @@ void ExcambiorexMarketDataSource::SubscribeToSecurities() {
 
 trdk::Security &ExcambiorexMarketDataSource::CreateNewSecurityObject(
     const Symbol &symbol) {
-  const auto &product = m_products.find(symbol.GetSymbol());
-  if (product == m_products.cend()) {
+  const auto &productIndex = m_products.get<BySymbol>();
+  const auto &product = productIndex.find(symbol.GetSymbol());
+  if (product == productIndex.cend()) {
     boost::format message("Symbol \"%1%\" is not in the exchange product list");
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());
@@ -103,7 +104,7 @@ trdk::Security &ExcambiorexMarketDataSource::CreateNewSecurityObject(
   {
     const auto &it = m_subscribtionList.find(symbol.GetSymbol());
     if (it != m_subscribtionList.cend()) {
-      Assert(it->product == &product->second);
+      Assert(it->product == &*product);
       return *it->security;
     }
   }
@@ -119,8 +120,7 @@ trdk::Security &ExcambiorexMarketDataSource::CreateNewSecurityObject(
 
   {
     const boost::mutex::scoped_lock lock(m_subscribtionMutex);
-    Verify(m_subscribtionList.emplace(Subscribtion{result, &product->second})
-               .second);
+    Verify(m_subscribtionList.emplace(Subscribtion{result, &*product}).second);
   }
 
   return *result;
@@ -128,7 +128,7 @@ trdk::Security &ExcambiorexMarketDataSource::CreateNewSecurityObject(
 
 void ExcambiorexMarketDataSource::UpdatePrices(Request &request) {
   const boost::mutex::scoped_lock lock(m_subscribtionMutex);
-  const auto &subscribtionIndex = m_subscribtionList.get<ByProductId>();
+  const auto &subscribtionIndex = m_subscribtionList.get<ById>();
   try {
     const auto &response = request.Send(m_session);
     const auto &time = boost::get<0>(response) - m_serverTimeDiff;

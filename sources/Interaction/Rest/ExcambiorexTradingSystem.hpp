@@ -138,7 +138,7 @@ class ExcambiorexTradingSystem : public TradingSystem {
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
-  boost::unordered_map<std::string, ExcambiorexProduct> m_products;
+  ExcambiorexProductList m_products;
   boost::unordered_map<std::string, std::string> m_currencies;
 
   BalancesContainer m_balances;
