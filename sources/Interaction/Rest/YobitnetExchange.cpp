@@ -215,9 +215,7 @@ class TradeRequest : public Request {
                                   "The given order has already been "
                                   "closed and cannot be cancel")) {
             throw OrderIsUnknownException(error.str().c_str());
-          } else if (boost::istarts_with(*message,
-                                         "Insufficient funds in wallet of the "
-                                         "second currency of the pair")) {
+          } else if (boost::istarts_with(*message, "Insufficient funds")) {
             throw InsufficientFundsException(error.str().c_str());
           }
         }
