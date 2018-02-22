@@ -37,16 +37,50 @@ class RootItem : public OperationItem {
 
 class OperationListModel::Implementation : private boost::noncopyable {
  public:
+  OperationListModel &m_self;
+
   RootItem m_root;
   boost::unordered_map<ids::uuid, boost::shared_ptr<OperationNodeItem>>
       m_operations;
-  boost::unordered_map<std::pair<const TradingSystem *, OrderId>,
+  boost::unordered_map<std::pair<const TradingSystem *, std ::string>,
                        boost::shared_ptr<OperationOrderItem>>
       m_orders;
+
+  explicit Implementation(OperationListModel &self) : m_self(self) {}
+
+  void AddOrder(const ids::uuid &operationId,
+                const std::string &orderId,
+                const TradingSystem &tradingSystem,
+                const boost::shared_ptr<OperationOrderItem> &&order) {
+    const auto &operationIt = m_operations.find(operationId);
+    if (operationIt == m_operations.cend()) {
+      Assert(operationIt != m_operations.cend());
+      return;
+    }
+    auto &operation = *operationIt->second;
+    if (!m_orders
+             .emplace(
+                 std::make_pair(std::make_pair(&tradingSystem, orderId), order))
+             .second) {
+      Assert(false);
+      return;
+    }
+    if (operation.GetNumberOfChilds() == 0) {
+      m_self.beginInsertRows(
+          m_self.createIndex(operation.GetRow(), 0, &operation), 0, 1);
+      operation.AppendChild(boost::make_shared<OperationOrderHeadItem>());
+    } else {
+      const auto &index = operation.GetNumberOfChilds();
+      m_self.beginInsertRows(
+          m_self.createIndex(operation.GetRow(), 0, &operation), index, index);
+    }
+    operation.AppendChild(order);
+    m_self.endInsertRows();
+  }
 };
 
 OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
-    : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
+    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationStart, this,
                  &OperationListModel::AddOperation, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationUpdate, this,
@@ -55,6 +89,9 @@ OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
                  &OperationListModel::CompleteOperation, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitted,
                  this, &OperationListModel::AddOrder, Qt::QueuedConnection));
+  Verify(connect(
+      &engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitError, this,
+      &OperationListModel::AddOrderSumbitError, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
                  &OperationListModel::UpdateOrder, Qt::QueuedConnection));
 }
@@ -99,13 +136,17 @@ QVariant OperationListModel::data(const QModelIndex &index, int role) const {
     return QVariant();
   }
   auto &item = *static_cast<OperationItem *>(index.internalPointer());
-  if (role == Qt::DisplayRole) {
-    return item.GetData(index.column());
-  } else if (role == Qt::TextAlignmentRole &&
-             (dynamic_cast<const OperationOrderItem *>(&item) ||
-              dynamic_cast<const OperationOrderHeadItem *>(&item))) {
-    return GetOperationFieldAligment(
-        static_cast<OperationColumn>(index.column()));
+  switch (role) {
+    case Qt::DisplayRole:
+      return item.GetData(index.column());
+    case Qt::ToolTipRole:
+      return item.GetToolTip();
+    case Qt::TextAlignmentRole:
+      if (dynamic_cast<const OperationOrderItem *>(&item) ||
+          dynamic_cast<const OperationOrderHeadItem *>(&item)) {
+        return GetOperationFieldAligment(
+            static_cast<OperationColumn>(index.column()));
+      }
   }
   return QVariant();
 }
@@ -214,32 +255,36 @@ void OperationListModel::AddOrder(const ids::uuid &operationId,
                                   const Qty &qty,
                                   const boost::optional<Price> &price,
                                   const TimeInForce &tif) {
-  const auto &operationIt = m_pimpl->m_operations.find(operationId);
-  if (operationIt == m_pimpl->m_operations.cend()) {
-    Assert(operationIt != m_pimpl->m_operations.cend());
-    return;
-  }
-  auto &operation = *operationIt->second;
-  const auto &order = boost::make_shared<OperationOrderItem>(OrderRecord(
-      OrderRecord(orderId, operationId, subOperationId, orderTime, *security,
-                  currency, *tradingSystem, side, qty, price, tif)));
-  if (!m_pimpl->m_orders
-           .emplace(
-               std::make_pair(std::make_pair(tradingSystem, orderId), order))
-           .second) {
-    Assert(false);
-    return;
-  }
-  if (operation.GetNumberOfChilds() == 0) {
-    beginInsertRows(createIndex(operation.GetRow(), 0, &operation), 0, 1);
-    operation.AppendChild(boost::make_shared<OperationOrderHeadItem>());
-  } else {
-    const auto &index = operation.GetNumberOfChilds();
-    beginInsertRows(createIndex(operation.GetRow(), 0, &operation), index,
-                    index);
-  }
-  operation.AppendChild(order);
-  endInsertRows();
+  m_pimpl->AddOrder(
+      operationId, orderId.GetValue(), *tradingSystem,
+      boost::make_shared<OperationOrderItem>(OrderRecord(
+          QString::fromStdString(boost::lexical_cast<std::string>(orderId)),
+          operationId, subOperationId, orderTime, *security, currency,
+          *tradingSystem, side, qty, price, ORDER_STATUS_SENT, tif,
+          QString())));
+}
+
+void OperationListModel::AddOrderSumbitError(
+    const ids::uuid &operationId,
+    int64_t subOperationId,
+    const pt::ptime &orderTime,
+    const Security *security,
+    const Currency &currency,
+    const TradingSystem *tradingSystem,
+    const OrderSide &side,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const TimeInForce &tif,
+    const QString &error) {
+  static boost::uuids::random_generator generateOrderId;
+  m_pimpl->AddOrder(
+      operationId, boost::lexical_cast<std::string>(generateOrderId()),
+      *tradingSystem,
+      boost::make_shared<OperationOrderItem>(OrderRecord(
+          QString(), operationId, subOperationId, orderTime, *security,
+          currency, *tradingSystem, side, qty, price, ORDER_STATUS_ERROR, tif,
+          !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
+                           : tr("Unknown submit error"))));
 }
 
 void OperationListModel::UpdateOrder(const OrderId &orderId,
@@ -248,7 +293,7 @@ void OperationListModel::UpdateOrder(const OrderId &orderId,
                                      const OrderStatus &status,
                                      const Qty &remainingQty) {
   const auto &it = m_pimpl->m_orders.find(
-      std::make_pair(tradingSystem, boost::cref(orderId)));
+      std::make_pair(tradingSystem, boost::cref(orderId.GetValue())));
   if (it == m_pimpl->m_orders.cend()) {
     // Maybe this is standalone order.
     return;

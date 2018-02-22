@@ -612,7 +612,16 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
             : side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                      : security.GetBidPrice(),
       tif, delayMeasurement, riskControlScope, nullptr);
-  m_pimpl->SendOrder(order, params);
+  try {
+    m_pimpl->SendOrder(order, params);
+  } catch (const std::exception &ex) {
+    GetContext().InvokeDropCopy([this, &order, &time, &ex](DropCopy &dropCopy) {
+      dropCopy.CopyOrderSubmitError(time, order->security, order->currency,
+                                    *this, order->side, order->qty,
+                                    order->price, order->tif, ex.what());
+    });
+    throw;
+  }
   GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
     dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
                                 order->security, order->currency, *this,
@@ -644,7 +653,16 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
       // operation end event will be raised only after last order will
       // be canceled or filled:
       std::move(position));
-  m_pimpl->SendOrder(order, params);
+  try {
+    m_pimpl->SendOrder(order, params);
+  } catch (const std::exception &ex) {
+    GetContext().InvokeDropCopy([this, &order, &time, &ex](DropCopy &dropCopy) {
+      dropCopy.CopyOrderSubmitError(time, *order->position, order->side,
+                                    order->qty, order->price, order->tif,
+                                    ex.what());
+    });
+    throw;
+  }
   GetContext().InvokeDropCopy([this, &order, &time](DropCopy &dropCopy) {
     dropCopy.CopySubmittedOrder(order->transactionContext->GetOrderId(), time,
                                 *order->position, order->side, order->qty,

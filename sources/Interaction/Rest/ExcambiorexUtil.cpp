@@ -22,13 +22,13 @@ namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
-std::pair<boost::unordered_map<std::string, ExcambiorexProduct>,
+std::pair<ExcambiorexProductList,
           boost::unordered_map<std::string, std::string>>
 Rest::RequestExcambiorexProductAndCurrencyList(
     std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
-  std::pair<boost::unordered_map<std::string, ExcambiorexProduct>,
+  std::pair<ExcambiorexProductList,
             boost::unordered_map<std::string, std::string>>
       result;
 
@@ -55,16 +55,16 @@ Rest::RequestExcambiorexProductAndCurrencyList(
       const auto &buyCoinAlias = pairData.get<std::string>("buy_coin_alias");
       const auto &sellCoinAlias = pairData.get<std::string>("sell_coin_alias");
       const auto &symbol = buyCoinAlias + "_" + sellCoinAlias;
-      const ExcambiorexProduct product = {node.first, buyCoinAlias,
+      const ExcambiorexProduct product = {node.first, symbol, buyCoinAlias,
                                           sellCoinAlias};
-      const auto &productIt = result.first.emplace(symbol, product);
+      const auto &productIt = result.first.emplace(product);
       if (!productIt.second) {
         log.Error(
             "Duplicate symbol \"%1%\": received with ID \"%2%\", but already "
             "added with ID \"%3%\".",
-            symbol,                             // 1
-            product.directId,                   // 2
-            productIt.first->second.directId);  // 3
+            symbol,                      // 1
+            product.directId,            // 2
+            productIt.first->directId);  // 3
         Assert(productIt.second);
       }
       addCurrency(pairData.get<std::string>("buy_coin"), buyCoinAlias);
@@ -82,25 +82,26 @@ Rest::RequestExcambiorexProductAndCurrencyList(
   }
 
   for (auto &product : result.first) {
-    AssertEq(std::string(), product.second.oppositeId);
+    AssertEq(std::string(), product.oppositeId);
     for (const auto &oppositeProduct : result.first) {
-      if (oppositeProduct.second.buyCoinAlias == product.second.sellCoinAlias &&
-          oppositeProduct.second.sellCoinAlias == product.second.buyCoinAlias) {
-        if (!product.second.oppositeId.empty()) {
+      if (oppositeProduct.buyCoinAlias == product.sellCoinAlias &&
+          oppositeProduct.sellCoinAlias == product.buyCoinAlias) {
+        if (!product.oppositeId.empty()) {
           log.Error(
               "Duplicate opposite product \"%1%\" found for product \"%2%\" "
               "that already has opposite product \"%3%\".",
-              oppositeProduct.second.directId,  // 1
-              product.second.directId,          // 2
-              product.second.oppositeId);       // 3
+              oppositeProduct.directId,  // 1
+              product.directId,          // 2
+              product.oppositeId);       // 3
           throw Exception("Failed to build product list");
         }
-        product.second.oppositeId = oppositeProduct.second.directId;
+        const_cast<std::string &>(product.oppositeId) =
+            oppositeProduct.directId;
       }
     }
-    if (product.second.oppositeId.empty()) {
+    if (product.oppositeId.empty()) {
       log.Error("Opposite product was not found for product \"%1%\".",
-                product.second.directId);
+                product.directId);
       throw Exception("Failed to build product list");
     }
   }

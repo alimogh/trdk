@@ -45,6 +45,7 @@ TakerStrategyWindow::TakerStrategyWindow(Engine &engine,
   m_ui.activationToggle->setChecked(m_strategy.IsTradingEnabled());
   m_ui.stopAfterNumberOfPeriods->setValue(
       static_cast<int>(m_strategy.GetNumerOfPeriods()));
+  m_ui.maxLossVolume->setValue(m_strategy.GetMaxLoss());
   m_ui.periodSize->setValue(static_cast<int>(m_strategy.GetPeriodSize()));
   m_ui.goalVolume->setValue(m_strategy.GetGoalVolume());
   m_ui.priceRangeFrom->setValue(m_strategy.GetMinPrice());
@@ -164,6 +165,7 @@ void TakerStrategyWindow::ConnectSignals() {
           m_ui.activationToggle->setChecked(m_strategy.IsTradingEnabled());
         }
       }));
+
   Verify(connect(m_ui.stopAfterNumberOfPeriods,
                  static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                  [this](int value) {
@@ -175,6 +177,18 @@ void TakerStrategyWindow::ConnectSignals() {
                          static_cast<int>(m_strategy.GetNumerOfPeriods()));
                    }
                  }));
+
+  Verify(connect(m_ui.maxLossVolume,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double value) {
+                   m_strategy.SetMaxLoss(value);
+                   {
+                     const QSignalBlocker blocker(*m_ui.maxLossVolume);
+                     m_ui.maxLossVolume->setValue(m_strategy.GetMaxLoss());
+                   }
+                 }));
+
   Verify(connect(m_ui.periodSize,
                  static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                  [this](int value) {

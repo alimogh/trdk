@@ -18,13 +18,32 @@ typedef std::string ExcambiorexProductId;
 
 struct ExcambiorexProduct {
   ExcambiorexProductId directId;
+  std::string symbol;
   std::string buyCoinAlias;
   std::string sellCoinAlias;
   ExcambiorexProductId oppositeId;
   const ExcambiorexProduct *oppositeProduct;
 };
 
-std::pair<boost::unordered_map<std::string, ExcambiorexProduct>,
+struct BySymbol {};
+struct ById {};
+
+typedef boost::multi_index_container<
+    ExcambiorexProduct,
+    boost::multi_index::indexed_by<
+        boost::multi_index::hashed_unique<
+            boost::multi_index::tag<BySymbol>,
+            boost::multi_index::member<ExcambiorexProduct,
+                                       std::string,
+                                       &ExcambiorexProduct::symbol>>,
+        boost::multi_index::hashed_unique<
+            boost::multi_index::tag<ById>,
+            boost::multi_index::member<ExcambiorexProduct,
+                                       ExcambiorexProductId,
+                                       &ExcambiorexProduct::directId>>>>
+    ExcambiorexProductList;
+
+std::pair<ExcambiorexProductList,
           boost::unordered_map<std::string, std::string>>
 RequestExcambiorexProductAndCurrencyList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &,

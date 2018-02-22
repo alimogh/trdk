@@ -33,8 +33,9 @@ struct OrderRecord {
   Qty filledQty;
   Qty remainingQty;
   QTime lastTime;
+  QString additionalInfo;
 
-  explicit OrderRecord(const OrderId &,
+  explicit OrderRecord(const QString &id,
                        const boost::optional<boost::uuids::uuid> &operationId,
                        const boost::optional<int64_t> &subOperationId,
                        const boost::posix_time::ptime &,
@@ -44,7 +45,9 @@ struct OrderRecord {
                        const OrderSide &,
                        const Qty &,
                        const boost::optional<Price> &,
-                       const TimeInForce &);
+                       const OrderStatus &,
+                       const TimeInForce &,
+                       const QString &additionalInfo);
 
   void Update(const boost::posix_time::ptime &,
               const OrderStatus &,
