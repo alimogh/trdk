@@ -17,7 +17,8 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::TradingLib;
 using namespace trdk::Strategies::PingPong;
 
-Controller::Controller() : m_isOpeningEnabled(true), m_isClosingEnabled(true) {}
+Controller::Controller()
+    : m_isOpeningEnabled(false), m_isClosingEnabled(false) {}
 
 bool Controller::IsOpeningEnabled() const { return m_isOpeningEnabled; }
 void Controller::EnableOpening(bool isEnabled) {
