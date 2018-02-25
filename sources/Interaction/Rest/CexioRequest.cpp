@@ -32,9 +32,10 @@ CexioRequest::CexioRequest(const std::string &name,
            log,
            tradingLog) {}
 
-FloodControl &CexioRequest::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &CexioRequest::GetFloodControl() const {
+  static auto result = CreateFloodControlWithMaxRequestsPerPeriod(
+      600, pt::minutes(10), pt::seconds(2));
+  return *result;
 }
 
 void CexioRequest::SetUri(const std::string &uri,
@@ -52,13 +53,27 @@ CexioRequest::Response CexioRequest::Send(
   const auto result = Base::Send(session);
   {
     const auto &response = boost::get<1>(result);
-    const auto &errorMessage = response.get_optional<std::string>("error");
-    if (errorMessage) {
+    const auto &errorMessageField = response.get_optional<std::string>("error");
+    if (errorMessageField) {
+      const auto &errorMessage = *errorMessageField;
+      bool isInsufficientFundsError = false;
+      bool isCommunicationError = false;
+      if (boost::istarts_with(errorMessage, "Rate limit exceeded")) {
+        GetLog().Warn("Server rejects requests by rate limit exceeding.");
+        GetFloodControl().OnRateLimitExceeded();
+        isCommunicationError = true;
+      } else {
+        isInsufficientFundsError = isCommunicationError =
+            boost::icontains(errorMessage, "Insufficient funds");
+      }
       std::ostringstream error;
       error << "The server returned an error in response to the request \""
             << GetName() << "\" (" << GetRequest().getURI() << "): "
-            << "\"" << *errorMessage << "\"";
-      throw Exception(error.str().c_str());
+            << "\"" << errorMessage << "\"";
+      isInsufficientFundsError
+          ? throw InsufficientFundsException(error.str().c_str())
+          : isCommunicationError ? throw CommunicationError(error.str().c_str())
+                                 : throw Exception(error.str().c_str());
     }
   }
   return result;

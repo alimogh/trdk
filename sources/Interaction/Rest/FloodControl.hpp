@@ -14,43 +14,31 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
+////////////////////////////////////////////////////////////////////////////////
+
 class FloodControl : private boost::noncopyable {
  public:
   virtual ~FloodControl() = default;
 
  public:
-  virtual void Check(bool isPriority) = 0;
+  virtual void Check(bool isPriority, ModuleEventsLog &) = 0;
+  virtual void OnRateLimitExceeded();
 };
 
-class DisabledFloodControl : public FloodControl {
- public:
-  virtual ~DisabledFloodControl() override = default;
+////////////////////////////////////////////////////////////////////////////////
 
- public:
-  virtual void Check(bool) {}
-};
+std::unique_ptr<FloodControl> CreateDisabledFloodControl();
 
-class MinTimeBetweenRequestsFloodControl : public FloodControl {
- private:
-  typedef boost::mutex Mutex;
-  typedef Mutex::scoped_lock Lock;
+std::unique_ptr<FloodControl> CreateFloodControlWithMinTimeBetweenRequests(
+    const boost::posix_time::time_duration &minTimeBetweenRequests,
+    const boost::posix_time::time_duration &criticalWaitTimeToReport);
 
- public:
-  explicit MinTimeBetweenRequestsFloodControl(
-      const boost::posix_time::time_duration &minTimeBetweenRequests);
-  virtual ~MinTimeBetweenRequestsFloodControl() override = default;
+std::unique_ptr<FloodControl> CreateFloodControlWithMaxRequestsPerPeriod(
+    size_t maxNumberOfRequest,
+    const boost::posix_time::time_duration &period,
+    const boost::posix_time::time_duration &criticalWaitTimeToReport);
 
- public:
-  virtual void Check(bool isPriority) override;
-
- private:
-  boost::posix_time::ptime CalcNextRequestTime() const;
-
- private:
-  const boost::posix_time::time_duration m_minTimeBetweenRequests;
-  Mutex m_mutex;
-  boost::posix_time::ptime m_nextRequestTime;
-};
-}
-}
-}
+////////////////////////////////////////////////////////////////////////////////
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

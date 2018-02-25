@@ -160,9 +160,9 @@ class Request : public Rest::Request {
     Base::CheckErrorResponse(response, responseContent, attemptNumber);
   }
 
-  virtual FloodControl &GetFloodControl() override {
-    static DisabledFloodControl result;
-    return result;
+  virtual FloodControl &GetFloodControl() const override {
+    static auto result = CreateDisabledFloodControl();
+    return *result;
   }
 };
 

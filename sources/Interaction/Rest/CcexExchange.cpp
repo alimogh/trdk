@@ -36,12 +36,14 @@ namespace {
 
 struct Endpoint : private boost::noncopyable {
   const std::string host;
-  MinTimeBetweenRequestsFloodControl floodControl;
+  std::unique_ptr<FloodControl> floodControl;
 
   explicit Endpoint(
       const std::string &host,
       const boost::posix_time::time_duration &minTimeBetweenRequests)
-      : host(host), floodControl(minTimeBetweenRequests) {}
+      : host(host),
+        floodControl(CreateFloodControlWithMinTimeBetweenRequests(
+            minTimeBetweenRequests, minTimeBetweenRequests * 2)) {}
 };
 Endpoint &GetEndpoint() {
   static Endpoint result("c-cex.com", pt::seconds(1));
@@ -149,7 +151,9 @@ class Request : public Rest::Request {
     }
     return *result;
   }
-  virtual FloodControl &GetFloodControl() override { return m_floodControl; }
+  virtual FloodControl &GetFloodControl() const override {
+    return m_floodControl;
+  }
 
  private:
   FloodControl &m_floodControl;
@@ -405,7 +409,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "getorderbook", m_endpoint.floodControl,
+          "getorderbook", *m_endpoint.floodControl,
           "market=" + product->second.id + "&type=both&depth=1", GetContext(),
           GetTsLog());
 
@@ -452,7 +456,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         % *price;                       // 3
 
     PrivateRequest request(side == ORDER_SIDE_SELL ? "selllimit" : "buylimit",
-                           m_settings, m_endpoint.floodControl, true,
+                           m_settings, *m_endpoint.floodControl, true,
                            requestParams.str(), GetContext(), GetTsLog(),
                            &GetTsTradingLog());
 
@@ -501,7 +505,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           const ptr::ptree &responseTree) const override {
         return responseTree;
       }
-    } request(orderId, m_settings, m_endpoint.floodControl, GetContext(),
+    } request(orderId, m_settings, *m_endpoint.floodControl, GetContext(),
               GetTsLog(), GetTsTradingLog());
 
     const boost::mutex::scoped_lock lock(m_canceledMutex);
@@ -517,7 +521,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
  private:
   void UpdateBalances() {
-    PrivateRequest request("getbalances", m_settings, m_endpoint.floodControl,
+    PrivateRequest request("getbalances", m_settings, *m_endpoint.floodControl,
                            false, std::string(), GetContext(), GetTsLog());
     ptr::ptree response;
     try {
@@ -549,7 +553,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
-    PublicRequest request("getmarkets", m_endpoint.floodControl, std::string(),
+    PublicRequest request("getmarkets", *m_endpoint.floodControl, std::string(),
                           GetContext(), GetTsLog());
     try {
       const auto response = boost::get<1>(request.Send(m_marketDataSession));
@@ -675,7 +679,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
   void UpdateOrders() {
     for (const auto &orderId : GetActiveOrderIdList()) {
       PrivateRequest request(
-          "getorder", m_settings, m_endpoint.floodControl, false,
+          "getorder", m_settings, *m_endpoint.floodControl, false,
           "uuid=" + boost::lexical_cast<std::string>(orderId), GetContext(),
           GetTsLog(), &GetTsTradingLog());
       ptr::ptree response;

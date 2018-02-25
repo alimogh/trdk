@@ -126,9 +126,9 @@ class Request : public Rest::Request {
       : Base(uri, name, method, uriParams, context, log, tradingLog) {}
 
  protected:
-  virtual FloodControl &GetFloodControl() override {
-    static DisabledFloodControl result;
-    return result;
+  virtual FloodControl &GetFloodControl() const override {
+    static auto result = CreateDisabledFloodControl();
+    return *result;
   }
 };
 

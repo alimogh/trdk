@@ -20,56 +20,10 @@ namespace ptr = boost::property_tree;
 namespace net = Poco::Net;
 namespace ios = boost::iostreams;
 
-FloodControl &LivecoinRequest::GetFloodControl() {
-  static class FloodControl : public Rest::FloodControl {
-   private:
-    typedef boost::mutex Mutex;
-    typedef Mutex::scoped_lock Lock;
-
-   public:
-    FloodControl() : m_events(60) {}
-    virtual ~FloodControl() override = default;
-
-   public:
-    virtual void Check(bool isPriority) override {
-      Lock lock(m_mutex);
-
-      static const auto period = pt::seconds(1);
-      auto now = pt::microsec_clock::universal_time();
-      FlushEvents(now - period);
-
-      while (m_events.full()) {
-        AssertEq(m_events.capacity(), m_events.size());
-        const auto timeToWait = m_events.front() + period - now;
-        AssertLt(pt::microseconds(0), timeToWait);
-        Assert(!timeToWait.is_negative());
-        if (!isPriority) {
-          lock.unlock();
-        }
-        boost::this_thread::sleep(timeToWait);
-        if (!isPriority) {
-          lock.lock();
-        }
-        now = pt::microsec_clock::universal_time();
-        FlushEvents(now - period);
-      }
-
-      m_events.push_back(now);
-    }
-
-   private:
-    void FlushEvents(const pt::ptime &startTime) {
-      while (!m_events.empty() && m_events.front() <= startTime) {
-        m_events.pop_front();
-      }
-    }
-
-   private:
-    Mutex m_mutex;
-    boost::circular_buffer<pt::ptime> m_events;
-  } result;
-
-  return result;
+FloodControl &LivecoinRequest::GetFloodControl() const {
+  static auto result = CreateFloodControlWithMaxRequestsPerPeriod(
+      60, pt::seconds(60), pt::seconds(2));
+  return *result;
 }
 
 void LivecoinRequest::CheckErrorResponse(const net::HTTPResponse &response,
@@ -86,11 +40,19 @@ void LivecoinRequest::CheckErrorResponse(const net::HTTPResponse &response,
     const auto &successNode = responseTree.get_optional<bool>("success");
     if (successNode && !*successNode) {
       const auto &errorCodeNode = responseTree.get_optional<int>("errorCode");
-      if (errorCodeNode && *errorCodeNode == 503) {
-        const auto &messageNode =
-            responseTree.get_optional<std::string>("errorMessage");
-        if (messageNode) {
-          throw CommunicationError(messageNode->c_str());
+      if (errorCodeNode) {
+        switch (*errorCodeNode) {
+          case 429:  // Too Many Requests
+            GetLog().Warn("Server rejects requests by rate limit exceeding.");
+            GetFloodControl().OnRateLimitExceeded();
+          case 503: {
+            const auto &messageNode =
+                responseTree.get_optional<std::string>("errorMessage");
+            if (messageNode) {
+              throw CommunicationError(messageNode->c_str());
+            }
+            break;
+          }
         }
       }
     }

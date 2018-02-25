@@ -90,7 +90,7 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
   PrepareRequest(*session, body, *m_request);
   m_request->setContentLength(body.size());
 
-  GetFloodControl().Check(IsPriority());
+  GetFloodControl().Check(IsPriority(), GetLog());
 
   for (size_t attempt = 1;; ++attempt) {
     try {
@@ -259,3 +259,5 @@ std::unique_ptr<net::HTTPSClientSession> Request::RecreateSession(
   result->setTimeout(source.getTimeout());
   return result;
 }
+
+ModuleEventsLog &Request::GetLog() const { return m_log; }
