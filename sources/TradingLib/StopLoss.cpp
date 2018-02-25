@@ -246,17 +246,17 @@ bool StopLossShare::Activate() {
   }
 
   GetTradingLog().Write(
-      "%1%\thit"
-      "\tplanned-pnl=%2%\tmax-loss=%3%*%4%=%5%"
-      "\tbid/ask=%6%/%7%\tpos=%8%/%9%",
+      "{'algo': {'action': 'hit', 'type': '%1%', 'plannedPnl': %2%, 'signal': "
+      "{'share': %3%, 'abs': %4%}, 'bid': %5%, 'ask': %6%, 'position': "
+      "{'openedVolume': %7%, 'operation': '%8%/%9%'}}}",
       [&](TradingRecord &record) {
         record % GetName()                                    // 1
             % plannedPnl                                      // 2
-            % openedVolume                                    // 3
-            % m_params->GetMaxLossShare()                     // 4
-            % maxLoss                                         // 5
-            % GetPosition().GetSecurity().GetBidPriceValue()  // 6
-            % GetPosition().GetSecurity().GetAskPriceValue()  // 7
+            % m_params->GetMaxLossShare()                     // 3
+            % maxLoss                                         // 4
+            % GetPosition().GetSecurity().GetBidPriceValue()  // 5
+            % GetPosition().GetSecurity().GetAskPriceValue()  // 6
+            % openedVolume                                    // 7
             % GetPosition().GetOperation()->GetId()           // 8
             % GetPosition().GetSubOperationId();              // 9
       });
