@@ -20,6 +20,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 

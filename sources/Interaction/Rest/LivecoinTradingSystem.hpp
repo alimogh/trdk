@@ -131,7 +131,7 @@ class LivecoinTradingSystem : public TradingSystem {
   Settings m_settings;
   boost::unordered_map<std::string, LivecoinProduct> m_products;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
