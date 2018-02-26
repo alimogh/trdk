@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>392</width>
-    <height>604</height>
+    <width>337</width>
+    <height>688</height>
    </rect>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
@@ -210,39 +210,110 @@
       <property name="title">
        <string>Trend Detection</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="1">
-        <widget class="QSpinBox" name="slowMaPeriods">
-         <property name="minimum">
-          <number>1</number>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="maBox">
+         <property name="title">
+          <string>Exponential Moving Average</string>
          </property>
-         <property name="maximum">
-          <number>1000000</number>
-         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <item>
+             <widget class="QCheckBox" name="isMaOpeningSignalConfirmationEnabled">
+              <property name="text">
+               <string>Confirm opening signal</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="isMaClosingSignalConfirmationEnabled">
+              <property name="text">
+               <string>Confirm closing signal</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="slowMaPeriodsLabel">
+            <property name="text">
+             <string>Number of periods for slow MA:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="slowMaPeriods">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>1000000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="fastMaPeriodsLabel">
+            <property name="text">
+             <string>Number of periods for fast MA:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="fastMaPeriods">
+            <property name="minimum">
+             <number>2</number>
+            </property>
+            <property name="maximum">
+             <number>1000000</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="fastMaPeriodsLabel">
-         <property name="text">
-          <string>Number of periods for fast MA:</string>
+       <item>
+        <widget class="QGroupBox" name="rsiBox">
+         <property name="title">
+          <string>Relative Strength Index</string>
          </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="fastMaPeriods">
-         <property name="minimum">
-          <number>2</number>
-         </property>
-         <property name="maximum">
-          <number>1000000</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="slowMaPeriodsLabel">
-         <property name="text">
-          <string>Number of periods for slow MA:</string>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QCheckBox" name="isRsiOpeningSignalConfirmationEnabled">
+              <property name="text">
+               <string>Confirm opening signal</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="isRsiClosingSignalConfirmationEnabled">
+              <property name="text">
+               <string>Confirm closing signal</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="rsiPeriodsLabel">
+            <property name="text">
+             <string>Number of periods:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="rsiPeriods">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>1000000</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>

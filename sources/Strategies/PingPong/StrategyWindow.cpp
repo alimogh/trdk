@@ -50,10 +50,21 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_ui.takeProfitTrailling->setValue(m_strategy.GetTakeProfitTrailing() * 100);
   m_ui.stopLoss->setValue(m_strategy.GetStopLoss() * 100);
 
+  m_ui.isMaOpeningSignalConfirmationEnabled->setChecked(
+      m_strategy.IsMaOpeningSignalConfirmationEnabled());
+  m_ui.isMaClosingSignalConfirmationEnabled->setChecked(
+      m_strategy.IsMaClosingSignalConfirmationEnabled());
   m_ui.fastMaPeriods->setValue(
       static_cast<int>(m_strategy.GetNumberOfFastMaPeriods()));
   m_ui.slowMaPeriods->setValue(
       static_cast<int>(m_strategy.GetNumberOfSlowMaPeriods()));
+
+  m_ui.isRsiOpeningSignalConfirmationEnabled->setChecked(
+      m_strategy.IsRsiOpeningSignalConfirmationEnabled());
+  m_ui.isRsiClosingSignalConfirmationEnabled->setChecked(
+      m_strategy.IsRsiClosingSignalConfirmationEnabled());
+  m_ui.rsiPeriods->setValue(
+      static_cast<int>(m_strategy.GetNumberOfRsiPeriods()));
 
   ConnectSignals();
 }
@@ -214,26 +225,73 @@ void StrategyWindow::ConnectSignals() {
                    }
                  }));
 
-  Verify(connect(m_ui.fastMaPeriods,
-                 static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-                 [this](int value) {
-                   m_strategy.SetNumberOfFastMaPeriods(value);
-                   {
-                     const QSignalBlocker blocker(*m_ui.fastMaPeriods);
-                     m_ui.fastMaPeriods->setValue(static_cast<int>(
-                         m_strategy.GetNumberOfFastMaPeriods()));
-                   }
-                 }));
-  Verify(connect(m_ui.slowMaPeriods,
-                 static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-                 [this](int value) {
-                   m_strategy.SetNumberOfSlowMaPeriods(value);
-                   {
-                     const QSignalBlocker blocker(*m_ui.slowMaPeriods);
-                     m_ui.slowMaPeriods->setValue(static_cast<int>(
-                         m_strategy.GetNumberOfSlowMaPeriods()));
-                   }
-                 }));
+  {
+    Verify(connect(m_ui.isMaOpeningSignalConfirmationEnabled,
+                   &QCheckBox::toggled, [this](bool isEnabled) {
+                     m_strategy.EnableMaOpeningSignalConfirmation(isEnabled);
+                     {
+                       const QSignalBlocker blocker(
+                           m_ui.isMaOpeningSignalConfirmationEnabled);
+                       m_ui.isMaOpeningSignalConfirmationEnabled->setChecked(
+                           m_strategy.IsMaOpeningSignalConfirmationEnabled());
+                     }
+                   }));
+    Verify(connect(m_ui.isMaClosingSignalConfirmationEnabled,
+                   &QCheckBox::toggled, [this](bool isEnabled) {
+                     m_strategy.EnableMaClosingSignalConfirmation(isEnabled);
+                     {
+                       const QSignalBlocker blocker(
+                           m_ui.isMaClosingSignalConfirmationEnabled);
+                       m_ui.isMaClosingSignalConfirmationEnabled->setChecked(
+                           m_strategy.IsMaClosingSignalConfirmationEnabled());
+                     }
+                   }));
+    Verify(connect(
+        m_ui.fastMaPeriods,
+        static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+        [this](int value) {
+          m_strategy.SetNumberOfFastMaPeriods(value);
+          {
+            const QSignalBlocker blocker(*m_ui.fastMaPeriods);
+            m_ui.fastMaPeriods->setValue(
+                static_cast<int>(m_strategy.GetNumberOfFastMaPeriods()));
+          }
+        }));
+    Verify(connect(
+        m_ui.slowMaPeriods,
+        static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+        [this](int value) {
+          m_strategy.SetNumberOfSlowMaPeriods(value);
+          {
+            const QSignalBlocker blocker(*m_ui.slowMaPeriods);
+            m_ui.slowMaPeriods->setValue(
+                static_cast<int>(m_strategy.GetNumberOfSlowMaPeriods()));
+          }
+        }));
+  }
+
+  {
+    Verify(connect(m_ui.isRsiOpeningSignalConfirmationEnabled,
+                   &QCheckBox::toggled, [this](bool isEnabled) {
+                     m_strategy.EnableRsiOpeningSignalConfirmation(isEnabled);
+                     {
+                       const QSignalBlocker blocker(
+                           m_ui.isRsiOpeningSignalConfirmationEnabled);
+                       m_ui.isRsiOpeningSignalConfirmationEnabled->setChecked(
+                           m_strategy.IsRsiOpeningSignalConfirmationEnabled());
+                     }
+                   }));
+    Verify(connect(m_ui.isRsiClosingSignalConfirmationEnabled,
+                   &QCheckBox::toggled, [this](bool isEnabled) {
+                     m_strategy.EnableRsiClosingSignalConfirmation(isEnabled);
+                     {
+                       const QSignalBlocker blocker(
+                           m_ui.isRsiClosingSignalConfirmationEnabled);
+                       m_ui.isRsiClosingSignalConfirmationEnabled->setChecked(
+                           m_strategy.IsRsiClosingSignalConfirmationEnabled());
+                     }
+                   }));
+  }
 
   Verify(connect(this, &StrategyWindow::Blocked, this,
                  &StrategyWindow::OnBlocked, Qt::QueuedConnection));
