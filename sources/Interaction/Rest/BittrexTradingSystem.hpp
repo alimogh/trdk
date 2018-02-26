@@ -143,7 +143,7 @@ class BittrexTradingSystem : public TradingSystem {
 
   boost::unordered_map<std::string, BittrexProduct> m_products;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;

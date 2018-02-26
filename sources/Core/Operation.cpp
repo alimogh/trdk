@@ -46,11 +46,11 @@ class Operation::Implementation : private boost::noncopyable {
   ~Implementation() {
     try {
       m_strategy.GetTradingLog().Write(
-          "{'operation': {'finResult': {%1%}, 'id' : %2%}}",
+          "{'operation': {'finResult': {%1%}, 'id' : '%2%'}}",
           [this](TradingRecord &record) {
             std::string list;
             for (const auto &pnl : m_pnl->GetData()) {
-              if (list.empty()) {
+              if (!list.empty()) {
                 list += ", ";
               }
               list += "'" + pnl.first +

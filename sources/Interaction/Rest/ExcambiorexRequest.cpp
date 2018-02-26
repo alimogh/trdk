@@ -114,9 +114,9 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
   return result;
 }
 
-FloodControl &ExcambiorexRequest::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &ExcambiorexRequest::GetFloodControl() const {
+  static auto result = CreateDisabledFloodControl();
+  return *result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

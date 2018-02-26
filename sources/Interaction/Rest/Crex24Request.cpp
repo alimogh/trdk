@@ -29,9 +29,9 @@ Crex24Request::Crex24Request(const std::string &path,
                              ModuleTradingLog *tradingLog)
     : Base(path + name, name, method, params, context, log, tradingLog) {}
 
-FloodControl &Crex24Request::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &Crex24Request::GetFloodControl() const {
+  static auto result = CreateDisabledFloodControl();
+  return *result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

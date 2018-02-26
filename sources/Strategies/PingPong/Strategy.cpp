@@ -78,8 +78,13 @@ class pp::Strategy::Implementation : private boost::noncopyable {
 
   Qty m_positionSize;
 
+  boost::atomic_bool m_isMaOpeningSignalConfirmationEnabled;
+  boost::atomic_bool m_isMaClosingSignalConfirmationEnabled;
   size_t m_fastMaSize;
   size_t m_slowMaSize;
+
+  bool m_isRsiOpeningSignalConfirmationEnabled;
+  bool m_isRsiClosingSignalConfirmationEnabled;
 
   boost::shared_ptr<TakeProfitShare::Params> m_takeProfit;
   boost::shared_ptr<StopLossShare::Params> m_stopLoss;
@@ -98,6 +103,10 @@ class pp::Strategy::Implementation : private boost::noncopyable {
   explicit Implementation(Strategy &self)
       : m_self(self),
         m_positionSize(.01),
+        m_isMaOpeningSignalConfirmationEnabled(false),
+        m_isMaClosingSignalConfirmationEnabled(false),
+        m_isRsiOpeningSignalConfirmationEnabled(false),
+        m_isRsiClosingSignalConfirmationEnabled(false),
         m_fastMaSize(12),
         m_slowMaSize(26),
         m_takeProfit(
@@ -186,7 +195,8 @@ class pp::Strategy::Implementation : private boost::noncopyable {
                       (subscribtion.trend.IsRising() ? "rising" : "falling") +
                       "\".");
 
-    if (!m_controller.IsOpeningEnabled()) {
+    if (!m_controller.IsOpeningEnabled() ||
+        !m_isMaOpeningSignalConfirmationEnabled) {
       return;
     }
 
@@ -372,6 +382,36 @@ bool pp::Strategy::IsActivePositionsControlEnabled() const {
   return m_pimpl->m_controller.IsClosingEnabled();
 }
 
+bool pp::Strategy::IsMaOpeningSignalConfirmationEnabled() const {
+  return m_pimpl->m_isMaOpeningSignalConfirmationEnabled;
+}
+void pp::Strategy::EnableMaOpeningSignalConfirmation(bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_isMaOpeningSignalConfirmationEnabled == isEnabled) {
+    return;
+  }
+  GetTradingLog().Write("%1% MA opening signal confirmation",
+                        [&](TradingRecord &record) {
+                          record % (isEnabled ? "Enabled" : "Disabled");
+                        });
+  m_pimpl->m_isMaOpeningSignalConfirmationEnabled = isEnabled;
+}
+
+bool pp::Strategy::IsMaClosingSignalConfirmationEnabled() const {
+  return m_pimpl->m_isMaClosingSignalConfirmationEnabled;
+}
+void pp::Strategy::EnableMaClosingSignalConfirmation(bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_isMaClosingSignalConfirmationEnabled == isEnabled) {
+    return;
+  }
+  GetTradingLog().Write("%1% MA closing signal confirmation",
+                        [&](TradingRecord &record) {
+                          record % (isEnabled ? "Enabled" : "Disabled");
+                        });
+  m_pimpl->m_isMaClosingSignalConfirmationEnabled = isEnabled;
+}
+
 void pp::Strategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
   m_pimpl->SetNumberOfMaPeriods(
       [this](Subscribtion &subscribtion) -> Ma & {
@@ -393,6 +433,36 @@ void pp::Strategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
 size_t pp::Strategy::GetNumberOfSlowMaPeriods() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_slowMaSize;
+}
+
+bool pp::Strategy::IsRsiOpeningSignalConfirmationEnabled() const {
+  return m_pimpl->m_isRsiOpeningSignalConfirmationEnabled;
+}
+void pp::Strategy::EnableRsiOpeningSignalConfirmation(bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_isRsiOpeningSignalConfirmationEnabled == isEnabled) {
+    return;
+  }
+  GetTradingLog().Write("%1% RSI opening signal confirmation",
+                        [&](TradingRecord &record) {
+                          record % (isEnabled ? "Enabled" : "Disabled");
+                        });
+  m_pimpl->m_isRsiOpeningSignalConfirmationEnabled = isEnabled;
+}
+bool pp::Strategy::IsRsiClosingSignalConfirmationEnabled() const {
+  return m_pimpl->m_isRsiClosingSignalConfirmationEnabled;
+}
+size_t pp::Strategy::GetNumberOfRsiPeriods() const { return 14; }
+void pp::Strategy::EnableRsiClosingSignalConfirmation(bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_isRsiClosingSignalConfirmationEnabled == isEnabled) {
+    return;
+  }
+  GetTradingLog().Write("%1% RSI closing signal confirmation",
+                        [&](TradingRecord &record) {
+                          record % (isEnabled ? "Enabled" : "Disabled");
+                        });
+  m_pimpl->m_isRsiClosingSignalConfirmationEnabled = isEnabled;
 }
 
 void pp::Strategy::SetStopLoss(const Double &stopLoss) {

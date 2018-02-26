@@ -33,10 +33,20 @@ class Strategy : public trdk::Strategy {
   void EnableActivePositionsControl(bool);
   bool IsActivePositionsControlEnabled() const;
 
+  bool IsMaOpeningSignalConfirmationEnabled() const;
+  void EnableMaOpeningSignalConfirmation(bool);
+  bool IsMaClosingSignalConfirmationEnabled() const;
+  void EnableMaClosingSignalConfirmation(bool);
   void SetNumberOfFastMaPeriods(size_t);
   size_t GetNumberOfFastMaPeriods() const;
   void SetNumberOfSlowMaPeriods(size_t);
   size_t GetNumberOfSlowMaPeriods() const;
+
+  bool IsRsiOpeningSignalConfirmationEnabled() const;
+  void EnableRsiOpeningSignalConfirmation(bool);
+  bool IsRsiClosingSignalConfirmationEnabled() const;
+  void EnableRsiClosingSignalConfirmation(bool);
+  size_t GetNumberOfRsiPeriods() const;
 
   void SetPositionSize(const Qty &);
   Qty GetPositionSize() const;

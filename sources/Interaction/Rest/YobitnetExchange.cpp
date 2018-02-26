@@ -20,6 +20,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -125,9 +126,9 @@ class Request : public Rest::Request {
       : Base(uri, name, method, uriParams, context, log, tradingLog) {}
 
  protected:
-  virtual FloodControl &GetFloodControl() override {
-    static DisabledFloodControl result;
-    return result;
+  virtual FloodControl &GetFloodControl() const override {
+    static auto result = CreateDisabledFloodControl();
+    return *result;
   }
 };
 

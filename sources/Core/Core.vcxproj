@@ -242,7 +242,6 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="AsyncLog.cpp" />
-    <ClCompile Include="BalancesContainer.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="ContextDummy.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -408,7 +407,6 @@
   <ItemGroup>
     <ClInclude Include="AsyncLog.hpp" />
     <ClInclude Include="Balances.hpp" />
-    <ClInclude Include="BalancesContainer.hpp" />
     <ClInclude Include="Context.hpp" />
     <ClInclude Include="ContextDummy.hpp" />
     <ClInclude Include="ContextMock.hpp" />

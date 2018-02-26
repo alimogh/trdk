@@ -37,7 +37,7 @@ class ExcambiorexRequest : public Request {
       std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
  protected:
-  virtual FloodControl &GetFloodControl() override;
+  virtual FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

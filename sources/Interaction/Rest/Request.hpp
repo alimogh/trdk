@@ -68,13 +68,15 @@ class Request {
                                   const std::string &responseContent,
                                   size_t attemptNumber) const;
 
-  virtual FloodControl &GetFloodControl() = 0;
+  virtual FloodControl &GetFloodControl() const = 0;
 
   virtual bool IsPriority() const = 0;
 
   virtual size_t GetNumberOfAttempts() const { return 2; }
 
   virtual void SetUri(const std::string &uri, Poco::Net::HTTPRequest &) const;
+
+  ModuleEventsLog &GetLog() const;
 
  private:
   std::unique_ptr<Poco::Net::HTTPSClientSession> RecreateSession(

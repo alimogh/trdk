@@ -10,14 +10,15 @@
 
 #include "Prec.hpp"
 #include "BalancesContainer.hpp"
-#include "DropCopy.hpp"
-#include "EventsLog.hpp"
-#include "Security.hpp"
-#include "TradingLog.hpp"
-#include "TradingSystem.hpp"
+#include "Core/DropCopy.hpp"
+#include "Core/EventsLog.hpp"
+#include "Core/Security.hpp"
+#include "Core/TradingLog.hpp"
+#include "Core/TradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::TradingLib;
 
 namespace {
 typedef boost::shared_mutex Mutex;

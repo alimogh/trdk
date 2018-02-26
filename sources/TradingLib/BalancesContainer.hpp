@@ -9,11 +9,12 @@
  ******************************************************************************/
 
 #pragma once
-#include "Api.h"
-#include "Balances.hpp"
+#include "Core/Balances.hpp"
 
 namespace trdk {
-class TRDK_CORE_API BalancesContainer : public trdk::Balances {
+namespace TradingLib {
+
+class BalancesContainer : public trdk::Balances {
  public:
   explicit BalancesContainer(const trdk::TradingSystem &,
                              trdk::ModuleEventsLog &,
@@ -47,4 +48,6 @@ class TRDK_CORE_API BalancesContainer : public trdk::Balances {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
+
+}  // namespace TradingLib
+}  // namespace trdk

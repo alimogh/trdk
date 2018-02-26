@@ -83,15 +83,12 @@ void aa::PositionController::HoldPosition(Position &position) {
 }
 
 namespace {
-bool PrepareOperationClose(Position &position) {
-  if (!position.HasActiveOpenOrders()) {
-    return true;
-  }
+void PrepareOperationClose(Position &position) {
+  Assert(position.HasActiveOpenOrders());
   if (position.IsCancelling()) {
-    return false;
+    return;
   }
   Verify(position.CancelAllOrders());
-  return false;
 }
 
 bool ChooseBestExchange(Position &position) {
@@ -103,48 +100,53 @@ bool ChooseBestExchange(Position &position) {
   if (!checker->HasSuitableSecurity()) {
     position.GetStrategy().GetLog().Error(
         "Failed to find suitable security for the position \"%1%/%2%\" (actual "
-        "security is \"%3%\") to close the rest of the position %4% out of "
+        "security is \"%3%\") to close the rest of the position: %4% out of "
         "%5%.",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
-        position.GetOpenedQty(),           // 4
-        position.GetActiveQty());          // 5
+        position.GetActiveQty(),           // 4
+        position.GetOpenedQty());          // 5
     position.MarkAsCompleted();
     return false;
   }
   return true;
 }
 
-Position *GetAbsolutePosition(Position &signalPosition) {
+Position *CheckAbsolutePosition(Position &signalPosition) {
   Assert(!signalPosition.IsCompleted());
 
   auto *const oppositePosition = FindOppositePosition(signalPosition);
-  if (!oppositePosition) {
+  if (!oppositePosition || oppositePosition->IsCompleted()) {
     return &signalPosition;
   }
+  Assert(!signalPosition.HasActiveCloseOrders());
   Assert(!oppositePosition->HasActiveCloseOrders());
 
   if (oppositePosition->HasActiveOpenOrders()) {
-    const auto listTransaction =
-        signalPosition.GetStrategy().StartThreadPositionsTransaction();
-    auto oppositePositionClosePreparingFuture =
-        boost::async([oppositePosition]() -> bool {
-          try {
-            return PrepareOperationClose(*oppositePosition);
-          } catch (const CommunicationError &ex) {
-            throw boost::enable_current_exception(ex);
-          } catch (const Exception &ex) {
-            throw boost::enable_current_exception(ex);
-          } catch (const std::exception &ex) {
-            throw boost::enable_current_exception(ex);
-          }
-        });
-    if (!PrepareOperationClose(signalPosition) ||
-        !oppositePositionClosePreparingFuture.get()) {
-      return nullptr;
+    if (signalPosition.HasActiveOpenOrders()) {
+      const auto listTransaction =
+          signalPosition.GetStrategy().StartThreadPositionsTransaction();
+      auto oppositePositionClosePreparingFuture =
+          boost::async([oppositePosition]() {
+            try {
+              PrepareOperationClose(*oppositePosition);
+            } catch (const CommunicationError &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const Exception &ex) {
+              throw boost::enable_current_exception(ex);
+            } catch (const std::exception &ex) {
+              throw boost::enable_current_exception(ex);
+            }
+          });
+      oppositePositionClosePreparingFuture.get();
+      PrepareOperationClose(signalPosition);
+    } else {
+      PrepareOperationClose(*oppositePosition);
     }
-  } else if (!PrepareOperationClose(signalPosition)) {
+    return nullptr;
+  } else if (signalPosition.HasActiveOpenOrders()) {
+    PrepareOperationClose(signalPosition);
     return nullptr;
   }
 
@@ -184,7 +186,7 @@ Position *GetAbsolutePosition(Position &signalPosition) {
 
 void aa::PositionController::ClosePosition(Position &position) {
   {
-    auto *const absolutePosition = GetAbsolutePosition(position);
+    auto *const absolutePosition = CheckAbsolutePosition(position);
     if (!absolutePosition) {
       return;
     } else if (&position != absolutePosition) {

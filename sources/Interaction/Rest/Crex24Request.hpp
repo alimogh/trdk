@@ -34,7 +34,7 @@ class Crex24Request : public Request {
   virtual ~Crex24Request() override = default;
 
  protected:
-  virtual FloodControl &GetFloodControl() override;
+  virtual FloodControl &GetFloodControl() const override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

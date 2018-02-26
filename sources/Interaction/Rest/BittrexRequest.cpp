@@ -59,7 +59,7 @@ BittrexRequest::Response BittrexRequest::Send(
   return result;
 }
 
-FloodControl &BittrexRequest::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &BittrexRequest::GetFloodControl() const {
+  static auto result = CreateDisabledFloodControl();
+  return *result;
 }

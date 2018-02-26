@@ -139,7 +139,7 @@ class CexioTradingSystem : public TradingSystem {
   mutable NonceStorage m_nonces;
   boost::unordered_map<std::string, CexioProduct> m_products;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;

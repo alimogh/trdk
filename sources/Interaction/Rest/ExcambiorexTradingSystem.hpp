@@ -141,7 +141,7 @@ class ExcambiorexTradingSystem : public TradingSystem {
   ExcambiorexProductList m_products;
   boost::unordered_map<std::string, std::string> m_currencies;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
