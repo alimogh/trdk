@@ -28,7 +28,7 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
   static const QColor colorOfLoss(179, 0, 0);
   static const QColor colorOfLossAlt(204, 0, 0);
   static const QColor textColorOfActive(251, 253, 254);
-  static const QColor colorOfSellActive(255, 51, 51);
+  static const QColor colorOfSellActive(255, 0, 0);
   static const QColor colorOfBuyActive(0, 255, 0);
   static const QColor colorOfSellClosed(230, 51, 51);
   static const QColor colorOfBuyClosed(0, 204, 0);
