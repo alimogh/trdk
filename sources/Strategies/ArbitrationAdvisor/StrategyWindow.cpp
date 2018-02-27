@@ -509,7 +509,7 @@ void StrategyWindow::UpdateAdviceLevel(double level) {
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
-          {QObject::tr("Arbitrage..."),
+          {QObject::tr("Arbitration Advisor..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
              result.emplace_back(boost::make_unique<StrategyWindow>(

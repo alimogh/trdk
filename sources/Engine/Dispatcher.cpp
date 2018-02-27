@@ -257,6 +257,9 @@ void Dispatcher::SignalNewTrade(
 void Dispatcher::SignalPositionUpdate(SubscriberPtrWrapper &subscriber,
                                       Position &position) {
   try {
+    if (subscriber.IsBlocked()) {
+      return;
+    }
     m_positionsUpdates.Queue(
         boost::make_tuple(position.shared_from_this(), subscriber), true);
   } catch (...) {
@@ -274,6 +277,9 @@ void Dispatcher::SignalBrokerPositionUpdate(SubscriberPtrWrapper &subscriber,
                                             const Volume &volume,
                                             bool isInitial) {
   try {
+    if (subscriber.IsBlocked()) {
+      return;
+    }
     m_brokerPositionsUpdates.Queue(
         boost::make_tuple(
             SubscriberPtrWrapper::BrokerPosition{&security, isLong, qty, volume,

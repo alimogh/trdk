@@ -261,6 +261,11 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
    */
   virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
 
+  //! Schedules call after time. Callback have to be available before will ba
+  //! called or while module will not be destroyed.
+  void Schedule(const boost::posix_time::time_duration &,
+                boost::function<void()> &&);
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

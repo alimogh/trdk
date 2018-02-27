@@ -34,7 +34,7 @@ class LivecoinRequest : public Request {
   virtual ~LivecoinRequest() override = default;
 
  protected:
-  virtual FloodControl &GetFloodControl() override;
+  virtual FloodControl &GetFloodControl() const override;
 
   virtual void CheckErrorResponse(const Poco::Net::HTTPResponse &,
                                   const std::string &responseContent,
@@ -58,6 +58,6 @@ class LivecoinPublicRequest : public LivecoinRequest {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

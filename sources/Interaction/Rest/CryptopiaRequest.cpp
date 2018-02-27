@@ -69,7 +69,7 @@ CryptopiaRequest::Response CryptopiaRequest::Send(
   return {boost::get<0>(result), *resultNode, boost::get<2>(result)};
 }
 
-FloodControl &CryptopiaRequest::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &CryptopiaRequest::GetFloodControl() const {
+  static auto result = CreateDisabledFloodControl();
+  return *result;
 }

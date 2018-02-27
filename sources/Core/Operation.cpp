@@ -16,6 +16,7 @@
 #include "PnlContainer.hpp"
 #include "Security.hpp"
 #include "Strategy.hpp"
+#include "TradingLog.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -44,6 +45,21 @@ class Operation::Implementation : private boost::noncopyable {
   }
   ~Implementation() {
     try {
+      m_strategy.GetTradingLog().Write(
+          "{'operation': {'finResult': {%1%}, 'id' : '%2%'}}",
+          [this](TradingRecord &record) {
+            std::string list;
+            for (const auto &pnl : m_pnl->GetData()) {
+              if (!list.empty()) {
+                list += ", ";
+              }
+              list += "'" + pnl.first +
+                      "': " + boost::lexical_cast<std::string>(pnl.second);
+            }
+            record % list  // 1
+                % m_id;    // 2
+          });
+
       m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
         dropCopy.CopyOperationEnd(m_id,
                                   m_strategy.GetContext().GetCurrentTime(),
@@ -130,3 +146,5 @@ void Operation::UpdatePnl(const Security &security,
     });
   }
 }
+
+const Pnl &Operation::GetPnl() const { return *m_pimpl->m_pnl; }

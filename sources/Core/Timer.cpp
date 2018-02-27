@@ -68,7 +68,7 @@ size_t Erase(std::vector<Task> &list, const Timer::Scope::Id &scope) {
   }
   return result;
 }
-}
+}  // namespace
 
 class Timer::Implementation : private boost::noncopyable {
  public:
@@ -295,7 +295,7 @@ Timer::Timer(const Context &context)
 Timer::~Timer() = default;
 
 void Timer::Schedule(const pt::time_duration &time,
-                     const boost::function<void()> &&callback,
+                     boost::function<void()> &&callback,
                      Timer::Scope &scope) const {
   Assert(!scope.m_timer || scope.m_timer == this);
   Assert(time != pt::not_a_date_time);
@@ -308,8 +308,7 @@ void Timer::Schedule(const pt::time_duration &time,
   scope.m_timer = this;
 }
 
-void Timer::Schedule(const boost::function<void()> &&callback,
-                     Scope &scope) const {
+void Timer::Schedule(boost::function<void()> &&callback, Scope &scope) const {
   m_pimpl->Schedule(pt::not_a_date_time, std::move(callback), scope);
 }
 

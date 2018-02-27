@@ -85,6 +85,15 @@ QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
                 static_cast<int>(ms.total_milliseconds()))};
 }
 
+TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const TimeInForce &tif) {
+  return QString(ConvertToPch(tif)).toUpper();
+}
+
+TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const OrderSide &side) {
+  static_assert(numberOfOrderSides == 2, "List changed");
+  return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
+}
+
 QString lib::ConvertToUiString(const OrderStatus &status) {
   static_assert(numberOfOrderStatuses == 7, "List changed.");
   switch (status) {

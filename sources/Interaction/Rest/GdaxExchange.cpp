@@ -22,6 +22,7 @@ using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::Lib::Crypto;
+using namespace trdk::TradingLib;
 using namespace trdk::Interaction;
 using namespace trdk::Interaction::Rest;
 
@@ -159,9 +160,9 @@ class Request : public Rest::Request {
     Base::CheckErrorResponse(response, responseContent, attemptNumber);
   }
 
-  virtual FloodControl &GetFloodControl() override {
-    static DisabledFloodControl result;
-    return result;
+  virtual FloodControl &GetFloodControl() const override {
+    static auto result = CreateDisabledFloodControl();
+    return *result;
   }
 };
 

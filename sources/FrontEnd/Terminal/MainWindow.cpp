@@ -40,7 +40,8 @@ MainWindow::MainWindow(lib::Engine &engine,
 #ifdef DEV_VER
   {
     auto &action = *new QAction("Test operation list");
-    m_ui.mainMenu->addAction(&action);
+    m_ui.menuHelp->insertAction(m_ui.showAbout, &action);
+    m_ui.menuHelp->insertSeparator(m_ui.showAbout);
     Verify(
         connect(&action, &QAction::triggered, [this]() { m_engine.Test(); }));
   }

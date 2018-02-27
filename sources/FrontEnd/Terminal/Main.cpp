@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
           application.tr("Loading strategy modules...").toStdString());
       mainWindow.LoadModule("ArbitrationAdvisor");
       mainWindow.LoadModule("MarketMaker");
+      mainWindow.LoadModule("PingPong");
     }
 
     for (;;) {

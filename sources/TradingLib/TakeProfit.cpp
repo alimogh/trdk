@@ -55,7 +55,8 @@ bool TakeProfit::CheckSignal() {
   Assert(m_maxProfit);
 
   auto profitToClose = *m_maxProfit;
-  profitToClose -= CalcOffsetToClose();
+  const auto offset = CalcOffsetToClose();
+  profitToClose -= offset;
 
   if (m_minProfit && plannedPnl >= *m_minProfit) {
     return false;
@@ -63,35 +64,23 @@ bool TakeProfit::CheckSignal() {
 
   const bool isSignal = plannedPnl <= profitToClose;
 
-#if 0
   GetTradingLog().Write(
-      "%1%\t%2%"
-      "\tprofit=%3%->%4%%5%(%6%-%7%*%8%=%9%)"
-      "\tbid/ask=%10%/%11%\tpos=%12%/%13%",
+      "{'algo': {'action': '%1%', 'type': '%2%', 'plannedPnl': %3%, 'signal': "
+      "{'min': %4%, 'max': %5%, 'offset': %6%, 'toClose': %7%}, 'bid': %8%, "
+      "'ask': %9%, 'position': {'operation': '%10%/%11%'}}}",
       [&](TradingRecord &record) {
-        record % GetName()                            // 1
-            % (isSignal ? "signaling" : "trailing");  // 2
-        if (m_minProfit) {
-          record % *m_minProfit;  // 3
-        } else {
-          record % "none";  // 3
-        }
-        record % plannedPnl;  // 4
-        if (isSignal) {
-          record % "<=";  // 5
-        } else {
-          record % '>';  // 5
-        }
-        record % *m_maxProfit                                 // 6
-            % m_params->GetMaxPriceOffsetPerLotToClose()      // 7
-            % GetPosition().GetOpenedQty()                    // 8
-            % profitToClose                                   // 9
-            % GetPosition().GetSecurity().GetBidPriceValue()  // 10
-            % GetPosition().GetSecurity().GetAskPriceValue()  // 11
-            % GetPosition().GetOperation()->GetId()           // 12
-            % GetPosition().GetSubOperationId();              // 13
+        record % GetName()                                    // 1
+            % (isSignal ? "signaling" : "trailing")           // 2
+            % plannedPnl                                      // 3
+            % *m_minProfit                                    // 4
+            % *m_maxProfit                                    // 5
+            % offset                                          // 6
+            % profitToClose                                   // 7
+            % GetPosition().GetSecurity().GetBidPriceValue()  // 8
+            % GetPosition().GetSecurity().GetAskPriceValue()  // 9
+            % GetPosition().GetOperation()->GetId()           // 10
+            % GetPosition().GetSubOperationId();              // 11
       });
-#endif
 
   m_minProfit = plannedPnl;
 
@@ -116,32 +105,33 @@ bool TakeProfit::Activate(const trdk::Volume &plannedPnl) {
   }
 
   GetTradingLog().Write(
-      "%1%\t%2%"
-      "\tprofit=%3%->%4%%5%%6%\tmin-profit=%7%"
-      "\tbid/ask=%8%/%9%\tpos=%10%/%11%",
+      "{'algo': {'action': '%1%', 'type': '%2%', 'profit': '%3%->%4%%5%%6%', "
+      "'minProfit': %7%, 'bid': %8%, 'ask': %9%, 'position': {'operation': "
+      "'%10%/%11%'}}}",
       [&](TradingRecord &record) {
-        record % GetName() % (isSignal ? "activating" : "accumulating");
+        record % GetName()                                 // 1
+            % (isSignal ? "activating" : "accumulating");  // 2
         if (m_maxProfit) {
-          record % *m_maxProfit;
+          record % *m_maxProfit;  // 3
         } else {
-          record % "none";
+          record % "none";  // 3
         }
-        record % plannedPnl;
+        record % plannedPnl;  // 4
         if (m_isActivated) {
-          record % ">=";
+          record % ">=";  // 5
         } else {
-          record % '<';
+          record % '<';  // 5
         }
-        record % profitToActivate;
+        record % profitToActivate;  // 6
         if (m_minProfit) {
-          record % *m_minProfit;
+          record % *m_minProfit;  // 7
         } else {
-          record % "none";
+          record % "null";  // 7
         }
-        record % GetPosition().GetSecurity().GetBidPriceValue() %
-            GetPosition().GetSecurity().GetAskPriceValue() %
-            GetPosition().GetOperation()->GetId()  // 10
-            % GetPosition().GetSubOperationId();   // 11
+        record % GetPosition().GetSecurity().GetBidPriceValue()  // 8
+            % GetPosition().GetSecurity().GetAskPriceValue()     // 9
+            % GetPosition().GetOperation()->GetId()              // 10
+            % GetPosition().GetSubOperationId();                 // 11
       });
 
   m_maxProfit = plannedPnl;

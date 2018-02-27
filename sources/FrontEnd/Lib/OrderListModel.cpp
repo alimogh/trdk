@@ -56,6 +56,7 @@ struct Order {
   mutable QString filledQty;
   mutable QString remainingQty;
   mutable QDateTime lastTime;
+  QString submitError;
 };
 
 struct ById {};
@@ -84,6 +85,9 @@ OrderListModel::OrderListModel(lib::Engine &engine, QWidget *parent)
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitted,
                  this, &OrderListModel::OnOrderSubmitted,
                  Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitError,
+                 this, &OrderListModel::OnOrderSubmitError,
+                 Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
                  &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::Order, this,
@@ -101,10 +105,10 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                                       const Qty &qty,
                                       const boost::optional<Price> &price,
                                       const TimeInForce &tif) {
-  const auto qtime = ConvertToQDateTime(time);
+  const auto qTime = ConvertToQDateTime(time);
   const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
   const Order order{QString::fromStdString(id.GetValue()),
-                    qtime,
+                    qTime,
                     security,
                     QString::fromStdString(security->GetSymbol().GetSymbol()),
                     QString::fromStdString(ConvertToIso(currency)),
@@ -115,10 +119,50 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                     qtyStr,
                     ConvertPriceToText(price, security->GetPricePrecision()),
                     QString(ConvertToPch(tif)).toUpper(),
-                    ConvertToPch(ORDER_STATUS_OPENED),
+                    ConvertToUiString(ORDER_STATUS_OPENED),
                     ConvertPriceToText(0, security->GetPricePrecision()),
                     qtyStr,
-                    qtime};
+                    qTime};
+  {
+    const auto index = static_cast<int>(m_pimpl->m_orders.size());
+    beginInsertRows(QModelIndex(), index, index);
+    Verify(m_pimpl->m_orders.emplace(std::move(order)).second);
+    endInsertRows();
+  }
+}
+
+void OrderListModel::OnOrderSubmitError(const pt::ptime &time,
+                                        const Security *security,
+                                        const Currency &currency,
+                                        const TradingSystem *tradingSystem,
+                                        const OrderSide &side,
+                                        const Qty &qty,
+                                        const boost::optional<Price> &price,
+                                        const TimeInForce &tif,
+                                        const QString &error) {
+  const auto qTime = ConvertToQDateTime(time);
+  const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
+  static boost::uuids::random_generator generateOrderId;
+  const auto &id = generateOrderId();
+  const Order order{
+      QString::fromStdString(boost::lexical_cast<std::string>(id)),
+      qTime,
+      security,
+      QString::fromStdString(security->GetSymbol().GetSymbol()),
+      QString::fromStdString(ConvertToIso(currency)),
+      tradingSystem,
+      QString::fromStdString(tradingSystem->GetInstanceName()),
+      QString(ConvertToUiString(side)),
+      qty,
+      qtyStr,
+      ConvertPriceToText(price, security->GetPricePrecision()),
+      ConvertToUiString(tif),
+      ConvertToUiString(ORDER_STATUS_ERROR),
+      ConvertPriceToText(0, security->GetPricePrecision()),
+      qtyStr,
+      qTime,
+      !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
+                       : tr("Unknown submit error")};
   {
     const auto index = static_cast<int>(m_pimpl->m_orders.size());
     beginInsertRows(QModelIndex(), index, index);
@@ -139,7 +183,7 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
     // Maybe this is operation order.
     return;
   }
-  it->status = ConvertToPch(status);
+  it->status = ConvertToUiString(status);
   it->lastTime = ConvertToQDateTime(time);
   it->filledQty = ConvertQtyToText(it->qty - remainingQty,
                                    it->security->GetPricePrecision());
@@ -198,7 +242,7 @@ void OrderListModel::OnOrder(const OrderId &id,
     if (it->security) {
       precision = it->security->GetPricePrecision();
     }
-    it->status = ConvertToPch(status);
+    it->status = ConvertToUiString(status);
     it->filledQty = ConvertPriceToText(qty - remainingQty, precision);
     it->remainingQty = ConvertPriceToText(remainingQty, precision);
     it->lastTime = ConvertToQDateTime(updateTime);
@@ -285,7 +329,17 @@ QVariant OrderListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_TIF:
           return order.tif;
         case COLUMN_ID:
-          return order.id;
+          if (order.submitError.isEmpty()) {
+            return order.id;
+          } else {
+            return QVariant();
+          }
+      }
+    case Qt::ToolTipRole:
+      if (!order.submitError.isEmpty()) {
+        return order.submitError;
+      } else {
+        return QVariant();
       }
     case Qt::TextAlignmentRole:
       return Qt::AlignLeft + Qt::AlignVCenter;

@@ -127,7 +127,7 @@ class Crex24TradingSystem : public TradingSystem {
 
   NonceStorage m_nonces;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;

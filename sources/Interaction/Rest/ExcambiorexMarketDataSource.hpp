@@ -30,8 +30,6 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
     const std::string &GetSymbol() const;
     const std::string &GetProductId() const;
   };
-  struct BySymbol {};
-  struct ByProductId {};
   typedef boost::multi_index_container<
       Subscribtion,
       boost::multi_index::indexed_by<
@@ -41,7 +39,7 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
                                                 const std::string &,
                                                 &Subscribtion::GetSymbol>>,
           boost::multi_index::hashed_unique<
-              boost::multi_index::tag<ByProductId>,
+              boost::multi_index::tag<ById>,
               boost::multi_index::const_mem_fun<Subscribtion,
                                                 const std::string &,
                                                 &Subscribtion::GetProductId>>>>
@@ -75,7 +73,7 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
-  boost::unordered_map<std::string, ExcambiorexProduct> m_products;
+  ExcambiorexProductList m_products;
   boost::mutex m_subscribtionMutex;
   SubscribtionList m_subscribtionList;
 

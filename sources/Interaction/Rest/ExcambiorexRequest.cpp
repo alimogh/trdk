@@ -58,6 +58,12 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
             case 10001:
               error << "\"Amount 0 or less\"";
               break;
+            case 10003:
+              error << "\"Can not afford that amount\"";
+              break;
+            case 10005:
+              error << "\"Order below minimum\"";
+              break;
             case 10007:
               error << "\"Signature/Nonce failed\"";
               break;
@@ -85,6 +91,19 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
           error << "Unknown error (error code is not provided)";
         }
       }
+      if (errorCode) {
+        switch (*errorCode) {
+          case 10001:
+          case 10003:
+          case 10005:
+          case 10007:
+            throw CommunicationError(error.str().c_str());
+            break;
+          case 20015:
+            throw OrderIsUnknownException(error.str().c_str());
+            break;
+        }
+      }
       throw Exception(error.str().c_str());
     }
   }
@@ -95,9 +114,9 @@ ExcambiorexRequest::Response ExcambiorexRequest::Send(
   return result;
 }
 
-FloodControl &ExcambiorexRequest::GetFloodControl() {
-  static DisabledFloodControl result;
-  return result;
+FloodControl &ExcambiorexRequest::GetFloodControl() const {
+  static auto result = CreateDisabledFloodControl();
+  return *result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

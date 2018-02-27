@@ -155,7 +155,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />
@@ -167,7 +167,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />
@@ -201,7 +201,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />
@@ -213,7 +213,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />
@@ -247,7 +247,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x86.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />
@@ -259,7 +259,7 @@
     <Import Project="..\..\Default.props" />
     <Import Project="..\..\x64.props" />
     <Import Project="..\..\Distribution Dll.props" />
-    <Import Project="..\..\Static lib.props" />
+    <Import Project="..\..\Static Lib.props" />
     <Import Project="..\..\Module.props" />
     <Import Project="..\Interaction.props" />
     <Import Project="FixProtocol.props" />

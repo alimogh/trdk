@@ -133,24 +133,25 @@ void ExcambiorexTradingSystem::CreateConnection(const IniSectionRef &) {
   }
 
   for (auto &product : m_products) {
-    Assert(!product.second.oppositeProduct);
+    Assert(!product.oppositeProduct);
     for (const auto &oppositeProduct : m_products) {
-      if (oppositeProduct.second.directId == product.second.oppositeId) {
-        if (product.second.oppositeProduct) {
+      if (oppositeProduct.directId == product.oppositeId) {
+        if (product.oppositeProduct) {
           GetLog().Error(
               "Duplicate opposite product \"%1%\" object found for product "
               "\"%2%\" that already has opposite product object.",
-              oppositeProduct.second.directId,  // 1
-              product.second.directId);         // 2
+              oppositeProduct.directId,  // 1
+              product.directId);         // 2
           throw ConnectError("Failed to build product list");
         }
-        product.second.oppositeProduct = &oppositeProduct.second;
+        const_cast<const ExcambiorexProduct *&>(product.oppositeProduct) =
+            &oppositeProduct;
       }
     }
-    if (!product.second.oppositeProduct) {
+    if (!product.oppositeProduct) {
       GetLog().Error(
           "Opposite product object was not found for product \"%1%\".",
-          product.second.directId);
+          product.directId);
       throw ConnectError("Failed to build product list");
     }
   }
@@ -222,13 +223,14 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
       const auto &order = node.second;
       Verify(actualIds.emplace(order.get<OrderId>("id")).second);
       const auto &pair = order.get<std::string>("pair");
-      const auto &product = m_products.find(pair);
-      if (product == m_products.cend()) {
+      const auto &products = m_products.get<ById>();
+      const auto &product = products.find(pair);
+      if (product == products.cend()) {
         boost::format error("Failed to resolve order pair \"%1%\"");
         error % pair;
         throw Exception(error.str().c_str());
       }
-      orderRequestList.emplace(&product->second);
+      orderRequestList.emplace(&*product);
     }
   } catch (const Exception &ex) {
     boost::format error("Failed to apply order update: \"%1%\"");
@@ -312,11 +314,12 @@ ExcambiorexTradingSystem::SendOrderTransaction(
     throw Exception("Market order is not supported");
   }
 
-  const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
-  if (productIt == m_products.cend()) {
+  const auto &products = m_products.get<BySymbol>();
+  const auto &productIt = products.find(security.GetSymbol().GetSymbol());
+  if (productIt == products.cend()) {
     throw Exception("Symbol is not supported by exchange");
   }
-  const auto &product = productIt->second;
+  const auto &product = *productIt;
 
   boost::format requestParams(
       "pair=%1%&type=%2%&amount=%3%&rate=%4%&feecoin=%5%&allowpartial=1");

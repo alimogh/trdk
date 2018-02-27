@@ -194,7 +194,7 @@ class CryptopiaTradingSystem : public TradingSystem {
   mutable NonceStorage m_nonces;
   CryptopiaProductList m_products;
 
-  BalancesContainer m_balances;
+  TradingLib::BalancesContainer m_balances;
   BalancesRequest m_balancesRequest;
 
   OrdersRequestsMutex m_openOrdersRequestMutex;

@@ -131,7 +131,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -141,7 +141,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -151,7 +151,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -161,7 +161,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Debug.props" />
     <Import Project="..\Configuration Debug.props" />
@@ -171,7 +171,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -181,7 +181,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -191,7 +191,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -201,7 +201,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Release.props" />
     <Import Project="..\Configuration Release.props" />
@@ -211,7 +211,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -221,7 +221,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Standalone.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Standalone Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -231,7 +231,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x86.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />
@@ -241,7 +241,7 @@
     <Import Project="..\Default.props" />
     <Import Project="..\x64.props" />
     <Import Project="..\Distribution Dll.props" />
-    <Import Project="..\Static lib.props" />
+    <Import Project="..\Static Lib.props" />
     <Import Project="Common.props" />
     <Import Project="..\Distribution Dll Test.props" />
     <Import Project="..\Configuration Test.props" />

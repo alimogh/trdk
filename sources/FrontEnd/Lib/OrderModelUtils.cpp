@@ -18,7 +18,7 @@ using namespace trdk::FrontEnd::Lib::Detail;
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
-OrderRecord::OrderRecord(const OrderId &id,
+OrderRecord::OrderRecord(const QString &id,
                          const boost::optional<ids::uuid> &operationId,
                          const boost::optional<int64_t> &subOperationId,
                          const pt::ptime &time,
@@ -28,8 +28,10 @@ OrderRecord::OrderRecord(const OrderId &id,
                          const OrderSide &side,
                          const Qty &qty,
                          const boost::optional<Price> &price,
-                         const TimeInForce &tif)
-    : id(QString::fromStdString(boost::lexical_cast<std::string>(id))),
+                         const OrderStatus &status,
+                         const TimeInForce &tif,
+                         const QString &additionalInfo)
+    : id(id),
       operationId(operationId
                       ? QString::fromStdString(
                             boost::lexical_cast<std::string>(*operationId))
@@ -40,16 +42,16 @@ OrderRecord::OrderRecord(const OrderId &id,
       currency(QString::fromStdString(ConvertToIso(currency))),
       exchangeName(QString::fromStdString(tradingSystem.GetInstanceName())),
       side(side),
-      sideName(side == ORDER_SIDE_BUY ? QObject::tr("buy")
-                                      : QObject::tr("sell")),
+      sideName(ConvertToUiString(side)),
       qty(qty),
       price(boost::get_optional_value_or(
           price, std::numeric_limits<double>::quiet_NaN())),
-      tif(QString(ConvertToPch(tif)).toUpper()),
-      status(ORDER_STATUS_SENT),
+      tif(ConvertToUiString(tif)),
+      status(status),
       statusName(ConvertToUiString(status)),
       filledQty(0),
-      remainingQty(qty) {
+      remainingQty(qty),
+      additionalInfo(additionalInfo) {
   AssertGe(qty, remainingQty);
 }
 

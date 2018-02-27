@@ -104,9 +104,6 @@
     <ClCompile Include="Operation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BalancesContainer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="StrategyDummy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -230,9 +227,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Balances.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BalancesContainer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OrderHandler.hpp">
