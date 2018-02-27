@@ -15,6 +15,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
+using namespace trdk::TradingLib;
 using namespace Lib::TimeMeasurement;
 using namespace trdk::Strategies::PingPong;
 
@@ -28,49 +29,122 @@ using tl::StopLossShare;
 using tl::TakeProfitShare;
 
 namespace {
-struct Ma {
-  const char *name;
-  bool isReported;
-  size_t numberOfPeriods;
-  std::unique_ptr<ma::Exponential> stat;
-
-  explicit Ma(const char *name, size_t numberOfPeriods)
-      : name(name), isReported(false), numberOfPeriods(numberOfPeriods) {
-    Reset();
-  }
-
-  bool IsFilled() const {
-    return accs::rolling_count(*stat) >= numberOfPeriods;
-  }
-
-  void Reset() {
-    stat.reset(new ma::Exponential(accs::tag::rolling_window::window_size =
-                                       numberOfPeriods));
-  }
-};
-
-class Trend : public tl::Trend {
- public:
-  bool Update(const ma::Exponential &slowMa, const ma::Exponential &fastMa) {
-    return SetIsRising(accs::ema(slowMa) < accs::ema(fastMa));
-  }
-};
-
 struct Subscribtion {
   bool isEnabled;
-  Ma fastMa;
-  Ma slowMa;
   boost::circular_buffer<Price> marketDataBuffer;
-  Trend trend;
+  pp::Strategy::Indicators indicators;
+  pp::Strategy::Trends trends;
 
-  explicit Subscribtion(size_t fastMaSize, size_t slowMaSize)
+  explicit Subscribtion(size_t fastMaSize,
+                        size_t slowMaSize,
+                        size_t numberOfRsiPeriods,
+                        const Double &overboughtLevel,
+                        const Double &oversoldLevel,
+                        const pp::Strategy::IndicatorsToggles &toggles)
       : isEnabled(true),
-        fastMa("fast", fastMaSize),
-        slowMa("slow", slowMaSize),
         marketDataBuffer(
-            std::max(fastMa.numberOfPeriods, slowMa.numberOfPeriods)) {}
+            std::max(fastMaSize, std::max(slowMaSize, numberOfRsiPeriods))),
+        indicators(fastMaSize,
+                   slowMaSize,
+                   numberOfRsiPeriods,
+                   overboughtLevel,
+                   oversoldLevel),
+        trends(toggles) {}
 };
 }  // namespace
+
+pp::Strategy::Indicators::Ma::Ma(const char *name, size_t numberOfPeriods)
+    : name(name) {
+  Reset(numberOfPeriods);
+}
+void pp::Strategy::Indicators::Ma::Reset(size_t newNumberOfPeriods) {
+  stat.reset(new ma::Exponential(accs::tag::rolling_window::window_size =
+                                     newNumberOfPeriods));
+  numberOfPeriods = newNumberOfPeriods;
+}
+pp::Strategy::Indicators::Indicators(size_t fastMaSize,
+                                     size_t slowMaSize,
+                                     size_t numberOfRsiPeriods,
+                                     const Double &overboughtLevel,
+                                     const Double &oversoldLevel)
+    : fastMa("fast", fastMaSize),
+      slowMa("slow", slowMaSize),
+      rsi(Rsi{RelativeStrengthIndex(numberOfRsiPeriods), overboughtLevel,
+              oversoldLevel}) {}
+bool pp::Strategy::Indicators::Update(const Price &value) {
+  (*fastMa.stat)(value);
+  (*slowMa.stat)(value);
+  rsi.stat.Append(value);
+  return accs::rolling_count(*slowMa.stat) >= slowMa.numberOfPeriods &&
+         accs::rolling_count(*fastMa.stat) >= fastMa.numberOfPeriods &&
+         rsi.stat.IsFull();
+}
+
+pp::Strategy::Trend::Trend(const IndicatorsToggles::Toggles &toggles)
+    : m_toggles(toggles) {}
+bool pp::Strategy::Trend::Update(const ma::Exponential &slowMa,
+                                 const ma::Exponential &fastMa) {
+  return SetIsRising(accs::ema(slowMa) < accs::ema(fastMa));
+}
+bool pp::Strategy::Trend::Update(const Indicators::Rsi &rsi) {
+  return rsi.stat.GetLastValue() > rsi.overboughtLevel
+             ? SetIsRising(false)
+             : rsi.stat.GetLastValue() < rsi.oversoldLevel ? SetIsRising(true)
+                                                           : Reset();
+}
+
+const pp::Strategy::IndicatorsToggles::Toggles &
+pp::Strategy::Trend::GetIndicatorsToggles() const {
+  return m_toggles;
+}
+
+pp::Strategy::Trends::Trends(const IndicatorsToggles &toggles)
+    : ma(toggles.ma), rsi(toggles.rsi) {}
+
+bool pp::Strategy::Trends::Update(const Indicators &indicators) {
+  bool result = false;
+  if (ma.Update(*indicators.slowMa.stat, *indicators.fastMa.stat)) {
+    if (ma.GetIndicatorsToggles().isOpeningSignalConfirmationEnabled) {
+      result = true;
+    }
+  }
+  if (rsi.Update(indicators.rsi)) {
+    if (rsi.GetIndicatorsToggles().isOpeningSignalConfirmationEnabled) {
+      result = true;
+    }
+  }
+  return result;
+}
+namespace {
+template <bool isOpen, typename Indicator>
+bool IsRising(const Indicator &indicator, boost::optional<bool> &isRising) {
+  if ((isOpen &&
+       !indicator.GetIndicatorsToggles().isOpeningSignalConfirmationEnabled) ||
+      (!isOpen &&
+       !indicator.GetIndicatorsToggles().isClosingSignalConfirmationEnabled)) {
+    return true;
+  }
+  if (!isRising) {
+    isRising = indicator.IsRising();
+  } else if (*isRising != indicator.IsRising()) {
+    return false;
+  }
+  return true;
+}
+}  // namespace
+bool pp::Strategy::Trends::IsRisingToOpen() const {
+  boost::optional<bool> result;
+  return IsRising<true>(ma, result) && IsRising<true>(rsi, result) && result &&
+         *result;
+}
+bool pp::Strategy::Trends::HasCloseSignal(bool isLong) const {
+  boost::optional<bool> isRising;
+  if (IsRising<false>(ma, isRising) || IsRising<false>(rsi, isRising) ||
+      !isRising) {
+    return false;
+  }
+  return *isRising != isLong;
+}
 
 class pp::Strategy::Implementation : private boost::noncopyable {
  public:
@@ -78,13 +152,14 @@ class pp::Strategy::Implementation : private boost::noncopyable {
 
   Qty m_positionSize;
 
-  boost::atomic_bool m_isMaOpeningSignalConfirmationEnabled;
-  boost::atomic_bool m_isMaClosingSignalConfirmationEnabled;
+  IndicatorsToggles m_indicatorsToggles;
+
   size_t m_fastMaSize;
   size_t m_slowMaSize;
 
-  bool m_isRsiOpeningSignalConfirmationEnabled;
-  bool m_isRsiClosingSignalConfirmationEnabled;
+  size_t m_numberOfRsiPeriods;
+  Double m_rsiOverboughtLevel;
+  Double m_rsiOversoldLevel;
 
   boost::shared_ptr<TakeProfitShare::Params> m_takeProfit;
   boost::shared_ptr<StopLossShare::Params> m_stopLoss;
@@ -102,13 +177,13 @@ class pp::Strategy::Implementation : private boost::noncopyable {
  public:
   explicit Implementation(Strategy &self)
       : m_self(self),
+        m_indicatorsToggles({}),
         m_positionSize(.01),
-        m_isMaOpeningSignalConfirmationEnabled(false),
-        m_isMaClosingSignalConfirmationEnabled(false),
-        m_isRsiOpeningSignalConfirmationEnabled(false),
-        m_isRsiClosingSignalConfirmationEnabled(false),
         m_fastMaSize(12),
         m_slowMaSize(26),
+        m_numberOfRsiPeriods(14),
+        m_rsiOverboughtLevel(70),
+        m_rsiOversoldLevel(30),
         m_takeProfit(
             boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
         m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)),
@@ -121,16 +196,15 @@ class pp::Strategy::Implementation : private boost::noncopyable {
     const auto lock = m_self.LockForOtherThreads();
     for (auto &security : m_securities) {
       Subscribtion &subscribtion = *security.second;
-      Ma &ma = getMa(subscribtion);
+      auto &ma = getMa(subscribtion);
 
       if (ma.numberOfPeriods == newNumberOfPeriods) {
-        return;
+        continue;
       }
 
       const auto prevNumberOfPeriods = ma.numberOfPeriods;
       const auto prevFilledSize = accs::rolling_count(*ma.stat);
-      ma.numberOfPeriods = newNumberOfPeriods;
-      ma.Reset();
+      ma.Reset(newNumberOfPeriods);
 
       for (auto it =
                subscribtion.marketDataBuffer.size() <= newNumberOfPeriods
@@ -139,8 +213,6 @@ class pp::Strategy::Implementation : private boost::noncopyable {
            it != subscribtion.marketDataBuffer.end(); ++it) {
         (*ma.stat)(*it);
       }
-
-      ma.isReported = false;
 
       m_self.GetTradingLog().Write(
           "%1% MA size for \"%2%\": %3% (%4%) -> %5% (%6%)",
@@ -168,42 +240,16 @@ class pp::Strategy::Implementation : private boost::noncopyable {
   void CheckSignal(Security &sourceSecurity,
                    Subscribtion &subscribtion,
                    const Milestones &delayMeasurement) {
-    if (!subscribtion.slowMa.IsFilled() || !subscribtion.fastMa.IsFilled()) {
+    if (!subscribtion.trends.Update(subscribtion.indicators)) {
       return;
     }
-    if (!subscribtion.trend.Update(*subscribtion.slowMa.stat,
-                                   *subscribtion.fastMa.stat)) {
+    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled) {
       return;
     }
-    if (!subscribtion.isEnabled) {
-      return;
-    }
-
-    const auto &tradingSystem =
-        m_self.GetTradingSystem(sourceSecurity.GetSource().GetIndex())
-            .GetInstanceName();
-
-    m_self.GetTradingLog().Write(
-        "trend\tchanged\t%1%\tslow_ema=%2%\tfast_ema=%3%\ttrend=%4%",
-        [&](TradingRecord &record) {
-          record % sourceSecurity                                        // 1
-              % accs::ema(*subscribtion.slowMa.stat)                     // 2
-              % accs::ema(*subscribtion.fastMa.stat)                     // 3
-              % (subscribtion.trend.IsRising() ? "rising" : "falling");  // 4
-        });
-    m_self.RaiseEvent(tradingSystem + " changed trend to \"" +
-                      (subscribtion.trend.IsRising() ? "rising" : "falling") +
-                      "\".");
-
-    if (!m_controller.IsOpeningEnabled() ||
-        !m_isMaOpeningSignalConfirmationEnabled) {
-      return;
-    }
-
     try {
       m_controller.OnSignal(
           boost::make_shared<Operation>(m_self, m_positionSize,
-                                        subscribtion.trend.IsRising(),
+                                        subscribtion.trends.IsRisingToOpen(),
                                         m_takeProfit, m_stopLoss),
           0, sourceSecurity, delayMeasurement);
     } catch (const CommunicationError &ex) {
@@ -232,11 +278,15 @@ void pp::Strategy::OnSecurityStart(Security &security,
           security.GetSymbol()) {
     throw Exception("Strategy works only with one symbol, but more is set");
   }
-  Verify(m_pimpl->m_securities
-             .emplace(std::make_pair(
-                 &security, boost::make_shared<Subscribtion>(
-                                m_pimpl->m_fastMaSize, m_pimpl->m_slowMaSize)))
-             .second);
+  Verify(
+      m_pimpl->m_securities
+          .emplace(std::make_pair(
+              &security,
+              boost::make_shared<Subscribtion>(
+                  m_pimpl->m_fastMaSize, m_pimpl->m_slowMaSize,
+                  m_pimpl->m_numberOfRsiPeriods, m_pimpl->m_rsiOverboughtLevel,
+                  m_pimpl->m_rsiOversoldLevel, m_pimpl->m_indicatorsToggles)))
+          .second);
   Base::OnSecurityStart(security, request);
 }
 
@@ -259,34 +309,9 @@ void pp::Strategy::OnLevel1Update(Security &security,
   const auto &statValue = bid + (spread / 2);
 
   subscribtion.marketDataBuffer.push_back(statValue);
-
-  Ma &fastMa = subscribtion.fastMa;
-  Ma &slowMa = subscribtion.slowMa;
-  (*fastMa.stat)(statValue);
-  (*slowMa.stat)(statValue);
-  if (subscribtion.isEnabled && (!slowMa.isReported || !fastMa.isReported)) {
-    if (slowMa.IsFilled() && slowMa.IsFilled()) {
-      RaiseEvent(
-          "Both " +
-          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
-          " MAs are filled, starting signal checks...");
-      slowMa.isReported = fastMa.isReported = true;
-    }
-    if (!slowMa.isReported && slowMa.IsFilled()) {
-      RaiseEvent(
-          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
-          " slow MA is filled, waiting for fast MA filling...");
-      slowMa.isReported = true;
-    }
-    if (!fastMa.isReported && fastMa.IsFilled()) {
-      RaiseEvent(
-          GetTradingSystem(security.GetSource().GetIndex()).GetInstanceName() +
-          " fast MA is filled, waiting for slow MA filling...");
-      fastMa.isReported = true;
-    }
+  if (subscribtion.indicators.Update(statValue)) {
+    m_pimpl->CheckSignal(security, subscribtion, delayMeasurement);
   }
-
-  m_pimpl->CheckSignal(security, subscribtion, delayMeasurement);
 }
 
 void pp::Strategy::OnPositionUpdate(Position &position) {
@@ -383,39 +408,45 @@ bool pp::Strategy::IsActivePositionsControlEnabled() const {
 }
 
 bool pp::Strategy::IsMaOpeningSignalConfirmationEnabled() const {
-  return m_pimpl->m_isMaOpeningSignalConfirmationEnabled;
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_indicatorsToggles.ma.isOpeningSignalConfirmationEnabled;
+}
+bool pp::Strategy::IsMaClosingSignalConfirmationEnabled() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_indicatorsToggles.ma.isClosingSignalConfirmationEnabled;
 }
 void pp::Strategy::EnableMaOpeningSignalConfirmation(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_isMaOpeningSignalConfirmationEnabled == isEnabled) {
+  auto &toggle =
+      m_pimpl->m_indicatorsToggles.ma.isOpeningSignalConfirmationEnabled;
+  if (toggle == isEnabled) {
     return;
   }
   GetTradingLog().Write("%1% MA opening signal confirmation",
                         [&](TradingRecord &record) {
                           record % (isEnabled ? "Enabled" : "Disabled");
                         });
-  m_pimpl->m_isMaOpeningSignalConfirmationEnabled = isEnabled;
+  toggle = isEnabled;
 }
 
-bool pp::Strategy::IsMaClosingSignalConfirmationEnabled() const {
-  return m_pimpl->m_isMaClosingSignalConfirmationEnabled;
-}
 void pp::Strategy::EnableMaClosingSignalConfirmation(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_isMaClosingSignalConfirmationEnabled == isEnabled) {
+  auto &toggle =
+      m_pimpl->m_indicatorsToggles.ma.isClosingSignalConfirmationEnabled;
+  if (toggle == isEnabled) {
     return;
   }
   GetTradingLog().Write("%1% MA closing signal confirmation",
                         [&](TradingRecord &record) {
                           record % (isEnabled ? "Enabled" : "Disabled");
                         });
-  m_pimpl->m_isMaClosingSignalConfirmationEnabled = isEnabled;
+  toggle = isEnabled;
 }
 
 void pp::Strategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
   m_pimpl->SetNumberOfMaPeriods(
-      [this](Subscribtion &subscribtion) -> Ma & {
-        return subscribtion.fastMa;
+      [this](Subscribtion &subscribtion) -> Indicators::Ma & {
+        return subscribtion.indicators.fastMa;
       },
       m_pimpl->m_fastMaSize, numberOfPeriods);
 }
@@ -425,8 +456,8 @@ size_t pp::Strategy::GetNumberOfFastMaPeriods() const {
 }
 void pp::Strategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
   m_pimpl->SetNumberOfMaPeriods(
-      [this](Subscribtion &subscribtion) -> Ma & {
-        return subscribtion.slowMa;
+      [this](Subscribtion &subscribtion) -> Indicators::Ma & {
+        return subscribtion.indicators.slowMa;
       },
       m_pimpl->m_slowMaSize, numberOfPeriods);
 }
@@ -436,33 +467,80 @@ size_t pp::Strategy::GetNumberOfSlowMaPeriods() const {
 }
 
 bool pp::Strategy::IsRsiOpeningSignalConfirmationEnabled() const {
-  return m_pimpl->m_isRsiOpeningSignalConfirmationEnabled;
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_indicatorsToggles.rsi.isOpeningSignalConfirmationEnabled;
+}
+bool pp::Strategy::IsRsiClosingSignalConfirmationEnabled() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_indicatorsToggles.rsi.isClosingSignalConfirmationEnabled;
 }
 void pp::Strategy::EnableRsiOpeningSignalConfirmation(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_isRsiOpeningSignalConfirmationEnabled == isEnabled) {
+  auto &toggle =
+      m_pimpl->m_indicatorsToggles.rsi.isOpeningSignalConfirmationEnabled;
+  if (toggle == isEnabled) {
     return;
   }
   GetTradingLog().Write("%1% RSI opening signal confirmation",
                         [&](TradingRecord &record) {
                           record % (isEnabled ? "Enabled" : "Disabled");
                         });
-  m_pimpl->m_isRsiOpeningSignalConfirmationEnabled = isEnabled;
+  toggle = isEnabled;
 }
-bool pp::Strategy::IsRsiClosingSignalConfirmationEnabled() const {
-  return m_pimpl->m_isRsiClosingSignalConfirmationEnabled;
-}
-size_t pp::Strategy::GetNumberOfRsiPeriods() const { return 14; }
 void pp::Strategy::EnableRsiClosingSignalConfirmation(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_isRsiClosingSignalConfirmationEnabled == isEnabled) {
+  auto &toggle =
+      m_pimpl->m_indicatorsToggles.rsi.isClosingSignalConfirmationEnabled;
+  if (toggle == isEnabled) {
     return;
   }
   GetTradingLog().Write("%1% RSI closing signal confirmation",
                         [&](TradingRecord &record) {
                           record % (isEnabled ? "Enabled" : "Disabled");
                         });
-  m_pimpl->m_isRsiClosingSignalConfirmationEnabled = isEnabled;
+  toggle = isEnabled;
+}
+size_t pp::Strategy::GetNumberOfRsiPeriods() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_numberOfRsiPeriods;
+}
+void pp::Strategy::SetNumberOfRsiPeriods(size_t newNumberOfPeriods) {
+  const auto lock = LockForOtherThreads();
+  for (auto &security : m_pimpl->m_securities) {
+    Subscribtion &subscribtion = *security.second;
+    auto &rsi = subscribtion.indicators.rsi;
+    const auto prevNumberOfPeriods = rsi.stat.GetNumberOfPeriods();
+    if (prevNumberOfPeriods == newNumberOfPeriods) {
+      continue;
+    }
+
+    rsi.stat = RelativeStrengthIndex(newNumberOfPeriods);
+
+    for (auto it =
+             subscribtion.marketDataBuffer.size() <= newNumberOfPeriods
+                 ? subscribtion.marketDataBuffer.begin()
+                 : subscribtion.marketDataBuffer.end() - newNumberOfPeriods;
+         it != subscribtion.marketDataBuffer.end(); ++it) {
+      rsi.stat.Append(*it);
+    }
+
+    GetTradingLog().Write("RSI size for \"%1%\": %2% -> %3%",
+                          [&](TradingRecord &record) {
+                            record % *security.first   // 1
+                                % prevNumberOfPeriods  // 2
+                                % newNumberOfPeriods;  // 3
+                          });
+
+    if (subscribtion.marketDataBuffer.capacity() < newNumberOfPeriods) {
+      GetTradingLog().Write(
+          "RSI buffer size: %1% -> %2%", [&](TradingRecord &record) {
+            record % subscribtion.marketDataBuffer.capacity()  // 1
+                % newNumberOfPeriods;                          // 2
+          });
+      subscribtion.marketDataBuffer.set_capacity(newNumberOfPeriods);
+    }
+  }
+  m_pimpl->m_numberOfRsiPeriods = newNumberOfPeriods;
 }
 
 void pp::Strategy::SetStopLoss(const Double &stopLoss) {
@@ -476,6 +554,54 @@ void pp::Strategy::SetStopLoss(const Double &stopLoss) {
   });
   *m_pimpl->m_stopLoss = StopLossShare::Params{stopLoss};
 }
+
+Double pp::Strategy::GetRsiOverboughtLevel() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_rsiOverboughtLevel;
+}
+void pp::Strategy::SetRsiOverboughtLevel(const Double &value) {
+  const auto lock = LockForOtherThreads();
+  for (auto &security : m_pimpl->m_securities) {
+    Subscribtion &subscribtion = *security.second;
+    auto &rsi = subscribtion.indicators.rsi;
+    const auto overboughtLevel = rsi.overboughtLevel;
+    if (overboughtLevel == value) {
+      continue;
+    }
+    rsi.overboughtLevel = value;
+    GetTradingLog().Write("RSI overbought level for \"%1%\": %2% -> %3%",
+                          [&](TradingRecord &record) {
+                            record % *security.first  // 1
+                                % overboughtLevel     // 2
+                                % value;              // 3
+                          });
+  }
+  m_pimpl->m_rsiOverboughtLevel = value;
+}
+Double pp::Strategy::GetRsiOversoldLevel() const {
+  const auto lock = LockForOtherThreads();
+  return m_pimpl->m_rsiOversoldLevel;
+}
+void pp::Strategy::SetRsiOversoldLevel(const Double &value) {
+  const auto lock = LockForOtherThreads();
+  for (auto &security : m_pimpl->m_securities) {
+    Subscribtion &subscribtion = *security.second;
+    auto &rsi = subscribtion.indicators.rsi;
+    const auto oversoldLevel = rsi.oversoldLevel;
+    if (oversoldLevel == value) {
+      continue;
+    }
+    rsi.oversoldLevel = value;
+    GetTradingLog().Write("RSI oversold level for \"%1%\": %2% -> %3%",
+                          [&](TradingRecord &record) {
+                            record % *security.first  // 1
+                                % oversoldLevel       // 2
+                                % value;              // 3
+                          });
+  }
+  m_pimpl->m_rsiOversoldLevel = value;
+}
+
 Double pp::Strategy::GetStopLoss() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_stopLoss->GetMaxLossShare();
@@ -524,16 +650,20 @@ sig::scoped_connection pp::Strategy::SubscribeToBlocking(
   return m_pimpl->m_blockSignal.connect(slot);
 }
 
-const tl::Trend &pp::Strategy::GetTrend(const Security &security) const {
+const pp::Strategy::Trends &pp::Strategy::GetTrends(
+    const Security &security) const {
   const auto &securityIt = m_pimpl->m_securities.find(&security);
   Assert(securityIt != m_pimpl->m_securities.cend());
   if (securityIt == m_pimpl->m_securities.cend()) {
-    throw LogicError("Request trend for unknown security");
+    throw LogicError("Request trend list for unknown security");
   }
-  return securityIt->second->trend;
+  return securityIt->second->trends;
 }
 
 void pp::Strategy::RaiseEvent(const std::string &message) {
+  GetTradingLog().Write("Event: \"%1%\".", [&message](TradingRecord &record) {
+    record % message;
+  });
   m_pimpl->m_eventsSignal(message);
 }
 
@@ -549,7 +679,6 @@ void pp::Strategy::EnableTradingSystem(size_t tradingSystemIndex,
       continue;
     }
     subscribtion.isEnabled = isEnabled;
-    subscribtion.fastMa.isReported = subscribtion.slowMa.isReported = false;
     GetTradingLog().Write("%1% %2%", [&](TradingRecord &record) {
       record % *security.first                           // 1
           % (security.second ? "enabled" : "disabled");  // 2

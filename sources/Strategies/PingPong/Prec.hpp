@@ -20,6 +20,7 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "TradingLib/RelativeStrengthIndex.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "TradingLib/TakeProfit.hpp"
 #include "TradingLib/Trend.hpp"

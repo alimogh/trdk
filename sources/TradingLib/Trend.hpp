@@ -21,29 +21,33 @@ class Trend : private boost::noncopyable {
  public:
   //! Is trend registered or not.
   /** @sa IsRising
-    * @sa IsFalling
-    */
+   * @sa IsFalling
+   */
   bool IsExistent() const;
   //! Is trend registered and rising.
   /** @sa IsExistent
-    * @sa IsFalling
-    */
+   * @sa IsFalling
+   */
   bool IsRising() const;
   //! Is trend registered and falling.
   /** @sa IsExistent
-    * @sa IsFalling
-    */
+   * @sa IsFalling
+   */
   bool IsFalling() const;
 
  protected:
   //! Sets "is rising" direction.
   /** @return true if direction is changed by this call, false otherwise.
-    */
+   */
   bool SetIsRising(bool isRising);
+  //! Resets trend.
+  /** @return true if direction is changed by this call, false otherwise.
+   */
+  bool Reset();
 
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
+}  // namespace TradingLib
+}  // namespace trdk

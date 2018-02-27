@@ -65,6 +65,10 @@ StrategyWindow::StrategyWindow(Engine &engine,
       m_strategy.IsRsiClosingSignalConfirmationEnabled());
   m_ui.rsiPeriods->setValue(
       static_cast<int>(m_strategy.GetNumberOfRsiPeriods()));
+  m_ui.rsiOverbought->setValue(
+      static_cast<int>(m_strategy.GetRsiOverboughtLevel()));
+  m_ui.rsiOversold->setValue(
+      static_cast<int>(m_strategy.GetRsiOversoldLevel()));
 
   ConnectSignals();
 }
@@ -289,6 +293,28 @@ void StrategyWindow::ConnectSignals() {
                            m_ui.isRsiClosingSignalConfirmationEnabled);
                        m_ui.isRsiClosingSignalConfirmationEnabled->setChecked(
                            m_strategy.IsRsiClosingSignalConfirmationEnabled());
+                     }
+                   }));
+    Verify(connect(m_ui.rsiOverbought,
+                   static_cast<void (QDoubleSpinBox::*)(double)>(
+                       &QDoubleSpinBox::valueChanged),
+                   [this](double value) {
+                     m_strategy.SetRsiOverboughtLevel(value);
+                     {
+                       const QSignalBlocker blocker(*m_ui.rsiOverbought);
+                       m_ui.rsiOverbought->setValue(
+                           m_strategy.GetRsiOverboughtLevel());
+                     }
+                   }));
+    Verify(connect(m_ui.rsiOversold,
+                   static_cast<void (QDoubleSpinBox::*)(double)>(
+                       &QDoubleSpinBox::valueChanged),
+                   [this](double value) {
+                     m_strategy.SetRsiOversoldLevel(value);
+                     {
+                       const QSignalBlocker blocker(*m_ui.rsiOversold);
+                       m_ui.rsiOversold->setValue(
+                           m_strategy.GetRsiOversoldLevel());
                      }
                    }));
   }
