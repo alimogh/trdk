@@ -51,13 +51,9 @@ bool pp::Operation::IsLong(const Security &) const { return m_isLong; }
 Qty pp::Operation::GetPlannedQty() const { return m_qty; }
 
 bool pp::Operation::HasCloseSignal(const Position &position) const {
-  const auto &strategy =
-      *boost::polymorphic_downcast<const pp::Strategy *>(&GetStrategy());
-  if (!strategy.IsMaClosingSignalConfirmationEnabled()) {
-    return false;
-  }
-  const auto &isRising = strategy.GetTrend(position.GetSecurity()).IsRising();
-  return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
+  return boost::polymorphic_downcast<const pp::Strategy *>(&GetStrategy())
+      ->GetTrends(position.GetSecurity())
+      .HasCloseSignal(IsLong(position.GetSecurity()));
 }
 
 boost::shared_ptr<trdk::Operation> pp::Operation::StartInvertedPosition(

@@ -16,6 +16,70 @@ namespace PingPong {
 
 class Strategy : public trdk::Strategy {
  public:
+  struct Indicators {
+    struct Ma {
+      const char *name;
+      std::unique_ptr<trdk::Lib::Accumulators::MovingAverage::Exponential> stat;
+      size_t numberOfPeriods;
+
+      explicit Ma(const char *name, size_t numberOfPeriods);
+      void Reset(size_t numberOfPeriods);
+    };
+    struct Rsi {
+      TradingLib::RelativeStrengthIndex stat;
+      Lib::Double overboughtLevel;
+      Lib::Double oversoldLevel;
+    };
+
+    Ma fastMa;
+    Ma slowMa;
+
+    Rsi rsi;
+
+    explicit Indicators(size_t fastMaSize,
+                        size_t slowMaSize,
+                        size_t numberOfRsiPeriods,
+                        const Lib::Double &overboughtLevel,
+                        const Lib::Double &oversoldLevel);
+
+    bool Update(const Price &);
+  };
+
+  struct IndicatorsToggles {
+    struct Toggles {
+      bool isOpeningSignalConfirmationEnabled;
+      bool isClosingSignalConfirmationEnabled;
+    };
+
+    Toggles ma;
+    Toggles rsi;
+  };
+
+  class Trend : public TradingLib::Trend {
+   public:
+    explicit Trend(const IndicatorsToggles::Toggles &);
+    bool Update(
+        const trdk::Lib::Accumulators::MovingAverage::Exponential &slowMa,
+        const trdk::Lib::Accumulators::MovingAverage::Exponential &fastMa);
+    bool Update(const Indicators::Rsi &);
+    const IndicatorsToggles::Toggles &GetIndicatorsToggles() const;
+
+   private:
+    const IndicatorsToggles::Toggles &m_toggles;
+  };
+
+  struct Trends {
+    Trend ma;
+    Trend rsi;
+
+   public:
+    explicit Trends(const IndicatorsToggles &);
+    bool Update(const Indicators &);
+    bool IsRisingToOpen() const;
+    bool HasCloseSignal(bool isLong) const;
+  };
+
+ public:
   typedef trdk::Strategy Base;
 
  public:
@@ -47,6 +111,11 @@ class Strategy : public trdk::Strategy {
   bool IsRsiClosingSignalConfirmationEnabled() const;
   void EnableRsiClosingSignalConfirmation(bool);
   size_t GetNumberOfRsiPeriods() const;
+  void SetNumberOfRsiPeriods(size_t);
+  Lib::Double GetRsiOverboughtLevel() const;
+  void SetRsiOverboughtLevel(const Lib::Double &);
+  Lib::Double GetRsiOversoldLevel() const;
+  void SetRsiOversoldLevel(const Lib::Double &);
 
   void SetPositionSize(const Qty &);
   Qty GetPositionSize() const;
@@ -63,7 +132,7 @@ class Strategy : public trdk::Strategy {
   boost::signals2::scoped_connection SubscribeToBlocking(
       const boost::function<void(const std::string *reason)> &);
 
-  const TradingLib::Trend &GetTrend(const Security &) const;
+  const Trends &GetTrends(const Security &) const;
 
   void RaiseEvent(const std::string &);
 

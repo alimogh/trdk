@@ -269,6 +269,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="RelativeStrengthIndex.cpp" />
     <ClCompile Include="SourcesSynchronizerUTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
@@ -314,6 +315,7 @@
     <ClInclude Include="PnlContainer.hpp" />
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="Prec.hpp" />
+    <ClInclude Include="RelativeStrengthIndex.hpp" />
     <ClInclude Include="SourcesSynchronizer.hpp" />
     <ClInclude Include="StopLimit.hpp" />
     <ClInclude Include="StopLoss.hpp" />
