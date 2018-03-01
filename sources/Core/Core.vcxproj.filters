@@ -229,9 +229,6 @@
     <ClInclude Include="Balances.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OrderHandler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OrderStatusHandler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
