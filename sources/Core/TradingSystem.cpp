@@ -341,6 +341,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   void OpenOrder(const pt::ptime &time, const OrderId &id, Order &order) {
     Assert(!order.isOpened);
     order.isOpened = true;
+    ReportOrderUpdate(id, order, "opened", 0, boost::none);
     ConfirmOrder(order, ORDER_STATUS_OPENED, boost::none);
     order.handler->OnOpened();
     m_context.InvokeDropCopy([&](DropCopy &dropCopy) {
