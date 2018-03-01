@@ -21,7 +21,7 @@ class BestSecurityChecker : private boost::noncopyable {
   virtual ~BestSecurityChecker() = default;
 
  public:
-  bool Check(trdk::Security &);
+  const std::string *Check(trdk::Security &);
 
   bool HasSuitableSecurity() const noexcept;
   trdk::Security *GetSuitableSecurity() const noexcept;
@@ -38,8 +38,6 @@ class BestSecurityChecker : private boost::noncopyable {
   virtual trdk::Qty GetRequiredQty() const = 0;
   virtual trdk::OrderSide GetSide() const = 0;
 
-  bool CheckGeneral(const trdk::Security &) const;
-  bool CheckExchange(const trdk::Security &) const;
   virtual bool CheckOrder(const trdk::Security &,
                           const trdk::TradingSystem &) const = 0;
 

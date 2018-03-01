@@ -423,7 +423,6 @@
     <ClInclude Include="ModuleVariant.hpp" />
     <ClInclude Include="Consumer.hpp" />
     <ClInclude Include="Operation.hpp" />
-    <ClInclude Include="OrderHandler.hpp" />
     <ClInclude Include="OrderStatusHandler.hpp" />
     <ClInclude Include="Pnl.hpp" />
     <ClInclude Include="PnlContainer.hpp" />

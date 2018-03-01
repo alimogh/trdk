@@ -996,8 +996,19 @@ bool Position::IsCompleted() const noexcept {
 }
 
 void Position::MarkAsCompleted() {
+  Assert(!HasOpenedOpenOrders());
+  Assert(!HasOpenedCloseOrders());
   Assert(!IsCompleted());
-  if (IsCompleted()) {
+  if (HasActiveOrders()) {
+    GetStrategy().GetLog().Error(
+        "Failed to mark position %1%/%2% as \"completed\": position has active "
+        "orders.",
+        GetOperation()->GetId(),  // 1
+        GetSubOperationId());     // 2
+    throw Exception(
+        "Failed to mark position as \"completed\" as position has active "
+        "orders");
+  } else if (IsCompleted()) {
     // Should not be added to the "delayed list" twice.
     GetStrategy().GetLog().Error(
         "Failed to mark position %1%/%2% as \"completed\": position already "

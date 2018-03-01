@@ -237,13 +237,14 @@ class pp::Strategy::Implementation : private boost::noncopyable {
     currentNumberOfPeriods = newNumberOfPeriods;
   }
 
-  void CheckSignal(Security &sourceSecurity,
+  void CheckSignal(Security &security,
                    Subscribtion &subscribtion,
                    const Milestones &delayMeasurement) {
     if (!subscribtion.trends.Update(subscribtion.indicators)) {
       return;
     }
-    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled) {
+    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled ||
+        m_controller.HasPositions(m_self, security)) {
       return;
     }
     try {
@@ -251,7 +252,7 @@ class pp::Strategy::Implementation : private boost::noncopyable {
           boost::make_shared<Operation>(m_self, m_positionSize,
                                         subscribtion.trends.IsRisingToOpen(),
                                         m_takeProfit, m_stopLoss),
-          0, sourceSecurity, delayMeasurement);
+          0, security, delayMeasurement);
     } catch (const CommunicationError &ex) {
       m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
                             ex.what());
@@ -424,7 +425,7 @@ void pp::Strategy::EnableMaOpeningSignalConfirmation(bool isEnabled) {
   }
   GetTradingLog().Write("%1% MA opening signal confirmation",
                         [&](TradingRecord &record) {
-                          record % (isEnabled ? "Enabled" : "Disabled");
+                          record % (isEnabled ? "enabled" : "disabled");
                         });
   toggle = isEnabled;
 }
@@ -438,7 +439,7 @@ void pp::Strategy::EnableMaClosingSignalConfirmation(bool isEnabled) {
   }
   GetTradingLog().Write("%1% MA closing signal confirmation",
                         [&](TradingRecord &record) {
-                          record % (isEnabled ? "Enabled" : "Disabled");
+                          record % (isEnabled ? "enabled" : "disabled");
                         });
   toggle = isEnabled;
 }
@@ -483,7 +484,7 @@ void pp::Strategy::EnableRsiOpeningSignalConfirmation(bool isEnabled) {
   }
   GetTradingLog().Write("%1% RSI opening signal confirmation",
                         [&](TradingRecord &record) {
-                          record % (isEnabled ? "Enabled" : "Disabled");
+                          record % (isEnabled ? "enabled" : "disabled");
                         });
   toggle = isEnabled;
 }
@@ -496,7 +497,7 @@ void pp::Strategy::EnableRsiClosingSignalConfirmation(bool isEnabled) {
   }
   GetTradingLog().Write("%1% RSI closing signal confirmation",
                         [&](TradingRecord &record) {
-                          record % (isEnabled ? "Enabled" : "Disabled");
+                          record % (isEnabled ? "enabled" : "disabled");
                         });
   toggle = isEnabled;
 }
@@ -661,7 +662,7 @@ const pp::Strategy::Trends &pp::Strategy::GetTrends(
 }
 
 void pp::Strategy::RaiseEvent(const std::string &message) {
-  GetTradingLog().Write("Event: \"%1%\".", [&message](TradingRecord &record) {
+  GetTradingLog().Write("event: \"%1%\"", [&message](TradingRecord &record) {
     record % message;
   });
   m_pimpl->m_eventsSignal(message);
@@ -680,8 +681,8 @@ void pp::Strategy::EnableTradingSystem(size_t tradingSystemIndex,
     }
     subscribtion.isEnabled = isEnabled;
     GetTradingLog().Write("%1% %2%", [&](TradingRecord &record) {
-      record % *security.first                           // 1
-          % (security.second ? "enabled" : "disabled");  // 2
+      record % *security.first                                  // 1
+          % (subscribtion.isEnabled ? "enabled" : "disabled");  // 2
     });
   }
 }

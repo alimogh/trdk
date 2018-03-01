@@ -29,6 +29,8 @@ class Controller : public TradingLib::PositionController {
   void EnableClosing(bool);
   bool IsClosingEnabled() const;
 
+  bool HasPositions(trdk::Strategy &, trdk::Security &) const;
+
  public:
   virtual trdk::Position *OpenPosition(
       const boost::shared_ptr<trdk::Operation> &,
@@ -41,6 +43,9 @@ class Controller : public TradingLib::PositionController {
                              const trdk::CloseReason &) override;
 
  protected:
+  virtual trdk::Position *GetExistingPosition(trdk::Strategy &,
+                                              trdk::Security &) override;
+
   virtual void ClosePosition(trdk::Position &) override;
 
  private:
