@@ -21,14 +21,42 @@ using namespace trdk::TradingLib;
 BestSecurityChecker::BestSecurityChecker(bool checkOpportunity)
     : m_bestSecurity(nullptr), m_checkOpportunity(checkOpportunity) {}
 
-bool BestSecurityChecker::Check(Security &checkSecurity) {
+const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
   AssertNe(m_bestSecurity, &checkSecurity);
-  if (!CheckGeneral(checkSecurity) || !CheckExchange(checkSecurity) ||
-      !(!m_bestSecurity || CheckPrice(*m_bestSecurity, checkSecurity))) {
-    return false;
+
+  if (!checkSecurity.IsOnline()) {
+    static const std::string error = "security if offline";
+    return &error;
   }
+
+  if (m_checkOpportunity &&
+      GetOpportunityQty(checkSecurity) < GetRequiredQty()) {
+    static const std::string error = "has no enough opportunity";
+    return &error;
+  }
+
+  {
+    const auto &tradingSystem = GetTradingSystem(checkSecurity);
+    if (tradingSystem.GetBalances().GetAvailableToTrade(GetBalanceSymbol(
+            checkSecurity)) < GetRequiredBalance(checkSecurity)) {
+      static const std::string error("insufficient funds");
+      return &error;
+    }
+
+    if (!CheckOrder(checkSecurity, tradingSystem)) {
+      static const std::string error =
+          "order parameters don't meet trading system requirements";
+      return &error;
+    }
+  }
+
+  if (m_bestSecurity && !CheckPrice(*m_bestSecurity, checkSecurity)) {
+    static const std::string error = "doesn't have best price";
+    return &error;
+  }
+
   m_bestSecurity = &checkSecurity;
-  return true;
+  return nullptr;
 }
 
 bool BestSecurityChecker::HasSuitableSecurity() const noexcept {
@@ -37,21 +65,6 @@ bool BestSecurityChecker::HasSuitableSecurity() const noexcept {
 
 Security *BestSecurityChecker::GetSuitableSecurity() const noexcept {
   return m_bestSecurity;
-}
-
-bool BestSecurityChecker::CheckGeneral(const Security &checkSecurity) const {
-  return checkSecurity.IsOnline() &&
-         (!m_checkOpportunity ||
-          GetOpportunityQty(checkSecurity) >= GetRequiredQty());
-}
-
-bool BestSecurityChecker::CheckExchange(const Security &checkSecurity) const {
-  const auto &tradingSystem = GetTradingSystem(checkSecurity);
-  if (tradingSystem.GetBalances().FindAvailableToTrade(GetBalanceSymbol(
-          checkSecurity)) < GetRequiredBalance(checkSecurity)) {
-    return false;
-  }
-  return CheckOrder(checkSecurity, tradingSystem);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

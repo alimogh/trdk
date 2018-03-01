@@ -93,20 +93,38 @@ void PrepareOperationClose(Position &position) {
 
 bool ChooseBestExchange(Position &position) {
   const auto &checker = BestSecurityCheckerForPosition::Create(position, true);
+  std::vector<std::pair<const Security *, const std::string *>> checks;
   boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
-      ->ForEachSecurity(
-          position.GetSecurity().GetSymbol(),
-          [&checker](Security &security) { checker->Check(security); });
+      ->ForEachSecurity(position.GetSecurity().GetSymbol(),
+                        [&checker, &checks](Security &security) {
+                          checks.emplace_back(&security,
+                                              checker->Check(security));
+                        });
   if (!checker->HasSuitableSecurity()) {
+    std::ostringstream checksStr;
+    for (const auto &check : checks) {
+      Assert(check.first);
+      Assert(check.second);
+      if (&check != &checks.front()) {
+        checksStr << ", ";
+      }
+      checksStr << *check.first << ": ";
+      if (check.second) {
+        checksStr << *check.second;
+      } else {
+        checksStr << "unknown error";
+      }
+    }
     position.GetStrategy().GetLog().Error(
         "Failed to find suitable security for the position \"%1%/%2%\" (actual "
         "security is \"%3%\") to close the rest of the position: %4% out of "
-        "%5%.",
+        "%5% (%6%)",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
         position.GetActiveQty(),           // 4
-        position.GetOpenedQty());          // 5
+        position.GetOpenedQty(),           // 5
+        checksStr.str());                  // 6
     position.MarkAsCompleted();
     return false;
   }

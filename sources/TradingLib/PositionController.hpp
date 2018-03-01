@@ -102,6 +102,9 @@ class PositionController : private boost::noncopyable {
 
   virtual void HoldPosition(trdk::Position &);
 
+  virtual trdk::Position *GetExistingPosition(trdk::Strategy &,
+                                              trdk::Security &);
+
  private:
   template <typename PositionType>
   boost::shared_ptr<trdk::Position> CreatePositionObject(

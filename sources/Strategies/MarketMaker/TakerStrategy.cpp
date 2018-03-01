@@ -127,7 +127,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    m_self.GetTradingLog().Write("Starting new iteration...");
+    m_self.GetTradingLog().Write("starting new iteration");
 
     for (auto &position : m_self.GetPositions()) {
       try {
@@ -170,8 +170,8 @@ class TakerStrategy::Implementation : private boost::noncopyable {
           std::max(1, static_cast<int>(m_goalVolume / *m_nextVolume));
       const auto delay = (m_nextPeriodEnd - now) / numberOfIteration;
       m_self.GetTradingLog().Write(
-          "Scheduling new iteration after %1% at %2% (next volume: %3%, number "
-          "of iteration: %4%, period end: %5%)...",
+          "scheduling new iteration after %1% at %2% (next volume: %3%, number "
+          "of iteration: %4%, period end: %5%)",
           [&](TradingRecord &record) {
             record % delay                                        // 1
                 % (m_self.GetContext().GetCurrentTime() + delay)  // 2
@@ -241,11 +241,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
   bool Complete() {
     if (m_self.GetPositions().IsEmpty()) {
-      {
-        const char *const message = "Trading period is completed.";
-        m_self.GetTradingLog().Write(message);
-        m_self.RaiseEvent(message);
-      }
+      m_self.RaiseEvent("Trading period is completed.");
       m_nextPeriodEnd = pt::not_a_date_time;
       m_completedSignal();
     }
@@ -367,7 +363,6 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
 
   if (!isEnabled) {
     m_pimpl->m_nextPeriodEnd = pt::not_a_date_time;
-    GetTradingLog().Write("Trading disabled.");
     RaiseEvent("Trading disabled.");
     return;
   }
@@ -391,8 +386,6 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
         "Trading enabled with period %1% minutes (ends at %2%).");
     message % m_pimpl->m_periodSizeMinutes  // 1
         % m_pimpl->m_nextPeriodEnd;         // 2
-    GetTradingLog().Write(
-        "%1%", [&message](TradingRecord &record) { record % message.str(); });
     RaiseEvent(message.str());
   }
 }
@@ -427,6 +420,9 @@ sig::scoped_connection TakerStrategy::SubscribeToPnl(
 }
 
 void TakerStrategy::RaiseEvent(const std::string &message) {
+  GetTradingLog().Write("event: \"%1%\"", [&message](TradingRecord &record) {
+    record % message;
+  });
   m_pimpl->m_eventsSignal(message);
 }
 
@@ -515,8 +511,6 @@ void TakerStrategy::SetPeriodSize(size_t numberOfMinutes) {
         "Trading period changed - %1% minutes (ends at %2%).");
     message % m_pimpl->m_periodSizeMinutes  // 1
         % m_pimpl->m_nextPeriodEnd;         // 2
-    GetTradingLog().Write(
-        "%1%", [&message](TradingRecord &record) { record % message.str(); });
     RaiseEvent(message.str());
   }
 

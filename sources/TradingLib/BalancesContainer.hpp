@@ -22,7 +22,7 @@ class BalancesContainer : public trdk::Balances {
   virtual ~BalancesContainer() override;
 
  public:
-  virtual trdk::Volume FindAvailableToTrade(
+  virtual trdk::Volume GetAvailableToTrade(
       const std::string &symbol) const override;
 
  public:

@@ -134,8 +134,7 @@ BalancesContainer::BalancesContainer(const TradingSystem &tradingSystem,
 
 BalancesContainer::~BalancesContainer() = default;
 
-Volume BalancesContainer::FindAvailableToTrade(
-    const std::string &symbol) const {
+Volume BalancesContainer::GetAvailableToTrade(const std::string &symbol) const {
   const ReadLock lock(m_pimpl->m_mutex);
   const auto &it = m_pimpl->m_storage.find(symbol);
   if (it == m_pimpl->m_storage.cend()) {

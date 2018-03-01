@@ -556,7 +556,7 @@ Balances &TradingSystem::GetBalancesStorage() {
     virtual ~DummyBalances() override = default;
 
    public:
-    virtual Volume FindAvailableToTrade(const std::string &) const override {
+    virtual Volume GetAvailableToTrade(const std::string &) const override {
       return 0;
     }
     virtual void ReduceAvailableToTradeByOrder(const Security &,

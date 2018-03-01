@@ -152,11 +152,9 @@ Position *PositionController::OnSignal(
     int64_t subOperationId,
     Security &security,
     const Milestones &delayMeasurement) {
-  Position *position = nullptr;
   auto &strategy = newOperationContext->GetStrategy();
-  if (!strategy.GetPositions().IsEmpty()) {
-    AssertEq(1, strategy.GetPositions().GetSize());
-    position = &*strategy.GetPositions().GetBegin();
+  Position *position = GetExistingPosition(strategy, security);
+  if (position) {
     if (position->IsCompleted()) {
       position = nullptr;
     } else if (!position->GetOperation()->HasCloseSignal(*position)) {
@@ -333,4 +331,13 @@ boost::shared_ptr<Position> PositionController::CreatePosition(
                                     price, delayMeasurement);
   result->GetOperation()->Setup(*result, *this);
   return result;
+}
+
+Position *PositionController::GetExistingPosition(Strategy &strategy,
+                                                  Security &) {
+  if (strategy.GetPositions().IsEmpty()) {
+    return nullptr;
+  }
+  AssertEq(1, strategy.GetPositions().GetSize());
+  return &*strategy.GetPositions().GetBegin();
 }
