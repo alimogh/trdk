@@ -69,10 +69,15 @@ Security *BestSecurityChecker::GetSuitableSecurity() const noexcept {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BestSecurityCheckerForOrder::BestSecurityCheckerForOrder(Strategy &strategy,
-                                                         const Qty &qty,
-                                                         bool checkOpportunity)
-    : BestSecurityChecker(checkOpportunity), m_strategy(strategy), m_qty(qty) {}
+BestSecurityCheckerForOrder::BestSecurityCheckerForOrder(
+    Strategy &strategy,
+    const Qty &qty,
+    boost::optional<Price> &&price,
+    bool checkOpportunity)
+    : BestSecurityChecker(checkOpportunity),
+      m_strategy(strategy),
+      m_qty(qty),
+      m_price(std::move(price)) {}
 
 const TradingSystem &BestSecurityCheckerForOrder::GetTradingSystem(
     const Security &security) const {
@@ -83,17 +88,19 @@ Qty BestSecurityCheckerForOrder::GetRequiredQty() const { return m_qty; }
 
 bool BestSecurityCheckerForOrder::CheckOrder(
     const Security &security, const TradingSystem &tradingSystem) const {
-  return !tradingSystem.CheckOrder(security, security.GetSymbol().GetCurrency(),
-                                   GetRequiredQty(),
-                                   GetOpportunityPrice(security), GetSide());
+  return !tradingSystem.CheckOrder(
+      security, security.GetSymbol().GetCurrency(), GetRequiredQty(),
+      m_price ? *m_price : GetOpportunityPrice(security), GetSide());
 }
 
 class BestSecurityCheckerForSellOrder : public BestSecurityCheckerForOrder {
  public:
   explicit class BestSecurityCheckerForSellOrder(Strategy &strategy,
                                                  const Qty &qty,
+                                                 boost::optional<Price> &&price,
                                                  bool checkOpportunity)
-      : BestSecurityCheckerForOrder(strategy, qty, checkOpportunity) {}
+      : BestSecurityCheckerForOrder(
+            strategy, qty, std::move(price), checkOpportunity) {}
   virtual ~BestSecurityCheckerForSellOrder() override = default;
 
  protected:
@@ -121,8 +128,10 @@ class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
  public:
   explicit BestSecurityCheckerForBuyOrder(Strategy &strategy,
                                           const Qty &qty,
+                                          boost::optional<Price> &&price,
                                           bool checkOpportunity)
-      : BestSecurityCheckerForOrder(strategy, qty, checkOpportunity) {}
+      : BestSecurityCheckerForOrder(
+            strategy, qty, std::move(price), checkOpportunity) {}
   virtual ~BestSecurityCheckerForBuyOrder() override = default;
 
  protected:
@@ -155,15 +164,29 @@ class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
 
 std::unique_ptr<BestSecurityCheckerForOrder>
 BestSecurityCheckerForOrder::Create(Strategy &strategy,
-                                    bool isLong,
+                                    bool isBuy,
                                     const Qty &qty,
                                     bool checkOpportunity) {
-  if (isLong) {
-    return boost::make_unique<BestSecurityCheckerForBuyOrder>(strategy, qty,
-                                                              checkOpportunity);
+  if (isBuy) {
+    return boost::make_unique<BestSecurityCheckerForBuyOrder>(
+        strategy, qty, boost::none, checkOpportunity);
   } else {
     return boost::make_unique<BestSecurityCheckerForSellOrder>(
-        strategy, qty, checkOpportunity);
+        strategy, qty, boost::none, checkOpportunity);
+  }
+}
+std::unique_ptr<BestSecurityCheckerForOrder>
+BestSecurityCheckerForOrder::Create(Strategy &strategy,
+                                    bool isBuy,
+                                    const Qty &qty,
+                                    const Price &price,
+                                    bool checkOpportunity) {
+  if (isBuy) {
+    return boost::make_unique<BestSecurityCheckerForBuyOrder>(
+        strategy, qty, price, checkOpportunity);
+  } else {
+    return boost::make_unique<BestSecurityCheckerForSellOrder>(
+        strategy, qty, price, checkOpportunity);
   }
 }
 

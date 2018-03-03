@@ -16,6 +16,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
+using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
@@ -76,9 +77,42 @@ class SignalSession : private boost::noncopyable {
     it->second -= takenQty - usedQty;
   }
 
+  void RegisterCheckError(const Security &sellTarget,
+                          const Security &buyTarget,
+                          const Security &checkTarget,
+                          const std::string &error) {
+    Verify(m_checkErrors
+               .emplace(std::make_pair(&sellTarget, &buyTarget),
+                        std::make_pair(&error, &checkTarget))
+               .second);
+  }
+  void RegisterCheckError(const Security &sellTarget,
+                          const Security &buyTarget,
+                          const std::string &error) {
+    Verify(m_checkErrors
+               .emplace(std::make_pair(&sellTarget, &buyTarget),
+                        std::make_pair(&error, nullptr))
+               .second);
+  }
+  void ForEachCheckError(
+      const boost::function<void(const Security &sellTarget,
+                                 const Security &buyTarget,
+                                 const std::string &error,
+                                 const Security *checkTarget)> &callback)
+      const {
+    for (const auto &targetSet : m_checkErrors) {
+      callback(*targetSet.first.first, *targetSet.first.second,
+               *targetSet.second.first, targetSet.second.second);
+    }
+  }
+
  private:
   boost::unordered_map<const Security *, Qty> m_usedQtyToBuy;
   boost::unordered_map<const Security *, Qty> m_usedQtyToSell;
+
+  std::map<std::pair<const Security *, const Security *>,
+           std::pair<const std::string *, const Security *>>
+      m_checkErrors;
 };
 }  // namespace
 
@@ -93,6 +127,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   PositionController m_controller;
 
   sig::signal<void(const Advice &)> m_adviceSignal;
+  sig::signal<void(const std::vector<std::string> &)>
+      m_tradingSignalCheckErrorsSignal;
   sig::signal<void(const std::string *)> m_blockSignal;
 
   Double m_minPriceDifferenceRatioToAdvice;
@@ -101,6 +137,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   boost::unordered_map<Symbol, std::vector<AdviceSecuritySignal>> m_symbols;
 
   boost::unordered_set<const Security *> m_errors;
+
+  mutable std::vector<std::string> m_lastTradingSignalCheckErrors;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
       : m_self(self), m_minPriceDifferenceRatioToAdvice(0) {
@@ -124,27 +162,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  void Signal(Security &sellTarget,
-              Security &buyTarget,
-              const Double &spreadRatio,
-              SignalSession &session,
-              const Milestones &delayMeasurement) {
-    if (!m_tradingSettings ||
-        spreadRatio < m_tradingSettings->minPriceDifferenceRatio ||
-        CheckActualPositions(sellTarget, buyTarget)) {
-      return;
-    }
-    Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
-  }
-  void Signal(Security &sellTarget,
-              Security &buyTarget,
-              SignalSession &session,
-              const Milestones &delayMeasurement) {
-    Signal(sellTarget, buyTarget,
-           CaclSpreadAndRatio(sellTarget, buyTarget).second, session,
-           delayMeasurement);
-  }
-
   void CheckAutoTradingSignal(Security &security,
                               const Milestones &delayMeasurement) {
     if (m_adviceSignal.num_slots() == 0 && !m_tradingSettings) {
@@ -157,8 +174,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   void CheckSignal(Security &updatedSecurity,
                    std::vector<AdviceSecuritySignal> &allSecurities,
                    const Milestones &delayMeasurement) {
-    CheckCrossSignals(allSecurities, delayMeasurement);
+    CheckTradeSignal(allSecurities, delayMeasurement);
+    CheckAdviceSignal(updatedSecurity, allSecurities);
+  }
 
+  void CheckAdviceSignal(Security &updatedSecurity,
+                         std::vector<AdviceSecuritySignal> &allSecurities) {
     std::vector<PriceItem> bids;
     std::vector<PriceItem> asks;
 
@@ -224,8 +245,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                allSecurities});
   }
 
-  void CheckCrossSignals(std::vector<AdviceSecuritySignal> &allSecurities,
-                         const Milestones &delayMeasurement) {
+  void CheckTradeSignal(std::vector<AdviceSecuritySignal> &allSecurities,
+                        const Milestones &delayMeasurement) {
     struct SignalData {
       Double spreadRatio;
       Security *sellTarget;
@@ -262,8 +283,19 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     SignalSession session;
     for (const auto &signal : signalSet) {
-      Signal(*signal.sellTarget, *signal.buyTarget, session, delayMeasurement);
+      auto &sellTarget = *signal.sellTarget;
+      auto &buyTarget = *signal.buyTarget;
+      const auto &spreadRatio =
+          CaclSpreadAndRatio(sellTarget, buyTarget).second;
+      if (!m_tradingSettings ||
+          spreadRatio < m_tradingSettings->minPriceDifferenceRatio ||
+          CheckActualPositions(sellTarget, buyTarget)) {
+        continue;
+      }
+      Trade(sellTarget, buyTarget, spreadRatio, session, delayMeasurement);
     }
+
+    ReportSignalCheckErrors(session);
   }
 
   void RecheckSignal() {
@@ -351,42 +383,27 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                         std::min(qtys.sellQty, qtys.buyQty));
 
     {
-      auto balance =
+      const auto &allowedQty =
           GetOrderQtyAllowedByBalance(sellTarget, buyTarget, buyPrice);
-      if (qty > balance.first) {
-        Assert(balance.second);
-        AssertGt(qty, balance.first);
-        m_self.GetTradingLog().Write(
-            "{'pre-trade': {'balance reduces qty': {'prev': %1%, 'new': %2%, "
-            "'security': '%3%'}}",
-            [&](TradingRecord &record) {
-              record % qty            // 1
-                  % balance.first     // 2
-                  % *balance.second;  // 3
-            });
-        if (balance.first == 0) {
-          ReportIgnored("empty balance", sellTarget, buyTarget, spreadRatio,
-                        bestSpreadRatio);
-          return;
-        }
-        qty = balance.first;
+      if (qty > allowedQty && allowedQty > 0) {
+        qty = allowedQty;
       }
     }
 
     {
-      const auto &error =
-          CheckOrder(sellTarget, qty, sellPrice, ORDER_SIDE_SELL);
-      if (error) {
-        ReportOrderCheck(sellTarget, qty, sellPrice, ORDER_SIDE_SELL, *error,
-                         sellTarget, buyTarget, spreadRatio, bestSpreadRatio);
-        return;
-      }
-    }
-    {
-      const auto &error = CheckOrder(buyTarget, qty, buyPrice, ORDER_SIDE_BUY);
-      if (error) {
-        ReportOrderCheck(buyTarget, qty, buyPrice, ORDER_SIDE_BUY, *error,
-                         sellTarget, buyTarget, spreadRatio, bestSpreadRatio);
+      const auto &checkTarget = [&](Security &target, bool isBuy,
+                                    const Price &price) -> bool {
+        const auto *const result = BestSecurityCheckerForOrder::Create(
+                                       m_self, isBuy, qty, price, false)
+                                       ->Check(target);
+        if (result) {
+          signalSession.RegisterCheckError(sellTarget, buyTarget, target,
+                                           *result);
+        }
+        return result ? false : true;
+      };
+      if (!checkTarget(sellTarget, false, sellPrice) ||
+          !checkTarget(buyTarget, true, buyPrice)) {
         return;
       }
     }
@@ -397,13 +414,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
     const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
     if (isSellTargetInBlackList && isBuyTargetInBlackList) {
-      ReportIgnored("blacklist", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
-      return;
-    }
-    if (!sellTarget.IsOnline() || !buyTarget.IsOnline()) {
-      ReportIgnored("offline", sellTarget, buyTarget, spreadRatio,
-                    bestSpreadRatio);
+      static const std::string error = "both targets on the blocked list";
+      signalSession.RegisterCheckError(sellTarget, buyTarget, error);
       return;
     }
 
@@ -435,8 +447,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  std::pair<Qty, const Security *> GetOrderQtyAllowedByBalance(
-      const Security &sell, const Security &buy, const Price &buyPrice) {
+  Qty GetOrderQtyAllowedByBalance(const Security &sell,
+                                  const Security &buy,
+                                  const Price &buyPrice) {
     const auto &sellBalance =
         m_self.GetTradingSystem(sell.GetSource().GetIndex())
             .GetBalances()
@@ -449,22 +462,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     buyBalance -= buyTradingSystem.CalcCommission(
         buyBalance / buyPrice, buyPrice, ORDER_SIDE_BUY, buy);
 
-    const auto resultByBuyBalance = buyBalance / buyPrice;
-    if (sellBalance <= resultByBuyBalance) {
-      return {sellBalance, &sell};
-    } else {
-      return {resultByBuyBalance, &buy};
-    }
-  }
-
-  boost::optional<TradingSystem::OrderCheckError> CheckOrder(
-      const Security &security,
-      const Qty &qty,
-      const Price &price,
-      const OrderSide &side) {
-    return m_self.GetTradingSystem(security.GetSource().GetIndex())
-        .CheckOrder(security, security.GetSymbol().GetCurrency(), qty, price,
-                    side);
+    return std::min(sellBalance, buyBalance / buyPrice);
   }
 
   void ReportSignal(const char *type,
@@ -476,10 +474,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                     const std::string &additional = std::string()) const {
     m_self.GetTradingLog().Write(
         "{'signal': {'%14%': {'reason': '%9%', 'sell': {'security': '%1%', "
-        "'bid': {'price': %2%, 'qty': %10%}, 'ask': {'price': %3%, "
-        "'qty': %11%}}, 'buy': {'security': '%4%', 'bid': {'price': %5%, "
-        "'qty': %12%}, 'ask': {'price': %6%, 'qty': %13%}}}, "
-        "'spread': {'used': %7$.3f, 'signal': %8$.3f}%15%}}",
+        "'bid': {'price': %2%, 'qty': %10%}, 'ask': {'price': %3%, 'qty': "
+        "%11%}}, 'buy': {'security': '%4%', 'bid': {'price': %5%, 'qty': "
+        "%12%}, 'ask': {'price': %6%, 'qty': %13%}}}, 'spread': {'used': "
+        "%7$.3f, 'signal': %8$.3f}%15%}}",
         [&](TradingRecord &record) {
           record % sellTarget                  // 1
               % sellTarget.GetBidPriceValue()  // 2
@@ -499,51 +497,35 @@ class aa::Strategy::Implementation : private boost::noncopyable {
         });
   }
 
-  void ReportIgnored(const char *reason,
-                     const Security &sellTarget,
-                     const Security &buyTarget,
-                     const Double &spreadRatio,
-                     const Double &bestSpreadRatio,
-                     const std::string &additional = std::string()) const {
-    ReportSignal("ignored", reason, sellTarget, buyTarget, spreadRatio,
-                 bestSpreadRatio, additional);
-  }
-
-  void ReportOrderCheck(const Security &security,
-                        const Qty &qty,
-                        const Price &price,
-                        const OrderSide &side,
-                        const TradingSystem::OrderCheckError &error,
-                        const Security &sellTarget,
-                        const Security &buyTarget,
-                        const Double &spreadRatio,
-                        const Double &bestSpreadRatio) const {
-    boost::format log(
-        ", 'restriction': {'order': {'security': '%1%', 'side': '%2%', 'qty': "
-        "%3%, 'price': %4%, 'vol': %5%}, 'error': {'qty': %6%, 'price': %7%, "
-        "'vol': %8%}}");
-    log % security        // 1
-        % side            // 2
-        % qty             // 3
-        % price           // 4
-        % (qty * price);  // 5
-    if (error.qty) {
-      log % *error.qty;  // 6
-    } else {
-      log % "null";  // 6
+  void ReportSignalCheckErrors(const SignalSession &session) const {
+    std::vector<std::string> report;
+    session.ForEachCheckError(
+        [this, &report](const Security &sellTarget, const Security &buyTarget,
+                        const std::string &error, const Security *checkTarget) {
+          std::ostringstream os;
+          os << m_self.GetTradingSystem(sellTarget.GetSource().GetIndex())
+                    .GetInstanceName()
+             << " > "
+             << m_self.GetTradingSystem(buyTarget.GetSource().GetIndex())
+                    .GetInstanceName()
+             << ": " << error;
+          if (checkTarget) {
+            os << " ("
+               << m_self.GetTradingSystem(checkTarget->GetSource().GetIndex())
+                      .GetInstanceName()
+               << ")";
+          }
+          report.emplace_back(os.str());
+        });
+    if (report == m_lastTradingSignalCheckErrors) {
+      return;
     }
-    if (error.price) {
-      log % *error.price;  // 7
-    } else {
-      log % "null";  // 7
-    }
-    if (error.volume) {
-      log % *error.volume;  // 8
-    } else {
-      log % "null";  // 8
-    }
-    ReportSignal("ignored", "order check", sellTarget, buyTarget, spreadRatio,
-                 bestSpreadRatio, log.str());
+    m_lastTradingSignalCheckErrors = std::move(report);
+    m_self.GetTradingLog().Write(
+        "signal check errors: {%1%}", [this](TradingRecord &record) {
+          record % boost::join(m_lastTradingSignalCheckErrors, "}, {");
+        });
+    m_tradingSignalCheckErrorsSignal(m_lastTradingSignalCheckErrors);
   }
 
   bool OpenPositionSync(Security &sellTarget,
@@ -583,7 +565,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
           *(!firstLeg ? legTargets.first : legTargets.second);
       m_errors.emplace(&errorLeg);
       m_self.GetLog().Debug(
-          "\"%1%\" (%2% leg) added to the blacklist by position opening error. "
+          "\"%1%\" (%2% leg) added to the blacklist by position opening "
+          "error. "
           "%3% leg is \"%4%\"",
           errorLeg,                        // 1
           !firstLeg ? "first" : "second",  // 2
@@ -713,6 +696,11 @@ sig::scoped_connection aa::Strategy::SubscribeToAdvice(
   const auto &result = m_pimpl->m_adviceSignal.connect(slot);
   m_pimpl->RecheckSignal();
   return result;
+}
+
+sig::scoped_connection aa::Strategy::SubscribeToTradingSignalCheckErrors(
+    const boost::function<void(const std::vector<std::string> &)> &slot) {
+  return m_pimpl->m_tradingSignalCheckErrorsSignal.connect(slot);
 }
 
 sig::scoped_connection aa::Strategy::SubscribeToBlocking(
