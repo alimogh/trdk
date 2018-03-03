@@ -18,19 +18,27 @@ using namespace trdk::Interaction;
 namespace net = Poco::Net;
 
 namespace {
-std::string NormilizeSymbol(std::string source) {
-  if (boost::starts_with(source, "BCC-")) {
-    source[2] = 'H';
-  } else if (boost::ends_with(source, "-BCC")) {
-    source.back() = 'H';
+
+void ReplaceSymbolWithAlias(std::string &symbol, const Settings &settings) {
+  if (symbol == "BCC") {
+    symbol = "BCH";
   }
-  std::vector<std::string> subs;
-  boost::split(subs, source, boost::is_any_of("-"));
-  if (subs.size() != 2) {
+  settings.ReplaceSymbolWithAlias(symbol);
+}
+
+std::string NormilizeSymbol(std::string source, const Settings &settings) {
+  std::vector<std::string> currencies;
+  boost::split(currencies, source, boost::is_any_of("-"));
+  AssertEq(2, currencies.size());
+  if (currencies.size() != 2) {
+    ReplaceSymbolWithAlias(source, settings);
     return source;
   }
-  subs[0].swap(subs[1]);
-  return boost::join(subs, "_");
+  for (auto &currency : currencies) {
+    ReplaceSymbolWithAlias(currency, settings);
+  }
+  currencies[0].swap(currencies[1]);
+  return boost::join(currencies, "_");
 }
 }  // namespace
 
@@ -46,7 +54,7 @@ Rest::RequestBittrexProductList(
     for (const auto &node : response) {
       const auto &data = node.second;
       BittrexProduct product = {data.get<std::string>("MarketName")};
-      const auto &symbol = NormilizeSymbol(product.id);
+      const auto &symbol = NormilizeSymbol(product.id, context.GetSettings());
       const auto &productIt =
           result.emplace(std::move(symbol), std::move(product));
       if (!productIt.second) {

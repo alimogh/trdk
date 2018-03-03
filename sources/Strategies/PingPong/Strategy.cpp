@@ -358,6 +358,11 @@ bool pp::Strategy::OnBlocked(const std::string *reason) noexcept {
 
 void pp::Strategy::SetPositionSize(const Qty &size) {
   const auto lock = LockForOtherThreads();
+  GetTradingLog().Write("position size: %1% -> %2%",
+                        [&](TradingRecord &record) {
+                          record % m_pimpl->m_positionSize  // 1
+                              % size;                       // 2
+                        });
   m_pimpl->m_positionSize = size;
 }
 Qty pp::Strategy::GetPositionSize() const {

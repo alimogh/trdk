@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>398</width>
-    <height>138</height>
+    <height>336</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -322,6 +322,16 @@ color: rgb(251, 253, 254);</string>
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QPlainTextEdit" name="events">
+      <property name="lineWrapMode">
+       <enum>QPlainTextEdit::NoWrap</enum>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

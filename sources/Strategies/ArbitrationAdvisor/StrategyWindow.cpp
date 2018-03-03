@@ -145,6 +145,10 @@ void StrategyWindow::ConnectSignals() {
   Verify(connect(this, &StrategyWindow::Advice, this,
                  &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
 
+  qRegisterMetaType<std::vector<std::string>>("std::vector<std::string>");
+  Verify(connect(this, &StrategyWindow::SignalCheckErrors, this,
+                 &StrategyWindow::OnSignalCheckErrors, Qt::QueuedConnection));
+
   Verify(connect(this, &StrategyWindow::Blocked, this,
                  &StrategyWindow::OnBlocked, Qt::QueuedConnection));
 
@@ -210,9 +214,11 @@ void StrategyWindow::InitBySelectedSymbol() {
   m_strategy->Invoke<aa::Strategy>([this](aa::Strategy &advisor) {
     m_adviceConnection = advisor.SubscribeToAdvice(
         [this](const aa::Advice &advice) { emit Advice(advice); });
-  });
-
-  m_strategy->Invoke<aa::Strategy>([this](aa::Strategy &advisor) {
+    m_tradingSignalCheckErrorsConnection =
+        advisor.SubscribeToTradingSignalCheckErrors(
+            [this](const std::vector<std::string> &errors) {
+              emit SignalCheckErrors(errors);
+            });
     m_blockConnection =
         advisor.SubscribeToBlocking([this](const std::string *reasonSource) {
           QString reason;
@@ -381,6 +387,14 @@ void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
       setSideSignal(signalTargetIt->widgets->ask, signal.isBestAsk,
                     *signal.security, m_bestBuyTradingSystem);
     }
+  }
+}
+
+void StrategyWindow::OnSignalCheckErrors(
+    const std::vector<std::string> &errors) {
+  m_ui.events->clear();
+  for (const auto &error : errors) {
+    m_ui.events->appendPlainText(QString::fromStdString(error));
   }
 }
 

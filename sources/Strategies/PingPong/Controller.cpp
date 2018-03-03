@@ -52,7 +52,7 @@ Position *Controller::OpenPosition(
           security,                   // 1
           isLong ? "long" : "short",  // 2
           qty,                        // 3
-          checkError);                // 4
+          *checkError);               // 4
       const auto &tradingSystem =
           operation->GetStrategy()
               .GetTradingSystem(security.GetSource().GetIndex())

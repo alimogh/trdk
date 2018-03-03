@@ -53,12 +53,19 @@ class BestSecurityCheckerForOrder : public BestSecurityChecker {
  public:
   explicit BestSecurityCheckerForOrder(trdk::Strategy &,
                                        const trdk::Qty &,
+                                       boost::optional<trdk::Price> &&,
                                        bool checkOpportunity);
   virtual ~BestSecurityCheckerForOrder() override = default;
 
  public:
   static std::unique_ptr<BestSecurityCheckerForOrder> Create(
-      trdk::Strategy &, bool isLong, const trdk::Qty &, bool checkOpportunity);
+      trdk::Strategy &, bool isBuy, const trdk::Qty &, bool checkOpportunity);
+  static std::unique_ptr<BestSecurityCheckerForOrder> Create(
+      trdk::Strategy &,
+      bool isBuy,
+      const trdk::Qty &,
+      const trdk::Price &,
+      bool checkOpportunity);
 
  protected:
   virtual const trdk::TradingSystem &GetTradingSystem(
@@ -70,6 +77,7 @@ class BestSecurityCheckerForOrder : public BestSecurityChecker {
  private:
   trdk::Strategy &m_strategy;
   const trdk::Qty m_qty;
+  const boost::optional<trdk::Price> m_price;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
