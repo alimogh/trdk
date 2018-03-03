@@ -87,22 +87,24 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
 
   {
     const char *const key = "symbol_aliases";
-    for (const auto &item : commonConf.ReadList(key, ",", false)) {
-      const auto &delimter = item.find("=");
-      std::string symbol;
-      std::string alias;
-      if (delimter != std::string::npos) {
-        symbol = boost::trim_copy(item.substr(0, delimter));
-        alias = boost::trim_copy(item.substr(delimter + 1));
+    if (commonConf.IsKeyExist(key)) {
+      for (const auto &item : commonConf.ReadList(key, ",", false)) {
+        const auto &delimter = item.find("=");
+        std::string symbol;
+        std::string alias;
+        if (delimter != std::string::npos) {
+          symbol = boost::trim_copy(item.substr(0, delimter));
+          alias = boost::trim_copy(item.substr(delimter + 1));
+        }
+        if (symbol.empty() || alias.empty()) {
+          boost::format error("Symbol alias \"%1%\" has invalid format");
+          error % alias;
+          throw Exception(error.str().c_str());
+        }
+        const_cast<boost::unordered_map<std::string, std::string> &>(
+            m_symbolAliases)
+            .emplace(std::move(symbol), std::move(alias));
       }
-      if (symbol.empty() || alias.empty()) {
-        boost::format error("Symbol alias \"%1%\" has invalid format");
-        error % alias;
-        throw Exception(error.str().c_str());
-      }
-      const_cast<boost::unordered_map<std::string, std::string> &>(
-          m_symbolAliases)
-          .emplace(std::move(symbol), std::move(alias));
     }
   }
 
