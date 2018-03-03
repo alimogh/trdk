@@ -84,6 +84,8 @@ class TRDK_CORE_API Operation {
                  const trdk::Price &,
                  const trdk::Volume &commission);
 
+  void OnNewPositionStart(trdk::Position &);
+
  private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

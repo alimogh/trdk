@@ -33,38 +33,40 @@ class Operation::Implementation : private boost::noncopyable {
   Strategy &m_strategy;
   uuids::uuid m_id;
 
+  bool m_isStarted;
+
   std::unique_ptr<PnlContainer> m_pnl;
 
   explicit Implementation(Strategy &strategy,
                           std::unique_ptr<PnlContainer> &&pnl)
-      : m_strategy(strategy), m_id(generateUuid()), m_pnl(std::move(pnl)) {
-    m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
-      dropCopy.CopyOperationStart(
-          m_id, m_strategy.GetContext().GetCurrentTime(), m_strategy);
-    });
-  }
+      : m_strategy(strategy),
+        m_id(generateUuid()),
+        m_isStarted(false),
+        m_pnl(std::move(pnl)) {}
+
   ~Implementation() {
     try {
-      m_strategy.GetTradingLog().Write(
-          "{'operation': {'finResult': {%1%}, 'id' : '%2%'}}",
-          [this](TradingRecord &record) {
-            std::string list;
-            for (const auto &pnl : m_pnl->GetData()) {
-              if (!list.empty()) {
-                list += ", ";
+      if (m_isStarted) {
+        m_strategy.GetTradingLog().Write(
+            "{'operation': {'finResult': {%1%}, 'id' : '%2%'}}",
+            [this](TradingRecord &record) {
+              std::string list;
+              for (const auto &pnl : m_pnl->GetData()) {
+                if (!list.empty()) {
+                  list += ", ";
+                }
+                list += "'" + pnl.first +
+                        "': " + boost::lexical_cast<std::string>(pnl.second);
               }
-              list += "'" + pnl.first +
-                      "': " + boost::lexical_cast<std::string>(pnl.second);
-            }
-            record % list  // 1
-                % m_id;    // 2
-          });
-
-      m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
-        dropCopy.CopyOperationEnd(m_id,
-                                  m_strategy.GetContext().GetCurrentTime(),
-                                  std::unique_ptr<Pnl>(m_pnl.release()));
-      });
+              record % list  // 1
+                  % m_id;    // 2
+            });
+        m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
+          dropCopy.CopyOperationEnd(m_id,
+                                    m_strategy.GetContext().GetCurrentTime(),
+                                    std::unique_ptr<Pnl>(m_pnl.release()));
+        });
+      }
     } catch (...) {
       AssertFailNoException();
     }
@@ -92,16 +94,20 @@ const TradingSystem &Operation::GetTradingSystem(
 }
 
 const OrderPolicy &Operation::GetOpenOrderPolicy(const Position &) const {
+  Assert(m_pimpl->m_isStarted);
   throw LogicError(
       "Position instance does not use operation context to open positions");
 }
 
 const OrderPolicy &Operation::GetCloseOrderPolicy(const Position &) const {
+  Assert(m_pimpl->m_isStarted);
   throw LogicError(
       "Position instance does not use operation context to close positions");
 }
 
-void Operation::Setup(Position &, PositionController &) const {}
+void Operation::Setup(Position &, PositionController &) const {
+  Assert(m_pimpl->m_isStarted);
+}
 
 bool Operation::IsLong(const Security &) const {
   throw LogicError(
@@ -115,6 +121,7 @@ Qty Operation::GetPlannedQty() const {
 }
 
 bool Operation::OnCloseReasonChange(Position &, const CloseReason &) {
+  Assert(m_pimpl->m_isStarted);
   return true;
 }
 
@@ -124,6 +131,7 @@ boost::shared_ptr<const Operation> Operation::GetParent() const {
 boost::shared_ptr<Operation> Operation::GetParent() { return nullptr; }
 
 bool Operation::HasCloseSignal(const Position &) const {
+  Assert(m_pimpl->m_isStarted);
   throw LogicError(
       "Position instance does not use operation context to detect signal to "
       "close");
@@ -131,6 +139,7 @@ bool Operation::HasCloseSignal(const Position &) const {
 
 boost::shared_ptr<Operation> Operation::StartInvertedPosition(
     const Position &) {
+  Assert(m_pimpl->m_isStarted);
   throw LogicError(
       "Position instance does not use operation context to invert position");
 }
@@ -140,6 +149,7 @@ void Operation::UpdatePnl(const Security &security,
                           const Qty &qty,
                           const Price &price,
                           const Volume &comission) {
+  Assert(m_pimpl->m_isStarted);
   if (m_pimpl->m_pnl->Update(security, side, qty, price, comission)) {
     GetStrategy().GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
       dropCopy.CopyOperationUpdate(GetId(), m_pimpl->m_pnl->GetData());
@@ -148,3 +158,14 @@ void Operation::UpdatePnl(const Security &security,
 }
 
 const Pnl &Operation::GetPnl() const { return *m_pimpl->m_pnl; }
+
+void Operation::OnNewPositionStart(Position &) {
+  if (m_pimpl->m_isStarted) {
+    return;
+  }
+  m_pimpl->m_isStarted = true;
+  GetStrategy().GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
+    dropCopy.CopyOperationStart(
+        GetId(), GetStrategy().GetContext().GetCurrentTime(), GetStrategy());
+  });
+}

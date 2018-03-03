@@ -1498,6 +1498,7 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                qty,
                startPrice,
                timeMeasurement) {
+  operation->OnNewPositionStart(*this);
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
       "7%/%8%\tparent=%9%",
@@ -1668,6 +1669,7 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                qty,
                startPrice,
                timeMeasurement) {
+  operation->OnNewPositionStart(*this);
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
       "7%/%8%\tparent=%9%",
