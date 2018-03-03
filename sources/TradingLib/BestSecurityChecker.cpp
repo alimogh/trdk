@@ -44,8 +44,7 @@ const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
     }
 
     if (!CheckOrder(checkSecurity, tradingSystem)) {
-      static const std::string error =
-          "order parameters don't meet trading system requirements";
+      static const std::string error = "order doesn't meet requirements";
       return &error;
     }
   }
