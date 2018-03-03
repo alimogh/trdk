@@ -40,17 +40,17 @@ class TRDK_CORE_API Settings {
 
   //! Default security Currency.
   /** Path: Defaults::currency
-    * Ex.: "currency = USD"
-    */
+   * Ex.: "currency = USD"
+   */
   const trdk::Lib::Currency &GetDefaultCurrency() const {
     return m_defaultCurrency;
   }
 
   //! Default security Security Type.
   /** Path: Defaults::currency.
-    * Values: STK, FUT, FOP, FOR, FORFOP
-    * Ex.: "security_type = FOP"
-    */
+   * Values: STK, FUT, FOP, FOR, FORFOP
+   * Ex.: "security_type = FOP"
+   */
   const trdk::Lib::SecurityType &GetDefaultSecurityType() const {
     return m_defaultSecurityType;
   }
@@ -64,6 +64,9 @@ class TRDK_CORE_API Settings {
     return m_periodBeforeExpiryDayToSwitchContract;
   }
 
+  const std::string &ResolveSymbolAlias(const std::string &) const;
+  void ReplaceSymbolWithAlias(std::string &) const;
+
  private:
   const trdk::Lib::SecurityType m_defaultSecurityType;
   const trdk::Lib::Currency m_defaultCurrency;
@@ -74,5 +77,6 @@ class TRDK_CORE_API Settings {
   const boost::filesystem::path m_logsInstanceDir;
   const boost::local_time::time_zone_ptr m_timeZone;
   const boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
+  const boost::unordered_map<std::string, std::string> m_symbolAliases;
 };
-}
+}  // namespace trdk

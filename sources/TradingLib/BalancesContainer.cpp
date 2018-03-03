@@ -10,11 +10,6 @@
 
 #include "Prec.hpp"
 #include "BalancesContainer.hpp"
-#include "Core/DropCopy.hpp"
-#include "Core/EventsLog.hpp"
-#include "Core/Security.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -51,11 +46,13 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   void Set(const std::string &symbol,
            boost::optional<Volume> &&available,
            boost::optional<Volume> &&locked) {
+    const auto &resolvedSymbol =
+        m_tradingSystem.GetContext().GetSettings().ResolveSymbolAlias(symbol);
     const WriteLock lock(m_mutex);
-    const auto &it = m_storage.find(symbol);
+    const auto &it = m_storage.find(resolvedSymbol);
     it != m_storage.cend()
         ? Update(*it, std::move(available), std::move(locked))
-        : Insert(symbol, std::move(available), std::move(locked));
+        : Insert(resolvedSymbol, std::move(available), std::move(locked));
   }
 
   void Insert(const std::string &symbol,
