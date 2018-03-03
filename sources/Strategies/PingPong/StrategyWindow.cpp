@@ -70,6 +70,9 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_ui.rsiOversold->setValue(
       static_cast<int>(m_strategy.GetRsiOversoldLevel()));
 
+  m_ui.bbPeriods->setValue(20);
+  m_ui.bbDeviation->setValue(2);
+
   ConnectSignals();
 }
 
