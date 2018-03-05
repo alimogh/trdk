@@ -393,9 +393,9 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     {
       const auto &checkTarget = [&](Security &target, bool isBuy,
                                     const Price &price) -> bool {
-        const auto *const result = BestSecurityCheckerForOrder::Create(
-                                       m_self, isBuy, qty, price, false)
-                                       ->Check(target);
+        const auto *const result =
+            OrderBestSecurityChecker::Create(m_self, isBuy, qty, price)
+                ->Check(target);
         if (result) {
           signalSession.RegisterCheckError(sellTarget, buyTarget, target,
                                            *result);

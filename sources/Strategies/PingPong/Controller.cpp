@@ -42,8 +42,7 @@ Position *Controller::OpenPosition(
   }
   {
     const auto *const checkError =
-        BestSecurityCheckerForOrder::Create(operation->GetStrategy(), isLong,
-                                            qty, false)
+        OrderBestSecurityChecker::Create(operation->GetStrategy(), isLong, qty)
             ->Check(security);
     if (checkError) {
       operation->GetStrategy().GetLog().Warn(
@@ -81,8 +80,8 @@ void Controller::ClosePosition(Position &position) {
   }
   {
     const auto *const checkError =
-        BestSecurityCheckerForPosition::Create(position, false)
-            ->Check(position.GetSecurity());
+        PositionBestSecurityChecker::Create(position)->Check(
+            position.GetSecurity());
     if (checkError) {
       position.GetStrategy().GetLog().Error(
           "%1% is not suitable target to close position %2%/%3%: \"%4%\"",

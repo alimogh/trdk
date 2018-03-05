@@ -18,20 +18,13 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BestSecurityChecker::BestSecurityChecker(bool checkOpportunity)
-    : m_bestSecurity(nullptr), m_checkOpportunity(checkOpportunity) {}
+BestSecurityChecker::BestSecurityChecker() : m_bestSecurity(nullptr) {}
 
 const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
   AssertNe(m_bestSecurity, &checkSecurity);
 
   if (!checkSecurity.IsOnline()) {
     static const std::string error = "security if offline";
-    return &error;
-  }
-
-  if (m_checkOpportunity &&
-      GetOpportunityQty(checkSecurity) < GetRequiredQty()) {
-    static const std::string error = "has no enough opportunity";
     return &error;
   }
 
@@ -68,47 +61,40 @@ Security *BestSecurityChecker::GetSuitableSecurity() const noexcept {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BestSecurityCheckerForOrder::BestSecurityCheckerForOrder(
-    Strategy &strategy,
-    const Qty &qty,
-    boost::optional<Price> &&price,
-    bool checkOpportunity)
-    : BestSecurityChecker(checkOpportunity),
-      m_strategy(strategy),
-      m_qty(qty),
-      m_price(std::move(price)) {}
+OrderBestSecurityChecker::OrderBestSecurityChecker(
+    Strategy &strategy, const Qty &qty, boost::optional<Price> &&price)
+    : m_strategy(strategy), m_qty(qty), m_price(std::move(price)) {}
 
-const TradingSystem &BestSecurityCheckerForOrder::GetTradingSystem(
+const TradingSystem &OrderBestSecurityChecker::GetTradingSystem(
     const Security &security) const {
   return m_strategy.GetTradingSystem(security.GetSource().GetIndex());
 }
 
-Qty BestSecurityCheckerForOrder::GetRequiredQty() const { return m_qty; }
+Qty OrderBestSecurityChecker::GetRequiredQty() const { return m_qty; }
 
-bool BestSecurityCheckerForOrder::CheckOrder(
+bool OrderBestSecurityChecker::CheckOrder(
     const Security &security, const TradingSystem &tradingSystem) const {
   return !tradingSystem.CheckOrder(
       security, security.GetSymbol().GetCurrency(), GetRequiredQty(),
       m_price ? *m_price : GetOpportunityPrice(security), GetSide());
 }
 
-class BestSecurityCheckerForSellOrder : public BestSecurityCheckerForOrder {
+class SellOrderBestSecurityChecker : public OrderBestSecurityChecker {
  public:
-  explicit class BestSecurityCheckerForSellOrder(Strategy &strategy,
-                                                 const Qty &qty,
-                                                 boost::optional<Price> &&price,
-                                                 bool checkOpportunity)
-      : BestSecurityCheckerForOrder(
-            strategy, qty, std::move(price), checkOpportunity) {}
-  virtual ~BestSecurityCheckerForSellOrder() override = default;
+  explicit class SellOrderBestSecurityChecker(Strategy &strategy,
+                                              const Qty &qty,
+                                              boost::optional<Price> &&price)
+      : OrderBestSecurityChecker(strategy, qty, std::move(price)) {}
+  virtual ~SellOrderBestSecurityChecker() override = default;
 
  protected:
   virtual bool CheckPrice(const Security &bestSecurity,
                           const Security &checkSecurity) const override {
-    return bestSecurity.GetBidPrice() < GetOpportunityPrice(checkSecurity);
-  }
-  virtual Qty GetOpportunityQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetBidQty();
+    const auto &bestPrice = bestSecurity.GetBidPrice();
+    const auto &opportunityPrice = GetOpportunityPrice(checkSecurity);
+    return bestPrice < opportunityPrice ||
+           (bestPrice == opportunityPrice &&
+            bestSecurity.GetBidQty() < checkSecurity.GetBidQty());
   }
   virtual Price GetOpportunityPrice(const Security &checkSecurity) const {
     return checkSecurity.GetBidPrice();
@@ -123,24 +109,22 @@ class BestSecurityCheckerForSellOrder : public BestSecurityCheckerForOrder {
   virtual OrderSide GetSide() const { return ORDER_SIDE_SELL; }
 };
 
-class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
+class BuyOrderBestSecurityChecker : public OrderBestSecurityChecker {
  public:
-  explicit BestSecurityCheckerForBuyOrder(Strategy &strategy,
-                                          const Qty &qty,
-                                          boost::optional<Price> &&price,
-                                          bool checkOpportunity)
-      : BestSecurityCheckerForOrder(
-            strategy, qty, std::move(price), checkOpportunity) {}
-  virtual ~BestSecurityCheckerForBuyOrder() override = default;
+  explicit BuyOrderBestSecurityChecker(Strategy &strategy,
+                                       const Qty &qty,
+                                       boost::optional<Price> &&price)
+      : OrderBestSecurityChecker(strategy, qty, std::move(price)) {}
+  virtual ~BuyOrderBestSecurityChecker() override = default;
 
  protected:
   virtual bool CheckPrice(const Security &bestSecurity,
                           const Security &checkSecurity) const override {
-    return bestSecurity.GetAskPrice() > GetOpportunityPrice(checkSecurity);
-  }
-
-  virtual Qty GetOpportunityQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetAskQty();
+    const auto &bestPrice = bestSecurity.GetAskPrice();
+    const auto &opportunityPrice = GetOpportunityPrice(checkSecurity);
+    return bestPrice > opportunityPrice ||
+           (bestPrice == opportunityPrice &&
+            bestSecurity.GetAskQty() < checkSecurity.GetAskQty());
   }
 
   virtual Price GetOpportunityPrice(
@@ -161,90 +145,67 @@ class BestSecurityCheckerForBuyOrder : public BestSecurityCheckerForOrder {
   }
 };
 
-std::unique_ptr<BestSecurityCheckerForOrder>
-BestSecurityCheckerForOrder::Create(Strategy &strategy,
-                                    bool isBuy,
-                                    const Qty &qty,
-                                    bool checkOpportunity) {
+std::unique_ptr<OrderBestSecurityChecker> OrderBestSecurityChecker::Create(
+    Strategy &strategy, bool isBuy, const Qty &qty) {
   if (isBuy) {
-    return boost::make_unique<BestSecurityCheckerForBuyOrder>(
-        strategy, qty, boost::none, checkOpportunity);
+    return boost::make_unique<BuyOrderBestSecurityChecker>(strategy, qty,
+                                                           boost::none);
   } else {
-    return boost::make_unique<BestSecurityCheckerForSellOrder>(
-        strategy, qty, boost::none, checkOpportunity);
+    return boost::make_unique<SellOrderBestSecurityChecker>(strategy, qty,
+                                                            boost::none);
   }
 }
-std::unique_ptr<BestSecurityCheckerForOrder>
-BestSecurityCheckerForOrder::Create(Strategy &strategy,
-                                    bool isBuy,
-                                    const Qty &qty,
-                                    const Price &price,
-                                    bool checkOpportunity) {
+std::unique_ptr<OrderBestSecurityChecker> OrderBestSecurityChecker::Create(
+    Strategy &strategy, bool isBuy, const Qty &qty, const Price &price) {
   if (isBuy) {
-    return boost::make_unique<BestSecurityCheckerForBuyOrder>(
-        strategy, qty, price, checkOpportunity);
+    return boost::make_unique<BuyOrderBestSecurityChecker>(strategy, qty,
+                                                           price);
   } else {
-    return boost::make_unique<BestSecurityCheckerForSellOrder>(
-        strategy, qty, price, checkOpportunity);
+    return boost::make_unique<SellOrderBestSecurityChecker>(strategy, qty,
+                                                            price);
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BestSecurityCheckerForPosition::BestSecurityCheckerForPosition(
-    Position &position, bool checkOpportunity)
-    : BestSecurityChecker(checkOpportunity), m_position(position) {}
+PositionBestSecurityChecker::PositionBestSecurityChecker(Position &position)
+    : m_position(position) {}
 
-BestSecurityCheckerForPosition::~BestSecurityCheckerForPosition() {
-  if (!HasSuitableSecurity()) {
-    return;
-  }
-  try {
-    m_position.ReplaceTradingSystem(
-        *GetSuitableSecurity(),
-        m_position.GetOperation()->GetTradingSystem(*GetSuitableSecurity()));
-  } catch (...) {
-    AssertFailNoException();
-    terminate();
-  }
-}
-
-const Position &BestSecurityCheckerForPosition::GetPosition() const {
+const Position &PositionBestSecurityChecker::GetPosition() const {
   return m_position;
 }
 
-const TradingSystem &BestSecurityCheckerForPosition::GetTradingSystem(
+const TradingSystem &PositionBestSecurityChecker::GetTradingSystem(
     const Security &security) const {
   return m_position.GetStrategy().GetTradingSystem(
       security.GetSource().GetIndex());
 }
 
-Qty BestSecurityCheckerForPosition::GetRequiredQty() const {
+Qty PositionBestSecurityChecker::GetRequiredQty() const {
   return m_position.GetActiveQty();
 }
 
-bool BestSecurityCheckerForPosition::CheckOrder(
+bool PositionBestSecurityChecker::CheckOrder(
     const Security &checkSecurity, const TradingSystem &tradingSystem) const {
   return CheckPositionRestAsOrder(m_position, checkSecurity, tradingSystem);
 }
 
-class BestSecurityCheckerForLongPosition
-    : public BestSecurityCheckerForPosition {
+class LongPositionBestSecurityChecker : public PositionBestSecurityChecker {
  public:
-  explicit BestSecurityCheckerForLongPosition(Position &position,
-                                              bool checkOpportunity)
-      : BestSecurityCheckerForPosition(position, checkOpportunity) {
+  explicit LongPositionBestSecurityChecker(Position &position)
+      : PositionBestSecurityChecker(position) {
     Assert(position.IsLong());
   }
-  virtual ~BestSecurityCheckerForLongPosition() override = default;
+  virtual ~LongPositionBestSecurityChecker() override = default;
 
  protected:
   virtual bool CheckPrice(const Security &bestSecurity,
                           const Security &checkSecurity) const override {
-    return bestSecurity.GetBidPrice() < GetOpportunityPrice(checkSecurity);
-  }
-  virtual Qty GetOpportunityQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetBidQty();
+    const auto &bestPrice = bestSecurity.GetBidPrice();
+    const auto &opportunityPrice = GetOpportunityPrice(checkSecurity);
+    return bestPrice < opportunityPrice ||
+           (bestPrice == opportunityPrice &&
+            bestSecurity.GetBidQty() < checkSecurity.GetBidQty());
   }
   virtual Price GetOpportunityPrice(const Security &checkSecurity) const {
     return checkSecurity.GetBidPrice();
@@ -259,23 +220,22 @@ class BestSecurityCheckerForLongPosition
   virtual OrderSide GetSide() const { return ORDER_SIDE_SELL; }
 };
 
-class BestSecurityCheckerForShortPosition
-    : public BestSecurityCheckerForPosition {
+class ShortPositionBestSecurityChecker : public PositionBestSecurityChecker {
  public:
-  explicit BestSecurityCheckerForShortPosition(Position &position,
-                                               bool checkOpportunity)
-      : BestSecurityCheckerForPosition(position, checkOpportunity) {
+  explicit ShortPositionBestSecurityChecker(Position &position)
+      : PositionBestSecurityChecker(position) {
     Assert(!position.IsLong());
   }
-  virtual ~BestSecurityCheckerForShortPosition() override = default;
+  virtual ~ShortPositionBestSecurityChecker() override = default;
 
  protected:
   virtual bool CheckPrice(const Security &bestSecurity,
                           const Security &checkSecurity) const override {
-    return bestSecurity.GetAskPrice() > GetOpportunityPrice(checkSecurity);
-  }
-  virtual Qty GetOpportunityQty(const Security &checkSecurity) const override {
-    return checkSecurity.GetAskQty();
+    const auto &bestPrice = bestSecurity.GetAskPrice();
+    const auto &opportunityPrice = GetOpportunityPrice(checkSecurity);
+    return bestPrice > opportunityPrice ||
+           (bestPrice == opportunityPrice &&
+            bestSecurity.GetAskQty() < checkSecurity.GetAskQty());
   }
   virtual Price GetOpportunityPrice(
       const Security &checkSecurity) const override {
@@ -291,15 +251,12 @@ class BestSecurityCheckerForShortPosition
   virtual OrderSide GetSide() const { return ORDER_SIDE_BUY; }
 };
 
-std::unique_ptr<BestSecurityCheckerForPosition>
-BestSecurityCheckerForPosition::Create(Position &positon,
-                                       bool checkOpportunity) {
+std::unique_ptr<PositionBestSecurityChecker>
+PositionBestSecurityChecker::Create(Position &positon) {
   if (positon.IsLong()) {
-    return boost::make_unique<BestSecurityCheckerForLongPosition>(
-        positon, checkOpportunity);
+    return boost::make_unique<LongPositionBestSecurityChecker>(positon);
   } else {
-    return boost::make_unique<BestSecurityCheckerForShortPosition>(
-        positon, checkOpportunity);
+    return boost::make_unique<ShortPositionBestSecurityChecker>(positon);
   }
 }
 

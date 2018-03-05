@@ -92,7 +92,7 @@ void PrepareOperationClose(Position &position) {
 }
 
 bool ChooseBestExchange(Position &position) {
-  const auto &checker = BestSecurityCheckerForPosition::Create(position, true);
+  const auto &checker = PositionBestSecurityChecker::Create(position);
   std::vector<std::pair<const Security *, const std::string *>> checks;
   boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
       ->ForEachSecurity(position.GetSecurity().GetSymbol(),
@@ -128,6 +128,9 @@ bool ChooseBestExchange(Position &position) {
     position.MarkAsCompleted();
     return false;
   }
+  position.ReplaceTradingSystem(*checker->GetSuitableSecurity(),
+                                position.GetOperation()->GetTradingSystem(
+                                    *checker->GetSuitableSecurity()));
   return true;
 }
 
