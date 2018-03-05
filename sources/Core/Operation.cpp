@@ -33,6 +33,7 @@ class Operation::Implementation : private boost::noncopyable {
   Strategy &m_strategy;
   uuids::uuid m_id;
 
+  boost::mutex m_startMutex;
   bool m_isStarted;
 
   std::unique_ptr<PnlContainer> m_pnl;
@@ -160,6 +161,9 @@ void Operation::UpdatePnl(const Security &security,
 const Pnl &Operation::GetPnl() const { return *m_pimpl->m_pnl; }
 
 void Operation::OnNewPositionStart(Position &) {
+  // As positions may be created in parallel threads for one strategy - method
+  // is not thread-safe.
+  const boost::mutex::scoped_lock lock(m_pimpl->m_startMutex);
   if (m_pimpl->m_isStarted) {
     return;
   }
