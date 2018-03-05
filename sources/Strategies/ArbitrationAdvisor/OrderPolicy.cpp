@@ -39,7 +39,7 @@ Price CloseOrderPolicy::GetOpenOrderPrice(Position &) const {
 }
 
 Price CloseOrderPolicy::GetCloseOrderPrice(Position &position) const {
-  return Base::GetCloseOrderPrice(position) + (position.IsLong() ? 0.95 : 1.05);
+  return Base::GetCloseOrderPrice(position) * (position.IsLong() ? 0.95 : 1.05);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
