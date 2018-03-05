@@ -23,7 +23,8 @@ namespace aa = trdk::Strategies::ArbitrageAdvisor;
 void aa::PositionController::OnPositionUpdate(Position &position) {
   auto *const oppositePosition = FindOppositePosition(position);
   if (position.IsCompleted()) {
-    if (oppositePosition && !oppositePosition->IsCompleted()) {
+    if (oppositePosition && !oppositePosition->IsCompleted() &&
+        !oppositePosition->IsCancelling()) {
       OnPositionUpdate(*oppositePosition);
     }
     return;
@@ -92,7 +93,7 @@ void PrepareOperationClose(Position &position) {
 }
 
 bool ChooseBestExchange(Position &position) {
-  const auto &checker = BestSecurityCheckerForPosition::Create(position, true);
+  const auto &checker = PositionBestSecurityChecker::Create(position);
   std::vector<std::pair<const Security *, const std::string *>> checks;
   boost::polymorphic_cast<aa::Strategy *>(&position.GetStrategy())
       ->ForEachSecurity(position.GetSecurity().GetSymbol(),
@@ -118,7 +119,7 @@ bool ChooseBestExchange(Position &position) {
     position.GetStrategy().GetLog().Error(
         "Failed to find suitable security for the position \"%1%/%2%\" (actual "
         "security is \"%3%\") to close the rest of the position: %4% out of "
-        "%5% (%6%)",
+        "%5% (%6%).",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
@@ -128,6 +129,9 @@ bool ChooseBestExchange(Position &position) {
     position.MarkAsCompleted();
     return false;
   }
+  position.ReplaceTradingSystem(*checker->GetSuitableSecurity(),
+                                position.GetOperation()->GetTradingSystem(
+                                    *checker->GetSuitableSecurity()));
   return true;
 }
 
