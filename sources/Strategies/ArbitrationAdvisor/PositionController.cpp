@@ -23,7 +23,8 @@ namespace aa = trdk::Strategies::ArbitrageAdvisor;
 void aa::PositionController::OnPositionUpdate(Position &position) {
   auto *const oppositePosition = FindOppositePosition(position);
   if (position.IsCompleted()) {
-    if (oppositePosition && !oppositePosition->IsCompleted()) {
+    if (oppositePosition && !oppositePosition->IsCompleted() &&
+        !oppositePosition->IsCancelling()) {
       OnPositionUpdate(*oppositePosition);
     }
     return;
@@ -118,7 +119,7 @@ bool ChooseBestExchange(Position &position) {
     position.GetStrategy().GetLog().Error(
         "Failed to find suitable security for the position \"%1%/%2%\" (actual "
         "security is \"%3%\") to close the rest of the position: %4% out of "
-        "%5% (%6%)",
+        "%5% (%6%).",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         position.GetSecurity(),            // 3
