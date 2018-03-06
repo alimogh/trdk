@@ -139,27 +139,61 @@ BittrexTradingSystem::CheckOrder(const trdk::Security &security,
     }
   }
   const auto &symbol = security.GetSymbol();
-  if (symbol.GetQuoteSymbol() == "BTC") {
-    const auto minVolume = 0.001;
-    if (price && qty * *price < minVolume) {
-      return OrderCheckError{boost::none, boost::none, minVolume};
+  switch (symbol.GetCurrency()) {
+    case CURRENCY_BTC: {
+      {
+        const auto minVolume = 0.001;
+        if (price && qty * *price < minVolume) {
+          return OrderCheckError{boost::none, boost::none, minVolume};
+        }
+      }
+      {
+        const auto minQty = symbol.GetBaseSymbol() == "ETH"
+                                ? 0.015
+                                : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
+        if (qty < minQty) {
+          return OrderCheckError{minQty};
+        }
+      }
+      break;
     }
-    const auto minQty = symbol.GetBaseSymbol() == "ETH"
-                            ? 0.015
-                            : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
-    if (qty < minQty) {
-      return OrderCheckError{minQty};
+    case CURRENCY_ETH: {
+      {
+        const auto minVolume = 0.0005;
+        if (price && qty * *price < minVolume) {
+          return OrderCheckError{boost::none, boost::none, minVolume};
+        }
+      }
+      {
+        const auto minQty = symbol.GetBaseSymbol() == "LTC"
+                                ? 0.06
+                                : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
+        if (qty < minQty) {
+          return OrderCheckError{minQty};
+        }
+      }
+      break;
     }
-  } else if (symbol.GetQuoteSymbol() == "ETH") {
-    const auto minVolume = 0.0005;
-    if (price && qty * *price < minVolume) {
-      return OrderCheckError{boost::none, boost::none, minVolume};
-    }
-    const auto minQty = symbol.GetBaseSymbol() == "LTC"
-                            ? 0.06
-                            : symbol.GetBaseSymbol() == "BCH" ? 0.0033 : 0;
-    if (qty < minQty) {
-      return OrderCheckError{minQty};
+    case CURRENCY_USD:
+    case CURRENCY_USDT: {
+      {
+        const auto minVolume = 0.0005;
+        if (price && qty * *price < minVolume) {
+          return OrderCheckError{boost::none, boost::none, minVolume};
+        }
+      }
+      {
+        const auto minQty =
+            symbol.GetBaseSymbol() == "BTC"
+                ? 0.000281
+                : symbol.GetBaseSymbol() == "ETH"
+                      ? 0.0034
+                      : symbol.GetBaseSymbol() == "BCH" ? 0.00214425 : 0;
+        if (qty < minQty) {
+          return OrderCheckError{minQty};
+        }
+      }
+      break;
     }
   }
   return boost::none;
