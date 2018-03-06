@@ -18,6 +18,7 @@ using namespace trdk::FrontEnd::Lib;
 using namespace trdk::Strategies::PingPong;
 
 namespace pp = trdk::Strategies::PingPong;
+namespace pt = boost::posix_time;
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QString &symbol,
@@ -74,6 +75,8 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_ui.bbDeviation->setValue(2);
 
   ConnectSignals();
+
+  m_strategy.SetSourceTimeFrameSize(pt::minutes(5));
 }
 
 StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
@@ -187,6 +190,11 @@ void StrategyWindow::ConnectSignals() {
                      m_ui.isPositionsClosingEnabled->setChecked(
                          m_strategy.IsActivePositionsControlEnabled());
                    }
+                 }));
+
+  Verify(connect(m_ui.timeFrameSize, &QComboBox::currentTextChanged,
+                 [this](const QString &item) {
+                   m_strategy.SetSourceTimeFrameSize(pt::minutes(item.toInt()));
                  }));
 
   Verify(connect(m_ui.positionSize,

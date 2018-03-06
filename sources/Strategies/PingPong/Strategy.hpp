@@ -94,6 +94,8 @@ class Strategy : public trdk::Strategy {
   void EnableTrading(bool);
   bool IsTradingEnabled() const;
 
+  void SetSourceTimeFrameSize(const boost::posix_time::time_duration &);
+
   void EnableActivePositionsControl(bool);
   bool IsActivePositionsControlEnabled() const;
 

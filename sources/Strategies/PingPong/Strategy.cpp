@@ -22,6 +22,7 @@ using namespace trdk::Strategies::PingPong;
 namespace accs = boost::accumulators;
 namespace ma = trdk::Lib::Accumulators::MovingAverage;
 namespace sig = boost::signals2;
+namespace pt = boost::posix_time;
 namespace tl = trdk::TradingLib;
 namespace pp = trdk::Strategies::PingPong;
 
@@ -392,6 +393,24 @@ void pp::Strategy::EnableTrading(bool isEnabled) {
 bool pp::Strategy::IsTradingEnabled() const {
   const auto lock = LockForOtherThreads();
   return m_pimpl->m_controller.IsOpeningEnabled();
+}
+
+#include "Core/Timer.hpp"
+void pp::Strategy::SetSourceTimeFrameSize(const pt::time_duration &frameSize) {
+  GetTradingLog().Write(
+      "time frame size: %1%",
+      [&frameSize](TradingRecord &record) { record % frameSize; });
+  static TimerScope scope;
+  GetContext().GetTimer().Schedule(
+      pt::seconds(15),
+      [this, frameSize]() {
+        boost::format message(
+            "Failed to request time frames with size %1%. Using actual price "
+            "instead. Try to request later or choose another frame size.");
+        message % frameSize;
+        RaiseEvent(message.str());
+      },
+      scope);
 }
 
 void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {
