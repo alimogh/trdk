@@ -24,7 +24,7 @@ class PriceBook {
     Level() : m_price(.0), m_qty(.0) {}
 
     explicit Level(const boost::posix_time::ptime &time,
-                   double price,
+                   const trdk::Price &price,
                    const trdk::Qty &qty)
         : m_time(time), m_price(price), m_qty(qty) {}
 
@@ -38,14 +38,14 @@ class PriceBook {
       }
     }
 
-    double GetPrice() const { return m_price; }
+    const trdk::Price &GetPrice() const { return m_price; }
 
     const trdk::Qty &GetQty() const { return m_qty; }
 
    private:
     boost::posix_time::ptime m_time;
 
-    double m_price;
+    trdk::Price m_price;
     trdk::Qty m_qty;
   };
 
@@ -128,7 +128,7 @@ class PriceBook {
         return;
       }
 
-      if (trdk::Lib::IsEqual(pos->GetPrice(), price)) {
+      if (pos->GetPrice() == price) {
         throw trdk::Lib::Exception("Not unique price level found");
       }
 
@@ -164,7 +164,7 @@ class PriceBook {
         return true;
       }
 
-      if (trdk::Lib::IsEqual(pos->GetPrice(), price)) {
+      if (pos->GetPrice() == price) {
         Level &level = *pos;
         level += qty;
         level.UpdateTime(time);
@@ -195,11 +195,12 @@ class PriceBook {
    private:
     static Storage::iterator FindPrice(const Storage::iterator &begin,
                                        const Storage::iterator &end,
-                                       double price) {
+                                       const trdk::Price &price) {
       static_assert(isAscendingSort, "Failed to find template specialization.");
-      return std::lower_bound(
-          begin, end, price,
-          [](const Level &lhs, double rhs) { return lhs.GetPrice() < rhs; });
+      return std::lower_bound(begin, end, price,
+                              [](const Level &lhs, const trdk::Price &rhs) {
+                                return lhs.GetPrice() < rhs;
+                              });
     }
 
    private:
@@ -249,9 +250,10 @@ inline PriceBook::Side<false>::Storage::iterator
 PriceBook::Side<false>::FindPrice(
     const PriceBook::Side<false>::Storage::iterator &begin,
     const PriceBook::Side<false>::Storage::iterator &end,
-    double price) {
-  return std::lower_bound(begin, end, price, [](const Level &lhs, double rhs) {
-    return lhs.GetPrice() > rhs;
-  });
+    const trdk::Price &price) {
+  return std::lower_bound(begin, end, price,
+                          [](const Level &lhs, const trdk::Price &rhs) {
+                            return lhs.GetPrice() > rhs;
+                          });
 }
-}
+}  // namespace trdk

@@ -20,19 +20,6 @@ using namespace trdk::TradingLib;
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
-class PositionController::Implementation : private boost::noncopyable {
- public:
-  PositionController &m_self;
-
- public:
-  explicit Implementation(PositionController &self) : m_self(self) {}
-};
-
-PositionController::PositionController()
-    : m_pimpl(std::make_unique<Implementation>(*this)) {}
-
-PositionController::~PositionController() = default;
-
 Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
@@ -49,7 +36,8 @@ Position *PositionController::OpenPosition(
     bool isLong,
     const Milestones &delayMeasurement) {
   return OpenPosition(operationContext, subOperationId, security, isLong,
-                      operationContext->GetPlannedQty(), delayMeasurement);
+                      operationContext->GetPlannedQty(security),
+                      delayMeasurement);
 }
 
 Position *PositionController::OpenPosition(
@@ -235,7 +223,7 @@ void PositionController::OnPositionUpdate(Position &position) {
     } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Close order was canceled by some condition. Sending
       // new close order.
-      ClosePosition(position);
+        ClosePosition(position);
     }
 
   } else if (position.HasActiveOrders()) {

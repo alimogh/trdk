@@ -2,37 +2,34 @@
 <ui version="4.0">
  <class>SymbolSelectionDialog</class>
  <widget class="QDialog" name="SymbolSelectionDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>274</width>
+    <height>260</height>
+   </rect>
+  </property>
   <property name="windowTitle">
-   <string>Market Making by Trend Strategy Traget Symbol</string>
+   <string>Select Symbol</string>
   </property>
   <layout class="QVBoxLayout" name="_2">
    <item>
     <widget class="QLabel" name="symbolLabel">
      <property name="text">
-      <string>Strategy target symbol:</string>
+      <string>Select one or more symbols:</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QListWidget" name="symbol"/>
+    <widget class="QListWidget" name="symbols">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
+    <layout class="QHBoxLayout" name="_3">
      <item>
       <widget class="QPushButton" name="okButton">
        <property name="text">

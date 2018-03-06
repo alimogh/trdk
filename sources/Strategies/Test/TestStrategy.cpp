@@ -56,7 +56,7 @@ class Operation : public trdk::Operation {
   virtual bool IsLong(const Security &) const override {
     return *GetIsRising();
   }
-  virtual Qty GetPlannedQty() const override { return 10; }
+  virtual Qty GetPlannedQty(const Security &) const override { return 10; }
   virtual bool HasCloseSignal(const Position &position) const override {
     const auto &isRising = GetIsRising();
     return !isRising || IsLong(position.GetSecurity()) == position.IsLong();

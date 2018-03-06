@@ -34,23 +34,23 @@ class TakerStrategy : public Strategy {
   size_t GetNumerOfPeriods() const;
 
   void SetGoalVolume(const Volume &);
-  Volume GetGoalVolume() const;
+  const Volume &GetGoalVolume() const;
 
   void SetMaxLoss(const Volume &);
-  Volume GetMaxLoss() const;
+  const Volume &GetMaxLoss() const;
 
   void SetPeriodSize(size_t numberOfMinutes);
   size_t GetPeriodSize() const;
 
   void SetMinPrice(const Price &);
-  Price GetMinPrice() const;
+  const Price &GetMinPrice() const;
   void SetMaxPrice(const Price &);
-  Price GetMaxPrice() const;
+  const Price &GetMaxPrice() const;
 
   void SetTradeMinVolume(const Volume &);
-  Volume GetTradeMinVolume() const;
+  const Volume &GetTradeMinVolume() const;
   void SetTradeMaxVolume(const Volume &);
-  Volume GetTradeMaxVolume() const;
+  const Volume &GetTradeMaxVolume() const;
 
   boost::signals2::scoped_connection SubscribeToCompleted(
       const boost::function<void()> &);

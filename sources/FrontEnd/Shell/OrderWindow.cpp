@@ -64,14 +64,16 @@ OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
       m_ui.mode->setCurrentIndex(*selectedByDefault);
     }
     LoadTradingSystemList(m_ui.mode->currentIndex());
-    Verify(connect(m_ui.mode, static_cast<void (QComboBox::*)(int)>(
-                                  &QComboBox::currentIndexChanged),
-                   this, &OrderWindow::LoadTradingSystemList));
+    Verify(connect(
+        m_ui.mode,
+        static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+        this, &OrderWindow::LoadTradingSystemList));
   }
 
-  Verify(connect(m_ui.mode, static_cast<void (QComboBox::*)(int)>(
-                                &QComboBox::currentIndexChanged),
-                 this, &OrderWindow::LoadTradingSystemList));
+  Verify(connect(
+      m_ui.mode,
+      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+      this, &OrderWindow::LoadTradingSystemList));
 
   Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
                  &OrderWindow::OnStateChanged, Qt::QueuedConnection));
@@ -146,15 +148,14 @@ void OrderWindow::UpdatePrices(const Security *security) {
   m_ui.lastTime->setText(
       ConvertTimeToText(security->GetLastMarketDataTime().time_of_day()));
   {
-    const auto &precision = security->GetPricePrecision();
     const auto &bid = security->GetBidPriceValue();
     const auto &ask = security->GetAskPriceValue();
-    m_ui.bidPrice->setText(ConvertPriceToText(bid, precision));
-    m_ui.askPrice->setText(ConvertPriceToText(ask, precision));
+    m_ui.bidPrice->setText(ConvertPriceToText(bid));
+    m_ui.askPrice->setText(ConvertPriceToText(ask));
     const Price spread = bid.IsNotNan() && ask.IsNotNan()
                              ? ask - bid
                              : std::numeric_limits<double>::quiet_NaN();
-    m_ui.spread->setText(ConvertPriceToText(spread, precision));
+    m_ui.spread->setText(ConvertPriceToText(spread));
   }
 }
 

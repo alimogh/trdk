@@ -37,6 +37,7 @@ var requiredModules = [
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'
 	, 'PingPong'
+	, 'TriangularArbitrage'
 ]
 
 //////////////////////////////////////////////////////////////////////////

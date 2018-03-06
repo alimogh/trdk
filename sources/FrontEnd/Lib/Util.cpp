@@ -51,28 +51,27 @@ QString lib::ConvertTimeToText(const pt::time_duration &source) {
                            source.seconds());
 }
 
-QString lib::ConvertPriceToText(const Price &source, uint8_t precision) {
+QString lib::ConvertPriceToText(const Price &source) {
   if (source.IsNan()) {
     return "---";
   }
-  return QString::number(source, 'f', precision);
+  return QString::number(source, 'f', source.GetPrecision());
 }
 
-QString lib::ConvertVolumeToText(const Price &source, uint8_t precision) {
-  return ConvertPriceToText(source, precision);
+QString lib::ConvertVolumeToText(const Price &source) {
+  return ConvertPriceToText(source);
 }
 
-QString lib::ConvertPriceToText(const boost::optional<Price> &source,
-                                uint8_t precision) {
-  return ConvertPriceToText(
-      source ? *source : std::numeric_limits<double>::quiet_NaN(), precision);
+QString lib::ConvertPriceToText(const boost::optional<Price> &source) {
+  return ConvertPriceToText(source ? *source
+                                   : std::numeric_limits<double>::quiet_NaN());
 }
 
-QString lib::ConvertQtyToText(const Qty &source, uint8_t precision) {
+QString lib::ConvertQtyToText(const Qty &source) {
   if (source.IsNan()) {
     return "---";
   }
-  return QString::number(source, 'f', precision);
+  return QString::number(source, 'f', source.GetPrecision());
 }
 
 QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {

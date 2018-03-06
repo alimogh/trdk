@@ -140,17 +140,13 @@ QVariant SecurityListModel::data(const QModelIndex &index, int role) const {
         case COLUMN_SOURCE:
           return QString::fromStdString(security.GetSource().GetInstanceName());
         case COLUMN_BID_PRICE:
-          return ConvertPriceToText(security.GetBidPriceValue(),
-                                    security.GetPricePrecision());
+          return ConvertPriceToText(security.GetBidPriceValue());
         case COLUMN_BID_QTY:
-          return ConvertPriceToText(security.GetBidQtyValue(),
-                                    security.GetPricePrecision());
+          return ConvertPriceToText(security.GetBidQtyValue());
         case COLUMN_ASK_PRICE:
-          return ConvertPriceToText(security.GetAskPriceValue(),
-                                    security.GetPricePrecision());
+          return ConvertPriceToText(security.GetAskPriceValue());
         case COLUMN_ASK_QTY:
-          return ConvertPriceToText(security.GetAskQtyValue(),
-                                    security.GetPricePrecision());
+          return ConvertPriceToText(security.GetAskQtyValue());
         case COLUMN_LAST_TIME: {
           return ConvertTimeToText(
               security.GetLastMarketDataTime().time_of_day());

@@ -16,14 +16,13 @@ using namespace trdk::Strategies::MarketMaker;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
-          {QObject::tr("Market Maker \"Taker\"..."),
+          {QObject::tr("&Market Maker \"Taker\"..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
-             const auto &symbol =
-                 SymbolSelectionDialog(engine, parent).RequestSymbol();
-             if (symbol) {
+             for (const auto &symbol :
+                  SymbolSelectionDialog(engine, parent).RequestSymbols()) {
                result.emplace_back(boost::make_unique<TakerStrategyWindow>(
-                   engine, *symbol, parent));
+                   engine, symbol, parent));
              }
              return result;
            }}};

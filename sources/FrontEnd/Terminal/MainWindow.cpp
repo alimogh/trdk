@@ -12,7 +12,6 @@
 #include "MainWindow.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/Engine.hpp"
-#include "Lib/ModuleApi.hpp"
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OrderListModel.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
@@ -37,7 +36,7 @@ MainWindow::MainWindow(lib::Engine &engine,
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
 
-#ifdef DEV_VER
+#ifdef _DEBUG
   {
     auto &action = *new QAction("Test operation list");
     m_ui.menuHelp->insertAction(m_ui.showAbout, &action);
@@ -115,12 +114,35 @@ void MainWindow::LoadModule(const fs::path &path) {
     const auto &callback = actionDesc.second;
     auto &action = *new QAction(actionDesc.first, this);
     m_ui.strategiesMenu->addAction(&action);
-    Verify(connect(&action, &QAction::triggered, [this, callback]() {
-      for (auto &widgetPtr : callback(this)) {
-        auto &widget = *widgetPtr.release();
-        widget.adjustSize();
-        widget.show();
+    Verify(connect(&action, &QAction::triggered,
+                   [this, callback]() { CreateModuleWindows(callback); }));
+  }
+}
+
+void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
+  boost::optional<QPoint> widgetPos = pos();
+  boost::optional<QSize> size;
+  widgetPos->setX(widgetPos->x() + 25);
+  widgetPos->setY(widgetPos->y() + 25);
+  const auto &screen = QApplication::desktop()->screenGeometry();
+  for (auto &widgetPtr : factory(this)) {
+    auto &widget = *widgetPtr.release();
+    widget.adjustSize();
+    widget.show();
+    if (!widgetPos) {
+      continue;
+    }
+    widget.move(*widgetPos);
+    if (!size) {
+      size = widget.size();
+    }
+    widgetPos->setX(widget.pos().x() + size->width() + 10);
+    if (widgetPos->x() + size->width() > screen.width()) {
+      widgetPos->setX(pos().x() + 25);
+      widgetPos->setY(widget.pos().y() + size->height() + 10);
+      if (widgetPos->y() + size->height() > screen.height()) {
+        widgetPos = boost::none;
       }
-    }));
+    }
   }
 }

@@ -298,12 +298,16 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     ReportSignalCheckErrors(session);
   }
 
-  void RecheckSignal() {
+  void RecheckSignalSync() {
     for (auto &symbol : m_symbols) {
       for (const auto &security : symbol.second) {
         CheckSignal(*security.security, symbol.second, Milestones());
       }
     }
+  }
+
+  void RecheckSignalAsync() {
+    m_self.Schedule([this]() { RecheckSignalSync(); });
   }
 
   static bool CheckActualPosition(const Position &position,
@@ -584,8 +588,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          const Double &spreadRatio,
                          const Double &bestSpreadRatio,
                          const Milestones &delayMeasurement) {
-    const boost::function<Position *(int64_t, Security &)> &openPosition =
-        [&](int64_t leg, Security &target) -> Position * {
+    const auto &openPosition = [&](int64_t leg,
+                                   Security &target) -> Position * {
       return m_controller.OpenPosition(operation, leg, target,
                                        delayMeasurement);
     };
@@ -694,7 +698,10 @@ aa::Strategy::~Strategy() = default;
 sig::scoped_connection aa::Strategy::SubscribeToAdvice(
     const boost::function<void(const Advice &)> &slot) {
   const auto &result = m_pimpl->m_adviceSignal.connect(slot);
-  m_pimpl->RecheckSignal();
+  {
+    const auto lock = LockForOtherThreads();
+    m_pimpl->RecheckSignalAsync();
+  }
   return result;
 }
 
@@ -709,6 +716,7 @@ sig::scoped_connection aa::Strategy::SubscribeToBlocking(
 }
 
 void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
+  const auto lock = LockForOtherThreads();
   GetTradingLog().Write(
       "{'setup': {'advising': {'ratio': '%1%->%2%'}}}",
       [this, &minPriceDifferenceRatio](TradingRecord &record) {
@@ -719,7 +727,7 @@ void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
     return;
   }
   m_pimpl->m_minPriceDifferenceRatioToAdvice = minPriceDifferenceRatio;
-  m_pimpl->RecheckSignal();
+  m_pimpl->RecheckSignalAsync();
 }
 
 void aa::Strategy::ForEachSecurity(
@@ -741,6 +749,7 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
 }
 
 void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
+  const auto lock = LockForOtherThreads();
   bool shouldRechecked = true;
   if (m_pimpl->m_tradingSettings) {
     GetTradingLog().Write(
@@ -764,7 +773,7 @@ void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
         });
   }
   m_pimpl->m_tradingSettings = std::move(settings);
-  m_pimpl->RecheckSignal();
+  m_pimpl->RecheckSignalAsync();
 }
 
 const boost::optional<aa::Strategy::TradingSettings>
@@ -772,6 +781,7 @@ const boost::optional<aa::Strategy::TradingSettings>
   return m_pimpl->m_tradingSettings;
 }
 void aa::Strategy::DeactivateAutoTrading() {
+  const auto lock = LockForOtherThreads();
   if (m_pimpl->m_tradingSettings) {
     GetTradingLog().Write(
         "{'setup': {'trading': {'ratio': '%1%->null', 'maxQty': "

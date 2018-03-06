@@ -36,7 +36,7 @@ class Operation : public trdk::Operation {
                      TradingLib::PositionController &) const override;
 
   virtual bool IsLong(const Security &) const override;
-  virtual Qty GetPlannedQty() const override;
+  virtual Qty GetPlannedQty(const Security &) const override;
   virtual bool HasCloseSignal(const Position &) const override;
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const Position &) override;

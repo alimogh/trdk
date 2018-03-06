@@ -24,23 +24,31 @@ SymbolSelectionDialog::SymbolSelectionDialog(Engine &engine, QWidget *parent)
     const IniSectionRef defaults(conf, "Defaults");
     for (const std::string &symbol :
          defaults.ReadList("symbol_list", ",", true)) {
-      m_ui->symbol->addItem(QString::fromStdString(symbol));
+      m_ui->symbols->addItem(QString::fromStdString(symbol));
     }
   }
+
+  Verify(connect(m_ui->symbols, &QListWidget::doubleClicked,
+                 [this](const QModelIndex &) { accept(); }));
 }
 
 SymbolSelectionDialog::~SymbolSelectionDialog() = default;
 
-boost::optional<QString> SymbolSelectionDialog::RequestSymbol() {
+std::vector<QString> SymbolSelectionDialog::RequestSymbols() {
   for (;;) {
+    std::vector<QString> result;
     if (exec() != QDialog::Accepted) {
-      return boost::none;
+      return result;
     }
-    if (!m_ui->symbol->selectedItems().size()) {
+    if (!m_ui->symbols->selectedItems().size()) {
       QMessageBox::warning(this, tr("Symbol is not set"),
-                           tr("Please select a symbol."), QMessageBox::Ok);
+                           tr("Please select one or more symbols."),
+                           QMessageBox::Ok);
       continue;
     }
-    return m_ui->symbol->selectedItems().first()->text();
+    for (const auto &item : m_ui->symbols->selectedItems()) {
+      result.emplace_back(item->text());
+    }
+    return result;
   }
 }

@@ -117,7 +117,10 @@ bool TakerStrategyWindow::LoadExchanges() {
   return numberOfExchanges > 0;
 }
 
-void TakerStrategyWindow::Disable() {}
+void TakerStrategyWindow::Disable() {
+  const QSignalBlocker blocker(*m_ui.controlGroup);
+  m_ui.controlGroup->setEnabled(false);
+}
 
 void TakerStrategyWindow::OnCompleted() {
   QMessageBox::information(this, QObject::tr("Strategy completed"),
@@ -291,30 +294,28 @@ TakerStrategy &TakerStrategyWindow::CreateStrategyInstance(
   auto &result = *boost::polymorphic_downcast<TakerStrategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
 
-  result.Invoke<TakerStrategy>([this](TakerStrategy &strategy) {
-    m_completedConnection =
-        strategy.SubscribeToCompleted([this]() { emit Completed(); });
-    m_blockConnection =
-        strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
-          QString reason;
-          if (reasonSource) {
-            reason = QString::fromStdString(*reasonSource);
-          }
-          emit Blocked(reason);
-        });
-    m_volumeUpdateConnection = strategy.SubscribeToVolume(
-        [this](const Volume &currentVolume, const Volume &maxVolume) {
-          emit VolumeUpdate(currentVolume, maxVolume);
-        });
-    m_pnlUpdateConnection = strategy.SubscribeToPnl(
-        [this](const Volume &currentPnl, const Volume &maxLoss) {
-          emit PnlUpdate(currentPnl, maxLoss);
-        });
-    m_eventsConnection =
-        strategy.SubscribeToEvents([this](const std::string &message) {
-          emit StrategyEvent(QString::fromStdString(message));
-        });
-  });
+  m_completedConnection =
+      result.SubscribeToCompleted([this]() { emit Completed(); });
+  m_blockConnection =
+      result.SubscribeToBlocking([this](const std::string *reasonSource) {
+        QString reason;
+        if (reasonSource) {
+          reason = QString::fromStdString(*reasonSource);
+        }
+        emit Blocked(reason);
+      });
+  m_volumeUpdateConnection = result.SubscribeToVolume(
+      [this](const Volume &currentVolume, const Volume &maxVolume) {
+        emit VolumeUpdate(currentVolume, maxVolume);
+      });
+  m_pnlUpdateConnection = result.SubscribeToPnl(
+      [this](const Volume &currentPnl, const Volume &maxLoss) {
+        emit PnlUpdate(currentPnl, maxLoss);
+      });
+  m_eventsConnection =
+      result.SubscribeToEvents([this](const std::string &message) {
+        emit StrategyEvent(QString::fromStdString(message));
+      });
 
   return result;
 }

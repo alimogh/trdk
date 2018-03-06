@@ -83,7 +83,7 @@ class StrategyWindow : public QMainWindow {
 
  public:
   explicit StrategyWindow(FrontEnd::Lib::Engine &,
-                          const boost::optional<QString> &defaultSymbol,
+                          const QString &symbol,
                           QWidget *parent);
   virtual ~StrategyWindow() override;
 
@@ -97,7 +97,6 @@ class StrategyWindow : public QMainWindow {
   void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
   void OnSignalCheckErrors(const std::vector<std::string> &);
   void OnBlocked(const QString &reason);
-  void OnCurrentSymbolChange(int symbolIndex);
 
   void ToggleAutoTrading(bool activate);
   void DeactivateAutoTrading();
@@ -112,8 +111,7 @@ class StrategyWindow : public QMainWindow {
 
  private:
   void ConnectSignals();
-  void LoadSymbolList();
-  void InitBySelectedSymbol();
+  void Init();
 
   void SendOrder(const OrderSide &, TradingSystem *);
 

@@ -16,14 +16,13 @@ using namespace trdk::FrontEnd::Lib;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
-          {QObject::tr("Ping Pong..."),
+          {QObject::tr("&Ping Pong..."),
            [&engine](QWidget *parent) -> StrategyWidgetList {
              StrategyWidgetList result;
-             const auto &symbol =
-                 SymbolSelectionDialog(engine, parent).RequestSymbol();
-             if (symbol) {
+             for (const auto &symbol :
+                  SymbolSelectionDialog(engine, parent).RequestSymbols()) {
                result.emplace_back(
-                   boost::make_unique<StrategyWindow>(engine, *symbol, parent));
+                   boost::make_unique<StrategyWindow>(engine, symbol, parent));
              }
              return result;
            }}};

@@ -106,6 +106,8 @@ typedef boost::multi_index_container<
     PositionHolderList;
 }  // namespace
 
+////////////////////////////////////////////////////////////////////////////////
+
 class Strategy::PositionList::Iterator::Implementation {
  public:
   PositionHolderList::iterator iterator;
@@ -194,119 +196,127 @@ void Strategy::PositionList::ConstIterator::advance(const difference_type &n) {
   std::advance(m_pimpl->iterator, n);
 }
 
-//////////////////////////////////////////////////////////////////////////
+namespace {
+class PositionMutableList : public Strategy::PositionList {
+ public:
+  virtual ~PositionMutableList() override = default;
+
+ public:
+  void Insert(const PositionHolder &&holder) {
+    Verify(m_impl.emplace(std::move(holder)).second);
+  }
+  void Erase(const Position &position) {
+    AssertLt(0, m_impl.get<ByPtr>().count(&position));
+    m_impl.get<ByPtr>().erase(&position);
+  }
+
+  bool Has(const Position &position) const {
+    return m_impl.get<ByPtr>().count(&position) > 0;
+  }
+
+ public:
+  virtual size_t GetSize() const { return m_impl.size(); }
+
+  virtual bool IsEmpty() const { return m_impl.empty(); }
+
+  virtual Iterator GetBegin() {
+    return Iterator(new Iterator::Implementation(m_impl.begin()));
+  }
+  virtual ConstIterator GetBegin() const {
+    return ConstIterator(new ConstIterator::Implementation(m_impl.begin()));
+  }
+  virtual Iterator GetEnd() {
+    return Iterator(new Iterator::Implementation(m_impl.end()));
+  }
+  virtual ConstIterator GetEnd() const {
+    return ConstIterator(new ConstIterator::Implementation(m_impl.end()));
+  }
+
+ private:
+  PositionHolderList m_impl;
+};
+
+}  // namespace
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+class ThreadPositionListTransaction : public Strategy::PositionListTransaction {
+ public:
+  class Data : public PositionListTransaction::Data {
+   public:
+    explicit Data(PositionMutableList &list) : m_originalList(list) {}
+
+    ~Data() {
+      try {
+        const auto &end = m_inserted.cend();
+        for (auto i = m_inserted.begin(); i != end; ++i) {
+          m_originalList.Insert(std::move(*i));
+        }
+      } catch (...) {
+        AssertFailNoException();
+        terminate();
+      }
+    }
+
+   public:
+    void Insert(PositionHolder &&position) {
+      Assert(std::find(m_inserted.cbegin(), m_inserted.cend(), *position) ==
+             m_inserted.cend());
+      m_inserted.emplace_back(std::move(position));
+    }
+
+    void Erase(const Position &position) {
+      // Supported only current list as another was not required before.
+      const auto it = std::find(m_inserted.begin(), m_inserted.end(), position);
+      Assert(it != m_inserted.cend());
+      if (it == m_inserted.cend()) {
+        return;
+      }
+      m_inserted.erase(it);
+    }
+
+   private:
+    PositionMutableList &m_originalList;
+    std::list<PositionHolder> m_inserted;
+  };
+
+ public:
+  explicit ThreadPositionListTransaction(PositionMutableList &list) {
+    if (IsStarted()) {
+      throw SystemException("Thread position list transaction already started");
+    }
+    m_instance.reset(new Data(list));
+  }
+  virtual ~ThreadPositionListTransaction() override { m_instance.reset(); }
+
+ public:
+  virtual std::unique_ptr<PositionListTransaction::Data> MoveToThread()
+      override {
+    Assert(IsStarted());
+    return std::unique_ptr<PositionListTransaction::Data>(m_instance.release());
+  }
+
+  static bool IsStarted() { return m_instance.get() ? true : false; }
+  static Data &GetData() {
+    Assert(m_instance.get());
+    Assert(IsStarted());
+    return *m_instance.get();
+  }
+
+ private:
+  static boost::thread_specific_ptr<Data> m_instance;
+};
+}  // namespace
+
+////////////////////////////////////////////////////////////////////////////////
 
 class Strategy::Implementation : private boost::noncopyable {
  public:
   typedef boost::mutex BlockMutex;
   typedef BlockMutex::scoped_lock BlockLock;
   typedef boost::condition_variable StopCondition;
-
-  class PositionList : public Strategy::PositionList {
-   public:
-    virtual ~PositionList() override = default;
-
-   public:
-    void Insert(const PositionHolder &&holder) {
-      Verify(m_impl.emplace(std::move(holder)).second);
-    }
-    void Erase(const Position &position) {
-      AssertLt(0, m_impl.get<ByPtr>().count(&position));
-      m_impl.get<ByPtr>().erase(&position);
-    }
-
-    bool Has(const Position &position) const {
-      return m_impl.get<ByPtr>().count(&position) > 0;
-    }
-
-   public:
-    virtual size_t GetSize() const { return m_impl.size(); }
-
-    virtual bool IsEmpty() const { return m_impl.empty(); }
-
-    virtual Iterator GetBegin() {
-      return Iterator(new Iterator::Implementation(m_impl.begin()));
-    }
-    virtual ConstIterator GetBegin() const {
-      return ConstIterator(new ConstIterator::Implementation(m_impl.begin()));
-    }
-    virtual Iterator GetEnd() {
-      return Iterator(new Iterator::Implementation(m_impl.end()));
-    }
-    virtual ConstIterator GetEnd() const {
-      return ConstIterator(new ConstIterator::Implementation(m_impl.end()));
-    }
-
-   private:
-    PositionHolderList m_impl;
-  };
-
-  class ThreadPositionListTransaction : public PositionListTransaction {
-   public:
-    class Data : private boost::noncopyable {
-     public:
-      explicit Data(PositionList &list) : m_originalList(list) {}
-
-      ~Data() {
-        try {
-          const auto &end = m_inserted.cend();
-          for (auto i = m_inserted.begin(); i != end; ++i) {
-            m_originalList.Insert(std::move(*i));
-          }
-        } catch (...) {
-          AssertFailNoException();
-          terminate();
-        }
-      }
-
-     public:
-      void Insert(PositionHolder &&position) {
-        Assert(std::find(m_inserted.cbegin(), m_inserted.cend(), *position) ==
-               m_inserted.cend());
-        m_inserted.emplace_back(std::move(position));
-      }
-
-      void Erase(const Position &position) {
-        // Supported only current list as another was not required before.
-        const auto it =
-            std::find(m_inserted.begin(), m_inserted.end(), position);
-        Assert(it != m_inserted.cend());
-        if (it == m_inserted.cend()) {
-          return;
-        }
-        m_inserted.erase(it);
-      }
-
-     private:
-      PositionList &m_originalList;
-      std::list<PositionHolder> m_inserted;
-    };
-
-   public:
-    explicit ThreadPositionListTransaction(PositionList &list) {
-      if (IsStarted()) {
-        throw SystemException(
-            "Thread position list transaction already started");
-      }
-      m_instance.reset(new Data(list));
-    }
-    virtual ~ThreadPositionListTransaction() override {
-      Assert(IsStarted());
-      Assert(m_instance.get());
-      m_instance.reset();
-    }
-
-   public:
-    static bool IsStarted() { return m_instance.get() ? true : false; }
-    static Data &GetData() {
-      Assert(m_instance.get());
-      Assert(IsStarted());
-      return *m_instance.get();
-    }
-
-   private:
-    static boost::thread_specific_ptr<Data> m_instance;
-  };
 
   template <typename SlotSignature>
   struct SignalTrait {
@@ -340,7 +350,7 @@ class Strategy::Implementation : private boost::noncopyable {
   StopCondition m_stopCondition;
   StopMode m_stopMode;
 
-  PositionList m_positions;
+  PositionMutableList m_positions;
   SignalTrait<PositionUpdateSlotSignature>::Signal m_positionUpdateSignal;
 
   std::vector<Position *> m_delayedPositionToForget;
@@ -477,9 +487,8 @@ class Strategy::Implementation : private boost::noncopyable {
   }
 };
 
-boost::thread_specific_ptr<
-    Strategy::Implementation::ThreadPositionListTransaction::Data>
-    Strategy::Implementation::ThreadPositionListTransaction::m_instance;
+boost::thread_specific_ptr<ThreadPositionListTransaction::Data>
+    ThreadPositionListTransaction::m_instance;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -506,7 +515,7 @@ Strategy::Strategy(trdk::Context &context,
 }
 
 Strategy::~Strategy() {
-  Assert(!Implementation::ThreadPositionListTransaction::IsStarted());
+  Assert(!ThreadPositionListTransaction::IsStarted());
   try {
     if (!m_pimpl->m_positions.IsEmpty()) {
       GetLog().Info("%1% active position(s).", m_pimpl->m_positions.GetSize());
@@ -565,17 +574,15 @@ void Strategy::Register(Position &position) {
   PositionHolder holder(position, position.Subscribe([this, &position]() {
     m_pimpl->m_positionUpdateSignal(position);
   }));
-  Implementation::ThreadPositionListTransaction::IsStarted()
-      ? Implementation::ThreadPositionListTransaction::GetData().Insert(
-            std::move(holder))
+  ThreadPositionListTransaction::IsStarted()
+      ? ThreadPositionListTransaction::GetData().Insert(std::move(holder))
       : m_pimpl->m_positions.Insert(std::move(holder));
 }
 
 void Strategy::Unregister(Position &position) noexcept {
   try {
-    Implementation::ThreadPositionListTransaction::IsStarted()
-        ? Implementation::ThreadPositionListTransaction::GetData().Erase(
-              position)
+    ThreadPositionListTransaction::IsStarted()
+        ? ThreadPositionListTransaction::GetData().Erase(position)
         : m_pimpl->m_positions.Erase(position);
   } catch (...) {
     AssertFailNoException();
@@ -915,7 +922,7 @@ Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(
 
 Strategy::PositionList &Strategy::GetPositions() {
   // Not supported as was not required before:
-  Assert(!Implementation::ThreadPositionListTransaction::IsStarted());
+  Assert(!ThreadPositionListTransaction::IsStarted());
   return m_pimpl->m_positions;
 }
 
@@ -925,7 +932,7 @@ const Strategy::PositionList &Strategy::GetPositions() const {
 
 std::unique_ptr<Strategy::PositionListTransaction>
 Strategy::StartThreadPositionsTransaction() {
-  return boost::make_unique<Implementation::ThreadPositionListTransaction>(
+  return boost::make_unique<ThreadPositionListTransaction>(
       m_pimpl->m_positions);
 }
 
@@ -969,6 +976,27 @@ void Strategy::Schedule(const pt::time_duration &delay,
                                      m_pimpl->FlushDelayed(lock);
                                    },
                                    m_pimpl->m_timerScope);
+}
+
+void Strategy::Schedule(boost::function<void()> &&callback) {
+  GetContext().GetTimer().Schedule(
+      [this, callback]() {
+        auto lock = LockForOtherThreads();
+        if (IsBlocked()) {
+          return;
+        }
+        try {
+          callback();
+        } catch (const RiskControlException &ex) {
+          m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
+          return;
+        } catch (const Exception &ex) {
+          Block(ex.what());
+          return;
+        }
+        m_pimpl->FlushDelayed(lock);
+      },
+      m_pimpl->m_timerScope);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
