@@ -20,7 +20,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/format.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/logic/tribool.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/noncopyable.hpp>

@@ -20,16 +20,50 @@ using namespace trdk::TradingLib;
 class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
  public:
   Data m_data;
+  size_t m_numberOfProfits;
+  size_t m_numberOfLosses;
 
  public:
+  Implementation() : m_numberOfProfits(0), m_numberOfLosses(0) {}
+
   void Update(const std::string &symbol, const Double &delta) {
     if (!delta) {
       return;
     }
     const auto &result = m_data.emplace(symbol, delta);
     if (!result.second) {
-      result.first->second += delta;
+      auto &value = result.first->second;
+      const auto prevValue = value;
+      value += delta;
+      if (value > 0) {
+        if (prevValue < 0) {
+          AssertLt(0, m_numberOfLosses);
+          --m_numberOfLosses;
+          ++m_numberOfProfits;
+        } else if (prevValue == 0) {
+          ++m_numberOfProfits;
+        }
+      } else if (value < 0) {
+        if (prevValue > 0) {
+          AssertLt(0, m_numberOfProfits);
+          --m_numberOfProfits;
+          ++m_numberOfLosses;
+        } else if (prevValue == 0) {
+          ++m_numberOfLosses;
+        }
+      } else if (prevValue > 0) {
+        AssertLt(0, m_numberOfProfits);
+        --m_numberOfProfits;
+      } else if (prevValue < 0) {
+        AssertLt(0, m_numberOfLosses);
+        --m_numberOfLosses;
+      }
+    } else if (delta > 0) {
+      ++m_numberOfProfits;
+    } else {
+      ++m_numberOfLosses;
     }
+    AssertLe(m_numberOfLosses + m_numberOfProfits, m_data.size());
   }
 };
 
@@ -61,19 +95,21 @@ bool PnlOneSymbolContainer::Update(const Security &security,
   return true;
 }
 
-boost::tribool PnlOneSymbolContainer::IsProfit() const {
-  if (m_pimpl->m_data.empty()) {
-    return boost::indeterminate;
+PnlOneSymbolContainer::Result PnlOneSymbolContainer::GetResult() const {
+  const auto numberOfBalances =
+      m_pimpl->m_numberOfLosses + m_pimpl->m_numberOfProfits;
+  if (numberOfBalances == 0) {
+    return RESULT_NONE;
+  } else if (numberOfBalances > 1) {
+    return RESULT_ERROR;
+  } else if (m_pimpl->m_numberOfProfits) {
+    AssertEq(1, m_pimpl->m_numberOfProfits);
+    AssertEq(0, m_pimpl->m_numberOfLosses);
+    return RESULT_PROFIT;
+  } else {
+    AssertEq(1, m_pimpl->m_numberOfLosses);
+    return RESULT_LOSS;
   }
-  boost::tribool result(false);
-  for (const auto &symbol : m_pimpl->m_data) {
-    if (symbol.second < 0) {
-      return false;
-    } else if (symbol.second > 0) {
-      result = true;
-    }
-  }
-  return result;
 }
 
 const PnlOneSymbolContainer::Data &PnlOneSymbolContainer::GetData() const {

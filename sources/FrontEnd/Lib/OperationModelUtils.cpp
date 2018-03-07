@@ -33,9 +33,7 @@ OperationRecord::OperationRecord(const ids::uuid &id,
       startTime(ConvertToQDateTime(startTime).time()),
       strategyName(QString::fromStdString(strategy.GetTitle())),
       strategyInstance(ShortenStrategyInstance(strategy.GetInstanceName())),
-      status(QObject::tr("active")),
-      isProfit(boost::indeterminate),
-      isCompelted(false) {}
+      status(QObject::tr("active")) {}
 
 void OperationRecord::Update(const Pnl::Data &data) {
   QString buffer;
@@ -68,13 +66,25 @@ void OperationRecord::Update(const Pnl::Data &data) {
 }
 
 void OperationRecord::Complete(const pt::ptime &newEndTime, const Pnl &pnl) {
-  Assert(boost::indeterminate(isProfit));
-  Assert(!isCompelted);
-  isCompelted = true;
+  Assert(!result);
   Update(pnl.GetData());
   endTime = ConvertToQDateTime(newEndTime).time();
-  isProfit = pnl.IsProfit();
-  status = boost::indeterminate(isProfit)
-               ? QObject::tr("canceled")
-               : isProfit ? QObject::tr("profit") : QObject::tr("loss");
+  result = pnl.GetResult();
+  static_assert(Pnl::numberOfResults == 4, "List changed.");
+  switch (*result) {
+    case Pnl::RESULT_NONE:
+      status = QObject::tr("canceled");
+      break;
+    case Pnl::RESULT_PROFIT:
+      status = QObject::tr("profit");
+      break;
+    case Pnl::RESULT_LOSS:
+      status = QObject::tr("loss");
+      break;
+    default:
+      AssertEq(Pnl::RESULT_ERROR, *result);
+    case Pnl::RESULT_ERROR:
+      status = QObject::tr("error");
+      break;
+  }
 }

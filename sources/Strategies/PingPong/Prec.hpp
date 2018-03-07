@@ -45,6 +45,7 @@
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/statistics/rolling_mean.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 
