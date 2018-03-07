@@ -26,7 +26,7 @@ class PnlOneSymbolContainer : public trdk::PnlContainer {
                       const trdk::Qty &,
                       const trdk::Price &,
                       const trdk::Volume &commission) override;
-  virtual boost::tribool IsProfit() const override;
+  virtual Result GetResult() const override;
   virtual const trdk::Pnl::Data &GetData() const override;
 
  private:

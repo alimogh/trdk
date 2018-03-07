@@ -45,15 +45,27 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
         options->backgroundBrush = backgoundColorOfError;
         options->palette.setColor(QPalette::Text, textColorOfError);
         options->font.setBold(true);
-      } else if (operation->GetRecord().isCompelted) {
-        if (!boost::indeterminate(operation->GetRecord().isProfit)) {
-          options->backgroundBrush =
-              operation->GetRecord().isProfit
-                  ? index.row() % 2 ? colorOfProfitAlt : colorOfProfit
-                  : index.row() % 2 ? colorOfLossAlt : colorOfLoss;
-          options->palette.setColor(QPalette::Text, textColorOfActive);
-        } else {
-          options->palette.setColor(QPalette::Text, colorOfInactive);
+      } else if (operation->GetRecord().result) {
+        static_assert(Pnl::numberOfResults, "List changed.");
+        switch (*operation->GetRecord().result) {
+          case Pnl::RESULT_NONE:
+            options->palette.setColor(QPalette::Text, colorOfInactive);
+            break;
+          case Pnl::RESULT_PROFIT:
+            options->backgroundBrush =
+                index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
+            break;
+          case Pnl::RESULT_LOSS:
+            options->backgroundBrush =
+                index.row() % 2 ? colorOfLossAlt : colorOfLoss;
+            break;
+          default:
+            AssertEq(Pnl::RESULT_ERROR, *operation->GetRecord().result);
+          case Pnl::RESULT_ERROR:
+            options->backgroundBrush = backgoundColorOfError;
+            options->palette.setColor(QPalette::Text, textColorOfError);
+            options->font.setBold(true);
+            break;
         }
       }
     }
