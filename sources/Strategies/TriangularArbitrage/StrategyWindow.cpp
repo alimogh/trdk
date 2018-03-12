@@ -52,28 +52,26 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_ui.isActivated->setChecked(m_strategy.IsTradingEnabled());
 
   {
-    {
-      const auto name = tr("Any exchange");
-      m_ui.startExchange->addItem(name);
-      m_ui.middleExchange->addItem(name);
-      m_ui.finishExchange->addItem(name);
-    }
     m_strategy.GetContext().ForEachMarketDataSource(
         [&](const MarketDataSource &source) {
           const auto name = QString::fromStdString(source.GetInstanceName());
-          const QVariant index(source.GetIndex());
-          m_ui.startExchange->addItem(name, index);
-          m_ui.middleExchange->addItem(name, index);
-          m_ui.finishExchange->addItem(name, index);
+          const auto &addItem = [&](QListWidget &control) {
+            auto &item = *new QListWidgetItem(name);
+            control.addItem(&item);
+            item.setData(Qt::UserRole, static_cast<int>(source.GetIndex()));
+          };
+          addItem(*m_ui.startExchanges);
+          addItem(*m_ui.middleExchanges);
+          addItem(*m_ui.finishExchanges);
         });
-    SetSelectedStartExchange();
-    SetSelectedMiddleExchange();
-    SetSelectedFinishExchange();
+    SetSelectedStartExchanges();
+    SetSelectedMiddleExchanges();
+    SetSelectedFinishExchanges();
   }
 
   m_ui.minVolume->setValue(m_strategy.GetMinVolume());
   m_ui.maxVolume->setValue(m_strategy.GetMaxVolume());
-  m_ui.volumeSymbol->setText(m_startCurrency);
+  m_ui.volumeSymbol->setText(tr("Volume (%1):").arg(m_startCurrency));
 
   m_ui.minProfit->setValue(m_strategy.GetMinProfitRatio() * 100);
 
@@ -97,11 +95,11 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
       m_legs[legIndex].symbol->setText(name);
       m_legs[legIndex].price->setStyleSheet(leg.side == ORDER_SIDE_SELL
-                                                ? "color: rgb(230, 59, 1);"
-                                                : "color: rgb(0, 195, 91);");
+                                                ? "color:rgb(230,59,1);"
+                                                : "color:rgb(0,195,91);");
       m_legs[legIndex].frame->setStyleSheet(
-          leg.side == ORDER_SIDE_SELL ? "border-color: rgb(230, 59, 1);"
-                                      : "border-color: rgb(0, 195, 91);");
+          leg.side == ORDER_SIDE_SELL ? "border-color:rgb(230,59,1);"
+                                      : "border-color:rgb(0,195,91);");
 
       m_ui.opportunities->setHorizontalHeaderItem(
           column++, new QTableWidgetItem(name + " " + tr("Qty.")));
@@ -134,9 +132,9 @@ void StrategyWindow::Disable() {
   m_ui.minVolume->setEnabled(false);
   m_ui.maxVolume->setEnabled(false);
   m_ui.minProfit->setEnabled(false);
-  m_ui.startExchange->setEnabled(false);
-  m_ui.middleExchange->setEnabled(false);
-  m_ui.finishExchange->setEnabled(false);
+  m_ui.startExchanges->setEnabled(false);
+  m_ui.middleExchanges->setEnabled(false);
+  m_ui.finishExchanges->setEnabled(false);
 }
 
 void StrategyWindow::OnBlocked(const QString &reason) {
@@ -148,11 +146,6 @@ void StrategyWindow::ConnectSignals() {
   qRegisterMetaType<std::vector<Opportunity>>("std::vector<Opportunity>");
   Verify(connect(this, &StrategyWindow::OpportunityUpdated, this,
                  &StrategyWindow::OnOpportunityUpdate, Qt::QueuedConnection));
-
-  qRegisterMetaType<std::vector<std::string>>("std::vector<std::string>");
-  Verify(connect(this, &StrategyWindow::TradingSignalCheckErrors, this,
-                 &StrategyWindow::OnTradingSignalCheckErrors,
-                 Qt::QueuedConnection));
 
   Verify(connect(this, &StrategyWindow::Blocked, this,
                  &StrategyWindow::OnBlocked, Qt::QueuedConnection));
@@ -171,61 +164,34 @@ void StrategyWindow::ConnectSignals() {
   }));
 
   Verify(connect(
-      m_ui.startExchange,
-      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-      [this](int itemIndex) {
-        {
-          boost::optional<size_t> tradingSystemIndex;
-          const auto &itemData = m_ui.startExchange->itemData(itemIndex);
-          if (itemData.isValid()) {
-            tradingSystemIndex = itemData.toInt();
-          }
-          try {
-            m_strategy.SetStartExchange(tradingSystemIndex);
-          } catch (const std::exception &ex) {
-            QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
-                                  ex.what(), QMessageBox::Ok);
-          }
+      m_ui.startExchanges, &QListWidget::itemSelectionChanged, [this]() {
+        try {
+          m_strategy.SetStartExchanges(GetSelectedStartExchanges());
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
+                                ex.what(), QMessageBox::Ok);
         }
-        SetSelectedStartExchange();
+        SetSelectedStartExchanges();
       }));
   Verify(connect(
-      m_ui.middleExchange,
-      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-      [this](int itemIndex) {
-        {
-          boost::optional<size_t> tradingSystemIndex;
-          const auto &itemData = m_ui.middleExchange->itemData(itemIndex);
-          if (itemData.isValid()) {
-            tradingSystemIndex = itemData.toInt();
-          }
-          try {
-            m_strategy.SetMiddleExchange(tradingSystemIndex);
-          } catch (const std::exception &ex) {
-            QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
-                                  ex.what(), QMessageBox::Ok);
-          }
+      m_ui.middleExchanges, &QListWidget::itemSelectionChanged, [this]() {
+        try {
+          m_strategy.SetMiddleExchanges(GetSelectedMiddleExchanges());
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
+                                ex.what(), QMessageBox::Ok);
         }
-        SetSelectedMiddleExchange();
+        SetSelectedMiddleExchanges();
       }));
   Verify(connect(
-      m_ui.finishExchange,
-      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-      [this](int itemIndex) {
-        {
-          boost::optional<size_t> tradingSystemIndex;
-          const auto &itemData = m_ui.finishExchange->itemData(itemIndex);
-          if (itemData.isValid()) {
-            tradingSystemIndex = itemData.toInt();
-          }
-          try {
-            m_strategy.SetFinishExchange(tradingSystemIndex);
-          } catch (const std::exception &ex) {
-            QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
-                                  ex.what(), QMessageBox::Ok);
-          }
+      m_ui.finishExchanges, &QListWidget::itemSelectionChanged, [this]() {
+        try {
+          m_strategy.SetFinishExchanges(GetSelectedFinishExchanges());
+        } catch (const std::exception &ex) {
+          QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
+                                ex.what(), QMessageBox::Ok);
         }
-        SetSelectedFinishExchange();
+        SetSelectedFinishExchanges();
       }));
 
   Verify(connect(m_ui.minVolume,
@@ -339,11 +305,6 @@ ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
       [this](const std::vector<Opportunity> &opportunities) {
         emit OpportunityUpdated(opportunities);
       });
-  m_tradingSignalCheckErrorsConnection =
-      result.SubscribeToTradingSignalCheckErrors(
-          [this](const std::vector<std::string> &errors) {
-            emit TradingSignalCheckErrors(errors);
-          });
   m_blockConnection =
       result.SubscribeToBlocking([this](const std::string *reasonSource) {
         QString reason;
@@ -385,7 +346,7 @@ void StrategyWindow::OnOpportunityUpdate(
                                      bestOpportunity.targets[LEG_1].price),
                  m_startCurrency)));
 
-    static const QString signaledStyle("background-color: rgb(0, 146, 68);");
+    static const QString signaledStyle("background-color:rgb(0,146,68);");
     m_ui.operationResultFrame->setStyleSheet(
         bestOpportunity.isSignaled ? signaledStyle : styleSheet());
   } else {
@@ -480,34 +441,59 @@ void StrategyWindow::OnOpportunityUpdate(
   }
 }
 
-void StrategyWindow::OnTradingSignalCheckErrors(
-    const std::vector<std::string> &errors) {
-  m_ui.events->clear();
-  for (const auto &error : errors) {
-    m_ui.events->appendPlainText(QString::fromStdString(error));
+boost::unordered_set<size_t> StrategyWindow::GetSelectedStartExchanges() const {
+  return GetSelectedExchanges(*m_ui.startExchanges,
+                              m_strategy.GetStartExchanges());
+}
+boost::unordered_set<size_t> StrategyWindow::GetSelectedMiddleExchanges()
+    const {
+  return GetSelectedExchanges(*m_ui.middleExchanges,
+                              m_strategy.GetMiddleExchanges());
+}
+boost::unordered_set<size_t> StrategyWindow::GetSelectedFinishExchanges()
+    const {
+  return GetSelectedExchanges(*m_ui.finishExchanges,
+                              m_strategy.GetFinishExchanges());
+}
+boost::unordered_set<size_t> StrategyWindow::GetSelectedExchanges(
+    const QListWidget &control,
+    const boost::unordered_set<size_t> &defaultResult) const {
+  boost::unordered_set<size_t> result;
+  const auto &selected = control.selectedItems();
+  if (selected.size() == control.count()) {
+    return result;
   }
+  for (const auto &item : selected) {
+    Verify(result.emplace(item->data(Qt::UserRole).toInt()).second);
+  }
+  return !result.empty() ? result : defaultResult;
 }
 
-void StrategyWindow::SetSelectedStartExchange() {
-  SetSelectedExchange(*m_ui.startExchange, m_strategy.GetStartExchange());
+void StrategyWindow::SetSelectedStartExchanges() {
+  SetSelectedExchanges(*m_ui.startExchanges, m_strategy.GetStartExchanges());
 }
-void StrategyWindow::SetSelectedMiddleExchange() {
-  SetSelectedExchange(*m_ui.middleExchange, m_strategy.GetMiddleExchange());
+void StrategyWindow::SetSelectedMiddleExchanges() {
+  SetSelectedExchanges(*m_ui.middleExchanges, m_strategy.GetMiddleExchanges());
 }
-void StrategyWindow::SetSelectedFinishExchange() {
-  SetSelectedExchange(*m_ui.finishExchange, m_strategy.GetFinishExchange());
+void StrategyWindow::SetSelectedFinishExchanges() {
+  SetSelectedExchanges(*m_ui.finishExchanges, m_strategy.GetFinishExchanges());
 }
-
-void StrategyWindow::SetSelectedExchange(
-    QComboBox &control, const boost::optional<size_t> &index) const {
+void StrategyWindow::SetSelectedExchanges(
+    QListWidget &control, const boost::unordered_set<size_t> &indexes) const {
   const QSignalBlocker blocker(control);
-  for (int i = 0; i < control.count(); ++i) {
-    const auto &item = control.itemData(i);
-    if ((item.isNull() && !index) ||
-        (!item.isNull() && index && item.toInt() == *index)) {
-      control.setCurrentIndex(i);
-      return;
+
+  if (indexes.empty()) {
+    control.selectAll();
+  } else {
+    for (int i = 0; i < control.count(); ++i) {
+      auto &item = *control.item(i);
+      item.setSelected(indexes.count(item.data(Qt::UserRole).toInt()) > 0);
     }
   }
-  Assert(false);
+
+  if (control.selectedItems().size() == control.count()) {
+    control.setStyleSheet(styleSheet());
+  } else {
+    control.setStyleSheet("border-color:rgb(255,255,0);");
+  }
 }

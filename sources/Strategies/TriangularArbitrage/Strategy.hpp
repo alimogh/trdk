@@ -38,19 +38,17 @@ class Strategy : public trdk::Strategy {
   const Lib::Double &GetMinProfitRatio() const;
   void SetMinProfitRatio(const Lib::Double &);
 
-  boost::optional<size_t> GetStartExchange() const;
-  void SetStartExchange(const boost::optional<size_t> &);
-  boost::optional<size_t> GetMiddleExchange() const;
-  void SetMiddleExchange(const boost::optional<size_t> &);
-  boost::optional<size_t> GetFinishExchange() const;
-  void SetFinishExchange(const boost::optional<size_t> &);
+  const boost::unordered_set<size_t> &GetStartExchanges() const;
+  void SetStartExchanges(boost::unordered_set<size_t> &&);
+  const boost::unordered_set<size_t> &GetMiddleExchanges() const;
+  void SetMiddleExchanges(boost::unordered_set<size_t> &&);
+  const boost::unordered_set<size_t> &GetFinishExchanges() const;
+  void SetFinishExchanges(boost::unordered_set<size_t> &&);
 
   void Stop() noexcept;
 
   boost::signals2::scoped_connection SubscribeToOpportunity(
       const boost::function<void(const std::vector<Opportunity> &)> &);
-  boost::signals2::scoped_connection SubscribeToTradingSignalCheckErrors(
-      const boost::function<void(const std::vector<std::string> &)> &);
   boost::signals2::scoped_connection SubscribeToBlocking(
       const boost::function<void(const std::string *reason)> &);
 

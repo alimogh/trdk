@@ -39,12 +39,10 @@ class StrategyWindow : public QMainWindow {
 
  private slots:
   void OnOpportunityUpdate(const std::vector<Opportunity> &);
-  void OnTradingSignalCheckErrors(const std::vector<std::string> &);
   void OnBlocked(const QString &reason);
 
  signals:
   void OpportunityUpdated(const std::vector<Opportunity> &);
-  void TradingSignalCheckErrors(const std::vector<std::string> &);
   void Blocked(const QString &reason);
 
  private:
@@ -53,10 +51,18 @@ class StrategyWindow : public QMainWindow {
 
   void Disable();
 
-  void SetSelectedStartExchange();
-  void SetSelectedMiddleExchange();
-  void SetSelectedFinishExchange();
-  void SetSelectedExchange(QComboBox &, const boost::optional<size_t> &) const;
+  boost::unordered_set<size_t> GetSelectedStartExchanges() const;
+  boost::unordered_set<size_t> GetSelectedMiddleExchanges() const;
+  boost::unordered_set<size_t> GetSelectedFinishExchanges() const;
+  boost::unordered_set<size_t> GetSelectedExchanges(
+      const QListWidget &,
+      const boost::unordered_set<size_t> &defaultResult) const;
+
+  void SetSelectedStartExchanges();
+  void SetSelectedMiddleExchanges();
+  void SetSelectedFinishExchanges();
+  void SetSelectedExchanges(QListWidget &,
+                            const boost::unordered_set<size_t> &) const;
 
  private:
   FrontEnd::Lib::Engine &m_engine;
@@ -65,7 +71,6 @@ class StrategyWindow : public QMainWindow {
   boost::array<Leg, numberOfLegs> m_legs;
 
   boost::signals2::scoped_connection m_opportunityUpdateConnection;
-  boost::signals2::scoped_connection m_tradingSignalCheckErrorsConnection;
   boost::signals2::scoped_connection m_blockConnection;
 
   size_t m_maxNumberOfOppotunities;

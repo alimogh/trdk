@@ -110,57 +110,6 @@ class OppositeLegPolicy : public Base {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-class SignalSession : private boost::noncopyable {
- public:
-  void RegisterCheckError(const TradingSystem &leg1,
-                          const TradingSystem &leg2,
-                          const TradingSystem &leg3,
-                          const TradingSystem &checkedTarget,
-                          const std::string &error) {
-    Verify(m_checkErrors
-               .emplace(
-                   boost::array<const TradingSystem *, numberOfLegs>{
-                       &leg1, &leg2, &leg3},
-                   std::make_pair(&error, &checkedTarget))
-               .second);
-  }
-  void RegisterCheckError(const TradingSystem &leg1,
-                          const TradingSystem &leg2,
-                          const TradingSystem &leg3,
-                          const std::string &error) {
-    Verify(m_checkErrors
-               .emplace(
-                   boost::array<const TradingSystem *, numberOfLegs>{
-                       &leg1, &leg2, &leg3},
-                   std::make_pair(&error, nullptr))
-               .second);
-  }
-
-  void ForEachCheckError(
-      const boost::function<void(const TradingSystem &leg1,
-                                 const TradingSystem &leg2,
-                                 const TradingSystem &leg3,
-                                 const std::string &error,
-                                 const TradingSystem *checkedTarget)> &callback)
-      const {
-    for (const auto &targetSet : m_checkErrors) {
-      callback(*targetSet.first[LEG_1], *targetSet.first[LEG_2],
-               *targetSet.first[LEG_3], *targetSet.second.first,
-               targetSet.second.second);
-    }
-  }
-
- private:
-  std::map<const boost::array<const TradingSystem *, numberOfLegs>,
-           std::pair<const std::string *, const TradingSystem *>>
-      m_checkErrors;
-};
-
-}  // namespace
-
-////////////////////////////////////////////////////////////////////////////////
-
-namespace {
 
 class WrongLegsConfigurationDetectedByVolumes : public Exception {
  public:
@@ -203,31 +152,23 @@ class ta::Strategy::Implementation : private boost::noncopyable {
   size_t m_numberOfSecuriries;
 
   sig::signal<void(const std::vector<Opportunity> &)> m_opportunitySignal;
-  sig::signal<void(const std::vector<std::string> &)>
-      m_tradingSignalCheckErrorsSignal;
   sig::signal<void(const std::string *)> m_blockSignal;
 
   bool m_isTradingEnabled;
   Volume m_minVolume;
   Volume m_maxVolume;
   Double m_minProfitRatio;
-  const MarketDataSource *m_startExchange;
-  const MarketDataSource *m_middleExchange;
-  const MarketDataSource *m_finishExchange;
+  boost::unordered_set<size_t> m_startExchanges;
+  boost::unordered_set<size_t> m_middleExchanges;
+  boost::unordered_set<size_t> m_finishExchanges;
 
   Controller m_controller;
 
   boost::unordered_set<const TradingSystem *> m_failedTargets;
-  mutable std::vector<std::string> m_lastTradingSignalCheckErrors;
 
  public:
   Implementation(ta::Strategy &self)
-      : m_self(self),
-        m_isStopped(false),
-        m_numberOfSecuriries(0),
-        m_startExchange(nullptr),
-        m_middleExchange(nullptr),
-        m_finishExchange(nullptr) {}
+      : m_self(self), m_isStopped(false), m_numberOfSecuriries(0) {}
 
   void CheckSignal(const Milestones &delayMeasurement) {
     std::vector<Opportunity> opportunities;
@@ -236,20 +177,20 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     boost::optional<WrongLegsConfigurationDetectedByVolumes> configurationError;
 
     for (auto *const leg1 : m_legs[LEG_1]->GetSecurities()) {
-      if (m_startExchange && m_startExchange != &leg1->GetSource()) {
+      if (!IsExchangeEnabled(*leg1, m_startExchanges)) {
         hasSkippedSecurities = true;
         continue;
       }
       auto &leg1Trading = m_self.GetTradingSystem(leg1->GetSource().GetIndex());
       for (auto *const leg2 : m_legs[LEG_2]->GetSecurities()) {
-        if (m_middleExchange && m_middleExchange != &leg2->GetSource()) {
+        if (!IsExchangeEnabled(*leg2, m_middleExchanges)) {
           hasSkippedSecurities = true;
           continue;
         }
         auto &leg2Trading =
             m_self.GetTradingSystem(leg2->GetSource().GetIndex());
         for (auto *const leg3 : m_legs[LEG_3]->GetSecurities()) {
-          if (m_finishExchange && m_finishExchange != &leg3->GetSource()) {
+          if (!IsExchangeEnabled(*leg3, m_finishExchanges)) {
             hasSkippedSecurities = true;
             continue;
           }
@@ -333,17 +274,14 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
   void Trade(const std::vector<Opportunity> &opportunities,
              const Milestones &delayMeasurement) {
-    SignalSession signalSession;
     for (const auto &opportunity : opportunities) {
       if (opportunity.isSignaled) {
-        Trade(opportunity, signalSession, delayMeasurement);
+        Trade(opportunity, delayMeasurement);
       }
     }
-    ReportSignalCheckErrors(signalSession);
   }
 
   void Trade(const Opportunity &opportunity,
-             SignalSession &signalSession,
              const Milestones &delayMeasurement) {
     Assert(opportunity.isSignaled);
     Assert(!opportunity.checkError);
@@ -366,11 +304,6 @@ class ta::Strategy::Implementation : private boost::noncopyable {
         continue;
       }
       if (blockedTarget) {
-        static std::string error = "two or more targets on the blocked list";
-        signalSession.RegisterCheckError(
-            *opportunity.targets[LEG_1].tradingSystem,
-            *opportunity.targets[LEG_2].tradingSystem,
-            *opportunity.targets[LEG_3].tradingSystem, error);
         return;
       }
       blockedTarget = static_cast<Leg>(i);
@@ -550,31 +483,6 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                          exception);                  // 3
   }
 
-  void ReportSignalCheckErrors(const SignalSession &session) const {
-    std::vector<std::string> report;
-    session.ForEachCheckError(
-        [this, &report](const TradingSystem &leg1, const TradingSystem &leg2,
-                        const TradingSystem &leg3, const std::string &error,
-                        const TradingSystem *checkedTarget) {
-          std::ostringstream os;
-          os << leg1.GetInstanceName() << ", " << leg2.GetInstanceName() << ", "
-             << leg3.GetInstanceName() << ": " << error;
-          if (checkedTarget) {
-            os << " (" << checkedTarget->GetInstanceName() << ")";
-          }
-          report.emplace_back(os.str());
-        });
-    if (report == m_lastTradingSignalCheckErrors) {
-      return;
-    }
-    m_lastTradingSignalCheckErrors = std::move(report);
-    m_self.GetTradingLog().Write(
-        "signal check errors: {%1%}", [this](TradingRecord &record) {
-          record % boost::join(m_lastTradingSignalCheckErrors, "}, {");
-        });
-    m_tradingSignalCheckErrorsSignal(m_lastTradingSignalCheckErrors);
-  }
-
   void CalcLegsQtys(Opportunity &opportunity) const {
     AssertEq(numberOfLegs, opportunity.reducedByAccountBalanceLeg);
     auto &targets = opportunity.targets;
@@ -665,41 +573,37 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     return {nullptr, nullptr};
   }
 
-  void SetExchange(const boost::optional<size_t> &source,
-                   const MarketDataSource *&destination,
-                   const char *type) {
+  void SetExchanges(boost::unordered_set<size_t> &&source,
+                    boost::unordered_set<size_t> &destination,
+                    const char *type) {
     const auto lock = m_self.LockForOtherThreads();
-    if ((destination ? true : false) == source.is_initialized() &&
-        (!destination || destination->GetIndex() == *source)) {
+    if (source == destination) {
       return;
     }
-    const MarketDataSource *sourceExchange = nullptr;
-    if (source) {
-      sourceExchange = &m_self.GetContext().GetMarketDataSource(*source);
-    }
+
     m_self.GetTradingLog().Write(
-        "%1% exchange: %2% -> %3%", [&](TradingRecord &record) {
+        "%1% exchange: %2%", [&](TradingRecord &record) {
           record % type;  // 1
-          if (!destination) {
+          if (source.empty()) {
             record % "any exchange";  // 2
           } else {
-            record % destination->GetInstanceName();  // 2
-          }
-          if (!sourceExchange) {
-            record % "any exchange";  // 3
-          } else {
-            record % sourceExchange->GetInstanceName();  // 3
+            std::vector<std::string> names;
+            names.reserve(source.size());
+            for (const auto &index : source) {
+              names.emplace_back(m_self.GetContext()
+                                     .GetMarketDataSource(index)
+                                     .GetInstanceName());
+            }
+            record % boost::join(names, ", ");  // 2
           }
         });
-    destination = sourceExchange;
+    destination = std::move(source);
     RecheckSignal();
   }
 
-  boost::optional<size_t> GetExchange(const MarketDataSource *source) const {
-    if (!source) {
-      return boost::none;
-    }
-    return source->GetIndex();
+  bool IsExchangeEnabled(const Security &leg,
+                         const boost::unordered_set<size_t> &set) const {
+    return set.empty() || set.count(leg.GetSource().GetIndex()) > 0;
   }
 };
 
@@ -778,11 +682,6 @@ void ta::Strategy::Stop() noexcept {
 sig::scoped_connection ta::Strategy::SubscribeToOpportunity(
     const boost::function<void(const std::vector<Opportunity> &)> &slot) {
   return m_pimpl->m_opportunitySignal.connect(slot);
-}
-
-sig::scoped_connection ta::Strategy::SubscribeToTradingSignalCheckErrors(
-    const boost::function<void(const std::vector<std::string> &)> &slot) {
-  return m_pimpl->m_tradingSignalCheckErrorsSignal.connect(slot);
 }
 
 sig::scoped_connection ta::Strategy::SubscribeToBlocking(
@@ -946,23 +845,28 @@ void ta::Strategy::SetMinProfitRatio(const Double &minProfitRatio) {
   m_pimpl->RecheckSignal();
 }
 
-boost::optional<size_t> ta::Strategy::GetStartExchange() const {
-  return m_pimpl->GetExchange(m_pimpl->m_startExchange);
+const boost::unordered_set<size_t> &ta::Strategy::GetStartExchanges() const {
+  return m_pimpl->m_startExchanges;
 }
-void ta::Strategy::SetStartExchange(const boost::optional<size_t> &exchange) {
-  m_pimpl->SetExchange(exchange, m_pimpl->m_startExchange, "start");
+void ta::Strategy::SetStartExchanges(boost::unordered_set<size_t> &&exchanges) {
+  m_pimpl->SetExchanges(std::move(exchanges), m_pimpl->m_startExchanges,
+                        "start");
 }
-boost::optional<size_t> ta::Strategy::GetMiddleExchange() const {
-  return m_pimpl->GetExchange(m_pimpl->m_middleExchange);
+const boost::unordered_set<size_t> &ta::Strategy::GetMiddleExchanges() const {
+  return m_pimpl->m_middleExchanges;
 }
-void ta::Strategy::SetMiddleExchange(const boost::optional<size_t> &exchange) {
-  m_pimpl->SetExchange(exchange, m_pimpl->m_middleExchange, "middle");
+void ta::Strategy::SetMiddleExchanges(
+    boost::unordered_set<size_t> &&exchanges) {
+  m_pimpl->SetExchanges(std::move(exchanges), m_pimpl->m_middleExchanges,
+                        "middle");
 }
-boost::optional<size_t> ta::Strategy::GetFinishExchange() const {
-  return m_pimpl->GetExchange(m_pimpl->m_finishExchange);
+const boost::unordered_set<size_t> &ta::Strategy::GetFinishExchanges() const {
+  return m_pimpl->m_finishExchanges;
 }
-void ta::Strategy::SetFinishExchange(const boost::optional<size_t> &exchange) {
-  m_pimpl->SetExchange(exchange, m_pimpl->m_finishExchange, "finish");
+void ta::Strategy::SetFinishExchanges(
+    boost::unordered_set<size_t> &&exchanges) {
+  m_pimpl->SetExchanges(std::move(exchanges), m_pimpl->m_finishExchanges,
+                        "finish");
 }
 
 const boost::array<std::unique_ptr<LegPolicy>, numberOfLegs>
