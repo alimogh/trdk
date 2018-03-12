@@ -84,4 +84,4 @@ boost::shared_ptr<Operation> TakerOperation::StartInvertedPosition(
 
 bool TakerOperation::IsLong(const Security &) const { return m_isLong; }
 
-Qty TakerOperation::GetPlannedQty() const { return m_qty; }
+Qty TakerOperation::GetPlannedQty(const Security &) const { return m_qty; }

@@ -22,6 +22,8 @@ BestSecurityChecker::BestSecurityChecker() : m_bestSecurity(nullptr) {}
 
 const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
   AssertNe(m_bestSecurity, &checkSecurity);
+  Assert(!m_bestSecurity ||
+         m_bestSecurity->GetSymbol() == checkSecurity.GetSymbol());
 
   if (!checkSecurity.IsOnline()) {
     static const std::string error = "security if offline";

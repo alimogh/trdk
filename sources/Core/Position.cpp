@@ -1185,11 +1185,6 @@ Volume Position::GetPlannedPnl() const {
   return GetUnrealizedPnl() + GetRealizedPnl();
 }
 
-bool Position::IsProfit() const {
-  const auto ratio = GetRealizedPnlRatio();
-  return ratio > 1.0 && !IsEqual(ratio, 1.0);
-}
-
 size_t Position::GetNumberOfOpenOrders() const {
   return m_pimpl->m_open.orders.size();
 }

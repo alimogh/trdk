@@ -69,14 +69,15 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
 
 PnlOneSymbolContainer::PnlOneSymbolContainer()
     : m_pimpl(boost::make_unique<Implementation>()) {}
+
 PnlOneSymbolContainer::~PnlOneSymbolContainer() = default;
 
 bool PnlOneSymbolContainer::Update(const Security &security,
                                    const OrderSide &side,
                                    const Qty &qty,
                                    const Price &price,
-                                   const Volume &comission) {
-  if (qty == 0 && price == 0 && comission == 0) {
+                                   const Volume &commission) {
+  if (qty == 0 && price == 0 && commission == 0) {
     return false;
   }
   const auto &symbol = security.GetSymbol();
@@ -89,7 +90,7 @@ bool PnlOneSymbolContainer::Update(const Security &security,
                       qty * (side == ORDER_SIDE_BUY ? 1 : -1));
       m_pimpl->Update(
           symbol.GetQuoteSymbol(),
-          ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)) - comission);
+          ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)) - commission);
     }
   }
   return true;

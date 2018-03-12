@@ -115,7 +115,7 @@ bool Operation::IsLong(const Security &) const {
       "Position instance does not use operation context to get order side");
 }
 
-Qty Operation::GetPlannedQty() const {
+Qty Operation::GetPlannedQty(const Security &) const {
   throw LogicError(
       "Position instance does not use operation context to calculate position "
       "planned size");

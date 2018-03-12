@@ -114,16 +114,16 @@ class Strategy : public trdk::Strategy {
   void EnableRsiClosingSignalConfirmation(bool);
   size_t GetNumberOfRsiPeriods() const;
   void SetNumberOfRsiPeriods(size_t);
-  Lib::Double GetRsiOverboughtLevel() const;
+  const Lib::Double &GetRsiOverboughtLevel() const;
   void SetRsiOverboughtLevel(const Lib::Double &);
-  Lib::Double GetRsiOversoldLevel() const;
+  const Lib::Double &GetRsiOversoldLevel() const;
   void SetRsiOversoldLevel(const Lib::Double &);
 
   void SetPositionSize(const Qty &);
-  Qty GetPositionSize() const;
+  const Qty &GetPositionSize() const;
 
   void SetStopLoss(const Lib::Double &);
-  Lib::Double GetStopLoss() const;
+  const Lib::Double &GetStopLoss() const;
   void SetTakeProfit(const Lib::Double &);
   void SetTakeProfitTrailing(const Lib::Double &);
   Lib::Double GetTakeProfit() const;

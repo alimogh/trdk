@@ -366,8 +366,7 @@ void pp::Strategy::SetPositionSize(const Qty &size) {
                         });
   m_pimpl->m_positionSize = size;
 }
-Qty pp::Strategy::GetPositionSize() const {
-  const auto lock = LockForOtherThreads();
+const Qty &pp::Strategy::GetPositionSize() const {
   return m_pimpl->m_positionSize;
 }
 
@@ -391,7 +390,6 @@ void pp::Strategy::EnableTrading(bool isEnabled) {
   });
 }
 bool pp::Strategy::IsTradingEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_controller.IsOpeningEnabled();
 }
 
@@ -428,16 +426,13 @@ void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {
                         });
 }
 bool pp::Strategy::IsActivePositionsControlEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_controller.IsClosingEnabled();
 }
 
 bool pp::Strategy::IsMaOpeningSignalConfirmationEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_indicatorsToggles.ma.isOpeningSignalConfirmationEnabled;
 }
 bool pp::Strategy::IsMaClosingSignalConfirmationEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_indicatorsToggles.ma.isClosingSignalConfirmationEnabled;
 }
 void pp::Strategy::EnableMaOpeningSignalConfirmation(bool isEnabled) {
@@ -476,7 +471,6 @@ void pp::Strategy::SetNumberOfFastMaPeriods(size_t numberOfPeriods) {
       m_pimpl->m_fastMaSize, numberOfPeriods);
 }
 size_t pp::Strategy::GetNumberOfFastMaPeriods() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_fastMaSize;
 }
 void pp::Strategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
@@ -487,16 +481,13 @@ void pp::Strategy::SetNumberOfSlowMaPeriods(size_t numberOfPeriods) {
       m_pimpl->m_slowMaSize, numberOfPeriods);
 }
 size_t pp::Strategy::GetNumberOfSlowMaPeriods() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_slowMaSize;
 }
 
 bool pp::Strategy::IsRsiOpeningSignalConfirmationEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_indicatorsToggles.rsi.isOpeningSignalConfirmationEnabled;
 }
 bool pp::Strategy::IsRsiClosingSignalConfirmationEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_indicatorsToggles.rsi.isClosingSignalConfirmationEnabled;
 }
 void pp::Strategy::EnableRsiOpeningSignalConfirmation(bool isEnabled) {
@@ -526,7 +517,6 @@ void pp::Strategy::EnableRsiClosingSignalConfirmation(bool isEnabled) {
   toggle = isEnabled;
 }
 size_t pp::Strategy::GetNumberOfRsiPeriods() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_numberOfRsiPeriods;
 }
 void pp::Strategy::SetNumberOfRsiPeriods(size_t newNumberOfPeriods) {
@@ -580,8 +570,7 @@ void pp::Strategy::SetStopLoss(const Double &stopLoss) {
   *m_pimpl->m_stopLoss = StopLossShare::Params{stopLoss};
 }
 
-Double pp::Strategy::GetRsiOverboughtLevel() const {
-  const auto lock = LockForOtherThreads();
+const Double &pp::Strategy::GetRsiOverboughtLevel() const {
   return m_pimpl->m_rsiOverboughtLevel;
 }
 void pp::Strategy::SetRsiOverboughtLevel(const Double &value) {
@@ -603,8 +592,7 @@ void pp::Strategy::SetRsiOverboughtLevel(const Double &value) {
   }
   m_pimpl->m_rsiOverboughtLevel = value;
 }
-Double pp::Strategy::GetRsiOversoldLevel() const {
-  const auto lock = LockForOtherThreads();
+const Double &pp::Strategy::GetRsiOversoldLevel() const {
   return m_pimpl->m_rsiOversoldLevel;
 }
 void pp::Strategy::SetRsiOversoldLevel(const Double &value) {
@@ -627,8 +615,7 @@ void pp::Strategy::SetRsiOversoldLevel(const Double &value) {
   m_pimpl->m_rsiOversoldLevel = value;
 }
 
-Double pp::Strategy::GetStopLoss() const {
-  const auto lock = LockForOtherThreads();
+const Double &pp::Strategy::GetStopLoss() const {
   return m_pimpl->m_stopLoss->GetMaxLossShare();
 }
 void pp::Strategy::SetTakeProfit(const Double &takeProfit) {
@@ -644,7 +631,6 @@ void pp::Strategy::SetTakeProfit(const Double &takeProfit) {
       takeProfit, m_pimpl->m_takeProfit->GetTrailingShareToClose()};
 }
 Double pp::Strategy::GetTakeProfit() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_takeProfit->GetProfitShareToActivate();
 }
 void pp::Strategy::SetTakeProfitTrailing(const Double &trailing) {
@@ -661,7 +647,6 @@ void pp::Strategy::SetTakeProfitTrailing(const Double &trailing) {
       m_pimpl->m_takeProfit->GetProfitShareToActivate(), trailing};
 }
 Double pp::Strategy::GetTakeProfitTrailing() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_takeProfit->GetTrailingShareToClose();
 }
 

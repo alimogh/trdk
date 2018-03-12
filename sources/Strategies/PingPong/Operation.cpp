@@ -48,7 +48,7 @@ void pp::Operation::Setup(Position &position,
 
 bool pp::Operation::IsLong(const Security &) const { return m_isLong; }
 
-Qty pp::Operation::GetPlannedQty() const { return m_qty; }
+Qty pp::Operation::GetPlannedQty(const Security &) const { return m_qty; }
 
 bool pp::Operation::HasCloseSignal(const Position &position) const {
   return boost::polymorphic_downcast<const pp::Strategy *>(&GetStrategy())

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Lib/BalanceListView.hpp"
+#include "Lib/ModuleApi.hpp"
 #include "Lib/OperationListView.hpp"
 #include "Lib/OrderListView.hpp"
 #include "ui_MainWindow.h"
@@ -30,6 +31,9 @@ class MainWindow : public QMainWindow {
  public:
   Lib::Engine &GetEngine() { return m_engine; }
   void LoadModule(const boost::filesystem::path &);
+
+ private:
+  void CreateModuleWindows(const Lib::StrategyWindowFactory &);
 
  private:
   Lib::Engine &m_engine;

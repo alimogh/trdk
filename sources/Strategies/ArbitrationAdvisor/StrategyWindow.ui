@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>398</width>
-    <height>336</height>
+    <width>491</width>
+    <height>358</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,9 +45,6 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="symbol"/>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="maxQtyLabel">
           <property name="text">
@@ -71,6 +68,13 @@
           </property>
           <property name="singleStep">
            <double>0.005000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="symbol">
+          <property name="readOnly">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

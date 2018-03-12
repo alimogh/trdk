@@ -106,7 +106,7 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                                       const boost::optional<Price> &price,
                                       const TimeInForce &tif) {
   const auto qTime = ConvertToQDateTime(time);
-  const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
+  const auto qtyStr = ConvertQtyToText(qty);
   const Order order{QString::fromStdString(id.GetValue()),
                     qTime,
                     security,
@@ -117,10 +117,10 @@ void OrderListModel::OnOrderSubmitted(const OrderId &id,
                     QString(ConvertToPch(side)).toLower(),
                     qty,
                     qtyStr,
-                    ConvertPriceToText(price, security->GetPricePrecision()),
+                    ConvertPriceToText(price),
                     QString(ConvertToPch(tif)).toUpper(),
                     ConvertToUiString(ORDER_STATUS_OPENED),
-                    ConvertPriceToText(0, security->GetPricePrecision()),
+                    ConvertPriceToText(0),
                     qtyStr,
                     qTime};
   {
@@ -141,7 +141,7 @@ void OrderListModel::OnOrderSubmitError(const pt::ptime &time,
                                         const TimeInForce &tif,
                                         const QString &error) {
   const auto qTime = ConvertToQDateTime(time);
-  const auto qtyStr = ConvertQtyToText(qty, security->GetPricePrecision());
+  const auto qtyStr = ConvertQtyToText(qty);
   static boost::uuids::random_generator generateOrderId;
   const auto &id = generateOrderId();
   const Order order{
@@ -155,10 +155,10 @@ void OrderListModel::OnOrderSubmitError(const pt::ptime &time,
       QString(ConvertToUiString(side)),
       qty,
       qtyStr,
-      ConvertPriceToText(price, security->GetPricePrecision()),
+      ConvertPriceToText(price),
       ConvertToUiString(tif),
       ConvertToUiString(ORDER_STATUS_ERROR),
-      ConvertPriceToText(0, security->GetPricePrecision()),
+      ConvertPriceToText(0),
       qtyStr,
       qTime,
       !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
@@ -185,10 +185,8 @@ void OrderListModel::OnOrderUpdated(const trdk::OrderId &id,
   }
   it->status = ConvertToUiString(status);
   it->lastTime = ConvertToQDateTime(time);
-  it->filledQty = ConvertQtyToText(it->qty - remainingQty,
-                                   it->security->GetPricePrecision());
-  it->remainingQty =
-      ConvertQtyToText(remainingQty, it->security->GetPricePrecision());
+  it->filledQty = ConvertQtyToText(it->qty - remainingQty);
+  it->remainingQty = ConvertQtyToText(remainingQty);
   {
     const auto &sequence = m_pimpl->m_orders.get<BySequence>();
     const auto index = static_cast<int>(std::distance(
@@ -210,8 +208,6 @@ void OrderListModel::OnOrder(const OrderId &id,
                              const TimeInForce &tif,
                              const pt::ptime &openTime,
                              const pt::ptime &updateTime) {
-  uint8_t precision = 8;
-
   auto &orders = m_pimpl->m_orders.get<ById>();
   auto it = orders.find(
       boost::make_tuple(tradingSystem, QString::fromStdString(id.GetValue())));
@@ -225,12 +221,12 @@ void OrderListModel::OnOrder(const OrderId &id,
                       QString::fromStdString(tradingSystem->GetInstanceName()),
                       QString(ConvertToPch(side)).toUpper(),
                       qty,
-                      ConvertQtyToText(qty, precision),
-                      ConvertPriceToText(price, precision),
+                      ConvertQtyToText(qty),
+                      ConvertPriceToText(price),
                       QString(ConvertToPch(tif)).toUpper(),
                       ConvertToUiString(status),
-                      ConvertPriceToText(qty - remainingQty, precision),
-                      ConvertPriceToText(remainingQty, precision),
+                      ConvertPriceToText(qty - remainingQty),
+                      ConvertPriceToText(remainingQty),
                       ConvertToQDateTime(updateTime)};
     {
       const auto index = static_cast<int>(m_pimpl->m_orders.size());
@@ -239,12 +235,9 @@ void OrderListModel::OnOrder(const OrderId &id,
       endInsertRows();
     }
   } else {
-    if (it->security) {
-      precision = it->security->GetPricePrecision();
-    }
     it->status = ConvertToUiString(status);
-    it->filledQty = ConvertPriceToText(qty - remainingQty, precision);
-    it->remainingQty = ConvertPriceToText(remainingQty, precision);
+    it->filledQty = ConvertPriceToText(qty - remainingQty);
+    it->remainingQty = ConvertPriceToText(remainingQty);
     it->lastTime = ConvertToQDateTime(updateTime);
     {
       const auto &sequence = m_pimpl->m_orders.get<BySequence>();

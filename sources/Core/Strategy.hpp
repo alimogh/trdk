@@ -110,7 +110,16 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   class PositionListTransaction : private boost::noncopyable {
    public:
+    class Data : private boost::noncopyable {
+     public:
+      virtual ~Data() = default;
+    };
+
+   public:
     virtual ~PositionListTransaction() = default;
+
+   public:
+    virtual std::unique_ptr<Data> MoveToThread() = 0;
   };
 
  public:
@@ -143,40 +152,6 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   void Stop(const trdk::StopMode &);
 
   void ClosePositions();
-
-  //! Safely invokes an action with the instance of the strategy.
-  /** Applied only for non-system calls.
-   */
-  template <typename StrategyImplementation, typename Callback>
-  void Invoke(const Callback &callback) {
-    const auto lock = LockForOtherThreads();
-    if (IsBlocked()) {
-      throw trdk::Lib::Exception("Strategy is blocked");
-    }
-    StrategyImplementation *const impl =
-        dynamic_cast<StrategyImplementation *>(this);
-    if (!impl) {
-      throw trdk::Lib::Exception(
-          "Strategy requested to invoke has another type");
-    }
-    callback(*impl);
-  }
-  /** Applied only for non-system calls.
-   */
-  template <typename StrategyImplementation, typename Callback>
-  void Invoke(const Callback &callback) const {
-    const auto &lock = LockForOtherThreads();
-    if (IsBlocked()) {
-      throw trdk::Lib::Exception("Strategy is blocked");
-    }
-    const StrategyImplementation *const impl =
-        dynamic_cast<const StrategyImplementation *>(this);
-    if (!impl) {
-      throw trdk::Lib::Exception(
-          "Strategy requested to invoke has another type");
-    }
-    callback(*impl);
-  }
 
  public:
   virtual void RaiseSecurityContractSwitchedEvent(
@@ -265,6 +240,9 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   //! called or while module will not be destroyed.
   void Schedule(const boost::posix_time::time_duration &,
                 boost::function<void()> &&);
+  //! Schedules call immediately. Callback have to be available before will ba
+  //! called or while module will not be destroyed.
+  void Schedule(boost::function<void()> &&);
 
  private:
   class Implementation;

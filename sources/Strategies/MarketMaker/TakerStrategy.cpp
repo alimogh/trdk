@@ -390,7 +390,6 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
   }
 }
 bool TakerStrategy::IsTradingEnabled() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_nextPeriodEnd != pt::not_a_date_time;
 }
 
@@ -470,7 +469,6 @@ void TakerStrategy::SetNumerOfPeriods(size_t value) {
   m_pimpl->m_numerOfPeriods = value;
 }
 size_t TakerStrategy::GetNumerOfPeriods() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_numerOfPeriods;
 }
 
@@ -480,8 +478,7 @@ void TakerStrategy::SetGoalVolume(const Volume &value) {
   m_pimpl->m_volumeUpdateSignal(m_pimpl->m_completedVolume,
                                 m_pimpl->m_goalVolume);
 }
-Volume TakerStrategy::GetGoalVolume() const {
-  const auto lock = LockForOtherThreads();
+const Volume &TakerStrategy::GetGoalVolume() const {
   return m_pimpl->m_goalVolume;
 }
 
@@ -490,10 +487,7 @@ void TakerStrategy::SetMaxLoss(const Volume &value) {
   m_pimpl->m_maxLoss = value;
   m_pimpl->m_pnlUpdateSignal(m_pimpl->m_pnl, m_pimpl->m_maxLoss);
 }
-Volume TakerStrategy::GetMaxLoss() const {
-  const auto lock = LockForOtherThreads();
-  return m_pimpl->m_maxLoss;
-}
+const Volume &TakerStrategy::GetMaxLoss() const { return m_pimpl->m_maxLoss; }
 
 void TakerStrategy::SetPeriodSize(size_t numberOfMinutes) {
   const auto lock = LockForOtherThreads();
@@ -519,7 +513,6 @@ void TakerStrategy::SetPeriodSize(size_t numberOfMinutes) {
   }
 }
 size_t TakerStrategy::GetPeriodSize() const {
-  const auto lock = LockForOtherThreads();
   return m_pimpl->m_periodSizeMinutes;
 }
 
@@ -527,26 +520,19 @@ void TakerStrategy::SetMinPrice(const Price &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_minPrice = value;
 }
-Price TakerStrategy::GetMinPrice() const {
-  const auto lock = LockForOtherThreads();
-  return m_pimpl->m_minPrice;
-}
+const Price &TakerStrategy::GetMinPrice() const { return m_pimpl->m_minPrice; }
 
 void TakerStrategy::SetMaxPrice(const Price &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_maxPrice = value;
 }
-Price TakerStrategy::GetMaxPrice() const {
-  const auto lock = LockForOtherThreads();
-  return m_pimpl->m_maxPrice;
-}
+const Price &TakerStrategy::GetMaxPrice() const { return m_pimpl->m_maxPrice; }
 
 void TakerStrategy::SetTradeMinVolume(const Volume &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_tradeMinVolume = value;
 }
-Volume TakerStrategy::GetTradeMinVolume() const {
-  const auto lock = LockForOtherThreads();
+const Volume &TakerStrategy::GetTradeMinVolume() const {
   return m_pimpl->m_tradeMinVolume;
 }
 
@@ -554,8 +540,7 @@ void TakerStrategy::SetTradeMaxVolume(const Volume &value) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_tradeMaxVolume = value;
 }
-Volume TakerStrategy::GetTradeMaxVolume() const {
-  const auto lock = LockForOtherThreads();
+const Volume &TakerStrategy::GetTradeMaxVolume() const {
   return m_pimpl->m_tradeMaxVolume;
 }
 

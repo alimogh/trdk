@@ -360,20 +360,18 @@ pp::Strategy &StrategyWindow::CreateStrategyInstance(const QString &symbol) {
   auto &result = *boost::polymorphic_downcast<pp::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
 
-  result.Invoke<pp::Strategy>([this](pp::Strategy &strategy) {
-    m_blockConnection =
-        strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
-          QString reason;
-          if (reasonSource) {
-            reason = QString::fromStdString(*reasonSource);
-          }
-          emit Blocked(reason);
-        });
-    m_eventsConnection =
-        strategy.SubscribeToEvents([this](const std::string &message) {
-          emit StrategyEvent(QString::fromStdString(message));
-        });
-  });
+  m_blockConnection =
+      m_strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
+        QString reason;
+        if (reasonSource) {
+          reason = QString::fromStdString(*reasonSource);
+        }
+        emit Blocked(reason);
+      });
+  m_eventsConnection =
+      m_strategy.SubscribeToEvents([this](const std::string &message) {
+        emit StrategyEvent(QString::fromStdString(message));
+      });
 
   return result;
 }

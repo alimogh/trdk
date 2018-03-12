@@ -745,7 +745,6 @@ QTabWidget{
 
 QTabWidget::pane {
     border: 1px solid #76797C;
-    padding: 5px;
     margin: 0px;
 }
 

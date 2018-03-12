@@ -31,7 +31,7 @@ class TRDK_FRONTEND_LIB_API SymbolSelectionDialog : public QDialog {
   ~SymbolSelectionDialog();
 
  public:
-  boost::optional<QString> RequestSymbol();
+  std::vector<QString> RequestSymbols();
 
  private:
   std::unique_ptr<Ui::SymbolSelectionDialog> m_ui;
