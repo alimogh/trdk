@@ -662,6 +662,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                  GetTsTradingLog());
       try {
         UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
+      } catch (const OrderIsUnknownException &) {
+        OnOrderCanceled(GetContext().GetCurrentTime(), orderId, boost::none,
+                        boost::none);
       } catch (const std::exception &ex) {
         boost::format error("Failed to update order list: \"%1%\"");
         error % ex.what();
