@@ -26,7 +26,7 @@ const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
          m_bestSecurity->GetSymbol() == checkSecurity.GetSymbol());
 
   if (!checkSecurity.IsOnline()) {
-    static const std::string error = "security if offline";
+    static const std::string error = "offline";
     return &error;
   }
 
@@ -39,13 +39,13 @@ const std::string *BestSecurityChecker::Check(Security &checkSecurity) {
     }
 
     if (!CheckOrder(checkSecurity, tradingSystem)) {
-      static const std::string error = "order doesn't meet requirements";
+      static const std::string error = "invalid order";
       return &error;
     }
   }
 
   if (m_bestSecurity && !CheckPrice(*m_bestSecurity, checkSecurity)) {
-    static const std::string error = "doesn't have best price";
+    static const std::string error = "price isn't best";
     return &error;
   }
 
