@@ -314,8 +314,8 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const CommunicationError &ex) {
-    GetLog().Debug("Communication error at position update handling: \"%1%\".",
-                   ex.what());
+    GetLog().Warn("Communication error at position update handling: \"%1%\".",
+                  ex.what());
   }
 
   if (prevCloseReason == CLOSE_REASON_NONE &&
