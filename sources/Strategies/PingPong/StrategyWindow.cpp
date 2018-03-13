@@ -361,7 +361,7 @@ pp::Strategy &StrategyWindow::CreateStrategyInstance(const QString &symbol) {
       &m_engine.GetContext().GetSrategy(strategyId));
 
   m_blockConnection =
-      m_strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
+      result.SubscribeToBlocking([this](const std::string *reasonSource) {
         QString reason;
         if (reasonSource) {
           reason = QString::fromStdString(*reasonSource);
@@ -369,7 +369,7 @@ pp::Strategy &StrategyWindow::CreateStrategyInstance(const QString &symbol) {
         emit Blocked(reason);
       });
   m_eventsConnection =
-      m_strategy.SubscribeToEvents([this](const std::string &message) {
+      result.SubscribeToEvents([this](const std::string &message) {
         emit StrategyEvent(QString::fromStdString(message));
       });
 
