@@ -169,15 +169,31 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
   switch (side) {
     case ORDER_SIDE_SELL: {
       const auto &symbol = security.GetSymbol().GetBaseSymbol();
-      const auto &delta = qty;
+      auto delta = qty;
 
       const WriteLock lock(m_pimpl->m_mutex);
       const auto &it = m_pimpl->m_storage.find(symbol);
       if (it == m_pimpl->m_storage.cend()) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance to %1% \"%2%\" as there is no "
+            "balance for symbol \"%3%\".",
+            side,      // 1
+            security,  // 2
+            symbol);   // 3
         break;
       }
       auto &storage = it->second;
 
+      if (storage.available < delta) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance by %1% to %2% \"%3%\" as result for "
+            "symbol \"%4%\" will be negative.",
+            delta,     // 1
+            side,      // 2
+            security,  // 3
+            symbol);   // 4
+        delta = storage.available;
+      }
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(
@@ -209,10 +225,26 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
       const WriteLock lock(m_pimpl->m_mutex);
       const auto &it = m_pimpl->m_storage.find(symbol);
       if (it == m_pimpl->m_storage.cend()) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance to %1% \"%2%\" as there is no "
+            "balance for symbol \"%3%\".",
+            side,      // 1
+            security,  // 2
+            symbol);   // 3
         break;
       }
       auto &storage = it->second;
 
+      if (storage.available < delta) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance by %1% to %2% \"%3%\" as result for "
+            "symbol \"%4%\" will be negative.",
+            delta,     // 1
+            side,      // 2
+            security,  // 3
+            symbol);   // 4
+        delta = storage.available;
+      }
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(

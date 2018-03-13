@@ -102,13 +102,15 @@ class Numeric {
 
   static_assert(boost::is_pod<ValueType>::value, "Type should be POD.");
 
+  enum { PRECISION = Policy::PRECISION };
+
  public:
   Numeric(const ValueType &value = 0) : m_value(value) { Normalize(); }
 
  public:
   void Swap(Numeric &rhs) noexcept { std::swap(m_value, rhs.m_value); }
 
-  uint8_t GetPrecision() const { return Policy::PRECISION; }
+  uint8_t GetPrecision() const { return PRECISION; }
 
   operator ValueType() const noexcept { return Get(); }
 

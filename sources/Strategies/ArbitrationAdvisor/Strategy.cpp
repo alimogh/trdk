@@ -811,8 +811,8 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
       m_pimpl->CheckAutoTradingSignal(position.GetSecurity(), Milestones());
     }
   } catch (const CommunicationError &ex) {
-    GetLog().Debug("Communication error at position update handling: \"%1%\".",
-                   ex.what());
+    GetLog().Warn("Communication error at position update handling: \"%1%\".",
+                  ex.what());
   }
 }
 

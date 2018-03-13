@@ -127,7 +127,7 @@ void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
   const auto &screen = QApplication::desktop()->screenGeometry();
   for (auto &widgetPtr : factory(this)) {
     auto &widget = *widgetPtr.release();
-    widget.adjustSize();
+    widget.resize(widget.minimumSize());
     widget.show();
     if (!widgetPos) {
       continue;

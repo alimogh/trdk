@@ -175,6 +175,10 @@ class pp::Strategy::Implementation : private boost::noncopyable {
 
   bool m_isStopped;
 
+  // debug
+  pt::time_duration m_frameSize;
+  pt::ptime m_lastTime;
+
  public:
   explicit Implementation(Strategy &self)
       : m_self(self),
@@ -188,7 +192,9 @@ class pp::Strategy::Implementation : private boost::noncopyable {
         m_takeProfit(
             boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
         m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)),
-        m_isStopped(false) {}
+        m_isStopped(false),
+        m_frameSize(pt::minutes(5)),
+        m_lastTime(m_self.GetContext().GetCurrentTime()) {}
 
   template <typename GetMa>
   void SetNumberOfMaPeriods(const GetMa &getMa,
@@ -238,25 +244,29 @@ class pp::Strategy::Implementation : private boost::noncopyable {
     currentNumberOfPeriods = newNumberOfPeriods;
   }
 
-  void CheckSignal(Security &security,
+  void CheckSignal(Security &,
                    Subscribtion &subscribtion,
                    const Milestones &delayMeasurement) {
     if (!subscribtion.trends.Update(subscribtion.indicators)) {
       return;
     }
-    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled ||
-        m_controller.HasPositions(m_self, security)) {
+    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled) {
       return;
     }
-    try {
-      m_controller.OnSignal(
-          boost::make_shared<Operation>(m_self, m_positionSize,
-                                        subscribtion.trends.IsRisingToOpen(),
-                                        m_takeProfit, m_stopLoss),
-          0, security, delayMeasurement);
-    } catch (const CommunicationError &ex) {
-      m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
-                            ex.what());
+    for (auto &security : m_self.GetSecurities()) {
+      if (m_controller.HasPositions(m_self, security)) {
+        continue;
+      }
+      try {
+        m_controller.OnSignal(
+            boost::make_shared<Operation>(m_self, m_positionSize,
+                                          subscribtion.trends.IsRisingToOpen(),
+                                          m_takeProfit, m_stopLoss),
+            0, security, delayMeasurement);
+      } catch (const CommunicationError &ex) {
+        m_self.GetLog().Debug(
+            "Communication error at signal handling: \"%1%\".", ex.what());
+      }
     }
   }
 };
@@ -298,6 +308,12 @@ void pp::Strategy::OnLevel1Update(Security &security,
     return;
   }
 
+  if (m_pimpl->m_lastTime + m_pimpl->m_frameSize >
+      GetContext().GetCurrentTime()) {
+    return;
+  }
+  m_pimpl->m_lastTime = GetContext().GetCurrentTime();
+
   const auto &securityIt = m_pimpl->m_securities.find(&security);
   Assert(securityIt != m_pimpl->m_securities.cend());
   if (securityIt == m_pimpl->m_securities.cend()) {
@@ -323,8 +339,8 @@ void pp::Strategy::OnPositionUpdate(Position &position) {
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
   } catch (const CommunicationError &ex) {
-    GetLog().Debug("Communication error at position update handling: \"%1%\".",
-                   ex.what());
+    GetLog().Warn("Communication error at position update handling: \"%1%\".",
+                  ex.what());
   }
 }
 
@@ -393,22 +409,11 @@ bool pp::Strategy::IsTradingEnabled() const {
   return m_pimpl->m_controller.IsOpeningEnabled();
 }
 
-#include "Core/Timer.hpp"
 void pp::Strategy::SetSourceTimeFrameSize(const pt::time_duration &frameSize) {
   GetTradingLog().Write(
       "time frame size: %1%",
       [&frameSize](TradingRecord &record) { record % frameSize; });
-  static TimerScope scope;
-  GetContext().GetTimer().Schedule(
-      pt::seconds(15),
-      [this, frameSize]() {
-        boost::format message(
-            "Failed to request time frames with size %1%. Using actual price "
-            "instead. Try to request later or choose another frame size.");
-        message % frameSize;
-        RaiseEvent(message.str());
-      },
-      scope);
+  m_pimpl->m_frameSize = frameSize;
 }
 
 void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {

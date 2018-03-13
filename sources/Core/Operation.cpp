@@ -49,8 +49,29 @@ class Operation::Implementation : private boost::noncopyable {
     try {
       if (m_isStarted) {
         m_strategy.GetTradingLog().Write(
-            "{'operation': {'finResult': {%1%}, 'id' : '%2%'}}",
+            "{'operation': {'result:': '%1%', 'finResult': {%2%}, 'id' : "
+            "'%3%'}}",
             [this](TradingRecord &record) {
+              static_assert(Pnl::numberOfResults == 4, "List changed.");
+              const auto &result = m_pnl->GetResult();
+              switch (result) {
+                default:
+                  AssertEq(Pnl::RESULT_NONE, result);
+                  record % result;  // 1
+                  break;
+                case Pnl::RESULT_NONE:
+                  record % "none";  // 1
+                  break;
+                case Pnl::RESULT_PROFIT:
+                  record % "profit";  // 1
+                  break;
+                case Pnl::RESULT_LOSS:
+                  record % "loss";  // 1
+                  break;
+                case Pnl::RESULT_ERROR:
+                  record % "error";  // 1
+                  break;
+              }
               std::string list;
               for (const auto &pnl : m_pnl->GetData()) {
                 if (!list.empty()) {
@@ -59,8 +80,8 @@ class Operation::Implementation : private boost::noncopyable {
                 list += "'" + pnl.first +
                         "': " + boost::lexical_cast<std::string>(pnl.second);
               }
-              record % list  // 1
-                  % m_id;    // 2
+              record % list  // 2
+                  % m_id;    // 3
             });
         m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
           dropCopy.CopyOperationEnd(m_id,

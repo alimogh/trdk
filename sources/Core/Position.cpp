@@ -590,6 +590,7 @@ class Position::Implementation : private boost::noncopyable {
             record % "null";  // 3
           }
           if (filledQty) {
+            AssertNe(0, direction.qty);
             record % direction.lastTradePrice          // 4
                 % (direction.volume / direction.qty);  // 5
           } else {
