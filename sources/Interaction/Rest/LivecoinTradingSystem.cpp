@@ -107,7 +107,7 @@ LivecoinTradingSystem::TradingRequest::Send(
             << GetName() << "\" (" << GetRequest().getURI() << "): \"";
       const auto &exception = content.get<std::string>("exception");
       try {
-        const auto &errorCode = boost::lexical_cast<int>("exception");
+        const auto &errorCode = boost::lexical_cast<int>(exception);
         switch (errorCode) {
           default:
           case 1:
@@ -159,9 +159,11 @@ LivecoinTradingSystem::TradingRequest::Send(
         error << "\" (error code: " << errorCode << ")";
       } catch (const boost::bad_lexical_cast &) {
         error << exception << "\"";
-        if (boost::starts_with(exception,
-                               "Not sufficient funds on the account")) {
+        if (boost::istarts_with(exception,
+                                "Not sufficient funds on the account")) {
           throw InsufficientFundsException(error.str().c_str());
+        } else if (boost::istarts_with(exception, "Cannot find order")) {
+          throw OrderIsUnknownException(error.str().c_str());
         }
       }
       throw Exception(error.str().c_str());
