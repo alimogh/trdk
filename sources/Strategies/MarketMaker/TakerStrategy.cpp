@@ -295,13 +295,14 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
     m_pimpl->AddCompletedVolume(position.GetClosedVolume());
     for (const auto &pnl : position.GetOperation()->GetPnl().GetData()) {
       if (pnl.first == position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
-        GetLog().Error("Wrong currency in P&L: \"%1%\" = %2%.",
-                       pnl.first,    // 1
-                       pnl.second);  // 2
+        GetLog().Error("Wrong currency in P&L: \"%1%\" = %2% - %3%.",
+                       pnl.first,                   // 1
+                       pnl.second.financialResult,  // 2
+                       pnl.second.commission);      // 3
         AssertEq(pnl.first,
                  position.GetSecurity().GetSymbol().GetQuoteSymbol());
       }
-      m_pimpl->AddPnl(pnl.second);
+      m_pimpl->AddPnl(pnl.second.financialResult - pnl.second.commission);
     }
 
     m_pimpl->StartNewOperation();

@@ -64,7 +64,7 @@ OperationRecord &OperationNodeItem::GetRecord() { return m_record; }
 const OperationRecord &OperationNodeItem::GetRecord() const { return m_record; }
 
 QVariant OperationNodeItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 13, "List changed.");
+  static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return GetRow() + 1;
@@ -76,9 +76,13 @@ QVariant OperationNodeItem::GetData(int column) const {
       return GetRecord().status;
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return GetRecord().financialResult;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
+    case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
+      return GetRecord().commission;
+    case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
+      return GetRecord().totalResult;
+    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return GetRecord().strategyName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
       return GetRecord().strategyInstance;
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
@@ -89,7 +93,7 @@ QVariant OperationNodeItem::GetData(int column) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 QVariant OperationOrderHeadItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 13, "List changed.");
+  static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
       return QObject::tr("Leg");
@@ -101,12 +105,14 @@ QVariant OperationOrderHeadItem::GetData(int column) const {
       return QObject::tr("Symbol");
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return QObject::tr("Exchange");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
+    case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
       return QObject::tr("Status");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
       return QObject::tr("Order price");
-    case OPERATION_COLUMN_ORDER_QTY:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return QObject::tr("Order qty.");
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
+      return QObject::tr("Order vol.");
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return QObject::tr("Remaining qty.");
     case OPERATION_COLUMN_ORDER_FILLED_QTY:
@@ -130,7 +136,7 @@ OrderRecord &OperationOrderItem::GetRecord() { return m_record; }
 const OrderRecord &OperationOrderItem::GetRecord() const { return m_record; }
 
 QVariant OperationOrderItem::GetData(int column) const {
-  static_assert(numberOfOperationColumns == 13, "List changed.");
+  static_assert(numberOfOperationColumns == 14, "List changed.");
   switch (column) {
     case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG: {
       const auto &value = GetRecord().subOperationId;
@@ -148,12 +154,14 @@ QVariant OperationOrderItem::GetData(int column) const {
       return GetRecord().symbol;
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return GetRecord().exchangeName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
+    case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
       return GetRecord().statusName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
+    case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
       return GetRecord().price;
-    case OPERATION_COLUMN_ORDER_QTY:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return GetRecord().qty;
+    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
+      return GetRecord().price * GetRecord().qty;
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return GetRecord().remainingQty.Get();
     case OPERATION_COLUMN_ORDER_FILLED_QTY:

@@ -22,6 +22,7 @@ class Controller : public TradingLib::PositionController {
   virtual ~Controller() override = default;
 
  public:
+  virtual void OnPositionUpdate(trdk::Position &) override;
   using Base::ClosePosition;
 
  protected:

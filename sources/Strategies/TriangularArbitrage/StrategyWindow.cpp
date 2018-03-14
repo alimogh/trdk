@@ -24,8 +24,10 @@ StrategyWindow::StrategyWindow(Engine &engine,
                                QWidget *parent)
     : Base(parent),
       m_engine(engine),
-      m_startCurrency(
+      m_investCurrency(
           legSet.front().symbol.right(legSet.front().symbol.indexOf('_'))),
+      m_resultCurrency(
+          legSet.front().symbol.left(legSet.front().symbol.indexOf('_'))),
       m_maxNumberOfOppotunities(0),
       m_strategy(CreateStrategyInstance(legSet)) {
   setAttribute(Qt::WA_DeleteOnClose);
@@ -71,9 +73,9 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
   m_ui.minVolume->setValue(m_strategy.GetMinVolume());
   m_ui.maxVolume->setValue(m_strategy.GetMaxVolume());
-  m_ui.volumeSymbol->setText(tr("Volume (%1):").arg(m_startCurrency));
+  m_ui.volumeSymbol->setText(tr("Volume (%1):").arg(m_investCurrency));
 
-  m_ui.minProfit->setValue(m_strategy.GetMinProfitRatio() * 100);
+  m_ui.minProfit->setValue((m_strategy.GetMinProfitRatio() - 1) * 100);
 
   {
     m_ui.opportunities->setColumnCount((static_cast<int>(legSet.size()) * 3) +
@@ -111,13 +113,13 @@ StrategyWindow::StrategyWindow(Engine &engine,
     }
     m_ui.opportunities->setHorizontalHeaderItem(
         column++,
-        new QTableWidgetItem(tr("Investment") + ", " + m_startCurrency));
+        new QTableWidgetItem(tr("Investment") + ", " + m_investCurrency));
     m_ui.opportunities->setHorizontalHeaderItem(
         column++, new QTableWidgetItem(tr("Reduces investment")));
     m_ui.opportunities->setHorizontalHeaderItem(
         column++, new QTableWidgetItem(tr("P&L") + ", %"));
     m_ui.opportunities->setHorizontalHeaderItem(
-        column++, new QTableWidgetItem(tr("P&L") + ", " + m_startCurrency));
+        column++, new QTableWidgetItem(tr("P&L") + ", " + m_resultCurrency));
     m_ui.opportunities->setHorizontalHeaderItem(
         column++, new QTableWidgetItem(tr("Signaled")));
   }
@@ -241,14 +243,14 @@ void StrategyWindow::ConnectSignals() {
           &QDoubleSpinBox::valueChanged),
       [this](double value) {
         try {
-          m_strategy.SetMinProfitRatio(value / 100);
+          m_strategy.SetMinProfitRatio(1 + (value / 100));
         } catch (const std::exception &ex) {
           QMessageBox::critical(this, QObject::tr("Failed to setup strategy"),
                                 ex.what(), QMessageBox::Ok);
         }
         {
           const QSignalBlocker blocker(*m_ui.maxVolume);
-          m_ui.minProfit->setValue(m_strategy.GetMinProfitRatio() * 100);
+          m_ui.minProfit->setValue((m_strategy.GetMinProfitRatio() - 1) * 100);
         }
       }));
 }
@@ -270,7 +272,7 @@ ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
      << "is_trading_enabled = no" << std::endl
      << "min_volume = 0" << std::endl
      << "max_volume = 1000" << std::endl
-     << "min_profit_ratio = 0.01" << std::endl
+     << "min_profit_ratio = 1.01" << std::endl
      << "legs = ";
   {
     bool isFirst = true;
@@ -333,22 +335,32 @@ void StrategyWindow::OnOpportunityUpdate(
     }
     m_ui.pnlRatio->setText(
         bestOpportunity.pnlRatio.IsNotNan()
-            ? QString::number(bestOpportunity.pnlRatio * 100, 'f', 2) + '%'
+            ? QString::number((bestOpportunity.pnlRatio - 1) * 100, 'f', 2) +
+                  '%'
             : "---");
     m_ui.pnlVolume->setText(
-        bestOpportunity.pnlVolume.IsNotNan()
-            ? (ConvertVolumeToText(bestOpportunity.pnlVolume) + ' ' +
-               m_startCurrency)
-            : QString());
-    m_ui.investmentVolume->setText(QString(
-        tr("inv.: %1 %2")
-            .arg(ConvertVolumeToText(bestOpportunity.targets[LEG_1].qty *
-                                     bestOpportunity.targets[LEG_1].price),
-                 m_startCurrency)));
+        bestOpportunity.checkError
+            ? QString::fromStdString(*bestOpportunity.checkError)
+            : bestOpportunity.pnlVolume.IsNotNan()
+                  ? (ConvertVolumeToText(bestOpportunity.pnlVolume) + ' ' +
+                     m_resultCurrency)
+                  : QString());
+    if (bestOpportunity.targets[LEG_1].qty.IsNotNan()) {
+      m_ui.investmentVolume->setText(QString(
+          tr("inv.: %1 %2")
+              .arg(ConvertVolumeToText(bestOpportunity.targets[LEG_1].qty *
+                                       bestOpportunity.targets[LEG_1].price),
+                   m_investCurrency)));
+    } else {
+      m_ui.investmentVolume->setText("");
+    }
 
     static const QString signaledStyle("background-color:rgb(0,146,68);");
+    static const QString errorStyle("background-color:rgb(230,59,1);");
     m_ui.operationResultFrame->setStyleSheet(
-        bestOpportunity.isSignaled ? signaledStyle : styleSheet());
+        bestOpportunity.isSignaled
+            ? signaledStyle
+            : bestOpportunity.checkError ? errorStyle : styleSheet());
   } else {
     for (const auto &leg : m_legs) {
       leg.price->setText(
@@ -397,7 +409,7 @@ void StrategyWindow::OnOpportunityUpdate(
           row, column++,
           new QTableWidgetItem(
               opportunity.pnlRatio.IsNotNan()
-                  ? QString::number(opportunity.pnlRatio * 100, 'f', 2)
+                  ? QString::number((opportunity.pnlRatio - 1) * 100, 'f', 2)
                   : QString()));
       m_ui.opportunities->setItem(
           row, column++,

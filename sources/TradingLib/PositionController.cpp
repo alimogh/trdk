@@ -113,8 +113,6 @@ void PositionController::ClosePosition(Position &position) {
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         ex);                               // 3
-    position.ScheduleUpdateEvent(
-        position.GetTradingSystem().GetDefaultPollingInterval());
     throw;
   }
 }
@@ -223,7 +221,7 @@ void PositionController::OnPositionUpdate(Position &position) {
     } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Close order was canceled by some condition. Sending
       // new close order.
-        ClosePosition(position);
+      ClosePosition(position);
     }
 
   } else if (position.HasActiveOrders()) {

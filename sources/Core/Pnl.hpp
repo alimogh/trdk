@@ -23,7 +23,11 @@ class Pnl : private boost::noncopyable {
   };
 
  public:
-  typedef boost::unordered_map<std::string, trdk::Volume> Data;
+  struct SymbolData {
+    trdk::Volume financialResult;
+    trdk::Volume commission;
+  };
+  typedef boost::unordered_map<std::string, SymbolData> Data;
 
  public:
   virtual ~Pnl() = default;

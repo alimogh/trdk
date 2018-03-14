@@ -18,16 +18,16 @@ using namespace trdk::Strategies::TriangularArbitrage;
 LegPolicy::LegPolicy(const std::string &symbol) : m_symbol(symbol) {}
 const std::string &LegPolicy::GetSymbol() const { return m_symbol; }
 
-std::vector<Security *> &LegPolicy::GetSecurities() { return m_securities; }
+boost::unordered_set<Security *> &LegPolicy::GetSecurities() {
+  return m_securities;
+}
 
-const std::vector<Security *> &LegPolicy::GetSecurities() const {
+const boost::unordered_set<Security *> &LegPolicy::GetSecurities() const {
   return const_cast<LegPolicy *>(this)->GetSecurities();
 }
 
 void LegPolicy::AddSecurities(Security &security) {
-  if (std::find(m_securities.cbegin(), m_securities.cend(), &security) !=
-      m_securities.cend()) {
+  if (!m_securities.emplace(&security).second) {
     throw Exception("Leg security isn't unique");
   }
-  m_securities.emplace_back(&security);
 }

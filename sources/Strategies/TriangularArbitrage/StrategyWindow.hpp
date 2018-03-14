@@ -66,7 +66,8 @@ class StrategyWindow : public QMainWindow {
 
  private:
   FrontEnd::Lib::Engine &m_engine;
-  const QString m_startCurrency;
+  const QString m_investCurrency;
+  const QString m_resultCurrency;
   Ui::StrategyWindow m_ui;
   boost::array<Leg, numberOfLegs> m_legs;
 

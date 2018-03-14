@@ -14,26 +14,25 @@
 #include "Strategy.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::TradingLib;
 using namespace trdk::Strategies::TriangularArbitrage;
 
 namespace ta = trdk::Strategies::TriangularArbitrage;
 
-void Controller::HoldPosition(Position &position) {
-  Assert(position.IsFullyOpened());
-  Assert(!position.IsCompleted());
-  Assert(!position.HasActiveOrders());
-  position.MarkAsCompleted();
-}
-
 namespace {
-bool ChooseBestExchange(Position &position) {
+bool ChooseBestExchange(Position &position,
+                        const boost::unordered_set<size_t> *const exchanges) {
   const auto &checker = PositionBestSecurityChecker::Create(position);
   std::vector<std::pair<const Security *, const std::string *>> checks;
   for (auto *security :
        boost::polymorphic_downcast<ta::Operation *>(&*position.GetOperation())
            ->GetLeg(position.GetSecurity())
            .GetSecurities()) {
+    if (exchanges && !exchanges->empty() &&
+        exchanges->count(security->GetSource().GetIndex()) == 0) {
+      continue;
+    }
     checks.emplace_back(security, checker->Check(*security));
   }
   if (!checker->HasSuitableSecurity()) {
@@ -71,8 +70,49 @@ bool ChooseBestExchange(Position &position) {
 }
 }  // namespace
 
+void Controller::OnPositionUpdate(Position &position) {
+  try {
+    Base::OnPositionUpdate(position);
+    return;
+  } catch (const CommunicationError &ex) {
+    position.GetStrategy().GetLog().Warn(
+        "Communication error at position update handling: \"%1%\".", ex.what());
+  }
+  if (position.IsCompleted()) {
+    Assert(!position.IsCompleted());
+    return;
+  }
+
+  const auto &numberOfAttempts = position.GetNumberOfCloseOrders()
+                                     ? position.GetNumberOfCloseOrders()
+                                     : position.GetNumberOfOpenOrders();
+  if (numberOfAttempts > 11) {
+    position.GetStrategy().GetLog().Warn(
+        "Failed to handle position %1%/%2%: number of attempts is exhausted "
+        "(to open: %3%, to close: %4%).",
+        position.GetOperation()->GetId(),    // 1
+        position.GetSubOperationId(),        // 2
+        position.GetNumberOfOpenOrders(),    // 3
+        position.GetNumberOfCloseOrders());  // 4
+    position.MarkAsCompleted();
+    return;
+  }
+
+  position.GetStrategy().Schedule(
+      position.GetTradingSystem().GetDefaultPollingInterval(), [&position]() {
+        position.GetStrategy().RaisePositionUpdateEvent(position);
+      });
+}
+
+void Controller::HoldPosition(Position &position) {
+  Assert(position.IsFullyOpened());
+  Assert(!position.IsCompleted());
+  Assert(!position.HasActiveOrders());
+  position.MarkAsCompleted();
+}
+
 void Controller::ClosePosition(Position &position) {
-  if (!ChooseBestExchange(position)) {
+  if (!ChooseBestExchange(position, nullptr)) {
     return;
   }
   Base::ClosePosition(position);

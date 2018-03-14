@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Operation.hpp"
-#include "PnlContainer.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
@@ -20,18 +19,9 @@ using namespace trdk::Strategies::TriangularArbitrage;
 
 namespace ta = trdk::Strategies::TriangularArbitrage;
 
-ta::Operation::Operation(
-    Strategy &strategy,
-    const boost::array<Opportunity::Target, numberOfLegs> &targets)
-    : Base(strategy,
-           boost::make_unique<PnlContainer>(
-               *targets[LEG_1].security,
-               *targets[LEG_2].security,
-               targets[LEG_2].tradingSystem->CalcCommission(
-                   targets[LEG_2].qty,
-                   targets[LEG_2].price,
-                   strategy.GetLegs()[LEG_2]->GetSide(),
-                   *targets[LEG_2].security))),
+ta::Operation::Operation(Strategy &strategy,
+                         const Opportunity::Targets &targets)
+    : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
       m_targets(targets) {}
 
 const Opportunity::Target &ta::Operation::GetTarget(

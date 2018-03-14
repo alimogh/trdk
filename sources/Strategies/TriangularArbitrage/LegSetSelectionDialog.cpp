@@ -19,36 +19,36 @@ LegSetSelectionDialog::LegSetSelectionDialog(Engine &, QWidget *parent)
     : QDialog(parent) {
   m_ui.setupUi(this);
   {
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_USD", ORDER_SIDE_BUY},
-                                    LegConf{"ETH_BTC", ORDER_SIDE_BUY},
-                                    LegConf{"ETH_USD", ORDER_SIDE_SELL}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_USD", ORDER_SIDE_SELL},
-                                    LegConf{"ETH_BTC", ORDER_SIDE_SELL},
-                                    LegConf{"ETH_USD", ORDER_SIDE_BUY}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_USD", ORDER_SIDE_BUY},
-                                    LegConf{"BCH_BTC", ORDER_SIDE_BUY},
-                                    LegConf{"BCH_USD", ORDER_SIDE_SELL}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_USD", ORDER_SIDE_SELL},
-                                    LegConf{"BCH_BTC", ORDER_SIDE_SELL},
-                                    LegConf{"BCH_USD", ORDER_SIDE_BUY}});
     m_legSets.emplace_back(LegsConf{LegConf{"ETH_BTC", ORDER_SIDE_BUY},
-                                    LegConf{"BCH_ETH", ORDER_SIDE_BUY},
-                                    LegConf{"BCH_BTC", ORDER_SIDE_SELL}});
+                                    LegConf{"BTC_USD", ORDER_SIDE_BUY},
+                                    LegConf{"ETH_USD", ORDER_SIDE_SELL}});
     m_legSets.emplace_back(LegsConf{LegConf{"ETH_BTC", ORDER_SIDE_SELL},
-                                    LegConf{"BCH_ETH", ORDER_SIDE_SELL},
+                                    LegConf{"BTC_USD", ORDER_SIDE_SELL},
+                                    LegConf{"ETH_USD", ORDER_SIDE_BUY}});
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_BTC", ORDER_SIDE_BUY},
+                                    LegConf{"BTC_USD", ORDER_SIDE_BUY},
+                                    LegConf{"BCH_USD", ORDER_SIDE_SELL}});
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_BTC", ORDER_SIDE_SELL},
+                                    LegConf{"BTC_USD", ORDER_SIDE_SELL},
+                                    LegConf{"BCH_USD", ORDER_SIDE_BUY}});
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_ETH", ORDER_SIDE_BUY},
+                                    LegConf{"ETH_BTC", ORDER_SIDE_BUY},
+                                    LegConf{"BCH_BTC", ORDER_SIDE_SELL}});
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_ETH", ORDER_SIDE_SELL},
+                                    LegConf{"ETH_BTC", ORDER_SIDE_SELL},
                                     LegConf{"BCH_BTC", ORDER_SIDE_BUY}});
 #ifdef _DEBUG
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_EUR", ORDER_SIDE_BUY},
-                                    LegConf{"ETH_BTC", ORDER_SIDE_BUY},
+    m_legSets.emplace_back(LegsConf{LegConf{"ETH_BTC", ORDER_SIDE_BUY},
+                                    LegConf{"BTC_EUR", ORDER_SIDE_BUY},
                                     LegConf{"ETH_EUR", ORDER_SIDE_SELL}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_EUR", ORDER_SIDE_SELL},
-                                    LegConf{"ETH_BTC", ORDER_SIDE_SELL},
+    m_legSets.emplace_back(LegsConf{LegConf{"ETH_BTC", ORDER_SIDE_SELL},
+                                    LegConf{"BTC_EUR", ORDER_SIDE_SELL},
                                     LegConf{"ETH_EUR", ORDER_SIDE_BUY}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_EUR", ORDER_SIDE_BUY},
-                                    LegConf{"BCH_BTC", ORDER_SIDE_BUY},
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_BTC", ORDER_SIDE_BUY},
+                                    LegConf{"BTC_EUR", ORDER_SIDE_BUY},
                                     LegConf{"BCH_EUR", ORDER_SIDE_SELL}});
-    m_legSets.emplace_back(LegsConf{LegConf{"BTC_EUR", ORDER_SIDE_SELL},
-                                    LegConf{"BCH_BTC", ORDER_SIDE_SELL},
+    m_legSets.emplace_back(LegsConf{LegConf{"BCH_BTC", ORDER_SIDE_SELL},
+                                    LegConf{"BTC_EUR", ORDER_SIDE_SELL},
                                     LegConf{"BCH_EUR", ORDER_SIDE_BUY}});
 #endif
   }

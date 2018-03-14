@@ -53,6 +53,10 @@ class BuyLegPolicy : public LegPolicy {
                                             ORDER_SIDE_BUY, security);
     return balance / price;
   }
+
+  virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const {
+    return thisLegQty - leg1Qty;
+  }
 };
 
 class SellLegPolicy : public LegPolicy {
@@ -80,6 +84,10 @@ class SellLegPolicy : public LegPolicy {
     return tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetBaseSymbol());
   }
+
+  virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const {
+    return leg1Qty - thisLegQty;
+  }
 };
 
 template <typename Base>
@@ -89,7 +97,7 @@ class DirectLegPolicy : public Base {
   virtual ~DirectLegPolicy() override = default;
 
  public:
-  virtual Double CalcX(const Security &security) const override {
+  virtual typename Base::X CalcX(const Security &security) const override {
     return GetPrice(security);
   }
 };
@@ -101,43 +109,36 @@ class OppositeLegPolicy : public Base {
   virtual ~OppositeLegPolicy() override = default;
 
  public:
-  virtual Double CalcX(const Security &security) const override {
+  virtual typename Base::X CalcX(const Security &security) const override {
     return 1 / GetPrice(security);
   }
 };
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 
-class WrongLegsConfigurationDetectedByVolumes : public Exception {
- public:
-  explicit WrongLegsConfigurationDetectedByVolumes(const char *what) noexcept
-      : Exception(what) {}
-};
-
-Volume CalcAndCheckPnlVolume(
-    const boost::array<Opportunity::Target, numberOfLegs> &targets) {
-  const auto leg1Volume = targets[LEG_1].qty * targets[LEG_1].price;
-  const auto leg3Volume = targets[LEG_3].qty * targets[LEG_3].price;
-  if (!leg1Volume || !leg3Volume) {
-    return std::numeric_limits<double>::quiet_NaN();
+boost::optional<std::string> CheckCalcs(const Opportunity &opportunity) {
+  if (opportunity.pnlVolume.IsNan()) {
+    return boost::none;
   }
-  if (leg3Volume < leg1Volume * 0.5 || leg1Volume * 1.5 < leg3Volume) {
-    boost::format message(
-        "Legs configuration is wrong - 3rd leg volume is %1% (qty.: %2%, "
-        "price: %3%), but should be near %4% (qty.: %5%, price: %6%)");
-    message % leg3Volume         // 1
-        % targets[LEG_3].qty     // 2
-        % targets[LEG_3].price   // 3
-        % leg1Volume             // 4
-        % targets[LEG_1].qty     // 5
-        % targets[LEG_1].price;  // 6
-    throw WrongLegsConfigurationDetectedByVolumes(message.str().c_str());
+  const auto &targets = opportunity.targets;
+  const auto plannedLeg3Qty = targets[LEG_1].qty * opportunity.pnlRatio;
+  if (targets[LEG_3].qty < plannedLeg3Qty * 0.75 ||
+      plannedLeg3Qty * 1.25 < targets[LEG_3].qty) {
+    boost::format error(
+        "Legs configuration is wrong - 3rd leg quantity is %1%, but should be "
+        "near %2% (P&L ratio is %3%)");
+    error % targets[LEG_3].qty   // 1
+        % plannedLeg3Qty         // 2
+        % opportunity.pnlRatio;  // 3
+    return error.str();
   }
-  return leg3Volume - leg1Volume;
+  return boost::none;
 }
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,6 +150,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
   bool m_isStopped;
 
   boost::array<std::unique_ptr<LegPolicy>, numberOfLegs> m_legs;
+  boost::function<LegPolicy::X(const Opportunity::Targets &)> m_calcPnlRatio;
+
   size_t m_numberOfSecuriries;
 
   sig::signal<void(const std::vector<Opportunity> &)> m_opportunitySignal;
@@ -174,7 +177,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     std::vector<Opportunity> opportunities;
     opportunities.reserve(m_numberOfSecuriries);
     size_t hasSkippedSecurities = 0;
-    boost::optional<WrongLegsConfigurationDetectedByVolumes> configurationError;
+    boost::optional<std::string> configurationError;
 
     for (auto *const leg1 : m_legs[LEG_1]->GetSecurities()) {
       if (!IsExchangeEnabled(*leg1, m_startExchanges)) {
@@ -197,37 +200,16 @@ class ta::Strategy::Implementation : private boost::noncopyable {
           auto &leg3Trading =
               m_self.GetTradingSystem(leg3->GetSource().GetIndex());
           try {
-            opportunities.emplace_back(Opportunity{
-                {
-                    Opportunity::Target{leg1, &leg1Trading,
-                                        m_legs[LEG_1]->GetPrice(*leg1)},
-                    Opportunity::Target{leg2, &leg2Trading,
-                                        m_legs[LEG_2]->GetPrice(*leg2)},
-                    Opportunity::Target{leg3, &leg3Trading,
-                                        m_legs[LEG_3]->GetPrice(*leg3)},
-                },
-                numberOfLegs,
-                std::numeric_limits<double>::quiet_NaN(),
-                std::numeric_limits<double>::quiet_NaN()});
-            auto &opportunity = opportunities.back();
-            CalcLegsQtys(opportunity);
-            boost::tie(opportunity.checkError, opportunity.errorTradingSystem) =
-                CheckTargets(opportunity.targets);
-            try {
-              opportunity.pnlVolume =
-                  CalcAndCheckPnlVolume(opportunity.targets);
-            } catch (const WrongLegsConfigurationDetectedByVolumes &ex) {
-              if (!configurationError) {
-                configurationError = ex;
-              }
-            }
-            if (opportunity.pnlVolume.IsNotNan()) {
-              opportunity.pnlRatio =
-                  (m_legs[LEG_1]->CalcX(*leg1) * m_legs[LEG_2]->CalcX(*leg2) *
-                   m_legs[LEG_3]->CalcX(*leg3)) -
-                  1;
-              opportunity.isSignaled = !opportunity.checkError &&
-                                       opportunity.pnlRatio >= m_minProfitRatio;
+            const auto thisConfigurationError = CheckSignal(
+                opportunities,
+                {Opportunity::Target{leg1, &leg1Trading,
+                                     m_legs[LEG_1]->GetPrice(*leg1)},
+                 Opportunity::Target{leg2, &leg2Trading,
+                                     m_legs[LEG_2]->GetPrice(*leg2)},
+                 Opportunity::Target{leg3, &leg3Trading,
+                                     m_legs[LEG_3]->GetPrice(*leg3)}});
+            if (thisConfigurationError && !configurationError) {
+              configurationError = std::move(thisConfigurationError);
             }
           } catch (const Security::MarketDataValueDoesNotExist &) {
             hasSkippedSecurities = true;
@@ -244,12 +226,16 @@ class ta::Strategy::Implementation : private boost::noncopyable {
               [](const Opportunity &item1, Opportunity &item2) {
                 return item1.pnlVolume.IsNotNan() && item2.pnlVolume.IsNotNan()
                            ? item1.pnlVolume > item2.pnlVolume
+                                 ? true
+                                 : item1.pnlVolume < item2.pnlVolume
+                                       ? false
+                                       : item1.pnlRatio > item2.pnlRatio
                            : item1.pnlVolume.IsNotNan();
               });
 
     if (configurationError) {
       m_opportunitySignal(opportunities);
-      throw *configurationError;
+      throw Exception(configurationError->c_str());
     } else if (!m_isTradingEnabled) {
       m_opportunitySignal(opportunities);
       return;
@@ -266,6 +252,47 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     Trade(opportunities, delayMeasurement);
 
     opportunitySignalFuture.get();
+  }
+
+  boost::optional<std::string> CheckSignal(
+      std::vector<Opportunity> &opportunities,
+      Opportunity::Targets &&targetsSource) {
+    opportunities.emplace_back(
+        Opportunity{std::move(targetsSource), numberOfLegs,
+                    std::numeric_limits<double>::quiet_NaN(),
+                    std::numeric_limits<double>::quiet_NaN()});
+    auto &opportunity = opportunities.back();
+    auto &targets = opportunity.targets;
+    CalcQtys(opportunity);
+    opportunity.pnlRatio = m_calcPnlRatio(opportunity.targets);
+    if (targets[LEG_3].qty.IsNotNan()) {
+      opportunity.pnlVolume =
+          m_legs[LEG_3]->CalcPnl(targets[LEG_3].qty, targets[LEG_1].qty);
+    }
+    if (!opportunity.checkError) {
+      boost::tie(opportunity.checkError, opportunity.errorTradingSystem) =
+          CheckTargets(opportunity.targets);
+    }
+    {
+      const auto configurationError = CheckCalcs(opportunity);
+      if (configurationError) {
+        if (m_isTradingEnabled) {
+          ReportSignal("configuration error", opportunity, false);
+          return configurationError;
+        } else {
+          if (!opportunity.checkError) {
+            Assert(!opportunity.errorTradingSystem);
+            static const std::string error("configuration error");
+            opportunity.checkError = &error;
+          }
+          return boost::none;
+        }
+      }
+    }
+    opportunity.isSignaled = opportunity.pnlVolume.IsNotNan() &&
+                             !opportunity.checkError &&
+                             opportunity.pnlRatio >= m_minProfitRatio;
+    return boost::none;
   }
 
   void RecheckSignal() {
@@ -483,81 +510,115 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                          exception);                  // 3
   }
 
-  void CalcLegsQtys(Opportunity &opportunity) const {
+  void CalcQtys(Opportunity &opportunity) const {
     AssertEq(numberOfLegs, opportunity.reducedByAccountBalanceLeg);
+    Assert(!opportunity.checkError);
+    Assert(!opportunity.errorTradingSystem);
     auto &targets = opportunity.targets;
 
+    const auto disable = [&opportunity](
+                             const std::string &error,
+                             const TradingSystem &errorTradingSystem) {
+      Assert(!opportunity.checkError);
+      Assert(!opportunity.errorTradingSystem);
+      opportunity.checkError = &error;
+      opportunity.errorTradingSystem = &errorTradingSystem;
+      for (auto &target : opportunity.targets) {
+        target.qty = std::numeric_limits<double>::quiet_NaN();
+      }
+    };
+
     if (targets[LEG_1].price == 0 || targets[LEG_2].price == 0) {
-      targets[LEG_1].qty = targets[LEG_2].qty = targets[LEG_3].qty = 0;
+      static const std::string error = "failed to get price";
+      disable(error, targets[LEG_1].price == 0 ? *targets[LEG_1].tradingSystem
+                                               : *targets[LEG_2].tradingSystem);
+      AssertLt(0, targets[LEG_1].price);
+      AssertLt(0, targets[LEG_2].price);
       return;
     }
+    AssertLt(0, targets[LEG_3].price);
 
-    const auto &getOrderQtyAllowedByBalance = [&](const Leg &leg) {
+    const auto &getBalance = [&](const Leg &leg) {
       return m_legs[leg]->GetOrderQtyAllowedByBalance(
           *targets[leg].tradingSystem, *targets[leg].security,
           targets[leg].price);
     };
-    const auto &getSecurityQty = [&](const Leg &leg) {
+    const auto &getMarketQty = [&](const Leg &leg) {
       return m_legs[leg]->GetQty(*targets[leg].security);
     };
 
     targets[LEG_1].qty =
-        std::min(m_maxVolume / targets[LEG_1].price, targets[LEG_1].price);
+        std::min(m_maxVolume / targets[LEG_1].price, getMarketQty(LEG_1));
     const auto minLeg1Qty = m_minVolume / targets[LEG_1].price;
-    const bool isLeg1QtyForced = targets[LEG_1].qty < minLeg1Qty;
+    const bool isLeg1QtyForced = targets[LEG_1].qty <= minLeg1Qty;
     if (isLeg1QtyForced) {
       targets[LEG_1].qty = minLeg1Qty;
     }
-
     {
-      const auto &allowedLeg1Qty = getOrderQtyAllowedByBalance(LEG_1);
+      const auto &allowedLeg1Qty = getBalance(LEG_1);
       if (allowedLeg1Qty < targets[LEG_1].qty) {
         targets[LEG_1].qty = allowedLeg1Qty;
         opportunity.reducedByAccountBalanceLeg = LEG_1;
       }
     }
-
+    static const std::string insufficientFundsError = "insufficient funds";
     if (targets[LEG_1].qty == 0) {
-      targets[LEG_2].qty = targets[LEG_3].qty = 0;
+      disable(insufficientFundsError, *targets[LEG_1].tradingSystem);
+      return;
+    }
+    const auto leg1SourceVolume = targets[LEG_1].qty * targets[LEG_1].price;
+
+    const auto &reduceQty = [&](const Leg &leg) {
+      const auto &balance = getBalance(leg);
+      if (!isLeg1QtyForced) {
+        const auto &qty = getMarketQty(leg);
+        const auto &balanceOrQty = std::min(qty, balance);
+        if (balanceOrQty < targets[leg].qty) {
+          if (balance < qty) {
+            opportunity.reducedByAccountBalanceLeg = leg;
+          }
+          if (balanceOrQty == 0) {
+            disable(insufficientFundsError, *targets[leg].tradingSystem);
+            return false;
+          }
+          targets[leg].qty = balanceOrQty;
+        }
+      } else if (balance < targets[leg].qty) {
+        opportunity.reducedByAccountBalanceLeg = leg;
+        if (leg == 0) {
+          disable(insufficientFundsError, *targets[leg].tradingSystem);
+          return false;
+        }
+        targets[leg].qty = balance;
+      }
+      return true;
+    };
+
+    targets[LEG_2].qty = leg1SourceVolume;
+    if (!reduceQty(LEG_2)) {
+      return;
+    }
+    const auto leg2SourceVolume = targets[LEG_2].qty * targets[LEG_2].price;
+
+    targets[LEG_3].qty = leg2SourceVolume / targets[LEG_3].price;
+    if (!reduceQty(LEG_3)) {
       return;
     }
 
-    targets[LEG_2].qty = targets[LEG_1].qty / targets[LEG_2].price;
-    if (!isLeg1QtyForced) {
-      const auto &actualLeg2Qty =
-          std::max(minLeg1Qty / targets[LEG_2].price,
-                   std::min(getSecurityQty(LEG_2), getSecurityQty(LEG_3)));
-      if (actualLeg2Qty < targets[LEG_2].qty) {
-        targets[LEG_2].qty = actualLeg2Qty;
-      }
-    }
     {
-      const auto &leg2AllowedQty = getOrderQtyAllowedByBalance(LEG_2);
-      const auto &leg3AllowedQty = getOrderQtyAllowedByBalance(LEG_3);
-      const auto &lowestAllowedQty = std::min(leg2AllowedQty, leg3AllowedQty);
-      if (lowestAllowedQty < targets[LEG_2].qty) {
-        targets[LEG_2].qty = lowestAllowedQty;
-        opportunity.reducedByAccountBalanceLeg =
-            leg2AllowedQty <= leg3AllowedQty ? LEG_2 : LEG_3;
+      const auto &leg3Volume = targets[LEG_3].qty * targets[LEG_3].price;
+      if (leg3Volume < leg2SourceVolume) {
+        targets[LEG_2].qty = leg3Volume / targets[LEG_2].price;
       }
-    }
-    targets[LEG_3].qty = targets[LEG_2].qty;
-
-    if (targets[LEG_2].qty == 0) {
-      targets[LEG_1].qty = 0;
-      return;
     }
 
-    {
-      const auto leg1Qty = targets[LEG_2].qty * targets[LEG_2].price;
-      if (leg1Qty < targets[LEG_1].qty) {
-        targets[LEG_1].qty = leg1Qty;
-      }
+    if (targets[LEG_2].qty < leg1SourceVolume) {
+      targets[LEG_1].qty = targets[LEG_2].qty / targets[LEG_1].price;
     }
   }
 
   std::pair<const std::string *, const TradingSystem *> CheckTargets(
-      boost::array<Opportunity::Target, numberOfLegs> &targets) {
+      Opportunity::Targets &targets) {
     size_t leg = 0;
     for (auto target : targets) {
       const auto *const result =
@@ -653,6 +714,24 @@ ta::Strategy::Strategy(Context &context,
     if (legIt != m_pimpl->m_legs.cend()) {
       throw Exception("Too few legs configured");
     }
+    AssertEq(numberOfLegs, numberOfLongs + numberOfShorts);
+    AssertLe(1, numberOfLongs);
+    AssertLe(1, numberOfShorts);
+    if (numberOfLongs < numberOfShorts) {
+      m_pimpl->m_calcPnlRatio = [this](const Opportunity::Targets &targets) {
+        const auto &calcX = [this, &targets](const Leg &leg) {
+          return m_pimpl->m_legs[leg]->CalcX(*targets[leg].security);
+        };
+        return calcX(LEG_1) * calcX(LEG_2) * calcX(LEG_3);
+      };
+    } else {
+      m_pimpl->m_calcPnlRatio = [this](const Opportunity::Targets &targets) {
+        const auto &calcX = [this, &targets](const Leg &leg) {
+          return m_pimpl->m_legs[leg]->CalcX(*targets[leg].security);
+        };
+        return calcX(LEG_3) * calcX(LEG_2) * calcX(LEG_1);
+      };
+    }
   }
   GetLog().Info("Is trading enabled: %1%.",
                 m_pimpl->m_isTradingEnabled ? "yes" : "no");
@@ -742,12 +821,13 @@ void ta::Strategy::OnPositionUpdate(Position &position) {
   }
   try {
     m_pimpl->m_controller.OnPositionUpdate(position);
-    if (!position.HasActiveOpenOrders()) {
-      m_pimpl->RecheckSignal();
-    }
   } catch (const CommunicationError &ex) {
-    GetLog().Debug("Communication error at position update handling: \"%1%\".",
-                   ex.what());
+    GetLog().Warn("Communication error at position update handling: \"%1%\".",
+                  ex.what());
+    return;
+  }
+  if (!position.HasActiveOpenOrders()) {
+    m_pimpl->RecheckSignal();
   }
 }
 
@@ -872,6 +952,16 @@ void ta::Strategy::SetFinishExchanges(
 const boost::array<std::unique_ptr<LegPolicy>, numberOfLegs>
     &ta::Strategy::GetLegs() const {
   return m_pimpl->m_legs;
+}
+
+Leg ta::Strategy::GetLeg(const Security &security) const {
+  for (size_t i = 0; m_pimpl->m_legs.size(); ++i) {
+    if (m_pimpl->m_legs[i]->GetSecurities().count(
+            const_cast<Security *>(&security)) > 0) {
+      return static_cast<Leg>(i);
+    }
+  }
+  throw Exception("Failed to find leg by security");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

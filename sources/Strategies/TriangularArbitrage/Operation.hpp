@@ -22,8 +22,7 @@ class Operation : public trdk::Operation {
   typedef trdk::Operation Base;
 
  public:
-  explicit Operation(Strategy &,
-                     const boost::array<Opportunity::Target, numberOfLegs> &);
+  explicit Operation(Strategy &, const Opportunity::Targets &);
   virtual ~Operation() override = default;
 
  public:

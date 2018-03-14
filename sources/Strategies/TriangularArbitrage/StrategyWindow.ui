@@ -7,7 +7,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>430</width>
+    <width>385</width>
     <height>252</height>
    </rect>
   </property>
@@ -55,7 +55,7 @@
        <attribute name="title">
         <string>Best</string>
        </attribute>
-       <layout class="QGridLayout" name="_6" columnstretch="1,0,1,0,1,0,1">
+       <layout class="QGridLayout" name="_6">
         <item row="0" column="0" rowspan="2">
          <widget class="QFrame" name="leg1Frame">
           <property name="frameShape">
@@ -126,75 +126,6 @@
          </widget>
         </item>
         <item row="0" column="2" rowspan="2">
-         <widget class="QFrame" name="leg2Frame">
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QVBoxLayout" name="_3">
-           <property name="spacing">
-            <number>3</number>
-           </property>
-           <property name="leftMargin">
-            <number>3</number>
-           </property>
-           <property name="topMargin">
-            <number>3</number>
-           </property>
-           <property name="rightMargin">
-            <number>3</number>
-           </property>
-           <property name="bottomMargin">
-            <number>3</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="leg2Symbol">
-             <property name="text">
-              <string notr="true">SYMBOL</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="leg2BestPrice">
-             <property name="font">
-              <font>
-               <pointsize>9</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string notr="true">---</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="leg2BestExchange">
-             <property name="font">
-              <font>
-               <pointsize>9</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string notr="true">---</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="0" column="4" rowspan="2">
          <widget class="QFrame" name="leg3Frame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
@@ -263,7 +194,76 @@
           </layout>
          </widget>
         </item>
-        <item row="0" column="6" rowspan="2">
+        <item row="0" column="1" rowspan="2">
+         <widget class="QFrame" name="leg2Frame">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="_3">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="leg2Symbol">
+             <property name="text">
+              <string notr="true">SYMBOL</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="leg2BestPrice">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string notr="true">---</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="leg2BestExchange">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string notr="true">---</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="3" rowspan="2">
          <widget class="QFrame" name="operationResultFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
@@ -338,8 +338,8 @@
           </layout>
          </widget>
         </item>
-        <item row="2" column="6">
-         <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0">
+        <item row="2" column="3">
+         <layout class="QGridLayout" name="_7" columnstretch="0,0,1,0">
           <item row="2" column="1">
            <widget class="QLabel" name="label_2">
             <property name="font">
@@ -401,7 +401,7 @@
           <item row="2" column="2" colspan="2">
            <widget class="QDoubleSpinBox" name="minVolume">
             <property name="decimals">
-             <number>2</number>
+             <number>6</number>
             </property>
             <property name="minimum">
              <double>0.000000000000000</double>
@@ -414,10 +414,10 @@
           <item row="4" column="2" colspan="2">
            <widget class="QDoubleSpinBox" name="maxVolume">
             <property name="decimals">
-             <number>2</number>
+             <number>6</number>
             </property>
             <property name="minimum">
-             <double>0.000000000000000</double>
+             <double>0.000001000000000</double>
             </property>
             <property name="maximum">
              <double>1000.000000000000000</double>
@@ -425,70 +425,6 @@
            </widget>
           </item>
          </layout>
-        </item>
-        <item row="3" column="6">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>45</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="0" column="5" rowspan="2">
-         <widget class="QLabel" name="label_11">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string notr="true">=</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3" rowspan="2">
-         <widget class="QLabel" name="label_10">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string notr="true">*</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1" rowspan="2">
-         <widget class="QLabel" name="label_9">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string notr="true">*</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
         </item>
         <item row="2" column="0" rowspan="2">
          <widget class="QListWidget" name="startExchanges">
@@ -502,7 +438,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="2" rowspan="2">
+        <item row="2" column="1" rowspan="2">
          <widget class="QListWidget" name="middleExchanges">
           <property name="font">
            <font>
@@ -514,7 +450,20 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="4" rowspan="2">
+        <item row="3" column="3">
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>45</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="2" rowspan="2">
          <widget class="QListWidget" name="finishExchanges">
           <property name="font">
            <font>

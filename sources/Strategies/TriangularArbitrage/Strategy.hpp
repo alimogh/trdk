@@ -53,6 +53,7 @@ class Strategy : public trdk::Strategy {
       const boost::function<void(const std::string *reason)> &);
 
   const boost::array<std::unique_ptr<LegPolicy>, numberOfLegs> &GetLegs() const;
+  Leg GetLeg(const Security &) const;
 
  protected:
   virtual void OnSecurityStart(trdk::Security &,

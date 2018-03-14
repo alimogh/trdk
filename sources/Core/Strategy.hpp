@@ -153,6 +153,14 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
   void ClosePositions();
 
+  //! Schedules call after time. Callback have to be available before will ba
+  //! called or while module will not be destroyed.
+  void Schedule(const boost::posix_time::time_duration &,
+                boost::function<void()> &&);
+  //! Schedules call immediately. Callback have to be available before will ba
+  //! called or while module will not be destroyed.
+  void Schedule(boost::function<void()> &&);
+
  public:
   virtual void RaiseSecurityContractSwitchedEvent(
       const boost::posix_time::ptime &,
@@ -235,14 +243,6 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
    *         in any case).
    */
   virtual bool OnBlocked(const std::string *reason = nullptr) noexcept;
-
-  //! Schedules call after time. Callback have to be available before will ba
-  //! called or while module will not be destroyed.
-  void Schedule(const boost::posix_time::time_duration &,
-                boost::function<void()> &&);
-  //! Schedules call immediately. Callback have to be available before will ba
-  //! called or while module will not be destroyed.
-  void Schedule(boost::function<void()> &&);
 
  private:
   class Implementation;

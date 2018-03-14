@@ -485,6 +485,24 @@ class Strategy::Implementation : private boost::noncopyable {
       Assert(!m_positions.Has(delayedPosition) || m_strategy.IsBlocked());
     }
   }
+
+  template <typename Callback>
+  void SignalByScheduledEvent(const Callback &callback) {
+    auto lock = m_strategy.LockForOtherThreads();
+    if (m_strategy.IsBlocked()) {
+      return;
+    }
+    try {
+      callback();
+    } catch (const RiskControlException &ex) {
+      BlockByRiskControlEvent(ex, "scheduled event");
+      return;
+    } catch (const Exception &ex) {
+      m_strategy.Block(ex.what());
+      return;
+    }
+    FlushDelayed(lock);
+  }
 };
 
 boost::thread_specific_ptr<ThreadPositionListTransaction::Data>
@@ -681,7 +699,6 @@ void Strategy::RaiseServiceDataUpdateEvent(
 }
 
 void Strategy::RaisePositionUpdateEvent(Position &position) {
-  Assert(position.IsStarted());
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -957,45 +974,14 @@ bool Strategy::OnBlocked(const std::string *) noexcept { return true; }
 
 void Strategy::Schedule(const pt::time_duration &delay,
                         boost::function<void()> &&callback) {
-  GetContext().GetTimer().Schedule(delay,
-                                   [this, callback]() {
-                                     auto lock = LockForOtherThreads();
-                                     if (IsBlocked()) {
-                                       return;
-                                     }
-                                     try {
-                                       callback();
-                                     } catch (const RiskControlException &ex) {
-                                       m_pimpl->BlockByRiskControlEvent(
-                                           ex, "broker position update");
-                                       return;
-                                     } catch (const Exception &ex) {
-                                       Block(ex.what());
-                                       return;
-                                     }
-                                     m_pimpl->FlushDelayed(lock);
-                                   },
-                                   m_pimpl->m_timerScope);
+  GetContext().GetTimer().Schedule(
+      delay, [this, callback]() { m_pimpl->SignalByScheduledEvent(callback); },
+      m_pimpl->m_timerScope);
 }
 
 void Strategy::Schedule(boost::function<void()> &&callback) {
   GetContext().GetTimer().Schedule(
-      [this, callback]() {
-        auto lock = LockForOtherThreads();
-        if (IsBlocked()) {
-          return;
-        }
-        try {
-          callback();
-        } catch (const RiskControlException &ex) {
-          m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
-          return;
-        } catch (const Exception &ex) {
-          Block(ex.what());
-          return;
-        }
-        m_pimpl->FlushDelayed(lock);
-      },
+      [this, callback]() { m_pimpl->SignalByScheduledEvent(callback); },
       m_pimpl->m_timerScope);
 }
 

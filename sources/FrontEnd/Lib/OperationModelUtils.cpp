@@ -24,6 +24,36 @@ QString ShortenStrategyInstance(const std::string &source) {
   return QString::fromStdString(
       start == std::string::npos ? source : source.substr(start + 1));
 }
+
+void AddToBalanceString(const QString &symbol,
+                        const Volume &value,
+                        bool showPlus,
+                        QString &destination) {
+  if (!value) {
+    return;
+  }
+  if (!destination.isEmpty()) {
+    destination += ", ";
+  }
+  if (showPlus && value > 0) {
+    destination += '+';
+  }
+  {
+    std::ostringstream os;
+    os << value;
+    auto strValue = os.str();
+    boost::trim_right_if(strValue, [](char ch) { return ch == '0'; });
+    if (!strValue.empty() &&
+        (strValue.back() == '.' || strValue.back() == ',')) {
+      strValue.pop_back();
+    }
+    if (strValue.empty()) {
+      strValue = "0.00000001";
+    }
+    destination += QString::fromStdString(std::move(strValue));
+  }
+  destination += " " + symbol;
+}
 }  // namespace
 
 OperationRecord::OperationRecord(const ids::uuid &id,
@@ -36,33 +66,21 @@ OperationRecord::OperationRecord(const ids::uuid &id,
       status(QObject::tr("active")) {}
 
 void OperationRecord::Update(const Pnl::Data &data) {
-  QString buffer;
+  QString financialResultBuffer;
+  QString commissionBuffer;
+  QString totalResultBuffer;
   for (const auto &item : data) {
-    if (!item.second) {
-      continue;
-    }
-    if (!buffer.isEmpty()) {
-      buffer += ", ";
-    }
-    if (item.second > 0) {
-      buffer += '+';
-    }
-    {
-      std::ostringstream os;
-      os << std ::fixed << std::setprecision(8) << item.second;
-      auto vol = os.str();
-      boost::trim_right_if(vol, [](char ch) { return ch == '0'; });
-      if (!vol.empty() && (vol.back() == '.' || vol.back() == ',')) {
-        vol.pop_back();
-      }
-      if (vol.empty()) {
-        vol = "0.00000001";
-      }
-      buffer += QString::fromStdString(std::move(vol));
-    }
-    buffer += " " + QString::fromStdString(item.first);
+    const auto symbol = QString::fromStdString(item.first);
+    AddToBalanceString(symbol, item.second.financialResult, true,
+                       financialResultBuffer);
+    AddToBalanceString(symbol, item.second.commission, false, commissionBuffer);
+    AddToBalanceString(symbol,
+                       item.second.financialResult - item.second.commission,
+                       true, totalResultBuffer);
   }
-  financialResult = std::move(buffer);
+  financialResult = std::move(financialResultBuffer);
+  commission = std::move(commissionBuffer);
+  totalResult = std::move(totalResultBuffer);
 }
 
 void OperationRecord::Complete(const pt::ptime &newEndTime, const Pnl &pnl) {

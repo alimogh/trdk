@@ -538,7 +538,6 @@
     <ClCompile Include="Menu.cpp" />
     <ClCompile Include="Operation.cpp" />
     <ClCompile Include="OrderPolicy.cpp" />
-    <ClCompile Include="PnlContainer.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">Create</PrecompiledHeader>
@@ -565,7 +564,6 @@
     <ClInclude Include="GeneratedFiles\ui_StrategyWindow.h" />
     <ClInclude Include="OrderPolicy.hpp" />
     <ClInclude Include="Operation.hpp" />
-    <ClInclude Include="PnlContainer.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="Leg.hpp" />

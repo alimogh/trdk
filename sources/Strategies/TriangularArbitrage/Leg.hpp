@@ -23,6 +23,11 @@ struct LegConf {
 
 typedef boost::array<LegConf, numberOfLegs> LegsConf;
 
+typedef trdk::Lib::Numeric<
+    Lib::Double::ValueType,
+    trdk::Lib::Detail::DoubleNumericPolicy<Price::PRECISION>>
+    Y;
+
 struct Opportunity {
   struct Target {
     Security *security;
@@ -30,9 +35,10 @@ struct Opportunity {
     Price price;
     Qty qty;
   };
-  boost::array<Target, numberOfLegs> targets;
+  typedef boost::array<Target, numberOfLegs> Targets;
+  Targets targets;
   Leg reducedByAccountBalanceLeg;
-  Lib::Double pnlRatio;
+  Y pnlRatio;
   Volume pnlVolume;
   const std::string *checkError;
   const TradingSystem *errorTradingSystem;
@@ -41,14 +47,17 @@ struct Opportunity {
 
 class LegPolicy : private boost::noncopyable {
  public:
+  typedef Y X;
+
+ public:
   explicit LegPolicy(const std::string &symbol);
   virtual ~LegPolicy() = default;
 
  public:
   const std::string &GetSymbol() const;
 
-  std::vector<Security *> &GetSecurities();
-  const std::vector<Security *> &GetSecurities() const;
+  boost::unordered_set<Security *> &GetSecurities();
+  const boost::unordered_set<Security *> &GetSecurities() const;
 
   void AddSecurities(Security &);
 
@@ -56,14 +65,15 @@ class LegPolicy : private boost::noncopyable {
 
   virtual Qty GetQty(const Security &) const = 0;
   virtual Price GetPrice(const Security &) const = 0;
-  virtual Lib::Double CalcX(const Security &) const = 0;
+  virtual X CalcX(const Security &) const = 0;
+  virtual Qty CalcPnl(const Qty &thisLegQty, const Qty &leg1Qty) const = 0;
   virtual Qty GetOrderQtyAllowedByBalance(const TradingSystem &,
                                           const Security &,
                                           const Price &) const = 0;
 
  private:
   const std::string m_symbol;
-  std::vector<Security *> m_securities;
+  boost::unordered_set<Security *> m_securities;
 };
 
 }  // namespace TriangularArbitrage

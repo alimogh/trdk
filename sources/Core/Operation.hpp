@@ -81,8 +81,13 @@ class TRDK_CORE_API Operation {
   void UpdatePnl(const trdk::Security &,
                  const trdk::OrderSide &,
                  const trdk::Qty &,
+                 const trdk::Price &);
+  void UpdatePnl(const trdk::Security &,
+                 const trdk::OrderSide &,
+                 const trdk::Qty &,
                  const trdk::Price &,
                  const trdk::Volume &commission);
+  void AddComission(const trdk::Security &, const trdk::Volume &commission);
 
   void OnNewPositionStart(trdk::Position &);
 
