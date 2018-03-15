@@ -344,8 +344,9 @@ class Strategy::Implementation : private boost::noncopyable {
 
   boost::atomic_bool m_isEnabled;
 
-  boost::atomic_bool m_isBlocked;
-  pt::ptime m_blockEndTime;
+  // Custom branch logic. No one event can block strategy instance:
+  const boost::atomic_bool m_isBlocked;
+  const pt::ptime m_blockEndTime;
   BlockMutex m_blockMutex;
   StopCondition m_stopCondition;
   StopMode m_stopMode;
@@ -396,27 +397,31 @@ class Strategy::Implementation : private boost::noncopyable {
 
   void Block(const std::string *reason = nullptr) noexcept {
     try {
-      const BlockLock lock(m_blockMutex);
-      m_isBlocked = true;
-      m_blockEndTime = pt::not_a_date_time;
-      reason ? m_strategy.GetLog().Error("Blocked by reason: \"%s\".", *reason)
-             : m_strategy.GetLog().Error("Blocked.");
-      m_stopCondition.notify_all();
+      // Custom branch logic. No one event can block strategy instance:
+      // const BlockLock lock(m_blockMutex);
+      // m_isBlocked = true;
+      // m_blockEndTime = pt::not_a_date_time;
+      reason ? m_strategy.GetLog().Error("Strategy critical error: \"%s\".",
+                                         *reason)
+             : m_strategy.GetLog().Error("Strategy critical error.");
+      // Custom branch logic. No one event can block strategy instance:
+      // m_stopCondition.notify_all();
     } catch (...) {
       AssertFailNoException();
       raise(SIGTERM);  // is it can mutex or notify_all, also see "include"
     }
-    if (!m_strategy.OnBlocked(reason)) {
-      return;
-    }
-    try {
-      reason ? m_strategy.GetContext().RaiseStateUpdate(
-                   Context::STATE_STRATEGY_BLOCKED, *reason)
-             : m_strategy.GetContext().RaiseStateUpdate(
-                   Context::STATE_STRATEGY_BLOCKED);
-    } catch (...) {
-      AssertFailNoException();
-    }
+    // Custom branch logic. No one event can block strategy instance:
+    // if (!m_strategy.OnBlocked(reason)) {
+    //   return;
+    // }
+    // try {
+    //   reason ? m_strategy.GetContext().RaiseStateUpdate(
+    //                Context::STATE_STRATEGY_BLOCKED, *reason)
+    //          : m_strategy.GetContext().RaiseStateUpdate(
+    //                Context::STATE_STRATEGY_BLOCKED);
+    // } catch (...) {
+    //   AssertFailNoException();
+    // }
   }
 
   void RunAllAlgos() {
@@ -848,8 +853,9 @@ bool Strategy::IsBlocked(bool isForever) const {
     return false;
   }
 
-  m_pimpl->m_blockEndTime = pt::not_a_date_time;
-  m_pimpl->m_isBlocked = false;
+  // Custom branch logic. No one event can block strategy instance:
+  // m_pimpl->m_blockEndTime = pt::not_a_date_time;
+  // m_pimpl->m_isBlocked = false;
 
   GetLog().Info("Unblocked.");
 
@@ -862,16 +868,19 @@ void Strategy::Block(const std::string &reason) noexcept {
   m_pimpl->Block(&reason);
 }
 
-void Strategy::Block(const pt::time_duration &blockDuration) {
-  const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-  const pt::ptime &blockEndTime = GetContext().GetCurrentTime() + blockDuration;
-  if (m_pimpl->m_isBlocked && m_pimpl->m_blockEndTime != pt::not_a_date_time &&
-      blockEndTime <= m_pimpl->m_blockEndTime) {
-    return;
-  }
-  m_pimpl->m_isBlocked = true;
-  m_pimpl->m_blockEndTime = blockEndTime;
+void Strategy::Block(const pt::time_duration &) {
+  // Custom branch logic. No one event can block strategy instance:
+  // const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
+  // const pt::ptime &blockEndTime = GetContext().GetCurrentTime() +
+  // blockDuration; if (m_pimpl->m_isBlocked && m_pimpl->m_blockEndTime !=
+  // pt::not_a_date_time &&
+  //     blockEndTime <= m_pimpl->m_blockEndTime) {
+  //   return;
+  // }
+  // m_pimpl->m_isBlocked = true;
+  // m_pimpl->m_blockEndTime = blockEndTime;
   GetLog().Warn("Blocked until %1%.", m_pimpl->m_blockEndTime);
+  AssertFail("Not implemented for this branch");
 }
 
 void Strategy::Stop(const StopMode &stopMode) {
@@ -913,8 +922,9 @@ void Strategy::ReportStop() {
       break;
   }
 
-  m_pimpl->m_isBlocked = true;
-  m_pimpl->m_blockEndTime = pt::not_a_date_time;
+  // Custom branch logic. No one event can block strategy instance:
+  const_cast<boost::atomic_bool &>(m_pimpl->m_isBlocked) = true;
+  // m_pimpl->m_blockEndTime = pt::not_a_date_time;
 
   GetLog().Info("Stopped.");
   m_pimpl->m_stopCondition.notify_all();
