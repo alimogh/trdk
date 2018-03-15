@@ -20,19 +20,6 @@ using namespace trdk::TradingLib;
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
-class PositionController::Implementation : private boost::noncopyable {
- public:
-  PositionController &m_self;
-
- public:
-  explicit Implementation(PositionController &self) : m_self(self) {}
-};
-
-PositionController::PositionController()
-    : m_pimpl(std::make_unique<Implementation>(*this)) {}
-
-PositionController::~PositionController() = default;
-
 Position *PositionController::OpenPosition(
     const boost::shared_ptr<Operation> &operationContext,
     int64_t subOperationId,
@@ -49,7 +36,8 @@ Position *PositionController::OpenPosition(
     bool isLong,
     const Milestones &delayMeasurement) {
   return OpenPosition(operationContext, subOperationId, security, isLong,
-                      operationContext->GetPlannedQty(), delayMeasurement);
+                      operationContext->GetPlannedQty(security),
+                      delayMeasurement);
 }
 
 Position *PositionController::OpenPosition(
@@ -125,8 +113,6 @@ void PositionController::ClosePosition(Position &position) {
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         ex);                               // 3
-    position.ScheduleUpdateEvent(
-        position.GetTradingSystem().GetDefaultPollingInterval());
     throw;
   }
 }
@@ -152,11 +138,9 @@ Position *PositionController::OnSignal(
     int64_t subOperationId,
     Security &security,
     const Milestones &delayMeasurement) {
-  Position *position = nullptr;
   auto &strategy = newOperationContext->GetStrategy();
-  if (!strategy.GetPositions().IsEmpty()) {
-    AssertEq(1, strategy.GetPositions().GetSize());
-    position = &*strategy.GetPositions().GetBegin();
+  Position *position = GetExistingPosition(strategy, security);
+  if (position) {
     if (position->IsCompleted()) {
       position = nullptr;
     } else if (!position->GetOperation()->HasCloseSignal(*position)) {
@@ -333,4 +317,13 @@ boost::shared_ptr<Position> PositionController::CreatePosition(
                                     price, delayMeasurement);
   result->GetOperation()->Setup(*result, *this);
   return result;
+}
+
+Position *PositionController::GetExistingPosition(Strategy &strategy,
+                                                  Security &) {
+  if (strategy.GetPositions().IsEmpty()) {
+    return nullptr;
+  }
+  AssertEq(1, strategy.GetPositions().GetSize());
+  return &*strategy.GetPositions().GetBegin();
 }

@@ -128,15 +128,9 @@ class TRDK_CORE_API Position
    */
   bool IsClosed() const noexcept;
 
-  //! Started.
-  /** True if at least one of open-orders was sent.
-  /** @sa IsCompleted
-    */
-  bool IsStarted() const noexcept;
-  //! Started and now doesn't have any orders and active qty or market as
-  //! completed.
-  /** @sa IsStarted
-   * @sa MarkAsCompleted
+  //! Started, has any opened qty and now doesn't have any orders and active qty
+  //! or market as completed.
+  /** @sa MarkAsCompleted
    */
   bool IsCompleted() const noexcept;
   //! Marks position as completed without real closing.
@@ -278,22 +272,17 @@ class TRDK_CORE_API Position
   trdk::Volume GetRealizedPnlVolume() const;
   //! Returns realized PnL ratio.
   /** @return If the value is 1.0 - no profit and no loss,
-   *         if less then 1.0 - loss, if greater then 1.0 - profit.
+   *          if less then 1.0 - loss, if greater then 1.0 - profit.
    */
   virtual trdk::Lib::Double GetRealizedPnlRatio() const = 0;
   //! Returns percentage of profit.
   /** @return If the value is zero - no profit and no loss,
-   *         if less then zero - loss, if greater then zero - profit.
+   *          if less then zero - loss, if greater then zero - profit.
    */
   trdk::Lib::Double GetRealizedPnlPercentage() const;
   virtual trdk::Volume GetUnrealizedPnl() const = 0;
   //! Realized PnL + unrealized PnL.
   trdk::Volume GetPlannedPnl() const;
-  //! Returns true if position has profit by realized P&L.
-  /** @return False if position has loss or does not have profit and does not
-   *         have loss. True if position has profit.
-   */
-  bool IsProfit() const;
 
   virtual trdk::Price GetMarketOpenPrice() const = 0;
   virtual trdk::Price GetMarketClosePrice() const = 0;
@@ -310,9 +299,9 @@ class TRDK_CORE_API Position
  public:
   //! Restores position in open-state.
   /** Sets position in open state at current strategy, doesn't make any trading
-   * actions.
-   * @param[in] openPrice      Position opening price.
-   * @param[in] openingContext Position opening context, if exists.
+   *  actions.
+   *  @param[in] openPrice      Position opening price.
+   *  @param[in] openingContext Position opening context, if exists.
    */
   void RestoreOpenState(
       const boost::posix_time::ptime &openStartTime,
@@ -374,8 +363,6 @@ class TRDK_CORE_API Position
    * @sa Algo
    */
   void RunAlgos();
-
-  void ScheduleUpdateEvent(const boost::posix_time::time_duration &);
 
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>

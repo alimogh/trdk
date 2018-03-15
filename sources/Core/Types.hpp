@@ -19,15 +19,15 @@ namespace trdk {
 
 typedef trdk::Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Qty;
 typedef trdk::Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Price;
 typedef trdk::Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
+    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Volume;
 
 ////////////////////////////////////////////////////////////////////////////////

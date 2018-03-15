@@ -19,10 +19,16 @@ class PnlContainer : public trdk::Pnl {
   virtual ~PnlContainer() = default;
 
  public:
-  virtual bool Update(const trdk::Security &,
-                      const trdk::OrderSide &,
-                      const trdk::Qty &,
-                      const trdk::Price &,
-                      const Volume &comission) = 0;
+  virtual void UpdateFinancialResult(const trdk::Security &,
+                                     const trdk::OrderSide &,
+                                     const trdk::Qty &,
+                                     const trdk::Price &) = 0;
+  virtual void UpdateFinancialResult(const trdk::Security &,
+                                     const trdk::OrderSide &,
+                                     const trdk::Qty &,
+                                     const trdk::Price &,
+                                     const trdk::Volume &commission) = 0;
+  virtual void AddCommission(const trdk::Security &, const trdk::Volume &) = 0;
 };
+
 }  // namespace trdk

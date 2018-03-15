@@ -20,8 +20,7 @@ class PriceAdapter {
 
  public:
   PriceAdapter() : m_widget(nullptr) {}
-  explicit PriceAdapter(Widget &widget, uint8_t precision)
-      : m_widget(&widget), m_precision(precision) {
+  explicit PriceAdapter(Widget &widget) : m_widget(&widget) {
     SetValue(std::numeric_limits<double>::quiet_NaN());
   }
 
@@ -36,23 +35,19 @@ class PriceAdapter {
 
   const Value &Get() const { return m_value; }
 
-  void SetPrecision(uint8_t precision) { m_precision = precision; }
-
  protected:
   void SetValue(const Value &value) {
     Assert(m_widget);
     if (!m_widget) {
       return;
     }
-    m_widget->setText(
-        trdk::FrontEnd::Lib::ConvertPriceToText(value, m_precision));
+    m_widget->setText(trdk::FrontEnd::Lib::ConvertPriceToText(value));
     m_value = value;
   }
 
  private:
   Value m_value;
   Widget *m_widget;
-  uint8_t m_precision;
 };
 
 template <typename WidgetType>
@@ -63,8 +58,7 @@ class QtyAdapter {
 
  public:
   QtyAdapter() : m_widget(nullptr) {}
-  explicit QtyAdapter(Widget &widget, uint8_t precision)
-      : m_widget(&widget), m_precision(precision) {
+  explicit QtyAdapter(Widget &widget) : m_widget(&widget) {
     SetValue(std::numeric_limits<double>::quiet_NaN());
   }
 
@@ -79,31 +73,27 @@ class QtyAdapter {
 
   const Value &Get() const { return m_value; }
 
-  void SetPrecision(uint8_t precision) { m_precision = precision; }
-
  protected:
   void SetValue(const Value &value) {
     Assert(m_widget);
     if (!m_widget) {
       return;
     }
-    m_widget->setText(
-        trdk::FrontEnd::Lib::ConvertQtyToText(value, m_precision));
+    m_widget->setText(trdk::FrontEnd::Lib::ConvertQtyToText(value));
     m_value = value;
   }
 
  private:
   Value m_value;
   Widget *m_widget;
-  uint8_t m_precision;
 };
 
 template <typename WidgetType>
 class SideAdapter {
  public:
   SideAdapter() {}
-  explicit SideAdapter(QLabel &price, QLabel &qty, uint8_t precision)
-      : m_price(price, precision), m_qty(qty, precision) {}
+  explicit SideAdapter(QLabel &price, QLabel &qty)
+      : m_price(price), m_qty(qty) {}
 
  public:
   void Set(const trdk::Price &price, const trdk::Qty &qty) {
@@ -119,11 +109,6 @@ class SideAdapter {
   QtyAdapter<WidgetType> &GetQty() { return m_price; }
   const QtyAdapter<WidgetType> &GetQty() const {
     return const_cast<SideAdapter *>(this)->GetQty();
-  }
-
-  void SetPrecision(uint8_t precision) {
-    m_price.SetPrecision(precision);
-    m_qty.SetPrecision(precision);
   }
 
  private:
@@ -170,6 +155,6 @@ class TimeAdapter {
   Value m_value;
   Widget *m_widget;
 };
-}
-}
-}
+}  // namespace Lib
+}  // namespace FrontEnd
+}  // namespace trdk

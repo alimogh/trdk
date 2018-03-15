@@ -29,8 +29,6 @@ class TargetSideWidget : public QWidget {
   virtual ~TargetSideWidget() override = default;
 
  public:
-  void SetPrecision(uint8_t);
-
   void Update(const Security &);
   void Update(const Advice &);
 
@@ -92,6 +90,6 @@ class TargetAskWidget : public TargetSideWidget {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

@@ -21,13 +21,19 @@ class PnlOneSymbolContainer : public trdk::PnlContainer {
   virtual ~PnlOneSymbolContainer() override;
 
  public:
-  virtual bool Update(const trdk::Security &,
-                      const trdk::OrderSide &,
-                      const trdk::Qty &,
-                      const trdk::Price &,
-                      const trdk::Volume &commission) override;
-  virtual boost::tribool IsProfit() const override;
-  virtual const trdk::Pnl::Data &GetData() const override;
+  virtual void UpdateFinancialResult(const trdk::Security &,
+                                     const trdk::OrderSide &,
+                                     const trdk::Qty &,
+                                     const trdk::Price &) override;
+  virtual void UpdateFinancialResult(const trdk::Security &,
+                                     const trdk::OrderSide &,
+                                     const trdk::Qty &,
+                                     const trdk::Price &,
+                                     const trdk::Volume &commission) override;
+  virtual void AddCommission(const trdk::Security &,
+                             const trdk::Volume &) override;
+  virtual Result GetResult() const override;
+  virtual const Data &GetData() const override;
 
  private:
   class Implementation;

@@ -20,6 +20,7 @@
 #include "TradingLib/OrderPolicy.hpp"
 #include "TradingLib/PnlContainer.hpp"
 #include "TradingLib/PositionController.hpp"
+#include "TradingLib/RelativeStrengthIndex.hpp"
 #include "TradingLib/StopLoss.hpp"
 #include "TradingLib/TakeProfit.hpp"
 #include "TradingLib/Trend.hpp"
@@ -44,6 +45,7 @@
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/statistics/rolling_mean.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 

@@ -41,3 +41,11 @@ bool Trend::SetIsRising(bool isRising) {
     return false;
   }
 }
+
+bool Trend::Reset() {
+  if (!m_pimpl->m_isRising) {
+    return false;
+  }
+  m_pimpl->m_isRising = boost::none;
+  return true;
+}

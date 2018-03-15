@@ -31,6 +31,7 @@ var requiredModules = [
 	, 'FixProtocol'
 	, 'Rest'
 	, 'ArbitrationAdvisor'
+	, 'TriangularArbitrage'
 ]
 
 //////////////////////////////////////////////////////////////////////////

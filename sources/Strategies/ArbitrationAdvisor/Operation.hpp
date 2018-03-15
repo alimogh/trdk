@@ -57,7 +57,9 @@ class Operation : public trdk::Operation {
     return &security == &m_buyTarget;
   }
 
-  virtual trdk::Qty GetPlannedQty() const override { return m_maxQty; }
+  virtual trdk::Qty GetPlannedQty(const Security &) const override {
+    return m_maxQty;
+  }
 
  private:
   OpenOrderPolicy m_openOrderPolicy;

@@ -53,7 +53,7 @@ class TRDK_CORE_API Operation {
   virtual bool IsLong(const trdk::Security &) const;
 
   //! Next new position quantity.
-  virtual trdk::Qty GetPlannedQty() const;
+  virtual trdk::Qty GetPlannedQty(const trdk::Security &) const;
 
   //! Returns true if the opened position should be closed as soon as possible.
   virtual bool HasCloseSignal(const trdk::Position &) const;
@@ -81,8 +81,15 @@ class TRDK_CORE_API Operation {
   void UpdatePnl(const trdk::Security &,
                  const trdk::OrderSide &,
                  const trdk::Qty &,
+                 const trdk::Price &);
+  void UpdatePnl(const trdk::Security &,
+                 const trdk::OrderSide &,
+                 const trdk::Qty &,
                  const trdk::Price &,
                  const trdk::Volume &commission);
+  void AddComission(const trdk::Security &, const trdk::Volume &commission);
+
+  void OnNewPositionStart(trdk::Position &);
 
  private:
   class Implementation;

@@ -21,33 +21,6 @@ namespace Lib {
 
 //////////////////////////////////////////////////////////////////////////
 
-inline bool IsEqual(const double v1, const double v2) {
-  return std::abs(v1 - v2) <= std::numeric_limits<double>::epsilon();
-}
-
-inline bool IsEqual(const float v1, const float v2) {
-  return std::abs(v1 - v2) <= std::numeric_limits<float>::epsilon();
-}
-
-inline bool IsEqual(const std::string &v1, const std::string &v2) {
-  return boost::equal(v1, v2);
-}
-
-inline bool IsEqual(const int32_t v1, const int32_t v2) { return v1 == v2; }
-inline bool IsEqual(const uint32_t v1, const uint32_t v2) { return v1 == v2; }
-inline bool IsEqual(const int64_t v1, const int64_t v2) { return v1 == v2; }
-inline bool IsEqual(const uint64_t v1, const uint64_t v2) { return v1 == v2; }
-
-inline bool IsEmpty(const char *const str) {
-  Assert(str);
-  return !str[0];
-}
-
-inline bool IsEmpty(const std::string &str) { return str.empty(); }
-inline bool IsEmpty(const std::wstring &str) { return str.empty(); }
-
-//////////////////////////////////////////////////////////////////////////
-
 inline trdk::Lib::Double RoundByPrecisionPower(double value,
                                                uintmax_t precisionPower) {
   return precisionPower

@@ -30,7 +30,9 @@ CryptopiaProductList Rest::RequestCryptopiaProductList(
     for (const auto &node : response) {
       const auto &pairNode = node.second;
       auto quoteSymbol = pairNode.get<std::string>("Symbol");
+      context.GetSettings().ReplaceSymbolWithAlias(quoteSymbol);
       auto baseSymbol = pairNode.get<std::string>("BaseSymbol");
+      context.GetSettings().ReplaceSymbolWithAlias(baseSymbol);
 #if 0
       const bool isReverted = baseSymbol == "LTC" && quoteSymbol == "ETH";
       if (isReverted) {

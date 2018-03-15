@@ -10,11 +10,6 @@
 
 #include "Prec.hpp"
 #include "BalancesContainer.hpp"
-#include "Core/DropCopy.hpp"
-#include "Core/EventsLog.hpp"
-#include "Core/Security.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -51,11 +46,13 @@ class BalancesContainer::Implementation : private boost::noncopyable {
   void Set(const std::string &symbol,
            boost::optional<Volume> &&available,
            boost::optional<Volume> &&locked) {
+    const auto &resolvedSymbol =
+        m_tradingSystem.GetContext().GetSettings().ResolveSymbolAlias(symbol);
     const WriteLock lock(m_mutex);
-    const auto &it = m_storage.find(symbol);
+    const auto &it = m_storage.find(resolvedSymbol);
     it != m_storage.cend()
         ? Update(*it, std::move(available), std::move(locked))
-        : Insert(symbol, std::move(available), std::move(locked));
+        : Insert(resolvedSymbol, std::move(available), std::move(locked));
   }
 
   void Insert(const std::string &symbol,
@@ -134,8 +131,7 @@ BalancesContainer::BalancesContainer(const TradingSystem &tradingSystem,
 
 BalancesContainer::~BalancesContainer() = default;
 
-Volume BalancesContainer::FindAvailableToTrade(
-    const std::string &symbol) const {
+Volume BalancesContainer::GetAvailableToTrade(const std::string &symbol) const {
   const ReadLock lock(m_pimpl->m_mutex);
   const auto &it = m_pimpl->m_storage.find(symbol);
   if (it == m_pimpl->m_storage.cend()) {
@@ -173,15 +169,31 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
   switch (side) {
     case ORDER_SIDE_SELL: {
       const auto &symbol = security.GetSymbol().GetBaseSymbol();
-      const auto &delta = qty;
+      auto delta = qty;
 
       const WriteLock lock(m_pimpl->m_mutex);
       const auto &it = m_pimpl->m_storage.find(symbol);
       if (it == m_pimpl->m_storage.cend()) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance to %1% \"%2%\" as there is no "
+            "balance for symbol \"%3%\".",
+            side,      // 1
+            security,  // 2
+            symbol);   // 3
         break;
       }
       auto &storage = it->second;
 
+      if (storage.available < delta) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance by %1% to %2% \"%3%\" as result for "
+            "symbol \"%4%\" will be negative.",
+            delta,     // 1
+            side,      // 2
+            security,  // 3
+            symbol);   // 4
+        delta = storage.available;
+      }
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(
@@ -213,10 +225,26 @@ void BalancesContainer::ReduceAvailableToTradeByOrder(
       const WriteLock lock(m_pimpl->m_mutex);
       const auto &it = m_pimpl->m_storage.find(symbol);
       if (it == m_pimpl->m_storage.cend()) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance to %1% \"%2%\" as there is no "
+            "balance for symbol \"%3%\".",
+            side,      // 1
+            security,  // 2
+            symbol);   // 3
         break;
       }
       auto &storage = it->second;
 
+      if (storage.available < delta) {
+        m_pimpl->m_eventsLog.Warn(
+            "Failed to reduce the balance by %1% to %2% \"%3%\" as result for "
+            "symbol \"%4%\" will be negative.",
+            delta,     // 1
+            side,      // 2
+            security,  // 3
+            symbol);   // 4
+        delta = storage.available;
+      }
       const auto newAvailable = storage.available - delta;
       const auto newLocked = storage.locked + delta;
       m_pimpl->m_tradingLog.Write(

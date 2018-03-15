@@ -57,7 +57,7 @@ class TakerOperation : public Operation {
   virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
       const trdk::Position &) override;
 
-  virtual trdk::Qty GetPlannedQty() const override;
+  virtual trdk::Qty GetPlannedQty(const Security &) const override;
 
  private:
   const bool m_isLong;

@@ -15,7 +15,6 @@
 #include "OrderStatusHandler.hpp"
 #include "Settings.hpp"
 #include "Strategy.hpp"
-#include "Timer.hpp"
 #include "Trade.hpp"
 #include "TradingLog.hpp"
 #include "TradingSystem.hpp"
@@ -229,8 +228,7 @@ class Position::Implementation : private boost::noncopyable {
       UpdateStat();
       Report(ORDER_STATUS_FILLED_FULLY);
       SignalUpdate(lock);
-      impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
-                                  comission);
+      impl.m_operation->AddComission(*impl.m_security, comission);
     }
 
     virtual void OnTrade(const Trade &trade) override {
@@ -249,7 +247,7 @@ class Position::Implementation : private boost::noncopyable {
       }
       Report(ORDER_STATUS_FILLED_PARTIALLY);
       impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), trade.qty,
-                                  trade.price, 0);
+                                  trade.price);
     }
 
     virtual void OnCanceled(const Volume &comission) override {
@@ -265,8 +263,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
-                                    comission);
+        impl.m_operation->AddComission(*impl.m_security, comission);
       }
     }
 
@@ -285,8 +282,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
-                                    comission);
+        impl.m_operation->AddComission(*impl.m_security, comission);
       }
     }
 
@@ -304,8 +300,7 @@ class Position::Implementation : private boost::noncopyable {
       SignalUpdate(lock);
       {
         auto &impl = GetPositionImpl();
-        impl.m_operation->UpdatePnl(*impl.m_security, GetOrderSide(), 0, 0,
-                                    comission);
+        impl.m_operation->AddComission(*impl.m_security, comission);
       }
     }
 
@@ -439,8 +434,6 @@ class Position::Implementation : private boost::noncopyable {
   std::vector<boost::shared_ptr<Algo>> m_algos;
 
   OrderParams m_defaultOrderParams;
-
-  Timer::Scope m_timerScope;
 
   explicit Implementation(Position &position,
                           const boost::shared_ptr<Operation> &operation,
@@ -590,6 +583,7 @@ class Position::Implementation : private boost::noncopyable {
             record % "null";  // 3
           }
           if (filledQty) {
+            AssertNe(0, direction.qty);
             record % direction.lastTradePrice          // 4
                 % (direction.volume / direction.qty);  // 5
           } else {
@@ -765,7 +759,7 @@ class Position::Implementation : private boost::noncopyable {
     }
 
     Assert(m_isRegistered);
-    Assert(m_self.IsStarted());
+    Assert(!m_open.orders.empty());
     Assert(!m_self.IsError());
     Assert(!m_self.HasActiveOrders());
     Assert(!m_self.IsCompleted());
@@ -986,18 +980,25 @@ bool Position::IsClosed() const noexcept {
   return !HasActiveOrders() && GetOpenedQty() > 0 && GetActiveQty() == 0;
 }
 
-bool Position::IsStarted() const noexcept {
-  return !m_pimpl->m_open.orders.empty();
-}
-
 bool Position::IsCompleted() const noexcept {
   return m_pimpl->m_isMarketAsCompleted ||
-         (IsStarted() && !HasActiveOrders() && GetActiveQty() == 0);
+         (GetOpenedQty() && !HasActiveOrders() && GetActiveQty() == 0);
 }
 
 void Position::MarkAsCompleted() {
+  Assert(!HasOpenedOpenOrders());
+  Assert(!HasOpenedCloseOrders());
   Assert(!IsCompleted());
-  if (IsCompleted()) {
+  if (HasActiveOrders()) {
+    GetStrategy().GetLog().Error(
+        "Failed to mark position %1%/%2% as \"completed\": position has active "
+        "orders.",
+        GetOperation()->GetId(),  // 1
+        GetSubOperationId());     // 2
+    throw Exception(
+        "Failed to mark position as \"completed\" as position has active "
+        "orders");
+  } else if (IsCompleted()) {
     // Should not be added to the "delayed list" twice.
     GetStrategy().GetLog().Error(
         "Failed to mark position %1%/%2% as \"completed\": position already "
@@ -1174,11 +1175,6 @@ Volume Position::GetPlannedPnl() const {
   return GetUnrealizedPnl() + GetRealizedPnl();
 }
 
-bool Position::IsProfit() const {
-  const auto ratio = GetRealizedPnlRatio();
-  return ratio > 1.0 && !IsEqual(ratio, 1.0);
-}
-
 size_t Position::GetNumberOfOpenOrders() const {
   return m_pimpl->m_open.orders.size();
 }
@@ -1199,11 +1195,6 @@ size_t Position::GetNumberOfCloseTrades() const {
 Position::StateUpdateConnection Position::Subscribe(
     const StateUpdateSlot &slot) const {
   return StateUpdateConnection(m_pimpl->m_stateUpdateSignal.connect(slot));
-}
-
-void Position::ScheduleUpdateEvent(const pt::time_duration &delay) {
-  GetStrategy().GetContext().GetTimer().Schedule(
-      delay, [this]() { m_pimpl->SignalUpdate(); }, m_pimpl->m_timerScope);
 }
 
 void Position::AddAlgo(std::unique_ptr<Algo> &&algo) {
@@ -1487,6 +1478,7 @@ LongPosition::LongPosition(const boost::shared_ptr<Operation> &operation,
                qty,
                startPrice,
                timeMeasurement) {
+  operation->OnNewPositionStart(*this);
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tlong\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
       "7%/%8%\tparent=%9%",
@@ -1657,6 +1649,7 @@ ShortPosition::ShortPosition(const boost::shared_ptr<Operation> &operation,
                qty,
                startPrice,
                timeMeasurement) {
+  operation->OnNewPositionStart(*this);
   GetStrategy().GetTradingLog().Write(
       "position\tnew\tshort\t%1%\t%2%.%3%\tprice=%4%\t%5%\tqty=%6%\toperation=%"
       "7%/%8%\tparent=%9%",

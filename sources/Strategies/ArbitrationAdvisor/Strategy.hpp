@@ -35,6 +35,8 @@ class Strategy : public trdk::Strategy {
  public:
   boost::signals2::scoped_connection SubscribeToAdvice(
       const boost::function<void(const Advice &)> &);
+  boost::signals2::scoped_connection SubscribeToTradingSignalCheckErrors(
+      const boost::function<void(const std::vector<std::string> &)> &);
   boost::signals2::scoped_connection SubscribeToBlocking(
       const boost::function<void(const std::string *reason)> &);
 
@@ -61,6 +63,6 @@ class Strategy : public trdk::Strategy {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

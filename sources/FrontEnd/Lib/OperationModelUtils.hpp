@@ -22,9 +22,10 @@ struct OperationRecord {
   const QString strategyInstance;
   QString status;
   QTime endTime;
-  boost::tribool isProfit;
+  boost::optional<Pnl::Result> result;
   QString financialResult;
-  bool isCompelted;
+  QString commission;
+  QString totalResult;
 
  public:
   explicit OperationRecord(const boost::uuids::uuid &,

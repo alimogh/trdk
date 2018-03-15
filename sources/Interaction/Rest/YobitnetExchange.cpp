@@ -293,11 +293,6 @@ std::string NormilizeSymbol(std::string source) {
   } else if (boost::ends_with(source, "_BCC")) {
     source.back() = 'H';
   }
-  if (boost::starts_with(source, "USD_")) {
-    source.insert(3, 1, 'T');
-  } else if (boost::ends_with(source, "_USD")) {
-    source.push_back('T');
-  }
   return source;
 }
 

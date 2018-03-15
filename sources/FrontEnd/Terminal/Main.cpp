@@ -68,6 +68,7 @@ int main(int argc, char *argv[]) {
       splash->ShowMessage(
           application.tr("Loading strategy modules...").toStdString());
       mainWindow.LoadModule("ArbitrationAdvisor");
+      mainWindow.LoadModule("TriangularArbitrage");
       mainWindow.LoadModule("MarketMaker");
       mainWindow.LoadModule("PingPong");
     }

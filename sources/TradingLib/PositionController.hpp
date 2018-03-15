@@ -17,8 +17,7 @@ namespace TradingLib {
 
 class PositionController : private boost::noncopyable {
  public:
-  PositionController();
-  virtual ~PositionController();
+  virtual ~PositionController() = default;
 
  public:
   //! Handles trading signal event.
@@ -102,6 +101,9 @@ class PositionController : private boost::noncopyable {
 
   virtual void HoldPosition(trdk::Position &);
 
+  virtual trdk::Position *GetExistingPosition(trdk::Strategy &,
+                                              trdk::Security &);
+
  private:
   template <typename PositionType>
   boost::shared_ptr<trdk::Position> CreatePositionObject(
@@ -111,10 +113,6 @@ class PositionController : private boost::noncopyable {
       const trdk::Qty &,
       const trdk::Price &,
       const trdk::Lib::TimeMeasurement::Milestones &);
-
- private:
-  class Implementation;
-  std::unique_ptr<Implementation> m_pimpl;
 };
 }  // namespace TradingLib
 }  // namespace trdk

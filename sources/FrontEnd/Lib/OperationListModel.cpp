@@ -107,7 +107,7 @@ QVariant OperationListModel::headerData(int section,
   if (role == Qt::TextAlignmentRole) {
     return GetOperationFieldAligment(static_cast<OperationColumn>(section));
   } else if (role == Qt::DisplayRole) {
-    static_assert(numberOfOperationColumns == 13, "List changed.");
+    static_assert(numberOfOperationColumns == 14, "List changed.");
     switch (section) {
       case OPERATION_COLUMN_OPERATION_NUMBER_OR_ORDER_LEG:
         return tr("#");
@@ -119,9 +119,13 @@ QVariant OperationListModel::headerData(int section,
         return tr("Status");
       case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
         return tr("Financial result");
-      case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_STATUS:
+      case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
+        return tr("Commission");
+      case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
+        return tr("Total result");
+      case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
         return tr("Strategy");
-      case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_PRICE:
+      case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
         return tr("Strategy instance");
       case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
         return tr("ID");

@@ -173,8 +173,8 @@ class TRDK_CORE_API AsyncLogRecord {
           WriteToDumpStream(
               boost::any_cast<trdk::Lib::BusinessNumeric<
                   double,
-                  trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<
-                      100000000>>>(val),
+                  trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>>(
+                  val),
               os);
           break;
 
@@ -290,15 +290,13 @@ class TRDK_CORE_API AsyncLogRecord {
   void StoreParam(
       const trdk::Lib::BusinessNumeric<
           double,
-          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
-          &val) {
+          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>> &val) {
     StoreTypedParam(PT_DOUBLE_BUSINESS_8, val);
   }
   void StoreParam(
       trdk::Lib::BusinessNumeric<
           double,
-          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<100000000>>
-          &&val) {
+          trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>> &&val) {
     StoreTypedParam(PT_DOUBLE_BUSINESS_8, std::move(val));
   }
 

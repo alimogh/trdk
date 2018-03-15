@@ -95,21 +95,6 @@ struct Product {
   uintmax_t precisionPower;
 };
 
-pt::ptime ParseTime(const ptr::ptree &order) {
-  {
-    const auto &doneTimeField = order.get_optional<std::string>("done_at");
-    if (doneTimeField) {
-      const std::string &value = *doneTimeField;
-      return {gr::from_string(value.substr(0, 10)),
-              pt::duration_from_string(value.substr(11, 8))};
-    }
-  }
-  {
-    const auto &timeField = order.get<std::string>("created_at");
-    return {gr::from_string(timeField.substr(0, 10)),
-            pt::duration_from_string(timeField.substr(11, 8))};
-  }
-}
 Volume ParseFee(const ptr::ptree &order) {
   return order.get<Volume>("fill_fees");
 }
@@ -263,6 +248,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
+        m_serverTimeDiff(
+            GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
         m_isConnected(false),
         m_marketDataSession(CreateSession("api.gdax.com", m_settings, false)),
         m_tradingSession(CreateSession("api.gdax.com", m_settings, true)),
@@ -675,6 +662,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                                  GetTsTradingLog());
       try {
         UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
+      } catch (const OrderIsUnknownException &) {
+        OnOrderCanceled(GetContext().GetCurrentTime(), orderId, boost::none,
+                        boost::none);
       } catch (const std::exception &ex) {
         boost::format error("Failed to update order list: \"%1%\"");
         error % ex.what();
@@ -683,8 +673,28 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
+  pt::ptime ParseTime(const ptr::ptree &order) const {
+    {
+      const auto &doneTimeField = order.get_optional<std::string>("done_at");
+      if (doneTimeField) {
+        const std::string &value = *doneTimeField;
+        return pt::ptime(gr::from_string(value.substr(0, 10)),
+                         pt::duration_from_string(value.substr(11, 8))) -
+               m_serverTimeDiff;
+        ;
+      }
+    }
+    {
+      const auto &timeField = order.get<std::string>("created_at");
+      return pt::ptime(gr::from_string(timeField.substr(0, 10)),
+                       pt::duration_from_string(timeField.substr(11, 8))) -
+             m_serverTimeDiff;
+    }
+  }
+
  private:
   Settings m_settings;
+  const boost::posix_time::time_duration m_serverTimeDiff;
 
   bool m_isConnected;
   std::unique_ptr<net::HTTPSClientSession> m_marketDataSession;

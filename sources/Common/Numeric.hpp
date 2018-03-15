@@ -17,32 +17,38 @@ namespace Lib {
 
 namespace Detail {
 
+template <uint8_t precision>
 struct DoubleNumericPolicy {
+  enum { PRECISION = precision };
+
+  static constexpr double GetPrecisionPower() { return pow(10, precision); }
+  static constexpr double GetEpsilon() { return 1 / GetPrecisionPower(); }
+
   template <typename T>
   static bool IsEq(const T &lhs, const T &rhs) {
-    return trdk::Lib::IsEqual(lhs, rhs);
+    return std::abs(lhs - rhs) <= GetEpsilon();
   }
   template <typename T>
   static bool IsNe(const T &lhs, const T &rhs) {
-    return !trdk::Lib::IsEqual(lhs, rhs);
+    return !IsEq(lhs, rhs);
   }
 
   template <typename T>
   static bool IsLt(const T &lhs, const T &rhs) {
-    return lhs < rhs && !trdk::Lib::IsEqual(lhs, rhs);
+    return lhs < rhs && !IsEq(lhs, rhs);
   }
   template <typename T>
   static bool IsLe(const T &lhs, const T &rhs) {
-    return lhs < rhs || trdk::Lib::IsEqual(lhs, rhs);
+    return lhs < rhs || IsEq(lhs, rhs);
   }
 
   template <typename T>
   static bool IsGt(const T &lhs, const T &rhs) {
-    return lhs > rhs && !trdk::Lib::IsEqual(lhs, rhs);
+    return lhs > rhs && !IsEq(lhs, rhs);
   }
   template <typename T>
   static bool IsGe(const T &lhs, const T &rhs) {
-    return lhs > rhs || trdk::Lib::IsEqual(lhs, rhs);
+    return lhs > rhs || IsEq(lhs, rhs);
   }
 
   template <typename T>
@@ -70,18 +76,18 @@ struct DoubleNumericPolicy {
   }
 };
 
-template <size_t precisionPower>
+template <uint8_t precision>
 struct DoubleWithFixedPrecisionNumericPolicy
-    : public trdk::Lib::Detail::DoubleNumericPolicy {
-  static_assert(precisionPower > 0, "Must be greater than zero.");
-  static_assert(precisionPower % 10 == 0, "Must be a multiple of ten.");
+    : public trdk::Lib::Detail::DoubleNumericPolicy<precision> {
+  static_assert(precision > 0, "Must be greater than zero.");
 
   template <typename T>
   static void Normalize(T &value) {
     if (IsNan(value)) {
       return;
     }
-    value = boost::math::round(value * precisionPower) / precisionPower;
+    value =
+        boost::math::round(value * GetPrecisionPower()) / GetPrecisionPower();
   }
 };
 
@@ -96,11 +102,15 @@ class Numeric {
 
   static_assert(boost::is_pod<ValueType>::value, "Type should be POD.");
 
+  enum { PRECISION = Policy::PRECISION };
+
  public:
   Numeric(const ValueType &value = 0) : m_value(value) { Normalize(); }
 
  public:
   void Swap(Numeric &rhs) noexcept { std::swap(m_value, rhs.m_value); }
+
+  uint8_t GetPrecision() const { return PRECISION; }
 
   operator ValueType() const noexcept { return Get(); }
 
@@ -296,7 +306,7 @@ bool IsEqual(const trdk::Lib::Numeric<T, Policy> &,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef trdk::Lib::Numeric<double, trdk::Lib::Detail::DoubleNumericPolicy>
+typedef trdk::Lib::Numeric<double, trdk::Lib::Detail::DoubleNumericPolicy<15>>
     Double;
 
 ////////////////////////////////////////////////////////////////////////////////

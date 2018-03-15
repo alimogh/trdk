@@ -17,7 +17,7 @@ using namespace trdk::FrontEnd::Lib;
 OperationListView::OperationListView(QWidget *parent)
     : Base(parent),
       m_isFollowingEnabled(true),
-      m_isExpandingEnabled(false),
+      m_isExpandingEnabled(true),
       m_numberOfResizesForOperations(),
       m_numberOfResizesForOrder(0) {
   setAlternatingRowColors(true);

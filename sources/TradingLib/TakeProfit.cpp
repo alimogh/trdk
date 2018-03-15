@@ -69,12 +69,20 @@ bool TakeProfit::CheckSignal() {
       "{'min': %4%, 'max': %5%, 'offset': %6%, 'toClose': %7%}, 'bid': %8%, "
       "'ask': %9%, 'position': {'operation': '%10%/%11%'}}}",
       [&](TradingRecord &record) {
-        record % GetName()                                    // 1
-            % (isSignal ? "signaling" : "trailing")           // 2
-            % plannedPnl                                      // 3
-            % *m_minProfit                                    // 4
-            % *m_maxProfit                                    // 5
-            % offset                                          // 6
+        record % GetName()                           // 1
+            % (isSignal ? "signaling" : "trailing")  // 2
+            % plannedPnl;                            // 3
+        if (m_minProfit) {
+          record % *m_minProfit;  // 4
+        } else {
+          record % "null";  // 4
+        }
+        if (m_maxProfit) {
+          record % *m_maxProfit;  // 5
+        } else {
+          record % "null";  // 5
+        }
+        record % offset                                       // 6
             % profitToClose                                   // 7
             % GetPosition().GetSecurity().GetBidPriceValue()  // 8
             % GetPosition().GetSecurity().GetAskPriceValue()  // 9
@@ -222,7 +230,7 @@ const char *TakeProfitShare::GetName() const { return "take profit share"; }
 
 Volume TakeProfitShare::CalcProfitToActivate() const {
   const auto &initialVol = GetPosition().GetOpenedVolume();
-  return initialVol + (initialVol * m_params->GetProfitShareToActivate());
+  return initialVol * m_params->GetProfitShareToActivate();
 }
 
 Volume TakeProfitShare::CalcOffsetToClose() const {

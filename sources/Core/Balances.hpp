@@ -17,8 +17,7 @@ class Balances : private boost::noncopyable {
   virtual ~Balances() = default;
 
  public:
-  virtual trdk::Volume FindAvailableToTrade(
-      const std::string &symbol) const = 0;
+  virtual trdk::Volume GetAvailableToTrade(const std::string &symbol) const = 0;
   virtual void ReduceAvailableToTradeByOrder(const trdk::Security &,
                                              const trdk::Qty &,
                                              const trdk::Price &,
@@ -29,4 +28,4 @@ class Balances : private boost::noncopyable {
                                  const trdk::Volume &available,
                                  const trdk::Volume &locked)> &) const = 0;
 };
-}
+}  // namespace trdk
