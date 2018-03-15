@@ -179,7 +179,7 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
                                   const boost::posix_time::ptime &,
                                   const trdk::Strategy &) override;
   virtual void CopyOperationUpdate(const boost::uuids::uuid &,
-                                   const trdk::Pnl::Data &) override;
+                                             const trdk::Pnl::Data &) override;
   virtual void CopyOperationEnd(const boost::uuids::uuid &,
                                 const boost::posix_time::ptime &,
                                 std::unique_ptr<trdk::Pnl> &&) override;

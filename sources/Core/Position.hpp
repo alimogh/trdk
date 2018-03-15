@@ -128,15 +128,9 @@ class TRDK_CORE_API Position
    */
   bool IsClosed() const noexcept;
 
-  //! Started.
-  /** True if at least one of open-orders was sent.
-  /** @sa IsCompleted
-    */
-  bool IsStarted() const noexcept;
-  //! Started and now doesn't have any orders and active qty or market as
-  //! completed.
-  /** @sa IsStarted
-   * @sa MarkAsCompleted
+  //! Started, has any opened qty and now doesn't have any orders and active qty
+  //! or market as completed.
+  /** @sa MarkAsCompleted
    */
   bool IsCompleted() const noexcept;
   //! Marks position as completed without real closing.
@@ -369,8 +363,6 @@ class TRDK_CORE_API Position
    * @sa Algo
    */
   void RunAlgos();
-
-  void ScheduleUpdateEvent(const boost::posix_time::time_duration &);
 
  protected:
   virtual boost::shared_ptr<const trdk::OrderTransactionContext>

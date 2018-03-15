@@ -113,7 +113,7 @@ class TRDK_CORE_API DropCopy {
                                   const boost::posix_time::ptime &,
                                   const trdk::Strategy &) = 0;
   virtual void CopyOperationUpdate(const boost::uuids::uuid &,
-                                   const trdk::Pnl::Data &) = 0;
+                                             const trdk::Pnl::Data &) = 0;
   virtual void CopyOperationEnd(const boost::uuids::uuid &,
                                 const boost::posix_time::ptime &,
                                 std::unique_ptr<trdk::Pnl> &&) = 0;

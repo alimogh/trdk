@@ -49,39 +49,57 @@ class Operation::Implementation : private boost::noncopyable {
     try {
       if (m_isStarted) {
         m_strategy.GetTradingLog().Write(
-            "{'operation': {'result:': '%1%', 'finResult': {%2%}, 'id' : "
-            "'%3%'}}",
+            "{'operation': {'result:': '%1%', 'finResult': {%2%}, "
+            "'commission': {%3%},  'totalResult': {%4%}, 'id' : '%5%'}}",
             [this](TradingRecord &record) {
-              static_assert(Pnl::numberOfResults == 4, "List changed.");
-              const auto &result = m_pnl->GetResult();
-              switch (result) {
-                default:
-                  AssertEq(Pnl::RESULT_NONE, result);
-                  record % result;  // 1
-                  break;
-                case Pnl::RESULT_NONE:
-                  record % "none";  // 1
-                  break;
-                case Pnl::RESULT_PROFIT:
-                  record % "profit";  // 1
-                  break;
-                case Pnl::RESULT_LOSS:
-                  record % "loss";  // 1
-                  break;
-                case Pnl::RESULT_ERROR:
-                  record % "error";  // 1
-                  break;
-              }
-              std::string list;
-              for (const auto &pnl : m_pnl->GetData()) {
-                if (!list.empty()) {
-                  list += ", ";
+              {
+                static_assert(Pnl::numberOfResults == 4, "List changed.");
+                const auto &result = m_pnl->GetResult();
+                switch (result) {
+                  default:
+                    AssertEq(Pnl::RESULT_NONE, result);
+                    record % result;  // 1
+                    break;
+                  case Pnl::RESULT_NONE:
+                    record % "none";  // 1
+                    break;
+                  case Pnl::RESULT_PROFIT:
+                    record % "profit";  // 1
+                    break;
+                  case Pnl::RESULT_LOSS:
+                    record % "loss";  // 1
+                    break;
+                  case Pnl::RESULT_ERROR:
+                    record % "error";  // 1
+                    break;
                 }
-                list += "'" + pnl.first +
-                        "': " + boost::lexical_cast<std::string>(pnl.second);
               }
-              record % list  // 2
-                  % m_id;    // 3
+              {
+                std::string financialResult;
+                std::string commission;
+                std::string totalResult;
+                for (const auto &symbol : m_pnl->GetData()) {
+                  if (!financialResult.empty()) {
+                    financialResult += ", ";
+                    commission += ", ";
+                    totalResult += ", ";
+                  }
+                  financialResult += "'" + symbol.first + "': " +
+                                     boost::lexical_cast<std::string>(
+                                         symbol.second.financialResult);
+                  commission += "'" + symbol.first + "': " +
+                                boost::lexical_cast<std::string>(
+                                    symbol.second.commission);
+                  totalResult += "'" + symbol.first + "': " +
+                                 boost::lexical_cast<std::string>(
+                                     symbol.second.financialResult -
+                                     symbol.second.commission);
+                }
+                record % financialResult  // 2
+                    % commission          // 3
+                    % totalResult         // 4
+                    % m_id;               // 5
+              }
             });
         m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
           dropCopy.CopyOperationEnd(m_id,
@@ -92,6 +110,12 @@ class Operation::Implementation : private boost::noncopyable {
     } catch (...) {
       AssertFailNoException();
     }
+  }
+
+  void CopyOperationUpdate() {
+    m_strategy.GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
+      dropCopy.CopyOperationUpdate(m_id, m_pnl->GetData());
+    });
   }
 };
 
@@ -169,14 +193,26 @@ boost::shared_ptr<Operation> Operation::StartInvertedPosition(
 void Operation::UpdatePnl(const Security &security,
                           const OrderSide &side,
                           const Qty &qty,
+                          const Price &price) {
+  Assert(m_pimpl->m_isStarted);
+  m_pimpl->m_pnl->UpdateFinancialResult(security, side, qty, price);
+  m_pimpl->CopyOperationUpdate();
+}
+
+void Operation::UpdatePnl(const Security &security,
+                          const OrderSide &side,
+                          const Qty &qty,
                           const Price &price,
                           const Volume &comission) {
   Assert(m_pimpl->m_isStarted);
-  if (m_pimpl->m_pnl->Update(security, side, qty, price, comission)) {
-    GetStrategy().GetContext().InvokeDropCopy([this](DropCopy &dropCopy) {
-      dropCopy.CopyOperationUpdate(GetId(), m_pimpl->m_pnl->GetData());
-    });
-  }
+  m_pimpl->m_pnl->UpdateFinancialResult(security, side, qty, price, comission);
+  m_pimpl->CopyOperationUpdate();
+}
+
+void Operation::AddComission(const Security &security,
+                             const Volume &commission) {
+  m_pimpl->m_pnl->AddCommission(security, commission);
+  m_pimpl->CopyOperationUpdate();
 }
 
 const Pnl &Operation::GetPnl() const { return *m_pimpl->m_pnl; }

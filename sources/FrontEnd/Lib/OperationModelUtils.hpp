@@ -24,6 +24,8 @@ struct OperationRecord {
   QTime endTime;
   boost::optional<Pnl::Result> result;
   QString financialResult;
+  QString commission;
+  QString totalResult;
 
  public:
   explicit OperationRecord(const boost::uuids::uuid &,

@@ -26,44 +26,70 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
  public:
   Implementation() : m_numberOfProfits(0), m_numberOfLosses(0) {}
 
-  void Update(const std::string &symbol, const Double &delta) {
-    if (!delta) {
-      return;
-    }
-    const auto &result = m_data.emplace(symbol, delta);
+  void Update(const std::string &symbol,
+              const Volume &financialResultDelta,
+              const Volume &commission) {
+    const auto &result =
+        m_data.emplace(symbol, SymbolData{financialResultDelta, commission});
     if (!result.second) {
-      auto &value = result.first->second;
-      const auto prevValue = value;
-      value += delta;
-      if (value > 0) {
-        if (prevValue < 0) {
-          AssertLt(0, m_numberOfLosses);
-          --m_numberOfLosses;
-          ++m_numberOfProfits;
-        } else if (prevValue == 0) {
-          ++m_numberOfProfits;
-        }
-      } else if (value < 0) {
-        if (prevValue > 0) {
+      auto &values = result.first->second;
+      const auto prevTotal = values.financialResult - values.commission;
+      values.financialResult += financialResultDelta;
+      values.commission += commission;
+      const auto total = values.financialResult - commission;
+      if (prevTotal != total) {
+        if (total > 0) {
+          if (prevTotal < 0) {
+            AssertLt(0, m_numberOfLosses);
+            --m_numberOfLosses;
+            ++m_numberOfProfits;
+          } else if (prevTotal == 0) {
+            ++m_numberOfProfits;
+          }
+        } else if (total < 0) {
+          if (prevTotal > 0) {
+            AssertLt(0, m_numberOfProfits);
+            --m_numberOfProfits;
+            ++m_numberOfLosses;
+          } else if (prevTotal == 0) {
+            ++m_numberOfLosses;
+          }
+        } else if (prevTotal > 0) {
           AssertLt(0, m_numberOfProfits);
           --m_numberOfProfits;
-          ++m_numberOfLosses;
-        } else if (prevValue == 0) {
-          ++m_numberOfLosses;
+        } else if (prevTotal < 0) {
+          AssertLt(0, m_numberOfLosses);
+          --m_numberOfLosses;
         }
-      } else if (prevValue > 0) {
-        AssertLt(0, m_numberOfProfits);
-        --m_numberOfProfits;
-      } else if (prevValue < 0) {
-        AssertLt(0, m_numberOfLosses);
-        --m_numberOfLosses;
       }
-    } else if (delta > 0) {
-      ++m_numberOfProfits;
     } else {
-      ++m_numberOfLosses;
+      const auto total = financialResultDelta - commission;
+      if (total > 0) {
+        ++m_numberOfProfits;
+      } else if (total < 0) {
+        ++m_numberOfLosses;
+      }
     }
     AssertLe(m_numberOfLosses + m_numberOfProfits, m_data.size());
+  }
+
+  void Update(const Security &security,
+              const OrderSide &side,
+              const Qty &qty,
+              const Price &price,
+              const Volume &commission) {
+    const auto &symbol = security.GetSymbol();
+    switch (symbol.GetSecurityType()) {
+      default:
+        throw MethodIsNotImplementedException(
+            "Security type is not supported by P&L container");
+      case SECURITY_TYPE_CRYPTO: {
+        Update(symbol.GetBaseSymbol(), qty * (side == ORDER_SIDE_BUY ? 1 : -1),
+               0);
+        Update(symbol.GetQuoteSymbol(),
+               ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)), commission);
+      }
+    }
   }
 };
 
@@ -72,28 +98,32 @@ PnlOneSymbolContainer::PnlOneSymbolContainer()
 
 PnlOneSymbolContainer::~PnlOneSymbolContainer() = default;
 
-bool PnlOneSymbolContainer::Update(const Security &security,
-                                   const OrderSide &side,
-                                   const Qty &qty,
-                                   const Price &price,
-                                   const Volume &commission) {
-  if (qty == 0 && price == 0 && commission == 0) {
-    return false;
-  }
+void PnlOneSymbolContainer::UpdateFinancialResult(const Security &security,
+                                                  const OrderSide &side,
+                                                  const Qty &qty,
+                                                  const Price &price) {
+  m_pimpl->Update(security, side, qty, price, 0);
+}
+
+void PnlOneSymbolContainer::UpdateFinancialResult(const Security &security,
+                                                  const OrderSide &side,
+                                                  const Qty &qty,
+                                                  const Price &price,
+                                                  const Volume &commission) {
+  m_pimpl->Update(security, side, qty, price, commission);
+}
+
+void PnlOneSymbolContainer::AddCommission(const Security &security,
+                                          const Volume &commission) {
   const auto &symbol = security.GetSymbol();
   switch (symbol.GetSecurityType()) {
     default:
       throw MethodIsNotImplementedException(
           "Security type is not supported by P&L container");
     case SECURITY_TYPE_CRYPTO: {
-      m_pimpl->Update(symbol.GetBaseSymbol(),
-                      qty * (side == ORDER_SIDE_BUY ? 1 : -1));
-      m_pimpl->Update(
-          symbol.GetQuoteSymbol(),
-          ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)) - commission);
+      m_pimpl->Update(security.GetSymbol().GetQuoteSymbol(), 0, commission);
     }
   }
-  return true;
 }
 
 PnlOneSymbolContainer::Result PnlOneSymbolContainer::GetResult() const {
