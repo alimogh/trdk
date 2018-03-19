@@ -34,7 +34,7 @@ QString BuildEngineName(const boost::filesystem::path &configFileSubPath) {
   }
   return QString::fromStdString(boost::join(result, " / "));
 }
-}
+}  // namespace
 
 EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
                            const boost::filesystem::path &configFileSubPath,
@@ -60,7 +60,7 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   Verify(
       connect(m_ui.stopEngine, &QAction::triggered, this, &EngineWindow::Stop));
 
-  Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Lib::Engine::StateChange, this,
                  &EngineWindow::OnStateChanged, Qt::QueuedConnection));
   Verify(connect(&m_engine, &Lib::Engine::Message, this,
                  &EngineWindow::OnMessage, Qt::QueuedConnection));

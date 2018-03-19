@@ -20,7 +20,6 @@ using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Lib::Detail;
 
 namespace pt = boost::posix_time;
-namespace ids = boost::uuids;
 namespace lib = trdk::FrontEnd::Lib;
 
 namespace {
@@ -40,60 +39,51 @@ class OperationListModel::Implementation : private boost::noncopyable {
   OperationListModel &m_self;
 
   RootItem m_root;
-  boost::unordered_map<ids::uuid, boost::shared_ptr<OperationNodeItem>>
+  boost::unordered_map<QUuid, boost::shared_ptr<OperationNodeItem>>
       m_operations;
-  boost::unordered_map<std::pair<const TradingSystem *, std ::string>,
-                       boost::shared_ptr<OperationOrderItem>>
-      m_orders;
+  boost::unordered_map<quint64, boost::shared_ptr<OperationOrderItem>> m_orders;
 
   explicit Implementation(OperationListModel &self) : m_self(self) {}
 
-  void AddOrder(const ids::uuid &operationId,
-                const std::string &orderId,
-                const TradingSystem &tradingSystem,
-                const boost::shared_ptr<OperationOrderItem> &&order) {
-    const auto &operationIt = m_operations.find(operationId);
+  void AddOrder(const Orm::Order &order,
+                const boost::shared_ptr<OperationOrderItem> &&item) {
+    const auto &operationIt = m_operations.find(order.getOperation()->getId());
     if (operationIt == m_operations.cend()) {
       Assert(operationIt != m_operations.cend());
       return;
     }
-    auto &operation = *operationIt->second;
-    if (!m_orders
-             .emplace(
-                 std::make_pair(std::make_pair(&tradingSystem, orderId), order))
-             .second) {
+    auto &record = *operationIt->second;
+    if (!m_orders.emplace(order.getId(), item).second) {
       Assert(false);
       return;
     }
-    if (operation.GetNumberOfChilds() == 0) {
-      m_self.beginInsertRows(
-          m_self.createIndex(operation.GetRow(), 0, &operation), 0, 1);
-      operation.AppendChild(boost::make_shared<OperationOrderHeadItem>());
+    if (record.GetNumberOfChilds() == 0) {
+      m_self.beginInsertRows(m_self.createIndex(record.GetRow(), 0, &record), 0,
+                             1);
+      record.AppendChild(boost::make_shared<OperationOrderHeadItem>());
     } else {
-      const auto &index = operation.GetNumberOfChilds();
-      m_self.beginInsertRows(
-          m_self.createIndex(operation.GetRow(), 0, &operation), index, index);
+      const auto &index = record.GetNumberOfChilds();
+      m_self.beginInsertRows(m_self.createIndex(record.GetRow(), 0, &record),
+                             index, index);
     }
-    operation.AppendChild(order);
+    record.AppendChild(item);
     m_self.endInsertRows();
   }
 };
 
 OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationStart, this,
-                 &OperationListModel::AddOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationUpdate, this,
-                 &OperationListModel::UpdateOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationEnd, this,
-                 &OperationListModel::CompleteOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitted,
-                 this, &OperationListModel::AddOrder, Qt::QueuedConnection));
-  Verify(connect(
-      &engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitError, this,
-      &OperationListModel::AddOrderSumbitError, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
-                 &OperationListModel::UpdateOrder, Qt::QueuedConnection));
+  for (const auto &operation : engine.GetOperations()) {
+    UpdateOperation(*operation);
+    for (const auto &order : operation->getOrders()) {
+      UpdateOrder(*order);
+    }
+  }
+
+  Verify(connect(&engine, &Lib::Engine::OperationUpdate, this,
+                 &OperationListModel::UpdateOperation));
+  Verify(connect(&engine, &Lib::Engine::OrderUpdate, this,
+                 &OperationListModel::UpdateOrder));
 }
 
 OperationListModel::~OperationListModel() = default;
@@ -206,105 +196,45 @@ Qt::ItemFlags OperationListModel::flags(const QModelIndex &index) const {
   return QAbstractItemModel::flags(index);
 }
 
-void OperationListModel::AddOperation(const ids::uuid &id,
-                                      const pt::ptime &time,
-                                      const Strategy *strategy) {
-  const auto &operation = boost::make_shared<OperationNodeItem>(
-      OperationRecord(id, time, *strategy));
-  Verify(m_pimpl->m_operations.emplace(std::make_pair(id, operation)).second);
-  const auto &index = m_pimpl->m_root.GetNumberOfChilds();
-  beginInsertRows(QModelIndex(), index, index);
-  m_pimpl->m_root.AppendChild(operation);
-  endInsertRows();
-}
-
-void OperationListModel::UpdateOperation(const ids::uuid &id,
-                                         const Pnl::Data &data) {
-  const auto &operationIt = m_pimpl->m_operations.find(id);
-  if (operationIt == m_pimpl->m_operations.cend()) {
-    Assert(operationIt != m_pimpl->m_operations.cend());
-    return;
+void OperationListModel::UpdateOperation(const Orm::Operation &operation) {
+  const auto &it = m_pimpl->m_operations.find(operation.getId());
+  if (it == m_pimpl->m_operations.cend()) {
+    const auto &record =
+        boost::make_shared<OperationNodeItem>(OperationRecord(operation));
+    Verify(
+        m_pimpl->m_operations.emplace(std::make_pair(operation.getId(), record))
+            .second);
+    const auto &index = m_pimpl->m_root.GetNumberOfChilds();
+    beginInsertRows(QModelIndex(), index, index);
+    m_pimpl->m_root.AppendChild(record);
+    endInsertRows();
+  } else {
+    auto &record = *it->second;
+    record.GetRecord().Update(operation);
+    emit dataChanged(
+        createIndex(record.GetRow(), 0, &record),
+        createIndex(record.GetRow(), numberOfOperationColumns - 1, &record));
   }
-  auto &operation = *operationIt->second;
-  operation.GetRecord().Update(data);
-  emit dataChanged(createIndex(operation.GetRow(), 0, &operation),
-                   createIndex(operation.GetRow(), numberOfOperationColumns - 1,
-                               &operation));
 }
 
-void OperationListModel::CompleteOperation(
-    const ids::uuid &id,
-    const pt::ptime &endTime,
-    const boost::shared_ptr<const Pnl> &pnl) {
-  const auto &operationIt = m_pimpl->m_operations.find(id);
-  if (operationIt == m_pimpl->m_operations.cend()) {
-    Assert(operationIt != m_pimpl->m_operations.cend());
-    return;
-  }
-  auto &operation = *operationIt->second;
-  operation.GetRecord().Complete(endTime, *pnl);
-  emit dataChanged(createIndex(operation.GetRow(), 0, &operation),
-                   createIndex(operation.GetRow(), numberOfOperationColumns - 1,
-                               &operation));
-}
-
-void OperationListModel::AddOrder(const ids::uuid &operationId,
-                                  int64_t subOperationId,
-                                  const OrderId &orderId,
-                                  const pt::ptime &orderTime,
-                                  const Security *security,
-                                  const Currency &currency,
-                                  const TradingSystem *tradingSystem,
-                                  const OrderSide &side,
-                                  const Qty &qty,
-                                  const boost::optional<Price> &price,
-                                  const TimeInForce &tif) {
-  m_pimpl->AddOrder(
-      operationId, orderId.GetValue(), *tradingSystem,
-      boost::make_shared<OperationOrderItem>(OrderRecord(
-          QString::fromStdString(boost::lexical_cast<std::string>(orderId)),
-          operationId, subOperationId, orderTime, *security, currency,
-          *tradingSystem, side, qty, price, ORDER_STATUS_SENT, tif,
-          QString())));
-}
-
-void OperationListModel::AddOrderSumbitError(
-    const ids::uuid &operationId,
-    int64_t subOperationId,
-    const pt::ptime &orderTime,
-    const Security *security,
-    const Currency &currency,
-    const TradingSystem *tradingSystem,
-    const OrderSide &side,
-    const Qty &qty,
-    const boost::optional<Price> &price,
-    const TimeInForce &tif,
-    const QString &error) {
-  static boost::uuids::random_generator generateOrderId;
-  m_pimpl->AddOrder(
-      operationId, boost::lexical_cast<std::string>(generateOrderId()),
-      *tradingSystem,
-      boost::make_shared<OperationOrderItem>(OrderRecord(
-          QString(), operationId, subOperationId, orderTime, *security,
-          currency, *tradingSystem, side, qty, price, ORDER_STATUS_ERROR, tif,
-          !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
-                           : tr("Unknown submit error"))));
-}
-
-void OperationListModel::UpdateOrder(const OrderId &orderId,
-                                     const TradingSystem *tradingSystem,
-                                     const pt::ptime &time,
-                                     const OrderStatus &status,
-                                     const Qty &remainingQty) {
-  const auto &it = m_pimpl->m_orders.find(
-      std::make_pair(tradingSystem, boost::cref(orderId.GetValue())));
+void OperationListModel::UpdateOrder(const Orm::Order &order) {
+  const auto &it = m_pimpl->m_orders.find(order.getId());
   if (it == m_pimpl->m_orders.cend()) {
-    // Maybe this is standalone order.
-    return;
+    auto additionalInfo = order.getAdditionalInfo();
+    m_pimpl->AddOrder(
+        order,
+        boost::make_shared<OperationOrderItem>(OrderRecord(
+            order,
+            order.getStatus() == ORDER_STATUS_SENT
+                ? std::move(additionalInfo)
+                : !additionalInfo.isEmpty()
+                      ? tr("Failed to submit order: %1").arg(additionalInfo)
+                      : tr("Unknown submit error"))));
+  } else {
+    auto &record = *it->second;
+    record.GetRecord().Update(order);
+    emit dataChanged(
+        createIndex(record.GetRow(), 0, &record),
+        createIndex(record.GetRow(), numberOfOperationColumns - 1, &record));
   }
-  auto &order = *it->second;
-  order.GetRecord().Update(time, status, remainingQty);
-  emit dataChanged(
-      createIndex(order.GetRow(), 0, &order),
-      createIndex(order.GetRow(), numberOfOperationColumns - 1, &order));
 }

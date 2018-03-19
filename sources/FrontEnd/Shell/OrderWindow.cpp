@@ -75,7 +75,7 @@ OrderWindow::OrderWindow(FrontEnd::Lib::Engine &engine, QWidget *parent)
       static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
       this, &OrderWindow::LoadTradingSystemList));
 
-  Verify(connect(&m_engine, &Lib::Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Lib::Engine::StateChange, this,
                  &OrderWindow::OnStateChanged, Qt::QueuedConnection));
 
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,

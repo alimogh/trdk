@@ -43,41 +43,8 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
   virtual Qt::ItemFlags flags(const QModelIndex &) const override;
 
  private slots:
-  void AddOperation(const boost::uuids::uuid &,
-                    const boost::posix_time::ptime &,
-                    const trdk::Strategy *);
-  void UpdateOperation(const boost::uuids::uuid &, const trdk::Pnl::Data &);
-  void CompleteOperation(const boost::uuids::uuid &,
-                         const boost::posix_time::ptime &,
-                         const boost::shared_ptr<const trdk::Pnl> &);
-
-  void AddOrder(const boost::uuids::uuid &operationId,
-                int64_t subOperationId,
-                const trdk::OrderId &,
-                const boost::posix_time::ptime &,
-                const trdk::Security *,
-                const trdk::Lib::Currency &,
-                const trdk::TradingSystem *,
-                const trdk::OrderSide &,
-                const trdk::Qty &,
-                const boost::optional<trdk::Price> &,
-                const trdk::TimeInForce &);
-  void AddOrderSumbitError(const boost::uuids::uuid &operationId,
-                           int64_t subOperationId,
-                           const boost::posix_time::ptime &,
-                           const trdk::Security *,
-                           const trdk::Lib::Currency &,
-                           const trdk::TradingSystem *,
-                           const trdk::OrderSide &,
-                           const trdk::Qty &,
-                           const boost::optional<trdk::Price> &,
-                           const trdk::TimeInForce &,
-                           const QString &error);
-  void UpdateOrder(const trdk::OrderId &,
-                   const trdk::TradingSystem *,
-                   const boost::posix_time::ptime &,
-                   const trdk::OrderStatus &,
-                   const trdk::Qty &remainingQty);
+  void UpdateOperation(const Orm::Operation &);
+  void UpdateOrder(const Orm::Order &);
 
  private:
   class Implementation;
