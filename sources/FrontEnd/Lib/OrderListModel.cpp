@@ -82,13 +82,12 @@ class OrderListModel::Implementation : private boost::noncopyable {
 
 OrderListModel::OrderListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitted,
-                 this, &OrderListModel::OnOrderSubmitted,
-                 Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmit, this,
+                 &OrderListModel::OnOrderSubmitted, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitError,
                  this, &OrderListModel::OnOrderSubmitError,
                  Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
+  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdate, this,
                  &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
   Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::Order, this,
                  &OrderListModel::OnOrder, Qt::QueuedConnection));

@@ -14,6 +14,7 @@ using namespace trdk;
 using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
+namespace ids = boost::uuids;
 namespace lib = trdk::FrontEnd::Lib;
 
 void lib::ShowAbout(QWidget &parent) {
@@ -84,11 +85,17 @@ QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
                 static_cast<int>(ms.total_milliseconds()))};
 }
 
-TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const TimeInForce &tif) {
+QDateTime lib::ConvertToDbDateTime(const pt::ptime &source) {
+  return ConvertToQDateTime(source);
+}
+
+QDateTime lib::ConvertFromDbDateTime(const QDateTime &source) { return source; }
+
+QString lib::ConvertToUiString(const TimeInForce &tif) {
   return QString(ConvertToPch(tif)).toUpper();
 }
 
-TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const OrderSide &side) {
+QString lib::ConvertToUiString(const OrderSide &side) {
   static_assert(numberOfOrderSides == 2, "List changed");
   return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
 }
@@ -113,6 +120,54 @@ QString lib::ConvertToUiString(const OrderStatus &status) {
   }
   AssertEq(ORDER_STATUS_SENT, status);
   return QObject::tr("undefined");
+}
+
+QUuid lib::ConvertToQUuid(const ids::uuid &source) {
+  static_assert(sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
+                        sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                        sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                        sizeof(uchar) ==
+                    sizeof(ids::uuid::data),
+                "Wrong size.");
+  const auto &l = reinterpret_cast<const uint &>(source.data[0]);
+  const auto &w1 = reinterpret_cast<const ushort &>(source.data[sizeof(uint)]);
+  const auto &w2 = reinterpret_cast<const ushort &>(
+      source.data[sizeof(uint) + sizeof(ushort)]);
+  return QUuid(((l >> 24) & 0xff) | ((l << 8) & 0xff0000) |
+                   ((l >> 8) & 0xff00) | ((l << 24) & 0xff000000),  // uint l
+               (w1 >> 8) | (w1 << 8),                               // ushort w1
+               (w2 >> 8) | (w2 << 8),                               // ushort w2
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) +
+                               sizeof(ushort)]),  // uchar b1
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar)]),  //  uchar b2
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar)]),  // uchar b3
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b4
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b5
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar)]),  // uchar b6
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b7
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]));  // uchar b8
 }
 
 void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {

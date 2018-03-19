@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   Created: 2017/10/16 02:35:45
+ *   Created: 2018/03/18 18:43:48
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
  * -------------------------------------------------------------------
@@ -8,20 +8,9 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
+#include "Prec.hpp"
 
-namespace trdk {
-namespace FrontEnd {
-namespace Lib {
-class DropCopy;
-class Engine;
-
-namespace Orm {
-class Operation;
-class Order;
-class Strategy;
-class StrategyInstance;
-}  // namespace Orm
-}  // namespace Lib
-}  // namespace FrontEnd
-}  // namespace trdk
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#include "GeneratedFiles/Orm/src/Trdk_FrontEnd_Lib_Orm_all.gen.cpp"
+#pragma warning(pop)

@@ -72,8 +72,8 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
                                        const Qty &qty,
                                        const boost::optional<Price> &price,
                                        const TimeInForce &tif) {
-  emit FreeOrderSubmitted(id, time, &security, currency, &tradingSystem, sid,
-                          qty, price, tif);
+  emit FreeOrderSubmit(id, time, &security, currency, &tradingSystem, sid, qty,
+                       price, tif);
 }
 void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
                                        const pt::ptime &time,
@@ -82,10 +82,10 @@ void lib::DropCopy::CopySubmittedOrder(const OrderId &id,
                                        const Qty &qty,
                                        const boost::optional<Price> &price,
                                        const TimeInForce &tif) {
-  emit OperationOrderSubmitted(
-      position.GetOperation()->GetId(), position.GetSubOperationId(), id, time,
-      &position.GetSecurity(), position.GetCurrency(),
-      &position.GetTradingSystem(), sid, qty, price, tif);
+  emit OperationOrderSubmit(position.GetOperation()->GetId(),
+                            position.GetSubOperationId(), id, time,
+                            &position.GetSecurity(), position.GetCurrency(),
+                            &position.GetTradingSystem(), sid, qty, price, tif);
 }
 
 void lib::DropCopy::CopyOrderSubmitError(const pt::ptime &time,
@@ -119,7 +119,7 @@ void lib::DropCopy::CopyOrderStatus(const OrderId &id,
                                     const pt::ptime &time,
                                     const OrderStatus &status,
                                     const Qty &remainingQty) {
-  emit OrderUpdated(id, &tradingSystem, time, status, remainingQty);
+  emit OrderUpdate(id, &tradingSystem, time, status, remainingQty);
 }
 
 void lib::DropCopy::CopyOrder(const OrderId &id,

@@ -22,7 +22,7 @@ namespace lib = trdk::FrontEnd::Lib;
 
 SecurityListModel::SecurityListModel(lib::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
-  Verify(connect(&m_engine, &Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Engine::StateChange, this,
                  &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
   Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
                  &SecurityListModel::UpdatePrice, Qt::QueuedConnection));

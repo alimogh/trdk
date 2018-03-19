@@ -45,23 +45,26 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
         options->backgroundBrush = backgoundColorOfError;
         options->palette.setColor(QPalette::Text, textColorOfError);
         options->font.setBold(true);
-      } else if (operation->GetRecord().result) {
-        static_assert(Pnl::numberOfResults, "List changed.");
-        switch (*operation->GetRecord().result) {
-          case Pnl::RESULT_NONE:
+      } else if (operation->GetRecord().status !=
+                 Orm::OperationStatus::ACTIVE) {
+        static_assert(Orm::OperationStatus::numberOfStatuses == 5,
+                      "List changed.");
+        switch (operation->GetRecord().status) {
+          case Orm::OperationStatus::CANCELED:
             options->palette.setColor(QPalette::Text, colorOfInactive);
             break;
-          case Pnl::RESULT_PROFIT:
+          case Orm::OperationStatus::PROFIT:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfProfitAlt : colorOfProfit;
             break;
-          case Pnl::RESULT_LOSS:
+          case Orm::OperationStatus::LOSS:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfLossAlt : colorOfLoss;
             break;
           default:
-            AssertEq(Pnl::RESULT_ERROR, *operation->GetRecord().result);
-          case Pnl::RESULT_ERROR:
+            AssertEq(Orm::OperationStatus::ERROR,
+                     operation->GetRecord().status);
+          case Orm::OperationStatus::ERROR:
             options->backgroundBrush = backgoundColorOfError;
             options->palette.setColor(QPalette::Text, textColorOfError);
             options->font.setBold(true);

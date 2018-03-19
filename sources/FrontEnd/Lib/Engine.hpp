@@ -36,14 +36,19 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   RiskControlScope &GetRiskControl(const TradingMode &);
 
+  std::vector<boost::shared_ptr<Orm::Operation>> GetOperations() const;
+
 #ifdef DEV_VER
   void Test();
 #endif
 
  signals:
-  void StateChanged(bool isStarted);
+  void StateChange(bool isStarted);
   void Message(const QString &, bool isCritical);
   void LogRecord(const QString &);
+
+  void OperationUpdate(const trdk::FrontEnd::Lib::Orm::Operation &);
+  void OrderUpdate(const trdk::FrontEnd::Lib::Orm::Order &);
 
  public:
   void Start(
