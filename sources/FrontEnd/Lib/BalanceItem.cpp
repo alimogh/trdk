@@ -12,7 +12,7 @@
 #include "BalanceItem.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd::Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 

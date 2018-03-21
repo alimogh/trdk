@@ -12,7 +12,7 @@
 #include "Lib/Style.hpp"
 #include "MainWindow.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Shell;
 
 int main(int argc, char *argv[]) {

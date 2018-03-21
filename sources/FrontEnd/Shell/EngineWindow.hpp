@@ -36,7 +36,7 @@ class EngineWindow : public QMainWindow {
 
  public slots:
   void ShowOrderWindow(Security &);
-  void CloseOrderWindow(const trdk::Lib::Symbol &);
+  void CloseOrderWindow(const Lib::Symbol &);
 
  private slots:
   void Start(bool start);
@@ -50,14 +50,14 @@ class EngineWindow : public QMainWindow {
   void LoadModule();
 
  private:
-  Lib::Engine m_engine;
+  Engine m_engine;
   const QString m_name;
   Ui::EngineWindow m_ui;
-  std::unique_ptr<trdk::Lib::Dll> m_moduleDll;
+  std::unique_ptr<Lib::Dll> m_moduleDll;
   std::vector<std::unique_ptr<QWidget>> m_modules;
-  boost::unordered_map<trdk::Lib::Symbol, std::unique_ptr<OrderWindow>>
+  boost::unordered_map<Lib::Symbol, std::unique_ptr<OrderWindow>>
       m_orderWindows;
 };
-}
-}
-}
+}  // namespace Shell
+}  // namespace FrontEnd
+}  // namespace trdk

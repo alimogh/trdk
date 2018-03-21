@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "OperationItem.hpp"
 
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd::Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 

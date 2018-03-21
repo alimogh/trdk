@@ -12,7 +12,7 @@
 #include "OrderListView.hpp"
 #include "Engine.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 OrderListView::OrderListView(Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {

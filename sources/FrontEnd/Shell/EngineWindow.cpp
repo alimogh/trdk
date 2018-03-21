@@ -17,7 +17,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Shell;
 
 namespace {
@@ -60,11 +60,11 @@ EngineWindow::EngineWindow(const boost::filesystem::path &configsBase,
   Verify(
       connect(m_ui.stopEngine, &QAction::triggered, this, &EngineWindow::Stop));
 
-  Verify(connect(&m_engine, &Lib::Engine::StateChange, this,
+  Verify(connect(&m_engine, &Engine::StateChange, this,
                  &EngineWindow::OnStateChanged, Qt::QueuedConnection));
-  Verify(connect(&m_engine, &Lib::Engine::Message, this,
-                 &EngineWindow::OnMessage, Qt::QueuedConnection));
-  Verify(connect(&m_engine, &Lib::Engine::LogRecord, this,
+  Verify(connect(&m_engine, &Engine::Message, this, &EngineWindow::OnMessage,
+                 Qt::QueuedConnection));
+  Verify(connect(&m_engine, &Engine::LogRecord, this,
                  &EngineWindow::OnLogRecord, Qt::QueuedConnection));
 
   Verify(connect(m_ui.securityList, &QTableView::doubleClicked,

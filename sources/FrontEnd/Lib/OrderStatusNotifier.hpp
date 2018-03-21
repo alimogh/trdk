@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API OrderStatusNotifier
     : public trdk::OrderStatusHandler {
@@ -30,6 +29,5 @@ class TRDK_FRONTEND_LIB_API OrderStatusNotifier
   virtual void OnRejected(const trdk::Volume &comission) override;
   virtual void OnError(const trdk::Volume &comission) override;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

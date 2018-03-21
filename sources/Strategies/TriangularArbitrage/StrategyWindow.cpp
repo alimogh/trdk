@@ -14,7 +14,7 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::TriangularArbitrage;
 
 namespace ta = trdk::Strategies::TriangularArbitrage;

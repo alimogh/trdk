@@ -16,11 +16,11 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace pt = boost::posix_time;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
 namespace {
 
@@ -119,7 +119,7 @@ class BalanceListModel::Implementation : private boost::noncopyable {
   }
 };
 
-BalanceListModel::BalanceListModel(lib::Engine &engine, QWidget *parent)
+BalanceListModel::BalanceListModel(front::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
   if (engine.IsStarted()) {
     const auto &size = engine.GetContext().GetNumberOfTradingSystems();
@@ -149,7 +149,7 @@ BalanceListModel::BalanceListModel(lib::Engine &engine, QWidget *parent)
       }
     }
   }
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::BalanceUpdate, this,
+  Verify(connect(&engine.GetDropCopy(), &front::DropCopy::BalanceUpdate, this,
                  &BalanceListModel::OnUpdate, Qt::QueuedConnection));
 }
 

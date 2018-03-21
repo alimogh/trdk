@@ -13,7 +13,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API SortFilterProxyModel
     : public QSortFilterProxyModel {
@@ -30,6 +29,5 @@ class TRDK_FRONTEND_LIB_API SortFilterProxyModel
   virtual bool lessThan(const QModelIndex &,
                         const QModelIndex &) const override;
 };
-}
-}
-}
+}  // namespace FrontEnd
+}  // namespace trdk

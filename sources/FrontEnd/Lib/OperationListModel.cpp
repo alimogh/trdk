@@ -16,11 +16,11 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace pt = boost::posix_time;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
 namespace {
 
@@ -71,7 +71,7 @@ class OperationListModel::Implementation : private boost::noncopyable {
   }
 };
 
-OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
+OperationListModel::OperationListModel(front::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
   for (const auto &operation : engine.GetOperations()) {
     UpdateOperation(*operation);
@@ -80,9 +80,9 @@ OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
     }
   }
 
-  Verify(connect(&engine, &Lib::Engine::OperationUpdate, this,
+  Verify(connect(&engine, &Engine::OperationUpdate, this,
                  &OperationListModel::UpdateOperation));
-  Verify(connect(&engine, &Lib::Engine::OrderUpdate, this,
+  Verify(connect(&engine, &Engine::OrderUpdate, this,
                  &OperationListModel::UpdateOrder));
 }
 

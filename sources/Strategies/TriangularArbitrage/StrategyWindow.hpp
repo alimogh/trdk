@@ -32,7 +32,7 @@ class StrategyWindow : public QMainWindow {
   };
 
  public:
-  explicit StrategyWindow(FrontEnd::Lib::Engine &,
+  explicit StrategyWindow(FrontEnd::Engine &,
                           const LegsConf &,
                           QWidget *parent);
   ~StrategyWindow();
@@ -65,7 +65,7 @@ class StrategyWindow : public QMainWindow {
                             const boost::unordered_set<size_t> &) const;
 
  private:
-  FrontEnd::Lib::Engine &m_engine;
+  FrontEnd::Engine &m_engine;
   const QString m_investCurrency;
   const QString m_resultCurrency;
   Ui::StrategyWindow m_ui;

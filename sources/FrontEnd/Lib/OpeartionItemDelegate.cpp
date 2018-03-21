@@ -13,8 +13,8 @@
 #include "OperationItem.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 OperationItemDelegate::OperationItemDelegate(QWidget *parent) : Base(parent) {}
 

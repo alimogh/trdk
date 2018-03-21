@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,6 +126,5 @@ class OperationOrderItem : public OperationItem {
 ////////////////////////////////////////////////////////////////////////////////
 
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

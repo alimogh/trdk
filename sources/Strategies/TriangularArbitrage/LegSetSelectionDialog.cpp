@@ -12,7 +12,7 @@
 #include "LegSetSelectionDialog.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::TriangularArbitrage;
 
 LegSetSelectionDialog::LegSetSelectionDialog(Engine &, QWidget *parent)

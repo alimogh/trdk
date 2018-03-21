@@ -82,7 +82,7 @@ class StrategyWindow : public QMainWindow {
   };
 
  public:
-  explicit StrategyWindow(FrontEnd::Lib::Engine &,
+  explicit StrategyWindow(FrontEnd::Engine &,
                           const QString &symbol,
                           QWidget *parent);
   virtual ~StrategyWindow() override;
@@ -123,9 +123,9 @@ class StrategyWindow : public QMainWindow {
   Ui::StrategyWindow m_ui;
   boost::unordered_map<TradingSystem *, std::unique_ptr<TargetWidgets>>
       m_targetWidgets;
-  FrontEnd::Lib::PriceAdapter<QLabel> m_bestSpreadAbsValue;
+  FrontEnd::PriceAdapter<QLabel> m_bestSpreadAbsValue;
 
-  FrontEnd::Lib::Engine &m_engine;
+  FrontEnd::Engine &m_engine;
   const TradingMode m_tradingMode;
   const size_t m_instanceNumber;
   int m_symbolIndex;

@@ -12,15 +12,11 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 typedef std::vector<std::unique_ptr<QWidget>> StrategyWidgetList;
-typedef boost::function<trdk::FrontEnd::Lib::StrategyWidgetList(
-    QWidget *parent)>
+typedef boost::function<StrategyWidgetList(QWidget *parent)>
     StrategyWindowFactory;
-typedef std::vector<
-    std::pair<QString, trdk::FrontEnd::Lib::StrategyWindowFactory>>
+typedef std::vector<std::pair<QString, StrategyWindowFactory>>
     StrategyMenuActionList;
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

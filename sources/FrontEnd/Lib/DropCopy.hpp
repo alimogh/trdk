@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   Q_OBJECT
@@ -234,6 +233,5 @@ class TRDK_FRONTEND_LIB_API DropCopy : public QObject, public trdk::DropCopy {
   const boost::posix_time::time_duration m_pollingInterval;
   boost::posix_time::ptime m_lastSignalTime;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

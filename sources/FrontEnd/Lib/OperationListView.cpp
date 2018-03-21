@@ -12,7 +12,7 @@
 #include "OperationListView.hpp"
 #include "OpeartionItemDelegate.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 OperationListView::OperationListView(QWidget *parent)
     : Base(parent),

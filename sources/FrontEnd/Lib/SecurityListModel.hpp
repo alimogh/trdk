@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API SecurityListModel : public QAbstractItemModel {
   Q_OBJECT
@@ -40,7 +39,7 @@ class TRDK_FRONTEND_LIB_API SecurityListModel : public QAbstractItemModel {
   };
 
  public:
-  explicit SecurityListModel(Lib::Engine &, QWidget *parent);
+  explicit SecurityListModel(Engine &, QWidget *parent);
   virtual ~SecurityListModel() override = default;
 
  public:
@@ -71,9 +70,8 @@ class TRDK_FRONTEND_LIB_API SecurityListModel : public QAbstractItemModel {
   QString ConvertFullToQString(const trdk::Lib::SecurityType &) const;
 
  private:
-  Lib::Engine &m_engine;
+  Engine &m_engine;
   std::vector<Security *> m_securities;
 };
-}
-}
-}
+}  // namespace FrontEnd
+}  // namespace trdk

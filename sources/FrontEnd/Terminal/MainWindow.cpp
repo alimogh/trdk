@@ -18,14 +18,12 @@
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
 namespace fs = boost::filesystem;
-namespace lib = trdk::FrontEnd::Lib;
 
-MainWindow::MainWindow(lib::Engine &engine,
-                       std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
+MainWindow::MainWindow(Engine &engine,
+                       std::vector<std::unique_ptr<Dll>> &moduleDlls,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
@@ -75,7 +73,7 @@ MainWindow::MainWindow(lib::Engine &engine,
     m_ui.balances->setWidget(&m_balanceList);
   }
 
-  Verify(connect(&m_engine, &Lib::Engine::Message,
+  Verify(connect(&m_engine, &Engine::Message,
                  [this](const QString &message, bool isCritical) {
                    if (isCritical) {
                      QMessageBox::critical(this, tr("Engine critical warning"),
@@ -102,7 +100,7 @@ void MainWindow::LoadModule(const fs::path &path) {
   StrategyMenuActionList actions;
   try {
     actions =
-        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(lib::Engine &)>(
+        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(Engine &)>(
             "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =

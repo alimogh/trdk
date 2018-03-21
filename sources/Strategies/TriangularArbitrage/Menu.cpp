@@ -12,7 +12,7 @@
 #include "LegSetSelectionDialog.hpp"
 #include "StrategyWindow.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::TriangularArbitrage;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {

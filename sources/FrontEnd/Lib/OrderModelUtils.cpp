@@ -13,8 +13,8 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;

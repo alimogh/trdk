@@ -12,8 +12,8 @@
 #include "OperationModelUtils.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;

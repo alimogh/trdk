@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 struct OperationRecord {
@@ -34,6 +33,5 @@ struct OperationRecord {
   void Update(const Orm::Operation &);
 };
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

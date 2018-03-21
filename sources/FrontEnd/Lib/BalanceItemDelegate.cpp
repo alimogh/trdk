@@ -13,8 +13,8 @@
 #include "BalanceItem.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 BalanceItemDelegate::BalanceItemDelegate(QWidget *parent) : Base(parent) {}
 

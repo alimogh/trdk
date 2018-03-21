@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "TakerStrategyWindow.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::MarketMaker;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {

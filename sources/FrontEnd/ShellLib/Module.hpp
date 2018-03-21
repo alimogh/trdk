@@ -17,11 +17,11 @@ namespace Shell {
 typedef std::vector<std::pair<QString, std::unique_ptr<QWidget>>>
     ModuleFactoryResult;
 
-typedef ModuleFactoryResult(ModuleFactory)(Lib::Engine &, QWidget *parent);
+typedef ModuleFactoryResult(ModuleFactory)(Engine &, QWidget *parent);
 
 inline std::string GetModuleFactoryName() {
   return "CreateEngineFrontEndWidgets";
 }
-}
-}
-}
+}  // namespace Shell
+}  // namespace FrontEnd
+}  // namespace trdk

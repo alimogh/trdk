@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 class DropCopy;
 class Engine;
 
@@ -22,6 +21,5 @@ class Order;
 class Strategy;
 class StrategyInstance;
 }  // namespace Orm
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

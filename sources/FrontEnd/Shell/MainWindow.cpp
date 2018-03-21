@@ -14,7 +14,7 @@
 #include "EngineWindow.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Shell;
 
 MainWindow::MainWindow(QWidget *parent)
