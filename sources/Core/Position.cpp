@@ -982,7 +982,8 @@ bool Position::IsClosed() const noexcept {
 
 bool Position::IsCompleted() const noexcept {
   return m_pimpl->m_isMarketAsCompleted ||
-         (GetOpenedQty() && !HasActiveOrders() && GetActiveQty() == 0);
+         ((GetOpenedQty() || GetCloseReason() != CLOSE_REASON_NONE) &&
+          !HasActiveOrders() && GetActiveQty() == 0);
 }
 
 void Position::MarkAsCompleted() {

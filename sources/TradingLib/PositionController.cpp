@@ -84,7 +84,11 @@ bool PositionController::ClosePosition(Position &position,
                                        const CloseReason &reason) {
   IsPassive(reason) ? position.SetCloseReason(reason)
                     : position.ResetCloseReason(reason);
-  if (position.HasActiveOpenOrders()) {
+  if (position.IsCompleted()) {
+    Assert(!position.HasActiveOpenOrders());
+    AssertEq(0, position.GetActiveQty());
+    return false;
+  } else if (position.HasActiveOpenOrders()) {
     if (position.IsCancelling()) {
       return false;
     }
