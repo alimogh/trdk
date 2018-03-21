@@ -18,11 +18,19 @@ using namespace trdk::TradingLib;
 using namespace trdk::Strategies::PingPong;
 
 Controller::Controller()
-    : m_isOpeningEnabled(false), m_isClosingEnabled(false) {}
+    : m_isLongOpeningEnabled(false),
+      m_isShortOpeningEnabled(false),
+      m_isClosingEnabled(false) {}
 
-bool Controller::IsOpeningEnabled() const { return m_isOpeningEnabled; }
-void Controller::EnableOpening(bool isEnabled) {
-  m_isOpeningEnabled = isEnabled;
+bool Controller::IsLongOpeningEnabled() const { return m_isLongOpeningEnabled; }
+bool Controller::IsShortOpeningEnabled() const {
+  return m_isShortOpeningEnabled;
+}
+void Controller::EnableLongOpening(bool isEnabled) {
+  m_isLongOpeningEnabled = isEnabled;
+}
+void Controller::EnableShortOpening(bool isEnabled) {
+  m_isShortOpeningEnabled = isEnabled;
 }
 
 bool Controller::IsClosingEnabled() const { return m_isClosingEnabled; }
@@ -37,7 +45,8 @@ Position *Controller::OpenPosition(
     bool isLong,
     const Qty &qty,
     const Milestones &delayMeasurement) {
-  if (!m_isOpeningEnabled) {
+  if ((operation->IsLong(security) && !m_isLongOpeningEnabled) ||
+      (!operation->IsLong(security) && !m_isShortOpeningEnabled)) {
     return nullptr;
   }
   {

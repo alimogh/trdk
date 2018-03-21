@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>398</width>
-    <height>724</height>
+    <width>347</width>
+    <height>531</height>
    </rect>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -62,9 +62,16 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_13">
          <item>
-          <widget class="QCheckBox" name="isPositionsOpeningEnabled">
+          <widget class="QCheckBox" name="isPositionsLongOpeningEnabled">
            <property name="text">
-            <string>Open positions</string>
+            <string>Long positions</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="isPositionsShortOpeningEnabled">
+           <property name="text">
+            <string>Short positions</string>
            </property>
           </widget>
          </item>
@@ -600,7 +607,7 @@
  </widget>
  <tabstops>
   <tabstop>symbol</tabstop>
-  <tabstop>isPositionsOpeningEnabled</tabstop>
+  <tabstop>isPositionsLongOpeningEnabled</tabstop>
   <tabstop>isPositionsClosingEnabled</tabstop>
   <tabstop>positionSize</tabstop>
   <tabstop>takeProfit</tabstop>
@@ -611,22 +618,5 @@
   <tabstop>log</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>isPositionsOpeningEnabled</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>isPositionsClosingEnabled</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>159</x>
-     <y>128</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>169</x>
-     <y>150</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

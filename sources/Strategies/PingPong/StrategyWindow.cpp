@@ -41,7 +41,10 @@ StrategyWindow::StrategyWindow(Engine &engine,
     return;
   }
 
-  m_ui.isPositionsOpeningEnabled->setChecked(m_strategy.IsTradingEnabled());
+  m_ui.isPositionsLongOpeningEnabled->setChecked(
+      m_strategy.IsLongTradingEnabled());
+  m_ui.isPositionsShortOpeningEnabled->setChecked(
+      m_strategy.IsShortTradingEnabled());
   m_ui.isPositionsClosingEnabled->setChecked(
       m_strategy.IsActivePositionsControlEnabled());
 
@@ -136,8 +139,12 @@ bool StrategyWindow::LoadExchanges() {
 
 void StrategyWindow::Disable() {
   {
-    const QSignalBlocker blocker(*m_ui.isPositionsOpeningEnabled);
-    m_ui.isPositionsOpeningEnabled->setChecked(false);
+    const QSignalBlocker blocker(*m_ui.isPositionsLongOpeningEnabled);
+    m_ui.isPositionsLongOpeningEnabled->setChecked(false);
+  }
+  {
+    const QSignalBlocker blocker(*m_ui.isPositionsShortOpeningEnabled);
+    m_ui.isPositionsShortOpeningEnabled->setChecked(false);
   }
   {
     const QSignalBlocker blocker(*m_ui.isPositionsClosingEnabled);
@@ -164,23 +171,36 @@ void StrategyWindow::OnStrategyEvent(const QString &message) {
 }
 
 void StrategyWindow::ConnectSignals() {
-  Verify(
-      connect(m_ui.isPositionsOpeningEnabled, &QCheckBox::toggled,
-              [this](bool isEnabled) {
-                m_strategy.EnableTrading(isEnabled);
-                {
-                  const QSignalBlocker blocker(m_ui.isPositionsOpeningEnabled);
-                  m_ui.isPositionsOpeningEnabled->setChecked(
-                      m_strategy.IsTradingEnabled());
-                }
-                {
-                  const QSignalBlocker blocker(m_ui.isPositionsClosingEnabled);
-                  m_ui.isPositionsClosingEnabled->setChecked(
-                      m_strategy.IsActivePositionsControlEnabled());
-                }
-                m_ui.isPositionsClosingEnabled->setEnabled(
-                    !m_ui.isPositionsOpeningEnabled->isChecked());
-              }));
+  Verify(connect(
+      m_ui.isPositionsLongOpeningEnabled, &QCheckBox::toggled,
+      [this](bool isEnabled) {
+        m_strategy.EnableLongTrading(isEnabled);
+        {
+          const QSignalBlocker blocker(m_ui.isPositionsLongOpeningEnabled);
+          m_ui.isPositionsLongOpeningEnabled->setChecked(
+              m_strategy.IsLongTradingEnabled());
+        }
+        {
+          const QSignalBlocker blocker(m_ui.isPositionsClosingEnabled);
+          m_ui.isPositionsClosingEnabled->setChecked(
+              m_strategy.IsActivePositionsControlEnabled());
+        }
+      }));
+  Verify(connect(
+      m_ui.isPositionsShortOpeningEnabled, &QCheckBox::toggled,
+      [this](bool isEnabled) {
+        m_strategy.EnableShortTrading(isEnabled);
+        {
+          const QSignalBlocker blocker(m_ui.isPositionsShortOpeningEnabled);
+          m_ui.isPositionsShortOpeningEnabled->setChecked(
+              m_strategy.IsShortTradingEnabled());
+        }
+        {
+          const QSignalBlocker blocker(m_ui.isPositionsClosingEnabled);
+          m_ui.isPositionsClosingEnabled->setChecked(
+              m_strategy.IsActivePositionsControlEnabled());
+        }
+      }));
   Verify(connect(m_ui.isPositionsClosingEnabled, &QCheckBox::toggled,
                  [this](bool isEnabled) {
                    m_strategy.EnableActivePositionsControl(isEnabled);

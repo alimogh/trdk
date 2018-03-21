@@ -250,7 +250,9 @@ class pp::Strategy::Implementation : private boost::noncopyable {
     if (!subscribtion.trends.Update(subscribtion.indicators)) {
       return;
     }
-    if (!m_controller.IsOpeningEnabled() || !subscribtion.isEnabled) {
+    if ((!m_controller.IsLongOpeningEnabled() &&
+         !m_controller.IsShortOpeningEnabled()) ||
+        !subscribtion.isEnabled) {
       return;
     }
     for (auto &security : m_self.GetSecurities()) {
@@ -386,27 +388,50 @@ const Qty &pp::Strategy::GetPositionSize() const {
   return m_pimpl->m_positionSize;
 }
 
-void pp::Strategy::EnableTrading(bool isEnabled) {
+void pp::Strategy::EnableLongTrading(bool isEnabled) {
   const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_controller.IsOpeningEnabled() == isEnabled) {
+  if (m_pimpl->m_controller.IsLongOpeningEnabled() == isEnabled) {
     return;
   }
-  m_pimpl->m_controller.EnableOpening(isEnabled);
+  m_pimpl->m_controller.EnableLongOpening(isEnabled);
   if (isEnabled) {
     if (m_pimpl->m_securities.empty()) {
       RaiseEvent(
-          "Failed to enable trading as no one selected exchange supports "
+          "Failed to enable long trading as no one selected exchange supports "
           "specified symbol.");
       return;
     }
     m_pimpl->m_controller.EnableClosing(true);
   }
-  GetTradingLog().Write("%1% trading", [isEnabled](TradingRecord &record) {
+  GetTradingLog().Write("%1% long trading", [isEnabled](TradingRecord &record) {
     record % (isEnabled ? "enabled" : "disabled");
   });
 }
-bool pp::Strategy::IsTradingEnabled() const {
-  return m_pimpl->m_controller.IsOpeningEnabled();
+void pp::Strategy::EnableShortTrading(bool isEnabled) {
+  const auto lock = LockForOtherThreads();
+  if (m_pimpl->m_controller.IsShortOpeningEnabled() == isEnabled) {
+    return;
+  }
+  m_pimpl->m_controller.EnableShortOpening(isEnabled);
+  if (isEnabled) {
+    if (m_pimpl->m_securities.empty()) {
+      RaiseEvent(
+          "Failed to enable short trading as no one selected exchange supports "
+          "specified symbol.");
+      return;
+    }
+    m_pimpl->m_controller.EnableClosing(true);
+  }
+  GetTradingLog().Write("%1% short trading",
+                        [isEnabled](TradingRecord &record) {
+                          record % (isEnabled ? "enabled" : "disabled");
+                        });
+}
+bool pp::Strategy::IsLongTradingEnabled() const {
+  return m_pimpl->m_controller.IsLongOpeningEnabled();
+}
+bool pp::Strategy::IsShortTradingEnabled() const {
+  return m_pimpl->m_controller.IsShortOpeningEnabled();
 }
 
 void pp::Strategy::SetSourceTimeFrameSize(const pt::time_duration &frameSize) {
@@ -419,9 +444,6 @@ void pp::Strategy::SetSourceTimeFrameSize(const pt::time_duration &frameSize) {
 void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {
   const auto lock = LockForOtherThreads();
   if (m_pimpl->m_controller.IsClosingEnabled() == isEnabled) {
-    return;
-  }
-  if (!isEnabled && m_pimpl->m_controller.IsOpeningEnabled()) {
     return;
   }
   m_pimpl->m_controller.EnableClosing(isEnabled);
@@ -714,7 +736,8 @@ boost::tribool pp::Strategy::IsTradingSystemEnabled(
 void pp::Strategy::Stop() noexcept {
   m_pimpl->m_isStopped = true;
   try {
-    EnableTrading(false);
+    EnableLongTrading(false);
+    EnableShortTrading(false);
     EnableActivePositionsControl(false);
   } catch (...) {
     AssertFailNoException();
