@@ -12,7 +12,7 @@
 #include "SortFilterProxyModel.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 bool SortFilterProxyModel::lessThan(const QModelIndex &left,
                                     const QModelIndex &right) const {

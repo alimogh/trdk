@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class OperationItemDelegate : public QStyledItemDelegate {
   Q_OBJECT
@@ -30,6 +29,5 @@ class OperationItemDelegate : public QStyledItemDelegate {
   virtual void initStyleOption(QStyleOptionViewItem *,
                                const QModelIndex &) const override;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

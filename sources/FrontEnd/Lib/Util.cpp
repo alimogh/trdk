@@ -15,9 +15,9 @@ using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
-void lib::ShowAbout(QWidget &parent) {
+void front::ShowAbout(QWidget &parent) {
   const auto &text =
       parent
           .tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "
@@ -37,14 +37,14 @@ void lib::ShowAbout(QWidget &parent) {
   QMessageBox::about(&parent, parent.tr("About"), text);
 }
 
-void lib::PinToTop(QWidget &widget, bool pin) {
+void front::PinToTop(QWidget &widget, bool pin) {
   auto flags = widget.windowFlags();
   pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
   widget.setWindowFlags(flags);
   widget.show();
 }
 
-QString lib::ConvertTimeToText(const pt::time_duration &source) {
+QString front::ConvertTimeToText(const pt::time_duration &source) {
   if (source == pt::not_a_date_time) {
     return "--:--:--";
   }
@@ -52,30 +52,30 @@ QString lib::ConvertTimeToText(const pt::time_duration &source) {
                            source.seconds());
 }
 
-QString lib::ConvertPriceToText(const Price &source) {
+QString front::ConvertPriceToText(const Price &source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QString lib::ConvertVolumeToText(const Price &source) {
+QString front::ConvertVolumeToText(const Price &source) {
   return ConvertPriceToText(source);
 }
 
-QString lib::ConvertPriceToText(const boost::optional<Price> &source) {
+QString front::ConvertPriceToText(const boost::optional<Price> &source) {
   return ConvertPriceToText(source ? *source
                                    : std::numeric_limits<double>::quiet_NaN());
 }
 
-QString lib::ConvertQtyToText(const Qty &source) {
+QString front::ConvertQtyToText(const Qty &source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
+QDateTime front::ConvertToQDateTime(const pt::ptime &source) {
   const auto &date = source.date();
   const auto &time = source.time_of_day();
   const auto &ms =
@@ -85,22 +85,24 @@ QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
                 static_cast<int>(ms.total_milliseconds()))};
 }
 
-QDateTime lib::ConvertToDbDateTime(const pt::ptime &source) {
+QDateTime front::ConvertToDbDateTime(const pt::ptime &source) {
   return ConvertToQDateTime(source);
 }
 
-QDateTime lib::ConvertFromDbDateTime(const QDateTime &source) { return source; }
+QDateTime front::ConvertFromDbDateTime(const QDateTime &source) {
+  return source;
+}
 
-QString lib::ConvertToUiString(const TimeInForce &tif) {
+QString front::ConvertToUiString(const TimeInForce &tif) {
   return QString(ConvertToPch(tif)).toUpper();
 }
 
-QString lib::ConvertToUiString(const OrderSide &side) {
+QString front::ConvertToUiString(const OrderSide &side) {
   static_assert(numberOfOrderSides == 2, "List changed");
   return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
 }
 
-QString lib::ConvertToUiString(const OrderStatus &status) {
+QString front::ConvertToUiString(const OrderStatus &status) {
   static_assert(numberOfOrderStatuses == 7, "List changed.");
   switch (status) {
     case ORDER_STATUS_SENT:
@@ -122,7 +124,7 @@ QString lib::ConvertToUiString(const OrderStatus &status) {
   return QObject::tr("undefined");
 }
 
-QUuid lib::ConvertToQUuid(const ids::uuid &source) {
+QUuid front::ConvertToQUuid(const ids::uuid &source) {
   static_assert(sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
                         sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
                         sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
@@ -170,7 +172,8 @@ QUuid lib::ConvertToQUuid(const ids::uuid &source) {
                                sizeof(uchar)]));  // uchar b8
 }
 
-void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
+void front::ScrollToLastChild(QAbstractItemView &view,
+                              const QModelIndex &index) {
   const auto &subRowCount = view.model()->rowCount(index);
   if (subRowCount) {
     view.scrollTo(index.child(subRowCount - 1, index.column()));
@@ -179,11 +182,11 @@ void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
   }
 }
 
-void lib::ScrollToLastChild(QAbstractItemView &view) {
+void front::ScrollToLastChild(QAbstractItemView &view) {
   ScrollToLastChild(view, view.model()->index(view.model()->rowCount() - 1, 0));
 }
 
-void lib::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
+void front::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
   QString message = QObject::tr("Strategy instance is blocked!");
   message += "\n\n";
   if (!reason.isEmpty()) {

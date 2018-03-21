@@ -23,7 +23,7 @@ class StrategyWindow : public QMainWindow {
   typedef QMainWindow Base;
 
  public:
-  explicit StrategyWindow(FrontEnd::Lib::Engine &,
+  explicit StrategyWindow(FrontEnd::Engine &,
                           const QString &symbol,
                           QWidget *parent);
   ~StrategyWindow();
@@ -44,7 +44,7 @@ class StrategyWindow : public QMainWindow {
   void Disable();
 
  private:
-  FrontEnd::Lib::Engine &m_engine;
+  FrontEnd::Engine &m_engine;
   Ui::StrategyWindow m_ui;
   bool m_hasExchanges;
 

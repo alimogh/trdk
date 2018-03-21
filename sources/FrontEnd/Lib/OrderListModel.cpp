@@ -15,11 +15,11 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
 namespace mi = boost::multi_index;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
 namespace {
 
@@ -80,16 +80,15 @@ class OrderListModel::Implementation : private boost::noncopyable {
   OrderList m_orders;
 };
 
-OrderListModel::OrderListModel(lib::Engine &engine, QWidget *parent)
+OrderListModel::OrderListModel(front::Engine &engine, QWidget *parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmit, this,
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::FreeOrderSubmit, this,
                  &OrderListModel::OnOrderSubmitted, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::FreeOrderSubmitError,
-                 this, &OrderListModel::OnOrderSubmitError,
-                 Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdate, this,
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::FreeOrderSubmitError, this,
+                 &OrderListModel::OnOrderSubmitError, Qt::QueuedConnection));
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::OrderUpdate, this,
                  &OrderListModel::OnOrderUpdated, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::Order, this,
+  Verify(connect(&engine.GetDropCopy(), &DropCopy::Order, this,
                  &OrderListModel::OnOrder, Qt::QueuedConnection));
 }
 

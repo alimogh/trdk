@@ -14,7 +14,7 @@
 #include "ui_SymbolSelectionDialog.h"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 SymbolSelectionDialog::SymbolSelectionDialog(Engine &engine, QWidget *parent)
     : Base(parent), m_ui(boost::make_unique<Ui::SymbolSelectionDialog>()) {

@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 TRDK_FRONTEND_LIB_API void ShowAbout(QWidget &);
 TRDK_FRONTEND_LIB_API void PinToTop(QWidget &, bool pin);
 TRDK_FRONTEND_LIB_API QString
@@ -56,6 +55,5 @@ void ScrollToLastChild(QAbstractItemView &);
 TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
                                                       QWidget *parent);
 
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

@@ -46,7 +46,7 @@ class TargetSideWidget : public QWidget {
 
  private:
   Ui::TargetSideWidget m_ui;
-  FrontEnd::Lib::SideAdapter<QLabel> m_side;
+  FrontEnd::SideAdapter<QLabel> m_side;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

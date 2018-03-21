@@ -15,9 +15,8 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Lib;
 
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
@@ -47,11 +46,11 @@ Orm::OperationStatus::enum_OperationStatus CovertToOperationStatus(
 }
 }  // namespace
 
-class lib::Engine::Implementation : private boost::noncopyable {
+class front::Engine::Implementation : private boost::noncopyable {
  public:
-  lib::Engine &m_self;
+  front::Engine &m_self;
   const fs::path m_configFilePath;
-  lib::DropCopy m_dropCopy;
+  front::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
   sig::scoped_connection m_engineLogSubscription;
   boost::array<std::unique_ptr<RiskControlScope>, numberOfTradingModes>
@@ -59,7 +58,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
   QSqlDatabase *const m_db;
 
  public:
-  explicit Implementation(lib::Engine &self, const fs::path &path)
+  explicit Implementation(front::Engine &self, const fs::path &path)
       : m_self(self),
         m_configFilePath(path),
         m_dropCopy(m_self.parent()),
@@ -95,19 +94,19 @@ class lib::Engine::Implementation : private boost::noncopyable {
     }));
 
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OperationStart, &m_self,
+        &m_dropCopy, &DropCopy::OperationStart, &m_self,
         boost::bind(&Implementation::OnOperationStart, this, _1, _2, _3),
         Qt::QueuedConnection));
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OperationUpdate, &m_self,
+        &m_dropCopy, &DropCopy::OperationUpdate, &m_self,
         boost::bind(&Implementation::OnOperationUpdate, this, _1, _2),
         Qt::QueuedConnection));
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OperationEnd, &m_self,
+        &m_dropCopy, &DropCopy::OperationEnd, &m_self,
         boost::bind(&Implementation::OnOperationEnd, this, _1, _2, _3),
         Qt::QueuedConnection));
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OperationOrderSubmit, &m_self,
+        &m_dropCopy, &DropCopy::OperationOrderSubmit, &m_self,
         [this](const ids::uuid &operationId, int64_t subOperationId,
                const OrderId &id, const pt::ptime &orderTime,
                const Security *security, const Currency &currency,
@@ -120,7 +119,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
         },
         Qt::QueuedConnection));
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OperationOrderSubmitError, &m_self,
+        &m_dropCopy, &DropCopy::OperationOrderSubmitError, &m_self,
         [this](const ids::uuid &operationId, int64_t subOperationId,
                const pt::ptime &orderTime, const Security *security,
                const Currency &currency, const TradingSystem *tradingSystem,
@@ -133,7 +132,7 @@ class lib::Engine::Implementation : private boost::noncopyable {
         },
         Qt::QueuedConnection));
     Verify(m_self.connect(
-        &m_dropCopy, &Lib::DropCopy::OrderUpdate, &m_self,
+        &m_dropCopy, &DropCopy::OrderUpdate, &m_self,
         boost::bind(&Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5),
         Qt::QueuedConnection));
   }
@@ -428,25 +427,27 @@ class lib::Engine::Implementation : private boost::noncopyable {
 #endif
 };
 
-lib::Engine::Engine(const fs::path &path, QWidget *parent)
+front::Engine::Engine(const fs::path &path, QWidget *parent)
     : QObject(parent),
       m_pimpl(boost::make_unique<Implementation>(*this, path)) {
   m_pimpl->InitDb();
   m_pimpl->ConnectSignals();
 }
 
-lib::Engine::~Engine() {
+front::Engine::~Engine() {
   // Fixes second stop by StateChanged-signal.
   m_pimpl->m_engine.reset();
 }
 
-const fs::path &lib::Engine::GetConfigFilePath() const {
+const fs::path &front::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;
 }
 
-bool lib::Engine::IsStarted() const { return m_pimpl->m_engine ? true : false; }
+bool front::Engine::IsStarted() const {
+  return m_pimpl->m_engine ? true : false;
+}
 
-void lib::Engine::Start(
+void front::Engine::Start(
     const boost::function<void(const std::string &)> &startProgressCallback) {
   if (m_pimpl->m_engine) {
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
@@ -469,35 +470,59 @@ void lib::Engine::Start(
       boost::unordered_map<std::string, std::string>());
 }
 
-void lib::Engine::Stop() {
+void front::Engine::Stop() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine.reset();
 }
 
-Context &lib::Engine::GetContext() {
+Context &front::Engine::GetContext() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   return m_pimpl->m_engine->GetContext();
 }
 
-const lib::DropCopy &lib::Engine::GetDropCopy() const {
+const front::DropCopy &front::Engine::GetDropCopy() const {
   return m_pimpl->m_dropCopy;
 }
 
-RiskControlScope &lib::Engine::GetRiskControl(const TradingMode &mode) {
+RiskControlScope &front::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }
 
-std::vector<boost::shared_ptr<Orm::Operation>> lib::Engine::GetOperations()
-    const {
+std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
+    bool isTradesIncluded,
+    bool isErrorsIncluded,
+    bool isCancelsIncluded,
+    const QDate &dateFrom,
+    const QDate &dateTo) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  db::fetch_all_with_all_relation(result, m_pimpl->m_db);
+  QString querySql = "WHERE startTime >= :timeFrom AND endTime < :timeTo";
+  if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
+    QList<QString> list;
+    if (!isTradesIncluded) {
+      list.append(QString::number(Orm::OperationStatus::LOSS));
+      list.append(QString::number(Orm::OperationStatus::PROFIT));
+    }
+    if (!isErrorsIncluded) {
+      list.append(QString::number(Orm::OperationStatus::ERROR));
+    }
+    if (!isCancelsIncluded) {
+      list.append(QString::number(Orm::OperationStatus::CANCELED));
+    }
+    querySql += " AND t_Operation.status NOT IN (" + list.join(", ") + ')';
+  }
+  qx::QxSqlQuery query(querySql);
+  query.bind(":timeFrom", QDateTime(dateFrom, QTime(0, 0)));
+  query.bind(":timeTo", QDateTime(dateTo, QTime(0, 0)).addDays(1));
+
+  Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
+              .isValid());
   return result;
 }
 
 #ifdef DEV_VER
-void lib::Engine::Test() { m_pimpl->Test(); }
+void front::Engine::Test() { m_pimpl->Test(); }
 #endif

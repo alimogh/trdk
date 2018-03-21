@@ -16,7 +16,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
   Q_OBJECT
@@ -27,6 +26,15 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
  public:
   explicit OperationListModel(Engine &, QWidget *parent);
   virtual ~OperationListModel() override;
+
+ public:
+  void Filter(const QDate &from, const QDate &to);
+  void DisableTimeFilter();
+
+ public slots:
+  void IncludeTrades(bool);
+  void IncludeErrors(bool);
+  void IncludeCancels(bool);
 
  public:
   virtual QVariant headerData(int section,
@@ -50,6 +58,5 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

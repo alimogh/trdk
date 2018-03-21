@@ -91,8 +91,10 @@ class Strategy : public trdk::Strategy {
  public:
   void Stop() noexcept;
 
-  void EnableTrading(bool);
-  bool IsTradingEnabled() const;
+  bool IsLongTradingEnabled() const;
+  bool IsShortTradingEnabled() const;
+  void EnableLongTrading(bool);
+  void EnableShortTrading(bool);
 
   void SetSourceTimeFrameSize(const boost::posix_time::time_duration &);
 

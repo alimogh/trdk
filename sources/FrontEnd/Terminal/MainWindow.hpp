@@ -23,25 +23,25 @@ namespace Terminal {
 class MainWindow : public QMainWindow {
   Q_OBJECT
  public:
-  explicit MainWindow(Lib::Engine &,
-                      std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
+  explicit MainWindow(Engine &,
+                      std::vector<std::unique_ptr<Lib::Dll>> &moduleDlls,
                       QWidget *parent);
   ~MainWindow() override;
 
  public:
-  Lib::Engine &GetEngine() { return m_engine; }
+  Engine &GetEngine() { return m_engine; }
   void LoadModule(const boost::filesystem::path &);
 
  private:
-  void CreateModuleWindows(const Lib::StrategyWindowFactory &);
+  void CreateModuleWindows(const StrategyWindowFactory &);
 
  private:
-  Lib::Engine &m_engine;
+  Engine &m_engine;
   Ui::MainWindow m_ui;
-  Lib::OperationListView m_operationListView;
-  Lib::OrderListView m_standaloneOrderList;
-  Lib::BalanceListView m_balanceList;
-  std::vector<std::unique_ptr<trdk::Lib::Dll>> &m_moduleDlls;
+  OperationListView m_operationListView;
+  OrderListView m_standaloneOrderList;
+  BalanceListView m_balanceList;
+  std::vector<std::unique_ptr<Lib::Dll>> &m_moduleDlls;
 };
 }  // namespace Terminal
 }  // namespace FrontEnd

@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 enum ItemDataRole {
   ITEM_DATA_ROLE_ITEM_ID = Qt::UserRole,
@@ -20,5 +19,4 @@ enum ItemDataRole {
   ITEM_DATA_ROLE_TRADING_MODE,
 };
 }
-}
-}
+}  // namespace trdk

@@ -19,7 +19,7 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 
 TargetSideWidget::TargetSideWidget(QWidget *parent) : Base(parent) {
   m_ui.setupUi(this);
-  m_side = FrontEnd::Lib::SideAdapter<QLabel>(*m_ui.price, *m_ui.qty);
+  m_side = FrontEnd::SideAdapter<QLabel>(*m_ui.price, *m_ui.qty);
 }
 
 void TargetSideWidget::Update(const Security &security) {

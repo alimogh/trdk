@@ -31,8 +31,8 @@ class TargetTitleWidget : public QWidget {
 
  private:
   Ui::TargetTitleWidget m_ui;
-  FrontEnd::Lib::TimeAdapter<QLabel> m_lastTime;
+  FrontEnd::TimeAdapter<QLabel> m_lastTime;
 };
-}
-}
-}
+}  // namespace ArbitrageAdvisor
+}  // namespace Strategies
+}  // namespace trdk

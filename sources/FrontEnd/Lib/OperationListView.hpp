@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
   Q_OBJECT
@@ -43,6 +42,5 @@ class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
   size_t m_numberOfResizesForOperations;
   size_t m_numberOfResizesForOrder;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

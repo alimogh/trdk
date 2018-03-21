@@ -23,8 +23,10 @@ class Controller : public TradingLib::PositionController {
   virtual ~Controller() override = default;
 
  public:
-  void EnableOpening(bool);
-  bool IsOpeningEnabled() const;
+  void EnableLongOpening(bool);
+  void EnableShortOpening(bool);
+  bool IsLongOpeningEnabled() const;
+  bool IsShortOpeningEnabled() const;
 
   void EnableClosing(bool);
   bool IsClosingEnabled() const;
@@ -49,7 +51,8 @@ class Controller : public TradingLib::PositionController {
   virtual void ClosePosition(trdk::Position &) override;
 
  private:
-  bool m_isOpeningEnabled;
+  bool m_isLongOpeningEnabled;
+  bool m_isShortOpeningEnabled;
   bool m_isClosingEnabled;
 };
 }  // namespace PingPong

@@ -14,7 +14,7 @@
 #include "MainWindow.hpp"
 
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Terminal;
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
   Q_OBJECT
@@ -37,6 +36,5 @@ class TRDK_FRONTEND_LIB_API OrderListView : public QTableView {
   Engine &m_engine;
   QMenu m_contextMenu;
 };
-}
-}
-}
+}  // namespace FrontEnd
+}  // namespace trdk

@@ -10,7 +10,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 template <typename WidgetType>
 class PriceAdapter {
@@ -41,7 +40,7 @@ class PriceAdapter {
     if (!m_widget) {
       return;
     }
-    m_widget->setText(trdk::FrontEnd::Lib::ConvertPriceToText(value));
+    m_widget->setText(FrontEnd::ConvertPriceToText(value));
     m_value = value;
   }
 
@@ -79,7 +78,7 @@ class QtyAdapter {
     if (!m_widget) {
       return;
     }
-    m_widget->setText(trdk::FrontEnd::Lib::ConvertQtyToText(value));
+    m_widget->setText(FrontEnd::ConvertQtyToText(value));
     m_value = value;
   }
 
@@ -146,8 +145,7 @@ class TimeAdapter {
     if (!m_widget) {
       return;
     }
-    m_widget->setText(
-        trdk::FrontEnd::Lib::ConvertTimeToText(value.time_of_day()));
+    m_widget->setText(FrontEnd::ConvertTimeToText(value.time_of_day()));
     m_value = value;
   }
 
@@ -155,6 +153,5 @@ class TimeAdapter {
   Value m_value;
   Widget *m_widget;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk
