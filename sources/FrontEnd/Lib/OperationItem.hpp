@@ -62,6 +62,8 @@ class OperationItem : private boost::noncopyable {
 
  public:
   void AppendChild(const boost::shared_ptr<OperationItem> &);
+  void RemoveChild(const boost::shared_ptr<OperationItem> &);
+  void RemoveAllChildren();
   int GetRow() const;
   int GetNumberOfChilds() const;
   OperationItem *GetChild(int row);

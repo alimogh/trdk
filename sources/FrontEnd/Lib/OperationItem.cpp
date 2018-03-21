@@ -25,6 +25,21 @@ void OperationItem::AppendChild(const boost::shared_ptr<OperationItem> &child) {
   child->m_row = static_cast<int>(m_childItems.size()) - 1;
 }
 
+void OperationItem::RemoveChild(const boost::shared_ptr<OperationItem> &child) {
+  auto it = std::find(m_childItems.begin(), m_childItems.end(), child);
+  Assert(it != m_childItems.cend());
+  if (it == m_childItems.cend()) {
+    return;
+  }
+  auto row = (*it)->m_row;
+  it = m_childItems.erase(it);
+  for (; it != m_childItems.cend(); ++it) {
+    (*it)->m_row = row++;
+  }
+}
+
+void OperationItem::RemoveAllChildren() { m_childItems.clear(); }
+
 int OperationItem::GetRow() const {
   AssertLe(0, m_row);
   return m_row;

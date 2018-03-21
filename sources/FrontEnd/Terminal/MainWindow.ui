@@ -24,6 +24,106 @@
        <attribute name="title">
         <string>Strategy operations</string>
        </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <layout class="QHBoxLayout" name="operationsFilters">
+          <item>
+           <widget class="QCheckBox" name="showTradeOperations">
+            <property name="text">
+             <string>Trades</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showErrorOperations">
+            <property name="text">
+             <string>Errors</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showCanceledOperations">
+            <property name="text">
+             <string>Cancels</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="enableOperationsDateFilter">
+            <property name="text">
+             <string>Filter by date:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="operationsFilterDateFrom">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="calendarPopup">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>-</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="operationsFilterDateTo">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="calendarPopup">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="applyOperationsDateFilter">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Apply</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="standaloneOrders">
        <attribute name="title">
@@ -40,7 +140,7 @@
      <x>0</x>
      <y>0</y>
      <width>943</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTrade">
@@ -109,6 +209,62 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>centalTabs</tabstop>
+  <tabstop>enableOperationsDateFilter</tabstop>
+  <tabstop>operationsFilterDateFrom</tabstop>
+  <tabstop>operationsFilterDateTo</tabstop>
+  <tabstop>applyOperationsDateFilter</tabstop>
+ </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>enableOperationsDateFilter</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>operationsFilterDateFrom</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>61</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>160</x>
+     <y>175</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableOperationsDateFilter</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>operationsFilterDateTo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>36</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>252</x>
+     <y>180</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableOperationsDateFilter</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>applyOperationsDateFilter</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>29</x>
+     <y>177</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>344</x>
+     <y>179</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

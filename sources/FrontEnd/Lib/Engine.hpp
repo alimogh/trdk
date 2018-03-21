@@ -35,7 +35,12 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
 
   RiskControlScope &GetRiskControl(const TradingMode &);
 
-  std::vector<boost::shared_ptr<Orm::Operation>> GetOperations() const;
+  std::vector<boost::shared_ptr<Orm::Operation>> GetOperations(
+      bool isTradesIncluded,
+      bool isErrorsIncluded,
+      bool isCancelsIncluded,
+      const QDate &dateFrom,
+      const QDate &dateTo) const;
 
 #ifdef DEV_VER
   void Test();

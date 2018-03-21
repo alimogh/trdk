@@ -28,6 +28,15 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
   virtual ~OperationListModel() override;
 
  public:
+  void Filter(const QDate &from, const QDate &to);
+  void DisableTimeFilter();
+
+ public slots:
+  void IncludeTrades(bool);
+  void IncludeErrors(bool);
+  void IncludeCancels(bool);
+
+ public:
   virtual QVariant headerData(int section,
                               Qt::Orientation,
                               int role) const override;

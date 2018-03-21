@@ -492,10 +492,34 @@ RiskControlScope &front::Engine::GetRiskControl(const TradingMode &mode) {
   return *m_pimpl->m_riskControls[mode];
 }
 
-std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations()
-    const {
+std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
+    bool isTradesIncluded,
+    bool isErrorsIncluded,
+    bool isCancelsIncluded,
+    const QDate &dateFrom,
+    const QDate &dateTo) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  db::fetch_all_with_all_relation(result, m_pimpl->m_db);
+  QString querySql = "WHERE startTime >= :timeFrom AND endTime < :timeTo";
+  if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
+    QList<QString> list;
+    if (!isTradesIncluded) {
+      list.append(QString::number(Orm::OperationStatus::LOSS));
+      list.append(QString::number(Orm::OperationStatus::PROFIT));
+    }
+    if (!isErrorsIncluded) {
+      list.append(QString::number(Orm::OperationStatus::ERROR));
+    }
+    if (!isCancelsIncluded) {
+      list.append(QString::number(Orm::OperationStatus::CANCELED));
+    }
+    querySql += " AND t_Operation.status NOT IN (" + list.join(", ") + ')';
+  }
+  qx::QxSqlQuery query(querySql);
+  query.bind(":timeFrom", QDateTime(dateFrom, QTime(0, 0)));
+  query.bind(":timeTo", QDateTime(dateTo, QTime(0, 0)).addDays(1));
+
+  Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
+              .isValid());
   return result;
 }
 

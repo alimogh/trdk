@@ -37,19 +37,33 @@ class RootItem : public OperationItem {
 class OperationListModel::Implementation : private boost::noncopyable {
  public:
   OperationListModel &m_self;
+  front::Engine &m_engine;
 
   RootItem m_root;
   boost::unordered_map<QUuid, boost::shared_ptr<OperationNodeItem>>
       m_operations;
   boost::unordered_map<quint64, boost::shared_ptr<OperationOrderItem>> m_orders;
 
-  explicit Implementation(OperationListModel &self) : m_self(self) {}
+  bool m_isTradesIncluded;
+  bool m_isErrorsIncluded;
+  bool m_isCancelsIncluded;
+
+  QDate m_dateFrom;
+  QDate m_dateTo;
+
+  explicit Implementation(OperationListModel &self, front::Engine &engine)
+      : m_self(self),
+        m_engine(engine),
+        m_isTradesIncluded(true),
+        m_isErrorsIncluded(true),
+        m_isCancelsIncluded(true),
+        m_dateFrom(QDate::currentDate()),
+        m_dateTo(m_dateFrom) {}
 
   void AddOrder(const Orm::Order &order,
                 const boost::shared_ptr<OperationOrderItem> &&item) {
     const auto &operationIt = m_operations.find(order.getOperation()->getId());
     if (operationIt == m_operations.cend()) {
-      Assert(operationIt != m_operations.cend());
       return;
     }
     auto &record = *operationIt->second;
@@ -69,17 +83,30 @@ class OperationListModel::Implementation : private boost::noncopyable {
     record.AppendChild(item);
     m_self.endInsertRows();
   }
+
+  void Reload() {
+    {
+      m_self.beginResetModel();
+      m_root.RemoveAllChildren();
+      m_operations.clear();
+      m_orders.clear();
+      m_self.endResetModel();
+    }
+
+    for (const auto &operation :
+         m_engine.GetOperations(m_isTradesIncluded, m_isErrorsIncluded,
+                                m_isCancelsIncluded, m_dateFrom, m_dateTo)) {
+      m_self.UpdateOperation(*operation);
+      for (const auto &order : operation->getOrders()) {
+        m_self.UpdateOrder(*order);
+      }
+    }
+  }
 };
 
 OperationListModel::OperationListModel(front::Engine &engine, QWidget *parent)
-    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  for (const auto &operation : engine.GetOperations()) {
-    UpdateOperation(*operation);
-    for (const auto &order : operation->getOrders()) {
-      UpdateOrder(*order);
-    }
-  }
-
+    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this, engine)) {
+  m_pimpl->Reload();
   Verify(connect(&engine, &Engine::OperationUpdate, this,
                  &OperationListModel::UpdateOperation));
   Verify(connect(&engine, &Engine::OrderUpdate, this,
@@ -197,8 +224,24 @@ Qt::ItemFlags OperationListModel::flags(const QModelIndex &index) const {
 }
 
 void OperationListModel::UpdateOperation(const Orm::Operation &operation) {
+  bool isIncluded =
+      operation.getStartTime().date() >= m_pimpl->m_dateFrom &&
+      ((operation.getStatus() == Orm::OperationStatus::ACTIVE
+            ? operation.getStartTime().date()
+            : operation.getEndTime().date()) <= m_pimpl->m_dateTo) &&
+      (m_pimpl->m_isTradesIncluded ||
+       (operation.getStatus() != Orm::OperationStatus::LOSS &&
+        operation.getStatus() != Orm::OperationStatus::PROFIT)) &&
+      (m_pimpl->m_isErrorsIncluded ||
+       operation.getStatus() != Orm::OperationStatus::ERROR) &&
+      (m_pimpl->m_isCancelsIncluded ||
+       operation.getStatus() != Orm::OperationStatus::CANCELED);
+
   const auto &it = m_pimpl->m_operations.find(operation.getId());
   if (it == m_pimpl->m_operations.cend()) {
+    if (!isIncluded) {
+      return;
+    }
     const auto &record =
         boost::make_shared<OperationNodeItem>(OperationRecord(operation));
     Verify(
@@ -208,6 +251,14 @@ void OperationListModel::UpdateOperation(const Orm::Operation &operation) {
     beginInsertRows(QModelIndex(), index, index);
     m_pimpl->m_root.AppendChild(record);
     endInsertRows();
+  } else if (!isIncluded) {
+    {
+      const auto &record = it->second;
+      beginRemoveRows(QModelIndex(), record->GetRow(), record->GetRow());
+      m_pimpl->m_root.RemoveChild(record);
+    }
+    m_pimpl->m_operations.erase(it);
+    endRemoveRows();
   } else {
     auto &record = *it->second;
     record.GetRecord().Update(operation);
@@ -237,4 +288,28 @@ void OperationListModel::UpdateOrder(const Orm::Order &order) {
         createIndex(record.GetRow(), 0, &record),
         createIndex(record.GetRow(), numberOfOperationColumns - 1, &record));
   }
+}
+
+void OperationListModel::Filter(const QDate &from, const QDate &to) {
+  m_pimpl->m_dateFrom = from;
+  m_pimpl->m_dateTo = to;
+  m_pimpl->Reload();
+}
+void OperationListModel::DisableTimeFilter() {
+  m_pimpl->m_dateFrom = QDate::currentDate();
+  m_pimpl->m_dateTo = m_pimpl->m_dateFrom.addYears(100);
+  m_pimpl->Reload();
+}
+
+void OperationListModel::IncludeTrades(bool isEnabled) {
+  m_pimpl->m_isTradesIncluded = isEnabled;
+  m_pimpl->Reload();
+}
+void OperationListModel::IncludeErrors(bool isEnabled) {
+  m_pimpl->m_isErrorsIncluded = isEnabled;
+  m_pimpl->Reload();
+}
+void OperationListModel::IncludeCancels(bool isEnabled) {
+  m_pimpl->m_isCancelsIncluded = isEnabled;
+  m_pimpl->Reload();
 }

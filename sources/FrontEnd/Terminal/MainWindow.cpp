@@ -46,10 +46,31 @@ MainWindow::MainWindow(Engine &engine,
 
   {
     auto *model = new OperationListModel(m_engine, &m_operationListView);
+
     m_operationListView.setModel(model);
-    auto *layout = new QVBoxLayout;
-    layout->addWidget(&m_operationListView);
-    m_ui.operations->setLayout(layout);
+    m_ui.verticalLayout->addWidget(&m_operationListView);
+
+    m_ui.operationsFilterDateFrom->setDate(QDate::currentDate());
+    m_ui.operationsFilterDateTo->setDate(QDate::currentDate());
+
+    Verify(connect(m_ui.showTradeOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeTrades));
+    Verify(connect(m_ui.showErrorOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeErrors));
+    Verify(connect(m_ui.showCanceledOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeCancels));
+
+    Verify(connect(m_ui.enableOperationsDateFilter, &QCheckBox::toggled,
+                   [model](bool isEnabled) {
+                     if (!isEnabled) {
+                       model->DisableTimeFilter();
+                     }
+                   }));
+    Verify(connect(m_ui.applyOperationsDateFilter, &QPushButton::clicked,
+                   [this, model]() {
+                     model->Filter(m_ui.operationsFilterDateFrom->date(),
+                                   m_ui.operationsFilterDateTo->date());
+                   }));
   }
 
   {
