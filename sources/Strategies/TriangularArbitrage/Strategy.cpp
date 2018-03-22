@@ -120,6 +120,20 @@ class OppositeLegPolicy : public Base {
 
 namespace {
 
+enum CalcQtysPpoints {
+  CALC_QTYS_POINT_LEG_1_ORIGINAL,
+  CALC_QTYS_POINT_LEG_1_FORCED,
+  CALC_QTYS_POINT_LEG_1_BY_BALANCE,
+  CALC_QTYS_POINT_LEG_2_ORIGINAL,
+  CALC_QTYS_POINT_LEG_3_ORIGINAL,
+  CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3_SOURCE_VOLUME,
+  CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3_SOURCE_PRICE,
+  CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3,
+  CALC_QTYS_POINT_LEG_1_REDUCED_BY_LEG_2_SOURCE_PRICE,
+  CALC_QTYS_POINT_LEG_1_REDUCED_BY_LEG_2,
+  numberOfCalcQtysPpoints
+};
+
 boost::optional<std::string> CheckCalcs(const Opportunity &opportunity) {
   if (opportunity.pnlVolume.IsNan()) {
     return boost::none;
@@ -129,7 +143,7 @@ boost::optional<std::string> CheckCalcs(const Opportunity &opportunity) {
   if (targets[LEG_3].qty < plannedLeg3Qty * 0.75 ||
       plannedLeg3Qty * 1.25 < targets[LEG_3].qty) {
     boost::format error(
-        "Legs configuration is wrong - 3rd leg quantity is %1%, but should be "
+        "Legs configuration is wrong - 3rd leg quantity is %1%, but shouldbe "
         "near %2% (P&L ratio is %3%)");
     error % targets[LEG_3].qty   // 1
         % plannedLeg3Qty         // 2
@@ -263,7 +277,8 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                     std::numeric_limits<double>::quiet_NaN()});
     auto &opportunity = opportunities.back();
     auto &targets = opportunity.targets;
-    CalcQtys(opportunity);
+    boost::array<Double, numberOfCalcQtysPpoints> calcQtysPoints;
+    CalcQtys(opportunity, calcQtysPoints);
     opportunity.pnlRatio = m_calcPnlRatio(opportunity.targets);
     if (targets[LEG_3].qty.IsNotNan()) {
       opportunity.pnlVolume =
@@ -276,13 +291,31 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     {
       const auto configurationError = CheckCalcs(opportunity);
       if (configurationError) {
+#if 0
         if (m_isTradingEnabled) {
-          ReportSignal("configuration error", opportunity, false);
+          ReportSignal("config. error", opportunity, false);
           return configurationError;
-        } else {
+        } else
+#else
+        ReportSignal("config. error", opportunity, false);
+        {
+          std::vector<std::string> points;
+          for (size_t i = 0; i < points.size(); ++i) {
+            if (calcQtysPoints[i].IsNan()) {
+              continue;
+            }
+            boost::format str("%1% = %2%");
+            str % i % calcQtysPoints[i];
+            points.emplace_back(str.str());
+          }
+          m_self.GetLog().Error("Configuration error. Points: %1%.",
+                                boost::join(points, ", "));
+        }
+#endif
+        {
           if (!opportunity.checkError) {
             Assert(!opportunity.errorTradingSystem);
-            static const std::string error("configuration error");
+            static const std::string error("config. error");
             opportunity.checkError = &error;
           }
           return boost::none;
@@ -510,11 +543,13 @@ class ta::Strategy::Implementation : private boost::noncopyable {
                          exception);                  // 3
   }
 
-  void CalcQtys(Opportunity &opportunity) const {
+  void CalcQtys(Opportunity &opportunity,
+                boost::array<Double, numberOfCalcQtysPpoints> &points) const {
     AssertEq(numberOfLegs, opportunity.reducedByAccountBalanceLeg);
     Assert(!opportunity.checkError);
     Assert(!opportunity.errorTradingSystem);
     auto &targets = opportunity.targets;
+    points.fill(std::numeric_limits<double>::quiet_NaN());
 
     const auto disable = [&opportunity](
                              const std::string &error,
@@ -549,15 +584,18 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
     targets[LEG_1].qty =
         std::min(m_maxVolume / targets[LEG_1].price, getMarketQty(LEG_1));
+    points[CALC_QTYS_POINT_LEG_1_ORIGINAL] = targets[LEG_1].qty;
     const auto minLeg1Qty = m_minVolume / targets[LEG_1].price;
     const bool isLeg1QtyForced = targets[LEG_1].qty <= minLeg1Qty;
     if (isLeg1QtyForced) {
       targets[LEG_1].qty = minLeg1Qty;
+      points[CALC_QTYS_POINT_LEG_1_FORCED] = targets[LEG_1].qty;
     }
     {
       const auto &allowedLeg1Qty = getBalance(LEG_1);
       if (allowedLeg1Qty < targets[LEG_1].qty) {
         targets[LEG_1].qty = allowedLeg1Qty;
+        points[CALC_QTYS_POINT_LEG_1_BY_BALANCE] = targets[LEG_1].qty;
         opportunity.reducedByAccountBalanceLeg = LEG_1;
       }
     }
@@ -595,12 +633,14 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     };
 
     targets[LEG_2].qty = leg1SourceVolume;
+    points[CALC_QTYS_POINT_LEG_2_ORIGINAL] = targets[LEG_2].qty;
     if (!reduceQty(LEG_2)) {
       return;
     }
     const auto leg2SourceVolume = targets[LEG_2].qty * targets[LEG_2].price;
 
     targets[LEG_3].qty = leg2SourceVolume / targets[LEG_3].price;
+    points[CALC_QTYS_POINT_LEG_3_ORIGINAL] = targets[LEG_3].qty;
     if (!reduceQty(LEG_3)) {
       return;
     }
@@ -609,11 +649,19 @@ class ta::Strategy::Implementation : private boost::noncopyable {
       const auto &leg3Volume = targets[LEG_3].qty * targets[LEG_3].price;
       if (leg3Volume < leg2SourceVolume) {
         targets[LEG_2].qty = leg3Volume / targets[LEG_2].price;
+        points[CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3_SOURCE_VOLUME] =
+            leg3Volume;
+        points[CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3_SOURCE_PRICE] =
+            targets[LEG_2].price;
+        points[CALC_QTYS_POINT_LEG_2_REDUCED_BY_LEG_3] = targets[LEG_3].qty;
       }
     }
 
     if (targets[LEG_2].qty < leg1SourceVolume) {
       targets[LEG_1].qty = targets[LEG_2].qty / targets[LEG_1].price;
+      points[CALC_QTYS_POINT_LEG_1_REDUCED_BY_LEG_2_SOURCE_PRICE] =
+          targets[LEG_1].price;
+      points[CALC_QTYS_POINT_LEG_1_REDUCED_BY_LEG_2] = targets[LEG_1].qty;
     }
   }
 
