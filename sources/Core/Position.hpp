@@ -107,7 +107,20 @@ class TRDK_CORE_API Position
 
  public:
   const CloseReason &GetCloseReason() const noexcept;
+
+  //! Sets position closing reason only if reason was not set before.
+  /** Position may be completed immediately after reason set if conditions are
+   * met.
+   * @sa ResetCloseReason
+   * @sa IsCompleted
+   */
   void SetCloseReason(const CloseReason &);
+  //! Sets or changes position closing reason.
+  /** Position may be completed immediately after reason set if conditions are
+   * met.
+   * @sa SetCloseReason
+   * @sa IsCompleted
+   */
   void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE);
 
   //! Has opened quantity equals or more than planned quantity.
@@ -128,9 +141,12 @@ class TRDK_CORE_API Position
    */
   bool IsClosed() const noexcept;
 
-  //! Started, has any opened qty and now doesn't have any orders and active qty
-  //! or market as completed.
-  /** @sa MarkAsCompleted
+  //! Has any opened qty or has close reason, and now doesn't have any orders
+  //! and active qty or market as completed.
+  /**
+   * @sa MarkAsCompleted
+   * @sa SetCloseReason
+   * @sa ResetCloseReason
    */
   bool IsCompleted() const noexcept;
   //! Marks position as completed without real closing.

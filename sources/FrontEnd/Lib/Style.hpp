@@ -14,8 +14,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 TRDK_FRONTEND_LIB_API void LoadStyle(QApplication &);
 }
-}
-}
+}  // namespace trdk

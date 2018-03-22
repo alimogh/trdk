@@ -11,7 +11,7 @@
 #include "Prec.hpp"
 #include "OperationItem.hpp"
 
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd::Detail;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +24,21 @@ void OperationItem::AppendChild(const boost::shared_ptr<OperationItem> &child) {
   child->m_parent = this;
   child->m_row = static_cast<int>(m_childItems.size()) - 1;
 }
+
+void OperationItem::RemoveChild(const boost::shared_ptr<OperationItem> &child) {
+  auto it = std::find(m_childItems.begin(), m_childItems.end(), child);
+  Assert(it != m_childItems.cend());
+  if (it == m_childItems.cend()) {
+    return;
+  }
+  auto row = (*it)->m_row;
+  it = m_childItems.erase(it);
+  for (; it != m_childItems.cend(); ++it) {
+    (*it)->m_row = row++;
+  }
+}
+
+void OperationItem::RemoveAllChildren() { m_childItems.clear(); }
 
 int OperationItem::GetRow() const {
   AssertLe(0, m_row);
@@ -73,7 +88,7 @@ QVariant OperationNodeItem::GetData(int column) const {
     case OPERATION_COLUMN_OPERATION_END_TIME_OR_ORDER_TIME:
       return GetRecord().endTime;
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
-      return GetRecord().status;
+      return GetRecord().statusName;
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
       return GetRecord().financialResult;
     case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
@@ -153,15 +168,15 @@ QVariant OperationOrderItem::GetData(int column) const {
     case OPERATION_COLUMN_OPERATION_STATUS_OR_ORDER_SYMBOL:
       return GetRecord().symbol;
     case OPERATION_COLUMN_OPERATION_FINANCIAL_RESULT_OR_ORDER_EXCHANGE:
-      return GetRecord().exchangeName;
+      return GetRecord().tradingSystem;
     case OPERATION_COLUMN_OPERATION_COMMISSION_OR_ORDER_STATUS:
       return GetRecord().statusName;
     case OPERATION_COLUMN_OPERATION_TOTAL_RESULT_OR_ORDER_PRICE:
-      return GetRecord().price;
+      return GetRecord().price.Get();
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
-      return GetRecord().qty;
+      return GetRecord().qty.Get();
     case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
-      return GetRecord().price * GetRecord().qty;
+      return (GetRecord().price * GetRecord().qty).Get();
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return GetRecord().remainingQty.Get();
     case OPERATION_COLUMN_ORDER_FILLED_QTY:
@@ -169,7 +184,7 @@ QVariant OperationOrderItem::GetData(int column) const {
     case OPERATION_COLUMN_ORDER_TIF:
       return GetRecord().tif;
     case OPERATION_COLUMN_ORDER_LAST_TIME:
-      return GetRecord().lastTime;
+      return GetRecord().updateTime;
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
   }

@@ -13,55 +13,34 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
-OrderRecord::OrderRecord(const QString &id,
-                         const boost::optional<ids::uuid> &operationId,
-                         const boost::optional<int64_t> &subOperationId,
-                         const pt::ptime &time,
-                         const Security &security,
-                         const Currency &currency,
-                         const TradingSystem &tradingSystem,
-                         const OrderSide &side,
-                         const Qty &qty,
-                         const boost::optional<Price> &price,
-                         const OrderStatus &status,
-                         const TimeInForce &tif,
-                         const QString &additionalInfo)
-    : id(id),
-      operationId(operationId
-                      ? QString::fromStdString(
-                            boost::lexical_cast<std::string>(*operationId))
-                      : ""),
-      subOperationId(subOperationId),
-      orderTime(ConvertToQDateTime(time).time()),
-      symbol(QString::fromStdString(security.GetSymbol().GetSymbol())),
-      currency(QString::fromStdString(ConvertToIso(currency))),
-      exchangeName(QString::fromStdString(tradingSystem.GetInstanceName())),
-      side(side),
+OrderRecord::OrderRecord(const Orm::Order &order, QString &&additionalInfo)
+    : id(order.getRemoteId()),
+      operationId(order.getOperation()->getId().toString()),
+      subOperationId(order.getSubOperationId()),
+      orderTime(ConvertFromDbDateTime(order.getOrderTime()).time()),
+      symbol(order.getSymbol()),
+      currency(order.getCurrency()),
+      tradingSystem(order.getTradingSystem()),
+      side(order.getIsBuy() ? ORDER_SIDE_BUY : ORDER_SIDE_SELL),
       sideName(ConvertToUiString(side)),
-      qty(qty),
-      price(boost::get_optional_value_or(
-          price, std::numeric_limits<double>::quiet_NaN())),
-      tif(ConvertToUiString(tif)),
-      status(status),
-      statusName(ConvertToUiString(status)),
-      filledQty(0),
-      remainingQty(qty),
-      additionalInfo(additionalInfo) {
-  AssertGe(qty, remainingQty);
+      qty(order.getQty()),
+      price(order.getPrice()),
+      tif(TIME_IN_FORCE_GTC),
+      additionalInfo(std::move(additionalInfo)) {
+  Update(order);
 }
 
-void OrderRecord::Update(const pt::ptime &time,
-                         const OrderStatus &newStatus,
-                         const Qty &newRemainingQty) {
-  lastTime = ConvertToQDateTime(time).time();
-  status = newStatus;
+void OrderRecord::Update(const Orm::Order &order) {
+  updateTime = order.getUpdateTime().time();
+  status = static_cast<OrderStatus>(order.getStatus());
   statusName = ConvertToUiString(status);
-  remainingQty = newRemainingQty;
+  remainingQty = order.getRemainingQty();
   AssertGe(qty, remainingQty);
   filledQty = qty - remainingQty;
 }

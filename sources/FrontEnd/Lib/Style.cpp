@@ -11,9 +11,7 @@
 #include "Prec.hpp"
 #include "Style.hpp"
 
-using namespace trdk::FrontEnd;
-
-void Lib::LoadStyle(QApplication &application) {
+void trdk::FrontEnd::LoadStyle(QApplication &application) {
   QFile qdarkstyleStyleFile(":qdarkstyle/style.qss");
   if (qdarkstyleStyleFile.exists()) {
     qdarkstyleStyleFile.open(QFile::ReadOnly | QFile::Text);

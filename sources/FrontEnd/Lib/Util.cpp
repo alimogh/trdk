@@ -14,9 +14,10 @@ using namespace trdk;
 using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
-namespace lib = trdk::FrontEnd::Lib;
+namespace ids = boost::uuids;
+namespace front = trdk::FrontEnd;
 
-void lib::ShowAbout(QWidget &parent) {
+void front::ShowAbout(QWidget &parent) {
   const auto &text =
       parent
           .tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "
@@ -36,14 +37,14 @@ void lib::ShowAbout(QWidget &parent) {
   QMessageBox::about(&parent, parent.tr("About"), text);
 }
 
-void lib::PinToTop(QWidget &widget, bool pin) {
+void front::PinToTop(QWidget &widget, bool pin) {
   auto flags = widget.windowFlags();
   pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
   widget.setWindowFlags(flags);
   widget.show();
 }
 
-QString lib::ConvertTimeToText(const pt::time_duration &source) {
+QString front::ConvertTimeToText(const pt::time_duration &source) {
   if (source == pt::not_a_date_time) {
     return "--:--:--";
   }
@@ -51,30 +52,30 @@ QString lib::ConvertTimeToText(const pt::time_duration &source) {
                            source.seconds());
 }
 
-QString lib::ConvertPriceToText(const Price &source) {
+QString front::ConvertPriceToText(const Price &source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QString lib::ConvertVolumeToText(const Price &source) {
+QString front::ConvertVolumeToText(const Price &source) {
   return ConvertPriceToText(source);
 }
 
-QString lib::ConvertPriceToText(const boost::optional<Price> &source) {
+QString front::ConvertPriceToText(const boost::optional<Price> &source) {
   return ConvertPriceToText(source ? *source
                                    : std::numeric_limits<double>::quiet_NaN());
 }
 
-QString lib::ConvertQtyToText(const Qty &source) {
+QString front::ConvertQtyToText(const Qty &source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
+QDateTime front::ConvertToQDateTime(const pt::ptime &source) {
   const auto &date = source.date();
   const auto &time = source.time_of_day();
   const auto &ms =
@@ -84,16 +85,24 @@ QDateTime lib::ConvertToQDateTime(const pt::ptime &source) {
                 static_cast<int>(ms.total_milliseconds()))};
 }
 
-TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const TimeInForce &tif) {
+QDateTime front::ConvertToDbDateTime(const pt::ptime &source) {
+  return ConvertToQDateTime(source);
+}
+
+QDateTime front::ConvertFromDbDateTime(const QDateTime &source) {
+  return source;
+}
+
+QString front::ConvertToUiString(const TimeInForce &tif) {
   return QString(ConvertToPch(tif)).toUpper();
 }
 
-TRDK_FRONTEND_LIB_API QString lib::ConvertToUiString(const OrderSide &side) {
+QString front::ConvertToUiString(const OrderSide &side) {
   static_assert(numberOfOrderSides == 2, "List changed");
   return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
 }
 
-QString lib::ConvertToUiString(const OrderStatus &status) {
+QString front::ConvertToUiString(const OrderStatus &status) {
   static_assert(numberOfOrderStatuses == 7, "List changed.");
   switch (status) {
     case ORDER_STATUS_SENT:
@@ -115,7 +124,56 @@ QString lib::ConvertToUiString(const OrderStatus &status) {
   return QObject::tr("undefined");
 }
 
-void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
+QUuid front::ConvertToQUuid(const ids::uuid &source) {
+  static_assert(sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
+                        sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                        sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                        sizeof(uchar) ==
+                    sizeof(ids::uuid::data),
+                "Wrong size.");
+  const auto &l = reinterpret_cast<const uint &>(source.data[0]);
+  const auto &w1 = reinterpret_cast<const ushort &>(source.data[sizeof(uint)]);
+  const auto &w2 = reinterpret_cast<const ushort &>(
+      source.data[sizeof(uint) + sizeof(ushort)]);
+  return QUuid(((l >> 24) & 0xff) | ((l << 8) & 0xff0000) |
+                   ((l >> 8) & 0xff00) | ((l << 24) & 0xff000000),  // uint l
+               (w1 >> 8) | (w1 << 8),                               // ushort w1
+               (w2 >> 8) | (w2 << 8),                               // ushort w2
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) +
+                               sizeof(ushort)]),  // uchar b1
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar)]),  //  uchar b2
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar)]),  // uchar b3
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b4
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b5
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar)]),  // uchar b6
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]),  // uchar b7
+               reinterpret_cast<const uchar &>(
+                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                               sizeof(uchar)]));  // uchar b8
+}
+
+void front::ScrollToLastChild(QAbstractItemView &view,
+                              const QModelIndex &index) {
   const auto &subRowCount = view.model()->rowCount(index);
   if (subRowCount) {
     view.scrollTo(index.child(subRowCount - 1, index.column()));
@@ -124,11 +182,11 @@ void lib::ScrollToLastChild(QAbstractItemView &view, const QModelIndex &index) {
   }
 }
 
-void lib::ScrollToLastChild(QAbstractItemView &view) {
+void front::ScrollToLastChild(QAbstractItemView &view) {
   ScrollToLastChild(view, view.model()->index(view.model()->rowCount() - 1, 0));
 }
 
-void lib::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
+void front::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
   QString message = QObject::tr("Strategy instance is blocked!");
   message += "\n\n";
   if (!reason.isEmpty()) {

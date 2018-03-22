@@ -12,7 +12,7 @@
 #include "OrderStatusNotifier.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 void OrderStatusNotifier::OnOpened() {}
 

@@ -20,7 +20,7 @@ namespace TriangularArbitrage {
 class LegSetSelectionDialog : public QDialog {
   Q_OBJECT
  public:
-  explicit LegSetSelectionDialog(FrontEnd::Lib::Engine &, QWidget *parent);
+  explicit LegSetSelectionDialog(FrontEnd::Engine &, QWidget *parent);
 
  public:
   std::vector<LegsConf> RequestLegSet();

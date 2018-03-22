@@ -9,5 +9,7 @@
  ******************************************************************************/
 
 #pragma once
+namespace stdext {
 
 inline std::size_t hash_value(const QString& value) { return qHash(value); }
+}  // namespace stdext

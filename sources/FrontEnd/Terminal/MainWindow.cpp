@@ -18,14 +18,12 @@
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Lib;
 using namespace trdk::FrontEnd::Terminal;
 
 namespace fs = boost::filesystem;
-namespace lib = trdk::FrontEnd::Lib;
 
-MainWindow::MainWindow(lib::Engine &engine,
-                       std::vector<std::unique_ptr<trdk::Lib::Dll>> &moduleDlls,
+MainWindow::MainWindow(Engine &engine,
+                       std::vector<std::unique_ptr<Dll>> &moduleDlls,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
@@ -48,10 +46,31 @@ MainWindow::MainWindow(lib::Engine &engine,
 
   {
     auto *model = new OperationListModel(m_engine, &m_operationListView);
+
     m_operationListView.setModel(model);
-    auto *layout = new QVBoxLayout;
-    layout->addWidget(&m_operationListView);
-    m_ui.operations->setLayout(layout);
+    m_ui.verticalLayout->addWidget(&m_operationListView);
+
+    m_ui.operationsFilterDateFrom->setDate(QDate::currentDate());
+    m_ui.operationsFilterDateTo->setDate(QDate::currentDate());
+
+    Verify(connect(m_ui.showTradeOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeTrades));
+    Verify(connect(m_ui.showErrorOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeErrors));
+    Verify(connect(m_ui.showCanceledOperations, &QCheckBox::toggled, model,
+                   &OperationListModel::IncludeCancels));
+
+    Verify(connect(m_ui.enableOperationsDateFilter, &QCheckBox::toggled,
+                   [model](bool isEnabled) {
+                     if (!isEnabled) {
+                       model->DisableTimeFilter();
+                     }
+                   }));
+    Verify(connect(m_ui.applyOperationsDateFilter, &QPushButton::clicked,
+                   [this, model]() {
+                     model->Filter(m_ui.operationsFilterDateFrom->date(),
+                                   m_ui.operationsFilterDateTo->date());
+                   }));
   }
 
   {
@@ -75,7 +94,7 @@ MainWindow::MainWindow(lib::Engine &engine,
     m_ui.balances->setWidget(&m_balanceList);
   }
 
-  Verify(connect(&m_engine, &Lib::Engine::Message,
+  Verify(connect(&m_engine, &Engine::Message,
                  [this](const QString &message, bool isCritical) {
                    if (isCritical) {
                      QMessageBox::critical(this, tr("Engine critical warning"),
@@ -102,7 +121,7 @@ void MainWindow::LoadModule(const fs::path &path) {
   StrategyMenuActionList actions;
   try {
     actions =
-        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(lib::Engine &)>(
+        m_moduleDlls.back()->GetFunction<StrategyMenuActionList(Engine &)>(
             "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =

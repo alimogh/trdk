@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 struct OrderRecord {
@@ -22,38 +21,23 @@ struct OrderRecord {
   boost::optional<int64_t> subOperationId;
   const QString symbol;
   const QString currency;
-  const QString exchangeName;
+  const QString tradingSystem;
   const OrderSide side;
   const QString sideName;
-  const double qty;
-  const double price;
+  const Qty qty;
+  const Price price;
   const QString tif;
   OrderStatus status;
   QString statusName;
   Qty filledQty;
   Qty remainingQty;
-  QTime lastTime;
+  QTime updateTime;
   QString additionalInfo;
 
-  explicit OrderRecord(const QString &id,
-                       const boost::optional<boost::uuids::uuid> &operationId,
-                       const boost::optional<int64_t> &subOperationId,
-                       const boost::posix_time::ptime &,
-                       const Security &,
-                       const trdk::Lib::Currency &,
-                       const TradingSystem &,
-                       const OrderSide &,
-                       const Qty &,
-                       const boost::optional<Price> &,
-                       const OrderStatus &,
-                       const TimeInForce &,
-                       const QString &additionalInfo);
+  explicit OrderRecord(const Orm::Order &, QString &&additionalInfo);
 
-  void Update(const boost::posix_time::ptime &,
-              const OrderStatus &,
-              const Qty &remainingQty);
+  void Update(const Orm::Order &);
 };
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

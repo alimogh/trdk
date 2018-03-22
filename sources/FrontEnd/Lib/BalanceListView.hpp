@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
   Q_OBJECT
@@ -31,6 +30,5 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
   void CopySelectedValuesToClipboard();
   virtual void rowsInserted(const QModelIndex &, int start, int end) override;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

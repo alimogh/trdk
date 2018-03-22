@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -121,6 +120,5 @@ class BalanceDataItem : public BalanceItem {
 
 ////////////////////////////////////////////////////////////////////////////////
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

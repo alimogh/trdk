@@ -37,29 +37,30 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
       values.financialResult += financialResultDelta;
       values.commission += commission;
       const auto total = values.financialResult - commission;
-      AssertNe(prevTotal, total);
-      if (total > 0) {
-        if (prevTotal < 0) {
-          AssertLt(0, m_numberOfLosses);
-          --m_numberOfLosses;
-          ++m_numberOfProfits;
-        } else if (prevTotal == 0) {
-          ++m_numberOfProfits;
-        }
-      } else if (total < 0) {
-        if (prevTotal > 0) {
+      if (prevTotal != total) {
+        if (total > 0) {
+          if (prevTotal < 0) {
+            AssertLt(0, m_numberOfLosses);
+            --m_numberOfLosses;
+            ++m_numberOfProfits;
+          } else if (prevTotal == 0) {
+            ++m_numberOfProfits;
+          }
+        } else if (total < 0) {
+          if (prevTotal > 0) {
+            AssertLt(0, m_numberOfProfits);
+            --m_numberOfProfits;
+            ++m_numberOfLosses;
+          } else if (prevTotal == 0) {
+            ++m_numberOfLosses;
+          }
+        } else if (prevTotal > 0) {
           AssertLt(0, m_numberOfProfits);
           --m_numberOfProfits;
-          ++m_numberOfLosses;
-        } else if (prevTotal == 0) {
-          ++m_numberOfLosses;
+        } else if (prevTotal < 0) {
+          AssertLt(0, m_numberOfLosses);
+          --m_numberOfLosses;
         }
-      } else if (prevTotal > 0) {
-        AssertLt(0, m_numberOfProfits);
-        --m_numberOfProfits;
-      } else if (prevTotal < 0) {
-        AssertLt(0, m_numberOfLosses);
-        --m_numberOfLosses;
       }
     } else {
       const auto total = financialResultDelta - commission;

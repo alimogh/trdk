@@ -17,6 +17,12 @@
 #include <QtWidgets>
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable : 4706)
+#pragma warning(disable : 4127)
+#include "GeneratedFiles/Orm/include/Trdk_FrontEnd_Lib_Orm_all_include.gen.h"
+#pragma warning(pop)
+
 #include <boost/algorithm/string.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>

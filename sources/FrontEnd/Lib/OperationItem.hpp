@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +62,8 @@ class OperationItem : private boost::noncopyable {
 
  public:
   void AppendChild(const boost::shared_ptr<OperationItem> &);
+  void RemoveChild(const boost::shared_ptr<OperationItem> &);
+  void RemoveAllChildren();
   int GetRow() const;
   int GetNumberOfChilds() const;
   OperationItem *GetChild(int row);
@@ -127,6 +128,5 @@ class OperationOrderItem : public OperationItem {
 ////////////////////////////////////////////////////////////////////////////////
 
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

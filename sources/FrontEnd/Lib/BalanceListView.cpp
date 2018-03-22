@@ -12,7 +12,7 @@
 #include "BalanceListView.hpp"
 #include "BalanceItemDelegate.hpp"
 
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 BalanceListView::BalanceListView(QWidget *parent) : Base(parent) {
   setWindowTitle(tr("Balances"));

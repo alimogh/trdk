@@ -12,7 +12,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 TRDK_FRONTEND_LIB_API void ShowAbout(QWidget &);
 TRDK_FRONTEND_LIB_API void PinToTop(QWidget &, bool pin);
 TRDK_FRONTEND_LIB_API QString
@@ -26,9 +25,15 @@ TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const trdk::Qty &);
 TRDK_FRONTEND_LIB_API QDateTime
 ConvertToQDateTime(const boost::posix_time::ptime &);
 
+TRDK_FRONTEND_LIB_API QDateTime
+ConvertToDbDateTime(const boost::posix_time::ptime &);
+TRDK_FRONTEND_LIB_API QDateTime ConvertFromDbDateTime(const QDateTime &);
+
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::TimeInForce &);
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderSide &);
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
+
+TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid &);
 
 template <typename Result>
 const Result &ResolveModelIndexItem(const QModelIndex &source) {
@@ -50,6 +55,5 @@ void ScrollToLastChild(QAbstractItemView &);
 TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
                                                       QWidget *parent);
 
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

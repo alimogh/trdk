@@ -17,7 +17,7 @@ using namespace trdk::Strategies::ArbitrageAdvisor;
 
 TargetTitleWidget::TargetTitleWidget(QWidget *parent) : Base(parent) {
   m_ui.setupUi(this);
-  m_lastTime = FrontEnd::Lib::TimeAdapter<QLabel>(*m_ui.lastTime);
+  m_lastTime = FrontEnd::TimeAdapter<QLabel>(*m_ui.lastTime);
 }
 
 void TargetTitleWidget::SetTitle(const QString &title) {

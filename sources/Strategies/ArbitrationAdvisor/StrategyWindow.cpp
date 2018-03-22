@@ -16,7 +16,7 @@
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;

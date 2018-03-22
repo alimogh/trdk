@@ -15,7 +15,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
   Q_OBJECT
@@ -79,6 +78,5 @@ class TRDK_FRONTEND_LIB_API OrderListModel : public QAbstractItemModel {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

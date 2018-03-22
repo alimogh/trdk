@@ -16,12 +16,11 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace pt = boost::posix_time;
-namespace ids = boost::uuids;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
 namespace {
 
@@ -38,62 +37,80 @@ class RootItem : public OperationItem {
 class OperationListModel::Implementation : private boost::noncopyable {
  public:
   OperationListModel &m_self;
+  front::Engine &m_engine;
 
   RootItem m_root;
-  boost::unordered_map<ids::uuid, boost::shared_ptr<OperationNodeItem>>
+  boost::unordered_map<QUuid, boost::shared_ptr<OperationNodeItem>>
       m_operations;
-  boost::unordered_map<std::pair<const TradingSystem *, std ::string>,
-                       boost::shared_ptr<OperationOrderItem>>
-      m_orders;
+  boost::unordered_map<quint64, boost::shared_ptr<OperationOrderItem>> m_orders;
 
-  explicit Implementation(OperationListModel &self) : m_self(self) {}
+  bool m_isTradesIncluded;
+  bool m_isErrorsIncluded;
+  bool m_isCancelsIncluded;
 
-  void AddOrder(const ids::uuid &operationId,
-                const std::string &orderId,
-                const TradingSystem &tradingSystem,
-                const boost::shared_ptr<OperationOrderItem> &&order) {
-    const auto &operationIt = m_operations.find(operationId);
+  QDate m_dateFrom;
+  QDate m_dateTo;
+
+  explicit Implementation(OperationListModel &self, front::Engine &engine)
+      : m_self(self),
+        m_engine(engine),
+        m_isTradesIncluded(true),
+        m_isErrorsIncluded(true),
+        m_isCancelsIncluded(true),
+        m_dateFrom(QDate::currentDate()),
+        m_dateTo(m_dateFrom) {}
+
+  void AddOrder(const Orm::Order &order,
+                const boost::shared_ptr<OperationOrderItem> &&item) {
+    const auto &operationIt = m_operations.find(order.getOperation()->getId());
     if (operationIt == m_operations.cend()) {
-      Assert(operationIt != m_operations.cend());
       return;
     }
-    auto &operation = *operationIt->second;
-    if (!m_orders
-             .emplace(
-                 std::make_pair(std::make_pair(&tradingSystem, orderId), order))
-             .second) {
+    auto &record = *operationIt->second;
+    if (!m_orders.emplace(order.getId(), item).second) {
       Assert(false);
       return;
     }
-    if (operation.GetNumberOfChilds() == 0) {
-      m_self.beginInsertRows(
-          m_self.createIndex(operation.GetRow(), 0, &operation), 0, 1);
-      operation.AppendChild(boost::make_shared<OperationOrderHeadItem>());
+    if (record.GetNumberOfChilds() == 0) {
+      m_self.beginInsertRows(m_self.createIndex(record.GetRow(), 0, &record), 0,
+                             1);
+      record.AppendChild(boost::make_shared<OperationOrderHeadItem>());
     } else {
-      const auto &index = operation.GetNumberOfChilds();
-      m_self.beginInsertRows(
-          m_self.createIndex(operation.GetRow(), 0, &operation), index, index);
+      const auto &index = record.GetNumberOfChilds();
+      m_self.beginInsertRows(m_self.createIndex(record.GetRow(), 0, &record),
+                             index, index);
     }
-    operation.AppendChild(order);
+    record.AppendChild(item);
     m_self.endInsertRows();
+  }
+
+  void Reload() {
+    {
+      m_self.beginResetModel();
+      m_root.RemoveAllChildren();
+      m_operations.clear();
+      m_orders.clear();
+      m_self.endResetModel();
+    }
+
+    for (const auto &operation :
+         m_engine.GetOperations(m_isTradesIncluded, m_isErrorsIncluded,
+                                m_isCancelsIncluded, m_dateFrom, m_dateTo)) {
+      m_self.UpdateOperation(*operation);
+      for (const auto &order : operation->getOrders()) {
+        m_self.UpdateOrder(*order);
+      }
+    }
   }
 };
 
-OperationListModel::OperationListModel(lib::Engine &engine, QWidget *parent)
-    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationStart, this,
-                 &OperationListModel::AddOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationUpdate, this,
-                 &OperationListModel::UpdateOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationEnd, this,
-                 &OperationListModel::CompleteOperation, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitted,
-                 this, &OperationListModel::AddOrder, Qt::QueuedConnection));
-  Verify(connect(
-      &engine.GetDropCopy(), &Lib::DropCopy::OperationOrderSubmitError, this,
-      &OperationListModel::AddOrderSumbitError, Qt::QueuedConnection));
-  Verify(connect(&engine.GetDropCopy(), &Lib::DropCopy::OrderUpdated, this,
-                 &OperationListModel::UpdateOrder, Qt::QueuedConnection));
+OperationListModel::OperationListModel(front::Engine &engine, QWidget *parent)
+    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this, engine)) {
+  m_pimpl->Reload();
+  Verify(connect(&engine, &Engine::OperationUpdate, this,
+                 &OperationListModel::UpdateOperation));
+  Verify(connect(&engine, &Engine::OrderUpdate, this,
+                 &OperationListModel::UpdateOrder));
 }
 
 OperationListModel::~OperationListModel() = default;
@@ -206,105 +223,93 @@ Qt::ItemFlags OperationListModel::flags(const QModelIndex &index) const {
   return QAbstractItemModel::flags(index);
 }
 
-void OperationListModel::AddOperation(const ids::uuid &id,
-                                      const pt::ptime &time,
-                                      const Strategy *strategy) {
-  const auto &operation = boost::make_shared<OperationNodeItem>(
-      OperationRecord(id, time, *strategy));
-  Verify(m_pimpl->m_operations.emplace(std::make_pair(id, operation)).second);
-  const auto &index = m_pimpl->m_root.GetNumberOfChilds();
-  beginInsertRows(QModelIndex(), index, index);
-  m_pimpl->m_root.AppendChild(operation);
-  endInsertRows();
-}
+void OperationListModel::UpdateOperation(const Orm::Operation &operation) {
+  bool isIncluded =
+      operation.getStartTime().date() >= m_pimpl->m_dateFrom &&
+      ((operation.getStatus() == Orm::OperationStatus::ACTIVE
+            ? operation.getStartTime().date()
+            : operation.getEndTime().date()) <= m_pimpl->m_dateTo) &&
+      (m_pimpl->m_isTradesIncluded ||
+       (operation.getStatus() != Orm::OperationStatus::LOSS &&
+        operation.getStatus() != Orm::OperationStatus::PROFIT)) &&
+      (m_pimpl->m_isErrorsIncluded ||
+       operation.getStatus() != Orm::OperationStatus::ERROR) &&
+      (m_pimpl->m_isCancelsIncluded ||
+       operation.getStatus() != Orm::OperationStatus::CANCELED);
 
-void OperationListModel::UpdateOperation(const ids::uuid &id,
-                                         const Pnl::Data &data) {
-  const auto &operationIt = m_pimpl->m_operations.find(id);
-  if (operationIt == m_pimpl->m_operations.cend()) {
-    Assert(operationIt != m_pimpl->m_operations.cend());
-    return;
+  const auto &it = m_pimpl->m_operations.find(operation.getId());
+  if (it == m_pimpl->m_operations.cend()) {
+    if (!isIncluded) {
+      return;
+    }
+    const auto &record =
+        boost::make_shared<OperationNodeItem>(OperationRecord(operation));
+    Verify(
+        m_pimpl->m_operations.emplace(std::make_pair(operation.getId(), record))
+            .second);
+    const auto &index = m_pimpl->m_root.GetNumberOfChilds();
+    beginInsertRows(QModelIndex(), index, index);
+    m_pimpl->m_root.AppendChild(record);
+    endInsertRows();
+  } else if (!isIncluded) {
+    {
+      const auto &record = it->second;
+      beginRemoveRows(QModelIndex(), record->GetRow(), record->GetRow());
+      m_pimpl->m_root.RemoveChild(record);
+    }
+    m_pimpl->m_operations.erase(it);
+    endRemoveRows();
+  } else {
+    auto &record = *it->second;
+    record.GetRecord().Update(operation);
+    emit dataChanged(
+        createIndex(record.GetRow(), 0, &record),
+        createIndex(record.GetRow(), numberOfOperationColumns - 1, &record));
   }
-  auto &operation = *operationIt->second;
-  operation.GetRecord().Update(data);
-  emit dataChanged(createIndex(operation.GetRow(), 0, &operation),
-                   createIndex(operation.GetRow(), numberOfOperationColumns - 1,
-                               &operation));
 }
 
-void OperationListModel::CompleteOperation(
-    const ids::uuid &id,
-    const pt::ptime &endTime,
-    const boost::shared_ptr<const Pnl> &pnl) {
-  const auto &operationIt = m_pimpl->m_operations.find(id);
-  if (operationIt == m_pimpl->m_operations.cend()) {
-    Assert(operationIt != m_pimpl->m_operations.cend());
-    return;
-  }
-  auto &operation = *operationIt->second;
-  operation.GetRecord().Complete(endTime, *pnl);
-  emit dataChanged(createIndex(operation.GetRow(), 0, &operation),
-                   createIndex(operation.GetRow(), numberOfOperationColumns - 1,
-                               &operation));
-}
-
-void OperationListModel::AddOrder(const ids::uuid &operationId,
-                                  int64_t subOperationId,
-                                  const OrderId &orderId,
-                                  const pt::ptime &orderTime,
-                                  const Security *security,
-                                  const Currency &currency,
-                                  const TradingSystem *tradingSystem,
-                                  const OrderSide &side,
-                                  const Qty &qty,
-                                  const boost::optional<Price> &price,
-                                  const TimeInForce &tif) {
-  m_pimpl->AddOrder(
-      operationId, orderId.GetValue(), *tradingSystem,
-      boost::make_shared<OperationOrderItem>(OrderRecord(
-          QString::fromStdString(boost::lexical_cast<std::string>(orderId)),
-          operationId, subOperationId, orderTime, *security, currency,
-          *tradingSystem, side, qty, price, ORDER_STATUS_SENT, tif,
-          QString())));
-}
-
-void OperationListModel::AddOrderSumbitError(
-    const ids::uuid &operationId,
-    int64_t subOperationId,
-    const pt::ptime &orderTime,
-    const Security *security,
-    const Currency &currency,
-    const TradingSystem *tradingSystem,
-    const OrderSide &side,
-    const Qty &qty,
-    const boost::optional<Price> &price,
-    const TimeInForce &tif,
-    const QString &error) {
-  static boost::uuids::random_generator generateOrderId;
-  m_pimpl->AddOrder(
-      operationId, boost::lexical_cast<std::string>(generateOrderId()),
-      *tradingSystem,
-      boost::make_shared<OperationOrderItem>(OrderRecord(
-          QString(), operationId, subOperationId, orderTime, *security,
-          currency, *tradingSystem, side, qty, price, ORDER_STATUS_ERROR, tif,
-          !error.isEmpty() ? tr("Failed to submit order: %1").arg(error)
-                           : tr("Unknown submit error"))));
-}
-
-void OperationListModel::UpdateOrder(const OrderId &orderId,
-                                     const TradingSystem *tradingSystem,
-                                     const pt::ptime &time,
-                                     const OrderStatus &status,
-                                     const Qty &remainingQty) {
-  const auto &it = m_pimpl->m_orders.find(
-      std::make_pair(tradingSystem, boost::cref(orderId.GetValue())));
+void OperationListModel::UpdateOrder(const Orm::Order &order) {
+  const auto &it = m_pimpl->m_orders.find(order.getId());
   if (it == m_pimpl->m_orders.cend()) {
-    // Maybe this is standalone order.
-    return;
+    auto additionalInfo = order.getAdditionalInfo();
+    m_pimpl->AddOrder(
+        order,
+        boost::make_shared<OperationOrderItem>(OrderRecord(
+            order,
+            order.getStatus() == ORDER_STATUS_SENT
+                ? std::move(additionalInfo)
+                : !additionalInfo.isEmpty()
+                      ? tr("Failed to submit order: %1").arg(additionalInfo)
+                      : tr("Unknown submit error"))));
+  } else {
+    auto &record = *it->second;
+    record.GetRecord().Update(order);
+    emit dataChanged(
+        createIndex(record.GetRow(), 0, &record),
+        createIndex(record.GetRow(), numberOfOperationColumns - 1, &record));
   }
-  auto &order = *it->second;
-  order.GetRecord().Update(time, status, remainingQty);
-  emit dataChanged(
-      createIndex(order.GetRow(), 0, &order),
-      createIndex(order.GetRow(), numberOfOperationColumns - 1, &order));
+}
+
+void OperationListModel::Filter(const QDate &from, const QDate &to) {
+  m_pimpl->m_dateFrom = from;
+  m_pimpl->m_dateTo = to;
+  m_pimpl->Reload();
+}
+void OperationListModel::DisableTimeFilter() {
+  m_pimpl->m_dateFrom = QDate::currentDate();
+  m_pimpl->m_dateTo = m_pimpl->m_dateFrom.addYears(100);
+  m_pimpl->Reload();
+}
+
+void OperationListModel::IncludeTrades(bool isEnabled) {
+  m_pimpl->m_isTradesIncluded = isEnabled;
+  m_pimpl->Reload();
+}
+void OperationListModel::IncludeErrors(bool isEnabled) {
+  m_pimpl->m_isErrorsIncluded = isEnabled;
+  m_pimpl->Reload();
+}
+void OperationListModel::IncludeCancels(bool isEnabled) {
+  m_pimpl->m_isCancelsIncluded = isEnabled;
+  m_pimpl->Reload();
 }

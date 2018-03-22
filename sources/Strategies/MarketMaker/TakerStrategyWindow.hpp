@@ -23,7 +23,7 @@ class TakerStrategyWindow : public QMainWindow {
   typedef QMainWindow Base;
 
  public:
-  explicit TakerStrategyWindow(FrontEnd::Lib::Engine &,
+  explicit TakerStrategyWindow(FrontEnd::Engine &,
                                const QString &symbol,
                                QWidget *parent);
   ~TakerStrategyWindow();
@@ -50,7 +50,7 @@ class TakerStrategyWindow : public QMainWindow {
   void Disable();
 
  private:
-  FrontEnd::Lib::Engine &m_engine;
+  FrontEnd::Engine &m_engine;
   Ui::TakerStrategyWindow m_ui;
   bool m_hasExchanges;
 

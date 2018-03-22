@@ -12,7 +12,7 @@
 #include "StrategyWindow.hpp"
 
 using namespace trdk::Strategies::PingPong;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,

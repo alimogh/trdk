@@ -583,7 +583,7 @@ class Position::Implementation : private boost::noncopyable {
             record % "null";  // 3
           }
           if (filledQty) {
-            AssertNe(0, direction.qty);
+            Assert(direction.qty != 0);
             record % direction.lastTradePrice          // 4
                 % (direction.volume / direction.qty);  // 5
           } else {
@@ -982,7 +982,8 @@ bool Position::IsClosed() const noexcept {
 
 bool Position::IsCompleted() const noexcept {
   return m_pimpl->m_isMarketAsCompleted ||
-         (GetOpenedQty() && !HasActiveOrders() && GetActiveQty() == 0);
+         ((GetOpenedQty() || GetCloseReason() != CLOSE_REASON_NONE) &&
+          !HasActiveOrders() && GetActiveQty() == 0);
 }
 
 void Position::MarkAsCompleted() {

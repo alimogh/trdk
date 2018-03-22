@@ -15,16 +15,16 @@
 
 using namespace trdk;
 using namespace trdk::Lib;
-using namespace trdk::FrontEnd::Lib;
+using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
-namespace lib = trdk::FrontEnd::Lib;
+namespace front = trdk::FrontEnd;
 
-SecurityListModel::SecurityListModel(lib::Engine &engine, QWidget *parent)
+SecurityListModel::SecurityListModel(front::Engine &engine, QWidget *parent)
     : Base(parent), m_engine(engine) {
-  Verify(connect(&m_engine, &Engine::StateChanged, this,
+  Verify(connect(&m_engine, &Engine::StateChange, this,
                  &SecurityListModel::OnStateChanged, Qt::QueuedConnection));
-  Verify(connect(&m_engine.GetDropCopy(), &Lib::DropCopy::PriceUpdate, this,
+  Verify(connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate, this,
                  &SecurityListModel::UpdatePrice, Qt::QueuedConnection));
 }
 

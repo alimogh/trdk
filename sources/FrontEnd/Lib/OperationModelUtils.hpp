@@ -12,31 +12,26 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 namespace Detail {
 
 struct OperationRecord {
   const QString id;
-  const QTime startTime;
+  const QDateTime startTime;
   const QString strategyName;
   const QString strategyInstance;
-  QString status;
-  QTime endTime;
-  boost::optional<Pnl::Result> result;
+  QString statusName;
+  QDateTime endTime;
+  Orm::OperationStatus::enum_OperationStatus status;
   QString financialResult;
   QString commission;
   QString totalResult;
 
  public:
-  explicit OperationRecord(const boost::uuids::uuid &,
-                           const boost::posix_time::ptime &,
-                           const Strategy &);
+  explicit OperationRecord(const Orm::Operation &);
 
  public:
-  void Update(const Pnl::Data &);
-  void Complete(const boost::posix_time::ptime &, const Pnl &);
+  void Update(const Orm::Operation &);
 };
 }  // namespace Detail
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

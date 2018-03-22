@@ -12,8 +12,8 @@
 #include "OperationModelUtils.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd::Lib;
-using namespace trdk::FrontEnd::Lib::Detail;
+using namespace trdk::FrontEnd;
+using namespace trdk::FrontEnd::Detail;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
@@ -56,53 +56,50 @@ void AddToBalanceString(const QString &symbol,
 }
 }  // namespace
 
-OperationRecord::OperationRecord(const ids::uuid &id,
-                                 const pt::ptime &startTime,
-                                 const Strategy &strategy)
-    : id(QString::fromStdString(boost::lexical_cast<std::string>(id))),
-      startTime(ConvertToQDateTime(startTime).time()),
-      strategyName(QString::fromStdString(strategy.GetTitle())),
-      strategyInstance(ShortenStrategyInstance(strategy.GetInstanceName())),
-      status(QObject::tr("active")) {}
-
-void OperationRecord::Update(const Pnl::Data &data) {
-  QString financialResultBuffer;
-  QString commissionBuffer;
-  QString totalResultBuffer;
-  for (const auto &item : data) {
-    const auto symbol = QString::fromStdString(item.first);
-    AddToBalanceString(symbol, item.second.financialResult, true,
-                       financialResultBuffer);
-    AddToBalanceString(symbol, item.second.commission, false, commissionBuffer);
-    AddToBalanceString(symbol,
-                       item.second.financialResult - item.second.commission,
-                       true, totalResultBuffer);
-  }
-  financialResult = std::move(financialResultBuffer);
-  commission = std::move(commissionBuffer);
-  totalResult = std::move(totalResultBuffer);
+OperationRecord::OperationRecord(const Orm::Operation &operation)
+    : id(operation.getId().toString()),
+      startTime(ConvertFromDbDateTime(operation.getStartTime())),
+      strategyName(operation.getStrategy()->getName()) {
+  Update(operation);
 }
 
-void OperationRecord::Complete(const pt::ptime &newEndTime, const Pnl &pnl) {
-  Assert(!result);
-  Update(pnl.GetData());
-  endTime = ConvertToQDateTime(newEndTime).time();
-  result = pnl.GetResult();
-  static_assert(Pnl::numberOfResults == 4, "List changed.");
-  switch (*result) {
-    case Pnl::RESULT_NONE:
-      status = QObject::tr("canceled");
-      break;
-    case Pnl::RESULT_PROFIT:
-      status = QObject::tr("profit");
-      break;
-    case Pnl::RESULT_LOSS:
-      status = QObject::tr("loss");
-      break;
-    default:
-      AssertEq(Pnl::RESULT_ERROR, *result);
-    case Pnl::RESULT_ERROR:
-      status = QObject::tr("error");
-      break;
+void OperationRecord::Update(const Orm::Operation &operation) {
+  endTime = ConvertFromDbDateTime(operation.getEndTime());
+  {
+    financialResult.clear();
+    commission.clear();
+    totalResult.clear();
+    for (const auto &pnl : operation.getPnl()) {
+      const auto &symbol = pnl->getSymbol();
+      AddToBalanceString(symbol, pnl->getFinancialResult(), true,
+                         financialResult);
+      AddToBalanceString(symbol, pnl->getCommission(), false, commission);
+      AddToBalanceString(symbol,
+                         pnl->getFinancialResult() - pnl->getCommission(), true,
+                         totalResult);
+    }
+  }
+  {
+    status = operation.getStatus();
+    static_assert(Orm::OperationStatus::numberOfStatuses == 5, "List changed.");
+    switch (status) {
+      case Orm::OperationStatus::ACTIVE:
+        statusName = QObject::tr("active");
+        break;
+      case Orm::OperationStatus::CANCELED:
+        statusName = QObject::tr("canceled");
+        break;
+      case Orm::OperationStatus::PROFIT:
+        statusName = QObject::tr("profit");
+        break;
+      case Orm::OperationStatus::LOSS:
+        statusName = QObject::tr("loss");
+        break;
+      default:
+        AssertEq(Orm::OperationStatus::ERROR, status);
+      case Orm::OperationStatus::ERROR:
+        statusName = QObject::tr("error");
+        break;
+    }
   }
 }

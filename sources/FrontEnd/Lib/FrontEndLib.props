@@ -2,6 +2,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <_PropertySheetDisplayName>Front-end Library</_PropertySheetDisplayName>
+    <IncludePath>$(SolutionDir)..\externals\QxOrm\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\externals\QxOrm\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
@@ -9,7 +11,7 @@
     </Link>
     <ClCompile />
     <ClCompile>
-      <PreprocessorDefinitions>TRDK_FRONTEND_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TRDK_FRONTEND_LIB;_BUILDING_TRDK_FRONTEND_LIB_ORM;_QX_UNITY_BUILD;_QX_ENABLE_BOOST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

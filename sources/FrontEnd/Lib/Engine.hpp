@@ -16,7 +16,6 @@
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Q_OBJECT
@@ -32,18 +31,28 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   bool IsStarted() const;
 
   Context &GetContext();
-  const Lib::DropCopy &GetDropCopy() const;
+  const FrontEnd::DropCopy &GetDropCopy() const;
 
   RiskControlScope &GetRiskControl(const TradingMode &);
+
+  std::vector<boost::shared_ptr<Orm::Operation>> GetOperations(
+      bool isTradesIncluded,
+      bool isErrorsIncluded,
+      bool isCancelsIncluded,
+      const QDate &dateFrom,
+      const QDate &dateTo) const;
 
 #ifdef DEV_VER
   void Test();
 #endif
 
  signals:
-  void StateChanged(bool isStarted);
+  void StateChange(bool isStarted);
   void Message(const QString &, bool isCritical);
   void LogRecord(const QString &);
+
+  void OperationUpdate(const trdk::FrontEnd::Orm::Operation &);
+  void OrderUpdate(const trdk::FrontEnd::Orm::Order &);
 
  public:
   void Start(
@@ -54,6 +63,5 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk

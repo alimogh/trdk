@@ -19,7 +19,6 @@ class SymbolSelectionDialog;
 
 namespace trdk {
 namespace FrontEnd {
-namespace Lib {
 
 class TRDK_FRONTEND_LIB_API SymbolSelectionDialog : public QDialog {
   Q_OBJECT
@@ -27,7 +26,7 @@ class TRDK_FRONTEND_LIB_API SymbolSelectionDialog : public QDialog {
   typedef QDialog Base;
 
  public:
-  explicit SymbolSelectionDialog(FrontEnd::Lib::Engine &, QWidget *parent);
+  explicit SymbolSelectionDialog(Engine &, QWidget *parent);
   ~SymbolSelectionDialog();
 
  public:
@@ -36,6 +35,5 @@ class TRDK_FRONTEND_LIB_API SymbolSelectionDialog : public QDialog {
  private:
   std::unique_ptr<Ui::SymbolSelectionDialog> m_ui;
 };
-}  // namespace Lib
 }  // namespace FrontEnd
 }  // namespace trdk
