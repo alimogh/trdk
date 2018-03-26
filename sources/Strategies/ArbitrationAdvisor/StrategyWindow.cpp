@@ -33,7 +33,21 @@ const TradingSystem *StrategyWindow::Target::GetTradingSystem() const {
 
 namespace {
 size_t numberOfNextInstance = 1;
+ids::random_generator generateStrategyId;
+
+std::string ExtractSymbolFromConfig(const QString &config) {
+  IniString ini(config.toStdString());
+  for (const auto &line : ini.ReadList()) {
+    std::vector<std::string> parts;
+    boost::split(parts, line, boost::is_any_of("="));
+    if (parts.size() != 2 || boost::trim_copy(parts.front()) != "symbol") {
+      continue;
+    }
+    return boost::trim_copy(parts.back());
+  }
+  throw Exception("Failed to find symbol in the strategy configuration");
 }
+}  // namespace
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QString &symbol,
@@ -41,25 +55,33 @@ StrategyWindow::StrategyWindow(Engine &engine,
     : Base(parent),
       m_engine(engine),
       m_tradingMode(TRADING_MODE_LIVE),
-      m_instanceNumber(numberOfNextInstance++),
-      m_strategy(nullptr),
+      m_symbol(symbol.toStdString()),
+      m_strategy(GenerateNewStrategyInstance(generateStrategyId(),
+                                             numberOfNextInstance++)),
       m_bestBuyTradingSystem(nullptr),
       m_bestSellTradingSystem(nullptr) {
-  setAttribute(Qt::WA_DeleteOnClose);
-  m_ui.setupUi(this);
-  {
-    m_ui.highlightLevel->setValue(1);
-    m_ui.autoTradeLevel->setValue(1);
-    m_ui.maxQty->setValue(0.015);
-  }
-  m_ui.symbol->setText(symbol);
   Init();
-  ConnectSignals();
+  StoreConfig(true);
+}
+
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const QUuid &strategyId,
+                               const QString &config,
+                               QWidget *parent)
+    : Base(parent),
+      m_engine(engine),
+      m_tradingMode(TRADING_MODE_LIVE),
+      m_symbol(ExtractSymbolFromConfig(config)),
+      m_strategy(
+          RestoreStrategyInstance(strategyId, numberOfNextInstance++, config)),
+      m_bestBuyTradingSystem(nullptr),
+      m_bestSellTradingSystem(nullptr) {
+  Init();
 }
 
 StrategyWindow::~StrategyWindow() {
   try {
-    if (!m_strategy->IsBlocked()) {
+    if (!m_strategy.IsBlocked()) {
       DeactivateAutoTrading();
     }
   } catch (...) {
@@ -68,138 +90,11 @@ StrategyWindow::~StrategyWindow() {
   }
 }
 
-void StrategyWindow::AddTargetWidgets(TargetWidgets &widgets) {
-  const auto row = static_cast<int>(m_targetWidgets.size());
-  int column = 0;
-  m_ui.targets->addWidget(&widgets.title, row, column++);
-  m_ui.targets->addWidget(&widgets.bid, row, column++);
-  m_ui.targets->addWidget(&widgets.ask, row, column++);
-  m_ui.targets->addWidget(&widgets.actions, row, column++);
-}
-
-void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
-  if (!IsAutoTradingActivated()) {
-    closeEvent->accept();
-    return;
-  }
-  const auto &response = QMessageBox::question(
-      this, tr("Strategy closing"),
-      tr("Are you sure you want to the close strategy window?\n\nIf strategy "
-         "window will be closed - automatic trading will be stopped, all "
-         "automatically opened position will not automatically closed.\n\n"
-         "Continue and close strategy window for %1?")
-          .arg(m_ui.symbol->text()),
-      QMessageBox::Yes | QMessageBox::No);
-  if (response == QMessageBox::Yes) {
-    closeEvent->accept();
-  } else {
-    closeEvent->ignore();
-  }
-}
-
-QSize StrategyWindow::sizeHint() const {
-  auto result = Base::sizeHint();
-  result.setWidth(static_cast<int>(result.width() * 0.9));
-  result.setHeight(static_cast<int>(result.height() * 0.7));
-  return result;
-}
-
-void StrategyWindow::ConnectSignals() {
-  Verify(connect(m_ui.highlightLevel,
-                 static_cast<void (QDoubleSpinBox::*)(double)>(
-                     &QDoubleSpinBox::valueChanged),
-                 this, &StrategyWindow::UpdateAdviceLevel));
-
-  Verify(connect(m_ui.autoTrade, &QCheckBox::toggled, this,
-                 &StrategyWindow::ToggleAutoTrading));
-  Verify(connect(m_ui.autoTradeLevel,
-                 static_cast<void (QDoubleSpinBox::*)(double)>(
-                     &QDoubleSpinBox::valueChanged),
-                 [this](double level) {
-                   UpdateAutoTradingLevel(level, m_ui.maxQty->value());
-                 }));
-  Verify(connect(m_ui.maxQty,
-                 static_cast<void (QDoubleSpinBox::*)(double)>(
-                     &QDoubleSpinBox::valueChanged),
-                 [this](double qty) {
-                   UpdateAutoTradingLevel(m_ui.autoTradeLevel->value(), qty);
-                 }));
-
-  qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
-      "trdk::Strategies::ArbitrageAdvisor::Advice");
-  Verify(connect(this, &StrategyWindow::Advice, this,
-                 &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
-
-  qRegisterMetaType<std::vector<std::string>>("std::vector<std::string>");
-  Verify(connect(this, &StrategyWindow::SignalCheckErrors, this,
-                 &StrategyWindow::OnSignalCheckErrors, Qt::QueuedConnection));
-
-  Verify(connect(this, &StrategyWindow::Blocked, this,
-                 &StrategyWindow::OnBlocked, Qt::QueuedConnection));
-
-  for (auto &target : m_targetWidgets) {
-    auto *const tradingSystem = target.first;
-    Verify(connect(&target.second->actions, &TargetActionsWidget::Order,
-                   [this, tradingSystem](const OrderSide &side) {
-                     SendOrder(side, tradingSystem);
-                   }));
-  }
-
-  Verify(connect(m_ui.bestSell, &QPushButton::clicked,
-                 [this]() { SendOrder(ORDER_SIDE_SELL, nullptr); }));
-  Verify(connect(m_ui.bestBuy, &QPushButton::clicked,
-                 [this]() { SendOrder(ORDER_SIDE_BUY, nullptr); }));
-}
-
 void StrategyWindow::Init() {
-  const auto &symbol = m_ui.symbol->text().toStdString();
+  setAttribute(Qt::WA_DeleteOnClose);
 
-  static ids::random_generator generateStrategyId;
-  const auto &strategyId = generateStrategyId();
-  {
-    const IniFile conf(m_engine.GetConfigFilePath());
-    const IniSectionRef defaults(conf, "Defaults");
-    std::ostringstream os;
-    os << "[Strategy.Arbitrage/" << symbol << '/' << m_instanceNumber << "]"
-       << std::endl
-       << "module = ArbitrationAdvisor" << std::endl
-       << "id = " << strategyId << std::endl
-       << "is_enabled = true" << std::endl
-       << "trading_mode = live" << std::endl
-       << "title = Arbitrage" << std::endl
-       << "requires = Level 1 Updates[" << symbol << "]" << std::endl;
-    const auto &copyKey = [&os, &conf](const char *key) {
-      if (!conf.IsKeyExist("General", key)) {
-        return;
-      }
-      os << key << " = " << conf.ReadKey("General", key) << std::endl;
-    };
-    copyKey("lowest_spread_percentage");
-    copyKey("stop_loss");
-    copyKey("stop_loss_delay_sec");
-    m_engine.GetContext().Add(IniString(os.str()));
-  }
-  m_strategy = boost::polymorphic_downcast<aa::Strategy *>(
-      &m_engine.GetContext().GetSrategy(strategyId));
-
-  m_strategy->SetupAdvising(m_ui.highlightLevel->value() / 100);
-  Assert(!m_strategy->GetAutoTradingSettings() ? true : false);
-
-  m_adviceConnection = m_strategy->SubscribeToAdvice(
-      [this](const aa::Advice &advice) { emit Advice(advice); });
-  m_tradingSignalCheckErrorsConnection =
-      m_strategy->SubscribeToTradingSignalCheckErrors(
-          [this](const std::vector<std::string> &errors) {
-            emit SignalCheckErrors(errors);
-          });
-  m_blockConnection =
-      m_strategy->SubscribeToBlocking([this](const std::string *reasonSource) {
-        QString reason;
-        if (reasonSource) {
-          reason = QString::fromStdString(*reasonSource);
-        }
-        emit Blocked(reason);
-      });
+  m_ui.setupUi(this);
+  m_ui.symbol->setText(QString::fromStdString(m_symbol));
 
   auto &context = m_engine.GetContext();
   for (size_t i = 0; i < context.GetNumberOfTradingSystems(); ++i) {
@@ -215,7 +110,7 @@ void StrategyWindow::Init() {
       }
       securityPtr = nullptr;
       source.ForEachSecurity([&](Security &security) {
-        if (security.GetSymbol().GetSymbol() != symbol) {
+        if (security.GetSymbol().GetSymbol() != m_symbol) {
           return;
         }
         Assert(securityPtr);
@@ -262,6 +157,177 @@ void StrategyWindow::Init() {
   for (const auto &target : m_targets) {
     target.widgets->Update(*target.security);
   }
+
+  m_ui.highlightLevel->setValue(
+      m_strategy.GetMinPriceDifferenceRatioToAdvice() * 100);
+  m_ui.autoTrade->setChecked(m_strategy.GetTradingSettings().isEnabled);
+  m_ui.autoTradeLevel->setValue(
+      m_strategy.GetTradingSettings().minPriceDifferenceRatio * 100);
+  m_ui.maxQty->setValue(m_strategy.GetTradingSettings().maxQty);
+
+  ConnectSignals();
+}
+
+void StrategyWindow::AddTargetWidgets(TargetWidgets &widgets) {
+  const auto row = static_cast<int>(m_targetWidgets.size());
+  int column = 0;
+  m_ui.targets->addWidget(&widgets.title, row, column++);
+  m_ui.targets->addWidget(&widgets.bid, row, column++);
+  m_ui.targets->addWidget(&widgets.ask, row, column++);
+  m_ui.targets->addWidget(&widgets.actions, row, column++);
+}
+
+void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
+  if (!IsAutoTradingActivated()) {
+    StoreConfig(false);
+    closeEvent->accept();
+    return;
+  }
+  const auto &response = QMessageBox::question(
+      this, tr("Strategy closing"),
+      tr("Are you sure you want to the close strategy window?\n\nIf strategy "
+         "window will be closed - automatic trading will be stopped, all "
+         "automatically opened position will not automatically closed.\n\n"
+         "Continue and close strategy window for %1?")
+          .arg(m_ui.symbol->text()),
+      QMessageBox::Yes | QMessageBox::No);
+  if (response == QMessageBox::Yes) {
+    StoreConfig(false);
+    closeEvent->accept();
+  } else {
+    closeEvent->ignore();
+  }
+}
+
+QSize StrategyWindow::sizeHint() const {
+  auto result = Base::sizeHint();
+  result.setWidth(static_cast<int>(result.width() * 0.9));
+  result.setHeight(static_cast<int>(result.height() * 0.7));
+  return result;
+}
+
+void StrategyWindow::ConnectSignals() {
+  m_adviceConnection = m_strategy.SubscribeToAdvice(
+      [this](const aa::Advice &advice) { emit Advice(advice); });
+  m_tradingSignalCheckErrorsConnection =
+      m_strategy.SubscribeToTradingSignalCheckErrors(
+          [this](const std::vector<std::string> &errors) {
+            emit SignalCheckErrors(errors);
+          });
+  m_blockConnection =
+      m_strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
+        QString reason;
+        if (reasonSource) {
+          reason = QString::fromStdString(*reasonSource);
+        }
+        emit Blocked(reason);
+      });
+
+  Verify(connect(m_ui.highlightLevel,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 this, &StrategyWindow::UpdateAdviceLevel));
+
+  Verify(connect(m_ui.autoTrade, &QCheckBox::toggled, this,
+                 &StrategyWindow::ToggleAutoTrading));
+  Verify(connect(m_ui.autoTradeLevel,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double level) {
+                   UpdateAutoTradingLevel(level, m_ui.maxQty->value());
+                 }));
+  Verify(connect(m_ui.maxQty,
+                 static_cast<void (QDoubleSpinBox::*)(double)>(
+                     &QDoubleSpinBox::valueChanged),
+                 [this](double qty) {
+                   UpdateAutoTradingLevel(m_ui.autoTradeLevel->value(), qty);
+                 }));
+
+  qRegisterMetaType<trdk::Strategies::ArbitrageAdvisor::Advice>(
+      "trdk::Strategies::ArbitrageAdvisor::Advice");
+  Verify(connect(this, &StrategyWindow::Advice, this,
+                 &StrategyWindow::TakeAdvice, Qt::QueuedConnection));
+
+  qRegisterMetaType<std::vector<std::string>>("std::vector<std::string>");
+  Verify(connect(this, &StrategyWindow::SignalCheckErrors, this,
+                 &StrategyWindow::OnSignalCheckErrors, Qt::QueuedConnection));
+
+  Verify(connect(this, &StrategyWindow::Blocked, this,
+                 &StrategyWindow::OnBlocked, Qt::QueuedConnection));
+
+  for (auto &target : m_targetWidgets) {
+    auto *const tradingSystem = target.first;
+    Verify(connect(&target.second->actions, &TargetActionsWidget::Order,
+                   [this, tradingSystem](const OrderSide &side) {
+                     SendOrder(side, tradingSystem);
+                   }));
+  }
+
+  Verify(connect(m_ui.bestSell, &QPushButton::clicked,
+                 [this]() { SendOrder(ORDER_SIDE_SELL, nullptr); }));
+  Verify(connect(m_ui.bestBuy, &QPushButton::clicked,
+                 [this]() { SendOrder(ORDER_SIDE_BUY, nullptr); }));
+}
+
+aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
+    const boost::uuids::uuid &strategyId, size_t instanceNumber) {
+  bool isLowestSpreadEnabed = false;
+  Double lowestSpreadPercentage = 0;
+  bool isStopLossEnabled = false;
+  size_t stopLossDelaySec = 0;
+  {
+    const IniFile conf(m_engine.GetConfigFilePath());
+    const IniSectionRef general(conf, "General");
+    {
+      const std::string key = "lowest_spread_enabled";
+      if (general.IsKeyExist(key)) {
+        isLowestSpreadEnabed = general.ReadBoolKey(key);
+      }
+    }
+    {
+      const std::string key = "lowest_spread_percentage";
+      if (general.IsKeyExist(key)) {
+        lowestSpreadPercentage = general.ReadTypedKey<Double>(key);
+      }
+    }
+    {
+      const std::string key = "stop_loss_enabled";
+      if (general.IsKeyExist(key)) {
+        isStopLossEnabled = general.ReadBoolKey(key);
+      }
+    }
+    {
+      const std::string key = "stop_loss_delay_sec";
+      if (general.IsKeyExist(key)) {
+        stopLossDelaySec = general.ReadTypedKey<size_t>(key);
+      }
+    }
+  }
+  return CreateStrategyInstance(
+      strategyId, instanceNumber,
+      CreateConfig(strategyId, .6, .6, 100000000, isLowestSpreadEnabed,
+                   lowestSpreadPercentage, isStopLossEnabled,
+                   stopLossDelaySec));
+}
+
+aa::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
+                                                      size_t instanceNumber,
+                                                      const QString &config) {
+  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), instanceNumber,
+                                config.toStdString());
+}
+
+aa::Strategy &StrategyWindow::CreateStrategyInstance(
+    const ids::uuid &strategyId,
+    size_t instanceNumber,
+    const std::string &config) {
+  std::ostringstream ini;
+  ini << "[Strategy.Arbitrage/" << m_symbol << '/' << instanceNumber << "]"
+      << std::endl;
+  ini << config;
+  m_engine.GetContext().Add(IniString(ini.str()));
+  return *boost::polymorphic_downcast<aa::Strategy *>(
+      &m_engine.GetContext().GetSrategy(strategyId));
 }
 
 void StrategyWindow::TakeAdvice(const aa::Advice &advice) {
@@ -389,29 +455,24 @@ void StrategyWindow::SendOrder(const OrderSide &side,
 }
 
 bool StrategyWindow::IsAutoTradingActivated() const {
-  if (m_strategy->IsBlocked()) {
-    return false;
-  }
-  const bool result = m_strategy->GetAutoTradingSettings() ? true : false;
-  AssertEq(result, m_ui.autoTrade->isChecked());
-  return result;
+  return !m_strategy.IsBlocked() && m_strategy.GetTradingSettings().isEnabled;
 }
 
 void StrategyWindow::ToggleAutoTrading(bool activate) {
   try {
-    AssertNe(activate, m_strategy->GetAutoTradingSettings() ? true : false);
-    activate ? m_strategy->ActivateAutoTrading(
-                   {m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()})
-             : m_strategy->DeactivateAutoTrading();
+    m_strategy.SetTradingSettings(
+        {activate, m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()});
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to enable auto-trading"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
+  StoreConfig(true);
 }
 
 void StrategyWindow::DeactivateAutoTrading() {
   try {
-    m_strategy->DeactivateAutoTrading();
+    m_strategy.SetTradingSettings(
+        {false, m_ui.autoTradeLevel->value() / 100, m_ui.maxQty->value()});
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to disable auto-trading"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
@@ -421,23 +482,70 @@ void StrategyWindow::DeactivateAutoTrading() {
 void StrategyWindow::UpdateAutoTradingLevel(const Double &level,
                                             const Qty &maxQty) {
   try {
-    if (!m_strategy->GetAutoTradingSettings()) {
-      return;
-    }
-    m_strategy->ActivateAutoTrading({level / 100, maxQty});
+    m_strategy.SetTradingSettings(
+        {m_ui.autoTrade->isChecked(), level / 100, maxQty});
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to setup auto-trading"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
+  StoreConfig(true);
 }
 
 void StrategyWindow::UpdateAdviceLevel(double level) {
   try {
-    m_strategy->SetupAdvising(level / 100);
+    m_strategy.SetMinPriceDifferenceRatioToAdvice(level / 100);
   } catch (const std::exception &ex) {
     QMessageBox::critical(this, tr("Failed to setup advice level"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);
   }
+  StoreConfig(true);
+}
+
+std::string StrategyWindow::CreateConfig(
+    const boost::uuids::uuid &strategyId,
+    const Double &minPriceDifferenceToHighlightPercentage,
+    const Double &minPriceDifferenceToTradePercentage,
+    const Qty &maxQty,
+    bool isLowestSpreadEnabled,
+    const Double &lowestSpreadPercentage,
+    bool isStopLossEnabled,
+    size_t stopLossDelaySec) const {
+  std::ostringstream result;
+  result << "module = ArbitrationAdvisor" << std::endl;
+  result << "id = " << strategyId << std::endl;
+  result << "is_enabled = true" << std::endl;
+  result << "trading_mode = live" << std::endl;
+  result << "title = Arbitrage" << std::endl;
+  result << "requires = Level 1 Updates[" << m_symbol << "]" << std::endl;
+  result << "symbol = " << m_symbol << std::endl;
+  result << "min_price_difference_to_highlight_percentage = "
+         << minPriceDifferenceToHighlightPercentage << std::endl;
+  result << "min_price_difference_to_trade_percentage = "
+         << minPriceDifferenceToTradePercentage << std::endl;
+  result << "max_qty = " << maxQty << std::endl;
+  result << "lowest_spread_enabled = "
+         << (isLowestSpreadEnabled ? "true" : "false") << std::endl;
+  result << "lowest_spread_percentage = " << lowestSpreadPercentage
+         << std::endl;
+  result << "stop_loss_enabled = " << (isStopLossEnabled ? "true" : "false")
+         << std::endl;
+  result << "stop_loss_delay_sec = " << stopLossDelaySec << std::endl;
+  return result.str();
+}
+
+std::string StrategyWindow::DumpConfig() const {
+  const auto &tradingSettings = m_strategy.GetTradingSettings();
+  return CreateConfig(
+      m_strategy.GetId(), m_strategy.GetMinPriceDifferenceRatioToAdvice() * 100,
+      tradingSettings.minPriceDifferenceRatio * 100, tradingSettings.maxQty,
+      m_strategy.IsLowestSpreadEnabled(),
+      m_strategy.GetLowestSpreadRatio() * 100, m_strategy.IsStopLossEnabled(),
+      m_strategy.GetStopLossDelay().total_seconds());
+}
+
+void StrategyWindow::StoreConfig(bool isActive) {
+  m_engine.StoreConfig(m_strategy, QString::fromStdString(DumpConfig()),
+                       isActive);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -454,6 +562,16 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
              }
              return result;
            }}};
+}
+
+StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
+                                          const QUuid &strategyId,
+                                          const QString &config,
+                                          QWidget *parent) {
+  StrategyWidgetList result;
+  result.emplace_back(
+      boost::make_unique<StrategyWindow>(engine, strategyId, config, parent));
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

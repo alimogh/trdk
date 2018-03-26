@@ -25,13 +25,13 @@ aa::Operation::Operation(
     const Qty &maxQty,
     const Price &sellPrice,
     const Price &buyPrice,
-    const boost::optional<pt::time_duration> &stopLossDelay)
+    const boost::optional<pt::time_duration> &&stopLossDelay)
     : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
       m_openOrderPolicy(sellPrice, buyPrice),
       m_sellTarget(sellTarget),
       m_buyTarget(buyTarget),
       m_maxQty(maxQty),
-      m_stopLossDelay(stopLossDelay) {}
+      m_stopLossDelay(std::move(stopLossDelay)) {}
 
 bool aa::Operation::IsSame(const Security &sellTarget,
                            const Security &buyTarget) const {

@@ -209,7 +209,7 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
   }
   Assert(!requestList.empty());
 
-  const auto &activeIds = GetActiveOrderIdList();
+  const auto &activeOrders = GetActiveOrderContextList();
   boost::unordered_set<const ExcambiorexProduct *> orderRequestList;
   boost::unordered_set<OrderId> actualIds;
   pt::ptime time;
@@ -242,7 +242,8 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
     throw Exception(error.str().c_str());
   }
 
-  for (const auto &orderId : activeIds) {
+  for (const auto &context : activeOrders) {
+    const auto &orderId = context->GetOrderId();
     if (actualIds.count(orderId)) {
       continue;
     }

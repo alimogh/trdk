@@ -34,6 +34,7 @@ TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderSide &);
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
 
 TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid &);
+TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid &);
 
 template <typename Result>
 const Result &ResolveModelIndexItem(const QModelIndex &source) {

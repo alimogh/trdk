@@ -19,6 +19,7 @@ namespace ArbitrageAdvisor {
 class Strategy : public trdk::Strategy {
  public:
   struct TradingSettings {
+    bool isEnabled;
     trdk::Lib::Double minPriceDifferenceRatio;
     trdk::Qty maxQty;
   };
@@ -41,11 +42,17 @@ class Strategy : public trdk::Strategy {
       const boost::function<void(const std::string *reason)> &);
 
  public:
-  void SetupAdvising(const Lib::Double &minPriceDifferenceRatio) const;
+  void SetMinPriceDifferenceRatioToAdvice(const Lib::Double &);
+  const Lib::Double &GetMinPriceDifferenceRatioToAdvice() const;
 
-  void ActivateAutoTrading(TradingSettings &&);
-  const boost::optional<TradingSettings> &GetAutoTradingSettings() const;
-  void DeactivateAutoTrading();
+  void SetTradingSettings(TradingSettings &&);
+  const TradingSettings &GetTradingSettings() const;
+
+  bool IsLowestSpreadEnabled() const;
+  const Lib::Double &GetLowestSpreadRatio() const;
+
+  bool IsStopLossEnabled() const;
+  const boost::posix_time::time_duration &GetStopLossDelay() const;
 
   void ForEachSecurity(const Lib::Symbol &,
                        const boost::function<void(Security &)> &);

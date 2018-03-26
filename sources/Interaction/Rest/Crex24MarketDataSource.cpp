@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Crex24MarketDataSource.hpp"
 #include "Crex24Request.hpp"
-#include "Crex24Util.hpp"
 #include "PollingTask.hpp"
 #include "Security.hpp"
 #include "Util.hpp"
@@ -53,15 +52,17 @@ Crex24MarketDataSource::~Crex24MarketDataSource() {
 
 void Crex24MarketDataSource::Connect(const IniSectionRef &) {
   GetLog().Debug("Creating connection...");
-  boost::unordered_set<std::string> products;
+  boost::unordered_map<std::string, Crex24Product> products;
   try {
     products = RequestCrex24ProductList(m_session, GetContext(), GetLog());
   } catch (const std::exception &ex) {
     throw ConnectError(ex.what());
   }
-  boost::unordered_map<std::string, boost::shared_ptr<Security>> securities;
+  boost::unordered_map<std::string,
+                       std::pair<Crex24Product, boost::shared_ptr<Security>>>
+      securities;
   for (const auto &product : products) {
-    securities.emplace(product, nullptr);
+    securities.emplace(product.first, std::make_pair(product.second, nullptr));
   }
   securities.swap(m_securities);
 }
@@ -71,13 +72,14 @@ void Crex24MarketDataSource::SubscribeToSecurities() {
       std::pair<boost::shared_ptr<Security>, boost::shared_ptr<Request>>>
       subscribtion;
   for (const auto &security : m_securities) {
-    if (!security.second) {
+    if (!security.second.second) {
       continue;
     }
     auto request = boost::make_shared<Crex24PublicRequest>(
-        "ReturnOrderBook", "request=[PairName=" + security.first + "]",
-        GetContext(), GetLog());
-    subscribtion.emplace_back(std::make_pair(security.second, request));
+        "ReturnOrderBook",
+        "request=[PairName=" + security.second.first.id + "]", GetContext(),
+        GetLog());
+    subscribtion.emplace_back(std::make_pair(security.second.second, request));
   }
   m_pollingTask->ReplaceTask(
       "Prices", 1,
@@ -96,18 +98,18 @@ trdk::Security &Crex24MarketDataSource::CreateNewSecurityObject(
     message % symbol.GetSymbol();
     throw SymbolIsNotSupportedException(message.str().c_str());
   }
-  if (security->second) {
-    return *security->second;
+  if (security->second.second) {
+    return *security->second.second;
   }
-  security->second =
+  security->second.second =
       boost::make_shared<r::Security>(GetContext(), symbol, *this,
                                       r::Security::SupportedLevel1Types()
                                           .set(LEVEL1_TICK_BID_PRICE)
                                           .set(LEVEL1_TICK_BID_QTY)
                                           .set(LEVEL1_TICK_ASK_PRICE)
                                           .set(LEVEL1_TICK_BID_QTY));
-  security->second->SetTradingSessionState(pt::not_a_date_time, true);
-  return *security->second;
+  security->second.second->SetTradingSessionState(pt::not_a_date_time, true);
+  return *security->second.second;
 }
 
 void Crex24MarketDataSource::UpdatePrices(
@@ -165,10 +167,10 @@ void Crex24MarketDataSource::UpdatePrices(r::Security &security,
   const auto &data = boost::get<1>(response);
   const auto &delayMeasurement = boost::get<2>(response);
   const auto &bestAsk =
-      ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+      ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
           data.get_child_optional("BuyOrders"));
   const auto &bestBid =
-      ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+      ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
           data.get_child_optional("SellOrders"));
   if (bestAsk && bestBid) {
     security.SetLevel1(time, bestBid->first, bestBid->second, bestAsk->first,
