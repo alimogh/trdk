@@ -30,10 +30,13 @@ class MainWindow : public QMainWindow {
 
  public:
   Engine &GetEngine() { return m_engine; }
+
   void LoadModule(const boost::filesystem::path &);
+  void RestoreModules();
 
  private:
   void CreateModuleWindows(const StrategyWindowFactory &);
+  void ShowModuleWindows(StrategyWidgetList &);
 
  private:
   Engine &m_engine;

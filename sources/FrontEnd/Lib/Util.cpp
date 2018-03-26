@@ -172,6 +172,10 @@ QUuid front::ConvertToQUuid(const ids::uuid &source) {
                                sizeof(uchar)]));  // uchar b8
 }
 
+ids::uuid front::ConvertToBoostUuid(const QUuid &source) {
+  return ids::string_generator()(source.toString().toStdString());
+}
+
 void front::ScrollToLastChild(QAbstractItemView &view,
                               const QModelIndex &index) {
   const auto &subRowCount = view.model()->rowCount(index);

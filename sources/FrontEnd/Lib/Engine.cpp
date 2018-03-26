@@ -279,11 +279,6 @@ class front::Engine::Implementation : private boost::noncopyable {
       const TimeInForce &,
       const QString &error) {
     auto fakeId = QUuid::createUuid().toString();
-    AssertEq(38, fakeId.size());
-    AssertEq('{', fakeId.begin()->toLatin1());
-    AssertEq('}', fakeId.rbegin()->toLatin1());
-    fakeId.remove(0, 1);
-    fakeId.remove(fakeId.size() - 1, 1);
     OnNewOrder(operationIdSuboperationId, std::move(fakeId), time, security,
                currency, tradingSystem, side, qty, price, ORDER_STATUS_ERROR,
                error);
@@ -327,6 +322,7 @@ class front::Engine::Implementation : private boost::noncopyable {
     {
       auto strategyOrm = boost::make_shared<Orm::Strategy>(
           ConvertToQUuid(strategySource->GetId()));
+      db::fetch_by_id(strategyOrm, m_db);
       strategyOrm->setName(
           QString::fromStdString(strategySource->GetInstanceName()));
       db::save(strategyOrm);
@@ -568,3 +564,26 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
 #ifdef DEV_VER
 void front::Engine::Test() { m_pimpl->Test(); }
 #endif
+
+void front::Engine::StoreConfig(const Strategy &strategy,
+                                QString &&config,
+                                bool isActive) {
+  auto strategyOrm =
+      boost::make_shared<Orm::Strategy>(ConvertToQUuid(strategy.GetId()));
+  db::fetch_by_id(strategyOrm, m_pimpl->m_db);
+  strategyOrm->setConfig(std::move(config));
+  strategyOrm->setIsActive(isActive);
+  db::save(strategyOrm);
+}
+
+void front::Engine::ForEachActiveStrategy(
+    const boost::function<void(const QUuid &id, const QString &config)>
+        &callback) const {
+  qx::QxSqlQuery query("WHERE IsActive != 0");
+  std::vector<boost::shared_ptr<Orm::Strategy>> result;
+  Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
+              .isValid());
+  for (const auto &strategy : result) {
+    callback(strategy->getId(), strategy->getConfig());
+  }
+}

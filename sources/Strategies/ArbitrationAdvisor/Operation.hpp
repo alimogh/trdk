@@ -30,7 +30,7 @@ class Operation : public trdk::Operation {
       const Qty &maxQty,
       const Price &sellPrice,
       const Price &buyPrice,
-      const boost::optional<boost::posix_time::time_duration> &stopLossDelay);
+      const boost::optional<boost::posix_time::time_duration> &&stopLossDelay);
   virtual ~Operation() override = default;
 
  public:

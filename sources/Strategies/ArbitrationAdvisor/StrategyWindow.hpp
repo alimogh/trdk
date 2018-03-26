@@ -85,6 +85,10 @@ class StrategyWindow : public QMainWindow {
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QString &symbol,
                           QWidget *parent);
+  explicit StrategyWindow(FrontEnd::Engine &,
+                          const QUuid &strategyId,
+                          const QString &config,
+                          QWidget *parent);
   virtual ~StrategyWindow() override;
 
  public:
@@ -110,14 +114,36 @@ class StrategyWindow : public QMainWindow {
   void Blocked(const QString &reason);
 
  private:
-  void ConnectSignals();
   void Init();
 
+  void ConnectSignals();
   void SendOrder(const OrderSide &, TradingSystem *);
 
   bool IsAutoTradingActivated() const;
 
+  Strategy &GenerateNewStrategyInstance(const boost::uuids::uuid &strategyId,
+                                        size_t instanceNumber);
+  Strategy &RestoreStrategyInstance(const QUuid &strategyId,
+                                    size_t instanceNumber,
+                                    const QString &config);
+  Strategy &CreateStrategyInstance(const boost::uuids::uuid &strategyId,
+                                   size_t instanceNumber,
+                                   const std::string &config);
+
   void AddTargetWidgets(TargetWidgets &);
+
+  std::string CreateConfig(
+      const boost::uuids::uuid &strategyId,
+      const Lib::Double &minPriceDifferenceToHighlightPercentage,
+      const Lib::Double &minPriceDifferenceToTradePercentage,
+      const Qty &maxQty,
+      bool isLowestSpreadEnabled,
+      const Lib::Double &lowestSpreadPercentage,
+      bool isStopLossEnabled,
+      size_t stopLossDelaySec) const;
+  std::string DumpConfig() const;
+
+  void StoreConfig(bool isActive);
 
  private:
   Ui::StrategyWindow m_ui;
@@ -127,10 +153,9 @@ class StrategyWindow : public QMainWindow {
 
   FrontEnd::Engine &m_engine;
   const TradingMode m_tradingMode;
-  const size_t m_instanceNumber;
-  int m_symbolIndex;
+  const std::string m_symbol;
 
-  Strategy *m_strategy;
+  Strategy &m_strategy;
   boost::signals2::scoped_connection m_adviceConnection;
   boost::signals2::scoped_connection m_tradingSignalCheckErrorsConnection;
   boost::signals2::scoped_connection m_blockConnection;
