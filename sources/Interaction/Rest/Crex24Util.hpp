@@ -14,7 +14,12 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-boost::unordered_set<std::string> RequestCrex24ProductList(
+struct Crex24Product {
+  std::string id;
+  Qty minQty;
+};
+
+boost::unordered_map<std::string, Crex24Product> RequestCrex24ProductList(
     std::unique_ptr<Poco::Net::HTTPSClientSession> &,
     const Context &,
     ModuleEventsLog &);

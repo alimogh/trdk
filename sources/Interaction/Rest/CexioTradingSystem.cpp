@@ -177,7 +177,8 @@ void CexioTradingSystem::UpdateBalances() {
 }
 
 void CexioTradingSystem::UpdateOrders() {
-  for (const auto &orderId : GetActiveOrderIdList()) {
+  for (const auto &context : GetActiveOrderContextList()) {
+    const auto &orderId = context->GetOrderId();
     PrivateRequest request("get_order",
                            "id=" + boost::lexical_cast<std::string>(orderId),
                            m_settings, m_nonces.TakeNonce(), false,

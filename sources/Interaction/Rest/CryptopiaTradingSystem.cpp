@@ -233,8 +233,8 @@ CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
   const auto &productIndex = m_products.get<BySymbol>();
   const auto &productIt = productIndex.find(security.GetSymbol().GetSymbol());
   if (productIt == productIndex.cend()) {
-    GetLog().Warn("Failed find product for \"%1%\" to check order.", security);
-    return boost::none;
+    GetLog().Error("Failed find product for \"%1%\" to check order.", security);
+    throw Exception("Product is unknown");
   }
 
   const CryptopiaProduct &product = *productIt;
@@ -455,7 +455,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
     version = m_openOrdersRequestsVersion;
   }
 
-  const auto activeOrders = GetActiveOrderIdList();
+  const auto activeOrders = GetActiveOrderContextList();
   boost::unordered_set<OrderId> actualOrders;
 
   std::vector<CryptopiaProductList::iterator> emptyRequests;
@@ -484,7 +484,8 @@ bool CryptopiaTradingSystem::UpdateOrders() {
 
   const auto &now = GetContext().GetCurrentTime();
 
-  for (const auto &id : activeOrders) {
+  for (const auto &context : activeOrders) {
+    const auto id = context->GetOrderId();
     if (actualOrders.count(id)) {
       continue;
     }

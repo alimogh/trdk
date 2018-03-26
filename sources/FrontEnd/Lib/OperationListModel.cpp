@@ -269,6 +269,11 @@ void OperationListModel::UpdateOperation(const Orm::Operation &operation) {
 }
 
 void OperationListModel::UpdateOrder(const Orm::Order &order) {
+  if (!order.getOperation()) {
+    // "free" order
+    return;
+  }
+
   const auto &it = m_pimpl->m_orders.find(order.getId());
   if (it == m_pimpl->m_orders.cend()) {
     auto additionalInfo = order.getAdditionalInfo();

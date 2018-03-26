@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Crex24Util.hpp"
 #include "ExcambiorexUtil.hpp"
 #include "Settings.hpp"
 
@@ -47,7 +48,9 @@ class Crex24MarketDataSource : public MarketDataSource {
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
-  boost::unordered_map<std::string, boost::shared_ptr<Security>> m_securities;
+  boost::unordered_map<std::string,
+                       std::pair<Crex24Product, boost::shared_ptr<Security>>>
+      m_securities;
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };

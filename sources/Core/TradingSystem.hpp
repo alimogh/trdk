@@ -153,7 +153,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
                                       const trdk::OrderSide &,
                                       const trdk::Security &) const = 0;
 
-  std::vector<trdk::OrderId> GetActiveOrderIdList() const;
+  std::vector<boost::shared_ptr<const trdk::OrderTransactionContext>>
+  GetActiveOrderContextList() const;
 
  public:
   virtual boost::optional<trdk::TradingSystem::OrderCheckError> CheckOrder(
@@ -206,6 +207,12 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
 
   virtual trdk::Balances &GetBalancesStorage();
+
+  //! Returns active orders list.
+  /** Call is trhread-safe.
+   */
+  std::vector<boost::shared_ptr<trdk::OrderTransactionContext>>
+  GetActiveOrderContextList();
 
   //! Direct access to active order list.
   /** Maybe called only from overloaded methods SendOrderTransaction
@@ -270,10 +277,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnOrderRemainingQtyUpdated(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const trdk::Qty &remainingQty);
+  void OnOrderRemainingQtyUpdated(const boost::posix_time::ptime &,
+                                  const trdk::OrderId &,
+                                  const trdk::Qty &remainingQty);
   //! Reports about remaining quantity update if it was changed.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
@@ -284,6 +290,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
       const trdk::OrderId &,
       const trdk::Qty &remainingQty,
       const boost::function<bool(OrderTransactionContext &)> &);
+
+  //! Finalizes the order with automatically chosen status.
+  /** All order-events methods should be called from one thread or call should
+   *  be synchronized. In another case - subscribers may receive notifications
+   * in the wrong order.
+   */
+  void OnOrderCompleted(const boost::posix_time::ptime &,
+                        const trdk::OrderId &,
+                        const boost::optional<trdk::Volume> &commission);
 
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
