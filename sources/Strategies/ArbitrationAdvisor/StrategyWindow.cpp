@@ -34,19 +34,6 @@ const TradingSystem *StrategyWindow::Target::GetTradingSystem() const {
 namespace {
 size_t numberOfNextInstance = 1;
 ids::random_generator generateStrategyId;
-
-std::string ExtractSymbolFromConfig(const QString &config) {
-  IniString ini(config.toStdString());
-  for (const auto &line : ini.ReadList()) {
-    std::vector<std::string> parts;
-    boost::split(parts, line, boost::is_any_of("="));
-    if (parts.size() != 2 || boost::trim_copy(parts.front()) != "symbol") {
-      continue;
-    }
-    return boost::trim_copy(parts.back());
-  }
-  throw Exception("Failed to find symbol in the strategy configuration");
-}
 }  // namespace
 
 StrategyWindow::StrategyWindow(Engine &engine,
@@ -270,7 +257,7 @@ void StrategyWindow::ConnectSignals() {
 }
 
 aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
-    const boost::uuids::uuid &strategyId, size_t instanceNumber) {
+    const ids::uuid &strategyId, size_t instanceNumber) {
   bool isLowestSpreadEnabed = false;
   Double lowestSpreadPercentage = 0;
   bool isStopLossEnabled = false;
@@ -502,7 +489,7 @@ void StrategyWindow::UpdateAdviceLevel(double level) {
 }
 
 std::string StrategyWindow::CreateConfig(
-    const boost::uuids::uuid &strategyId,
+    const ids::uuid &strategyId,
     const Double &minPriceDifferenceToHighlightPercentage,
     const Double &minPriceDifferenceToTradePercentage,
     const Qty &maxQty,
@@ -565,12 +552,15 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
 }
 
 StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
-                                          const QUuid &strategyId,
+                                          const QUuid &typeId,
+                                          const QUuid &instanceId,
                                           const QString &config,
                                           QWidget *parent) {
   StrategyWidgetList result;
-  result.emplace_back(
-      boost::make_unique<StrategyWindow>(engine, strategyId, config, parent));
+  if (ConvertToBoostUuid(typeId) == aa::Strategy::typeId) {
+    result.emplace_back(
+        boost::make_unique<StrategyWindow>(engine, instanceId, config, parent));
+  }
   return result;
 }
 

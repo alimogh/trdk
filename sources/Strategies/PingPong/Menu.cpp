@@ -9,10 +9,13 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Strategy.hpp"
 #include "StrategyWindow.hpp"
 
 using namespace trdk::Strategies::PingPong;
 using namespace trdk::FrontEnd;
+
+namespace pp = trdk::Strategies::PingPong;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
@@ -26,4 +29,17 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
              }
              return result;
            }}};
+}
+
+StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
+                                          const QUuid &typeId,
+                                          const QUuid &instanceId,
+                                          const QString &config,
+                                          QWidget *parent) {
+  StrategyWidgetList result;
+  if (ConvertToBoostUuid(typeId) == pp::Strategy::typeId) {
+    result.emplace_back(
+        boost::make_unique<StrategyWindow>(engine, instanceId, config, parent));
+  }
+  return result;
 }

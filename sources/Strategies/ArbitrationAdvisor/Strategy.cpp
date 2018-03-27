@@ -20,8 +20,9 @@ using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
 namespace sig = boost::signals2;
+namespace ids = boost::uuids;
+namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -117,6 +118,9 @@ class SignalSession : private boost::noncopyable {
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
+
+const ids::uuid aa::Strategy::typeId =
+    ids::string_generator()("{39FBFFDA-10D7-462D-BA82-0D8BA9CA7A09}");
 
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
@@ -706,11 +710,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 aa::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
                        const IniSectionRef &conf)
-    : Base(context,
-           "{39FBFFDA-10D7-462D-BA82-0D8BA9CA7A09}",
-           "ArbitrageAdvisor",
-           instanceName,
-           conf),
+    : Base(context, typeId, "ArbitrageAdvisor", instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 aa::Strategy::~Strategy() = default;

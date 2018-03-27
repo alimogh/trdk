@@ -80,7 +80,7 @@ class front::Engine::Implementation : private boost::noncopyable {
     qx::QxSqlDatabase::getSingleton()->setUserName("root");
     qx::QxSqlDatabase::getSingleton()->setPassword("");
 
-    db::create_table<Orm::Strategy>(m_db);
+    db::create_table<Orm::StrategyInstance>(m_db);
     db::create_table<Orm::Operation>(m_db);
     db::create_table<Orm::Order>(m_db);
     db::create_table<Orm::Pnl>(m_db);
@@ -320,13 +320,13 @@ class front::Engine::Implementation : private boost::noncopyable {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
     operation->setStartTime(ConvertToDbDateTime(time));
     {
-      auto strategyOrm = boost::make_shared<Orm::Strategy>(
+      auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
           ConvertToQUuid(strategySource->GetId()));
       db::fetch_by_id(strategyOrm, m_db);
       strategyOrm->setName(
           QString::fromStdString(strategySource->GetInstanceName()));
       db::save(strategyOrm);
-      operation->setStrategy(strategyOrm);
+      operation->setStrategyInstance(strategyOrm);
     }
     db::insert(operation, m_db);
     emit m_self.OperationUpdate(*operation);
@@ -568,22 +568,23 @@ void front::Engine::Test() { m_pimpl->Test(); }
 void front::Engine::StoreConfig(const Strategy &strategy,
                                 QString &&config,
                                 bool isActive) {
-  auto strategyOrm =
-      boost::make_shared<Orm::Strategy>(ConvertToQUuid(strategy.GetId()));
+  auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
+      ConvertToQUuid(strategy.GetId()));
   db::fetch_by_id(strategyOrm, m_pimpl->m_db);
+  strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
   strategyOrm->setConfig(std::move(config));
   strategyOrm->setIsActive(isActive);
   db::save(strategyOrm);
 }
 
 void front::Engine::ForEachActiveStrategy(
-    const boost::function<void(const QUuid &id, const QString &config)>
-        &callback) const {
-  qx::QxSqlQuery query("WHERE IsActive != 0");
-  std::vector<boost::shared_ptr<Orm::Strategy>> result;
-  Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
-              .isValid());
+    const boost::function<void(const QUuid &typeId,
+                               const QUuid &instanceId,
+                               const QString &config)> &callback) const {
+  qx::QxSqlQuery query("WHERE is_active != 0");
+  std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
+  Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
   for (const auto &strategy : result) {
-    callback(strategy->getId(), strategy->getConfig());
+    callback(strategy->getTypeId(), strategy->getId(), strategy->getConfig());
   }
 }

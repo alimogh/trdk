@@ -83,6 +83,9 @@ class Strategy : public trdk::Strategy {
   typedef trdk::Strategy Base;
 
  public:
+  static const boost::uuids::uuid typeId;
+
+ public:
   explicit Strategy(Context &,
                     const std::string &instanceName,
                     const Lib::IniSectionRef &);
@@ -97,6 +100,7 @@ class Strategy : public trdk::Strategy {
   void EnableShortTrading(bool);
 
   void SetSourceTimeFrameSize(const boost::posix_time::time_duration &);
+  const boost::posix_time::time_duration &GetSourceTimeFrameSize() const;
 
   void EnableActivePositionsControl(bool);
   bool IsActivePositionsControlEnabled() const;

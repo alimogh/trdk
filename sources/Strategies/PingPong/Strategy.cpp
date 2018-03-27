@@ -23,6 +23,7 @@ namespace accs = boost::accumulators;
 namespace ma = trdk::Lib::Accumulators::MovingAverage;
 namespace sig = boost::signals2;
 namespace pt = boost::posix_time;
+namespace ids = boost::uuids;
 namespace tl = trdk::TradingLib;
 namespace pp = trdk::Strategies::PingPong;
 
@@ -147,6 +148,9 @@ bool pp::Strategy::Trends::HasCloseSignal(bool isLong) const {
   return *isRising != isLong;
 }
 
+const ids::uuid pp::Strategy::typeId =
+    ids::string_generator()("{C9C4282A-C620-45DA-9071-A6F9E5224BE9}");
+
 class pp::Strategy::Implementation : private boost::noncopyable {
  public:
   pp::Strategy &m_self;
@@ -180,20 +184,33 @@ class pp::Strategy::Implementation : private boost::noncopyable {
   pt::ptime m_lastTime;
 
  public:
-  explicit Implementation(Strategy &self)
+  explicit Implementation(Strategy &self, const IniSectionRef &conf)
       : m_self(self),
-        m_indicatorsToggles({}),
-        m_positionSize(.01),
-        m_fastMaSize(12),
-        m_slowMaSize(26),
-        m_numberOfRsiPeriods(14),
-        m_rsiOverboughtLevel(70),
-        m_rsiOversoldLevel(30),
-        m_takeProfit(
-            boost::make_shared<TakeProfitShare::Params>(3.0 / 100, .75 / 100)),
-        m_stopLoss(boost::make_shared<StopLossShare::Params>(15.0 / 100)),
+        m_indicatorsToggles(
+            {{conf.ReadBoolKey("ma_opening_signal_confirmation_enabled"),
+              conf.ReadBoolKey("ma_closing_signal_confirmation_enabled")},
+             {conf.ReadBoolKey("rsi_opening_signal_confirmation_enabled"),
+              conf.ReadBoolKey("rsi_closing_signal_confirmation_enabled")}}),
+        m_positionSize(conf.ReadTypedKey<Qty>("position_size")),
+        m_fastMaSize(conf.ReadTypedKey<size_t>("number_of_fast_ma_periods")),
+        m_slowMaSize(conf.ReadTypedKey<size_t>("number_of_slow_ma_periods")),
+        m_numberOfRsiPeriods(
+            conf.ReadTypedKey<size_t>("number_of_rsi_periods")),
+        m_rsiOverboughtLevel(conf.ReadTypedKey<Double>("rsi_overbought_level")),
+        m_rsiOversoldLevel(conf.ReadTypedKey<Double>("rsi_oversold_level")),
+        m_takeProfit(boost::make_shared<TakeProfitShare::Params>(
+            conf.ReadTypedKey<Double>("profit_share_to_activate_take_profit") /
+                100,
+            conf.ReadTypedKey<Double>("take_profit_trailing_share_to_close") /
+                100)),
+        m_stopLoss(boost::make_shared<StopLossShare::Params>(
+            conf.ReadTypedKey<Double>("max_loss_share") / 100)),
+        m_controller(conf.ReadBoolKey("long_trading_enabled"),
+                     conf.ReadBoolKey("short_trading_enabled"),
+                     conf.ReadBoolKey("active_positions_control_enabled")),
         m_isStopped(false),
-        m_frameSize(pt::minutes(5)),
+        m_frameSize(
+            pt::seconds(conf.ReadTypedKey<long>("source_time_frame_size_sec"))),
         m_lastTime(m_self.GetContext().GetCurrentTime()) {}
 
   template <typename GetMa>
@@ -276,12 +293,8 @@ class pp::Strategy::Implementation : private boost::noncopyable {
 pp::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
                        const IniSectionRef &conf)
-    : Base(context,
-           "{C9C4282A-C620-45DA-9071-A6F9E5224BE9}",
-           "PingPong",
-           instanceName,
-           conf),
-      m_pimpl(boost::make_unique<Implementation>(*this)) {}
+    : Base(context, typeId, "PingPong", instanceName, conf),
+      m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 pp::Strategy::~Strategy() = default;
 
@@ -439,6 +452,10 @@ void pp::Strategy::SetSourceTimeFrameSize(const pt::time_duration &frameSize) {
       "time frame size: %1%",
       [&frameSize](TradingRecord &record) { record % frameSize; });
   m_pimpl->m_frameSize = frameSize;
+}
+
+const pt::time_duration &pp::Strategy::GetSourceTimeFrameSize() const {
+  return m_pimpl->m_frameSize;
 }
 
 void pp::Strategy::EnableActivePositionsControl(bool isEnabled) {

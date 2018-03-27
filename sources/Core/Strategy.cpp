@@ -362,10 +362,10 @@ class Strategy::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(Strategy &strategy,
-                          const std::string &typeUuid,
+                          const uuids::uuid &typeId,
                           const IniSectionRef &conf)
       : m_strategy(strategy),
-        m_typeId(boost::uuids::string_generator()(typeUuid)),
+        m_typeId(typeId),
         m_title(conf.ReadKey("title")),
         m_tradingMode(
             ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
@@ -376,7 +376,21 @@ class Strategy::Implementation : private boost::noncopyable {
                 .GetRiskControl(m_tradingMode)
                 .CreateScope(m_strategy.GetInstanceName(), conf)),
         m_stopMode(STOP_MODE_UNKNOWN),
-        m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {}
+        m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
+    std::string dropCopyInstanceIdStr = "not used";
+    m_strategy.GetContext().InvokeDropCopy(
+        [this, &dropCopyInstanceIdStr](DropCopy &dropCopy) {
+          m_dropCopyInstanceId = dropCopy.RegisterStrategyInstance(m_strategy);
+          AssertNe(DropCopy::nStrategyInstanceId, m_dropCopyInstanceId);
+          dropCopyInstanceIdStr =
+              boost::lexical_cast<std::string>(m_dropCopyInstanceId);
+        });
+    m_strategy.GetLog().Info(
+        "%1%, %2% mode, drop copy ID: %3%.",
+        m_isEnabled ? "ENABLED" : "DISABLED",
+        boost::to_upper_copy(ConvertToString(m_tradingMode)),
+        dropCopyInstanceIdStr);
+  }
 
  public:
   void ForgetPosition(const Position &position) {
@@ -515,27 +529,26 @@ boost::thread_specific_ptr<ThreadPositionListTransaction::Data>
 
 //////////////////////////////////////////////////////////////////////////
 
+namespace {
+const std::string typeName = "Strategy";
+}
+
+Strategy::Strategy(trdk::Context &context,
+                   const uuids::uuid &typeId,
+                   const std::string &implementationName,
+                   const std::string &instanceName,
+                   const IniSectionRef &conf)
+    : Consumer(context, typeName, implementationName, instanceName, conf),
+      m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {}
+
 Strategy::Strategy(trdk::Context &context,
                    const std::string &typeUuid,
                    const std::string &implementationName,
                    const std::string &instanceName,
                    const IniSectionRef &conf)
-    : Consumer(context, "Strategy", implementationName, instanceName, conf),
-      m_pimpl(boost::make_unique<Implementation>(*this, typeUuid, conf)) {
-  std::string dropCopyInstanceIdStr = "not used";
-  GetContext().InvokeDropCopy([this,
-                               &dropCopyInstanceIdStr](DropCopy &dropCopy) {
-    m_pimpl->m_dropCopyInstanceId = dropCopy.RegisterStrategyInstance(*this);
-    AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
-    dropCopyInstanceIdStr =
-        boost::lexical_cast<std::string>(m_pimpl->m_dropCopyInstanceId);
-  });
-
-  GetLog().Info("%1%, %2% mode, drop copy ID: %3%.",
-                m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED",
-                boost::to_upper_copy(ConvertToString(GetTradingMode())),
-                dropCopyInstanceIdStr);
-}
+    : Consumer(context, typeName, implementationName, instanceName, conf),
+      m_pimpl(boost::make_unique<Implementation>(
+          *this, uuids::string_generator()(typeUuid), conf)) {}
 
 Strategy::~Strategy() {
   Assert(!ThreadPositionListTransaction::IsStarted());

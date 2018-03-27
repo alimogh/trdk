@@ -25,6 +25,9 @@ class Strategy : public trdk::Strategy {
   };
 
  public:
+  static const boost::uuids::uuid typeId;
+
+ public:
   typedef trdk::Strategy Base;
 
  public:

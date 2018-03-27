@@ -147,7 +147,7 @@ void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
 void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
   boost::optional<QPoint> widgetPos = pos();
   boost::optional<QSize> size;
-  widgetPos->setX(widgetPos->x() + 25);
+  widgetPos->setX(widgetPos->x() + 50);
   widgetPos->setY(widgetPos->y() + 25);
   const auto &screen = QApplication::desktop()->screenGeometry();
   for (auto &widgetPtr : widgets) {
@@ -174,20 +174,22 @@ void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
 
 void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
-  m_engine.ForEachActiveStrategy(
-      [this, &widgets](const QUuid &id, const QString &config) {
-        for (const auto &module : m_moduleDlls) {
-          try {
-            for (auto &widget :
-                 module->GetFunction<StrategyWidgetList(
-                     Engine &, const QUuid &, const QString &, QWidget *)>(
-                     "RestoreStrategyWidgets")(m_engine, id, config, this)) {
-              widgets.emplace_back(widget.release());
-            }
-          } catch (const Dll::DllFuncException &) {
-            continue;
-          }
+  m_engine.ForEachActiveStrategy([this, &widgets](const QUuid &typeId,
+                                                  const QUuid &instanceId,
+                                                  const QString &config) {
+    for (const auto &module : m_moduleDlls) {
+      try {
+        for (auto &widget :
+             module->GetFunction<StrategyWidgetList(
+                 Engine &, const QUuid &, const QUuid &, const QString &,
+                 QWidget *)>("RestoreStrategyWidgets")(
+                 m_engine, typeId, instanceId, config, this)) {
+          widgets.emplace_back(widget.release());
         }
-      });
+      } catch (const Dll::DllFuncException &) {
+        continue;
+      }
+    }
+  });
   ShowModuleWindows(widgets);
 }

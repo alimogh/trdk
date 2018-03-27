@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 
 using namespace trdk;
+using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 
 namespace pt = boost::posix_time;
@@ -173,7 +174,48 @@ QUuid front::ConvertToQUuid(const ids::uuid &source) {
 }
 
 ids::uuid front::ConvertToBoostUuid(const QUuid &source) {
-  return ids::string_generator()(source.toString().toStdString());
+  ids::uuid result;
+  reinterpret_cast<uint &>(result.data[0]) =
+      ((source.data1 >> 24) & 0xff) | ((source.data1 << 8) & 0xff0000) |
+      ((source.data1 >> 8) & 0xff00) | ((source.data1 << 24) & 0xff000000);
+  reinterpret_cast<ushort &>(result.data[sizeof(uint)]) =
+      (source.data2 >> 8) | (source.data2 << 8);
+  reinterpret_cast<ushort &>(result.data[sizeof(uint) + sizeof(ushort)]) =
+      (source.data3 >> 8) | (source.data3 << 8);
+  reinterpret_cast<uchar &>(
+      result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort)]) =
+      source.data4[0];
+  reinterpret_cast<uchar &>(result.data[sizeof(uint) + sizeof(ushort) +
+                                        sizeof(ushort) + sizeof(uchar)]) =
+      source.data4[1];
+  reinterpret_cast<uchar &>(
+      result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                  sizeof(uchar) + sizeof(uchar)]) = source.data4[2];
+  reinterpret_cast<uchar &>(
+      result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                  sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
+      source.data4[3];
+  reinterpret_cast<uchar &>(
+      result
+          .data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
+                sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
+      source.data4[4];
+  reinterpret_cast<uchar &>(
+      result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                  sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                  sizeof(uchar) + sizeof(uchar)]) = source.data4[5];
+  reinterpret_cast<uchar &>(
+      result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                  sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                  sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
+      source.data4[6];
+  reinterpret_cast<uchar &>(
+      result
+          .data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
+                sizeof(uchar) + sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                sizeof(uchar) + sizeof(uchar)]) = source.data4[7];
+  Assert(source == ConvertToQUuid(result));
+  return result;
 }
 
 void front::ScrollToLastChild(QAbstractItemView &view,
@@ -213,4 +255,17 @@ void front::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
       QObject::tr("Please notify the software vendor about this incident.");
   QMessageBox::critical(parent, QObject::tr("Strategy is blocked"), message,
                         QMessageBox::Ok);
+}
+
+std::string front::ExtractSymbolFromConfig(const QString &config) {
+  IniString ini(config.toStdString());
+  for (const auto &line : ini.ReadList()) {
+    std::vector<std::string> parts;
+    boost::split(parts, line, boost::is_any_of("="));
+    if (parts.size() != 2 || boost::trim_copy(parts.front()) != "symbol") {
+      continue;
+    }
+    return boost::trim_copy(parts.back());
+  }
+  throw Exception("Failed to find symbol in the strategy configuration");
 }
