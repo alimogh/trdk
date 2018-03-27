@@ -17,10 +17,12 @@ using namespace trdk::Lib::TimeMeasurement;
 using namespace trdk::TradingLib;
 using namespace trdk::Strategies::PingPong;
 
-Controller::Controller()
-    : m_isLongOpeningEnabled(false),
-      m_isShortOpeningEnabled(false),
-      m_isClosingEnabled(false) {}
+Controller::Controller(bool isLongOpeningEnabled,
+                       bool isShortOpeningEnabled,
+                       bool isClosingEnabled)
+    : m_isLongOpeningEnabled(isLongOpeningEnabled),
+      m_isShortOpeningEnabled(isShortOpeningEnabled),
+      m_isClosingEnabled(isClosingEnabled) {}
 
 bool Controller::IsLongOpeningEnabled() const { return m_isLongOpeningEnabled; }
 bool Controller::IsShortOpeningEnabled() const {

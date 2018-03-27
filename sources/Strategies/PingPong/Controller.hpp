@@ -19,7 +19,9 @@ class Controller : public TradingLib::PositionController {
   typedef TradingLib::PositionController Base;
 
  public:
-  Controller();
+  explicit Controller(bool isLongOpeningEnabled,
+                      bool isShortOpeningEnabled,
+                      bool isClosingEnabled);
   virtual ~Controller() override = default;
 
  public:

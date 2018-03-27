@@ -19,21 +19,49 @@ using namespace trdk::Strategies::PingPong;
 
 namespace pp = trdk::Strategies::PingPong;
 namespace pt = boost::posix_time;
+namespace ids = boost::uuids;
+
+namespace {
+size_t numberOfNextInstance = 1;
+ids::random_generator generateStrategyId;
+}  // namespace
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QString &symbol,
                                QWidget *parent)
     : Base(parent),
       m_engine(engine),
-      m_strategy(CreateStrategyInstance(symbol)) {
+      m_symbol(symbol.toStdString()),
+      m_strategy(GenerateNewStrategyInstance(generateStrategyId(),
+                                             numberOfNextInstance++)) {
+  Init();
+  StoreConfig(true);
+}
+
+StrategyWindow::StrategyWindow(Engine &engine,
+                               const QUuid &strategyId,
+                               const QString &config,
+                               QWidget *parent)
+    : Base(parent),
+      m_engine(engine),
+      m_symbol(ExtractSymbolFromConfig(config)),
+      m_strategy(
+          RestoreStrategyInstance(strategyId, numberOfNextInstance++, config)) {
+  Init();
+}
+
+StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
+
+void StrategyWindow::Init() {
   setAttribute(Qt::WA_DeleteOnClose);
 
   m_ui.setupUi(this);
 
-  setWindowTitle(symbol + " " + tr("Ping Pong Strategy") + " - " +
+  setWindowTitle(QString::fromStdString(m_symbol) + " " +
+                 tr("Ping Pong Strategy") + " - " +
                  QCoreApplication::applicationName());
 
-  m_ui.symbol->setText(symbol);
+  m_ui.symbol->setText(QString::fromStdString(m_symbol));
 
   m_hasExchanges = LoadExchanges();
   if (!m_hasExchanges) {
@@ -49,6 +77,9 @@ StrategyWindow::StrategyWindow(Engine &engine,
       m_strategy.IsActivePositionsControlEnabled());
 
   m_ui.positionSize->setValue(m_strategy.GetPositionSize());
+
+  m_ui.timeFrameSize->setCurrentText(QString::number(
+      m_strategy.GetSourceTimeFrameSize().total_seconds() / 60));
 
   m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() * 100);
   m_ui.takeProfitTrailling->setValue(m_strategy.GetTakeProfitTrailing() * 100);
@@ -82,7 +113,7 @@ StrategyWindow::StrategyWindow(Engine &engine,
   m_strategy.SetSourceTimeFrameSize(pt::minutes(5));
 }
 
-StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
+void StrategyWindow::closeEvent(QCloseEvent *) { StoreConfig(false); }
 
 bool StrategyWindow::LoadExchanges() {
   auto &leftBox = *new QVBoxLayout(this);
@@ -171,6 +202,19 @@ void StrategyWindow::OnStrategyEvent(const QString &message) {
 }
 
 void StrategyWindow::ConnectSignals() {
+  m_blockConnection =
+      m_strategy.SubscribeToBlocking([this](const std::string *reasonSource) {
+        QString reason;
+        if (reasonSource) {
+          reason = QString::fromStdString(*reasonSource);
+        }
+        emit Blocked(reason);
+      });
+  m_eventsConnection =
+      m_strategy.SubscribeToEvents([this](const std::string &message) {
+        emit StrategyEvent(QString::fromStdString(message));
+      });
+
   Verify(connect(
       m_ui.isPositionsLongOpeningEnabled, &QCheckBox::toggled,
       [this](bool isEnabled) {
@@ -210,11 +254,13 @@ void StrategyWindow::ConnectSignals() {
                      m_ui.isPositionsClosingEnabled->setChecked(
                          m_strategy.IsActivePositionsControlEnabled());
                    }
+                   StoreConfig(true);
                  }));
 
   Verify(connect(m_ui.timeFrameSize, &QComboBox::currentTextChanged,
                  [this](const QString &item) {
                    m_strategy.SetSourceTimeFrameSize(pt::minutes(item.toInt()));
+                   StoreConfig(true);
                  }));
 
   Verify(connect(m_ui.positionSize,
@@ -226,6 +272,7 @@ void StrategyWindow::ConnectSignals() {
                      const QSignalBlocker blocker(*m_ui.positionSize);
                      m_ui.positionSize->setValue(m_strategy.GetPositionSize());
                    }
+                   StoreConfig(true);
                  }));
   Verify(connect(m_ui.takeProfit,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -237,6 +284,7 @@ void StrategyWindow::ConnectSignals() {
                      m_ui.takeProfit->setValue(m_strategy.GetTakeProfit() *
                                                100);
                    }
+                   StoreConfig(true);
                  }));
   Verify(connect(m_ui.takeProfitTrailling,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -248,6 +296,7 @@ void StrategyWindow::ConnectSignals() {
                      m_ui.takeProfitTrailling->setValue(
                          m_strategy.GetTakeProfitTrailing() * 100);
                    }
+                   StoreConfig(true);
                  }));
   Verify(connect(m_ui.stopLoss,
                  static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -258,6 +307,7 @@ void StrategyWindow::ConnectSignals() {
                      const QSignalBlocker blocker(*m_ui.stopLoss);
                      m_ui.stopLoss->setValue(m_strategy.GetStopLoss() * 100);
                    }
+                   StoreConfig(true);
                  }));
 
   {
@@ -270,6 +320,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.isMaOpeningSignalConfirmationEnabled->setChecked(
                            m_strategy.IsMaOpeningSignalConfirmationEnabled());
                      }
+                     StoreConfig(true);
                    }));
     Verify(connect(m_ui.isMaClosingSignalConfirmationEnabled,
                    &QCheckBox::toggled, [this](bool isEnabled) {
@@ -280,6 +331,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.isMaClosingSignalConfirmationEnabled->setChecked(
                            m_strategy.IsMaClosingSignalConfirmationEnabled());
                      }
+                     StoreConfig(true);
                    }));
     Verify(connect(
         m_ui.fastMaPeriods,
@@ -291,6 +343,7 @@ void StrategyWindow::ConnectSignals() {
             m_ui.fastMaPeriods->setValue(
                 static_cast<int>(m_strategy.GetNumberOfFastMaPeriods()));
           }
+          StoreConfig(true);
         }));
     Verify(connect(
         m_ui.slowMaPeriods,
@@ -302,6 +355,7 @@ void StrategyWindow::ConnectSignals() {
             m_ui.slowMaPeriods->setValue(
                 static_cast<int>(m_strategy.GetNumberOfSlowMaPeriods()));
           }
+          StoreConfig(true);
         }));
   }
 
@@ -315,6 +369,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.isRsiOpeningSignalConfirmationEnabled->setChecked(
                            m_strategy.IsRsiOpeningSignalConfirmationEnabled());
                      }
+                     StoreConfig(true);
                    }));
     Verify(connect(m_ui.isRsiClosingSignalConfirmationEnabled,
                    &QCheckBox::toggled, [this](bool isEnabled) {
@@ -325,6 +380,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.isRsiClosingSignalConfirmationEnabled->setChecked(
                            m_strategy.IsRsiClosingSignalConfirmationEnabled());
                      }
+                     StoreConfig(true);
                    }));
     Verify(connect(m_ui.rsiOverbought,
                    static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -336,6 +392,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.rsiOverbought->setValue(
                            m_strategy.GetRsiOverboughtLevel());
                      }
+                     StoreConfig(true);
                    }));
     Verify(connect(m_ui.rsiOversold,
                    static_cast<void (QDoubleSpinBox::*)(double)>(
@@ -347,6 +404,7 @@ void StrategyWindow::ConnectSignals() {
                        m_ui.rsiOversold->setValue(
                            m_strategy.GetRsiOversoldLevel());
                      }
+                     StoreConfig(true);
                    }));
   }
 
@@ -356,42 +414,113 @@ void StrategyWindow::ConnectSignals() {
                  &StrategyWindow::OnStrategyEvent, Qt::QueuedConnection));
 }
 
-pp::Strategy &StrategyWindow::CreateStrategyInstance(const QString &symbol) {
-  static boost::uuids::random_generator generateStrategyId;
-  const auto &strategyId = generateStrategyId();
-  {
-    static size_t instanceNumber = 0;
-    const IniFile conf(m_engine.GetConfigFilePath());
-    const IniSectionRef defaults(conf, "Defaults");
-    std::ostringstream os;
-    os << "[Strategy.PingPong/" << symbol.toStdString() << '/'
-       << ++instanceNumber << "]" << std::endl
-       << "module = PingPong" << std::endl
-       << "factory = CreateStrategy" << std::endl
-       << "id = " << strategyId << std::endl
-       << "is_enabled = true" << std::endl
-       << "trading_mode = live" << std::endl
-       << "title = Ping Pong" << std::endl
-       << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
-       << std::endl;
-    m_engine.GetContext().Add(IniString(os.str()));
-  }
-
-  auto &result = *boost::polymorphic_downcast<pp::Strategy *>(
+pp::Strategy &StrategyWindow::CreateStrategyInstance(
+    const ids::uuid &strategyId,
+    size_t instanceNumber,
+    const std::string &config) {
+  std::ostringstream ini;
+  ini << "[Strategy.PingPong/" << m_symbol << '/' << instanceNumber << "]"
+      << std::endl;
+  ini << config;
+  m_engine.GetContext().Add(IniString(ini.str()));
+  return *boost::polymorphic_downcast<pp::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
+}
 
-  m_blockConnection =
-      result.SubscribeToBlocking([this](const std::string *reasonSource) {
-        QString reason;
-        if (reasonSource) {
-          reason = QString::fromStdString(*reasonSource);
-        }
-        emit Blocked(reason);
-      });
-  m_eventsConnection =
-      result.SubscribeToEvents([this](const std::string &message) {
-        emit StrategyEvent(QString::fromStdString(message));
-      });
+pp::Strategy &StrategyWindow::GenerateNewStrategyInstance(
+    const ids::uuid &strategyId, size_t instanceNumber) {
+  return CreateStrategyInstance(
+      strategyId, instanceNumber,
+      CreateConfig(strategyId, true, .01, false, false, 12, 26, false, false,
+                   14, 70, 30, 3, .75, 15, pt::minutes(5)));
+}
 
-  return result;
+pp::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
+                                                      size_t instanceNumber,
+                                                      const QString &config) {
+  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), instanceNumber,
+                                config.toStdString());
+}
+
+std::string StrategyWindow::CreateConfig(
+    const ids::uuid &strategyId,
+    bool isActivePositionsControlEnabled,
+    const Qty &positionSize,
+    bool isMaOpeningSignalConfirmationEnabled,
+    bool isMaClosingSignalConfirmationEnabled,
+    size_t fastMaSize,
+    size_t slowMaSize,
+    bool isRsiOpeningSignalConfirmationEnabled,
+    bool isRsiClosingSignalConfirmationEnabled,
+    size_t numberOfRsiPeriods,
+    const Double &rsiOverboughtLevel,
+    const Double &rsiOversoldLevel,
+    const Volume &profitShareToActivateTakeProfit,
+    const Volume &takeProfitTrailingShareToClose,
+    const Double &maxLossShare,
+    const pt::time_duration &frameSize) const {
+  std::ostringstream result;
+  result << "module = PingPong" << std::endl;
+  result << "factory = CreateStrategy" << std::endl;
+  result << "id = " << strategyId << std::endl;
+  result << "is_enabled = true" << std::endl;
+  result << "trading_mode = live" << std::endl;
+  result << "title = Ping Pong" << std::endl;
+  result << "requires = Level 1 Updates[" << m_symbol << "]" << std::endl;
+  result << "symbol = " << m_symbol << std::endl;
+
+  result << "long_trading_enabled = no" << std::endl;
+  result << "short_trading_enabled = no" << std::endl;
+
+  result << "source_time_frame_size_sec = " << frameSize.total_seconds()
+         << std::endl;
+
+  result << "active_positions_control_enabled = "
+         << (isActivePositionsControlEnabled ? "yes" : "no") << std::endl;
+
+  result << "ma_opening_signal_confirmation_enabled = "
+         << (isMaOpeningSignalConfirmationEnabled ? "yes" : "no") << std::endl;
+  result << "ma_closing_signal_confirmation_enabled = "
+         << (isMaClosingSignalConfirmationEnabled ? "yes" : "no") << std::endl;
+  result << "number_of_fast_ma_periods = " << fastMaSize << std::endl;
+  result << "number_of_slow_ma_periods = " << slowMaSize << std::endl;
+
+  result << "rsi_opening_signal_confirmation_enabled = "
+         << (isRsiOpeningSignalConfirmationEnabled ? "yes" : "no") << std::endl;
+  result << "rsi_closing_signal_confirmation_enabled = "
+         << (isRsiClosingSignalConfirmationEnabled ? "yes" : "no") << std::endl;
+  result << "number_of_rsi_periods = " << numberOfRsiPeriods << std::endl;
+  result << "rsi_overbought_level = " << rsiOverboughtLevel << std::endl;
+  result << "rsi_oversold_level = " << rsiOversoldLevel << std::endl;
+
+  result << "position_size = " << positionSize << std::endl;
+
+  result << "max_loss_share = " << maxLossShare << std::endl;
+
+  result << "profit_share_to_activate_take_profit = "
+         << profitShareToActivateTakeProfit << std::endl;
+  result << "take_profit_trailing_share_to_close = "
+         << takeProfitTrailingShareToClose << std::endl;
+
+  return result.str();
+}
+
+std::string StrategyWindow::DumpConfig() const {
+  return CreateConfig(m_strategy.GetId(),
+                      m_ui.isPositionsClosingEnabled->isChecked(),
+                      m_ui.positionSize->value(),
+                      m_ui.isMaOpeningSignalConfirmationEnabled->isChecked(),
+                      m_ui.isMaClosingSignalConfirmationEnabled->isChecked(),
+                      m_ui.fastMaPeriods->value(), m_ui.slowMaPeriods->value(),
+                      m_ui.isRsiOpeningSignalConfirmationEnabled->isChecked(),
+                      m_ui.isRsiClosingSignalConfirmationEnabled->isChecked(),
+                      m_ui.rsiPeriods->value(), m_ui.rsiOverbought->value(),
+                      m_ui.rsiOversold->value(), m_ui.takeProfit->value(),
+                      m_ui.takeProfitTrailling->value(), m_ui.stopLoss->value(),
+                      pt::minutes(m_ui.timeFrameSize->currentText().toInt()));
+}
+
+void StrategyWindow::StoreConfig(bool isActive) {
+  m_engine.StoreConfig(m_strategy, QString::fromStdString(DumpConfig()),
+                       isActive);
 }

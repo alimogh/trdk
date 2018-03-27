@@ -56,5 +56,7 @@ void ScrollToLastChild(QAbstractItemView &);
 TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
                                                       QWidget *parent);
 
+TRDK_FRONTEND_LIB_API std::string ExtractSymbolFromConfig(const QString &);
+
 }  // namespace FrontEnd
 }  // namespace trdk

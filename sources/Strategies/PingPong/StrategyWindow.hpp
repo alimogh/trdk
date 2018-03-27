@@ -26,7 +26,14 @@ class StrategyWindow : public QMainWindow {
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QString &symbol,
                           QWidget *parent);
-  ~StrategyWindow();
+  explicit StrategyWindow(FrontEnd::Engine &,
+                          const QUuid &strategyId,
+                          const QString &config,
+                          QWidget *parent);
+  virtual ~StrategyWindow() override;
+
+ protected:
+  virtual void closeEvent(QCloseEvent *) override;
 
  private slots:
   void OnBlocked(const QString &reason);
@@ -37,14 +44,46 @@ class StrategyWindow : public QMainWindow {
   void StrategyEvent(const QString &);
 
  private:
+  void Init();
+
   bool LoadExchanges();
   void ConnectSignals();
-  Strategy &CreateStrategyInstance(const QString &symbol);
+
+  Strategy &GenerateNewStrategyInstance(const boost::uuids::uuid &strategyId,
+                                        size_t instanceNumber);
+  Strategy &CreateStrategyInstance(const boost::uuids::uuid &strategyId,
+                                   size_t instanceNumber,
+                                   const std::string &config);
+  Strategy &RestoreStrategyInstance(const QUuid &strategyId,
+                                    size_t instanceNumber,
+                                    const QString &config);
 
   void Disable();
 
+  std::string CreateConfig(
+      const boost::uuids::uuid &strategyId,
+      bool isActivePositionsControlEnabled,
+      const Qty &positionSize,
+      bool isMaOpeningSignalConfirmationEnabled,
+      bool isMaClosingSignalConfirmationEnabled,
+      size_t fastMaSize,
+      size_t slowMaSize,
+      bool isRsiOpeningSignalConfirmationEnabled,
+      bool isRsiClosingSignalConfirmationEnabled,
+      size_t numberOfRsiPeriods,
+      const Lib::Double &rsiOverboughtLevel,
+      const Lib::Double &rsiOversoldLevel,
+      const Volume &profitShareToActivateTakeProfit,
+      const Volume &takeProfitTrailingShareToClose,
+      const Lib::Double &maxLossShare,
+      const boost::posix_time::time_duration &frameSize) const;
+  std::string DumpConfig() const;
+
+  void StoreConfig(bool isActive);
+
  private:
   FrontEnd::Engine &m_engine;
+  const std::string m_symbol;
   Ui::StrategyWindow m_ui;
   bool m_hasExchanges;
 
