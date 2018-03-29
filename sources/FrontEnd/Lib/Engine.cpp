@@ -537,7 +537,9 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
     const QDate &dateFrom,
     const QDate &dateTo) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  QString querySql = "WHERE startTime >= :timeFrom AND endTime < :timeTo";
+  QString querySql =
+      "WHERE startTime >= :timeFrom AND (endTime <= :timeTo OR endTime IS "
+      "NULL)";
   if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
     QList<QString> list;
     if (!isTradesIncluded) {
@@ -554,7 +556,7 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
   }
   qx::QxSqlQuery query(querySql);
   query.bind(":timeFrom", QDateTime(dateFrom, QTime(0, 0)));
-  query.bind(":timeTo", QDateTime(dateTo, QTime(0, 0)).addDays(1));
+  query.bind(":timeTo", QDateTime(dateTo, QTime(23, 59)));
 
   Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
               .isValid());
