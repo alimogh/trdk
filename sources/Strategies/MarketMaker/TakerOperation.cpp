@@ -23,8 +23,18 @@ template <bool isClosing>
 Price GetMarketPrice(const Position &position) {
   const auto &security = position.GetSecurity();
   const auto spread = security.GetAskPrice() - security.GetBidPrice();
-  return position.IsLong() || isClosing ? security.GetAskPrice() + spread
-                                        : security.GetBidPrice() - spread;
+  static_assert(!isClosing, "Failed to find specialization.");
+  return position.IsLong()
+             ? security.GetAskPrice() + spread
+             : std::max(security.GetBidPrice() - spread, security.GetPip());
+}
+template <>
+Price GetMarketPrice<true>(const Position &position) {
+  const auto &security = position.GetSecurity();
+  const auto spread = security.GetAskPrice() - security.GetBidPrice();
+  return position.IsLong()
+             ? std::max(security.GetBidPrice() - spread, security.GetPip())
+             : security.GetAskPrice() + spread;
 }
 }  // namespace
 
