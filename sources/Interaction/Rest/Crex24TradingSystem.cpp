@@ -100,14 +100,17 @@ Crex24TradingSystem::PrivateRequest::Send(
   {
     const auto &error = boost::get<1>(result).get_child_optional("Error");
     if (error && !error->empty()) {
+      const auto &message = boost::trim_copy(
+          boost::get<1>(result).get<std::string>("Error.Message"));
       std::ostringstream os;
       os << "The server returned an error in response to the request \""
-         << GetName() << "\" (" << GetRequest().getURI() << "): \""
-         << boost::get<1>(result).get<std::string>("Error.Message") << "\"";
-      const auto &message = os.str();
+         << GetName() << "\" (" << GetRequest().getURI() << "): \"" << message
+         << "\"";
       boost::iequals(message, "Can't place sell order Money not enough")
-          ? throw InsufficientFundsException(message.c_str())
-          : throw Exception(message.c_str());
+          ? throw InsufficientFundsException(os.str().c_str())
+          : boost::iequals(message, "Can't cancel order")
+                ? throw OrderIsUnknownException(os.str().c_str())
+                : throw Exception(os.str().c_str());
     }
   }
 

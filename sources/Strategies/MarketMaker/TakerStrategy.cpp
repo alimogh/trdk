@@ -74,7 +74,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
         m_minPrice(0),
         m_maxPrice(100000000),
         m_tradeMinVolume(0.0003),
-        m_tradeMaxVolume(0.0003),
+        m_tradeMaxVolume(0.001),
         m_nextSecurity(m_securities.end()) {}
 
   bool IsActive() const {
@@ -294,13 +294,15 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
 
     m_pimpl->AddCompletedVolume(position.GetClosedVolume());
     for (const auto &pnl : position.GetOperation()->GetPnl().GetData()) {
-      if (pnl.first == position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
-        GetLog().Error("Wrong currency in P&L: \"%1%\" = %2% - %3%.",
-                       pnl.first,                   // 1
-                       pnl.second.financialResult,  // 2
-                       pnl.second.commission);      // 3
-        AssertEq(pnl.first,
-                 position.GetSecurity().GetSymbol().GetQuoteSymbol());
+      if (pnl.first == position.GetSecurity().GetSymbol().GetBaseSymbol() &&
+          (pnl.second.financialResult || pnl.second.commission)) {
+        GetLog().Error("Wrong currency in P&L: %1% - %2% = %3% %4%.",
+                       pnl.second.financialResult,                          // 1
+                       pnl.second.commission,                               // 2
+                       pnl.second.financialResult - pnl.second.commission,  // 3
+                       pnl.first);                                          // 4
+        Assert(false);
+        continue;
       }
       m_pimpl->AddPnl(pnl.second.financialResult - pnl.second.commission);
     }
