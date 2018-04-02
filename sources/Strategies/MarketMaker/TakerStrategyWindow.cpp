@@ -13,9 +13,11 @@
 #include "TakerStrategy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
-using namespace trdk::Strategies::MarketMaker;
+using namespace Lib;
+using namespace FrontEnd;
+using namespace Strategies::MarketMaker;
+
+namespace pt = boost::posix_time;
 
 TakerStrategyWindow::TakerStrategyWindow(Engine &engine,
                                          const QString &symbol,
@@ -46,7 +48,8 @@ TakerStrategyWindow::TakerStrategyWindow(Engine &engine,
   m_ui.stopAfterNumberOfPeriods->setValue(
       static_cast<int>(m_strategy.GetNumerOfPeriods()));
   m_ui.maxLossVolume->setValue(m_strategy.GetMaxLoss());
-  m_ui.periodSize->setValue(static_cast<int>(m_strategy.GetPeriodSize()));
+  m_ui.periodSize->setValue(
+      static_cast<int>(m_strategy.GetPeriodSize().total_seconds() / 60));
   m_ui.goalVolume->setValue(m_strategy.GetGoalVolume());
   m_ui.priceRangeFrom->setValue(m_strategy.GetMinPrice());
   m_ui.priceRangeTo->setValue(m_strategy.GetMaxPrice());
@@ -134,17 +137,24 @@ void TakerStrategyWindow::OnBlocked(const QString &reason) {
   ShowBlockedStrategyMessage(reason, this);
 }
 
+namespace {
+void SetProgressBarValue(QProgressBar &bar,
+                         const Volume &current,
+                         const Volume &max) {
+  const auto currentScaled = static_cast<int>(current * 100000000);
+  const auto maxScaled = static_cast<int>(max * 100000000);
+  bar.setValue(std::min(currentScaled, maxScaled));
+  bar.setMaximum(maxScaled);
+}
+}  // namespace
 void TakerStrategyWindow::OnVolumeUpdate(const Volume &currentVolume,
                                          const Volume &maxVolume) {
-  m_ui.volumeBar->setValue(static_cast<int>(currentVolume * 100000000));
-  m_ui.volumeBar->setMaximum(static_cast<int>(maxVolume * 100000000));
+  SetProgressBarValue(*m_ui.volumeBar, currentVolume, maxVolume);
 }
 
 void TakerStrategyWindow::OnPnlUpdate(const Volume &currentPnl,
                                       const Volume &maxLoss) {
-  m_ui.lossBar->setValue(
-      static_cast<int>(std::max(.0, -currentPnl.Get()) * 100000000));
-  m_ui.lossBar->setMaximum(static_cast<int>(maxLoss * 100000000));
+  SetProgressBarValue(*m_ui.lossBar, currentPnl < 0 ? -currentPnl : 0, maxLoss);
 }
 
 void TakerStrategyWindow::OnStrategyEvent(const QString &message) {
@@ -195,11 +205,11 @@ void TakerStrategyWindow::ConnectSignals() {
   Verify(connect(m_ui.periodSize,
                  static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                  [this](int value) {
-                   m_strategy.SetPeriodSize(value);
+                   m_strategy.SetPeriodSize(pt::minutes(value));
                    {
                      const QSignalBlocker blocker(*m_ui.periodSize);
-                     m_ui.periodSize->setValue(
-                         static_cast<int>(m_strategy.GetPeriodSize()));
+                     m_ui.periodSize->setValue(static_cast<int>(
+                         m_strategy.GetPeriodSize().total_seconds() / 60));
                    }
                  }));
 
