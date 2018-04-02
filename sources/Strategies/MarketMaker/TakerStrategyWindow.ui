@@ -130,9 +130,6 @@
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
             <widget class="QSpinBox" name="stopAfterNumberOfPeriods">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
              <property name="minimum">
               <number>1</number>
              </property>
@@ -419,11 +416,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QProgressBar" name="lossBar">
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
+          <widget class="QProgressBar" name="lossBar"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_3">
@@ -433,11 +426,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QProgressBar" name="volumeBar">
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
+          <widget class="QProgressBar" name="volumeBar"/>
          </item>
         </layout>
        </item>

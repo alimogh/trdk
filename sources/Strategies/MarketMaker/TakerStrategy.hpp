@@ -39,8 +39,8 @@ class TakerStrategy : public Strategy {
   void SetMaxLoss(const Volume &);
   const Volume &GetMaxLoss() const;
 
-  void SetPeriodSize(size_t numberOfMinutes);
-  size_t GetPeriodSize() const;
+  void SetPeriodSize(const boost::posix_time::time_duration &);
+  const boost::posix_time::time_duration &GetPeriodSize() const;
 
   void SetMinPrice(const Price &);
   const Price &GetMinPrice() const;
