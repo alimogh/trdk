@@ -42,12 +42,12 @@ class TradingSystem : public trdk::TradingSystem {
       const trdk::Lib::Currency &currency,
       const trdk::Qty &qty,
       const boost::optional<trdk::Price> &price,
-      const trdk::OrderParams &params,
+      const trdk::StaticOrderParams &params,
       std::unique_ptr<trdk::OrderStatusHandler> &&handler,
       trdk::RiskControlScope &riskControlScope,
       const trdk::OrderSide &side,
       const trdk::TimeInForce &tif,
-      const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) {
+      const trdk::Lib::TimeMeasurement::Milestones &delayMeasurement) override {
     return SendOrder(security, currency, qty, price, params, *handler,
                      riskControlScope, side, tif, delayMeasurement);
   }
@@ -57,7 +57,7 @@ class TradingSystem : public trdk::TradingSystem {
                     const trdk::Lib::Currency &,
                     const trdk::Qty &,
                     const boost::optional<trdk::Price> &,
-                    const trdk::OrderParams &,
+                    const trdk::StaticOrderParams &,
                     trdk::OrderStatusHandler &,
                     trdk::RiskControlScope &,
                     const trdk::OrderSide &,
@@ -75,12 +75,12 @@ class TradingSystem : public trdk::TradingSystem {
                    const trdk::Lib::Currency &,
                    const trdk::Qty &,
                    const boost::optional<trdk::Price> &,
-                   const trdk::OrderParams &,
+                   const trdk::StaticOrderParams &,
                    const trdk::OrderSide &,
                    const trdk::TimeInForce &));
 
   MOCK_METHOD1(SendCancelOrderTransaction, void(const OrderId &));
 };
-}
-}
-}
+}  // namespace Mocks
+}  // namespace Tests
+}  // namespace trdk

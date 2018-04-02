@@ -76,9 +76,9 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
                                          const OrderParams &params,
                                          const OrderSide &side,
                                          const TimeInForce &tif) {
-  static_assert(numberOfTimeInForces == 5, "List changed.");
+  static_assert(numberOfTimeInForces == 6, "List changed.");
   switch (tif) {
-    case TIME_IN_FORCE_IOC:
+    case TIME_IN_FORCE_GTD:
       return SendOrderTransactionAndEmulateIoc(security, currency, qty, price,
                                                params, side);
     case TIME_IN_FORCE_GTC:

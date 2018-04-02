@@ -17,41 +17,41 @@ namespace trdk {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef boost::shared_ptr<trdk::TradingSystem>(TradingSystemFactory)(
-    const trdk::TradingMode &,
-    trdk::Context &,
+typedef boost::shared_ptr<TradingSystem>(TradingSystemFactory)(
+    const TradingMode &,
+    Context &,
     const std::string &instanceName,
-    const trdk::Lib::IniSectionRef &);
+    const Lib::IniSectionRef &);
 
 struct TradingSystemAndMarketDataSourceFactoryResult {
-  boost::shared_ptr<trdk::TradingSystem> tradingSystem;
-  boost::shared_ptr<trdk::MarketDataSource> marketDataSource;
+  boost::shared_ptr<TradingSystem> tradingSystem;
+  boost::shared_ptr<MarketDataSource> marketDataSource;
 };
-typedef trdk::TradingSystemAndMarketDataSourceFactoryResult(
-    TradingSystemAndMarketDataSourceFactory)(const trdk::TradingMode &,
-                                             trdk::Context &,
+typedef TradingSystemAndMarketDataSourceFactoryResult(
+    TradingSystemAndMarketDataSourceFactory)(const TradingMode &,
+                                             Context &,
                                              const std::string &instanceName,
-                                             const trdk::Lib::IniSectionRef &);
+                                             const Lib::IniSectionRef &);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
+class TRDK_CORE_API TradingSystem : virtual public Interactor {
  public:
-  typedef trdk::Interactor Base;
+  typedef Interactor Base;
 
-  typedef trdk::ModuleEventsLog Log;
-  typedef trdk::ModuleTradingLog TradingLog;
+  typedef ModuleEventsLog Log;
+  typedef ModuleTradingLog TradingLog;
 
   struct OrderCheckError {
-    boost::optional<trdk::Qty> qty;
-    boost::optional<trdk::Price> price;
-    boost::optional<trdk::Volume> volume;
+    boost::optional<Qty> qty;
+    boost::optional<Price> price;
+    boost::optional<Volume> volume;
   };
 
  protected:
-  template <trdk::Lib::Concurrency::Profile profile>
+  template <Lib::Concurrency::Profile profile>
   struct ConcurrencyPolicyTrait {
-    static_assert(profile == trdk::Lib::Concurrency::PROFILE_RELAX,
+    static_assert(profile == Lib::Concurrency::PROFILE_RELAX,
                   "Wrong concurrency profile");
     typedef boost::shared_mutex SharedMutex;
     typedef boost::mutex Mutex;
@@ -60,9 +60,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
     typedef Mutex::scoped_lock Lock;
   };
   template <>
-  struct ConcurrencyPolicyTrait<trdk::Lib::Concurrency::PROFILE_HFT> {
-    typedef trdk::Lib::Concurrency::SpinMutex SharedMutex;
-    typedef trdk::Lib::Concurrency::SpinMutex Mutex;
+  struct ConcurrencyPolicyTrait<Lib::Concurrency::PROFILE_HFT> {
+    typedef Lib::Concurrency::SpinMutex SharedMutex;
+    typedef Lib::Concurrency::SpinMutex Mutex;
     typedef Mutex::ScopedLock WriteLock;
     typedef Mutex::ScopedLock ReadLock;
     typedef Mutex::ScopedLock Lock;
@@ -70,67 +70,68 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   typedef ConcurrencyPolicyTrait<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
 
   struct Order {
-    trdk::Security &security;
-    trdk::Lib::Currency currency;
-    trdk::OrderSide side;
-    std::unique_ptr<trdk::OrderStatusHandler> handler;
-    trdk::Qty qty;
-    trdk::Qty remainingQty;
-    boost::optional<trdk::Price> price;
-    trdk::Price actualPrice;
+    Security &security;
+    Lib::Currency currency;
+    OrderSide side;
+    std::unique_ptr<OrderStatusHandler> handler;
+    Qty qty;
+    Qty remainingQty;
+    boost::optional<Price> price;
+    Price actualPrice;
     bool isOpened;
-    trdk::TimeInForce tif;
-    trdk::Lib::TimeMeasurement::Milestones delayMeasurement;
-    trdk::RiskControlScope &riskControlScope;
-    boost::shared_ptr<const trdk::Position> position;
-    trdk::RiskControlOperationId riskControlOperationId;
-    std::unique_ptr<trdk::TimerScope> timerScope;
-    boost::shared_ptr<trdk::OrderTransactionContext> transactionContext;
+    TimeInForce tif;
+    boost::optional<boost::posix_time::time_duration> goodInTime;
+    Lib::TimeMeasurement::Milestones delayMeasurement;
+    RiskControlScope &riskControlScope;
+    boost::shared_ptr<const Position> position;
+    RiskControlOperationId riskControlOperationId;
+    std::unique_ptr<TimerScope> timerScope;
+    boost::shared_ptr<OrderTransactionContext> transactionContext;
     bool isCancelRequestSent;
     size_t numberOfTrades;
-    trdk::Lib::Double sumOfTradePrices;
+    Lib::Double sumOfTradePrices;
     ConcurrencyPolicy::Mutex mutex;
 
-    explicit Order(trdk::Security &,
-                   const trdk::Lib::Currency &,
-                   const trdk::OrderSide &,
-                   std::unique_ptr<trdk::OrderStatusHandler> &&,
-                   const trdk::Qty &qty,
-                   const trdk::Qty &remainingQty,
-                   const boost::optional<trdk::Price> &price,
-                   trdk::Price actualPrice,
-                   const trdk::TimeInForce &,
-                   const trdk::Lib::TimeMeasurement::Milestones &,
-                   trdk::RiskControlScope &,
-                   boost::shared_ptr<const trdk::Position> &&);
+    explicit Order(
+        Security &,
+        const Lib::Currency &,
+        const OrderSide &,
+        std::unique_ptr<OrderStatusHandler> &&,
+        const Qty &qty,
+        const Qty &remainingQty,
+        const boost::optional<Price> &price,
+        const Price &actualPrice,
+        const TimeInForce &,
+        boost::optional<boost::posix_time::time_duration> &&goodInTime,
+        const Lib::TimeMeasurement::Milestones &,
+        RiskControlScope &,
+        boost::shared_ptr<const Position> &&);
   };
 
-  typedef boost::unordered_map<trdk::OrderId,
-                               boost::shared_ptr<trdk::TradingSystem::Order>>
-      Orders;
+  typedef boost::unordered_map<OrderId, boost::shared_ptr<Order>> Orders;
 
  public:
-  explicit TradingSystem(const trdk::TradingMode &,
-                         trdk::Context &,
+  explicit TradingSystem(const TradingMode &,
+                         Context &,
                          const std::string &instanceName);
   virtual ~TradingSystem() override;
 
   friend std::ostream &operator<<(std::ostream &oss,
-                                  const trdk::TradingSystem &tradingSystem) {
+                                  const TradingSystem &tradingSystem) {
     return oss << tradingSystem.GetStringId();
   }
 
  public:
-  const trdk::TradingMode &GetMode() const;
+  const TradingMode &GetMode() const;
 
   void AssignIndex(size_t);
   size_t GetIndex() const;
 
-  trdk::Context &GetContext();
-  const trdk::Context &GetContext() const;
+  Context &GetContext();
+  const Context &GetContext() const;
 
-  trdk::TradingSystem::Log &GetLog() const noexcept;
-  trdk::TradingSystem::TradingLog &GetTradingLog() const noexcept;
+  TradingSystem::Log &GetLog() const noexcept;
+  TradingSystem::TradingLog &GetTradingLog() const noexcept;
 
   //! Identifies Trading System object by verbose name.
   /** Trading System instance name is unique, but can be empty.
@@ -141,28 +142,26 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
 
  public:
   virtual bool IsConnected() const = 0;
-  void Connect(const trdk::Lib::IniSectionRef &);
+  void Connect(const Lib::IniSectionRef &);
 
  public:
-  const boost::posix_time::time_duration &GetDefaultPollingInterval() const;
+  const Balances &GetBalances() const;
 
-  const trdk::Balances &GetBalances() const;
+  virtual Volume CalcCommission(const Qty &,
+                                const Price &,
+                                const OrderSide &,
+                                const Security &) const = 0;
 
-  virtual trdk::Volume CalcCommission(const trdk::Qty &,
-                                      const trdk::Price &,
-                                      const trdk::OrderSide &,
-                                      const trdk::Security &) const = 0;
-
-  std::vector<boost::shared_ptr<const trdk::OrderTransactionContext>>
+  std::vector<boost::shared_ptr<const OrderTransactionContext>>
   GetActiveOrderContextList() const;
 
  public:
-  virtual boost::optional<trdk::TradingSystem::OrderCheckError> CheckOrder(
-      const trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderSide &) const;
+  virtual boost::optional<OrderCheckError> CheckOrder(
+      const Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const OrderSide &) const;
 
   //! Returns true if the symbol is supported by the trading system.
   virtual bool CheckSymbol(const std::string &) const;
@@ -170,70 +169,71 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
   //! Sends order synchronously.
   /** @return Order transaction pointer in any case.
    */
-  boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&,
-      trdk::RiskControlScope &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
+  boost::shared_ptr<const OrderTransactionContext> SendOrder(
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      boost::optional<boost::posix_time::time_duration> &&goodInTime,
+      const StaticOrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&,
+      RiskControlScope &,
+      const OrderSide &,
+      const TimeInForce &,
+      const Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
   //! Sends position order synchronously.
   /** @return Order transaction pointer in any case.
    */
-  boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
-      boost::shared_ptr<trdk::Position> &&,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &,
-      const trdk::Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
+  boost::shared_ptr<const OrderTransactionContext> SendOrder(
+      boost::shared_ptr<Position> &&,
+      const Qty &,
+      const boost::optional<Price> &,
+      boost::optional<boost::posix_time::time_duration> &&goodInTime,
+      const StaticOrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&,
+      const OrderSide &,
+      const TimeInForce &,
+      const Lib::TimeMeasurement::Milestones &strategyDelaysMeasurement);
 
   //! Cancels active order synchronously.
   /** @return True, if order is known and cancel-command successfully sent.
    *         False if order is unknown.
    */
-  bool CancelOrder(const trdk::OrderId &);
+  bool CancelOrder(const OrderId &);
 
  public:
-  virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+  virtual void OnSettingsUpdate(const Lib::IniSectionRef &);
 
  protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) = 0;
+  virtual void CreateConnection(const Lib::IniSectionRef &) = 0;
 
-  virtual trdk::Balances &GetBalancesStorage();
+  virtual Balances &GetBalancesStorage();
 
   //! Returns active orders list.
-  /** Call is trhread-safe.
+  /** Call is thread-safe.
    */
-  std::vector<boost::shared_ptr<trdk::OrderTransactionContext>>
+  std::vector<boost::shared_ptr<OrderTransactionContext>>
   GetActiveOrderContextList();
 
   //! Direct access to active order list.
   /** Maybe called only from overloaded methods SendOrderTransaction
    *  and SendCancelOrderTransaction.
    */
-  const trdk::TradingSystem::Orders &GetActiveOrders() const;
+  const TradingSystem::Orders &GetActiveOrders() const;
 
  protected:
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &) = 0;
+  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const StaticOrderParams &,
+      const OrderSide &,
+      const TimeInForce &) = 0;
 
-  virtual void SendCancelOrderTransaction(
-      const trdk::OrderTransactionContext &) = 0;
+  virtual void SendCancelOrderTransaction(const OrderTransactionContext &) = 0;
 
-  virtual void OnTransactionSent(const trdk::OrderTransactionContext &);
+  virtual void OnTransactionSent(const OrderTransactionContext &);
 
  protected:
   //! Reports order opened state.
@@ -241,16 +241,15 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnOrderOpened(const boost::posix_time::ptime &, const trdk::OrderId &);
+  void OnOrderOpened(const boost::posix_time::ptime &, const OrderId &);
   //! Reports order opened state.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnOrderOpened(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const boost::function<bool(trdk::OrderTransactionContext &)> &);
+  void OnOrderOpened(const boost::posix_time::ptime &,
+                     const OrderId &,
+                     const boost::function<bool(OrderTransactionContext &)> &);
 
   //! Reports new trade. Doesn't finalize the order even no more remaining
   //! quantity is left.
@@ -258,9 +257,7 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnTrade(const boost::posix_time::ptime &,
-               const trdk::OrderId &,
-               trdk::Trade &&);
+  void OnTrade(const boost::posix_time::ptime &, const OrderId &, Trade &&);
   //! Reports new trade. Doesn't finalize the order even no more remaining
   //! quantity is left.
   /** All order-events methods should be called from one thread or call should
@@ -268,9 +265,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnTrade(const boost::posix_time::ptime &,
-               const trdk::OrderId &,
-               trdk::Trade &&,
-               const boost::function<bool(trdk::OrderTransactionContext &)> &);
+               const OrderId &,
+               Trade &&,
+               const boost::function<bool(OrderTransactionContext &)> &);
 
   //! Reports about remaining quantity update if it was changed.
   /** All order-events methods should be called from one thread or call should
@@ -278,8 +275,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderRemainingQtyUpdated(const boost::posix_time::ptime &,
-                                  const trdk::OrderId &,
-                                  const trdk::Qty &remainingQty);
+                                  const OrderId &,
+                                  const Qty &remainingQty);
   //! Reports about remaining quantity update if it was changed.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
@@ -287,8 +284,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    */
   void OnOrderRemainingQtyUpdated(
       const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const trdk::Qty &remainingQty,
+      const OrderId &,
+      const Qty &remainingQty,
       const boost::function<bool(OrderTransactionContext &)> &);
 
   //! Finalizes the order with automatically chosen status.
@@ -297,8 +294,8 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderCompleted(const boost::posix_time::ptime &,
-                        const trdk::OrderId &,
-                        const boost::optional<trdk::Volume> &commission);
+                        const OrderId &,
+                        const boost::optional<Volume> &commission);
 
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
@@ -306,38 +303,36 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderFilled(const boost::posix_time::ptime &,
-                     const trdk::OrderId &,
-                     const boost::optional<trdk::Volume> &commission);
+                     const OrderId &,
+                     const boost::optional<Volume> &commission);
   //! Finalize the order by filling.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnOrderFilled(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      const boost::optional<trdk::Volume> &commission,
-      const boost::function<bool(trdk::OrderTransactionContext &)> &);
+  void OnOrderFilled(const boost::posix_time::ptime &,
+                     const OrderId &,
+                     const boost::optional<Volume> &commission,
+                     const boost::function<bool(OrderTransactionContext &)> &);
   //! Finalize the order by filling with trade info.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
   void OnOrderFilled(const boost::posix_time::ptime &,
-                     const trdk::OrderId &,
-                     trdk::Trade &&,
-                     const boost::optional<trdk::Volume> &commission);
+                     const OrderId &,
+                     Trade &&,
+                     const boost::optional<Volume> &commission);
   //! Finalize the order by filling with trade info.
   /** All order-events methods should be called from one thread or call should
    *  be synchronized. In another case - subscribers may receive notifications
    * in the wrong order.
    */
-  void OnOrderFilled(
-      const boost::posix_time::ptime &,
-      const trdk::OrderId &,
-      trdk::Trade &&,
-      const boost::optional<trdk::Volume> &commission,
-      const boost::function<bool(trdk::OrderTransactionContext &)> &);
+  void OnOrderFilled(const boost::posix_time::ptime &,
+                     const OrderId &,
+                     Trade &&,
+                     const boost::optional<Volume> &commission,
+                     const boost::function<bool(OrderTransactionContext &)> &);
 
   //! Finalize the order by canceling.
   /** All order-events methods should be called from one thread or call should
@@ -345,9 +340,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderCanceled(const boost::posix_time::ptime &,
-                       const trdk::OrderId &,
-                       const boost::optional<trdk::Qty> &remainingQty,
-                       const boost::optional<trdk::Volume> &commission);
+                       const OrderId &,
+                       const boost::optional<Qty> &remainingQty,
+                       const boost::optional<Volume> &commission);
 
   //! Finalize the order by rejecting.
   /** All order-events methods should be called from one thread or call should
@@ -355,9 +350,9 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderRejected(const boost::posix_time::ptime &,
-                       const trdk::OrderId &,
-                       const boost::optional<trdk::Qty> &remainingQty,
-                       const boost::optional<trdk::Volume> &commission);
+                       const OrderId &,
+                       const boost::optional<Qty> &remainingQty,
+                       const boost::optional<Volume> &commission);
 
   //! Finalize the order by error.
   /** All order-events methods should be called from one thread or call should
@@ -365,18 +360,19 @@ class TRDK_CORE_API TradingSystem : virtual public trdk::Interactor {
    * in the wrong order.
    */
   void OnOrderError(const boost::posix_time::ptime &,
-                    const trdk::OrderId &,
-                    const boost::optional<trdk::Qty> &remainingQty,
-                    const boost::optional<trdk::Volume> &commission,
+                    const OrderId &,
+                    const boost::optional<Qty> &remainingQty,
+                    const boost::optional<Volume> &commission,
                     const std::string &error);
 
-  std::unique_ptr<trdk::OrderTransactionContext>
-  SendOrderTransactionAndEmulateIoc(trdk::Security &,
-                                    const trdk::Lib::Currency &,
-                                    const trdk::Qty &,
-                                    const boost::optional<trdk::Price> &,
-                                    const trdk::OrderParams &,
-                                    const trdk::OrderSide &);
+  std::unique_ptr<OrderTransactionContext> SendOrderTransactionAndEmulateIoc(
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const boost::optional<Price> &,
+      const boost::posix_time::time_duration &goodInTime,
+      const StaticOrderParams &,
+      const OrderSide &);
 
  private:
   class Implementation;

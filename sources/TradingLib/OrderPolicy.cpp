@@ -17,19 +17,19 @@ using namespace trdk::TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Price LimitOrderPolicy::GetOpenOrderPrice(Position &position) const {
-  return position.GetMarketOpenPrice();
-}
-Price LimitOrderPolicy::GetCloseOrderPrice(Position &position) const {
-  return position.GetMarketClosePrice();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 void LimitGtcOrderPolicy::Open(Position &position) const {
   position.Open(GetOpenOrderPrice(position));
 }
 void LimitGtcOrderPolicy::Close(Position &position) const {
+  position.Close(GetCloseOrderPrice(position));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void LimitGtdOrderPolicy::Open(Position &position) const {
+  position.Open(GetOpenOrderPrice(position), );
+}
+void LimitGtdOrderPolicy::Close(Position &position) const {
   position.Close(GetCloseOrderPrice(position));
 }
 
@@ -40,15 +40,6 @@ void LimitIocOrderPolicy::Open(Position &position) const {
 }
 void LimitIocOrderPolicy::Close(Position &position) const {
   position.CloseImmediatelyOrCancel(GetCloseOrderPrice(position));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void MarketGtcOrderPolicy::Open(Position &position) const {
-  position.OpenAtMarketPrice();
-}
-void MarketGtcOrderPolicy::Close(Position &position) const {
-  position.CloseAtMarketPrice();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

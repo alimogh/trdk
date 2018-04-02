@@ -48,34 +48,6 @@ const char *trdk::ConvertToPch(const PositionSide &type) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace {
-
-template <typename Param>
-void DumpOrderParam(const char *paramName,
-                    const Param &paramVal,
-                    size_t &count,
-                    std::ostream &os) {
-  if (!paramVal) {
-    return;
-  }
-  if (count > 0) {
-    os << ", ";
-  }
-  os << paramName << "=\"" << *paramVal << '"';
-  ++count;
-}
-}  // namespace
-
-std::ostream &trdk::operator<<(std::ostream &os, const OrderParams &params) {
-  size_t count = 0;
-  DumpOrderParam("account", params.account, count, os);
-  DumpOrderParam("goodInTime", params.goodInTime, count, os);
-  DumpOrderParam("expiration", params.expiration, count, os);
-  return os;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 const char *trdk::ConvertToPch(const Level1TickType &tickType) {
   static_assert(numberOfLevel1TickTypes == 7, "List changed.");
   switch (tickType) {
@@ -248,7 +220,7 @@ const char *trdk::ConvertToPch(const CloseReason &closeReason) {
 ////////////////////////////////////////////////////////////////////////////////
 
 const char *trdk::ConvertToPch(const TimeInForce &tif) {
-  static_assert(numberOfTimeInForces == 5, "List changed.");
+  static_assert(numberOfTimeInForces == 6, "List changed.");
   switch (tif) {
     default:
       AssertEq(int(TIME_IN_FORCE_DAY),
@@ -258,6 +230,8 @@ const char *trdk::ConvertToPch(const TimeInForce &tif) {
       return "day";
     case TIME_IN_FORCE_GTC:
       return "gtc";
+    case TIME_IN_FORCE_GTD:
+      return "gtd";
     case TIME_IN_FORCE_OPG:
       return "opg";
     case TIME_IN_FORCE_IOC:

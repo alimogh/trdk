@@ -142,9 +142,10 @@ void TakerStrategyWindow::OnVolumeUpdate(const Volume &currentVolume,
 
 void TakerStrategyWindow::OnPnlUpdate(const Volume &currentPnl,
                                       const Volume &maxLoss) {
-  m_ui.lossBar->setValue(
-      static_cast<int>(std::max(.0, -currentPnl.Get()) * 100000000));
-  m_ui.lossBar->setMaximum(static_cast<int>(maxLoss * 100000000));
+  const double cpl = std::max(.0, -currentPnl.Get());
+  const double fff = maxLoss * 100000000;
+  m_ui.lossBar->setValue(static_cast<int>(cpl * 100000000));
+  m_ui.lossBar->setMaximum(static_cast<int>(fff));
 }
 
 void TakerStrategyWindow::OnStrategyEvent(const QString &message) {

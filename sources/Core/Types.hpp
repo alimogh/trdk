@@ -73,6 +73,8 @@ enum TimeInForce {
   TIME_IN_FORCE_DAY,
   // Good Till Cancel.
   TIME_IN_FORCE_GTC,
+  // Good Till Date.
+  TIME_IN_FORCE_GTD,
   // At the Opening.
   TIME_IN_FORCE_OPG,
   // Immediate or Cancel.
@@ -89,15 +91,10 @@ inline std::ostream &operator<<(std::ostream &os,
   return os << trdk::ConvertToPch(tif);
 }
 
-//! Extended order parameters.
-struct OrderParams {
+//! Static order parameters.
+struct StaticOrderParams {
   //! Account.
   boost::optional<std::string> account;
-
-  //! Good in Time.
-  /** The order should be canceled if is not filled after this time.
-   */
-  boost::optional<boost::posix_time::time_duration> goodInTime;
 
   //! Define forced expiration for order contract.
   /** If set - this expiration will be used, not from security object.
@@ -107,12 +104,6 @@ struct OrderParams {
   //! Trading system must try to work with position started by specified order
   //! or used by specified order.
   const trdk::OrderTransactionContext *position;
-
-  //! Price that triggers a atop order.
-  boost::optional<trdk::Price> stopPrice;
-
-  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
-                                                const trdk::OrderParams &);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

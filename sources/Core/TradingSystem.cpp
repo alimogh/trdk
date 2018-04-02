@@ -70,8 +70,9 @@ TradingSystem::Order::Order(Security &security,
                             const Qty &qty,
                             const Qty &remainingQty,
                             const boost::optional<Price> &price,
-                            Price actualPrice,
+                            const Price &actualPrice,
                             const TimeInForce &tif,
+                            boost::optional<pt::time_duration> &&goodInTime,
                             const Milestones &delayMeasurement,
                             RiskControlScope &riskControlScope,
                             boost::shared_ptr<const Position> &&position)
@@ -85,6 +86,7 @@ TradingSystem::Order::Order(Security &security,
       actualPrice(actualPrice),
       isOpened(false),
       tif(tif),
+      goodInTime(std::move(goodInTime)),
       delayMeasurement(delayMeasurement),
       riskControlScope(riskControlScope),
       position(std::move(position)),
@@ -164,7 +166,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
   }
 
   void SendOrder(const boost::shared_ptr<Order> &order,
-                 const OrderParams &params) {
+                 const StaticOrderParams &params) {
     ReportNewOrder(*order, "sending");
 
     order->riskControlOperationId = CheckNewOrder(*order);
@@ -477,7 +479,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     void (OrderStatusHandler::*handler)(const Volume &) =
         &OrderStatusHandler::OnCanceled;
     if (!order.isCancelRequestSent) {
-      static_assert(numberOfTimeInForces == 5, "List changed.");
+      static_assert(numberOfTimeInForces == 6, "List changed.");
       switch (order.tif) {
         case TIME_IN_FORCE_DAY:
         case TIME_IN_FORCE_GTC:
@@ -493,7 +495,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
                   handler, emptyOrderTransactionContextCallback);
   }
 
-  void OnOrderRejected(const boost::posix_time::ptime &time,
+  void OnOrderRejected(const pt::ptime &time,
                        const OrderId &id,
                        Order &order,
                        const boost::optional<Qty> &remainingQty,
@@ -505,22 +507,23 @@ class TradingSystem::Implementation : private boost::noncopyable {
                   emptyOrderTransactionContextCallback);
   }
 
-  void CancelEmultedIocOrder(const OrderId &id,
-                             const pt::time_duration &goodInTime) {
+  void CancelEmultedIocOrder(const OrderId &id) {
     try {
       m_self.CancelOrder(id);
     } catch (const CommunicationError &) {
       const ActiveOrderReadLock lock(m_activeOrdersMutex);
       const auto &it = m_activeOrders.find(id);
-      if (it == m_activeOrders.cend() || !it->second->timerScope) {
-        Assert(it == m_activeOrders.cend());
+      if (it == m_activeOrders.cend()) {
+        Assert(it != m_activeOrders.cend());
         throw;
       }
       auto &order = *it->second;
-      m_context.GetTimer().Schedule(
-          goodInTime,
-          [this, id, goodInTime]() { CancelEmultedIocOrder(id, goodInTime); },
-          *order.timerScope);
+      if (!order.timerScope) {
+        Assert(order.timerScope);
+        throw;
+      }
+      m_context.GetTimer().Schedule([this, id]() { CancelEmultedIocOrder(id); },
+                                    *order.timerScope);
     } catch (...) {
       m_log.Error(
           "IOC-emulation for order \"%1%\" is stopped by order canceling "
@@ -572,11 +575,6 @@ const std::string &TradingSystem::GetInstanceName() const {
 
 const std::string &TradingSystem::GetStringId() const noexcept {
   return m_pimpl->m_stringId;
-}
-
-const pt::time_duration &TradingSystem::GetDefaultPollingInterval() const {
-  static const pt::time_duration result = pt::seconds(3);
-  return result;
 }
 
 const Balances &TradingSystem::GetBalances() const {
@@ -655,7 +653,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     const Currency &currency,
     const Qty &qty,
     const boost::optional<Price> &price,
-    const OrderParams &params,
+    boost::optional<pt::time_duration> &&goodInTime,
+    const StaticOrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler,
     RiskControlScope &riskControlScope,
     const OrderSide &side,
@@ -668,7 +667,7 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
       price ? *price
             : side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                      : security.GetBidPrice(),
-      tif, delayMeasurement, riskControlScope, nullptr);
+      tif, std::move(goodInTime), delayMeasurement, riskControlScope, nullptr);
   try {
     m_pimpl->SendOrder(order, params);
   } catch (const std::exception &ex) {
@@ -691,7 +690,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
     boost::shared_ptr<Position> &&position,
     const Qty &qty,
     const boost::optional<Price> &price,
-    const OrderParams &params,
+    boost::optional<pt::time_duration> &&goodInTime,
+    const StaticOrderParams &params,
     std::unique_ptr<OrderStatusHandler> &&handler,
     const OrderSide &side,
     const TimeInForce &tif,
@@ -705,7 +705,8 @@ boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
       price ? *price
             : side == ORDER_SIDE_BUY ? security.GetAskPrice()
                                      : security.GetBidPrice(),
-      tif, delayMeasurement, position->GetStrategy().GetRiskControlScope(),
+      tif, std::move(goodInTime), delayMeasurement,
+      position->GetStrategy().GetRiskControlScope(),
       // Order record should hold position object to guarantee that
       // operation end event will be raised only after last order will
       // be canceled or filled:
@@ -736,19 +737,17 @@ TradingSystem::SendOrderTransactionAndEmulateIoc(
     const Currency &currency,
     const Qty &qty,
     const boost::optional<Price> &price,
-    const OrderParams &params,
+    const pt::time_duration &goodInTime,
+    const StaticOrderParams &params,
     const OrderSide &side) {
   auto result = SendOrderTransaction(security, currency, qty, price, params,
                                      side, TIME_IN_FORCE_GTC);
   Assert(!m_pimpl->m_lastOrderTimerScope);
   const auto &orderId = result->GetOrderId();
   m_pimpl->m_lastOrderTimerScope = boost::make_unique<Timer::Scope>();
-  const auto goodInTime =
-      params.goodInTime ? *params.goodInTime : GetDefaultPollingInterval();
   GetContext().GetTimer().Schedule(goodInTime,
                                    [this, orderId, goodInTime]() {
-                                     m_pimpl->CancelEmultedIocOrder(orderId,
-                                                                    goodInTime);
+                                     m_pimpl->CancelEmultedIocOrder(orderId);
                                    },
                                    *m_pimpl->m_lastOrderTimerScope);
   return result;
@@ -994,7 +993,7 @@ void TradingSystem::OnOrderCanceled(const pt::ptime &time,
                            commission);
 }
 
-void TradingSystem::OnOrderRejected(const boost::posix_time::ptime &time,
+void TradingSystem::OnOrderRejected(const pt::ptime &time,
                                     const OrderId &id,
                                     const boost::optional<Qty> &remainingQty,
                                     const boost::optional<Volume> &commission) {
