@@ -18,12 +18,10 @@ class OrderPolicy : public TradingLib::LimitIocOrderPolicy {
  public:
   typedef LimitIocOrderPolicy Base;
 
- public:
-  virtual ~OrderPolicy() override = default;
+  ~OrderPolicy() override = default;
 
- public:
-  virtual Price GetOpenOrderPrice(Position &) const override;
-  virtual Price GetCloseOrderPrice(Position &) const override;
+  Price GetOpenOrderPrice(Position &) const override;
+  Price GetCloseOrderPrice(Position &) const override;
 };
 
 }  // namespace TriangularArbitrage

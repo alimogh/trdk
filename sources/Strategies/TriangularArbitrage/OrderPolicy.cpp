@@ -12,14 +12,12 @@
 #include "OrderPolicy.hpp"
 
 using namespace trdk;
-using namespace trdk::Strategies::TriangularArbitrage;
+using namespace Strategies::TriangularArbitrage;
 
 Price OrderPolicy::GetOpenOrderPrice(Position &position) const {
-  const auto &pip = position.GetSecurity().GetPip();
-  return Base::GetOpenOrderPrice(position) + (position.IsLong() ? pip : -pip);
+  return Base::GetOpenOrderPrice(position) * (position.IsLong() ? 1.05 : 0.95);
 }
 
 Price OrderPolicy::GetCloseOrderPrice(Position &position) const {
-  const auto &pip = position.GetSecurity().GetPip();
-  return Base::GetCloseOrderPrice(position) + (position.IsLong() ? -pip : pip);
+  return Base::GetCloseOrderPrice(position) + (position.IsLong() ? 0.95 : 1.05);
 }
