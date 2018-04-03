@@ -353,8 +353,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
              const Double &bestSpreadRatio,
              SignalSession &signalSession,
              const Milestones &delayMeasurement) {
-    Price sellPrice = sellTarget.GetBidPrice();
-    Price buyPrice = buyTarget.GetAskPrice();
+    auto sellPrice = sellTarget.GetBidPrice();
+    auto buyPrice = buyTarget.GetAskPrice();
     AssertGt(sellPrice, buyPrice);
     const auto spreadRatio = m_isLowestSpreadEnabled
                                  ? m_lowestSpreadRatio
@@ -369,7 +369,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto newSellPrice = buyPrice * (spreadRatio + 1);
       AssertGe(sellPrice, newSellPrice);
       sellPrice = std::move(newSellPrice);
-      AssertGt(sellPrice, buyPrice);
       AssertEq(spreadRatio, CaclSpreadAndRatio(sellPrice, buyPrice).second);
     }
 
@@ -383,11 +382,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       explicit Qtys(Security &sellTarget,
                     Security &buyTarget,
                     SignalSession &session)
-          : sellTarget(sellTarget),
+          : session(&session),
+            sellTarget(sellTarget),
             buyTarget(buyTarget),
             sellQty(sellTarget.GetBidQty()),
-            buyQty(buyTarget.GetAskQty()),
-            session(&session) {
+            buyQty(buyTarget.GetAskQty()) {
         sellQty = session.TakeQty(sellTarget, true, sellQty);
         buyQty = session.TakeQty(buyTarget, false, buyQty);
       }
@@ -433,10 +432,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     const auto sellTargetBlackListIt = m_errors.find(&sellTarget);
-    const bool isSellTargetInBlackList =
+    const auto isSellTargetInBlackList =
         sellTargetBlackListIt != m_errors.cend();
     const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
-    const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
+    const auto isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
     if (isSellTargetInBlackList && isBuyTargetInBlackList) {
       static const std::string error = "both targets on the blocked list";
       signalSession.RegisterCheckError(sellTarget, buyTarget, error);
