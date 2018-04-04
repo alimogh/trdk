@@ -32,19 +32,21 @@ void OperationListView::InitContextMenu() {
   setContextMenuPolicy(Qt::ActionsContextMenu);
   {
     auto *action = new QAction(tr("&Copy\tCtrl+C"), this);
-    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
+    action->setShortcut(QKeySequence::Copy);
+    action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     Verify(connect(action, &QAction::triggered, this,
                    &OperationListView::CopySelectedValuesToClipboard));
     addAction(action);
   }
   {
-    QAction *separator = new QAction(this);
+    auto *separator = new QAction(this);
     separator->setSeparator(true);
     addAction(separator);
   }
   {
     auto *action = new QAction(tr("&Follow New Operations\tF"), this);
     action->setShortcut(QKeySequence(Qt::Key_F));
+    action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     action->setCheckable(true);
     action->setChecked(m_isFollowingEnabled);
     Verify(connect(action, &QAction::toggled, this,
@@ -80,8 +82,8 @@ void OperationListView::InitContextMenu() {
 }
 
 void OperationListView::CopySelectedValuesToClipboard() {
-  QItemSelectionModel *selection = selectionModel();
-  QModelIndexList indexes = selection->selectedIndexes();
+  auto *selection = selectionModel();
+  auto indexes = selection->selectedIndexes();
   const QModelIndex *previous = nullptr;
   QString result;
   for (const auto &current : indexes) {
@@ -96,19 +98,19 @@ void OperationListView::CopySelectedValuesToClipboard() {
 }
 
 void OperationListView::rowsInserted(const QModelIndex &index,
-                                     int start,
-                                     int end) {
+                                     const int start,
+                                     const int end) {
   Base::rowsInserted(index, start, end);
   if (start == 0) {
     if (m_numberOfResizesForOperations < 3) {
-      for (int i = 0; i < header()->count(); ++i) {
+      for (auto i = 0; i < header()->count(); ++i) {
         resizeColumnToContents(i);
       }
       ++m_numberOfResizesForOperations;
     }
   } else if (m_numberOfResizesForOrder < 3) {
     expand(index);
-    for (int i = 0; i < header()->count(); ++i) {
+    for (auto i = 0; i < header()->count(); ++i) {
       resizeColumnToContents(i);
     }
     ++m_numberOfResizesForOrder;
@@ -119,7 +121,7 @@ void OperationListView::rowsInserted(const QModelIndex &index,
   m_isExpandingEnabled ? expand(index) : collapse(index);
 }
 
-void OperationListView::FollowNewRecords(bool isEnabled) {
+void OperationListView::FollowNewRecords(const bool isEnabled) {
   m_isFollowingEnabled = isEnabled;
   if (!m_isFollowingEnabled) {
     return;

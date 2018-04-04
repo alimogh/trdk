@@ -30,7 +30,8 @@ void BalanceListView::InitContextMenu() {
   setContextMenuPolicy(Qt::ActionsContextMenu);
   {
     auto *action = new QAction(tr("&Copy\tCtrl+C"), this);
-    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
+    action->setShortcut(QKeySequence::Copy);
+    action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     Verify(connect(action, &QAction::triggered, this,
                    &BalanceListView::CopySelectedValuesToClipboard));
     addAction(action);
@@ -54,15 +55,15 @@ void BalanceListView::InitContextMenu() {
   }
 }
 
-void BalanceListView::CopySelectedValuesToClipboard() {
-  QItemSelectionModel *selection = selectionModel();
-  QModelIndexList indexes = selection->selectedIndexes();
+void BalanceListView::CopySelectedValuesToClipboard() const {
+  auto *selection = selectionModel();
+  const auto &indexes = selection->selectedIndexes();
   const QModelIndex *previous = nullptr;
   QString result;
   for (const auto &current : indexes) {
     if (previous) {
-      current.row() != previous->row() ? result.append('\n')
-                                       : result.append(", ");
+      current.parent().row() != previous->parent().row() ? result.append('\n')
+                                                         : result.append(", ");
     }
     result.append(model()->data(current).toString());
     previous = &current;
@@ -71,13 +72,13 @@ void BalanceListView::CopySelectedValuesToClipboard() {
 }
 
 void BalanceListView::rowsInserted(const QModelIndex &index,
-                                   int start,
-                                   int end) {
+                                   const int start,
+                                   const int end) {
   Base::rowsInserted(index, start, end);
   if (start == 0) {
     expand(index);
   }
-  for (int i = 0; i < header()->count(); ++i) {
+  for (auto i = 0; i < header()->count(); ++i) {
     resizeColumnToContents(i);
   }
 }
