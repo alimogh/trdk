@@ -21,6 +21,7 @@ using namespace trdk::FrontEnd;
 using namespace trdk::FrontEnd::Terminal;
 
 namespace fs = boost::filesystem;
+namespace ids = boost::uuids;
 
 MainWindow::MainWindow(Engine &engine,
                        std::vector<std::unique_ptr<Dll>> &moduleDlls,
@@ -139,12 +140,17 @@ void MainWindow::LoadModule(const fs::path &path) {
 }
 
 void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
+  auto widgets = factory(this);
+  ShowModuleWindows(widgets);
+}
+
+void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
   boost::optional<QPoint> widgetPos = pos();
   boost::optional<QSize> size;
-  widgetPos->setX(widgetPos->x() + 25);
+  widgetPos->setX(widgetPos->x() + 50);
   widgetPos->setY(widgetPos->y() + 25);
   const auto &screen = QApplication::desktop()->screenGeometry();
-  for (auto &widgetPtr : factory(this)) {
+  for (auto &widgetPtr : widgets) {
     auto &widget = *widgetPtr.release();
     widget.resize(widget.minimumSize());
     widget.show();
@@ -164,4 +170,26 @@ void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
       }
     }
   }
+}
+
+void MainWindow::RestoreModules() {
+  StrategyWidgetList widgets;
+  m_engine.ForEachActiveStrategy([this, &widgets](const QUuid &typeId,
+                                                  const QUuid &instanceId,
+                                                  const QString &config) {
+    for (const auto &module : m_moduleDlls) {
+      try {
+        for (auto &widget :
+             module->GetFunction<StrategyWidgetList(
+                 Engine &, const QUuid &, const QUuid &, const QString &,
+                 QWidget *)>("RestoreStrategyWidgets")(
+                 m_engine, typeId, instanceId, config, this)) {
+          widgets.emplace_back(widget.release());
+        }
+      } catch (const Dll::DllFuncException &) {
+        continue;
+      }
+    }
+  });
+  ShowModuleWindows(widgets);
 }

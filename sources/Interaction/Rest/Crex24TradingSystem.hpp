@@ -27,9 +27,23 @@ class Crex24TradingSystem : public TradingSystem {
  private:
   struct Settings : public Rest::Settings {
     std::string apiKey;
-    std::string apiSecret;
+    std::vector<unsigned char> apiSecret;
 
     explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+  };
+
+  class OrderTransactionContext : public trdk::OrderTransactionContext {
+   public:
+    typedef trdk::OrderTransactionContext Base;
+
+   public:
+    explicit OrderTransactionContext(TradingSystem &, const OrderId &&);
+
+   public:
+    bool RegisterTrade(const std::string &);
+
+   private:
+    boost::unordered_set<std::string> m_trades;
   };
 
   class PrivateRequest : public Crex24Request {
@@ -56,20 +70,14 @@ class Crex24TradingSystem : public TradingSystem {
                                 const std::string &body,
                                 Poco::Net::HTTPRequest &) const override;
     virtual bool IsPriority() const override;
+    virtual void CreateBody(const Poco::Net::HTTPClientSession &,
+                            std::string &result) const override;
 
    private:
     const Settings &m_settings;
     const bool m_isPriority;
     NonceStorage &m_nonces;
     mutable boost::optional<NonceStorage::TakenValue> m_nonce;
-  };
-
-  class BalancesRequest : public PrivateRequest {
-   public:
-    explicit BalancesRequest(const Settings &,
-                             NonceStorage &,
-                             const Context &,
-                             ModuleEventsLog &);
   };
 
  public:
@@ -112,23 +120,28 @@ class Crex24TradingSystem : public TradingSystem {
       const trdk::TimeInForce &) override;
 
   virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &) override;
+      const trdk::OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(const OrderTransactionContext &) override;
+  virtual void OnTransactionSent(
+      const trdk::OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
+
   void UpdateOrders();
+  void UpdateOrder(OrderTransactionContext &,
+                   const boost::posix_time::ptime &,
+                   const boost::property_tree::ptree &);
 
  private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
-  boost::unordered_set<std::string> m_products;
+  boost::unordered_map<std::string, Crex24Product> m_products;
 
   NonceStorage m_nonces;
 
   TradingLib::BalancesContainer m_balances;
-  BalancesRequest m_balancesRequest;
+  PrivateRequest m_balancesRequest;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_tradingSession;
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_pollingSession;

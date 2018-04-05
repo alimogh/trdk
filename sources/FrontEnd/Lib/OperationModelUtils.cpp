@@ -59,7 +59,7 @@ void AddToBalanceString(const QString &symbol,
 OperationRecord::OperationRecord(const Orm::Operation &operation)
     : id(operation.getId().toString()),
       startTime(ConvertFromDbDateTime(operation.getStartTime())),
-      strategyName(operation.getStrategy()->getName()) {
+      strategyName(operation.getStrategyInstance()->getName()) {
   Update(operation);
 }
 

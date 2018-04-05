@@ -178,29 +178,35 @@ bool PollingTask::RunTask(Task &task, bool isAccelerated) const {
   try {
     isCompleted = !task.task();
   } catch (const std::exception &ex) {
-    if (++task.numberOfErrors <= 2) {
+    ++task.numberOfErrors;
+    if (task.numberOfErrors <= 2) {
       try {
         throw;
       } catch (const CommunicationError &reEx) {
         m_log.Debug(
-            "%1% task \"%2%\" error: \"%3%\".",
+            R"(%1% task "%2%" error: "%3%".)",
             task.numberOfErrors == 1 ? "Polling" : "Repeated polling",  // 1
             task.name,                                                  // 2
             reEx.what());                                               // 3
       } catch (const std::exception &reEx) {
         m_log.Error(
-            "%1% task \"%2%\" error: \"%3%\".",
+            R"(%1% task "%2%" error: "%3%".)",
             task.numberOfErrors == 1 ? "Polling" : "Repeated polling",  // 1
             task.name,                                                  // 2
             reEx.what());                                               // 3
       }
-    } else if (!(task.numberOfErrors % 10)) {
-      m_log.Debug(
-          "Polling task \"%1%\" still gets an error at each iteration. Last "
-          "error: \"%2%\". Number of errors: %3%.",
-          task.name,             // 1
-          ex.what(),             // 2
-          task.numberOfErrors);  // 3
+    } else {
+      const auto thinning = task.numberOfErrors <= 50
+                                ? 10
+                                : task.numberOfErrors <= 500 ? 50 : 100;
+      if (!(task.numberOfErrors % thinning)) {
+        m_log.Error(
+            "Polling task \"%1%\" still gets an error at each iteration. Last "
+            "error: \"%2%\". Number of errors: %3%.",
+            task.name,             // 1
+            ex.what(),             // 2
+            task.numberOfErrors);  // 3
+      }
     }
     return false;
   } catch (...) {
@@ -209,9 +215,17 @@ bool PollingTask::RunTask(Task &task, bool isAccelerated) const {
   }
 
   if (task.numberOfErrors > 1) {
-    m_log.Debug("Polling task \"%1%\" restored.", task.name);
+    if (task.numberOfErrors >= 10) {
+      m_log.Info("Polling task \"%1%\" restored after %2% errors.",
+                 task.name,             // 1
+                 task.numberOfErrors);  // 2
+    } else {
+      m_log.Debug("Polling task \"%1%\" restored after %2% errors.",
+                  task.name,             // 1
+                  task.numberOfErrors);  // 2
+    }
+    task.numberOfErrors = 0;
   }
-  task.numberOfErrors = 0;
 
   return isCompleted;
 }

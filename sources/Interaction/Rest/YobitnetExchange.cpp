@@ -826,9 +826,10 @@ class YobitnetExchange : public TradingSystem, public MarketDataSource {
     std::vector<boost::tuple<ptr::ptree, pt::ptime, int>> orders;
     boost::unordered_map<std::string, pt::ptime> tradesRequest;
     {
-      const auto &activeOrders = GetActiveOrderIdList();
+      const auto &activeOrders = GetActiveOrderContextList();
       orders.reserve(activeOrders.size());
-      for (const OrderId &orderId : activeOrders) {
+      for (const auto &context : activeOrders) {
+        const auto &orderId = context->GetOrderId();
         try {
           orders.emplace_back(boost::make_tuple(
               boost::get<1>(

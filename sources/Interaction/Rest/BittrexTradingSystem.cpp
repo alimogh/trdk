@@ -402,7 +402,8 @@ void BittrexTradingSystem::UpdateOrder(const OrderId &orderId,
 }
 
 void BittrexTradingSystem::UpdateOrders() {
-  for (const OrderId &orderId : GetActiveOrderIdList()) {
+  for (const auto &context : GetActiveOrderContextList()) {
+    const auto &orderId = context->GetOrderId();
     AccountRequest request("/account/getorder", "uuid=" + orderId.GetValue(),
                            m_settings, GetContext(), GetLog(),
                            &GetTradingLog());

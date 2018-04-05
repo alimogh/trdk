@@ -89,6 +89,12 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    {
+      splash->ShowMessage(
+          application.tr("Restoring module instances...").toStdString());
+      mainWindow.RestoreModules();
+    }
+
     mainWindow.setEnabled(true);
     splash->finish(&mainWindow);
     splash.reset();

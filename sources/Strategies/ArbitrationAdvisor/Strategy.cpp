@@ -20,8 +20,9 @@ using namespace trdk::TradingLib;
 using namespace trdk::Strategies::ArbitrageAdvisor;
 
 namespace pt = boost::posix_time;
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
 namespace sig = boost::signals2;
+namespace ids = boost::uuids;
+namespace aa = trdk::Strategies::ArbitrageAdvisor;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -118,11 +119,18 @@ class SignalSession : private boost::noncopyable {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const ids::uuid aa::Strategy::typeId =
+    ids::string_generator()("{39FBFFDA-10D7-462D-BA82-0D8BA9CA7A09}");
+
 class aa::Strategy::Implementation : private boost::noncopyable {
  public:
   aa::Strategy &m_self;
-  const boost::optional<Double> m_lowestSpreadRatio;
-  const boost::optional<pt::time_duration> m_stopLossDelay;
+
+  const bool m_isLowestSpreadEnabled;
+  const Double m_lowestSpreadRatio;
+
+  const bool m_isStopLossEnabled;
+  const pt::time_duration m_stopLossDelay;
 
   PositionController m_controller;
 
@@ -132,7 +140,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   sig::signal<void(const std::string *)> m_blockSignal;
 
   Double m_minPriceDifferenceRatioToAdvice;
-  boost::optional<TradingSettings> m_tradingSettings;
+  TradingSettings m_tradingSettings;
 
   boost::unordered_map<Symbol, std::vector<AdviceSecuritySignal>> m_symbols;
 
@@ -141,30 +149,42 @@ class aa::Strategy::Implementation : private boost::noncopyable {
   mutable std::vector<std::string> m_lastTradingSignalCheckErrors;
 
   explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
-      : m_self(self), m_minPriceDifferenceRatioToAdvice(0) {
-    if (conf.ReadBoolKey("stop_loss", false)) {
-      const_cast<boost::optional<pt::time_duration> &>(m_stopLossDelay) =
-          pt::seconds(conf.ReadTypedKey("stop_loss_delay_sec", 0));
+      : m_self(self),
+        m_isLowestSpreadEnabled(conf.ReadBoolKey("lowest_spread_enabled")),
+        m_lowestSpreadRatio(
+            conf.ReadTypedKey<Double>("lowest_spread_percentage") / 100),
+        m_isStopLossEnabled(conf.ReadBoolKey("stop_loss_enabled")),
+        m_stopLossDelay(
+            pt::seconds(conf.ReadTypedKey<long>("stop_loss_delay_sec"))),
+        m_minPriceDifferenceRatioToAdvice(
+            conf.ReadTypedKey<Double>(
+                "min_price_difference_to_highlight_percentage") /
+            100),
+        m_tradingSettings({false,
+                           conf.ReadTypedKey<Double>(
+                               "min_price_difference_to_trade_percentage") /
+                               100,
+                           conf.ReadTypedKey<Qty>("max_qty")}) {
+    m_self.GetLog().Info(
+        "Min. price diff. to highlight: %1%%%. Trading: %2%. Min. price diff. "
+        "to trade: %3%%%. Max. qty.: %4%.",
+        m_minPriceDifferenceRatioToAdvice * 100,               // 1
+        m_tradingSettings.isEnabled ? "enabled" : "disabled",  // 2
+        m_tradingSettings.minPriceDifferenceRatio * 100,       // 3
+        m_tradingSettings.maxQty);                             // 4
+
+    if (m_isLowestSpreadEnabled) {
+      m_self.GetLog().Info("Lowest spread: %1%%%.",
+                           m_isLowestSpreadEnabled * 100);
     }
-    {
-      const char *const key = "lowest_spread_percentage";
-      if (conf.IsKeyExist(key)) {
-        const_cast<boost::optional<Double> &>(m_lowestSpreadRatio) =
-            conf.ReadTypedKey<Double>(key) / 100;
-        m_self.GetLog().Info("Lowest spread: %1%%%.",
-                             *m_lowestSpreadRatio * 100);
-      } else {
-        m_self.GetLog().Info("Lowest spread: not set.");
-      }
-    }
-    if (m_stopLossDelay) {
-      m_self.GetLog().Info("Stop-loss uses delay %1%.", *m_stopLossDelay);
+    if (m_isStopLossEnabled) {
+      m_self.GetLog().Info("Stop-loss uses delay %1%.", m_stopLossDelay);
     }
   }
 
   void CheckAutoTradingSignal(Security &security,
                               const Milestones &delayMeasurement) {
-    if (m_adviceSignal.num_slots() == 0 && !m_tradingSettings) {
+    if (m_adviceSignal.num_slots() == 0 && !m_tradingSettings.isEnabled) {
       return;
     }
     AssertLt(0, m_adviceSignal.num_slots());
@@ -287,8 +307,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       auto &buyTarget = *signal.buyTarget;
       const auto &spreadRatio =
           CaclSpreadAndRatio(sellTarget, buyTarget).second;
-      if (!m_tradingSettings ||
-          spreadRatio < m_tradingSettings->minPriceDifferenceRatio ||
+      if (!m_tradingSettings.isEnabled ||
+          spreadRatio < m_tradingSettings.minPriceDifferenceRatio ||
           CheckActualPositions(sellTarget, buyTarget)) {
         continue;
       }
@@ -333,12 +353,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
              const Double &bestSpreadRatio,
              SignalSession &signalSession,
              const Milestones &delayMeasurement) {
-    Price sellPrice = sellTarget.GetBidPrice();
-    Price buyPrice = buyTarget.GetAskPrice();
+    auto sellPrice = sellTarget.GetBidPrice();
+    auto buyPrice = buyTarget.GetAskPrice();
     AssertGt(sellPrice, buyPrice);
-    const auto spreadRatio = m_lowestSpreadRatio
-                                 ? *m_lowestSpreadRatio
-                                 : m_tradingSettings->minPriceDifferenceRatio;
+    const auto spreadRatio = m_isLowestSpreadEnabled
+                                 ? m_lowestSpreadRatio
+                                 : m_tradingSettings.minPriceDifferenceRatio;
     {
       const auto spreadHalfPercent = (spreadRatio * 100) / 2;
       const auto middle = buyPrice + ((sellPrice - buyPrice) / 2);
@@ -349,7 +369,6 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       const auto newSellPrice = buyPrice * (spreadRatio + 1);
       AssertGe(sellPrice, newSellPrice);
       sellPrice = std::move(newSellPrice);
-      AssertGt(sellPrice, buyPrice);
       AssertEq(spreadRatio, CaclSpreadAndRatio(sellPrice, buyPrice).second);
     }
 
@@ -363,11 +382,11 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       explicit Qtys(Security &sellTarget,
                     Security &buyTarget,
                     SignalSession &session)
-          : sellTarget(sellTarget),
+          : session(&session),
+            sellTarget(sellTarget),
             buyTarget(buyTarget),
             sellQty(sellTarget.GetBidQty()),
-            buyQty(buyTarget.GetAskQty()),
-            session(&session) {
+            buyQty(buyTarget.GetAskQty()) {
         sellQty = session.TakeQty(sellTarget, true, sellQty);
         buyQty = session.TakeQty(buyTarget, false, buyQty);
       }
@@ -383,8 +402,8 @@ class aa::Strategy::Implementation : private boost::noncopyable {
       }
     } qtys(sellTarget, buyTarget, signalSession);
 
-    auto qty = std::min(m_tradingSettings->maxQty,
-                        std::min(qtys.sellQty, qtys.buyQty));
+    auto qty =
+        std::min(m_tradingSettings.maxQty, std::min(qtys.sellQty, qtys.buyQty));
 
     {
       const auto &allowedQty =
@@ -413,10 +432,10 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     }
 
     const auto sellTargetBlackListIt = m_errors.find(&sellTarget);
-    const bool isSellTargetInBlackList =
+    const auto isSellTargetInBlackList =
         sellTargetBlackListIt != m_errors.cend();
     const auto buyTargetBlackListIt = m_errors.find(&buyTarget);
-    const bool isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
+    const auto isBuyTargetInBlackList = buyTargetBlackListIt != m_errors.cend();
     if (isSellTargetInBlackList && isBuyTargetInBlackList) {
       static const std::string error = "both targets on the blocked list";
       signalSession.RegisterCheckError(sellTarget, buyTarget, error);
@@ -426,9 +445,13 @@ class aa::Strategy::Implementation : private boost::noncopyable {
     ReportSignal("trade", "start", sellTarget, buyTarget, spreadRatio,
                  bestSpreadRatio);
 
-    const auto operation =
-        boost::make_shared<Operation>(m_self, sellTarget, buyTarget, qty,
-                                      sellPrice, buyPrice, m_stopLossDelay);
+    boost::optional<pt::time_duration> stopLossDelay;
+    if (m_isStopLossEnabled) {
+      stopLossDelay = m_stopLossDelay;
+    }
+    const auto operation = boost::make_shared<Operation>(
+        m_self, sellTarget, buyTarget, qty, sellPrice, buyPrice,
+        std::move(stopLossDelay));
 
     qtys.Return(qty);
 
@@ -686,11 +709,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 aa::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
                        const IniSectionRef &conf)
-    : Base(context,
-           "{39FBFFDA-10D7-462D-BA82-0D8BA9CA7A09}",
-           "ArbitrageAdvisor",
-           instanceName,
-           conf),
+    : Base(context, typeId, "ArbitrageAdvisor", instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
 aa::Strategy::~Strategy() = default;
@@ -715,7 +734,8 @@ sig::scoped_connection aa::Strategy::SubscribeToBlocking(
   return m_pimpl->m_blockSignal.connect(slot);
 }
 
-void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
+void aa::Strategy::SetMinPriceDifferenceRatioToAdvice(
+    const Double &minPriceDifferenceRatio) {
   const auto lock = LockForOtherThreads();
   GetTradingLog().Write(
       "{'setup': {'advising': {'ratio': '%1%->%2%'}}}",
@@ -728,6 +748,24 @@ void aa::Strategy::SetupAdvising(const Double &minPriceDifferenceRatio) const {
   }
   m_pimpl->m_minPriceDifferenceRatioToAdvice = minPriceDifferenceRatio;
   m_pimpl->RecheckSignalAsync();
+}
+
+const Double &aa::Strategy::GetMinPriceDifferenceRatioToAdvice() const {
+  return m_pimpl->m_minPriceDifferenceRatioToAdvice;
+}
+
+bool aa::Strategy::IsLowestSpreadEnabled() const {
+  return m_pimpl->m_isLowestSpreadEnabled;
+}
+const Double &aa::Strategy::GetLowestSpreadRatio() const {
+  return m_pimpl->m_lowestSpreadRatio;
+}
+
+bool aa::Strategy::IsStopLossEnabled() const {
+  return m_pimpl->m_isStopLossEnabled;
+}
+const pt::time_duration &aa::Strategy::GetStopLossDelay() const {
+  return m_pimpl->m_stopLossDelay;
 }
 
 void aa::Strategy::ForEachSecurity(
@@ -748,55 +786,34 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
       AdviceSecuritySignal{&security});
 }
 
-void aa::Strategy::ActivateAutoTrading(TradingSettings &&settings) {
+void aa::Strategy::SetTradingSettings(TradingSettings &&settings) {
   const auto lock = LockForOtherThreads();
   bool shouldRechecked = true;
-  if (m_pimpl->m_tradingSettings) {
-    GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': '%1%->%2%', 'maxQty': "
-        "'%3%->%4%}}}",
-        [this, &settings](TradingRecord &record) {
-          record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
-              % settings.minPriceDifferenceRatio                        // 2
-              % m_pimpl->m_tradingSettings->maxQty                      // 3
-              % settings.maxQty;                                        // 4
-        });
-    shouldRechecked = m_pimpl->m_tradingSettings->minPriceDifferenceRatio !=
-                      settings.minPriceDifferenceRatio;
-  } else {
-    GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': 'null->%1%', 'maxQty': "
-        "'null->%2%'}}}",
-        [this, &settings](TradingRecord &record) {
-          record % settings.minPriceDifferenceRatio  // 1
-              % settings.maxQty;                     // 2
-        });
-  }
+  GetTradingLog().Write(
+      "{'setup': {'trading': {'isEnabled': '%5%->%6%', 'ratio': '%1%->%2%', "
+      "'maxQty': '%3%->%4%}}}",
+      [this, &settings](TradingRecord &record) {
+        record % m_pimpl->m_tradingSettings.minPriceDifferenceRatio  // 1
+            % settings.minPriceDifferenceRatio                       // 2
+            % m_pimpl->m_tradingSettings.maxQty                      // 3
+            % settings.maxQty                                        // 4
+            % (m_pimpl->m_tradingSettings.isEnabled ? "yes" : "no")  // 5
+            % (settings.isEnabled ? "yes" : "no");                   // 6
+      });
+  shouldRechecked = m_pimpl->m_tradingSettings.minPriceDifferenceRatio !=
+                    settings.minPriceDifferenceRatio;
+
   m_pimpl->m_tradingSettings = std::move(settings);
-  m_pimpl->RecheckSignalAsync();
+
+  if (m_pimpl->m_tradingSettings.isEnabled) {
+    m_pimpl->RecheckSignalAsync();
+  } else {
+    m_pimpl->m_errors.clear();
+  }
 }
 
-const boost::optional<aa::Strategy::TradingSettings>
-    &aa::Strategy::GetAutoTradingSettings() const {
+const aa::Strategy::TradingSettings &aa::Strategy::GetTradingSettings() const {
   return m_pimpl->m_tradingSettings;
-}
-void aa::Strategy::DeactivateAutoTrading() {
-  const auto lock = LockForOtherThreads();
-  if (m_pimpl->m_tradingSettings) {
-    GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': '%1%->null', 'maxQty': "
-        "'%2%->null'}}}",
-        [this](TradingRecord &record) {
-          record % m_pimpl->m_tradingSettings->minPriceDifferenceRatio  // 1
-              % m_pimpl->m_tradingSettings->maxQty;                     // 2
-        });
-  } else {
-    GetTradingLog().Write(
-        "{'setup': {'trading': {'ratio': 'null->null', 'maxQty': "
-        "'null->null'}}}");
-  }
-  m_pimpl->m_tradingSettings = boost::none;
-  m_pimpl->m_errors.clear();
 }
 
 void aa::Strategy::OnLevel1Update(Security &security,

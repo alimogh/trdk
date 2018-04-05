@@ -13,11 +13,11 @@
 #include "Strategy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::TradingLib;
-using namespace trdk::Strategies::TriangularArbitrage;
+using namespace Lib;
+using namespace TradingLib;
+using namespace Strategies::TriangularArbitrage;
 
-namespace ta = trdk::Strategies::TriangularArbitrage;
+namespace ta = Strategies::TriangularArbitrage;
 
 ta::Operation::Operation(Strategy &strategy,
                          const Opportunity::Targets &targets)

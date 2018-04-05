@@ -21,11 +21,42 @@ using namespace trdk::Interaction::Rest;
 namespace net = Poco::Net;
 namespace ptr = boost::property_tree;
 
-boost::unordered_set<std::string> Rest::RequestCrex24ProductList(
+namespace {
+
+void ReplaceSymbolWithAlias(std::string &symbol,
+                            const trdk::Settings &settings) {
+  settings.ReplaceSymbolWithAlias(symbol);
+}
+
+std::string NormilizeSymbol(std::string source,
+                            const trdk::Settings &settings) {
+  std::vector<std::string> currencies;
+  boost::split(currencies, source, boost::is_any_of("_"));
+  AssertEq(2, currencies.size());
+  if (currencies.size() != 2) {
+    ReplaceSymbolWithAlias(source, settings);
+    return source;
+  }
+  for (auto &currency : currencies) {
+    ReplaceSymbolWithAlias(currency, settings);
+  }
+  currencies[0].swap(currencies[1]);
+  return boost::join(currencies, "_");
+}
+
+Qty GetMinQty(const std::string &symbol) {
+  if (symbol == "BTC_CNTF") {
+    return 10;
+  }
+  return 0;
+}
+}  // namespace
+
+boost::unordered_map<std::string, Crex24Product> Rest::RequestCrex24ProductList(
     std::unique_ptr<net::HTTPSClientSession> &session,
     const Context &context,
     ModuleEventsLog &log) {
-  boost::unordered_set<std::string> result;
+  boost::unordered_map<std::string, Crex24Product> result;
   ptr::ptree response;
   try {
     response = boost::get<1>(
@@ -33,7 +64,8 @@ boost::unordered_set<std::string> Rest::RequestCrex24ProductList(
     for (const auto &node : response.get_child("Tickers")) {
       const auto &pairData = node.second;
       const auto &symbol = pairData.get<std::string>("PairName");
-      Verify(result.emplace(symbol).second);
+      result.emplace(NormilizeSymbol(symbol, context.GetSettings()),
+                     Crex24Product{symbol, GetMinQty(symbol)});
     }
   } catch (const std::exception &ex) {
     log.Error(

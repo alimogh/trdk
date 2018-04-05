@@ -657,7 +657,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     };
 
-    for (const OrderId &orderId : GetActiveOrderIdList()) {
+    for (const auto &context : GetActiveOrderContextList()) {
+      const auto &orderId = context->GetOrderId();
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {

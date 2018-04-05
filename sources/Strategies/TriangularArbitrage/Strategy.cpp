@@ -457,7 +457,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
       }
     }
 
-    bool hasErrors = false;
+    auto hasErrors = false;
     for (size_t i = 0; i < positions.size(); ++i) {
       if (!positions[i]) {
         Verify(m_failedTargets.emplace(opportunity.targets[i].tradingSystem)

@@ -28,14 +28,15 @@ class MainWindow : public QMainWindow {
                       QWidget *parent);
   ~MainWindow() override;
 
- public:
   Engine &GetEngine() { return m_engine; }
+
   void LoadModule(const boost::filesystem::path &);
+  void RestoreModules();
 
  private:
   void CreateModuleWindows(const StrategyWindowFactory &);
+  void ShowModuleWindows(StrategyWidgetList &);
 
- private:
   Engine &m_engine;
   Ui::MainWindow m_ui;
   OperationListView m_operationListView;

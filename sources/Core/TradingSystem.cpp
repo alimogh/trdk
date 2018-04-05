@@ -457,19 +457,52 @@ class TradingSystem::Implementation : private boost::noncopyable {
                   std::move(trade), handler, callback);
   }
 
-  void FinalizeOrder(
+  void OnOrderFilled(
       const pt::ptime &time,
       const OrderId &id,
-      const OrderStatus &status,
-      const char *statusName,
-      const boost::optional<Qty> &remainingQty,
+      Order &order,
       const boost::optional<Volume> &commission,
-      void (OrderStatusHandler::*handler)(const Volume &),
       const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
-    const auto &order = TakeOrder(id);
-    FinalizeOrder(time, id, *order, status, statusName,
-                  remainingQty.get_value_or(order->remainingQty), commission,
-                  handler, callback);
+    FinalizeOrder(time, id, order, ORDER_STATUS_FILLED_FULLY, "filled", 0,
+                  commission, &OrderStatusHandler::OnFilled, callback);
+  }
+
+  void OnOrderCanceled(const pt::ptime &time,
+                       const OrderId &id,
+                       Order &order,
+                       const boost::optional<Qty> &remainingQty,
+                       const boost::optional<Volume> &commission) {
+    OrderStatus status = ORDER_STATUS_CANCELED;
+    const char *statusName = "canceled";
+    void (OrderStatusHandler::*handler)(const Volume &) =
+        &OrderStatusHandler::OnCanceled;
+    if (!order.isCancelRequestSent) {
+      static_assert(numberOfTimeInForces == 5, "List changed.");
+      switch (order.tif) {
+        case TIME_IN_FORCE_DAY:
+        case TIME_IN_FORCE_GTC:
+        case TIME_IN_FORCE_OPG:
+          status = ORDER_STATUS_REJECTED;
+          statusName = "canceled without request";
+          handler = &OrderStatusHandler::OnRejected;
+          break;
+      }
+    }
+    FinalizeOrder(time, id, order, status, statusName,
+                  remainingQty.get_value_or(order.remainingQty), commission,
+                  handler, emptyOrderTransactionContextCallback);
+  }
+
+  void OnOrderRejected(const boost::posix_time::ptime &time,
+                       const OrderId &id,
+                       Order &order,
+                       const boost::optional<Qty> &remainingQty,
+                       const boost::optional<Volume> &commission) {
+    Assert(!remainingQty || *remainingQty > 0);
+    FinalizeOrder(time, id, order, ORDER_STATUS_REJECTED, "rejected",
+                  remainingQty.get_value_or(order.remainingQty), commission,
+                  &OrderStatusHandler::OnRejected,
+                  emptyOrderTransactionContextCallback);
   }
 
   void CancelEmultedIocOrder(const OrderId &id,
@@ -584,12 +617,24 @@ boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
 
 bool TradingSystem::CheckSymbol(const std::string &) const { return true; }
 
-std::vector<OrderId> TradingSystem::GetActiveOrderIdList() const {
-  std::vector<OrderId> result;
+std::vector<boost::shared_ptr<OrderTransactionContext>>
+TradingSystem::GetActiveOrderContextList() {
+  std::vector<boost::shared_ptr<OrderTransactionContext>> result;
   const Implementation::ActiveOrderReadLock lock(m_pimpl->m_activeOrdersMutex);
   result.reserve(m_pimpl->m_activeOrders.size());
-  for (const auto &order : m_pimpl->m_activeOrders) {
-    result.emplace_back(order.first);
+  for (auto &order : m_pimpl->m_activeOrders) {
+    result.emplace_back(order.second->transactionContext);
+  }
+  return result;
+}
+
+std::vector<boost::shared_ptr<const OrderTransactionContext>>
+TradingSystem::GetActiveOrderContextList() const {
+  std::vector<boost::shared_ptr<const OrderTransactionContext>> result;
+  const Implementation::ActiveOrderReadLock lock(m_pimpl->m_activeOrdersMutex);
+  result.reserve(m_pimpl->m_activeOrders.size());
+  for (auto &order : m_pimpl->m_activeOrders) {
+    result.emplace_back(order.second->transactionContext);
   }
   return result;
 }
@@ -894,20 +939,33 @@ void TradingSystem::OnOrderRemainingQtyUpdated(
       Trade{order->actualPrice, order->remainingQty - remainingQty});
 }
 
+void TradingSystem::OnOrderCompleted(
+    const pt::ptime &time,
+    const OrderId &id,
+    const boost::optional<trdk::Volume> &commission) {
+  auto order = m_pimpl->TakeOrder(id);
+  if (order->isCancelRequestSent) {
+    m_pimpl->OnOrderCanceled(time, id, *order, boost::none, commission);
+  } else if (order->remainingQty) {
+    m_pimpl->OnOrderRejected(time, id, *order, boost::none, commission);
+  } else {
+    m_pimpl->OnOrderFilled(time, id, *order, commission,
+                           emptyOrderTransactionContextCallback);
+  }
+}
+
 void TradingSystem::OnOrderFilled(const pt::ptime &time,
-                                  const OrderId &orderId,
+                                  const OrderId &id,
                                   const boost::optional<Volume> &commission) {
-  OnOrderFilled(time, orderId, commission,
-                emptyOrderTransactionContextCallback);
+  OnOrderFilled(time, id, commission, emptyOrderTransactionContextCallback);
 }
 void TradingSystem::OnOrderFilled(
     const pt::ptime &time,
     const OrderId &id,
     const boost::optional<Volume> &commission,
     const boost::function<bool(trdk::OrderTransactionContext &)> &callback) {
-  m_pimpl->FinalizeOrder(time, id, *m_pimpl->TakeOrder(id),
-                         ORDER_STATUS_FILLED_FULLY, "filled", 0, commission,
-                         &OrderStatusHandler::OnFilled, callback);
+  m_pimpl->OnOrderFilled(time, id, *m_pimpl->TakeOrder(id), commission,
+                         callback);
 }
 
 void TradingSystem::OnOrderFilled(const pt::ptime &time,
@@ -932,37 +990,16 @@ void TradingSystem::OnOrderCanceled(const pt::ptime &time,
                                     const OrderId &id,
                                     const boost::optional<Qty> &remainingQty,
                                     const boost::optional<Volume> &commission) {
-  OrderStatus status = ORDER_STATUS_CANCELED;
-  const char *statusName = "canceled";
-  void (OrderStatusHandler::*handler)(const Volume &) =
-      &OrderStatusHandler::OnCanceled;
-  auto order = m_pimpl->TakeOrder(id);
-  if (!order->isCancelRequestSent) {
-    static_assert(numberOfTimeInForces == 5, "List changed.");
-    switch (order->tif) {
-      case TIME_IN_FORCE_DAY:
-      case TIME_IN_FORCE_GTC:
-      case TIME_IN_FORCE_OPG:
-        status = ORDER_STATUS_REJECTED;
-        statusName = "canceled without request";
-        handler = &OrderStatusHandler::OnRejected;
-        break;
-    }
-  }
-  m_pimpl->FinalizeOrder(time, id, *order, status, statusName,
-                         remainingQty.get_value_or(order->remainingQty),
-                         commission, handler,
-                         emptyOrderTransactionContextCallback);
+  m_pimpl->OnOrderCanceled(time, id, *m_pimpl->TakeOrder(id), remainingQty,
+                           commission);
 }
 
 void TradingSystem::OnOrderRejected(const boost::posix_time::ptime &time,
                                     const OrderId &id,
                                     const boost::optional<Qty> &remainingQty,
                                     const boost::optional<Volume> &commission) {
-  Assert(!remainingQty || *remainingQty > 0);
-  m_pimpl->FinalizeOrder(
-      time, id, ORDER_STATUS_REJECTED, "rejected", remainingQty, commission,
-      &OrderStatusHandler::OnRejected, emptyOrderTransactionContextCallback);
+  m_pimpl->OnOrderRejected(time, id, *m_pimpl->TakeOrder(id), remainingQty,
+                           commission);
 }
 
 void TradingSystem::OnOrderError(const pt::ptime &time,
@@ -973,7 +1010,9 @@ void TradingSystem::OnOrderError(const pt::ptime &time,
   GetLog().Error("Order %1% is rejected with the reason: \"%2%\".",
                  id,      // 1
                  error);  // 2
-  m_pimpl->FinalizeOrder(time, id, ORDER_STATUS_ERROR, "error", remainingQty,
+  auto order = m_pimpl->TakeOrder(id);
+  m_pimpl->FinalizeOrder(time, id, *order, ORDER_STATUS_ERROR, "error",
+                         remainingQty.get_value_or(order->remainingQty),
                          commission, &OrderStatusHandler::OnError,
                          emptyOrderTransactionContextCallback);
 }

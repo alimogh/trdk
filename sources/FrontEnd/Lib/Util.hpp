@@ -34,6 +34,7 @@ TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderSide &);
 TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
 
 TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid &);
+TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid &);
 
 template <typename Result>
 const Result &ResolveModelIndexItem(const QModelIndex &source) {
@@ -54,6 +55,8 @@ void ScrollToLastChild(QAbstractItemView &);
 
 TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
                                                       QWidget *parent);
+
+TRDK_FRONTEND_LIB_API std::string ExtractSymbolFromConfig(const QString &);
 
 }  // namespace FrontEnd
 }  // namespace trdk

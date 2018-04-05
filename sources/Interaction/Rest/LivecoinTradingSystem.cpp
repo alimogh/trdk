@@ -276,7 +276,8 @@ void LivecoinTradingSystem::UpdateOrders() {
     virtual bool IsPriority() const override { return false; }
   };
 
-  for (const auto &orderId : GetActiveOrderIdList()) {
+  for (const auto &context : GetActiveOrderContextList()) {
+    const auto &orderId = context->GetOrderId();
     const auto response = OrderStatusRequest(orderId, m_settings, GetContext(),
                                              GetLog(), GetTradingLog())
                               .Send(m_pollingSession);

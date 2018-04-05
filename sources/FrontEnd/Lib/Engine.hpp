@@ -42,6 +42,12 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
       const QDate &dateFrom,
       const QDate &dateTo) const;
 
+  void StoreConfig(const Strategy &, QString &&config, bool isActive);
+  void ForEachActiveStrategy(
+      const boost::function<void(const QUuid &typeIt,
+                                 const QUuid &instanceId,
+                                 const QString &config)> &) const;
+
 #ifdef DEV_VER
   void Test();
 #endif
