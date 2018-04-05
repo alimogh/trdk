@@ -1,4 +1,0 @@
-EXPORTS
-	CreateStrategy
-	CreateMenuActions
-	GetTrdkModuleVersionInfoV1
