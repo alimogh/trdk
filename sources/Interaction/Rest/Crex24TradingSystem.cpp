@@ -248,9 +248,9 @@ void Crex24TradingSystem::UpdateOrder(OrderTransactionContext &context,
             Trade{trade.get<Price>("CoinPrice"), trade.get<Qty>("CoinCount"),
                   std::move(id)});
   }
-  if (source.get_child("CurrentOrder").empty()) {
-    OnOrderCompleted(time, context.GetOrderId(), boost::none);
-  }
+  !source.get_child("CurrentOrder").empty()
+      ? OnOrderOpened(time, context.GetOrderId())
+      : OnOrderCompleted(time, context.GetOrderId(), boost::none);
 }
 
 boost::optional<Crex24TradingSystem::OrderCheckError>

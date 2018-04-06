@@ -15,25 +15,25 @@
 namespace trdk {
 namespace TradingLib {
 
-class PnlOneSymbolContainer : public trdk::PnlContainer {
+class PnlOneSymbolContainer : public PnlContainer {
  public:
   PnlOneSymbolContainer();
-  virtual ~PnlOneSymbolContainer() override;
+  ~PnlOneSymbolContainer() override;
 
- public:
-  virtual void UpdateFinancialResult(const trdk::Security &,
-                                     const trdk::OrderSide &,
-                                     const trdk::Qty &,
-                                     const trdk::Price &) override;
-  virtual void UpdateFinancialResult(const trdk::Security &,
-                                     const trdk::OrderSide &,
-                                     const trdk::Qty &,
-                                     const trdk::Price &,
-                                     const trdk::Volume &commission) override;
-  virtual void AddCommission(const trdk::Security &,
-                             const trdk::Volume &) override;
-  virtual Result GetResult() const override;
-  virtual const Data &GetData() const override;
+  void UpdateFinancialResult(const Security &,
+                             const OrderSide &,
+                             const Qty &,
+                             const Price &) override;
+  void UpdateFinancialResult(const Security &,
+                             const OrderSide &,
+                             const Qty &,
+                             const Price &,
+                             const Volume &commission) override;
+
+  void AddCommission(const trdk::Security &, const Volume &) override;
+
+  Result GetResult() const override;
+  const Data &GetData() const override;
 
  private:
   class Implementation;

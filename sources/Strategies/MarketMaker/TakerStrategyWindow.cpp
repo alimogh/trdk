@@ -290,14 +290,14 @@ TakerStrategy &TakerStrategyWindow::CreateStrategyInstance(
     const IniSectionRef defaults(conf, "Defaults");
     std::ostringstream os;
     os << "[Strategy.Taker/" << symbol.toStdString() << '/' << ++instanceNumber
-       << "]" << std::endl
-       << "module = MarketMaker" << std::endl
-       << "factory = CreateStrategy" << std::endl
-       << "id = " << strategyId << std::endl
-       << "is_enabled = true" << std::endl
-       << "trading_mode = live" << std::endl
-       << "title = Taker" << std::endl
-       << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
+       << "]" << std::endl;
+    os << "module = MarketMaker" << std::endl;
+    os << "factory = CreateStrategy" << std::endl;
+    os << "id = " << strategyId << std::endl;
+    os << "is_enabled = true" << std::endl;
+    os << "trading_mode = live" << std::endl;
+    os << "title = Taker" << std::endl;
+    os << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
        << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));
   }

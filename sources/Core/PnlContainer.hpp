@@ -14,21 +14,20 @@
 
 namespace trdk {
 
-class PnlContainer : public trdk::Pnl {
+class PnlContainer : public Pnl {
  public:
-  virtual ~PnlContainer() = default;
+  ~PnlContainer() override = default;
 
- public:
-  virtual void UpdateFinancialResult(const trdk::Security &,
-                                     const trdk::OrderSide &,
-                                     const trdk::Qty &,
-                                     const trdk::Price &) = 0;
-  virtual void UpdateFinancialResult(const trdk::Security &,
-                                     const trdk::OrderSide &,
-                                     const trdk::Qty &,
-                                     const trdk::Price &,
-                                     const trdk::Volume &commission) = 0;
-  virtual void AddCommission(const trdk::Security &, const trdk::Volume &) = 0;
+  virtual void UpdateFinancialResult(const Security &,
+                                     const OrderSide &,
+                                     const Qty &,
+                                     const Price &) = 0;
+  virtual void UpdateFinancialResult(const Security &,
+                                     const OrderSide &,
+                                     const Qty &,
+                                     const Price &,
+                                     const Volume &commission) = 0;
+  virtual void AddCommission(const Security &, const Volume &) = 0;
 };
 
 }  // namespace trdk

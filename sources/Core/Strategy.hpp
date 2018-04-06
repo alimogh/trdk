@@ -16,9 +16,9 @@
 
 namespace trdk {
 
-class TRDK_CORE_API Strategy : public trdk::Consumer {
+class TRDK_CORE_API Strategy : public Consumer {
  public:
-  typedef void(PositionUpdateSlotSignature)(trdk::Position &);
+  typedef void(PositionUpdateSlotSignature)(Position &);
   typedef boost::function<PositionUpdateSlotSignature> PositionUpdateSlot;
   typedef boost::signals2::connection PositionUpdateSlotConnection;
 
@@ -28,24 +28,21 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
     class TRDK_CORE_API Iterator
         : public boost::iterator_facade<Iterator,
-                                        trdk::Position,
+                                        Position,
                                         boost::bidirectional_traversal_tag> {
-      friend class trdk::Strategy::PositionList::ConstIterator;
+      friend class ConstIterator;
 
      public:
       class Implementation;
 
-     public:
       explicit Iterator(Implementation *) noexcept;
       Iterator(const Iterator &);
       ~Iterator();
 
-     public:
       Iterator &operator=(const Iterator &);
-      void Swap(Iterator &);
+      void Swap(Iterator &) noexcept;
 
-     public:
-      trdk::Position &dereference() const;
+      Position &dereference() const;
       bool equal(const Iterator &) const;
       bool equal(const ConstIterator &) const;
       void increment();
@@ -58,25 +55,22 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
     class TRDK_CORE_API ConstIterator
         : public boost::iterator_facade<ConstIterator,
-                                        const trdk::Position,
+                                        const Position,
                                         boost::bidirectional_traversal_tag> {
-      friend class trdk::Strategy::PositionList::Iterator;
+      friend class Iterator;
 
      public:
       class Implementation;
 
-     public:
       explicit ConstIterator(Implementation *) noexcept;
       explicit ConstIterator(const Iterator &) noexcept;
       ConstIterator(const ConstIterator &);
       ~ConstIterator();
 
-     public:
       ConstIterator &operator=(const ConstIterator &);
       void Swap(ConstIterator &);
 
-     public:
-      const trdk::Position &dereference() const;
+      const Position &dereference() const;
       bool equal(const Iterator &) const;
       bool equal(const ConstIterator &) const;
       void increment();
@@ -123,29 +117,27 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   };
 
  public:
-  explicit Strategy(trdk::Context &,
+  explicit Strategy(Context &,
                     const boost::uuids::uuid &typeUuid,
                     const std::string &implementationName,
                     const std::string &instanceName,
-                    const trdk::Lib::IniSectionRef &);
-  explicit Strategy(trdk::Context &,
+                    const Lib::IniSectionRef &);
+  explicit Strategy(Context &,
                     const std::string &typeUuid,
                     const std::string &implementationName,
                     const std::string &instanceName,
-                    const trdk::Lib::IniSectionRef &);
-  virtual ~Strategy() override;
+                    const Lib::IniSectionRef &);
+  ~Strategy() override;
 
- public:
   const boost::uuids::uuid &GetTypeId() const;
   const std::string &GetTitle() const;
-  trdk::TradingMode GetTradingMode() const;
-  const trdk::DropCopyStrategyInstanceId &GetDropCopyInstanceId() const;
+  TradingMode GetTradingMode() const;
+  const DropCopyStrategyInstanceId &GetDropCopyInstanceId() const;
 
- public:
-  trdk::RiskControlScope &GetRiskControlScope();
+  RiskControlScope &GetRiskControlScope();
 
-  trdk::TradingSystem &GetTradingSystem(size_t index);
-  const trdk::TradingSystem &GetTradingSystem(size_t index) const;
+  TradingSystem &GetTradingSystem(size_t index);
+  const TradingSystem &GetTradingSystem(size_t index) const;
 
  public:
   bool IsBlocked(bool isForever = false) const;
@@ -154,7 +146,7 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   void Block() noexcept;
   void Block(const std::string &reason) noexcept;
   void Block(const boost::posix_time::time_duration &);
-  void Stop(const trdk::StopMode &);
+  void Stop(const StopMode &);
 
   void ClosePositions();
 
@@ -173,35 +165,35 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
       Security::Request &,
       bool &isSwitched) override;
 
-  virtual void RaiseBrokerPositionUpdateEvent(trdk::Security &,
+  virtual void RaiseBrokerPositionUpdateEvent(Security &,
                                               bool isLong,
-                                              const trdk::Qty &,
-                                              const trdk::Volume &,
+                                              const Qty &,
+                                              const Volume &,
                                               bool isInitial) override;
 
-  virtual void RaiseNewBarEvent(trdk::Security &, const trdk::Security::Bar &);
+  virtual void RaiseNewBarEvent(Security &, const Security::Bar &);
 
   virtual void RaiseSecurityServiceEvent(
       const boost::posix_time::ptime &,
-      trdk::Security &,
-      const trdk::Security::ServiceEvent &) override;
+      Security &,
+      const Security::ServiceEvent &) override;
 
-  void RaiseLevel1UpdateEvent(trdk::Security &,
-                              const trdk::Lib::TimeMeasurement::Milestones &);
-  void RaiseLevel1TickEvent(trdk::Security &,
+  void RaiseLevel1UpdateEvent(Security &,
+                              const Lib::TimeMeasurement::Milestones &);
+  void RaiseLevel1TickEvent(Security &,
                             const boost::posix_time::ptime &,
-                            const trdk::Level1TickValue &,
-                            const trdk::Lib::TimeMeasurement::Milestones &);
-  void RaiseNewTradeEvent(trdk::Security &,
+                            const Level1TickValue &,
+                            const Lib::TimeMeasurement::Milestones &);
+  void RaiseNewTradeEvent(Security &,
                           const boost::posix_time::ptime &,
-                          const trdk::Price &,
-                          const trdk::Qty &);
-  void RaiseServiceDataUpdateEvent(
-      const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
-  void RaisePositionUpdateEvent(trdk::Position &);
-  void RaiseBookUpdateTickEvent(trdk::Security &,
-                                const trdk::PriceBook &,
-                                const trdk::Lib::TimeMeasurement::Milestones &);
+                          const Price &,
+                          const Qty &);
+  void RaiseServiceDataUpdateEvent(const Service &,
+                                   const Lib::TimeMeasurement::Milestones &);
+  void RaisePositionUpdateEvent(Position &);
+  void RaiseBookUpdateTickEvent(Security &,
+                                const PriceBook &,
+                                const Lib::TimeMeasurement::Milestones &);
 
  public:
   //! Registers position for this strategy.
@@ -227,22 +219,22 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
   void OnPositionMarkedAsCompleted(Position &);
 
  protected:
-  virtual void OnLevel1Update(trdk::Security &,
-                              const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void OnPositionUpdate(trdk::Position &);
-  virtual void OnBookUpdateTick(trdk::Security &,
-                                const trdk::PriceBook &,
-                                const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+  virtual void OnLevel1Update(Security &,
+                              const Lib::TimeMeasurement::Milestones &);
+  virtual void OnPositionUpdate(Position &);
+  virtual void OnBookUpdateTick(Security &,
+                                const PriceBook &,
+                                const Lib::TimeMeasurement::Milestones &);
+  void OnSettingsUpdate(const Lib::IniSectionRef &) override;
 
-  const trdk::StopMode &GetStopMode() const;
-  virtual void OnStopRequest(const trdk::StopMode &);
+  const StopMode &GetStopMode() const;
+  virtual void OnStopRequest(const StopMode &);
   void ReportStop();
 
   virtual void OnPostionsCloseRequest() = 0;
 
   //! Will be called after position blocking.
-  /** @param[in] Blocking reason, if existent (maybe nullptr).
+  /** @param[in] reason Blocking reason, if existent (maybe nullptr).
    * @return True, if position blocking event should be broadcasted through the
    *         engine subscription, false otherwise (position still be blocked
    *         in any case).
@@ -259,20 +251,20 @@ class TRDK_CORE_API Strategy : public trdk::Consumer {
 
 namespace trdk {
 
-inline trdk::Strategy::PositionList::Iterator range_begin(
-    trdk::Strategy::PositionList &list) {
+inline Strategy::PositionList::Iterator range_begin(
+    Strategy::PositionList &list) {
   return list.GetBegin();
 }
-inline trdk::Strategy::PositionList::Iterator range_end(
-    trdk::Strategy::PositionList &list) {
+inline Strategy::PositionList::Iterator range_end(
+    Strategy::PositionList &list) {
   return list.GetEnd();
 }
-inline trdk::Strategy::PositionList::ConstIterator range_begin(
-    const trdk::Strategy::PositionList &list) {
+inline Strategy::PositionList::ConstIterator range_begin(
+    const Strategy::PositionList &list) {
   return list.GetBegin();
 }
-inline trdk::Strategy::PositionList::ConstIterator range_end(
-    const trdk::Strategy::PositionList &list) {
+inline Strategy::PositionList::ConstIterator range_end(
+    const Strategy::PositionList &list) {
   return list.GetEnd();
 }
 }  // namespace trdk
@@ -291,12 +283,12 @@ struct range_const_iterator<trdk::Strategy::PositionList> {
 namespace std {
 template <>
 inline void swap(trdk::Strategy::PositionList::Iterator &lhs,
-                 trdk::Strategy::PositionList::Iterator &rhs) {
+                 trdk::Strategy::PositionList::Iterator &rhs) noexcept {
   lhs.Swap(rhs);
 }
 template <>
 inline void swap(trdk::Strategy::PositionList::ConstIterator &lhs,
-                 trdk::Strategy::PositionList::ConstIterator &rhs) {
+                 trdk::Strategy::PositionList::ConstIterator &rhs) noexcept {
   lhs.Swap(rhs);
 }
 }  // namespace std

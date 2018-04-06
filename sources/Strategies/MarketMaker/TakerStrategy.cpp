@@ -14,9 +14,9 @@
 #include "TakerOperation.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace Lib::TimeMeasurement;
-using namespace trdk::Strategies::MarketMaker;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Strategies::MarketMaker;
 
 namespace sig = boost::signals2;
 namespace pt = boost::posix_time;
@@ -134,7 +134,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto isLong = m_numberOfUsedPeriods % 2 ? true : false;
+    const auto isLong = (m_numberOfUsedPeriods % 2) != 0;
 
     const auto &price =
         isLong ? security->GetAskPriceValue() : security->GetBidPriceValue();
@@ -145,20 +145,22 @@ class TakerStrategy::Implementation : private boost::noncopyable {
     if (!volume) {
       return;
     }
-    const Qty qty = (volume / 2) / price;
+    const auto qty = (volume / 2) / price;
 
     ids::uuid operationId;
     try {
-      operationId =
-          m_controller
-              .OnSignal(boost::make_shared<TakerOperation>(m_self, isLong, qty),
-                        0, *security, Milestones())
-              ->GetOperation()
-              ->GetId();
+      const auto position = m_controller.OnSignal(
+          boost::make_shared<TakerOperation>(m_self, isLong, qty), 1, *security,
+          Milestones());
+      if (!position) {
+        return;
+      }
+      operationId = position->GetOperation()->GetId();
     } catch (const CommunicationError &ex) {
       m_self.GetLog().Debug("Communication error at signal handling: \"%1%\".",
                             ex.what());
       m_self.Schedule(pt::seconds(15), [this]() { StartNewOperation(); });
+      return;
     }
 
     const auto periodToEnd =
@@ -166,13 +168,46 @@ class TakerStrategy::Implementation : private boost::noncopyable {
     const auto maxOperationTime =
         periodToEnd /
         static_cast<int>((m_goalVolume - m_completedVolume) / volume);
-    m_self.Schedule(maxOperationTime, [this, operationId]() {
-      for (auto &position : m_self.GetPositions()) {
-        if (position.GetOperation()->GetId() == operationId) {
-          m_controller.ClosePosition(position, CLOSE_REASON_SCHEDULE);
+    m_self.Schedule(maxOperationTime,
+                    [this, operationId]() { CloseOperation(operationId); });
+  }
+
+  void CloseOperation(const ids::uuid &operationId) {
+    Position *firstLeg = nullptr;
+    for (auto &position : m_self.GetPositions()) {
+      auto &operation = *position.GetOperation();
+      if (operation.GetId() == operationId) {
+        if (position.GetSubOperationId() == 2) {
+          ScheduleOperationClosing(operationId);
+          return;
         }
+        AssertEq(1, position.GetSubOperationId());
+        Assert(!firstLeg);
+        firstLeg = &position;
+        break;
       }
-    });
+    }
+    if (!firstLeg) {
+      return;
+    }
+    if (!firstLeg->HasOpenedCloseOrders()) {
+      ScheduleOperationClosing(operationId);
+      return;
+    }
+    const auto &qty = firstLeg->GetActiveQty();
+    if (qty) {
+      m_controller.OpenPosition(firstLeg->GetOperation(), 2,
+                                firstLeg->GetSecurity(), firstLeg->IsLong(),
+                                qty, Milestones());
+    }
+    ScheduleOperationClosing(operationId);
+  }
+
+  void ScheduleOperationClosing(
+      const ids::uuid &operationId,
+      const pt::time_duration &time = pt::seconds(15)) {
+    m_self.Schedule(time,
+                    [this, operationId]() { CloseOperation(operationId); });
   }
 
   Security *ChooseSecurityForNewOperation() {
@@ -244,14 +279,7 @@ void TakerStrategy::OnSecurityStart(Security &security,
   Base::OnSecurityStart(security, request);
 }
 
-void TakerStrategy::OnLevel1Update(Security &security,
-                                   const Milestones &delayMeasurement) {
-  if (m_pimpl->m_isStopped) {
-    return;
-  }
-  security;
-  delayMeasurement;
-}
+void TakerStrategy::OnLevel1Update(Security &, const Milestones &) {}
 
 void TakerStrategy::OnPositionUpdate(Position &position) {
   if (m_pimpl->m_isStopped) {
@@ -259,20 +287,26 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
   }
 
   if (position.IsCompleted()) {
-    if (position.GetCloseReason() == CLOSE_REASON_NONE) {
+    if (position.GetNumberOfCloseTrades()) {
       m_pimpl->AddCompletedVolume(position.GetOpenedVolume());
     }
-
     m_pimpl->AddCompletedVolume(position.GetClosedVolume());
+
+    if (position.GetSubOperationId() == 1) {
+      m_pimpl->m_controller.OnPositionUpdate(position);
+    }
+
+    for (const auto &anotherPosition : GetPositions()) {
+      if (&anotherPosition == &position) {
+        continue;
+      }
+      if (anotherPosition.GetOperation() == position.GetOperation()) {
+        return;
+      }
+    }
+
     for (const auto &pnl : position.GetOperation()->GetPnl().GetData()) {
-      if (pnl.first == position.GetSecurity().GetSymbol().GetBaseSymbol() &&
-          (pnl.second.financialResult || pnl.second.commission)) {
-        GetLog().Error("Wrong currency in P&L: %1% - %2% = %3% %4%.",
-                       pnl.second.financialResult,                          // 1
-                       pnl.second.commission,                               // 2
-                       pnl.second.financialResult - pnl.second.commission,  // 3
-                       pnl.first);                                          // 4
-        Assert(false);
+      if (pnl.first == position.GetSecurity().GetSymbol().GetBaseSymbol()) {
         continue;
       }
       m_pimpl->AddPnl(pnl.second.financialResult - pnl.second.commission);
@@ -514,9 +548,9 @@ const Volume &TakerStrategy::GetTradeMaxVolume() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
-                                               const std::string &instanceName,
-                                               const IniSectionRef &conf) {
+std::unique_ptr<Strategy> CreateStrategy(Context &context,
+                                         const std::string &instanceName,
+                                         const IniSectionRef &conf) {
   return boost::make_unique<TakerStrategy>(context, instanceName, conf);
 }
 
