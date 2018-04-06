@@ -1176,6 +1176,9 @@ Volume Position::GetPlannedPnl() const {
   return GetUnrealizedPnl() + GetRealizedPnl();
 }
 
+size_t Position::GetNumberOfOrders() const {
+  return GetNumberOfOpenOrders() + GetNumberOfCloseOrders();
+}
 size_t Position::GetNumberOfOpenOrders() const {
   return m_pimpl->m_open.orders.size();
 }

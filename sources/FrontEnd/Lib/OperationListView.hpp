@@ -22,20 +22,19 @@ class TRDK_FRONTEND_LIB_API OperationListView : public QTreeView {
  public:
   typedef QTreeView Base;
 
- public:
   explicit OperationListView(QWidget* parent);
+  ~OperationListView() override = default;
 
  private slots:
   void CopySelectedValuesToClipboard();
 
  protected:
-  virtual void rowsInserted(const QModelIndex&, int start, int end) override;
+  void rowsInserted(const QModelIndex&, int start, int end) override;
 
  private:
   void InitContextMenu();
   void FollowNewRecords(bool isEnabled);
 
- private:
   bool m_isFollowingEnabled;
   QAction* m_followNewOperationsAction;
   bool m_isExpandingEnabled;

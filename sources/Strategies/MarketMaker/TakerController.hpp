@@ -16,13 +16,14 @@ namespace MarketMaker {
 
 class TakerController : public TradingLib::PositionController {
  public:
-  typedef TradingLib::PositionController Base;
+  typedef PositionController Base;
 
- public:
-  virtual ~TakerController() override = default;
+  ~TakerController() override = default;
+
+  void OnPositionUpdate(Position &) override;
 
  protected:
-  virtual void HoldPosition(trdk::Position &) override;
+  void HoldPosition(Position &) override;
 };
 
 }  // namespace MarketMaker

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "Api.h"
-#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -22,13 +21,12 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
  public:
   typedef QTreeView Base;
 
- public:
   explicit BalanceListView(QWidget *parent);
 
  private:
   void InitContextMenu();
-  void CopySelectedValuesToClipboard();
-  virtual void rowsInserted(const QModelIndex &, int start, int end) override;
+  void CopySelectedValuesToClipboard() const;
+  void rowsInserted(const QModelIndex &, int start, int end) override;
 };
 }  // namespace FrontEnd
 }  // namespace trdk

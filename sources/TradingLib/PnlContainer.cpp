@@ -36,7 +36,7 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
       const auto prevTotal = values.financialResult - values.commission;
       values.financialResult += financialResultDelta;
       values.commission += commission;
-      const auto total = values.financialResult - commission;
+      const auto total = values.financialResult - values.commission;
       if (prevTotal != total) {
         if (total > 0) {
           if (prevTotal < 0) {

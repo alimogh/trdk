@@ -19,51 +19,46 @@ class TakerOperation : public Operation {
   typedef Operation Base;
 
  private:
-  class PassivePolicy : public TradingLib::LimitGtcOrderPolicy {
+  class PnlContainer : public TradingLib::PnlOneSymbolContainer {
    public:
-    virtual ~PassivePolicy() override = default;
+    typedef PnlOneSymbolContainer Base;
 
-   public:
-    virtual trdk::Price GetOpenOrderPrice(trdk::Position &) const override;
-    virtual trdk::Price GetCloseOrderPrice(trdk::Position &) const override;
+    ~PnlContainer() override = default;
+
+    Result GetResult() const override;
   };
-  class AggresivePolicy : public TradingLib::OrderPolicy {
-   public:
-    virtual ~AggresivePolicy() override = default;
 
+  class OrderPolicy : public TradingLib::LimitGtcOrderPolicy {
    public:
-    virtual void Open(trdk::Position &) const override;
-    virtual void Close(trdk::Position &) const override;
+    ~OrderPolicy() override = default;
 
-   private:
-    static OrderParams m_orderParams;
+    Price GetOpenOrderPrice(Position &) const override;
+    Price GetCloseOrderPrice(Position &) const override;
   };
 
  public:
   explicit TakerOperation(Strategy &, bool isLong, const Qty &);
-  virtual ~TakerOperation() override = default;
+  ~TakerOperation() override = default;
 
- public:
-  virtual const trdk::TradingLib::OrderPolicy &GetOpenOrderPolicy(
-      const trdk::Position &) const override;
-  virtual const trdk::TradingLib::OrderPolicy &GetCloseOrderPolicy(
-      const trdk::Position &) const override;
+  const TradingLib::OrderPolicy &GetOpenOrderPolicy(
+      const Position &) const override;
+  const TradingLib::OrderPolicy &GetCloseOrderPolicy(
+      const Position &) const override;
 
-  virtual bool IsLong(const trdk::Security &) const override;
+  bool IsLong(const Security &) const override;
 
-  virtual bool OnCloseReasonChange(trdk::Position &,
-                                   const trdk::CloseReason &newReason) override;
+  bool OnCloseReasonChange(Position &, const CloseReason &) override;
 
-  virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
-      const trdk::Position &) override;
+  boost::shared_ptr<Operation> StartInvertedPosition(const Position &) override;
 
-  virtual trdk::Qty GetPlannedQty(const Security &) const override;
+  Qty GetPlannedQty(const Security &) const override;
+
+  bool HasCloseSignal(const Position &) const override;
 
  private:
   const bool m_isLong;
   const Qty m_qty;
-  AggresivePolicy m_aggresiveOrderPolicy;
-  PassivePolicy m_passivePolicy;
+  OrderPolicy m_orderPolicy;
 };
 
 }  // namespace MarketMaker

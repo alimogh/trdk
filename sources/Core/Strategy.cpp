@@ -139,7 +139,7 @@ Strategy::PositionList::Iterator &Strategy::PositionList::Iterator::operator=(
   Iterator(rhs).Swap(*this);
   return *this;
 }
-void Strategy::PositionList::Iterator::Swap(Iterator &rhs) {
+void Strategy::PositionList::Iterator::Swap(Iterator &rhs) noexcept {
   Assert(this != &rhs);
   std::swap(m_pimpl, rhs.m_pimpl);
 }

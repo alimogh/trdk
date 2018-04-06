@@ -69,13 +69,12 @@ class TakerStrategy : public Strategy {
   boost::tribool IsTradingSystemEnabled(size_t tradingSystemIndex) const;
 
  protected:
-  virtual void OnSecurityStart(trdk::Security &,
-                               trdk::Security::Request &) override;
-  virtual void OnLevel1Update(
-      trdk::Security &, const Lib::TimeMeasurement::Milestones &) override;
-  virtual void OnPositionUpdate(trdk::Position &) override;
+  void OnSecurityStart(Security &, Security::Request &) override;
+  void OnLevel1Update(Security &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+  void OnPositionUpdate(Position &) override;
   void OnPostionsCloseRequest() override;
-  virtual bool OnBlocked(const std::string * = nullptr) noexcept override;
+  bool OnBlocked(const std::string *) noexcept override;
 
  private:
   class Implementation;
