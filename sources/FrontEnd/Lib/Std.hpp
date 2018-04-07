@@ -9,7 +9,10 @@
  ******************************************************************************/
 
 #pragma once
-namespace stdext {
+namespace trdk {
+namespace FrontEnd {
 
 inline std::size_t hash_value(const QString& value) { return qHash(value); }
-}  // namespace stdext
+
+}  // namespace FrontEnd
+}  // namespace trdk

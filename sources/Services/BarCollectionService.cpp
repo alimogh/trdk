@@ -312,33 +312,44 @@ class BarCollectionService::Implementation : private boost::noncopyable {
     static_assert(numberOfUnits == 6, "Units list changed.");
     switch (m_units) {
       case UNITS_SECONDS:
-        endTime = pt::ptime(tradeTime.date()) + pt::hours(time.hours()) +
-                  pt::minutes(time.minutes()) +
-                  pt::seconds(((time.seconds() / m_barSizeUnits) + 1) *
-                              m_barSizeUnits);
+        endTime =
+            pt::ptime(tradeTime.date()) +
+            pt::hours(static_cast<long>(time.hours())) +
+            pt::minutes(static_cast<long>(time.minutes())) +
+            pt::seconds(
+                ((static_cast<long>(time.seconds()) / m_barSizeUnits) + 1) *
+                m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_MINUTES:
-        endTime = pt::ptime(tradeTime.date()) + pt::hours(time.hours()) +
-                  pt::minutes(((time.minutes() / m_barSizeUnits) + 1) *
-                              m_barSizeUnits);
+        endTime =
+            pt::ptime(tradeTime.date()) +
+            pt::hours(static_cast<long>(time.hours())) +
+            pt::minutes(
+                ((static_cast<long>(time.minutes()) / m_barSizeUnits) + 1) *
+                m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_HOURS:
         endTime =
             pt::ptime(tradeTime.date()) +
-            pt::hours(((time.hours() / m_barSizeUnits) + 1) * m_barSizeUnits);
+            pt::hours(((static_cast<long>(time.hours()) / m_barSizeUnits) + 1) *
+                      m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_DAYS:
         endTime = pt::ptime(tradeTime.date()) +
-                  pt::hours((((time.hours() * 24) / m_barSizeUnits) + 1) *
+                  pt::hours((((static_cast<long>(time.hours()) * 24) /
+                              m_barSizeUnits) +
+                             1) *
                             m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;
       case UNITS_WEEKS:
         endTime = pt::ptime(tradeTime.date()) +
-                  pt::hours(((((time.hours() * 24) * 7) / m_barSizeUnits) + 1) *
+                  pt::hours(((((static_cast<long>(time.hours()) * 24) * 7) /
+                              m_barSizeUnits) +
+                             1) *
                             m_barSizeUnits);
         startTime = endTime - m_timedBarSize;
         break;

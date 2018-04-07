@@ -26,15 +26,16 @@ using namespace trdk::Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Module::SecurityList::Iterator::Iterator(Implementation *pimpl)
-    : m_pimpl(pimpl) {
+Module::SecurityList::Iterator::Iterator(
+    std::unique_ptr<Implementation> &&pimpl)
+    : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
 
 Module::SecurityList::Iterator::Iterator(const Iterator &rhs)
-    : m_pimpl(new Implementation(*rhs.m_pimpl)) {}
+    : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
 
-Module::SecurityList::Iterator::~Iterator() { delete m_pimpl; }
+Module::SecurityList::Iterator::~Iterator() = default;
 
 Module::SecurityList::Iterator &Module::SecurityList::Iterator::operator=(
     const Iterator &rhs) {
@@ -62,24 +63,19 @@ bool Module::SecurityList::Iterator::equal(const ConstIterator &rhs) const {
 
 void Module::SecurityList::Iterator::increment() { ++m_pimpl->iterator; }
 
-void Module::SecurityList::Iterator::decrement() { --m_pimpl->iterator; }
-
-void Module::SecurityList::Iterator::advance(const difference_type &n) {
-  std::advance(m_pimpl->iterator, n);
-}
-
-Module::SecurityList::ConstIterator::ConstIterator(Implementation *pimpl)
-    : m_pimpl(pimpl) {
+Module::SecurityList::ConstIterator::ConstIterator(
+    std::unique_ptr<Implementation> &&pimpl)
+    : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
 
 Module::SecurityList::ConstIterator::ConstIterator(const Iterator &rhs)
-    : m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {}
+    : m_pimpl(boost::make_unique<Implementation>(rhs.m_pimpl->iterator)) {}
 
 Module::SecurityList::ConstIterator::ConstIterator(const ConstIterator &rhs)
-    : m_pimpl(new Implementation(*rhs.m_pimpl)) {}
+    : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
 
-Module::SecurityList::ConstIterator::~ConstIterator() { delete m_pimpl; }
+Module::SecurityList::ConstIterator::~ConstIterator() = default;
 
 Module::SecurityList::ConstIterator &Module::SecurityList::ConstIterator::
 operator=(const ConstIterator &rhs) {
@@ -108,12 +104,6 @@ bool Module::SecurityList::ConstIterator::equal(const Iterator &rhs) const {
 }
 
 void Module::SecurityList::ConstIterator::increment() { ++m_pimpl->iterator; }
-
-void Module::SecurityList::ConstIterator::decrement() { --m_pimpl->iterator; }
-
-void Module::SecurityList::ConstIterator::advance(const difference_type &n) {
-  std::advance(m_pimpl->iterator, n);
-}
 
 //////////////////////////////////////////////////////////////////////////
 
