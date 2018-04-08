@@ -431,8 +431,8 @@ pp::Strategy &StrategyWindow::GenerateNewStrategyInstance(
     const ids::uuid &strategyId, size_t instanceNumber) {
   return CreateStrategyInstance(
       strategyId, instanceNumber,
-      CreateConfig(strategyId, true, .01, false, false, 12, 26, false, false,
-                   14, 70, 30, 3, .75, 15, pt::minutes(5)));
+      CreateConfig(strategyId, false, false, true, .01, false, false, 12, 26,
+                   false, false, 14, 70, 30, 3, .75, 15, pt::minutes(5)));
 }
 
 pp::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
@@ -444,15 +444,17 @@ pp::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
 
 std::string StrategyWindow::CreateConfig(
     const ids::uuid &strategyId,
-    bool isActivePositionsControlEnabled,
+    bool isLongOpeningEnabled,
+    bool isShortOpeningEnabled,
+    const bool isActivePositionsControlEnabled,
     const Qty &positionSize,
-    bool isMaOpeningSignalConfirmationEnabled,
-    bool isMaClosingSignalConfirmationEnabled,
-    size_t fastMaSize,
-    size_t slowMaSize,
-    bool isRsiOpeningSignalConfirmationEnabled,
-    bool isRsiClosingSignalConfirmationEnabled,
-    size_t numberOfRsiPeriods,
+    const bool isMaOpeningSignalConfirmationEnabled,
+    const bool isMaClosingSignalConfirmationEnabled,
+    const size_t fastMaSize,
+    const size_t slowMaSize,
+    const bool isRsiOpeningSignalConfirmationEnabled,
+    const bool isRsiClosingSignalConfirmationEnabled,
+    const size_t numberOfRsiPeriods,
     const Double &rsiOverboughtLevel,
     const Double &rsiOversoldLevel,
     const Volume &profitShareToActivateTakeProfit,
@@ -469,8 +471,10 @@ std::string StrategyWindow::CreateConfig(
   result << "requires = Level 1 Updates[" << m_symbol << "]" << std::endl;
   result << "symbol = " << m_symbol << std::endl;
 
-  result << "long_trading_enabled = no" << std::endl;
-  result << "short_trading_enabled = no" << std::endl;
+  result << "long_trading_enabled = " << (isLongOpeningEnabled ? "yes" : "no")
+         << std::endl;
+  result << "short_trading_enabled = " << (isShortOpeningEnabled ? "yes" : "no")
+         << std::endl;
 
   result << "source_time_frame_size_sec = " << frameSize.total_seconds()
          << std::endl;
@@ -506,18 +510,19 @@ std::string StrategyWindow::CreateConfig(
 }
 
 std::string StrategyWindow::DumpConfig() const {
-  return CreateConfig(m_strategy.GetId(),
-                      m_ui.isPositionsClosingEnabled->isChecked(),
-                      m_ui.positionSize->value(),
-                      m_ui.isMaOpeningSignalConfirmationEnabled->isChecked(),
-                      m_ui.isMaClosingSignalConfirmationEnabled->isChecked(),
-                      m_ui.fastMaPeriods->value(), m_ui.slowMaPeriods->value(),
-                      m_ui.isRsiOpeningSignalConfirmationEnabled->isChecked(),
-                      m_ui.isRsiClosingSignalConfirmationEnabled->isChecked(),
-                      m_ui.rsiPeriods->value(), m_ui.rsiOverbought->value(),
-                      m_ui.rsiOversold->value(), m_ui.takeProfit->value(),
-                      m_ui.takeProfitTrailling->value(), m_ui.stopLoss->value(),
-                      pt::minutes(m_ui.timeFrameSize->currentText().toInt()));
+  return CreateConfig(
+      m_strategy.GetId(), m_ui.isPositionsLongOpeningEnabled->isChecked(),
+      m_ui.isPositionsShortOpeningEnabled->isChecked(),
+      m_ui.isPositionsClosingEnabled->isChecked(), m_ui.positionSize->value(),
+      m_ui.isMaOpeningSignalConfirmationEnabled->isChecked(),
+      m_ui.isMaClosingSignalConfirmationEnabled->isChecked(),
+      m_ui.fastMaPeriods->value(), m_ui.slowMaPeriods->value(),
+      m_ui.isRsiOpeningSignalConfirmationEnabled->isChecked(),
+      m_ui.isRsiClosingSignalConfirmationEnabled->isChecked(),
+      m_ui.rsiPeriods->value(), m_ui.rsiOverbought->value(),
+      m_ui.rsiOversold->value(), m_ui.takeProfit->value(),
+      m_ui.takeProfitTrailling->value(), m_ui.stopLoss->value(),
+      pt::minutes(m_ui.timeFrameSize->currentText().toInt()));
 }
 
 void StrategyWindow::StoreConfig(bool isActive) {

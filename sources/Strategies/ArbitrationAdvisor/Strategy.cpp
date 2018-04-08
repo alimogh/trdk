@@ -160,7 +160,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             conf.ReadTypedKey<Double>(
                 "min_price_difference_to_highlight_percentage") /
             100),
-        m_tradingSettings({false,
+        m_tradingSettings({conf.ReadBoolKey("auto_trading_enabled"),
                            conf.ReadTypedKey<Double>(
                                "min_price_difference_to_trade_percentage") /
                                100,
@@ -788,7 +788,6 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
 
 void aa::Strategy::SetTradingSettings(TradingSettings &&settings) {
   const auto lock = LockForOtherThreads();
-  bool shouldRechecked = true;
   GetTradingLog().Write(
       "{'setup': {'trading': {'isEnabled': '%5%->%6%', 'ratio': '%1%->%2%', "
       "'maxQty': '%3%->%4%}}}",
@@ -800,13 +799,16 @@ void aa::Strategy::SetTradingSettings(TradingSettings &&settings) {
             % (m_pimpl->m_tradingSettings.isEnabled ? "yes" : "no")  // 5
             % (settings.isEnabled ? "yes" : "no");                   // 6
       });
-  shouldRechecked = m_pimpl->m_tradingSettings.minPriceDifferenceRatio !=
-                    settings.minPriceDifferenceRatio;
+  const auto shouldBeRechecked =
+      m_pimpl->m_tradingSettings.minPriceDifferenceRatio !=
+      settings.minPriceDifferenceRatio;
 
   m_pimpl->m_tradingSettings = std::move(settings);
 
   if (m_pimpl->m_tradingSettings.isEnabled) {
-    m_pimpl->RecheckSignalAsync();
+    if (shouldBeRechecked) {
+      m_pimpl->RecheckSignalAsync();
+    }
   } else {
     m_pimpl->m_errors.clear();
   }

@@ -20,23 +20,19 @@ class Strategy : public trdk::Strategy {
  public:
   struct TradingSettings {
     bool isEnabled;
-    trdk::Lib::Double minPriceDifferenceRatio;
-    trdk::Qty maxQty;
+    Lib::Double minPriceDifferenceRatio;
+    Qty maxQty;
   };
 
- public:
   static const boost::uuids::uuid typeId;
 
- public:
   typedef trdk::Strategy Base;
 
- public:
   explicit Strategy(Context &,
                     const std::string &instanceName,
                     const Lib::IniSectionRef &);
-  virtual ~Strategy() override;
+  ~Strategy() override;
 
- public:
   boost::signals2::scoped_connection SubscribeToAdvice(
       const boost::function<void(const Advice &)> &);
   boost::signals2::scoped_connection SubscribeToTradingSignalCheckErrors(
@@ -44,7 +40,6 @@ class Strategy : public trdk::Strategy {
   boost::signals2::scoped_connection SubscribeToBlocking(
       const boost::function<void(const std::string *reason)> &);
 
- public:
   void SetMinPriceDifferenceRatioToAdvice(const Lib::Double &);
   const Lib::Double &GetMinPriceDifferenceRatioToAdvice() const;
 
@@ -61,13 +56,12 @@ class Strategy : public trdk::Strategy {
                        const boost::function<void(Security &)> &);
 
  protected:
-  virtual void OnSecurityStart(trdk::Security &,
-                               trdk::Security::Request &) override;
-  virtual void OnLevel1Update(
-      trdk::Security &, const Lib::TimeMeasurement::Milestones &) override;
-  virtual void OnPositionUpdate(trdk::Position &) override;
+  void OnSecurityStart(Security &, Security::Request &) override;
+  void OnLevel1Update(Security &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+  void OnPositionUpdate(Position &) override;
   void OnPostionsCloseRequest() override;
-  virtual bool OnBlocked(const std::string * = nullptr) noexcept override;
+  bool OnBlocked(const std::string *) noexcept override;
 
  private:
   class Implementation;
