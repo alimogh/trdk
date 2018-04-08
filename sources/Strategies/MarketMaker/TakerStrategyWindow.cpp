@@ -126,9 +126,7 @@ void TakerStrategyWindow::Disable() {
 }
 
 void TakerStrategyWindow::OnCompleted() {
-  QMessageBox::information(this, QObject::tr("Strategy completed"),
-                           QObject::tr("Strategy is completed."),
-                           QMessageBox::Ok);
+  const QSignalBlocker lock(*m_ui.activationToggle);
   m_ui.activationToggle->setChecked(m_strategy.IsTradingEnabled());
 }
 

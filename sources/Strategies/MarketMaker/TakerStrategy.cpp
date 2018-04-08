@@ -125,6 +125,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
   void StartNewOperation() {
     if (!CheckNewOperationStart()) {
+      m_nextPeriodEnd = pt::not_a_date_time;
       m_completedSignal();
       return;
     }
