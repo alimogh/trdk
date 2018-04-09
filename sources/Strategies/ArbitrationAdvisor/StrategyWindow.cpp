@@ -524,8 +524,9 @@ std::string StrategyWindow::CreateConfig(
 
 std::string StrategyWindow::DumpConfig() const {
   const auto &tradingSettings = m_strategy.GetTradingSettings();
+  // In custom branch it restores auto-trading status:
   const auto isShouldBeEnabledImmediatelyAfterRestoration =
-      false;  // m_strategy.GetTradingSettings().isEnabled;
+      m_strategy.GetTradingSettings().isEnabled;
   return CreateConfig(
       m_strategy.GetId(), m_strategy.GetMinPriceDifferenceRatioToAdvice() * 100,
       isShouldBeEnabledImmediatelyAfterRestoration,
