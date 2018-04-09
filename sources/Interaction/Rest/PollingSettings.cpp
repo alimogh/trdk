@@ -28,8 +28,9 @@ const size_t defaultBalancesRequestFrequency = 120;
 
 PollingSetttings::PollingSetttings(const IniSectionRef &conf)
     : m_interval(std::max<pt::time_duration>(
-          pt::seconds(conf.ReadTypedKey<long>("polling_interval_second",
-                                              defailtInterval.total_seconds())),
+          pt::seconds(conf.ReadTypedKey<long>(
+              "polling_interval_second",
+              static_cast<long>(defailtInterval.total_seconds()))),
           minInterval)),
       m_actualOrdersRequestFrequency(
           conf.ReadTypedKey<size_t>("actual_order_request_frequency",

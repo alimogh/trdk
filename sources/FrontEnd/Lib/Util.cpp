@@ -81,9 +81,11 @@ QDateTime front::ConvertToQDateTime(const pt::ptime &source) {
   const auto &time = source.time_of_day();
   const auto &ms =
       time - pt::time_duration(time.hours(), time.minutes(), time.seconds());
-  return {QDate(date.year(), date.month().as_number(), date.day()),
-          QTime(time.hours(), time.minutes(), time.seconds(),
-                static_cast<int>(ms.total_milliseconds()))};
+  return {
+      QDate(date.year(), date.month().as_number(), date.day()),
+      QTime(static_cast<long>(time.hours()), static_cast<long>(time.minutes()),
+            static_cast<long>(time.seconds()),
+            static_cast<long>(ms.total_milliseconds()))};
 }
 
 QDateTime front::ConvertToDbDateTime(const pt::ptime &source) {

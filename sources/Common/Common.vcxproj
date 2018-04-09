@@ -344,6 +344,7 @@
     <ClInclude Include="SecurityType.hpp" />
     <ClInclude Include="SegmentedVector.hpp" />
     <ClInclude Include="Spin.hpp" />
+    <ClInclude Include="Tuple.hpp" />
     <ClInclude Include="Symbol.hpp" />
     <ClInclude Include="SysError.hpp" />
     <ClInclude Include="Exception.hpp" />

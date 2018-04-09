@@ -16,9 +16,9 @@ namespace trdk {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::map<boost::tuple<size_t /*trdk::Lib::Symbol::Hash*/,
-                              const trdk::MarketDataSource *>,
-                 Security *>
+typedef boost::unordered_map<
+    boost::tuple<size_t /*trdk::Lib::Symbol::Hash*/, const MarketDataSource *>,
+    Security *>
     ModuleSecurityListStorage;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,8 +27,7 @@ class Module::SecurityList::Iterator::Implementation {
  public:
   ModuleSecurityListStorage::iterator iterator;
 
- public:
-  explicit Implementation(ModuleSecurityListStorage::iterator iterator)
+  explicit Implementation(const ModuleSecurityListStorage::iterator &iterator)
       : iterator(iterator) {}
 };
 
@@ -36,8 +35,8 @@ class Module::SecurityList::ConstIterator::Implementation {
  public:
   ModuleSecurityListStorage::const_iterator iterator;
 
- public:
-  explicit Implementation(ModuleSecurityListStorage::const_iterator iterator)
+  explicit Implementation(
+      const ModuleSecurityListStorage::const_iterator &iterator)
       : iterator(iterator) {}
 };
 
@@ -45,49 +44,36 @@ class Module::SecurityList::ConstIterator::Implementation {
 
 class ModuleSecurityList : public Module::SecurityList {
  public:
-  typedef trdk::Module::SecurityList::Iterator Iterator;
-  typedef trdk::Module::SecurityList::ConstIterator ConstIterator;
+  ~ModuleSecurityList() override = default;
 
- public:
-  virtual ~ModuleSecurityList() {}
-
- public:
   bool Insert(Security &security) {
-    const auto &key = boost::make_tuple(security.GetSymbol().GetHash(),
-                                        &security.GetSource());
-    if (m_list.find(key) != m_list.end()) {
-      Assert(&security == m_list[key]);
-      return false;
-    }
-    m_list[key] = &security;
-    return true;
+    const auto &result =
+        m_list.emplace(boost::make_tuple(security.GetSymbol().GetHash(),
+                                         &security.GetSource()),
+                       &security);
+    // Detects symbol hash collisions:
+    Assert(result.second || &security == result.first->second);
+    return result.second;
   }
 
- public:
-  virtual size_t GetSize() const { return m_list.size(); }
+  size_t GetSize() const override { return m_list.size(); }
 
-  virtual bool IsEmpty() const { return m_list.empty(); }
+  bool IsEmpty() const override { return m_list.empty(); }
 
-  virtual Iterator GetBegin() {
-    return Iterator(new Iterator::Implementation(m_list.begin()));
-  }
-  virtual ConstIterator GetBegin() const {
-    return ConstIterator(new ConstIterator::Implementation(m_list.begin()));
-  }
-  virtual Iterator GetEnd() {
-    return Iterator(new Iterator::Implementation(m_list.end()));
-  }
-  virtual ConstIterator GetEnd() const {
-    return ConstIterator(new ConstIterator::Implementation(m_list.end()));
-  }
-
-  virtual Iterator Find(const Lib::Symbol &symbol) {
+  Iterator GetBegin() override {
     return Iterator(
-        new Iterator::Implementation(m_list.find(symbol.GetHash())));
+        boost::make_unique<Iterator::Implementation>(m_list.begin()));
   }
-  virtual ConstIterator Find(const Lib::Symbol &symbol) const {
+  ConstIterator GetBegin() const override {
     return ConstIterator(
-        new ConstIterator::Implementation(m_list.find(symbol.GetHash())));
+        boost::make_unique<ConstIterator::Implementation>(m_list.begin()));
+  }
+  Iterator GetEnd() override {
+    return Iterator(boost::make_unique<Iterator::Implementation>(m_list.end()));
+  }
+  ConstIterator GetEnd() const override {
+    return ConstIterator(
+        boost::make_unique<ConstIterator::Implementation>(m_list.end()));
   }
 
  private:
@@ -95,4 +81,4 @@ class ModuleSecurityList : public Module::SecurityList {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

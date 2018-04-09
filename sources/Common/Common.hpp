@@ -47,6 +47,7 @@
 #include "Symbol.hpp"
 #include "SysError.hpp"
 #include "TimeMeasurement.hpp"
+#include "Tuple.hpp"
 #include "UseUnused.hpp"
 #include "Util.hpp"
 #include "Fwd.hpp"
