@@ -19,25 +19,19 @@ class TakerOperation : public Operation {
   typedef Operation Base;
 
  private:
-  class PnlContainer : public TradingLib::PnlOneSymbolContainer {
+  class AggresivePolicy : public TradingLib::LimitOrderPolicy {
    public:
-    typedef PnlOneSymbolContainer Base;
+    ~AggresivePolicy() override = default;
 
-    ~PnlContainer() override = default;
+    void Open(Position &) const override;
+    void Close(Position &) const override;
 
-    Result GetResult() const override;
-  };
-
-  class OrderPolicy : public TradingLib::LimitGtcOrderPolicy {
-   public:
-    ~OrderPolicy() override = default;
-
-    Price GetOpenOrderPrice(Position &) const override;
-    Price GetCloseOrderPrice(Position &) const override;
+   private:
+    static OrderParams m_orderParams;
   };
 
  public:
-  explicit TakerOperation(Strategy &, bool isLong, const Qty &);
+  explicit TakerOperation(Strategy &);
   ~TakerOperation() override = default;
 
   const TradingLib::OrderPolicy &GetOpenOrderPolicy(
@@ -45,20 +39,15 @@ class TakerOperation : public Operation {
   const TradingLib::OrderPolicy &GetCloseOrderPolicy(
       const Position &) const override;
 
-  bool IsLong(const Security &) const override;
-
   bool OnCloseReasonChange(Position &, const CloseReason &) override;
 
   boost::shared_ptr<Operation> StartInvertedPosition(const Position &) override;
 
-  Qty GetPlannedQty(const Security &) const override;
-
   bool HasCloseSignal(const Position &) const override;
 
  private:
-  const bool m_isLong;
-  const Qty m_qty;
-  OrderPolicy m_orderPolicy;
+  AggresivePolicy m_aggresiveOrderPolicy;
+  TradingLib::LimitGtcOrderPolicy m_passivePolicy;
 };
 
 }  // namespace MarketMaker

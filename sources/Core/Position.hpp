@@ -178,6 +178,8 @@ class TRDK_CORE_API Position : boost::noncopyable,
   const boost::posix_time::ptime &GetOpenStartTime() const;
 
   const Qty &GetOpenedQty() const noexcept;
+  void SetOpenedQty(const Qty &);
+
   Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
   /** Throws an exception if there is no active open-order at this moment.

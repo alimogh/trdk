@@ -15,43 +15,29 @@ using namespace trdk;
 using namespace TradingLib;
 using namespace Strategies::MarketMaker;
 
-PnlContainer::Result TakerOperation::PnlContainer::GetResult() const {
-  const auto &result = Base::GetResult();
-  return result == RESULT_ERROR ? RESULT_LOSS : result;
+namespace pt = boost::posix_time;
+
+OrderParams TakerOperation::AggresivePolicy::m_orderParams = {boost::none,
+                                                              pt::minutes(1)};
+
+void TakerOperation::AggresivePolicy::Open(Position &position) const {
+  position.OpenImmediatelyOrCancel(GetOpenOrderPrice(position), m_orderParams);
 }
 
-Price TakerOperation::OrderPolicy::GetOpenOrderPrice(Position &position) const {
-  if (position.GetSubOperationId() != 1) {
-    for (const auto &firstLeg : position.GetStrategy().GetPositions()) {
-      if (firstLeg.GetSubOperationId() != 1 ||
-          &*firstLeg.GetOperation() != &*position.GetOperation()) {
-        continue;
-      }
-      return *firstLeg.GetActiveCloseOrderPrice();
-    }
-  }
-  return position.GetMarketOpenPrice() * (position.IsLong() ? 1.05 : 0.95);
+void TakerOperation::AggresivePolicy::Close(trdk::Position &position) const {
+  position.CloseImmediatelyOrCancel(GetCloseOrderPrice(position),
+                                    m_orderParams);
 }
 
-Price TakerOperation::OrderPolicy::GetCloseOrderPrice(
-    Position &position) const {
-  AssertEq(1, position.GetSubOperationId());
-  return position.GetOpenAvgPrice() * (position.IsLong() ? 1.0005 : 0.9995);
-}
-
-TakerOperation::TakerOperation(Strategy &strategy,
-                               const bool isLong,
-                               const Qty &qty)
-    : Base(strategy, boost::make_unique<PnlContainer>()),
-      m_isLong(isLong),
-      m_qty(qty) {}
+TakerOperation::TakerOperation(Strategy &strategy)
+    : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()) {}
 
 const OrderPolicy &TakerOperation::GetOpenOrderPolicy(const Position &) const {
-  return m_orderPolicy;
+  return m_aggresiveOrderPolicy;
 }
 
 const OrderPolicy &TakerOperation::GetCloseOrderPolicy(const Position &) const {
-  return m_orderPolicy;
+  return m_aggresiveOrderPolicy;
 }
 
 bool TakerOperation::OnCloseReasonChange(Position &position,
@@ -66,9 +52,5 @@ boost::shared_ptr<Operation> TakerOperation::StartInvertedPosition(
     const Position &) {
   return nullptr;
 }
-
-bool TakerOperation::IsLong(const Security &) const { return m_isLong; }
-
-Qty TakerOperation::GetPlannedQty(const Security &) const { return m_qty; }
 
 bool TakerOperation::HasCloseSignal(const Position &) const { return false; }
