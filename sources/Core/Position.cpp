@@ -13,7 +13,6 @@
 #include "TradingLib/Algo.hpp"
 #include "Operation.hpp"
 #include "OrderStatusHandler.hpp"
-#include "Settings.hpp"
 #include "Strategy.hpp"
 #include "Trade.hpp"
 #include "TradingLog.hpp"
@@ -825,6 +824,33 @@ class Position::Implementation : private boost::noncopyable {
     order.isCanceled = true;
     return true;
   }
+
+  void SetQty(const Qty &newValue,
+              Qty &variable,
+              const char *const status,
+              const char *variableName) {
+    m_strategy.GetTradingLog().Write(
+        "{'position': {'forcing': {'status': '%9%', 'prev%10%': "
+        "%1%, 'new%10%' %2%}, 'startPrice': %3%, 'plannedQty': %4%, "
+        "'type': '%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
+        [&](TradingRecord &record) {
+          record % variable           // 1
+              % newValue              // 2
+              % m_open.startPrice     // 3
+              % m_planedQty           // 4
+              % m_self.GetSide()      // 5
+              % *m_security           // 6
+              % m_operation->GetId()  // 7
+              % m_subOperationId      // 8
+              % status                // 9
+              % variableName;         // 10
+        });
+    const auto isCompelted = m_self.IsCompleted();
+    variable = newValue;
+    if (!isCompelted && m_self.IsCompleted()) {
+      m_strategy.OnPositionMarkedAsCompleted(m_self);
+    }
+  }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1098,26 +1124,8 @@ const Qty &Position::GetClosedQty() const noexcept {
   return m_pimpl->m_close.qty;
 }
 void Position::SetClosedQty(const Qty &newValue) {
-  GetStrategy().GetTradingLog().Write(
-      "{'position': {'forcing': {'status': 'closedQty', 'prevClosedQty': %1%, "
-      "'newClosedQty' %2%}, 'startPrice': %3%, 'plannedQty': %4%, 'type': "
-      "'%5%', 'security': '%6%', 'operation': '%7%/%8%'}}",
-      [&](TradingRecord &record) {
-        record % m_pimpl->m_close.qty  // 1
-            % newValue                 // 2
-            % GetOpenStartPrice()      // 3
-            % GetPlanedQty()           // 4
-            % GetSide()                // 5
-            % GetSecurity()            // 6
-            % GetOperation()->GetId()  // 7
-            % GetSubOperationId();     // 8
-      });
   AssertGe(GetOpenedQty(), newValue);
-  const bool isCompelted = IsCompleted();
-  m_pimpl->m_close.qty = newValue;
-  if (!isCompelted && IsCompleted()) {
-    m_pimpl->m_strategy.OnPositionMarkedAsCompleted(*this);
-  }
+  m_pimpl->SetQty(newValue, m_pimpl->m_close.qty, "closedQty", "ClosedQty");
 }
 
 Volume Position::GetClosedVolume() const { return m_pimpl->m_close.volume; }
@@ -1242,6 +1250,10 @@ const pt::ptime &Position::GetOpenStartTime() const {
 
 const Qty &Position::GetOpenedQty() const noexcept {
   return m_pimpl->m_open.qty;
+}
+
+void Position::SetOpenedQty(const Qty &newValue) {
+  m_pimpl->SetQty(newValue, m_pimpl->m_open.qty, "openedQty", "OpenedQty");
 }
 
 Price Position::GetOpenAvgPrice() const {

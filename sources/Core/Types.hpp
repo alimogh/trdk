@@ -354,19 +354,11 @@ class OrderId {
  private:
   std::string m_value;
 };
-}  // namespace trdk
 
-namespace stdext {
-
-inline size_t hash_value(const trdk::OrderId &orderId) {
+inline size_t hash_value(const OrderId &orderId) {
   return boost::hash_value(orderId.GetValue());
 }
-}  // namespace stdext
 
-namespace trdk {
-inline size_t hash_value(const trdk::OrderId &orderId) {
-  return stdext::hash_value(orderId);
-}
 }  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////

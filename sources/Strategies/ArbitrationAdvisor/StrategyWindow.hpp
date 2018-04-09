@@ -135,6 +135,7 @@ class StrategyWindow : public QMainWindow {
   std::string CreateConfig(
       const boost::uuids::uuid &strategyId,
       const Lib::Double &minPriceDifferenceToHighlightPercentage,
+      bool isAutoTradingEnabled,
       const Lib::Double &minPriceDifferenceToTradePercentage,
       const Qty &maxQty,
       bool isLowestSpreadEnabled,

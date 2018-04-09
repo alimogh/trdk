@@ -62,6 +62,8 @@ class StrategyWindow : public QMainWindow {
 
   std::string CreateConfig(
       const boost::uuids::uuid &strategyId,
+      bool isLongOpeningEnabled,
+      bool isShortOpeningEnabled,
       bool isActivePositionsControlEnabled,
       const Qty &positionSize,
       bool isMaOpeningSignalConfirmationEnabled,

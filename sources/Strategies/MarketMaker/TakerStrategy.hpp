@@ -18,13 +18,11 @@ class TakerStrategy : public Strategy {
  public:
   typedef Strategy Base;
 
- public:
   explicit TakerStrategy(Context &,
                          const std::string &instanceName,
                          const Lib::IniSectionRef &);
-  virtual ~TakerStrategy() override;
+  ~TakerStrategy() override;
 
- public:
   void Stop() noexcept;
 
   void EnableTrading(bool);

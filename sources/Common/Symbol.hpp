@@ -26,47 +26,42 @@ class Symbol {
 
   enum Right { RIGHT_PUT, RIGHT_CALL, numberOfRights };
 
- public:
   class Error : public Exception {
    public:
-    explicit Error(const char *what) throw();
+    explicit Error(const char *what) noexcept;
   };
 
   class StringFormatError : public Error {
    public:
-    explicit StringFormatError(const char *what) throw();
+    explicit StringFormatError(const char *what) noexcept;
   };
 
   class ParameterError : public Error {
    public:
-    explicit ParameterError(const char *what) throw();
+    explicit ParameterError(const char *what) noexcept;
   };
 
- public:
   Symbol();
   explicit Symbol(const std::string &line,
-                  const trdk::Lib::SecurityType &defSecurityType =
-                      trdk::Lib::numberOfSecurityTypes,
-                  const Currency &defCurrency = trdk::Lib::numberOfCurrencies);
+                  const SecurityType &defSecurityType = numberOfSecurityTypes,
+                  const Currency &defCurrency = numberOfCurrencies);
 
   Symbol(const Symbol &);
 
   Symbol &operator=(const Symbol &);
 
-  operator bool() const;
+  explicit operator bool() const;
 
   bool operator<(const Symbol &rhs) const;
   bool operator==(const Symbol &rhs) const;
   bool operator!=(const Symbol &rhs) const;
 
-  friend std::ostream &operator<<(std::ostream &, const trdk::Lib::Symbol &);
+  friend std::ostream &operator<<(std::ostream &, const Symbol &);
 
- public:
   Hash GetHash() const;
 
- public:
-  const trdk::Lib::SecurityType &GetSecurityType() const;
-  void SetSecurityType(const trdk::Lib::SecurityType &);
+  const SecurityType &GetSecurityType() const;
+  void SetSecurityType(const SecurityType &);
 
   const std::string &GetSymbol() const;
   void SetSymbol(const std::string &);
@@ -78,11 +73,12 @@ class Symbol {
 
   //! Explicit symbol has all in the name what required to specify symbol,
   //! dates and so on.
-  /** Futures will not be "explicit" if doesn't have contract period in the
-    * name, ex.: CL* - not explicit, CLM6 - explicit.
-    * @sa GetSecurityType
-    * @return true if symbol is explicit, false if symbol is not explicit.
-    */
+  /**
+   * Futures will not be "explicit" if doesn't have contract period in the
+   * name, ex.: CL* - not explicit, CLM6 - explicit.
+   * @sa GetSecurityType
+   * @return true if symbol is explicit, false if symbol is not explicit.
+   */
   bool IsExplicit() const;
 
   double GetStrike() const;
@@ -93,11 +89,11 @@ class Symbol {
   void SetRight(const Right &);
   void SetRight(const std::string &);
 
-  const trdk::Lib::Currency &GetCurrency() const;
-  void SetCurrency(const trdk::Lib::Currency &);
+  const Currency &GetCurrency() const;
+  void SetCurrency(const Currency &);
 
-  const trdk::Lib::Currency &GetFotBaseCurrency() const;
-  const trdk::Lib::Currency &GetFotQuoteCurrency() const;
+  const Currency &GetFotBaseCurrency() const;
+  const Currency &GetFotQuoteCurrency() const;
 
   const std::string &GetBaseSymbol() const;
   const std::string &GetQuoteSymbol() const;
@@ -106,7 +102,7 @@ class Symbol {
 
  private:
   struct Data {
-    trdk::Lib::SecurityType securityType;
+    SecurityType securityType;
     std::string symbol;
     std::string exchange;
     std::string primaryExchange;
@@ -118,9 +114,9 @@ class Symbol {
     std::string baseSymbol;
     std::string quoteSymbol;
 
-    trdk::Lib::Currency fotBaseCurrency;
+    Currency fotBaseCurrency;
     //! Currency and FOR Quote Currency.
-    trdk::Lib::Currency currency;
+    Currency currency;
 
     Data();
 
@@ -128,25 +124,10 @@ class Symbol {
 
   boost::atomic<Hash> m_hash;
 };
-}
-}
 
-////////////////////////////////////////////////////////////////////////////////
+inline size_t hash_value(const Symbol &symbol) { return symbol.GetHash(); }
 
-namespace stdext {
-
-inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
-  return symbol.GetHash();
-}
-}
-
-namespace trdk {
-namespace Lib {
-
-inline size_t hash_value(const trdk::Lib::Symbol &symbol) {
-  return stdext::hash_value(symbol);
-}
-}
-}
+}  // namespace Lib
+}  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////

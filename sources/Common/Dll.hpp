@@ -20,7 +20,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/type_traits.hpp>
 #if defined(BOOST_MSVC)
 #include <Windows.h>
 #elif defined(BOOST_GCC)

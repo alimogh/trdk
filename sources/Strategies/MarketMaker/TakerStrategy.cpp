@@ -125,6 +125,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
   void StartNewOperation() {
     if (!CheckNewOperationStart()) {
+      m_nextPeriodEnd = pt::not_a_date_time;
       m_completedSignal();
       return;
     }
@@ -149,9 +150,9 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
     ids::uuid operationId;
     try {
-      const auto position = m_controller.OnSignal(
-          boost::make_shared<TakerOperation>(m_self, isLong, qty), 1, *security,
-          Milestones());
+      const auto position =
+          m_controller.OpenPosition(boost::make_shared<TakerOperation>(m_self),
+                                    0, *security, isLong, qty, Milestones());
       if (!position) {
         return;
       }
@@ -173,41 +174,20 @@ class TakerStrategy::Implementation : private boost::noncopyable {
   }
 
   void CloseOperation(const ids::uuid &operationId) {
-    Position *firstLeg = nullptr;
     for (auto &position : m_self.GetPositions()) {
-      auto &operation = *position.GetOperation();
-      if (operation.GetId() == operationId) {
-        if (position.GetSubOperationId() == 2) {
-          ScheduleOperationClosing(operationId);
-          return;
-        }
-        AssertEq(1, position.GetSubOperationId());
-        Assert(!firstLeg);
-        firstLeg = &position;
-        break;
+      if (position.GetOperation()->GetId() != operationId) {
+        continue;
+      }
+      try {
+        m_controller.ClosePosition(position, CLOSE_REASON_SCHEDULE);
+      } catch (const CommunicationError &ex) {
+        m_self.GetLog().Error("Failed to close position %1%/%2%: \"%3%\".",
+                              operationId, position.GetSubOperationId(),
+                              ex.what());
+        m_self.Schedule(pt::seconds(15),
+                        [this, operationId]() { CloseOperation(operationId); });
       }
     }
-    if (!firstLeg) {
-      return;
-    }
-    if (!firstLeg->HasOpenedCloseOrders()) {
-      ScheduleOperationClosing(operationId);
-      return;
-    }
-    const auto &qty = firstLeg->GetActiveQty();
-    if (qty) {
-      m_controller.OpenPosition(firstLeg->GetOperation(), 2,
-                                firstLeg->GetSecurity(), firstLeg->IsLong(),
-                                qty, Milestones());
-    }
-    ScheduleOperationClosing(operationId);
-  }
-
-  void ScheduleOperationClosing(
-      const ids::uuid &operationId,
-      const pt::time_duration &time = pt::seconds(15)) {
-    m_self.Schedule(time,
-                    [this, operationId]() { CloseOperation(operationId); });
   }
 
   Security *ChooseSecurityForNewOperation() {

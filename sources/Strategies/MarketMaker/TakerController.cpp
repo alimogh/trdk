@@ -15,34 +15,25 @@ using namespace trdk;
 using namespace TradingLib;
 using namespace Strategies::MarketMaker;
 
-void TakerController::OnPositionUpdate(Position &position) {
-  if (position.GetSubOperationId() != 1) {
-    if (position.IsCompleted()) {
-      return;
-    }
-    if (position.GetNumberOfOrders() && !position.HasActiveOrders()) {
-      position.MarkAsCompleted();
-      return;
-    }
-  } else if (position.IsCompleted()) {
-    for (auto &secondLeg : position.GetStrategy().GetPositions()) {
-      if (&secondLeg == &position ||
-          &*secondLeg.GetOperation() != &*position.GetOperation()) {
-        continue;
-      }
-      AssertEq(2, secondLeg.GetSubOperationId());
-      if (!secondLeg.IsCompleted()) {
-        if (secondLeg.HasActiveOrders()) {
-          secondLeg.CancelAllOrders();
-        } else {
-          secondLeg.MarkAsCompleted();
-        }
-      }
-    }
-  }
-  Base::OnPositionUpdate(position);
-}
-
 void TakerController::HoldPosition(Position &position) {
   ClosePosition(position, CLOSE_REASON_TAKE_PROFIT);
+}
+
+void TakerController::ClosePosition(Position &position) {
+  if (position.GetClosedQty() == 0) {
+    for (const auto &symbol : position.GetOperation()->GetPnl().GetData()) {
+      if (symbol.first != position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
+        continue;
+      }
+      auto volume =
+          std::abs(symbol.second.financialResult) + symbol.second.commission;
+      const auto &price = position.GetMarketClosePrice();
+      volume += position.GetTradingSystem().CalcCommission(
+          volume / price, price,
+          position.IsLong() ? ORDER_SIDE_SELL : ORDER_SIDE_BUY,
+          position.GetSecurity());
+      position.SetOpenedQty(volume / price);
+    }
+  }
+  Base::ClosePosition(position);
 }

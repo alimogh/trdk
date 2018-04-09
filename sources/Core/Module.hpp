@@ -18,10 +18,10 @@
 
 namespace trdk {
 
-class TRDK_CORE_API Module : private boost::noncopyable {
+class TRDK_CORE_API Module : boost::noncopyable {
  public:
-  typedef trdk::ModuleEventsLog Log;
-  typedef trdk::ModuleTradingLog TradingLog;
+  typedef ModuleEventsLog Log;
+  typedef ModuleTradingLog TradingLog;
 
   class TRDK_CORE_API SecurityList;
 
@@ -30,53 +30,47 @@ class TRDK_CORE_API Module : private boost::noncopyable {
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
 
- public:
-  explicit Module(trdk::Context &,
+  explicit Module(Context &,
                   const std::string &typeName,
                   const std::string &implementationName,
                   const std::string &instanceName,
-                  const trdk::Lib::IniSectionRef &);
+                  const Lib::IniSectionRef &);
   virtual ~Module();
 
-  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
-                                                const trdk::Module &);
+  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &, const Module &);
 
- public:
   const boost::uuids::uuid &GetId() const;
-  const trdk::Module::InstanceId &GetInstanceId() const;
+  const InstanceId &GetInstanceId() const;
   const std::string &GetImplementationName() const;
   const std::string &GetInstanceName() const noexcept;
 
-  trdk::Context &GetContext();
-  const trdk::Context &GetContext() const;
+  Context &GetContext();
+  const Context &GetContext() const;
 
   const std::string &GetStringId() const noexcept;
 
- public:
-  trdk::Module::Log &GetLog() const noexcept;
-  trdk::Module::TradingLog &GetTradingLog() const noexcept;
+  Log &GetLog() const noexcept;
+  TradingLog &GetTradingLog() const noexcept;
   //! Opens file stream to log module data and reports and reports file
   //! path to log.
   std::ofstream OpenDataLog(const std::string &fileExtension,
                             const std::string &suffix = std::string()) const;
 
- public:
   Lock LockForOtherThreads();
 
- public:
   //! Returns list of required services.
   virtual std::string GetRequiredSuppliers() const;
 
-  void RaiseSettingsUpdateEvent(const trdk::Lib::IniSectionRef &);
+  void RaiseSettingsUpdateEvent(const Lib::IniSectionRef &);
 
-  virtual void OnServiceStart(const trdk::Service &);
+  virtual void OnServiceStart(const Service &);
 
  protected:
   Lock LockForOtherThreads() const {
     return const_cast<Module *>(this)->LockForOtherThreads();
   }
 
-  virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+  virtual void OnSettingsUpdate(const Lib::IniSectionRef &);
 
  private:
   class Implementation;
@@ -92,76 +86,63 @@ class TRDK_CORE_API trdk::Module::SecurityList {
 
   class TRDK_CORE_API Iterator
       : public boost::iterator_facade<Iterator,
-                                      trdk::Security,
-                                      boost::bidirectional_traversal_tag> {
-    friend class trdk::Module::SecurityList::ConstIterator;
+                                      Security,
+                                      boost::incrementable_traversal_tag> {
+    friend class ConstIterator;
 
    public:
     class Implementation;
 
-   public:
-    explicit Iterator(Implementation *);
+    explicit Iterator(std::unique_ptr<Implementation> &&);
     Iterator(const Iterator &);
     ~Iterator();
 
-   public:
     Iterator &operator=(const Iterator &);
     void Swap(Iterator &);
 
-   public:
-    trdk::Security &dereference() const;
+    Security &dereference() const;
     bool equal(const Iterator &) const;
     bool equal(const ConstIterator &) const;
     void increment();
-    void decrement();
-    void advance(const difference_type &);
 
    private:
-    Implementation *m_pimpl;
+    std::unique_ptr<Implementation> m_pimpl;
   };
 
   class TRDK_CORE_API ConstIterator
       : public boost::iterator_facade<ConstIterator,
-                                      const trdk::Security,
-                                      boost::bidirectional_traversal_tag> {
-    friend class trdk::Module::SecurityList::Iterator;
+                                      const Security,
+                                      boost::incrementable_traversal_tag> {
+    friend class Iterator;
 
    public:
     class Implementation;
 
-   public:
-    explicit ConstIterator(Implementation *);
+    explicit ConstIterator(std::unique_ptr<Implementation> &&);
     explicit ConstIterator(const Iterator &);
     ConstIterator(const ConstIterator &);
     ~ConstIterator();
 
-   public:
     ConstIterator &operator=(const ConstIterator &);
     void Swap(ConstIterator &);
 
-   public:
-    const trdk::Security &dereference() const;
+    const Security &dereference() const;
     bool equal(const Iterator &) const;
     bool equal(const ConstIterator &) const;
     void increment();
-    void decrement();
-    void advance(const difference_type &);
 
    private:
-    Implementation *m_pimpl;
+    std::unique_ptr<Implementation> m_pimpl;
   };
 
- public:
   virtual ~SecurityList() = default;
 
- public:
   Iterator begin() { return GetBegin(); }
   ConstIterator cbegin() const { return GetBegin(); }
 
   Iterator end() { return GetEnd(); }
   ConstIterator cend() const { return GetEnd(); }
 
- public:
   virtual size_t GetSize() const = 0;
   virtual bool IsEmpty() const = 0;
 
@@ -170,9 +151,6 @@ class TRDK_CORE_API trdk::Module::SecurityList {
 
   virtual Iterator GetEnd() = 0;
   virtual ConstIterator GetEnd() const = 0;
-
-  virtual Iterator Find(const trdk::Lib::Symbol &) = 0;
-  virtual ConstIterator Find(const trdk::Lib::Symbol &) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////

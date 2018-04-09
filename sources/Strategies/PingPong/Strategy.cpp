@@ -186,12 +186,12 @@ class pp::Strategy::Implementation : private boost::noncopyable {
  public:
   explicit Implementation(Strategy &self, const IniSectionRef &conf)
       : m_self(self),
+        m_positionSize(conf.ReadTypedKey<Qty>("position_size")),
         m_indicatorsToggles(
             {{conf.ReadBoolKey("ma_opening_signal_confirmation_enabled"),
               conf.ReadBoolKey("ma_closing_signal_confirmation_enabled")},
              {conf.ReadBoolKey("rsi_opening_signal_confirmation_enabled"),
               conf.ReadBoolKey("rsi_closing_signal_confirmation_enabled")}}),
-        m_positionSize(conf.ReadTypedKey<Qty>("position_size")),
         m_fastMaSize(conf.ReadTypedKey<size_t>("number_of_fast_ma_periods")),
         m_slowMaSize(conf.ReadTypedKey<size_t>("number_of_slow_ma_periods")),
         m_numberOfRsiPeriods(
