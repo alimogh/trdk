@@ -150,9 +150,9 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
     ids::uuid operationId;
     try {
-      const auto position =
-          m_controller.OpenPosition(boost::make_shared<TakerOperation>(m_self),
-                                    0, *security, isLong, qty, Milestones());
+      const auto position = m_controller.Open(
+          boost::make_shared<TakerOperation>(m_self, *security), 0, *security,
+          isLong, qty, Milestones());
       if (!position) {
         return;
       }
@@ -179,7 +179,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
         continue;
       }
       try {
-        m_controller.ClosePosition(position, CLOSE_REASON_SCHEDULE);
+        m_controller.Close(position, CLOSE_REASON_SCHEDULE);
       } catch (const CommunicationError &ex) {
         m_self.GetLog().Error("Failed to close position %1%/%2%: \"%3%\".",
                               operationId, position.GetSubOperationId(),
@@ -273,7 +273,7 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
     m_pimpl->AddCompletedVolume(position.GetClosedVolume());
 
     if (position.GetSubOperationId() == 1) {
-      m_pimpl->m_controller.OnPositionUpdate(position);
+      m_pimpl->m_controller.OnUpdate(position);
     }
 
     for (const auto &anotherPosition : GetPositions()) {
@@ -300,7 +300,7 @@ void TakerStrategy::OnPositionUpdate(Position &position) {
   const auto prevCloseReason = position.GetCloseReason();
 
   try {
-    m_pimpl->m_controller.OnPositionUpdate(position);
+    m_pimpl->m_controller.OnUpdate(position);
   } catch (const CommunicationError &ex) {
     GetLog().Warn("Communication error at position update handling: \"%1%\".",
                   ex.what());
@@ -316,7 +316,7 @@ void TakerStrategy::OnPostionsCloseRequest() {
   if (m_pimpl->m_isStopped) {
     return;
   }
-  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
+  m_pimpl->m_controller.OnCloseAllRequest(*this);
 }
 
 bool TakerStrategy::OnBlocked(const std::string *reason) noexcept {

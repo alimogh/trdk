@@ -31,7 +31,7 @@ class TakerOperation : public Operation {
   };
 
  public:
-  explicit TakerOperation(Strategy &);
+  explicit TakerOperation(Strategy &, const Security &);
   ~TakerOperation() override = default;
 
   const TradingLib::OrderPolicy &GetOpenOrderPolicy(

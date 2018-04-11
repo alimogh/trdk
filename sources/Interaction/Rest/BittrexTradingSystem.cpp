@@ -126,12 +126,12 @@ void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
   m_pollingTask.AccelerateNextPolling();
 }
 
-boost::optional<BittrexTradingSystem::OrderCheckError>
-BittrexTradingSystem::CheckOrder(const trdk::Security &security,
-                                 const Currency &currency,
-                                 const Qty &qty,
-                                 const boost::optional<Price> &price,
-                                 const OrderSide &side) const {
+boost::optional<OrderCheckError> BittrexTradingSystem::CheckOrder(
+    const trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderSide &side) const {
   {
     const auto &result = Base::CheckOrder(security, currency, qty, price, side);
     if (result) {

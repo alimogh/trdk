@@ -27,7 +27,8 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
   static const QColor colorOfProfitAlt(0, 153, 0);
   static const QColor colorOfLoss(179, 0, 0);
   static const QColor colorOfLossAlt(204, 0, 0);
-  static const QColor textColorOfActive(251, 253, 254);
+  static const QColor colorOfCompleted(0, 51, 204);
+  static const QColor colorOfCompletedAlt(0, 51, 153);
   static const QColor colorOfSellActive(255, 0, 0);
   static const QColor colorOfBuyActive(0, 255, 0);
   static const QColor colorOfSellClosed(230, 51, 51);
@@ -47,7 +48,7 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
         options->font.setBold(true);
       } else if (operation->GetRecord().status !=
                  Orm::OperationStatus::ACTIVE) {
-        static_assert(Orm::OperationStatus::numberOfStatuses == 5,
+        static_assert(Orm::OperationStatus::numberOfStatuses == 6,
                       "List changed.");
         switch (operation->GetRecord().status) {
           case Orm::OperationStatus::CANCELED:
@@ -60,6 +61,10 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
           case Orm::OperationStatus::LOSS:
             options->backgroundBrush =
                 index.row() % 2 ? colorOfLossAlt : colorOfLoss;
+            break;
+          case Orm::OperationStatus::COMPLETED:
+            options->backgroundBrush =
+                index.row() % 2 ? colorOfCompletedAlt : colorOfCompleted;
             break;
           default:
             AssertEq(Orm::OperationStatus::ERROR,

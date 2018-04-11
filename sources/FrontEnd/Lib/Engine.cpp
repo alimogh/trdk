@@ -26,22 +26,20 @@ namespace db = qx::dao;
 namespace {
 Orm::OperationStatus::enum_OperationStatus CovertToOperationStatus(
     const Pnl::Result &source) {
-  static_assert(Pnl::numberOfResults == 4, "List changed.");
+  static_assert(Pnl::numberOfResults == 5, "List changed.");
   switch (source) {
     case Pnl::RESULT_NONE:
       return Orm::OperationStatus::CANCELED;
-      break;
+    case Pnl::RESULT_COMPLETED:
+      return Orm::OperationStatus::COMPLETED;
     case Pnl::RESULT_PROFIT:
       return Orm::OperationStatus::PROFIT;
-      break;
     case Pnl::RESULT_LOSS:
       return Orm::OperationStatus::LOSS;
-      break;
     default:
       AssertEq(Pnl::RESULT_ERROR, source);
     case Pnl::RESULT_ERROR:
       return Orm::OperationStatus::ERROR;
-      break;
   }
 }
 }  // namespace

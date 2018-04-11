@@ -18,16 +18,14 @@ class PositionController : public TradingLib::PositionController {
  public:
   typedef TradingLib::PositionController Base;
 
- public:
-  virtual ~PositionController() override = default;
+  ~PositionController() override = default;
 
- public:
-  virtual void OnPositionUpdate(trdk::Position &) override;
-  using Base::ClosePosition;
+  void OnUpdate(trdk::Position &) override;
+  using Base::Close;
 
  protected:
-  virtual void HoldPosition(Position &) override;
-  virtual void ClosePosition(Position &) override;
+  void Hold(Position &) override;
+  void Close(Position &) override;
 };
 }  // namespace ArbitrageAdvisor
 }  // namespace Strategies

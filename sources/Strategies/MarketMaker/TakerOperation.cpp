@@ -12,6 +12,7 @@
 #include "TakerOperation.hpp"
 
 using namespace trdk;
+using namespace Lib;
 using namespace TradingLib;
 using namespace Strategies::MarketMaker;
 
@@ -29,8 +30,106 @@ void TakerOperation::AggresivePolicy::Close(trdk::Position &position) const {
                                     m_orderParams);
 }
 
-TakerOperation::TakerOperation(Strategy &strategy)
-    : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()) {}
+namespace {
+class MarketmakingPnlContainer : public PnlContainer {
+ public:
+  explicit MarketmakingPnlContainer(const Security &security)
+      : m_security(security) {}
+  ~MarketmakingPnlContainer() override = default;
+
+  void UpdateFinancialResult(const Security &security,
+                             const OrderSide &side,
+                             const Qty &qty,
+                             const Price &price) override {
+    Update(security, side, qty, price, 0);
+  }
+
+  void UpdateFinancialResult(const Security &security,
+                             const OrderSide &side,
+                             const Qty &qty,
+                             const Price &price,
+                             const Volume &commission) override {
+    Update(security, side, qty, price, commission);
+  }
+
+  void AddCommission(const Security &security,
+                     const Volume &commission) override {
+    const auto &symbol = security.GetSymbol();
+    switch (symbol.GetSecurityType()) {
+      default:
+        throw MethodIsNotImplementedException(
+            "Security type is not supported by P&L container");
+      case SECURITY_TYPE_CRYPTO: {
+        Update(security.GetSymbol().GetQuoteSymbol(), 0, commission);
+      }
+    }
+  }
+
+  Result GetResult() const override {
+    auto isBaseProfit = false;
+    auto isQuoteProfit = false;
+    for (const auto &balance : m_data) {
+      const auto total =
+          balance.second.financialResult - balance.second.commission;
+      if (total == 0) {
+        continue;
+      }
+      if (total < 0) {
+        if (balance.first != m_security.GetSymbol().GetBaseSymbol()) {
+          return RESULT_LOSS;
+        }
+        isQuoteProfit = false;
+      } else if (balance.first == m_security.GetSymbol().GetBaseSymbol()) {
+        isBaseProfit = true;
+      } else {
+        isQuoteProfit = true;
+      }
+    }
+    return isQuoteProfit && isBaseProfit ? RESULT_PROFIT : RESULT_COMPLETED;
+  }
+
+  const Data &GetData() const override { return m_data; }
+
+ private:
+  void Update(const std::string &symbol,
+              const Volume &financialResultDelta,
+              const Volume &commission) {
+    const auto &result =
+        m_data.emplace(symbol, SymbolData{financialResultDelta, commission});
+    if (!result.second) {
+      auto &values = result.first->second;
+      values.financialResult += financialResultDelta;
+      values.commission += commission;
+    }
+  }
+
+  void Update(const Security &security,
+              const OrderSide &side,
+              const Qty &qty,
+              const Price &price,
+              const Volume &commission) {
+    const auto &symbol = security.GetSymbol();
+    switch (symbol.GetSecurityType()) {
+      default:
+        throw MethodIsNotImplementedException(
+            "Security type is not supported by P&L container");
+      case SECURITY_TYPE_CRYPTO: {
+        Update(symbol.GetBaseSymbol(), qty * (side == ORDER_SIDE_BUY ? 1 : -1),
+               0);
+        Update(symbol.GetQuoteSymbol(),
+               ((qty * price) * (side == ORDER_SIDE_BUY ? -1 : 1)), commission);
+      }
+    }
+  }
+
+  const Security &m_security;
+  Data m_data;
+};
+
+}  // namespace
+
+TakerOperation::TakerOperation(Strategy &strategy, const Security &security)
+    : Base(strategy, boost::make_unique<MarketmakingPnlContainer>(security)) {}
 
 const OrderPolicy &TakerOperation::GetOpenOrderPolicy(const Position &) const {
   return m_aggresiveOrderPolicy;

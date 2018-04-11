@@ -208,12 +208,12 @@ void CexioTradingSystem::UpdateOrder(const OrderId &id,
   }
 }
 
-boost::optional<CexioTradingSystem::OrderCheckError>
-CexioTradingSystem::CheckOrder(const trdk::Security &security,
-                               const Currency &currency,
-                               const Qty &qty,
-                               const boost::optional<Price> &price,
-                               const OrderSide &side) const {
+boost::optional<OrderCheckError> CexioTradingSystem::CheckOrder(
+    const trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderSide &side) const {
   {
     const auto result = Base::CheckOrder(security, currency, qty, price, side);
     if (result) {

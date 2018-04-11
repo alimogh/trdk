@@ -10,22 +10,21 @@
 
 #include "Prec.hpp"
 #include "PositionController.hpp"
-#include "Operation.hpp"
 #include "Strategy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::TradingLib;
-using namespace trdk::Strategies::ArbitrageAdvisor;
+using namespace Lib;
+using namespace TradingLib;
+using namespace Strategies::ArbitrageAdvisor;
 
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
+namespace aa = Strategies::ArbitrageAdvisor;
 
-void aa::PositionController::OnPositionUpdate(Position &position) {
+void aa::PositionController::OnUpdate(Position &position) {
   auto *const oppositePosition = FindOppositePosition(position);
   if (position.IsCompleted()) {
     if (oppositePosition && !oppositePosition->IsCompleted() &&
         !oppositePosition->IsCancelling()) {
-      OnPositionUpdate(*oppositePosition);
+      OnUpdate(*oppositePosition);
     }
     return;
   }
@@ -57,21 +56,20 @@ void aa::PositionController::OnPositionUpdate(Position &position) {
 
   position.GetCloseReason() == CLOSE_REASON_NONE &&oppositePosition &&
           oppositePosition->GetCloseReason() != CLOSE_REASON_NONE
-      ? ClosePosition(position, oppositePosition->GetCloseReason())
-      : Base::OnPositionUpdate(position);
+      ? Close(position, oppositePosition->GetCloseReason())
+      : Base::OnUpdate(position);
 }
 
-void aa::PositionController::HoldPosition(Position &position) {
+void aa::PositionController::Hold(Position &position) {
+  AssertLt(0, position.GetActiveQty());
   Assert(position.IsFullyOpened());
   Assert(!position.IsCompleted());
-  Assert(!position.HasActiveOrders());
 
-  Position *const oppositePosition = FindOppositePosition(position);
+  auto *const oppositePosition = FindOppositePosition(position);
   if (!oppositePosition) {
-    ClosePosition(position, CLOSE_REASON_SYSTEM_ERROR);
+    Close(position, CLOSE_REASON_SYSTEM_ERROR);
     return;
   }
-  Assert(!position.IsCompleted());
 
   if (!oppositePosition->IsFullyOpened()) {
     // Waiting until another leg will be completed.
@@ -179,7 +177,7 @@ Position *CheckAbsolutePosition(Position &signalPosition) {
       signalPosition.IsLong() ? signalPosition : *oppositePosition;
   auto &shortPosition =
       &longPosition == oppositePosition ? signalPosition : *oppositePosition;
-  const Qty &absolutePositionSize =
+  const auto &absolutePositionSize =
       longPosition.GetActiveQty() - shortPosition.GetActiveQty();
 
   if (!absolutePositionSize) {
@@ -206,18 +204,18 @@ Position *CheckAbsolutePosition(Position &signalPosition) {
 }
 }  // namespace
 
-void aa::PositionController::ClosePosition(Position &position) {
+void aa::PositionController::Close(Position &position) {
   {
     auto *const absolutePosition = CheckAbsolutePosition(position);
     if (!absolutePosition) {
       return;
     } else if (&position != absolutePosition) {
-      ClosePosition(*absolutePosition, position.GetCloseReason());
+      Close(*absolutePosition, position.GetCloseReason());
       return;
     }
   }
   if (!ChooseBestExchange(position)) {
     return;
   }
-  Base::ClosePosition(position);
+  Base::Close(position);
 }
