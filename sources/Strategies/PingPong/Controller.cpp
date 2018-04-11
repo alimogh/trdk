@@ -40,13 +40,12 @@ void Controller::EnableClosing(bool isEnabled) {
   m_isClosingEnabled = isEnabled;
 }
 
-Position *Controller::OpenPosition(
-    const boost::shared_ptr<Operation> &operation,
-    int64_t subOperationId,
-    Security &security,
-    bool isLong,
-    const Qty &qty,
-    const Milestones &delayMeasurement) {
+Position *Controller::Open(const boost::shared_ptr<Operation> &operation,
+                           int64_t subOperationId,
+                           Security &security,
+                           bool isLong,
+                           const Qty &qty,
+                           const Milestones &delayMeasurement) {
   if ((operation->IsLong(security) && !m_isLongOpeningEnabled) ||
       (!operation->IsLong(security) && !m_isShortOpeningEnabled)) {
     return nullptr;
@@ -74,18 +73,18 @@ Position *Controller::OpenPosition(
       return nullptr;
     }
   }
-  return Base::OpenPosition(operation, subOperationId, security, isLong, qty,
-                            delayMeasurement);
+  return Base::Open(operation, subOperationId, security, isLong, qty,
+                    delayMeasurement);
 }
 
-bool Controller::ClosePosition(Position &position, const CloseReason &reason) {
+bool Controller::Close(Position &position, const CloseReason &reason) {
   if (!m_isClosingEnabled) {
     return false;
   }
-  return Base::ClosePosition(position, reason);
+  return Base::Close(position, reason);
 }
 
-void Controller::ClosePosition(Position &position) {
+void Controller::Close(Position &position) {
   if (!m_isClosingEnabled) {
     return;
   }
@@ -110,11 +109,11 @@ void Controller::ClosePosition(Position &position) {
       return;
     }
   }
-  Base::ClosePosition(position);
+  Base::Close(position);
 }
 
-Position *Controller::GetExistingPosition(trdk::Strategy &strategy,
-                                          Security &security) {
+Position *Controller::GetExisting(trdk::Strategy &strategy,
+                                  Security &security) {
   for (auto &position : strategy.GetPositions()) {
     if (&position.GetSecurity() == &security) {
       return &position;
@@ -125,7 +124,7 @@ Position *Controller::GetExistingPosition(trdk::Strategy &strategy,
 
 bool Controller::HasPositions(trdk::Strategy &strategy,
                               Security &security) const {
-  return const_cast<Controller *>(this)->GetExistingPosition(strategy, security)
+  return const_cast<Controller *>(this)->GetExisting(strategy, security)
              ? true
              : false;
 }

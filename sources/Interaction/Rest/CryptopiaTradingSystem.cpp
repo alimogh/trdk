@@ -210,12 +210,12 @@ Volume CryptopiaTradingSystem::CalcCommission(
   return (qty * price) * productIt->feeRatio;
 }
 
-boost::optional<CryptopiaTradingSystem::OrderCheckError>
-CryptopiaTradingSystem::CheckOrder(const trdk::Security &security,
-                                   const Currency &currency,
-                                   const Qty &internalQty,
-                                   const boost::optional<Price> &internalPrice,
-                                   const OrderSide &side) const {
+boost::optional<OrderCheckError> CryptopiaTradingSystem::CheckOrder(
+    const trdk::Security &security,
+    const Currency &currency,
+    const Qty &internalQty,
+    const boost::optional<Price> &internalPrice,
+    const OrderSide &side) const {
   {
     const auto result =
         Base::CheckOrder(security, currency, internalQty, internalPrice, side);

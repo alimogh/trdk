@@ -21,7 +21,7 @@ StopOrder::StopOrder(Position &position, PositionController &controller)
 
 void StopOrder::OnHit(const CloseReason &reason) {
   try {
-    m_controller.ClosePosition(GetPosition(), reason);
+    m_controller.Close(GetPosition(), reason);
   } catch (const CommunicationError &ex) {
     GetPosition().GetStrategy().GetLog().Warn(
         "Communication error while starting position closing by stop-order "

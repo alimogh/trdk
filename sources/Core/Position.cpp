@@ -685,7 +685,8 @@ class Position::Implementation : private boost::noncopyable {
 
     if (m_self.IsCancelling()) {
       throw Exception("Failed to start opening as canceling is not completed");
-    } else if (!m_close.orders.empty()) {
+    }
+    if (!m_close.orders.empty()) {
       throw AlreadyStartedError();
     }
 
@@ -696,7 +697,7 @@ class Position::Implementation : private boost::noncopyable {
     AssertGt(m_planedQty, m_open.qty);
     auto qty = m_planedQty - m_open.qty;
 
-    bool isRegistered = false;
+    auto isRegistered = false;
     if (!m_isRegistered) {
       m_strategy.Register(m_self);
       isRegistered = true;
@@ -711,7 +712,7 @@ class Position::Implementation : private boost::noncopyable {
           boost::make_unique<OpenStatusHandler>(m_self.shared_from_this());
       if (!orderParams.expiration && !m_security->GetSymbol().IsExplicit()) {
         m_expiration = m_security->GetExpiration();
-        OrderParams additionalOrderParams(orderParams);
+        auto additionalOrderParams(orderParams);
         additionalOrderParams.expiration = &*m_expiration;
         order.transactionContext =
             openImpl(qty, additionalOrderParams, std::move(handler));
@@ -1095,11 +1096,11 @@ const boost::shared_ptr<const OrderTransactionContext> &GetOrderContext(
 }
 }  // namespace
 const boost::shared_ptr<const OrderTransactionContext>
-    &Position::GetOpeningContext(size_t index) const {
+    &Position::GetOpeningContext(const size_t index) const {
   return GetOrderContext(m_pimpl->m_open, index);
 }
 const boost::shared_ptr<const OrderTransactionContext>
-    &Position::GetClosingContext(size_t index) const {
+    &Position::GetClosingContext(const size_t index) const {
   return GetOrderContext(m_pimpl->m_close, index);
 }
 

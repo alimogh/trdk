@@ -352,7 +352,7 @@ void pp::Strategy::OnPositionUpdate(Position &position) {
     return;
   }
   try {
-    m_pimpl->m_controller.OnPositionUpdate(position);
+    m_pimpl->m_controller.OnUpdate(position);
   } catch (const CommunicationError &ex) {
     GetLog().Warn("Communication error at position update handling: \"%1%\".",
                   ex.what());
@@ -363,7 +363,7 @@ void pp::Strategy::OnPostionsCloseRequest() {
   if (m_pimpl->m_isStopped) {
     return;
   }
-  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
+  m_pimpl->m_controller.OnCloseAllRequest(*this);
 }
 
 bool pp::Strategy::OnBlocked(const std::string *reason) noexcept {

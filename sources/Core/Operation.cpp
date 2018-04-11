@@ -53,7 +53,7 @@ class Operation::Implementation : private boost::noncopyable {
             "'commission': {%3%},  'totalResult': {%4%}, 'id' : '%5%'}}",
             [this](TradingRecord &record) {
               {
-                static_assert(Pnl::numberOfResults == 4, "List changed.");
+                static_assert(Pnl::numberOfResults == 5, "List changed.");
                 const auto &result = m_pnl->GetResult();
                 switch (result) {
                   default:
@@ -62,6 +62,9 @@ class Operation::Implementation : private boost::noncopyable {
                     break;
                   case Pnl::RESULT_NONE:
                     record % "none";  // 1
+                    break;
+                  case Pnl::RESULT_COMPLETED:
+                    record % "completed";  // 1
                     break;
                   case Pnl::RESULT_PROFIT:
                     record % "profit";  // 1

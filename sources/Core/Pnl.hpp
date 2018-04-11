@@ -16,6 +16,7 @@ class Pnl : boost::noncopyable {
  public:
   enum Result {
     RESULT_NONE,
+    RESULT_COMPLETED,
     RESULT_PROFIT,
     RESULT_LOSS,
     RESULT_ERROR,

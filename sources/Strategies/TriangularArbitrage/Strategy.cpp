@@ -383,9 +383,9 @@ class ta::Strategy::Implementation : private boost::noncopyable {
     boost::array<Position *, numberOfLegs> positions = {};
     const auto &openPosition = [&](const Leg &leg) {
       Assert(!positions[leg]);
-      positions[leg] = m_controller.OpenPosition(
-          operation, leg + 1, *opportunity.targets[leg].security,
-          delayMeasurement);
+      positions[leg] = m_controller.Open(operation, leg + 1,
+                                         *opportunity.targets[leg].security,
+                                         delayMeasurement);
     };
 
     if (firstSyncLeg) {
@@ -486,7 +486,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
     const auto &close = [this](Position &position) {
       try {
-        m_controller.ClosePosition(position, CLOSE_REASON_OPEN_FAILED);
+        m_controller.Close(position, CLOSE_REASON_OPEN_FAILED);
       } catch (const CommunicationError &ex) {
         m_self.GetLog().Warn(
             "Communication error at position closing request: \"%1%\".",
@@ -868,7 +868,7 @@ void ta::Strategy::OnPositionUpdate(Position &position) {
     return;
   }
   try {
-    m_pimpl->m_controller.OnPositionUpdate(position);
+    m_pimpl->m_controller.OnUpdate(position);
   } catch (const CommunicationError &ex) {
     GetLog().Warn("Communication error at position update handling: \"%1%\".",
                   ex.what());
@@ -883,7 +883,7 @@ void ta::Strategy::OnPostionsCloseRequest() {
   if (m_pimpl->m_isStopped) {
     return;
   }
-  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
+  m_pimpl->m_controller.OnCloseAllRequest(*this);
 }
 
 bool ta::Strategy::OnBlocked(const std::string *reason) noexcept {

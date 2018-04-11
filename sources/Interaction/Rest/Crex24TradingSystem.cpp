@@ -253,12 +253,12 @@ void Crex24TradingSystem::UpdateOrder(OrderTransactionContext &context,
       : OnOrderCompleted(time, context.GetOrderId(), boost::none);
 }
 
-boost::optional<Crex24TradingSystem::OrderCheckError>
-Crex24TradingSystem::CheckOrder(const trdk::Security &security,
-                                const Currency &currency,
-                                const Qty &qty,
-                                const boost::optional<Price> &price,
-                                const OrderSide &side) const {
+boost::optional<OrderCheckError> Crex24TradingSystem::CheckOrder(
+    const trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderSide &side) const {
   {
     const auto result = Base::CheckOrder(security, currency, qty, price, side);
     if (result) {
@@ -272,7 +272,7 @@ Crex24TradingSystem::CheckOrder(const trdk::Security &security,
                      security);
       throw Exception("Product is unknown");
     }
-    if (product->second.minQty < qty) {
+    if (qty < product->second.minQty) {
       return OrderCheckError{product->second.minQty};
     }
   }

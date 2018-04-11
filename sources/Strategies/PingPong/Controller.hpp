@@ -36,21 +36,20 @@ class Controller : public TradingLib::PositionController {
   bool HasPositions(trdk::Strategy &, trdk::Security &) const;
 
  public:
-  virtual trdk::Position *OpenPosition(
+  virtual trdk::Position *Open(
       const boost::shared_ptr<trdk::Operation> &,
       int64_t subOperationId,
       trdk::Security &,
       bool isLong,
       const trdk::Qty &,
       const trdk::Lib::TimeMeasurement::Milestones &) override;
-  virtual bool ClosePosition(trdk::Position &,
-                             const trdk::CloseReason &) override;
+  virtual bool Close(trdk::Position &, const trdk::CloseReason &) override;
 
  protected:
-  virtual trdk::Position *GetExistingPosition(trdk::Strategy &,
-                                              trdk::Security &) override;
+  virtual trdk::Position *GetExisting(trdk::Strategy &,
+                                      trdk::Security &) override;
 
-  virtual void ClosePosition(trdk::Position &) override;
+  virtual void Close(trdk::Position &) override;
 
  private:
   bool m_isLongOpeningEnabled;

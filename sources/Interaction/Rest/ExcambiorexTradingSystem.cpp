@@ -270,12 +270,12 @@ void ExcambiorexTradingSystem::FinalizeOrder(const pt::ptime &time,
               : OnOrderCanceled(time, id, boost::none, boost::none);
 }
 
-boost::optional<ExcambiorexTradingSystem::OrderCheckError>
-ExcambiorexTradingSystem::CheckOrder(const trdk::Security &security,
-                                     const Currency &currency,
-                                     const Qty &qty,
-                                     const boost::optional<Price> &price,
-                                     const OrderSide &side) const {
+boost::optional<OrderCheckError> ExcambiorexTradingSystem::CheckOrder(
+    const trdk::Security &security,
+    const Currency &currency,
+    const Qty &qty,
+    const boost::optional<Price> &price,
+    const OrderSide &side) const {
   {
     const auto result = Base::CheckOrder(security, currency, qty, price, side);
     if (result) {

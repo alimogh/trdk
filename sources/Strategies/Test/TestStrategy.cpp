@@ -98,7 +98,7 @@ class TestStrategy : public Strategy {
 
  protected:
   void OnPositionUpdate(Position &position) {
-    m_positionController.OnPositionUpdate(position);
+    m_positionController.OnUpdate(position);
   }
 
   virtual void OnLevel1Tick(Security &security,
@@ -131,7 +131,7 @@ class TestStrategy : public Strategy {
   }
 
   virtual void OnPostionsCloseRequest() override {
-    m_positionController.OnPostionsCloseRequest(*this);
+    m_positionController.OnCloseAllRequest(*this);
   }
 
  private:

@@ -20,11 +20,13 @@ class TakerController : public TradingLib::PositionController {
 
   ~TakerController() override = default;
 
-  using Base::ClosePosition;
+  using Base::Close;
 
  protected:
-  void HoldPosition(Position &) override;
-  void ClosePosition(Position &) override;
+  void Hold(Position &) override;
+  void Hold(Position &, const OrderCheckError &) override;
+  void Close(Position &) override;
+  void Complete(Position &, const OrderCheckError &) override;
 };
 
 }  // namespace MarketMaker

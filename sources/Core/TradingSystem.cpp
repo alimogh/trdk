@@ -606,7 +606,7 @@ Balances &TradingSystem::GetBalancesStorage() {
   return result;
 }
 
-boost::optional<TradingSystem::OrderCheckError> TradingSystem::CheckOrder(
+boost::optional<OrderCheckError> TradingSystem::CheckOrder(
     const Security &,
     const Currency &,
     const Qty &,

@@ -12,14 +12,24 @@
 #include "TakerController.hpp"
 
 using namespace trdk;
+using namespace Lib;
 using namespace TradingLib;
 using namespace Strategies::MarketMaker;
 
-void TakerController::HoldPosition(Position &position) {
-  ClosePosition(position, CLOSE_REASON_TAKE_PROFIT);
+void TakerController::Hold(Position &position) {
+  Close(position, CLOSE_REASON_TAKE_PROFIT);
+}
+void TakerController::Hold(Position &position, const OrderCheckError &) {
+  Hold(position);
 }
 
-void TakerController::ClosePosition(Position &position) {
+void TakerController::Complete(Position &position, const OrderCheckError &) {
+  AssertLt(0, position.GetActiveQty());
+  Assert(!position.IsCompleted());
+  position.MarkAsCompleted();
+}
+
+void TakerController::Close(Position &position) {
   if (position.GetClosedQty() == 0) {
     for (const auto &symbol : position.GetOperation()->GetPnl().GetData()) {
       if (symbol.first != position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
@@ -35,5 +45,5 @@ void TakerController::ClosePosition(Position &position) {
       position.SetOpenedQty(volume / price);
     }
   }
-  Base::ClosePosition(position);
+  Base::Close(position);
 }

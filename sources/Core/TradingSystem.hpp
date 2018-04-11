@@ -42,12 +42,6 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   typedef ModuleEventsLog Log;
   typedef ModuleTradingLog TradingLog;
 
-  struct OrderCheckError {
-    boost::optional<Qty> qty;
-    boost::optional<Price> price;
-    boost::optional<Volume> volume;
-  };
-
  protected:
   template <Lib::Concurrency::Profile profile>
   struct ConcurrencyPolicyTrait {
@@ -105,8 +99,7 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
                    boost::shared_ptr<const Position> &&);
   };
 
-  typedef boost::unordered_map<OrderId, boost::shared_ptr<TradingSystem::Order>>
-      Orders;
+  typedef boost::unordered_map<OrderId, boost::shared_ptr<Order>> Orders;
 
  public:
   explicit TradingSystem(const TradingMode &,
