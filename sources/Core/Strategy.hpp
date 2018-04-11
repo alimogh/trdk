@@ -29,13 +29,13 @@ class TRDK_CORE_API Strategy : public Consumer {
     class TRDK_CORE_API Iterator
         : public boost::iterator_facade<Iterator,
                                         Position,
-                                        boost::bidirectional_traversal_tag> {
+                                        boost::incrementable_traversal_tag> {
       friend class ConstIterator;
 
      public:
       class Implementation;
 
-      explicit Iterator(Implementation *) noexcept;
+      explicit Iterator(std::unique_ptr<Implementation> &&);
       Iterator(const Iterator &);
       ~Iterator();
 
@@ -46,24 +46,22 @@ class TRDK_CORE_API Strategy : public Consumer {
       bool equal(const Iterator &) const;
       bool equal(const ConstIterator &) const;
       void increment();
-      void decrement();
-      void advance(const difference_type &);
 
      private:
-      Implementation *m_pimpl;
+      std::unique_ptr<Implementation> m_pimpl;
     };
 
     class TRDK_CORE_API ConstIterator
         : public boost::iterator_facade<ConstIterator,
                                         const Position,
-                                        boost::bidirectional_traversal_tag> {
+                                        boost::incrementable_traversal_tag> {
       friend class Iterator;
 
      public:
       class Implementation;
 
-      explicit ConstIterator(Implementation *) noexcept;
-      explicit ConstIterator(const Iterator &) noexcept;
+      explicit ConstIterator(std::unique_ptr<Implementation> &&);
+      explicit ConstIterator(const Iterator &);
       ConstIterator(const ConstIterator &);
       ~ConstIterator();
 
@@ -74,24 +72,18 @@ class TRDK_CORE_API Strategy : public Consumer {
       bool equal(const Iterator &) const;
       bool equal(const ConstIterator &) const;
       void increment();
-      void decrement();
-      void advance(const difference_type &);
 
      private:
-      class Implementation;
       std::unique_ptr<Implementation> m_pimpl;
     };
 
-   public:
     virtual ~PositionList() = default;
 
-   public:
     Iterator begin() { return GetBegin(); }
     ConstIterator cbegin() const { return GetBegin(); }
     Iterator end() { return GetEnd(); }
     ConstIterator cend() const { return GetEnd(); }
 
-   public:
     virtual size_t GetSize() const = 0;
     virtual bool IsEmpty() const = 0;
 
@@ -102,21 +94,18 @@ class TRDK_CORE_API Strategy : public Consumer {
     virtual ConstIterator GetEnd() const = 0;
   };
 
-  class PositionListTransaction : private boost::noncopyable {
+  class PositionListTransaction : boost::noncopyable {
    public:
-    class Data : private boost::noncopyable {
+    class Data : boost::noncopyable {
      public:
       virtual ~Data() = default;
     };
 
-   public:
     virtual ~PositionListTransaction() = default;
 
-   public:
     virtual std::unique_ptr<Data> MoveToThread() = 0;
   };
 
- public:
   explicit Strategy(Context &,
                     const boost::uuids::uuid &typeUuid,
                     const std::string &implementationName,
@@ -138,8 +127,9 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   TradingSystem &GetTradingSystem(size_t index);
   const TradingSystem &GetTradingSystem(size_t index) const;
+  TradingSystem &GetTradingSystem(const Security &);
+  const TradingSystem &GetTradingSystem(const Security &) const;
 
- public:
   bool IsBlocked(bool isForever = false) const;
   void WaitForStop();
 
@@ -158,25 +148,22 @@ class TRDK_CORE_API Strategy : public Consumer {
   //! called or while module will not be destroyed.
   void Schedule(boost::function<void()> &&);
 
- public:
-  virtual void RaiseSecurityContractSwitchedEvent(
-      const boost::posix_time::ptime &,
-      Security &,
-      Security::Request &,
-      bool &isSwitched) override;
+  void RaiseSecurityContractSwitchedEvent(const boost::posix_time::ptime &,
+                                          Security &,
+                                          Security::Request &,
+                                          bool &isSwitched) override;
 
-  virtual void RaiseBrokerPositionUpdateEvent(Security &,
-                                              bool isLong,
-                                              const Qty &,
-                                              const Volume &,
-                                              bool isInitial) override;
+  void RaiseBrokerPositionUpdateEvent(Security &,
+                                      bool isLong,
+                                      const Qty &,
+                                      const Volume &,
+                                      bool isInitial) override;
 
   virtual void RaiseNewBarEvent(Security &, const Security::Bar &);
 
-  virtual void RaiseSecurityServiceEvent(
-      const boost::posix_time::ptime &,
-      Security &,
-      const Security::ServiceEvent &) override;
+  void RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
+                                 Security &,
+                                 const Security::ServiceEvent &) override;
 
   void RaiseLevel1UpdateEvent(Security &,
                               const Lib::TimeMeasurement::Milestones &);
@@ -195,14 +182,15 @@ class TRDK_CORE_API Strategy : public Consumer {
                                 const PriceBook &,
                                 const Lib::TimeMeasurement::Milestones &);
 
- public:
   //! Registers position for this strategy.
-  /** Thread-unsafe method! Must be called only from event-methods, or if
+  /**
+   * Thread-unsafe method! Must be called only from event-methods, or if
    * strategy locked by GetMutex().
    */
   virtual void Register(Position &);
   //! Unregisters position for this strategy.
-  /** Thread-unsafe method! Must be called only from event-methods, or if
+  /**
+   * Thread-unsafe method! Must be called only from event-methods, or if
    * strategy locked by GetMutex().
    */
   virtual void Unregister(Position &) noexcept;
@@ -212,7 +200,6 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   std::unique_ptr<PositionListTransaction> StartThreadPositionsTransaction();
 
- public:
   PositionUpdateSlotConnection SubscribeToPositionsUpdates(
       const PositionUpdateSlot &) const;
 
@@ -234,7 +221,8 @@ class TRDK_CORE_API Strategy : public Consumer {
   virtual void OnPostionsCloseRequest() = 0;
 
   //! Will be called after position blocking.
-  /** @param[in] reason Blocking reason, if existent (maybe nullptr).
+  /**
+   * @param[in] reason Blocking reason, if existent (maybe nullptr).
    * @return True, if position blocking event should be broadcasted through the
    *         engine subscription, false otherwise (position still be blocked
    *         in any case).

@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "Strategy.hpp"
 #include "DropCopy.hpp"
+#include "MarketDataSource.hpp"
 #include "Operation.hpp"
 #include "RiskControl.hpp"
 #include "Service.hpp"
@@ -99,10 +100,10 @@ struct ByPtr {};
 typedef boost::multi_index_container<
     PositionHolder,
     mi::indexed_by<
-        mi::ordered_unique<mi::tag<ByPtr>,
-                           mi::const_mem_fun<PositionHolder,
-                                             const Position *,
-                                             &PositionHolder::GetPtr>>>>
+        mi::hashed_unique<mi::tag<ByPtr>,
+                          mi::const_mem_fun<PositionHolder,
+                                            const Position *,
+                                            &PositionHolder::GetPtr>>>>
     PositionHolderList;
 }  // namespace
 
@@ -126,13 +127,14 @@ class Strategy::PositionList::ConstIterator::Implementation {
       : iterator(iterator) {}
 };
 
-Strategy::PositionList::Iterator::Iterator(Implementation *pimpl) noexcept
-    : m_pimpl(pimpl) {
+Strategy::PositionList::Iterator::Iterator(
+    std::unique_ptr<Implementation> &&pimpl)
+    : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
 Strategy::PositionList::Iterator::Iterator(const Iterator &rhs)
-    : m_pimpl(new Implementation(*rhs.m_pimpl)) {}
-Strategy::PositionList::Iterator::~Iterator() { delete m_pimpl; }
+    : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
+Strategy::PositionList::Iterator::~Iterator() = default;
 Strategy::PositionList::Iterator &Strategy::PositionList::Iterator::operator=(
     const Iterator &rhs) {
   Assert(this != &rhs);
@@ -153,19 +155,14 @@ bool Strategy::PositionList::Iterator::equal(const ConstIterator &rhs) const {
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 void Strategy::PositionList::Iterator::increment() { ++m_pimpl->iterator; }
-void Strategy::PositionList::Iterator::decrement() { --m_pimpl->iterator; }
-void Strategy::PositionList::Iterator::advance(const difference_type &n) {
-  std::advance(m_pimpl->iterator, n);
-}
 
 Strategy::PositionList::ConstIterator::ConstIterator(
-    Implementation *pimpl) noexcept
-    : m_pimpl(pimpl) {
+    std::unique_ptr<Implementation> &&pimpl)
+    : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
-Strategy::PositionList::ConstIterator::ConstIterator(
-    const Iterator &rhs) noexcept
-    : m_pimpl(new Implementation(rhs.m_pimpl->iterator)) {}
+Strategy::PositionList::ConstIterator::ConstIterator(const Iterator &rhs)
+    : m_pimpl(boost::make_unique<Implementation>(rhs.m_pimpl->iterator)) {}
 Strategy::PositionList::ConstIterator::ConstIterator(const ConstIterator &rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
 Strategy::PositionList::ConstIterator::~ConstIterator() = default;
@@ -191,17 +188,12 @@ bool Strategy::PositionList::ConstIterator::equal(const Iterator &rhs) const {
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
 void Strategy::PositionList::ConstIterator::increment() { ++m_pimpl->iterator; }
-void Strategy::PositionList::ConstIterator::decrement() { --m_pimpl->iterator; }
-void Strategy::PositionList::ConstIterator::advance(const difference_type &n) {
-  std::advance(m_pimpl->iterator, n);
-}
 
 namespace {
 class PositionMutableList : public Strategy::PositionList {
  public:
-  virtual ~PositionMutableList() override = default;
+  ~PositionMutableList() override = default;
 
- public:
   void Insert(const PositionHolder &&holder) {
     Verify(m_impl.emplace(std::move(holder)).second);
   }
@@ -214,22 +206,24 @@ class PositionMutableList : public Strategy::PositionList {
     return m_impl.get<ByPtr>().count(&position) > 0;
   }
 
- public:
-  virtual size_t GetSize() const { return m_impl.size(); }
+  size_t GetSize() const override { return m_impl.size(); }
 
-  virtual bool IsEmpty() const { return m_impl.empty(); }
+  bool IsEmpty() const override { return m_impl.empty(); }
 
-  virtual Iterator GetBegin() {
-    return Iterator(new Iterator::Implementation(m_impl.begin()));
+  Iterator GetBegin() override {
+    return Iterator(
+        boost::make_unique<Iterator::Implementation>(m_impl.begin()));
   }
-  virtual ConstIterator GetBegin() const {
-    return ConstIterator(new ConstIterator::Implementation(m_impl.begin()));
+  ConstIterator GetBegin() const override {
+    return ConstIterator(
+        boost::make_unique<ConstIterator::Implementation>(m_impl.begin()));
   }
-  virtual Iterator GetEnd() {
-    return Iterator(new Iterator::Implementation(m_impl.end()));
+  Iterator GetEnd() override {
+    return Iterator(boost::make_unique<Iterator::Implementation>(m_impl.end()));
   }
-  virtual ConstIterator GetEnd() const {
-    return ConstIterator(new ConstIterator::Implementation(m_impl.end()));
+  ConstIterator GetEnd() const override {
+    return ConstIterator(
+        boost::make_unique<ConstIterator::Implementation>(m_impl.end()));
   }
 
  private:
@@ -575,7 +569,14 @@ TradingSystem &Strategy::GetTradingSystem(size_t index) {
   return GetContext().GetTradingSystem(index, GetTradingMode());
 }
 const TradingSystem &Strategy::GetTradingSystem(size_t index) const {
-  return GetContext().GetTradingSystem(index, GetTradingMode());
+  return const_cast<Strategy *>(this)->GetTradingSystem(index);
+}
+TradingSystem &Strategy::GetTradingSystem(const Security &security) {
+  return GetTradingSystem(security.GetSource().GetIndex());
+}
+const TradingSystem &Strategy::GetTradingSystem(
+    const Security &security) const {
+  return const_cast<Strategy *>(this)->GetTradingSystem(security);
 }
 
 void Strategy::OnLevel1Update(Security &security,
