@@ -21,15 +21,14 @@ class ShortPosition;
 
 //////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API Position
-    : private boost::noncopyable,
-      public boost::enable_shared_from_this<trdk::Position> {
+class TRDK_CORE_API Position : boost::noncopyable,
+                               public boost::enable_shared_from_this<Position> {
  public:
   typedef void(StateUpdateSlotSignature)();
   typedef boost::function<StateUpdateSlotSignature> StateUpdateSlot;
   typedef boost::signals2::connection StateUpdateConnection;
 
-  class TRDK_CORE_API Exception : public trdk::Lib::Exception {
+  class TRDK_CORE_API Exception : public Lib::Exception {
    public:
     explicit Exception(const char *what) noexcept;
   };
@@ -48,17 +47,15 @@ class TRDK_CORE_API Position
     AlreadyClosedError() noexcept;
   };
 
- public:
-  explicit Position(const boost::shared_ptr<trdk::Operation> &,
+  explicit Position(const boost::shared_ptr<Operation> &,
                     int64_t subOperationId,
-                    trdk::Security &,
-                    const trdk::Lib::Currency &,
-                    const trdk::Qty &,
-                    const trdk::Price &startPrice,
-                    const trdk::Lib::TimeMeasurement::Milestones &);
+                    Security &,
+                    const Lib::Currency &,
+                    const Qty &,
+                    const Price &startPrice,
+                    const Lib::TimeMeasurement::Milestones &);
   virtual ~Position();
 
- public:
   int64_t GetSubOperationId() const;
 
   //! Adds algorithm to the position.
@@ -67,12 +64,12 @@ class TRDK_CORE_API Position
    * @sa IsCancelling
    * @sa IsCompleted
    */
-  void AddAlgo(std::unique_ptr<trdk::TradingLib::Algo> &&);
+  void AddAlgo(std::unique_ptr<TradingLib::Algo> &&);
   //! Removes all algorithms.
   void RemoveAlgos();
 
-  const boost::shared_ptr<trdk::Operation> &GetOperation();
-  const boost::shared_ptr<const trdk::Operation> &GetOperation() const;
+  const boost::shared_ptr<Operation> &GetOperation();
+  const boost::shared_ptr<const Operation> &GetOperation() const;
 
   template <typename Operation>
   Operation &GetTypedOperation() {
@@ -84,28 +81,26 @@ class TRDK_CORE_API Position
   }
 
   bool IsLong() const;
-  virtual trdk::PositionSide GetSide() const = 0;
-  virtual trdk::OrderSide GetOpenOrderSide() const = 0;
-  virtual trdk::OrderSide GetCloseOrderSide() const = 0;
+  virtual PositionSide GetSide() const = 0;
+  virtual OrderSide GetOpenOrderSide() const = 0;
+  virtual OrderSide GetCloseOrderSide() const = 0;
 
-  const trdk::Lib::ContractExpiration &GetExpiration() const;
+  const Lib::ContractExpiration &GetExpiration() const;
 
- public:
-  const trdk::TradingSystem &GetTradingSystem() const;
-  trdk::TradingSystem &GetTradingSystem();
-  void ReplaceTradingSystem(trdk::Security &, trdk::TradingSystem &);
+  const TradingSystem &GetTradingSystem() const;
+  TradingSystem &GetTradingSystem();
+  void ReplaceTradingSystem(Security &, TradingSystem &);
 
-  const trdk::Strategy &GetStrategy() const noexcept;
-  trdk::Strategy &GetStrategy() noexcept;
+  const Strategy &GetStrategy() const noexcept;
+  Strategy &GetStrategy() noexcept;
 
-  const trdk::Security &GetSecurity() const noexcept;
-  trdk::Security &GetSecurity() noexcept;
+  const Security &GetSecurity() const noexcept;
+  Security &GetSecurity() noexcept;
 
-  const trdk::Lib::Currency &GetCurrency() const;
+  const Lib::Currency &GetCurrency() const;
 
   const Lib::TimeMeasurement::Milestones &GetTimeMeasurement();
 
- public:
   const CloseReason &GetCloseReason() const noexcept;
 
   //! Sets position closing reason only if reason was not set before.
@@ -124,13 +119,15 @@ class TRDK_CORE_API Position
   void ResetCloseReason(const CloseReason & = CLOSE_REASON_NONE);
 
   //! Has opened quantity equals or more than planned quantity.
-  /** @sa GetPlanedQty
+  /**
+   * @sa GetPlanedQty
    * @sa GetActiveQty
    * @sa IsOpened
    */
   bool IsFullyOpened() const;
   //! Has opened qty and doesn't have active open-orders.
-  /** @sa IsClosed
+  /**
+   * @sa IsClosed
    * @sa IsFullyOpened
    */
   bool IsOpened() const noexcept;
@@ -171,9 +168,8 @@ class TRDK_CORE_API Position
   bool HasActiveCloseOrders() const noexcept;
   bool HasOpenedCloseOrders() const noexcept;
 
- public:
-  const trdk::Qty &GetPlanedQty() const;
-  const trdk::Price &GetOpenStartPrice() const;
+  const Qty &GetPlanedQty() const;
+  const Price &GetOpenStartPrice() const;
   //! Returns time of first order.
   /** Throws an exception if there is no open-order at this moment.
    * @sa GetCloseStartTime()
@@ -181,8 +177,10 @@ class TRDK_CORE_API Position
    */
   const boost::posix_time::ptime &GetOpenStartTime() const;
 
-  const trdk::Qty &GetOpenedQty() const noexcept;
-  trdk::Price GetOpenAvgPrice() const;
+  const Qty &GetOpenedQty() const noexcept;
+  void SetOpenedQty(const Qty &);
+
+  Price GetOpenAvgPrice() const;
   //! Returns price of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
    * @sa GetActiveOrderPrice
@@ -191,7 +189,7 @@ class TRDK_CORE_API Position
    * @return Active order price or boost::none if the order is an order by
    *         market price.
    */
-  const boost::optional<trdk::Price> &GetActiveOpenOrderPrice() const;
+  const boost::optional<Price> &GetActiveOpenOrderPrice() const;
   //! Returns time of active open-order.
   /** Throws an exception if there is no active open-order at this moment.
    * @sa GetActiveOrderTime
@@ -204,8 +202,8 @@ class TRDK_CORE_API Position
    * @sa GetLastTradePrice
    * @sa GetLastCloseTradePrice
    */
-  const trdk::Price &GetLastOpenTradePrice() const;
-  trdk::Volume GetOpenedVolume() const;
+  const Price &GetLastOpenTradePrice() const;
+  Volume GetOpenedVolume() const;
   //! Time of first open-trade.
   const boost::posix_time::ptime &GetOpenTime() const;
 
@@ -213,27 +211,27 @@ class TRDK_CORE_API Position
   //! doesn't have it.
   /** @sa GetNumberOfOpenOrders
    */
-  const boost::shared_ptr<const trdk::OrderTransactionContext>
-      &GetOpeningContext(size_t index) const;
+  const boost::shared_ptr<const OrderTransactionContext> &GetOpeningContext(
+      size_t index) const;
   //! Returns position closing context if exists or throws an exception if
   //! doesn't have it.
   /** @sa GetNumberOfCloseOrders
    */
-  const boost::shared_ptr<const trdk::OrderTransactionContext>
-      &GetClosingContext(size_t index) const;
+  const boost::shared_ptr<const OrderTransactionContext> &GetClosingContext(
+      size_t index) const;
 
-  trdk::Qty GetActiveQty() const noexcept;
-  trdk::Volume GetActiveVolume() const;
+  Qty GetActiveQty() const noexcept;
+  Volume GetActiveVolume() const;
 
-  void SetCloseStartPrice(const trdk::Price &);
-  const trdk::Price &GetCloseStartPrice() const;
+  void SetCloseStartPrice(const Price &);
+  const Price &GetCloseStartPrice() const;
   //! Returns time of first close-order.
   /** Throws an exception if there is no close-order at this moment.
    * @sa GetOpenStartTime()
    * @sa GetActiveCloseTime()
    */
   const boost::posix_time::ptime &GetCloseStartTime() const;
-  trdk::Price GetCloseAvgPrice() const;
+  Price GetCloseAvgPrice() const;
   //! Returns price of active close-order.
   /** Throws an exception if there is no active close-order at this moment.
    * @sa GetActiveOrderPrice
@@ -242,7 +240,7 @@ class TRDK_CORE_API Position
    * @return Active order price or boost::none if the order is an order by
    *         market price.
    */
-  const boost::optional<trdk::Price> &GetActiveCloseOrderPrice() const;
+  const boost::optional<Price> &GetActiveCloseOrderPrice() const;
   //! Returns time of active close-order.
   /** Throws an exception if there is no active close-order at this
    * moment.
@@ -256,10 +254,10 @@ class TRDK_CORE_API Position
    * @sa GetLastTradePrice
    * @sa GetLastOpenTradePrice
    */
-  const trdk::Price &GetLastCloseTradePrice() const;
-  const trdk::Qty &GetClosedQty() const noexcept;
-  void SetClosedQty(const trdk::Qty &);
-  trdk::Volume GetClosedVolume() const;
+  const Price &GetLastCloseTradePrice() const;
+  const Qty &GetClosedQty() const noexcept;
+  void SetClosedQty(const Qty &);
+  Volume GetClosedVolume() const;
   //! Time of last trade.
   const boost::posix_time::ptime &GetCloseTime() const;
 
@@ -270,7 +268,7 @@ class TRDK_CORE_API Position
    * @return Active order price or boost::none if the order is an order by
    *         market price.
    */
-  const boost::optional<trdk::Price> &GetActiveOrderPrice() const;
+  const boost::optional<Price> &GetActiveOrderPrice() const;
   //! Returns time of active order.
   /** Throws an exception if there is no active order at this moment.
    * @sa GetActiveOpenOrderTime
@@ -282,29 +280,30 @@ class TRDK_CORE_API Position
    * @sa GetLastOpenTradePrice
    * @sa GetLastCloseTradePrice
    */
-  const trdk::Price &GetLastTradePrice() const;
+  const Price &GetLastTradePrice() const;
 
-  virtual trdk::Volume GetRealizedPnl() const = 0;
-  trdk::Volume GetRealizedPnlVolume() const;
+  virtual Volume GetRealizedPnl() const = 0;
+  Volume GetRealizedPnlVolume() const;
   //! Returns realized PnL ratio.
   /** @return If the value is 1.0 - no profit and no loss,
    *          if less then 1.0 - loss, if greater then 1.0 - profit.
    */
-  virtual trdk::Lib::Double GetRealizedPnlRatio() const = 0;
+  virtual Lib::Double GetRealizedPnlRatio() const = 0;
   //! Returns percentage of profit.
   /** @return If the value is zero - no profit and no loss,
    *          if less then zero - loss, if greater then zero - profit.
    */
-  trdk::Lib::Double GetRealizedPnlPercentage() const;
-  virtual trdk::Volume GetUnrealizedPnl() const = 0;
+  Lib::Double GetRealizedPnlPercentage() const;
+  virtual Volume GetUnrealizedPnl() const = 0;
   //! Realized PnL + unrealized PnL.
-  trdk::Volume GetPlannedPnl() const;
+  Volume GetPlannedPnl() const;
 
-  virtual trdk::Price GetMarketOpenPrice() const = 0;
-  virtual trdk::Price GetMarketClosePrice() const = 0;
-  virtual trdk::Price GetMarketOpenOppositePrice() const = 0;
-  virtual trdk::Price GetMarketCloseOppositePrice() const = 0;
+  virtual Price GetMarketOpenPrice() const = 0;
+  virtual Price GetMarketClosePrice() const = 0;
+  virtual Price GetMarketOpenOppositePrice() const = 0;
+  virtual Price GetMarketCloseOppositePrice() const = 0;
 
+  size_t GetNumberOfOrders() const;
   size_t GetNumberOfOpenOrders() const;
   size_t GetNumberOfCloseOrders() const;
 
@@ -312,55 +311,45 @@ class TRDK_CORE_API Position
   size_t GetNumberOfOpenTrades() const;
   size_t GetNumberOfCloseTrades() const;
 
- public:
   //! Restores position in open-state.
   /** Sets position in open state at current strategy, doesn't make any trading
    *  actions.
+   *  @param[in] openStartTime  Position opening start time.
+   *  @param[in] openTime       Position opening time.
    *  @param[in] openPrice      Position opening price.
    *  @param[in] openingContext Position opening context, if exists.
    */
-  void RestoreOpenState(
-      const boost::posix_time::ptime &openStartTime,
-      const boost::posix_time::ptime &openTime,
-      const trdk::Price &openPrice,
-      const boost::shared_ptr<const trdk::OrderTransactionContext>
-          &openingContext = nullptr);
+  void RestoreOpenState(const boost::posix_time::ptime &openStartTime,
+                        const boost::posix_time::ptime &openTime,
+                        const Price &openPrice,
+                        const boost::shared_ptr<const OrderTransactionContext>
+                            &openingContext = nullptr);
 
   //! Adds virtual trade to the last order.
   /** Raises an exception if order conditions will be violated by this trade.
    */
-  void AddVirtualTrade(const trdk::Qty &, const trdk::Price &);
+  void AddVirtualTrade(const Qty &, const Price &);
 
- public:
-  const trdk::OrderTransactionContext &OpenAtMarketPrice();
-  const trdk::OrderTransactionContext &OpenAtMarketPrice(
-      const trdk::OrderParams &);
-  const trdk::OrderTransactionContext &Open(const trdk::Price &);
-  const trdk::OrderTransactionContext &Open(const trdk::Price &,
-                                            const trdk::OrderParams &);
-  const trdk::OrderTransactionContext &OpenImmediatelyOrCancel(
-      const trdk::Price &);
-  const trdk::OrderTransactionContext &OpenImmediatelyOrCancel(
-      const trdk::Price &, const trdk::OrderParams &);
+  const OrderTransactionContext &OpenAtMarketPrice();
+  const OrderTransactionContext &OpenAtMarketPrice(const OrderParams &);
+  const OrderTransactionContext &Open(const Price &);
+  const OrderTransactionContext &Open(const Price &, const OrderParams &);
+  const OrderTransactionContext &OpenImmediatelyOrCancel(const Price &);
+  const OrderTransactionContext &OpenImmediatelyOrCancel(const Price &,
+                                                         const OrderParams &);
 
- public:
-  const trdk::OrderTransactionContext &CloseAtMarketPrice();
-  const trdk::OrderTransactionContext &CloseAtMarketPrice(
-      const trdk::OrderParams &);
-  const trdk::OrderTransactionContext &Close(const trdk::Price &);
-  const trdk::OrderTransactionContext &Close(const trdk::Price &,
-                                             const trdk::Qty &maxQty);
-  const trdk::OrderTransactionContext &Close(const trdk::Price &,
-                                             const trdk::OrderParams &);
-  const trdk::OrderTransactionContext &Close(const trdk::Price &,
-                                             const trdk::Qty &maxQty,
-                                             const trdk::OrderParams &);
-  const trdk::OrderTransactionContext &CloseImmediatelyOrCancel(
-      const trdk::Price &);
-  const trdk::OrderTransactionContext &CloseImmediatelyOrCancel(
-      const trdk::Price &, const trdk::OrderParams &);
+  const OrderTransactionContext &CloseAtMarketPrice();
+  const OrderTransactionContext &CloseAtMarketPrice(const OrderParams &);
+  const OrderTransactionContext &Close(const Price &);
+  const OrderTransactionContext &Close(const Price &, const Qty &maxQty);
+  const OrderTransactionContext &Close(const Price &, const OrderParams &);
+  const OrderTransactionContext &Close(const Price &,
+                                       const Qty &maxQty,
+                                       const OrderParams &);
+  const OrderTransactionContext &CloseImmediatelyOrCancel(const Price &);
+  const OrderTransactionContext &CloseImmediatelyOrCancel(const Price &,
+                                                          const OrderParams &);
 
- public:
   //! Cancels all active orders.
   /** @sa IsCancelling
    * @return True if sent cancel request for one or more orders.
@@ -371,7 +360,6 @@ class TRDK_CORE_API Position
    */
   bool IsCancelling() const;
 
- public:
   StateUpdateConnection Subscribe(const StateUpdateSlot &) const;
 
   //! Runs each attached algorithm.
@@ -381,35 +369,35 @@ class TRDK_CORE_API Position
   void RunAlgos();
 
  protected:
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &,
-                      const trdk::OrderParams &,
-                      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenImmediatelyOrCancel(const trdk::Qty &,
-                            const trdk::Price &,
-                            const trdk::OrderParams &,
-                            std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext> DoOpenAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext> DoOpen(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext>
+  DoOpenImmediatelyOrCancel(const Qty &,
+                            const Price &,
+                            const OrderParams &,
+                            std::unique_ptr<OrderStatusHandler> &&) = 0;
 
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseImmediatelyOrCancel(const trdk::Qty &,
-                             const trdk::Price &,
-                             const trdk::OrderParams &,
-                             std::unique_ptr<trdk::OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext> DoCloseAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext> DoClose(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) = 0;
+  virtual boost::shared_ptr<const OrderTransactionContext>
+  DoCloseImmediatelyOrCancel(const Qty &,
+                             const Price &,
+                             const OrderParams &,
+                             std::unique_ptr<OrderStatusHandler> &&) = 0;
 
  private:
   class Implementation;
@@ -420,122 +408,116 @@ class TRDK_CORE_API Position
 
 class TRDK_CORE_API LongPosition : public Position {
  public:
-  explicit LongPosition(const boost::shared_ptr<trdk::Operation> &,
+  explicit LongPosition(const boost::shared_ptr<Operation> &,
                         int64_t subOperationId,
-                        trdk::Security &,
-                        const trdk::Lib::Currency &,
-                        const trdk::Qty &,
-                        const trdk::Price &startPrice,
-                        const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual ~LongPosition() override;
+                        Security &,
+                        const Lib::Currency &,
+                        const Qty &,
+                        const Price &startPrice,
+                        const Lib::TimeMeasurement::Milestones &);
+  ~LongPosition() override;
 
- public:
-  virtual trdk::PositionSide GetSide() const override;
-  virtual trdk::OrderSide GetOpenOrderSide() const override;
-  virtual trdk::OrderSide GetCloseOrderSide() const override;
+  PositionSide GetSide() const override;
+  OrderSide GetOpenOrderSide() const override;
+  OrderSide GetCloseOrderSide() const override;
 
-  virtual trdk::Volume GetRealizedPnl() const override;
-  virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
-  virtual trdk::Volume GetUnrealizedPnl() const override;
+  Volume GetRealizedPnl() const override;
+  Lib::Double GetRealizedPnlRatio() const override;
+  Volume GetUnrealizedPnl() const override;
 
-  virtual trdk::Price GetMarketOpenPrice() const override;
-  virtual trdk::Price GetMarketClosePrice() const override;
-  virtual trdk::Price GetMarketOpenOppositePrice() const override;
-  virtual trdk::Price GetMarketCloseOppositePrice() const override;
+  Price GetMarketOpenPrice() const override;
+  Price GetMarketClosePrice() const override;
+  Price GetMarketOpenOppositePrice() const override;
+  Price GetMarketCloseOppositePrice() const override;
 
  protected:
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &,
-                      const trdk::OrderParams &,
-                      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpenAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpen(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpenImmediatelyOrCancel(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
 
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoCloseAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoClose(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoCloseImmediatelyOrCancel(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class TRDK_CORE_API ShortPosition : public Position {
  public:
-  explicit ShortPosition(const boost::shared_ptr<trdk::Operation> &,
+  explicit ShortPosition(const boost::shared_ptr<Operation> &,
                          int64_t subOperationId,
-                         trdk::Security &,
-                         const trdk::Lib::Currency &,
-                         const trdk::Qty &,
-                         const trdk::Price &startPrice,
-                         const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual ~ShortPosition() override;
+                         Security &,
+                         const Lib::Currency &,
+                         const Qty &,
+                         const Price &startPrice,
+                         const Lib::TimeMeasurement::Milestones &);
+  ~ShortPosition() override;
 
- public:
-  virtual trdk::PositionSide GetSide() const override;
-  virtual trdk::OrderSide GetOpenOrderSide() const override;
-  virtual trdk::OrderSide GetCloseOrderSide() const override;
+  PositionSide GetSide() const override;
+  OrderSide GetOpenOrderSide() const override;
+  OrderSide GetCloseOrderSide() const override;
 
-  virtual trdk::Volume GetRealizedPnl() const override;
-  virtual trdk::Lib::Double GetRealizedPnlRatio() const override;
-  virtual trdk::Volume GetUnrealizedPnl() const override;
+  Volume GetRealizedPnl() const override;
+  Lib::Double GetRealizedPnlRatio() const override;
+  Volume GetUnrealizedPnl() const override;
 
-  virtual trdk::Price GetMarketOpenPrice() const override;
-  virtual trdk::Price GetMarketClosePrice() const override;
-  virtual trdk::Price GetMarketOpenOppositePrice() const override;
-  virtual trdk::Price GetMarketCloseOppositePrice() const override;
+  Price GetMarketOpenPrice() const override;
+  Price GetMarketClosePrice() const override;
+  Price GetMarketOpenOppositePrice() const override;
+  Price GetMarketCloseOppositePrice() const override;
 
  protected:
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenAtMarketPrice(const trdk::Qty &,
-                      const trdk::OrderParams &,
-                      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoOpen(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoOpenImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpenAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpen(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoOpenImmediatelyOrCancel(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
 
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseAtMarketPrice(const trdk::Qty &,
-                       const trdk::OrderParams &,
-                       std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext> DoClose(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
-  virtual boost::shared_ptr<const trdk::OrderTransactionContext>
-  DoCloseImmediatelyOrCancel(
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::OrderParams &,
-      std::unique_ptr<trdk::OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoCloseAtMarketPrice(
+      const Qty &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoClose(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
+  boost::shared_ptr<const OrderTransactionContext> DoCloseImmediatelyOrCancel(
+      const Qty &,
+      const Price &,
+      const OrderParams &,
+      std::unique_ptr<OrderStatusHandler> &&) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

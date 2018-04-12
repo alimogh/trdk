@@ -14,14 +14,13 @@
 #include "Strategy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::FrontEnd;
-using namespace trdk::Strategies::ArbitrageAdvisor;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace FrontEnd;
+using namespace Strategies::ArbitrageAdvisor;
 
-namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
+namespace aa = Strategies::ArbitrageAdvisor;
 
 const std::string &StrategyWindow::Target::GetSymbol() const {
   return security->GetSymbol().GetSymbol();
@@ -292,7 +291,7 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
   }
   return CreateStrategyInstance(
       strategyId, instanceNumber,
-      CreateConfig(strategyId, .6, .6, 100000000, isLowestSpreadEnabed,
+      CreateConfig(strategyId, .6, false, .6, 100000000, isLowestSpreadEnabed,
                    lowestSpreadPercentage, isStopLossEnabled,
                    stopLossDelaySec));
 }
@@ -491,12 +490,13 @@ void StrategyWindow::UpdateAdviceLevel(double level) {
 std::string StrategyWindow::CreateConfig(
     const ids::uuid &strategyId,
     const Double &minPriceDifferenceToHighlightPercentage,
+    const bool isAutoTradingEnabled,
     const Double &minPriceDifferenceToTradePercentage,
     const Qty &maxQty,
-    bool isLowestSpreadEnabled,
+    const bool isLowestSpreadEnabled,
     const Double &lowestSpreadPercentage,
-    bool isStopLossEnabled,
-    size_t stopLossDelaySec) const {
+    const bool isStopLossEnabled,
+    const size_t stopLossDelaySec) const {
   std::ostringstream result;
   result << "module = ArbitrationAdvisor" << std::endl;
   result << "id = " << strategyId << std::endl;
@@ -507,6 +507,8 @@ std::string StrategyWindow::CreateConfig(
   result << "symbol = " << m_symbol << std::endl;
   result << "min_price_difference_to_highlight_percentage = "
          << minPriceDifferenceToHighlightPercentage << std::endl;
+  result << "auto_trading_enabled = "
+         << (isAutoTradingEnabled ? "true" : "false") << std::endl;
   result << "min_price_difference_to_trade_percentage = "
          << minPriceDifferenceToTradePercentage << std::endl;
   result << "max_qty = " << maxQty << std::endl;
@@ -522,15 +524,18 @@ std::string StrategyWindow::CreateConfig(
 
 std::string StrategyWindow::DumpConfig() const {
   const auto &tradingSettings = m_strategy.GetTradingSettings();
+  const auto isShouldBeEnabledImmediatelyAfterRestoration =
+      false;  // m_strategy.GetTradingSettings().isEnabled;
   return CreateConfig(
       m_strategy.GetId(), m_strategy.GetMinPriceDifferenceRatioToAdvice() * 100,
+      isShouldBeEnabledImmediatelyAfterRestoration,
       tradingSettings.minPriceDifferenceRatio * 100, tradingSettings.maxQty,
       m_strategy.IsLowestSpreadEnabled(),
       m_strategy.GetLowestSpreadRatio() * 100, m_strategy.IsStopLossEnabled(),
       m_strategy.GetStopLossDelay().total_seconds());
 }
 
-void StrategyWindow::StoreConfig(bool isActive) {
+void StrategyWindow::StoreConfig(const bool isActive) {
   m_engine.StoreConfig(m_strategy, QString::fromStdString(DumpConfig()),
                        isActive);
 }

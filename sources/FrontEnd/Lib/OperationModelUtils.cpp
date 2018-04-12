@@ -81,7 +81,7 @@ void OperationRecord::Update(const Orm::Operation &operation) {
   }
   {
     status = operation.getStatus();
-    static_assert(Orm::OperationStatus::numberOfStatuses == 5, "List changed.");
+    static_assert(Orm::OperationStatus::numberOfStatuses == 6, "List changed.");
     switch (status) {
       case Orm::OperationStatus::ACTIVE:
         statusName = QObject::tr("active");
@@ -94,6 +94,9 @@ void OperationRecord::Update(const Orm::Operation &operation) {
         break;
       case Orm::OperationStatus::LOSS:
         statusName = QObject::tr("loss");
+        break;
+      case Orm::OperationStatus::COMPLETED:
+        statusName = QObject::tr("completed");
         break;
       default:
         AssertEq(Orm::OperationStatus::ERROR, status);

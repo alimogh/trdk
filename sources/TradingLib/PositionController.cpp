@@ -13,107 +13,153 @@
 #include "OrderPolicy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace TradingLib;
 
-namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
-Position *PositionController::OpenPosition(
-    const boost::shared_ptr<Operation> &operationContext,
-    int64_t subOperationId,
-    Security &security,
-    const Milestones &delayMeasurement) {
-  return OpenPosition(operationContext, subOperationId, security,
-                      operationContext->IsLong(security), delayMeasurement);
+namespace {
+boost::optional<OrderCheckError> CheckOrder(const Position& position,
+                                            const Qty& qty,
+                                            const Price& price,
+                                            const OrderSide& side) {
+  return position.GetTradingSystem().CheckOrder(
+      position.GetSecurity(), position.GetCurrency(), qty, price, side);
 }
 
-Position *PositionController::OpenPosition(
-    const boost::shared_ptr<Operation> &operationContext,
-    int64_t subOperationId,
-    Security &security,
-    bool isLong,
-    const Milestones &delayMeasurement) {
-  return OpenPosition(operationContext, subOperationId, security, isLong,
-                      operationContext->GetPlannedQty(security),
-                      delayMeasurement);
+boost::optional<OrderCheckError> CheckOpening(const Position& position) {
+  AssertGt(position.GetPlanedQty(), position.GetOpenedQty());
+  return CheckOrder(position, position.GetPlanedQty() - position.GetOpenedQty(),
+                    position.GetMarketOpenPrice(), position.GetOpenOrderSide());
 }
 
-Position *PositionController::OpenPosition(
-    const boost::shared_ptr<Operation> &operationContext,
-    int64_t subOperationId,
-    Security &security,
-    bool isLong,
-    const Qty &qty,
-    const Milestones &delayMeasurement) {
-  auto result =
-      CreatePosition(operationContext, subOperationId, isLong, security, qty,
-                     isLong ? security.GetAskPrice() : security.GetBidPrice(),
-                     delayMeasurement);
-  ContinuePosition(*result);
+boost::optional<OrderCheckError> CheckClosing(const Position& position) {
+  return CheckOrder(position, position.GetActiveQty(),
+                    position.GetMarketClosePrice(),
+                    position.GetCloseOrderSide());
+}
+}  // namespace
+
+Position* PositionController::Open(
+    const boost::shared_ptr<Operation>& operationContext,
+    const int64_t subOperationId,
+    Security& security,
+    const Milestones& delayMeasurement) {
+  return Open(operationContext, subOperationId, security,
+              operationContext->IsLong(security), delayMeasurement);
+}
+
+Position* PositionController::Open(
+    const boost::shared_ptr<Operation>& operationContext,
+    const int64_t subOperationId,
+    Security& security,
+    const bool isLong,
+    const Milestones& delayMeasurement) {
+  return Open(operationContext, subOperationId, security, isLong,
+              operationContext->GetPlannedQty(security), delayMeasurement);
+}
+
+Position* PositionController::Open(
+    const boost::shared_ptr<Operation>& operationContext,
+    const int64_t subOperationId,
+    Security& security,
+    const bool isLong,
+    const Qty& qty,
+    const Milestones& delayMeasurement) {
+  const auto result =
+      Create(operationContext, subOperationId, isLong, security, qty,
+             isLong ? security.GetAskPrice() : security.GetBidPrice(),
+             delayMeasurement);
+  // Will not check order requirements as this is orders initiated by the
+  // client, the controller only checks automated next orders.
+  Continue(*result);
   return &*result;
 }
 
-Position &PositionController::RestorePosition(
-    const boost::shared_ptr<Operation> &operationContext,
-    int64_t subOperationId,
-    Security &security,
-    bool isLong,
-    const pt::ptime &openStartTime,
-    const pt::ptime &openTime,
-    const Qty &qty,
-    const Price &startPrice,
-    const Price &openPrice,
-    const boost::shared_ptr<const OrderTransactionContext> &openingContext,
-    const Milestones &delayMeasurement) {
-  auto result = CreatePosition(operationContext, subOperationId, isLong,
-                               security, qty, startPrice, delayMeasurement);
+Position& PositionController::Restore(
+    const boost::shared_ptr<Operation>& operationContext,
+    const int64_t subOperationId,
+    Security& security,
+    const bool isLong,
+    const pt::ptime& openStartTime,
+    const pt::ptime& openTime,
+    const Qty& qty,
+    const Price& startPrice,
+    const Price& openPrice,
+    const boost::shared_ptr<const OrderTransactionContext>& openingContext,
+    const Milestones& delayMeasurement) {
+  auto result = Create(operationContext, subOperationId, isLong, security, qty,
+                       startPrice, delayMeasurement);
   result->RestoreOpenState(openStartTime, openTime, openPrice, openingContext);
   return *result;
 }
 
-void PositionController::ContinuePosition(Position &position) {
+void PositionController::Continue(Position& position) {
   Assert(!position.HasActiveOrders());
   position.GetOperation()->GetOpenOrderPolicy(position).Open(position);
 }
 
-void PositionController::HoldPosition(Position &) {}
+void PositionController::Hold(Position& position) {
+  AssertLt(0, position.GetActiveQty());
+  Assert(position.IsFullyOpened());
+  Assert(!position.IsCompleted());
+  UseUnused(position);
+}
+void PositionController::Hold(Position& position, const OrderCheckError&) {
+  AssertLt(0, position.GetActiveQty());
+  Assert(!position.IsFullyOpened());
+  Continue(position);
+}
 
-bool PositionController::ClosePosition(Position &position,
-                                       const CloseReason &reason) {
+void PositionController::Complete(Position& position) {
+  AssertEq(0, position.GetActiveQty());
+  Assert(position.IsCompleted());
+  UseUnused(position);
+}
+void PositionController::Complete(Position& position, const OrderCheckError&) {
+  AssertLt(0, position.GetActiveQty());
+  Assert(!position.IsCompleted());
+  Close(position);
+}
+
+bool PositionController::Close(Position& position, const CloseReason& reason) {
   IsPassive(reason) ? position.SetCloseReason(reason)
                     : position.ResetCloseReason(reason);
   if (position.IsCompleted()) {
     Assert(!position.HasActiveOpenOrders());
     AssertEq(0, position.GetActiveQty());
+    Complete(position);
     return false;
-  } else if (position.HasActiveOpenOrders()) {
+  }
+  if (position.HasActiveOpenOrders()) {
     if (position.IsCancelling()) {
       return false;
     }
     try {
       Verify(position.CancelAllOrders());
       return true;
-    } catch (const OrderIsUnknownException &) {
+    } catch (const OrderIsUnknownException&) {
       return false;
     }
-  } else if (position.HasActiveCloseOrders()) {
-    return false;
-  } else {
-    ClosePosition(position);
-    return true;
   }
+  if (position.HasActiveCloseOrders()) {
+    return false;
+  }
+  // Will not check order requirements as this is orders initiated by the
+  // client, the controller only checks automated next orders.
+  Close(position);
+  return true;
 }
 
-void PositionController::ClosePosition(Position &position) {
+void PositionController::Close(Position& position) {
   Assert(!position.HasActiveOrders());
-  const auto &policy = position.GetOperation()->GetCloseOrderPolicy(position);
+  const auto& policy = position.GetOperation()->GetCloseOrderPolicy(position);
   try {
     policy.Close(position);
-  } catch (const CommunicationError &ex) {
+  } catch (const CommunicationError& ex) {
     position.GetStrategy().GetLog().Warn(
-        "Failed to close position \"%1%/%2%\": \"%3%\".",
+        R"(Failed to close position "%1%/%2%": "%3%".)",
         position.GetOperation()->GetId(),  // 1
         position.GetSubOperationId(),      // 2
         ex);                               // 3
@@ -121,12 +167,14 @@ void PositionController::ClosePosition(Position &position) {
   }
 }
 
-void PositionController::CloseAllPositions(Strategy &strategy,
-                                           const CloseReason &reason) {
-  for (auto &position : strategy.GetPositions()) {
+void PositionController::CloseAll(Strategy& strategy,
+                                  const CloseReason& reason) {
+  for (auto& position : strategy.GetPositions()) {
+    // Will not check order requirements as this is orders initiated by the
+    // client, the controller only checks automated next orders.
     try {
-      ClosePosition(position, reason);
-    } catch (const std::exception &ex) {
+      Close(position, reason);
+    } catch (const std::exception& ex) {
       strategy.GetLog().Error(
           "Failed to close position %1%/%2% with reason %3%: \"%4%\".",
           position.GetOperation()->GetId(),  // 1
@@ -137,15 +185,16 @@ void PositionController::CloseAllPositions(Strategy &strategy,
   }
 }
 
-Position *PositionController::OnSignal(
-    const boost::shared_ptr<Operation> &newOperationContext,
-    int64_t subOperationId,
-    Security &security,
-    const Milestones &delayMeasurement) {
-  auto &strategy = newOperationContext->GetStrategy();
-  Position *position = GetExistingPosition(strategy, security);
+Position* PositionController::OnSignal(
+    const boost::shared_ptr<Operation>& newOperationContext,
+    const int64_t subOperationId,
+    Security& security,
+    const Milestones& delayMeasurement) {
+  auto& strategy = newOperationContext->GetStrategy();
+  auto* position = GetExisting(strategy, security);
   if (position) {
     if (position->IsCompleted()) {
+      Complete(*position);
       position = nullptr;
     } else if (!position->GetOperation()->HasCloseSignal(*position)) {
       if (!position->HasActiveCloseOrders()) {
@@ -164,12 +213,12 @@ Position *PositionController::OnSignal(
   delayMeasurement.Measure(SM_STRATEGY_EXECUTION_START_1);
 
   if (!position) {
-    position = OpenPosition(newOperationContext, subOperationId, security,
-                            delayMeasurement);
+    position =
+        Open(newOperationContext, subOperationId, security, delayMeasurement);
     if (!position) {
       return nullptr;
     }
-  } else if (!ClosePosition(*position, CLOSE_REASON_SIGNAL)) {
+  } else if (!Close(*position, CLOSE_REASON_SIGNAL)) {
     return nullptr;
   }
 
@@ -178,7 +227,7 @@ Position *PositionController::OnSignal(
   return position;
 }
 
-void PositionController::OnPositionUpdate(Position &position) {
+void PositionController::OnUpdate(Position& position) {
   AssertLt(0, position.GetNumberOfOpenOrders());
 
   if (position.IsCompleted()) {
@@ -189,85 +238,110 @@ void PositionController::OnPositionUpdate(Position &position) {
     }
 
     // No active order, no active qty...
-
     if (position.GetNumberOfCloseOrders()) {
       // Position fully closed.
-      auto &operation = *position.GetOperation();
+      Complete(position);
+      auto& operation = *position.GetOperation();
       if (operation.HasCloseSignal(position)) {
-        const auto &newOperation = operation.StartInvertedPosition(position);
+        const auto& newOperation = operation.StartInvertedPosition(position);
         if (newOperation) {
           //! @todo Move StartInvertedPosition to the closing start and close
           //! position x2 with "restoring" position object as opposite position.
-          OpenPosition(std::move(newOperation), position.GetSubOperationId(),
-                       position.GetSecurity(), !position.IsLong(),
-                       Milestones());
+          Open(newOperation, position.GetSubOperationId(),
+               position.GetSecurity(), !position.IsLong(), Milestones());
         }
       }
       return;
     }
+
     // Open order was canceled by some condition. Checking open
     // signal again and sending new open order...
     if (position.GetCloseReason() == CLOSE_REASON_NONE &&
         !position.GetOperation()->HasCloseSignal(position)) {
-      ContinuePosition(position);
+      // Will not check order requirements as it should be first order, the
+      // controller only checks next orders.
+      Continue(position);
+    } else {
+      Complete(position);
     }
-
     // Position will be deleted if was not continued.
+    return;
+  }
 
-  } else if (position.GetNumberOfCloseOrders()) {
+  if (position.GetNumberOfCloseOrders()) {
     // Position closing started.
-
     Assert(!position.HasActiveOpenOrders());
     AssertNe(CLOSE_REASON_NONE, position.GetCloseReason());
-
     if (position.HasActiveCloseOrders()) {
       // Closing in progress.
     } else if (position.GetCloseReason() != CLOSE_REASON_NONE) {
       // Close order was canceled by some condition. Sending
       // new close order.
-      ClosePosition(position);
+      {
+        const auto checkError = CheckClosing(position);
+        if (checkError) {
+          Complete(position, *checkError);
+          return;
+        }
+      }
+      Close(position);
     }
+    return;
+  }
 
-  } else if (position.HasActiveOrders()) {
+  if (position.HasActiveOrders()) {
     // Opening in progress.
-
     Assert(!position.HasActiveCloseOrders());
-
     if (position.GetCloseReason() != CLOSE_REASON_NONE) {
-      // Close signal received, closing position...
-      ClosePosition(position);
+      // Close signal received, closing position. Will not check order
+      // requirements as this is orders initiated by the client, the controller
+      // only checks automated next orders.
+      Close(position);
     }
+    return;
+  }
 
-  } else {
-    // Position is active.
+  // Position is active.
 
-    if (position.GetCloseReason() != CLOSE_REASON_NONE) {
-      // Received signal to close...
-      AssertLt(0, position.GetActiveQty());
-      ClosePosition(position);
-    } else if (!position.IsFullyOpened()) {
-      ContinuePosition(position);
-    } else {
-      HoldPosition(position);
+  if (position.GetCloseReason() != CLOSE_REASON_NONE) {
+    // Received signal to close. Will not check order requirements as this is
+    // orders initiated by the client, the controller only checks automated
+    // next orders.
+    AssertLt(0, position.GetActiveQty());
+    Close(position);
+    return;
+  }
+
+  if (position.IsFullyOpened()) {
+    Hold(position);
+    return;
+  }
+
+  {
+    const auto checkError = CheckOpening(position);
+    if (checkError) {
+      Hold(position, *checkError);
+      return;
     }
   }
+  Continue(position);
 }
 
-void PositionController::OnPostionsCloseRequest(Strategy &strategy) {
-  CloseAllPositions(strategy, CLOSE_REASON_REQUEST);
+void PositionController::OnCloseAllRequest(Strategy& strategy) {
+  CloseAll(strategy, CLOSE_REASON_REQUEST);
 }
 
-void PositionController::OnBrokerPositionUpdate(
-    const boost::shared_ptr<Operation> &operation,
-    int64_t subOperationId,
-    Security &security,
-    bool isLong,
-    const Qty &qty,
-    const Volume &volume,
-    bool isInitial) {
+void PositionController::OnBrokerUpdate(
+    const boost::shared_ptr<Operation>& operation,
+    const int64_t subOperationId,
+    Security& security,
+    const bool isLong,
+    const Qty& qty,
+    const Volume& volume,
+    const bool isInitial) {
   if (!isInitial || qty == 0) {
     operation->GetStrategy().GetLog().Debug(
-        "Skipped broker position \"%5%\" %1% (volume %2%) for \"%3%\" (%4%).",
+        R"(Skipped broker position "%5%" %1% (volume %2%) for "%3%" (%4%).)",
         qty,                               // 1
         volume,                            // 2
         security,                          // 3
@@ -276,9 +350,9 @@ void PositionController::OnBrokerPositionUpdate(
     return;
   }
 
-  const auto &now = security.GetContext().GetCurrentTime();
+  const auto& now = security.GetContext().GetCurrentTime();
 
-  const Price price = volume / qty;
+  const auto price = volume / qty;
   operation->GetStrategy().GetLog().Info(
       "Accepting broker position \"%5%\" %1% (volume %2%, start price %3%) for "
       "\"%4%\"...",
@@ -287,44 +361,42 @@ void PositionController::OnBrokerPositionUpdate(
       price,                       // 3
       security,                    // 4
       isLong ? "long" : "short");  // 5
-  RestorePosition(operation, subOperationId, security, isLong, now, now, qty,
-                  price, price, nullptr, Milestones());
+  Restore(operation, subOperationId, security, isLong, now, now, qty, price,
+          price, nullptr, Milestones());
 }
 
+namespace {
 template <typename PositionType>
-boost::shared_ptr<Position> PositionController::CreatePositionObject(
-    const boost::shared_ptr<Operation> &operation,
+boost::shared_ptr<Position> CreateObject(
+    const boost::shared_ptr<Operation>& operation,
     int64_t subOperationId,
-    Security &security,
-    const Qty &qty,
-    const Price &price,
-    const TimeMeasurement::Milestones &delayMeasurement) {
-  const auto &result = boost::make_shared<PositionType>(
-      operation, subOperationId, security, security.GetSymbol().GetCurrency(),
-      qty, price, delayMeasurement);
-  return result;
+    Security& security,
+    const Qty& qty,
+    const Price& price,
+    const Milestones& delayMeasurement) {
+  return boost::make_shared<PositionType>(operation, subOperationId, security,
+                                          security.GetSymbol().GetCurrency(),
+                                          qty, price, delayMeasurement);
 }
-
-boost::shared_ptr<Position> PositionController::CreatePosition(
-    const boost::shared_ptr<Operation> &operation,
-    int64_t subOperationId,
-    bool isLong,
-    Security &security,
-    const Qty &qty,
-    const Price &price,
-    const Milestones &delayMeasurement) {
-  const auto &result = isLong ? CreatePositionObject<LongPosition>(
-                                    operation, subOperationId, security, qty,
-                                    price, delayMeasurement)
-                              : CreatePositionObject<ShortPosition>(
-                                    operation, subOperationId, security, qty,
-                                    price, delayMeasurement);
+}  // namespace
+boost::shared_ptr<Position> PositionController::Create(
+    const boost::shared_ptr<Operation>& operation,
+    const int64_t subOperationId,
+    const bool isLong,
+    Security& security,
+    const Qty& qty,
+    const Price& startPrice,
+    const Milestones& delayMeasurement) {
+  const auto& result =
+      isLong ? CreateObject<LongPosition>(operation, subOperationId, security,
+                                          qty, startPrice, delayMeasurement)
+             : CreateObject<ShortPosition>(operation, subOperationId, security,
+                                           qty, startPrice, delayMeasurement);
   result->GetOperation()->Setup(*result, *this);
   return result;
 }
 
-Position *PositionController::GetExistingPosition(Strategy &strategy,
-                                                  Security &) {
+Position* PositionController::GetExisting(Strategy& strategy, Security&) {
   if (strategy.GetPositions().IsEmpty()) {
     return nullptr;
   }

@@ -12,28 +12,26 @@
 
 namespace trdk {
 
-class Pnl : private boost::noncopyable {
+class Pnl : boost::noncopyable {
  public:
   enum Result {
     RESULT_NONE,
+    RESULT_COMPLETED,
     RESULT_PROFIT,
     RESULT_LOSS,
     RESULT_ERROR,
     numberOfResults
   };
 
- public:
   struct SymbolData {
-    trdk::Volume financialResult;
-    trdk::Volume commission;
+    Volume financialResult;
+    Volume commission;
   };
   typedef boost::unordered_map<std::string, SymbolData> Data;
 
- public:
   virtual ~Pnl() = default;
 
- public:
   virtual Result GetResult() const = 0;
-  virtual const trdk::Pnl::Data& GetData() const = 0;
+  virtual const Data& GetData() const = 0;
 };
 }  // namespace trdk

@@ -19,100 +19,115 @@ class PositionController : private boost::noncopyable {
  public:
   virtual ~PositionController() = default;
 
- public:
   //! Handles trading signal event.
-  /** Works only with one active position per strategy instance.
-   * @param newOperationContext  New position operation context. Will be used
-   *                             only if new position instance will be created.
-   * @param security             New position security. Will be used only if
-   *                             new position instance will be created.
+  /**
+   * Works only with one active position per strategy instance.
+   * @param[in] newOperationContext  New position operation context. Will be
+   *                                 used only if new position instance will be
+   *                                 created.
+   * @param[in] subOperationId       New position operation sub-ID. Will be
+   *                                 used only if new position instance will be
+   *                                 created.
+   * @param[in] security             New position security. Will be used only if
+   *                                 new position instance will be created.
+   * @param[int] delayMeasurement    Delay measurement.
    * @return A pointer to position object if a new position is started or if an
    *         existing position is changed. nullptr - if no position was
    *         started or changed.
    */
-  trdk::Position *OnSignal(
-      const boost::shared_ptr<trdk::Operation> &newOperationContext,
-      int64_t subOperationId,
-      trdk::Security &security,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual void OnPositionUpdate(trdk::Position &);
-  virtual void OnPostionsCloseRequest(trdk::Strategy &);
-  void OnBrokerPositionUpdate(const boost::shared_ptr<trdk::Operation> &,
-                              int64_t subOperationId,
-                              trdk::Security &,
-                              bool isLong,
-                              const trdk::Qty &,
-                              const trdk::Volume &,
-                              bool isInitial);
+  Position* OnSignal(const boost::shared_ptr<Operation>& newOperationContext,
+                     int64_t subOperationId,
+                     Security& security,
+                     const Lib::TimeMeasurement::Milestones& delayMeasurement);
+  virtual void OnUpdate(Position&);
+  virtual void OnCloseAllRequest(Strategy&);
+  void OnBrokerUpdate(const boost::shared_ptr<Operation>&,
+                      int64_t subOperationId,
+                      Security&,
+                      bool isLong,
+                      const Qty&,
+                      const Volume&,
+                      bool isInitial);
 
- public:
-  virtual trdk::Position *OpenPosition(
-      const boost::shared_ptr<trdk::Operation> &,
+  virtual Position* Open(const boost::shared_ptr<Operation>&,
+                         int64_t subOperationId,
+                         Security&,
+                         const Lib::TimeMeasurement::Milestones&);
+  virtual Position* Open(const boost::shared_ptr<Operation>&,
+                         int64_t subOperationId,
+                         Security&,
+                         bool isLong,
+                         const Lib::TimeMeasurement::Milestones&);
+  virtual Position* Open(const boost::shared_ptr<Operation>&,
+                         int64_t subOperationId,
+                         Security&,
+                         bool isLong,
+                         const Qty&,
+                         const Lib::TimeMeasurement::Milestones&);
+  virtual Position& Restore(
+      const boost::shared_ptr<Operation>&,
       int64_t subOperationId,
-      trdk::Security &,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual trdk::Position *OpenPosition(
-      const boost::shared_ptr<trdk::Operation> &,
-      int64_t subOperationId,
-      trdk::Security &,
+      Security&,
       bool isLong,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual trdk::Position *OpenPosition(
-      const boost::shared_ptr<trdk::Operation> &,
-      int64_t subOperationId,
-      trdk::Security &,
-      bool isLong,
-      const trdk::Qty &,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  virtual trdk::Position &RestorePosition(
-      const boost::shared_ptr<trdk::Operation> &,
-      int64_t subOperationId,
-      trdk::Security &,
-      bool isLong,
-      const boost::posix_time::ptime &openStartTime,
-      const boost::posix_time::ptime &openTime,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Price &openPrice,
-      const boost::shared_ptr<const trdk::OrderTransactionContext>
-          &openingContext,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+      const boost::posix_time::ptime& openStartTime,
+      const boost::posix_time::ptime& openTime,
+      const Qty&,
+      const Price& startPrice,
+      const Price& openPrice,
+      const boost::shared_ptr<const OrderTransactionContext>& openingContext,
+      const Lib::TimeMeasurement::Milestones&);
 
   //! Cancels active open-order, if exists, and closes position.
-  /** @return true, if did some action to close position, if not (for ex.: there
+  /**
+   * @return true, if did some action to close position, if not (for ex.: there
    *         is no opened position) - false.
    */
-  virtual bool ClosePosition(trdk::Position &, const trdk::CloseReason &);
+  virtual bool Close(Position&, const CloseReason&);
   //! Cancels all active open-orders, if exists, and closes all positions.
-  void CloseAllPositions(trdk::Strategy &, const trdk::CloseReason &);
+  void CloseAll(Strategy&, const CloseReason&);
 
  protected:
-  boost::shared_ptr<Position> CreatePosition(
-      const boost::shared_ptr<trdk::Operation> &,
-      int64_t subOperationId,
-      bool isLong,
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &startPrice,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+  boost::shared_ptr<Position> Create(const boost::shared_ptr<Operation>&,
+                                     int64_t subOperationId,
+                                     bool isLong,
+                                     Security&,
+                                     const Qty&,
+                                     const Price& startPrice,
+                                     const Lib::TimeMeasurement::Milestones&);
 
-  void ContinuePosition(trdk::Position &);
-  virtual void ClosePosition(trdk::Position &);
+  static void Continue(Position&);
 
-  virtual void HoldPosition(trdk::Position &);
+  //! Will be called one time when the position is fully opened.
+  /** The default implementation does nothing.
+   */
+  virtual void Hold(Position&);
+  //! Will be called one time when the position opened not fully and the trading
+  //! system doesn't allow to send last order to open position fully.
+  /**
+   * The default implementation calls Continue even if the order will be
+   * rejected by the trading system as the order will have wrong parameters
+   *
+   * @sa Continue
+   */
+  virtual void Hold(Position&, const OrderCheckError&);
 
-  virtual trdk::Position *GetExistingPosition(trdk::Strategy &,
-                                              trdk::Security &);
+  virtual void Close(Position&);
 
- private:
-  template <typename PositionType>
-  boost::shared_ptr<trdk::Position> CreatePositionObject(
-      const boost::shared_ptr<trdk::Operation> &,
-      int64_t subOperationId,
-      trdk::Security &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+  //! Will be called one time when the position is fully closed.
+  /** The default implementation does nothing.
+   */
+  virtual void Complete(Position&);
+  //! Will be called one time when the position closed not fully and the trading
+  //! system doesn't allow to send last order to close position fully.
+  /**
+   * The default implementation calls Close, even if it will be rejected by the
+   * trading system as the order will have wrong parameters.
+   *
+   * @sa Close
+   */
+  virtual void Complete(Position&, const OrderCheckError&);
+
+  virtual Position* GetExisting(Strategy&, Security&);
 };
 }  // namespace TradingLib
 }  // namespace trdk

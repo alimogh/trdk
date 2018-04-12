@@ -160,7 +160,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
             conf.ReadTypedKey<Double>(
                 "min_price_difference_to_highlight_percentage") /
             100),
-        m_tradingSettings({false,
+        m_tradingSettings({conf.ReadBoolKey("auto_trading_enabled"),
                            conf.ReadTypedKey<Double>(
                                "min_price_difference_to_trade_percentage") /
                                100,
@@ -568,13 +568,12 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
     Position *firstLeg = nullptr;
     try {
-      firstLeg = m_controller.OpenPosition(operation, 1, *legTargets.first,
-                                           delayMeasurement);
+      firstLeg =
+          m_controller.Open(operation, 1, *legTargets.first, delayMeasurement);
       if (!firstLeg) {
         return false;
       }
-      m_controller.OpenPosition(operation, 2, *legTargets.second,
-                                delayMeasurement);
+      m_controller.Open(operation, 2, *legTargets.second, delayMeasurement);
 
       return true;
 
@@ -613,8 +612,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
                          const Milestones &delayMeasurement) {
     const auto &openPosition = [&](int64_t leg,
                                    Security &target) -> Position * {
-      return m_controller.OpenPosition(operation, leg, target,
-                                       delayMeasurement);
+      return m_controller.Open(operation, leg, target, delayMeasurement);
     };
 
     auto &firstLegTarget = sellTarget;
@@ -697,7 +695,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   void CloseLegPositionByOperationStartError(Position &openedPosition) {
     try {
-      m_controller.ClosePosition(openedPosition, CLOSE_REASON_OPEN_FAILED);
+      m_controller.Close(openedPosition, CLOSE_REASON_OPEN_FAILED);
     } catch (const CommunicationError &ex) {
       m_self.GetLog().Warn(
           "Communication error at position closing request: \"%1%\".",
@@ -788,7 +786,6 @@ void aa::Strategy::OnSecurityStart(Security &security, Security::Request &) {
 
 void aa::Strategy::SetTradingSettings(TradingSettings &&settings) {
   const auto lock = LockForOtherThreads();
-  bool shouldRechecked = true;
   GetTradingLog().Write(
       "{'setup': {'trading': {'isEnabled': '%5%->%6%', 'ratio': '%1%->%2%', "
       "'maxQty': '%3%->%4%}}}",
@@ -800,13 +797,16 @@ void aa::Strategy::SetTradingSettings(TradingSettings &&settings) {
             % (m_pimpl->m_tradingSettings.isEnabled ? "yes" : "no")  // 5
             % (settings.isEnabled ? "yes" : "no");                   // 6
       });
-  shouldRechecked = m_pimpl->m_tradingSettings.minPriceDifferenceRatio !=
-                    settings.minPriceDifferenceRatio;
+  const auto shouldBeRechecked =
+      m_pimpl->m_tradingSettings.minPriceDifferenceRatio !=
+      settings.minPriceDifferenceRatio;
 
   m_pimpl->m_tradingSettings = std::move(settings);
 
   if (m_pimpl->m_tradingSettings.isEnabled) {
-    m_pimpl->RecheckSignalAsync();
+    if (shouldBeRechecked) {
+      m_pimpl->RecheckSignalAsync();
+    }
   } else {
     m_pimpl->m_errors.clear();
   }
@@ -823,7 +823,7 @@ void aa::Strategy::OnLevel1Update(Security &security,
 
 void aa::Strategy::OnPositionUpdate(Position &position) {
   try {
-    m_pimpl->m_controller.OnPositionUpdate(position);
+    m_pimpl->m_controller.OnUpdate(position);
     if (position.IsCompleted()) {
       m_pimpl->CheckAutoTradingSignal(position.GetSecurity(), Milestones());
     }
@@ -834,7 +834,7 @@ void aa::Strategy::OnPositionUpdate(Position &position) {
 }
 
 void aa::Strategy::OnPostionsCloseRequest() {
-  m_pimpl->m_controller.OnPostionsCloseRequest(*this);
+  m_pimpl->m_controller.OnCloseAllRequest(*this);
 }
 
 bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {

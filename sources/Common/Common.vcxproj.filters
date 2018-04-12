@@ -169,5 +169,8 @@
     <ClInclude Include="Crypto.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Tuple.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

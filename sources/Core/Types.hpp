@@ -17,17 +17,17 @@ namespace trdk {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef trdk::Lib::BusinessNumeric<
+typedef Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
+    Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Qty;
-typedef trdk::Lib::BusinessNumeric<
+typedef Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
+    Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Price;
-typedef trdk::Lib::BusinessNumeric<
+typedef Lib::BusinessNumeric<
     double,
-    trdk::Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
+    Lib::Detail::DoubleWithFixedPrecisionNumericPolicy<8>>
     Volume;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,11 +44,19 @@ enum OrderSide {
   numberOfOrderSides
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::OrderSide &);
+TRDK_CORE_API const char* ConvertToPch(const OrderSide&);
 
-inline std::ostream &operator<<(std::ostream &os, const trdk::OrderSide &side) {
-  return os << trdk::ConvertToPch(side);
+inline std::ostream& operator<<(std::ostream& os, const OrderSide& side) {
+  return os << ConvertToPch(side);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct OrderCheckError {
+  boost::optional<Qty> qty;
+  boost::optional<Price> price;
+  boost::optional<Volume> volume;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -58,11 +66,11 @@ enum PositionSide {
   numberOfPositionSides
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::PositionSide &);
+TRDK_CORE_API const char* ConvertToPch(const PositionSide&);
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const trdk::PositionSide &positionSide) {
-  return os << trdk::ConvertToPch(positionSide);
+inline std::ostream& operator<<(std::ostream& os,
+                                const PositionSide& positionSide) {
+  return os << ConvertToPch(positionSide);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,11 +90,10 @@ enum TimeInForce {
   numberOfTimeInForces
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::TimeInForce &);
+TRDK_CORE_API const char* ConvertToPch(const TimeInForce&);
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const trdk::TimeInForce &tif) {
-  return os << trdk::ConvertToPch(tif);
+inline std::ostream& operator<<(std::ostream& os, const TimeInForce& tif) {
+  return os << ConvertToPch(tif);
 }
 
 //! Extended order parameters.
@@ -102,17 +109,17 @@ struct OrderParams {
   //! Define forced expiration for order contract.
   /** If set - this expiration will be used, not from security object.
    */
-  const trdk::Lib::ContractExpiration *expiration;
+  const Lib::ContractExpiration* expiration;
 
   //! Trading system must try to work with position started by specified order
   //! or used by specified order.
-  const trdk::OrderTransactionContext *position;
+  const OrderTransactionContext* position;
 
   //! Price that triggers a atop order.
-  boost::optional<trdk::Price> stopPrice;
+  boost::optional<Price> stopPrice;
 
-  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
-                                                const trdk::OrderParams &);
+  TRDK_CORE_API friend std::ostream& operator<<(std::ostream&,
+                                                const OrderParams&);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -142,11 +149,10 @@ enum OrderStatus {
   numberOfOrderStatuses
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::OrderStatus &);
+TRDK_CORE_API const char* ConvertToPch(const OrderStatus&);
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const trdk::OrderStatus &status) {
-  os << trdk::ConvertToPch(status);
+inline std::ostream& operator<<(std::ostream& os, const OrderStatus& status) {
+  os << ConvertToPch(status);
   return os;
 }
 
@@ -179,13 +185,14 @@ enum CloseReason {
   numberOfCloseReasons
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::CloseReason &);
-inline std::ostream &operator<<(std::ostream &os,
-                                const trdk::CloseReason &closeReason) {
-  return os << trdk::ConvertToPch(closeReason);
+TRDK_CORE_API const char* ConvertToPch(const CloseReason&);
+
+inline std::ostream& operator<<(std::ostream& os,
+                                const CloseReason& closeReason) {
+  return os << ConvertToPch(closeReason);
 }
 
-inline bool IsPassive(const CloseReason &reason) {
+inline bool IsPassive(const CloseReason& reason) {
   static_assert(numberOfCloseReasons == 13, "List changed.");
   switch (reason) {
     case CLOSE_REASON_NONE:
@@ -218,52 +225,60 @@ enum Level1TickType {
   numberOfLevel1TickTypes = 7
 };
 
-template <trdk::Level1TickType type>
+template <Level1TickType type>
 struct Level1TickTypeToValueType {};
+
 template <>
 struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_PRICE> {
-  typedef trdk::Price Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
-  typedef trdk::Qty Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_BID_PRICE> {
-  typedef trdk::Price Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
-  typedef trdk::Qty Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_PRICE> {
-  typedef trdk::Price Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
-  typedef trdk::Qty Type;
-};
-template <>
-struct Level1TickTypeToValueType<LEVEL1_TICK_TRADING_VOLUME> {
-  typedef trdk::Price Type;
+  typedef Price Type;
 };
 
-TRDK_CORE_API const char *ConvertToPch(const trdk::Level1TickType &);
-TRDK_CORE_API trdk::Level1TickType ConvertToLevel1TickType(const std::string &);
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_LAST_QTY> {
+  typedef Qty Type;
+};
+
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_BID_PRICE> {
+  typedef Price Type;
+};
+
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_BID_QTY> {
+  typedef Qty Type;
+};
+
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_PRICE> {
+  typedef Price Type;
+};
+
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_ASK_QTY> {
+  typedef Qty Type;
+};
+
+template <>
+struct Level1TickTypeToValueType<LEVEL1_TICK_TRADING_VOLUME> {
+  typedef Price Type;
+};
+
+TRDK_CORE_API const char* ConvertToPch(const Level1TickType&);
+TRDK_CORE_API Level1TickType ConvertToLevel1TickType(const std::string&);
 
 class Level1TickValue {
  public:
-  explicit Level1TickValue(const Level1TickType &type, double value)
+  explicit Level1TickValue(const Level1TickType& type, double value)
       : m_type(type), m_value(value) {}
 
-  template <trdk::Level1TickType type, typename Value>
-  static Level1TickValue Create(const Value &value) {
+  template <Level1TickType type, typename Value>
+  static Level1TickValue Create(const Value& value) {
     return Level1TickValue(type, value);
   }
+
   template <typename Value>
-  static Level1TickValue Create(const trdk::Level1TickType &type,
-                                const Value &value) {
+  static Level1TickValue Create(const Level1TickType& type,
+                                const Value& value) {
     static_assert(numberOfLevel1TickTypes == 7, "List changed.");
     switch (type) {
       case LEVEL1_TICK_LAST_PRICE:
@@ -285,13 +300,13 @@ class Level1TickValue {
     throw Exception("Unknown Level 1 Tick Value Type");
   }
 
-  const Level1TickType &GetType() const { return m_type; }
+  const Level1TickType& GetType() const { return m_type; }
 
-  const trdk::Lib::Double &GetValue() const { return m_value; }
+  const Lib::Double& GetValue() const { return m_value; }
 
  private:
   Level1TickType m_type;
-  trdk::Lib::Double m_value;
+  Lib::Double m_value;
 };
 }  // namespace trdk
 
@@ -305,9 +320,9 @@ enum TradingMode {
   TRADING_MODE_BACKTESTING,
   numberOfTradingModes
 };
-TRDK_CORE_API trdk::TradingMode ConvertTradingModeFromString(
-    const std::string &);
-TRDK_CORE_API const std::string &ConvertToString(const trdk::TradingMode &);
+
+TRDK_CORE_API TradingMode ConvertTradingModeFromString(const std::string&);
+TRDK_CORE_API const std::string& ConvertToString(const TradingMode&);
 
 enum StopMode {
   STOP_MODE_IMMEDIATELY,
@@ -317,9 +332,8 @@ enum StopMode {
   numberOfStopModes = STOP_MODE_UNKNOWN
 };
 
-inline std::ostream &operator<<(std::ostream &oss,
-                                const trdk::TradingMode &mode) {
-  oss << trdk::ConvertToString(mode);
+inline std::ostream& operator<<(std::ostream& oss, const TradingMode& mode) {
+  oss << ConvertToString(mode);
   return oss;
 }
 }  // namespace trdk
@@ -331,42 +345,34 @@ namespace trdk {
 class OrderId {
  public:
   OrderId() = default;
-  OrderId(const std::string &value) : m_value(value) {}
-  OrderId(const std::string &&value) : m_value(std::move(value)) {}
+  OrderId(const std::string& value) : m_value(value) {}
+  OrderId(const std::string&& value) : m_value(std::move(value)) {}
   OrderId(int32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(uint32_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(intmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
   OrderId(uintmax_t value) : m_value(boost::lexical_cast<std::string>(value)) {}
 
-  bool operator==(const OrderId &rhs) const { return m_value == rhs.m_value; }
-  bool operator!=(const OrderId &rhs) const { return !operator==(rhs); }
+  bool operator==(const OrderId& rhs) const { return m_value == rhs.m_value; }
+  bool operator!=(const OrderId& rhs) const { return !operator==(rhs); }
 
-  friend std::ostream &operator<<(std::ostream &os,
-                                  const trdk::OrderId &orderId) {
+  friend std::ostream& operator<<(std::ostream& os, const OrderId& orderId) {
     return os << orderId.m_value;
   }
-  friend std::istream &operator>>(std::istream &is, trdk::OrderId &orderId) {
+
+  friend std::istream& operator>>(std::istream& is, OrderId& orderId) {
     return is >> orderId.m_value;
   }
 
-  const std::string &GetValue() const { return m_value; }
+  const std::string& GetValue() const { return m_value; }
 
  private:
   std::string m_value;
 };
-}  // namespace trdk
 
-namespace stdext {
-
-inline size_t hash_value(const trdk::OrderId &orderId) {
+inline size_t hash_value(const OrderId& orderId) {
   return boost::hash_value(orderId.GetValue());
 }
-}  // namespace stdext
 
-namespace trdk {
-inline size_t hash_value(const trdk::OrderId &orderId) {
-  return stdext::hash_value(orderId);
-}
 }  // namespace trdk
 
 ////////////////////////////////////////////////////////////////////////////////

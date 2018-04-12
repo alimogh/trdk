@@ -70,9 +70,9 @@ bool ChooseBestExchange(Position &position,
 }
 }  // namespace
 
-void Controller::OnPositionUpdate(Position &position) {
+void Controller::OnUpdate(Position &position) {
   try {
-    Base::OnPositionUpdate(position);
+    Base::OnUpdate(position);
     return;
   } catch (const CommunicationError &ex) {
     position.GetStrategy().GetLog().Warn(
@@ -104,16 +104,16 @@ void Controller::OnPositionUpdate(Position &position) {
       });
 }
 
-void Controller::HoldPosition(Position &position) {
+void Controller::Hold(Position &position) {
   Assert(position.IsFullyOpened());
   Assert(!position.IsCompleted());
   Assert(!position.HasActiveOrders());
   position.MarkAsCompleted();
 }
 
-void Controller::ClosePosition(Position &position) {
+void Controller::Close(Position &position) {
   if (!ChooseBestExchange(position, nullptr)) {
     return;
   }
-  Base::ClosePosition(position);
+  Base::Close(position);
 }

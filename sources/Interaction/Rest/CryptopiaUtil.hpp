@@ -60,7 +60,7 @@ typedef boost::multi_index_container<
     CryptopiaProductList;
 
 inline size_t hash_value(const CryptopiaProductList::iterator &iterator) {
-  return stdext::hash_value(iterator->id);
+  return boost::hash_value(iterator->id);
 }
 
 CryptopiaProductList RequestCryptopiaProductList(
