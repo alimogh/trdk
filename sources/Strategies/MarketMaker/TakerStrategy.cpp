@@ -135,7 +135,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto isLong = (m_numberOfUsedPeriods % 2) != 0;
+    const auto isLong = false;
 
     const auto &price =
         isLong ? security->GetAskPriceValue() : security->GetBidPriceValue();
