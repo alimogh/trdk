@@ -37,7 +37,6 @@ LegSetSelectionDialog::LegSetSelectionDialog(Engine &, QWidget *parent)
     m_legSets.emplace_back(LegsConf{LegConf{"BCH_ETH", ORDER_SIDE_SELL},
                                     LegConf{"ETH_BTC", ORDER_SIDE_SELL},
                                     LegConf{"BCH_BTC", ORDER_SIDE_BUY}});
-#ifdef _DEBUG
     m_legSets.emplace_back(LegsConf{LegConf{"ETH_BTC", ORDER_SIDE_BUY},
                                     LegConf{"BTC_EUR", ORDER_SIDE_BUY},
                                     LegConf{"ETH_EUR", ORDER_SIDE_SELL}});
@@ -50,7 +49,6 @@ LegSetSelectionDialog::LegSetSelectionDialog(Engine &, QWidget *parent)
     m_legSets.emplace_back(LegsConf{LegConf{"BCH_BTC", ORDER_SIDE_SELL},
                                     LegConf{"BTC_EUR", ORDER_SIDE_SELL},
                                     LegConf{"BCH_EUR", ORDER_SIDE_BUY}});
-#endif
   }
   for (const auto &legs : m_legSets) {
     QStringList subs;
