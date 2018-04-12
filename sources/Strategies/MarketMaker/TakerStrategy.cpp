@@ -135,7 +135,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto isLong = (m_numberOfUsedPeriods % 2) != 0;
+    const auto isLong = false;
 
     const auto &price =
         isLong ? security->GetAskPriceValue() : security->GetBidPriceValue();
@@ -368,7 +368,12 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
   m_pimpl->SetPnl(0);
   m_pimpl->m_numberOfUsedPeriods = 0;
 
-  m_pimpl->StartNewOperation();
+  try {
+    m_pimpl->StartNewOperation();
+  } catch (...) {
+    m_pimpl->m_nextPeriodEnd = pt::not_a_date_time;
+    throw;
+  }
 
   {
     boost::format message("Trading enabled with period %1% (ends at %2%).");
