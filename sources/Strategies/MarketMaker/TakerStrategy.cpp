@@ -368,7 +368,12 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
   m_pimpl->SetPnl(0);
   m_pimpl->m_numberOfUsedPeriods = 0;
 
-  m_pimpl->StartNewOperation();
+  try {
+    m_pimpl->StartNewOperation();
+  } catch (...) {
+    m_pimpl->m_nextPeriodEnd = pt::not_a_date_time;
+    throw;
+  }
 
   {
     boost::format message("Trading enabled with period %1% (ends at %2%).");
