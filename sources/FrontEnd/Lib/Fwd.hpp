@@ -14,6 +14,8 @@ namespace trdk {
 namespace FrontEnd {
 class DropCopy;
 class Engine;
+class OperationListModel;
+class TotalResultsReportModel;
 
 namespace Orm {
 class Operation;

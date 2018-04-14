@@ -44,13 +44,3 @@ void BalanceItemDelegate::initStyleOption(QStyleOptionViewItem *options,
     }
   }
 }
-
-QString BalanceItemDelegate::displayText(const QVariant &source,
-                                         const QLocale &locale) const {
-  switch (source.type()) {
-    case QVariant::Double: {
-      return QString::number(source.toDouble(), 'f', 8);
-    }
-  }
-  return Base::displayText(source, locale);
-}

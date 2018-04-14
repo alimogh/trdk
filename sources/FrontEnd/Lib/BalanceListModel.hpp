@@ -23,7 +23,7 @@ class TRDK_FRONTEND_LIB_API BalanceListModel : public QAbstractItemModel {
   typedef QAbstractItemModel Base;
 
  public:
-  explicit BalanceListModel(Engine &, QWidget *parent);
+  explicit BalanceListModel(const Engine &, QWidget *parent);
   virtual ~BalanceListModel() override;
 
  public:

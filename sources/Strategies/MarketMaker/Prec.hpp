@@ -30,6 +30,7 @@
 #include "Core/Security.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
+#include "Core/TradingSystem.hpp"
 #include "FrontEnd/Lib/Engine.hpp"
 #include "FrontEnd/Lib/ModuleApi.hpp"
 #include "FrontEnd/Lib/OrderStatusNotifier.hpp"

@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Core/Pnl.hpp"
 #include "Api.h"
 #include "Fwd.hpp"
 
@@ -23,36 +22,32 @@ class TRDK_FRONTEND_LIB_API OperationListModel : public QAbstractItemModel {
  public:
   typedef QAbstractItemModel Base;
 
- public:
-  explicit OperationListModel(Engine &, QWidget *parent);
-  virtual ~OperationListModel() override;
-
- public:
-  void Filter(const QDate &from, const QDate &to);
-  void DisableTimeFilter();
+  explicit OperationListModel(const Engine&, QWidget* parent);
+  ~OperationListModel() override;
 
  public slots:
-  void IncludeTrades(bool);
-  void IncludeErrors(bool);
-  void IncludeCancels(bool);
+  void ShowTrades(bool);
+  void ShowErrors(bool);
+  void ShowCancels(bool);
 
  public:
-  virtual QVariant headerData(int section,
-                              Qt::Orientation,
-                              int role) const override;
-  virtual QVariant data(const QModelIndex &index, int role) const override;
-  virtual QModelIndex index(int row,
-                            int column,
-                            const QModelIndex &parent) const override;
-  virtual QModelIndex parent(const QModelIndex &index) const override;
-  virtual int rowCount(const QModelIndex &parent) const override;
-  virtual int columnCount(const QModelIndex &parent) const override;
+  void Filter(const QDate& from, const QDate& to);
+  void DisableTimeFilter();
 
-  virtual Qt::ItemFlags flags(const QModelIndex &) const override;
+  QVariant headerData(int section, Qt::Orientation, int role) const override;
+  QVariant data(const QModelIndex& index, int role) const override;
+  QModelIndex index(int row,
+                    int column,
+                    const QModelIndex& parent) const override;
+  QModelIndex parent(const QModelIndex& index) const override;
+  int rowCount(const QModelIndex& parent) const override;
+  int columnCount(const QModelIndex& parent) const override;
+
+  Qt::ItemFlags flags(const QModelIndex&) const override;
 
  private slots:
-  void UpdateOperation(const Orm::Operation &);
-  void UpdateOrder(const Orm::Order &);
+  void UpdateOperation(const Orm::Operation&);
+  void UpdateOrder(const Orm::Order&);
 
  private:
   class Implementation;
