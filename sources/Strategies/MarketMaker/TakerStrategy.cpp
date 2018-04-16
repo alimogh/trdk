@@ -164,11 +164,9 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return;
     }
 
-    const auto periodToEnd =
-        m_nextPeriodEnd - m_self.GetContext().GetCurrentTime();
+    const auto period = m_nextPeriodEnd - m_self.GetContext().GetCurrentTime();
     const auto maxOperationTime =
-        periodToEnd /
-        static_cast<int>((m_goalVolume - m_completedVolume) / volume);
+        period / static_cast<int>((m_goalVolume - m_completedVolume) / volume);
     m_self.Schedule(maxOperationTime,
                     [this, operationId]() { CloseOperation(operationId); });
   }
@@ -207,12 +205,6 @@ class TakerStrategy::Implementation : private boost::noncopyable {
   }
 
   bool CheckNewOperationStart() {
-    if (m_numberOfUsedPeriods >= m_maxNumberOfPeriods) {
-      AssertEq(m_numberOfUsedPeriods, m_maxNumberOfPeriods);
-      m_self.RaiseEvent("Stop trading by number of used periods.");
-      return false;
-    }
-
     if (m_pnl <= -m_maxLoss) {
       m_self.RaiseEvent("Stop trading by accumulated loss volume.");
       return false;
@@ -223,13 +215,28 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return false;
     }
 
-    ++m_numberOfUsedPeriods;
-
     if (m_self.GetContext().GetCurrentTime() < m_nextPeriodEnd) {
       return true;
     }
 
-    m_nextPeriodEnd = m_self.GetContext().GetCurrentTime() + m_periodSize;
+    if (m_numberOfUsedPeriods >= m_maxNumberOfPeriods) {
+      AssertEq(m_numberOfUsedPeriods, m_maxNumberOfPeriods);
+      m_self.RaiseEvent("Stop trading by number of used periods.");
+      return false;
+    }
+
+    ++m_numberOfUsedPeriods;
+    m_nextPeriodEnd = (m_nextPeriodEnd != pt::not_a_date_time
+                           ? m_nextPeriodEnd
+                           : m_self.GetContext().GetCurrentTime()) +
+                      m_periodSize;
+
+    {
+      boost::format message("New period #%1% started. Ends at %2%.");
+      message % (m_numberOfUsedPeriods + 1)  // 1
+          % m_nextPeriodEnd;                 // 2
+      m_self.RaiseEvent(message.str());
+    }
 
     return true;
   }
@@ -376,7 +383,8 @@ void TakerStrategy::EnableTrading(bool isEnabled) {
   }
 
   {
-    boost::format message("Trading enabled with period %1% (ends at %2%).");
+    boost::format message(
+        "Trading enabled with period %1% (first ends at %2%).");
     message % m_pimpl->m_periodSize  // 1
         % m_pimpl->m_nextPeriodEnd;  // 2
     RaiseEvent(message.str());
