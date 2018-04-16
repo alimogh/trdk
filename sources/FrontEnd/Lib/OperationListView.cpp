@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "OperationListView.hpp"
-#include "OpeartionItemDelegate.hpp"
+#include "OperationItemDelegate.hpp"
 
 using namespace trdk::FrontEnd;
 

@@ -520,6 +520,10 @@ Context &front::Engine::GetContext() {
   return m_pimpl->m_engine->GetContext();
 }
 
+const Context &front::Engine::GetContext() const {
+  return const_cast<Engine *>(this)->GetContext();
+}
+
 const front::DropCopy &front::Engine::GetDropCopy() const {
   return m_pimpl->m_dropCopy;
 }
@@ -529,15 +533,21 @@ RiskControlScope &front::Engine::GetRiskControl(const TradingMode &mode) {
 }
 
 std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
-    bool isTradesIncluded,
-    bool isErrorsIncluded,
-    bool isCancelsIncluded,
-    const QDate &dateFrom,
-    const QDate &dateTo) const {
+    const QDateTime &startTime,
+    const boost::optional<QDateTime> &endTime,
+    const bool isTradesIncluded,
+    const bool isErrorsIncluded,
+    const bool isCancelsIncluded) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  QString querySql =
-      "WHERE startTime >= :timeFrom AND (endTime <= :timeTo OR endTime IS "
-      "NULL)";
+  QString querySql = "WHERE ((startTime >= :timeFrom";
+  if (endTime) {
+    querySql += " AND startTime <= :timeTo";
+  }
+  querySql += ") OR (endTime >= :timeFrom";
+  if (endTime) {
+    querySql += " AND endTime <= :timeTo";
+  }
+  querySql += "))";
   if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
     QList<QString> list;
     if (!isTradesIncluded) {
@@ -553,8 +563,10 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
     querySql += " AND t_Operation.status NOT IN (" + list.join(", ") + ')';
   }
   qx::QxSqlQuery query(querySql);
-  query.bind(":timeFrom", QDateTime(dateFrom, QTime(0, 0)));
-  query.bind(":timeTo", QDateTime(dateTo, QTime(23, 59)));
+  query.bind(":timeFrom", startTime);
+  if (endTime) {
+    query.bind(":timeTo", *endTime);
+  }
 
   Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
               .isValid());
@@ -581,7 +593,7 @@ void front::Engine::ForEachActiveStrategy(
     const boost::function<void(const QUuid &typeId,
                                const QUuid &instanceId,
                                const QString &config)> &callback) const {
-  qx::QxSqlQuery query("WHERE is_active != 0");
+  const qx::QxSqlQuery query("WHERE is_active != 0");
   std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
   Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
   for (const auto &strategy : result) {

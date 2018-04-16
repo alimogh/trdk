@@ -10,10 +10,7 @@
 
 #pragma once
 
-#include "Lib/BalanceListView.hpp"
 #include "Lib/ModuleApi.hpp"
-#include "Lib/OperationListView.hpp"
-#include "Lib/OrderListView.hpp"
 #include "ui_MainWindow.h"
 
 namespace trdk {
@@ -28,20 +25,25 @@ class MainWindow : public QMainWindow {
                       QWidget *parent);
   ~MainWindow() override;
 
-  Engine &GetEngine() { return m_engine; }
+  Engine &GetEngine();
+  const Engine &GetEngine() const;
 
   void LoadModule(const boost::filesystem::path &);
   void RestoreModules();
 
  private:
+  void ConnectSignals();
+
   void CreateModuleWindows(const StrategyWindowFactory &);
   void ShowModuleWindows(StrategyWidgetList &);
 
+  void CreateNewStrategyOperationsWindow();
+  void CreateNewStandaloneOrderListWindow();
+  void CreateNewBalanceListWindow();
+  void CreateNewTotalResultsReportWindow();
+
   Engine &m_engine;
   Ui::MainWindow m_ui;
-  OperationListView m_operationListView;
-  OrderListView m_standaloneOrderList;
-  BalanceListView m_balanceList;
   std::vector<std::unique_ptr<Lib::Dll>> &m_moduleDlls;
 };
 }  // namespace Terminal

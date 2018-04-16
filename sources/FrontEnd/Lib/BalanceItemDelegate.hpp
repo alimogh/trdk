@@ -10,24 +10,22 @@
 
 #pragma once
 
+#include "ItemDelegate.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 
-class BalanceItemDelegate : public QStyledItemDelegate {
+class BalanceItemDelegate : public ItemDelegate {
   Q_OBJECT
  public:
-  typedef QStyledItemDelegate Base;
+  typedef ItemDelegate Base;
 
- public:
   explicit BalanceItemDelegate(QWidget *parent);
-  virtual ~BalanceItemDelegate() override = default;
-
- public:
-  virtual QString displayText(const QVariant &, const QLocale &) const override;
+  ~BalanceItemDelegate() override = default;
 
  protected:
-  virtual void initStyleOption(QStyleOptionViewItem *,
-                               const QModelIndex &) const override;
+  void initStyleOption(QStyleOptionViewItem *,
+                       const QModelIndex &) const override;
 };
 }  // namespace FrontEnd
 }  // namespace trdk

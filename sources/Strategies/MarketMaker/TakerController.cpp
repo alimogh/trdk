@@ -38,10 +38,15 @@ void TakerController::Close(Position &position) {
       auto volume =
           std::abs(symbol.second.financialResult) + symbol.second.commission;
       const auto &price = position.GetMarketClosePrice();
-      volume += position.GetTradingSystem().CalcCommission(
+      auto closeComission = position.GetTradingSystem().CalcCommission(
           volume / price, price,
           position.IsLong() ? ORDER_SIDE_SELL : ORDER_SIDE_BUY,
           position.GetSecurity());
+      closeComission *= 2;
+      if (!position.IsLong()) {
+        closeComission *= -1;
+      }
+      volume += closeComission;
       position.SetOpenedQty(volume / price);
     }
   }

@@ -10,24 +10,23 @@
 
 #pragma once
 
+#include "ItemDelegate.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 
-class OperationItemDelegate : public QStyledItemDelegate {
+class OperationItemDelegate : public ItemDelegate {
   Q_OBJECT
- public:
-  typedef QStyledItemDelegate Base;
 
  public:
+  typedef ItemDelegate Base;
+
   explicit OperationItemDelegate(QWidget *parent);
-  virtual ~OperationItemDelegate() override = default;
-
- public:
-  virtual QString displayText(const QVariant &, const QLocale &) const override;
+  ~OperationItemDelegate() override = default;
 
  protected:
-  virtual void initStyleOption(QStyleOptionViewItem *,
-                               const QModelIndex &) const override;
+  void initStyleOption(QStyleOptionViewItem *,
+                       const QModelIndex &) const override;
 };
 }  // namespace FrontEnd
 }  // namespace trdk

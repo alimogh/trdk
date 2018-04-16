@@ -198,18 +198,6 @@
     <ClCompile Include="..\..\Core\StrategyDummy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OpeartionItemDelegate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OpeartionItemDelegate.cpp">
-      <Filter>Generated Files\Debug Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OpeartionItemDelegate.cpp">
-      <Filter>Generated Files\Test Standalone</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OpeartionItemDelegate.cpp">
-      <Filter>Generated Files\Release Standalone</Filter>
-    </ClCompile>
     <ClCompile Include="OperationItem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -245,6 +233,78 @@
     </ClCompile>
     <ClCompile Include="Orm.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationListSettingsWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationListSettingsWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationListSettingsWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationListSettingsWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportModel.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportModel.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportModel.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="TotalResultsReportModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportSettingsWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportSettingsWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportSettingsWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="TotalResultsReportSettingsWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_TotalResultsReportView.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_TotalResultsReportView.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_TotalResultsReportView.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="TotalResultsReportView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ItemDelegate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ItemDelegate.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ItemDelegate.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ItemDelegate.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationItemDelegate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_OperationItemDelegate.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_OperationItemDelegate.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_OperationItemDelegate.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -291,6 +351,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_SymbolSelectionDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_OperationListSettingsWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TotalResultsReportSettingsWidget.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -464,9 +530,6 @@
     <CustomBuild Include="OperationListView.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="OpeartionItemDelegate.hpp">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="BalanceItemDelegate.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
@@ -474,6 +537,30 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="SymbolSelectionDialog.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OperationListSettingsWidget.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OperationListSettingsWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TotalResultsReportModel.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TotalResultsReportSettingsWidget.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TotalResultsReportView.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TotalResultsReportSettingsWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ItemDelegate.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="OperationItemDelegate.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
