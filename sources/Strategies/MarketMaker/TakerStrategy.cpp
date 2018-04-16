@@ -219,13 +219,12 @@ class TakerStrategy::Implementation : private boost::noncopyable {
       return true;
     }
 
-    if (m_numberOfUsedPeriods >= m_maxNumberOfPeriods) {
+    if (++m_numberOfUsedPeriods >= m_maxNumberOfPeriods) {
       AssertEq(m_numberOfUsedPeriods, m_maxNumberOfPeriods);
       m_self.RaiseEvent("Stop trading by number of used periods.");
       return false;
     }
 
-    ++m_numberOfUsedPeriods;
     m_nextPeriodEnd = (m_nextPeriodEnd != pt::not_a_date_time
                            ? m_nextPeriodEnd
                            : m_self.GetContext().GetCurrentTime()) +
