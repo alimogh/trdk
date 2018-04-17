@@ -35,18 +35,25 @@ void TakerController::Close(Position &position) {
       if (symbol.first != position.GetSecurity().GetSymbol().GetQuoteSymbol()) {
         continue;
       }
-      auto volume =
-          std::abs(symbol.second.financialResult) + symbol.second.commission;
+
+      auto volume = std::abs(symbol.second.financialResult);
+      position.IsLong() ? volume += symbol.second.commission
+                        : volume -= symbol.second.commission;
+
       const auto &price = position.GetMarketClosePrice();
-      auto closeComission = position.GetTradingSystem().CalcCommission(
-          volume / price, price,
-          position.IsLong() ? ORDER_SIDE_SELL : ORDER_SIDE_BUY,
-          position.GetSecurity());
-      closeComission *= 2;
-      if (!position.IsLong()) {
-        closeComission *= -1;
+      {
+        const auto closeCommissionSource =
+            position.GetTradingSystem().CalcCommission(
+                volume / price, price, position.GetCloseOrderSide(),
+                position.GetSecurity());
+        const auto closeCommissionRatio =
+            ((closeCommissionSource * 100) / volume) / 100;
+        const auto closeCommission =
+            volume * (1 - (1 / (1 + closeCommissionRatio)));
+        position.IsLong() ? volume += closeCommission
+                          : volume -= closeCommission;
       }
-      volume += closeComission;
+
       position.SetOpenedQty(volume / price);
     }
   }

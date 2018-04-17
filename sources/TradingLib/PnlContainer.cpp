@@ -12,27 +12,26 @@
 #include "PnlContainer.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::TradingLib;
+using namespace Lib;
+using namespace TradingLib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
+class PnlOneSymbolContainer::Implementation : boost::noncopyable {
  public:
   Data m_data;
   size_t m_numberOfProfits;
   size_t m_numberOfLosses;
 
- public:
   Implementation() : m_numberOfProfits(0), m_numberOfLosses(0) {}
 
-  void Update(const std::string &symbol,
-              const Volume &financialResultDelta,
-              const Volume &commission) {
-    const auto &result =
+  void Update(const std::string& symbol,
+              const Volume& financialResultDelta,
+              const Volume& commission) {
+    const auto& result =
         m_data.emplace(symbol, SymbolData{financialResultDelta, commission});
     if (!result.second) {
-      auto &values = result.first->second;
+      auto& values = result.first->second;
       const auto prevTotal = values.financialResult - values.commission;
       values.financialResult += financialResultDelta;
       values.commission += commission;
@@ -73,12 +72,12 @@ class PnlOneSymbolContainer::Implementation : private boost::noncopyable {
     AssertLe(m_numberOfLosses + m_numberOfProfits, m_data.size());
   }
 
-  void Update(const Security &security,
-              const OrderSide &side,
-              const Qty &qty,
-              const Price &price,
-              const Volume &commission) {
-    const auto &symbol = security.GetSymbol();
+  void Update(const Security& security,
+              const OrderSide& side,
+              const Qty& qty,
+              const Price& price,
+              const Volume& commission) {
+    const auto& symbol = security.GetSymbol();
     switch (symbol.GetSecurityType()) {
       default:
         throw MethodIsNotImplementedException(
@@ -98,24 +97,24 @@ PnlOneSymbolContainer::PnlOneSymbolContainer()
 
 PnlOneSymbolContainer::~PnlOneSymbolContainer() = default;
 
-void PnlOneSymbolContainer::UpdateFinancialResult(const Security &security,
-                                                  const OrderSide &side,
-                                                  const Qty &qty,
-                                                  const Price &price) {
+void PnlOneSymbolContainer::UpdateFinancialResult(const Security& security,
+                                                  const OrderSide& side,
+                                                  const Qty& qty,
+                                                  const Price& price) {
   m_pimpl->Update(security, side, qty, price, 0);
 }
 
-void PnlOneSymbolContainer::UpdateFinancialResult(const Security &security,
-                                                  const OrderSide &side,
-                                                  const Qty &qty,
-                                                  const Price &price,
-                                                  const Volume &commission) {
+void PnlOneSymbolContainer::UpdateFinancialResult(const Security& security,
+                                                  const OrderSide& side,
+                                                  const Qty& qty,
+                                                  const Price& price,
+                                                  const Volume& commission) {
   m_pimpl->Update(security, side, qty, price, commission);
 }
 
-void PnlOneSymbolContainer::AddCommission(const Security &security,
-                                          const Volume &commission) {
-  const auto &symbol = security.GetSymbol();
+void PnlOneSymbolContainer::AddCommission(const Security& security,
+                                          const Volume& commission) {
+  const auto& symbol = security.GetSymbol();
   switch (symbol.GetSecurityType()) {
     default:
       throw MethodIsNotImplementedException(
@@ -131,19 +130,20 @@ PnlOneSymbolContainer::Result PnlOneSymbolContainer::GetResult() const {
       m_pimpl->m_numberOfLosses + m_pimpl->m_numberOfProfits;
   if (numberOfBalances == 0) {
     return RESULT_NONE;
-  } else if (numberOfBalances > 1) {
+  }
+  if (numberOfBalances > 1) {
     return RESULT_ERROR;
-  } else if (m_pimpl->m_numberOfProfits) {
+  }
+  if (m_pimpl->m_numberOfProfits) {
     AssertEq(1, m_pimpl->m_numberOfProfits);
     AssertEq(0, m_pimpl->m_numberOfLosses);
     return RESULT_PROFIT;
-  } else {
-    AssertEq(1, m_pimpl->m_numberOfLosses);
-    return RESULT_LOSS;
   }
+  AssertEq(1, m_pimpl->m_numberOfLosses);
+  return RESULT_LOSS;
 }
 
-const PnlOneSymbolContainer::Data &PnlOneSymbolContainer::GetData() const {
+const PnlOneSymbolContainer::Data& PnlOneSymbolContainer::GetData() const {
   return m_pimpl->m_data;
 }
 
