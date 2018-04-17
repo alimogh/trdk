@@ -66,6 +66,13 @@ class MarketmakingPnlContainer : public PnlContainer {
   }
 
   Result GetResult() const override {
+    if (m_result) {
+      return *m_result;
+    }
+    if (m_data.empty()) {
+      m_result = RESULT_NONE;
+      return *m_result;
+    }
     auto isBaseProfit = false;
     auto isQuoteProfit = false;
     for (const auto &balance : m_data) {
@@ -85,7 +92,8 @@ class MarketmakingPnlContainer : public PnlContainer {
         isQuoteProfit = true;
       }
     }
-    return isQuoteProfit && isBaseProfit ? RESULT_PROFIT : RESULT_COMPLETED;
+    m_result = isQuoteProfit && isBaseProfit ? RESULT_PROFIT : RESULT_COMPLETED;
+    return *m_result;
   }
 
   const Data &GetData() const override { return m_data; }
@@ -94,6 +102,7 @@ class MarketmakingPnlContainer : public PnlContainer {
   void Update(const std::string &symbol,
               const Volume &financialResultDelta,
               const Volume &commission) {
+    m_result = boost::none;
     const auto &result =
         m_data.emplace(symbol, SymbolData{financialResultDelta, commission});
     if (!result.second) {
@@ -124,6 +133,7 @@ class MarketmakingPnlContainer : public PnlContainer {
 
   const Security &m_security;
   Data m_data;
+  mutable boost::optional<Result> m_result;
 };
 
 }  // namespace

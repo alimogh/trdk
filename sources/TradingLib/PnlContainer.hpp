@@ -20,20 +20,20 @@ class PnlOneSymbolContainer : public PnlContainer {
   PnlOneSymbolContainer();
   ~PnlOneSymbolContainer() override;
 
-  void UpdateFinancialResult(const Security &,
-                             const OrderSide &,
-                             const Qty &,
-                             const Price &) override;
-  void UpdateFinancialResult(const Security &,
-                             const OrderSide &,
-                             const Qty &,
-                             const Price &,
-                             const Volume &commission) override;
+  void UpdateFinancialResult(const Security&,
+                             const OrderSide&,
+                             const Qty&,
+                             const Price&) override;
+  void UpdateFinancialResult(const Security&,
+                             const OrderSide&,
+                             const Qty&,
+                             const Price&,
+                             const Volume& commission) override;
 
-  void AddCommission(const trdk::Security &, const Volume &) override;
+  void AddCommission(const Security&, const Volume&) override;
 
   Result GetResult() const override;
-  const Data &GetData() const override;
+  const Data& GetData() const override;
 
  private:
   class Implementation;
