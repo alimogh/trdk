@@ -54,9 +54,9 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   void StoreConfig(const Strategy&, QString&& config, bool isActive);
 
   void ForEachActiveStrategy(
-      const boost::function<void(const QUuid &typeIt,
-                                 const QUuid &instanceId,
-                                 const QString &config)> &) const;
+      const boost::function<void(const QUuid& typeIt,
+                                 const QUuid& instanceId,
+                                 const QString& config)>&) const;
 
   void Start(const boost::function<void(const std::string&)>& progressCallback);
   void Stop();

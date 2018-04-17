@@ -26,10 +26,8 @@ struct OperationRecord {
   QString commission;
   QString totalResult;
 
- public:
   explicit OperationRecord(const Orm::Operation &);
 
- public:
   void Update(const Orm::Operation &);
 };
 }  // namespace Detail
