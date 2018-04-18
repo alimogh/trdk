@@ -11,12 +11,12 @@
 #include "Prec.hpp"
 #include "Engine.hpp"
 #include "DropCopy.hpp"
+#include <utility>
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
+using namespace Lib;
+using namespace FrontEnd;
 
-namespace front = trdk::FrontEnd;
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
@@ -25,7 +25,7 @@ namespace db = qx::dao;
 
 namespace {
 Orm::OperationStatus::enum_OperationStatus CovertToOperationStatus(
-    const Pnl::Result &source) {
+    const Pnl::Result& source) {
   static_assert(Pnl::numberOfResults == 5, "List changed.");
   switch (source) {
     case Pnl::RESULT_NONE:
@@ -36,35 +36,56 @@ Orm::OperationStatus::enum_OperationStatus CovertToOperationStatus(
       return Orm::OperationStatus::PROFIT;
     case Pnl::RESULT_LOSS:
       return Orm::OperationStatus::LOSS;
-    default:
-      AssertEq(Pnl::RESULT_ERROR, source);
     case Pnl::RESULT_ERROR:
       return Orm::OperationStatus::ERROR;
+    default:
+      AssertEq(Pnl::RESULT_ERROR, source);
+      throw Exception("Operation Status code is unknown");
+  }
+}
+
+Orm::TimeInForce::enum_TimeInForce CovertToTimeInForce(
+    const TimeInForce& source) {
+  static_assert(numberOfTimeInForces == 5, "List changed.");
+  switch (source) {
+    case TIME_IN_FORCE_DAY:
+      return Orm::TimeInForce::TIME_IN_FORCE_DAY;
+    case TIME_IN_FORCE_GTC:
+      return Orm::TimeInForce::TIME_IN_FORCE_GTC;
+    case TIME_IN_FORCE_OPG:
+      return Orm::TimeInForce::TIME_IN_FORCE_OPG;
+    case TIME_IN_FORCE_IOC:
+      return Orm::TimeInForce::TIME_IN_FORCE_IOC;
+    case TIME_IN_FORCE_FOK:
+      return Orm::TimeInForce::TIME_IN_FORCE_FOK;
+    default:
+      AssertEq(TIME_IN_FORCE_FOK, source);
+      throw Exception("Time In Force code is unknown");
   }
 }
 }  // namespace
 
-class front::Engine::Implementation : private boost::noncopyable {
+class FrontEnd::Engine::Implementation : private boost::noncopyable {
  public:
-  front::Engine &m_self;
+  FrontEnd::Engine& m_self;
   const fs::path m_configFilePath;
-  front::DropCopy m_dropCopy;
+  FrontEnd::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
   sig::scoped_connection m_engineLogSubscription;
   boost::array<std::unique_ptr<RiskControlScope>, numberOfTradingModes>
       m_riskControls;
-  QSqlDatabase *const m_db;
+  QSqlDatabase* const m_db;
 
  public:
-  explicit Implementation(front::Engine &self, const fs::path &path)
+  explicit Implementation(FrontEnd::Engine& self, fs::path path)
       : m_self(self),
-        m_configFilePath(path),
+        m_configFilePath(std::move(path)),
         m_dropCopy(m_self.parent()),
         m_db(nullptr) {
     // Just a smoke-check that config is an engine config:
     IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
 
-    for (int i = 0; i < numberOfTradingModes; ++i) {
+    for (auto i = 0; i < numberOfTradingModes; ++i) {
       m_riskControls[i] = boost::make_unique<EmptyRiskControlScope>(
           static_cast<TradingMode>(i), "Front-end");
     }
@@ -105,12 +126,12 @@ class front::Engine::Implementation : private boost::noncopyable {
         Qt::QueuedConnection));
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::OperationOrderSubmit, &m_self,
-        [this](const ids::uuid &operationId, int64_t subOperationId,
-               const OrderId &id, const pt::ptime &orderTime,
-               const Security *security, const Currency &currency,
-               const TradingSystem *tradingSystem, const OrderSide &orderSide,
-               const Qty &qty, const boost::optional<Price> &price,
-               const TimeInForce &timeInForce) {
+        [this](const ids::uuid& operationId, int64_t subOperationId,
+               const OrderId& id, const pt::ptime& orderTime,
+               const Security* security, const Currency& currency,
+               const TradingSystem* tradingSystem, const OrderSide& orderSide,
+               const Qty& qty, const boost::optional<Price>& price,
+               const TimeInForce& timeInForce) {
           OnOperationOrderSubmit(std::make_pair(operationId, subOperationId),
                                  id, orderTime, *security, currency,
                                  *tradingSystem, orderSide, qty, price,
@@ -119,12 +140,12 @@ class front::Engine::Implementation : private boost::noncopyable {
         Qt::QueuedConnection));
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::OperationOrderSubmitError, &m_self,
-        [this](const ids::uuid &operationId, int64_t subOperationId,
-               const pt::ptime &orderTime, const Security *security,
-               const Currency &currency, const TradingSystem *tradingSystem,
-               const OrderSide &side, const Qty &qty,
-               const boost::optional<Price> &price,
-               const TimeInForce &timeInForce, const QString &error) {
+        [this](const ids::uuid& operationId, int64_t subOperationId,
+               const pt::ptime& orderTime, const Security* security,
+               const Currency& currency, const TradingSystem* tradingSystem,
+               const OrderSide& side, const Qty& qty,
+               const boost::optional<Price>& price,
+               const TimeInForce& timeInForce, const QString& error) {
           OnOperationOrderSubmitError(
               std::make_pair(operationId, subOperationId), orderTime, *security,
               currency, *tradingSystem, side, qty, price, timeInForce, error);
@@ -132,11 +153,11 @@ class front::Engine::Implementation : private boost::noncopyable {
         Qt::QueuedConnection));
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::FreeOrderSubmit, &m_self,
-        [this](const OrderId &id, const pt::ptime &orderTime,
-               const Security *security, const Currency &currency,
-               const TradingSystem *tradingSystem, const OrderSide &orderSide,
-               const Qty &qty, const boost::optional<Price> &price,
-               const TimeInForce &timeInForce) {
+        [this](const OrderId& id, const pt::ptime& orderTime,
+               const Security* security, const Currency& currency,
+               const TradingSystem* tradingSystem, const OrderSide& orderSide,
+               const Qty& qty, const boost::optional<Price>& price,
+               const TimeInForce& timeInForce) {
           OnOperationOrderSubmit(boost::none, id, orderTime, *security,
                                  currency, *tradingSystem, orderSide, qty,
                                  price, timeInForce);
@@ -144,11 +165,11 @@ class front::Engine::Implementation : private boost::noncopyable {
         Qt::QueuedConnection));
     Verify(m_self.connect(
         &m_dropCopy, &DropCopy::FreeOrderSubmitError, &m_self,
-        [this](const pt::ptime &orderTime, const Security *security,
-               const Currency &currency, const TradingSystem *tradingSystem,
-               const OrderSide &side, const Qty &qty,
-               const boost::optional<Price> &price,
-               const TimeInForce &timeInForce, const QString &error) {
+        [this](const pt::ptime& orderTime, const Security* security,
+               const Currency& currency, const TradingSystem* tradingSystem,
+               const OrderSide& side, const Qty& qty,
+               const boost::optional<Price>& price,
+               const TimeInForce& timeInForce, const QString& error) {
           OnOperationOrderSubmitError(boost::none, orderTime, *security,
                                       currency, *tradingSystem, side, qty,
                                       price, timeInForce, error);
@@ -160,8 +181,8 @@ class front::Engine::Implementation : private boost::noncopyable {
         Qt::QueuedConnection));
   }
 
-  void OnContextStateChanged(const Context::State &newState,
-                             const std::string *updateMessage) {
+  void OnContextStateChanged(const Context::State& newState,
+                             const std::string* updateMessage) {
     static_assert(Context::numberOfStates == 4, "List changed.");
     switch (newState) {
       case Context::STATE_ENGINE_STARTED:
@@ -191,10 +212,10 @@ class front::Engine::Implementation : private boost::noncopyable {
     }
   }
 
-  void OnEngineNewLogRecord(const char *tag,
-                            const pt::ptime &time,
-                            const std::string *module,
-                            const char *message) {
+  void OnEngineNewLogRecord(const char* tag,
+                            const pt::ptime& time,
+                            const std::string* module,
+                            const char* message) {
     if (!std::strcmp(tag, "Debug")) {
       return;
     }
@@ -209,29 +230,30 @@ class front::Engine::Implementation : private boost::noncopyable {
     emit m_self.LogRecord(QString::fromStdString(oss.str()));
   }
 
-  void OnNewOrder(const boost::optional<std::pair<ids::uuid, int64_t>>
-                      &operationIdSuboperationId,
-                  QString &&remoteId,
-                  const pt::ptime &time,
-                  const Security &security,
-                  const Currency &currency,
-                  const TradingSystem &tradingSystem,
-                  const OrderSide &side,
-                  const Qty &qty,
-                  const boost::optional<Price> &price,
-                  const OrderStatus &status,
-                  const QString &additionalInfo) {
+  void OnNewOrder(const boost::optional<std::pair<ids::uuid, int64_t>>&
+                      operationIdSuboperationId,
+                  QString&& remoteId,
+                  const pt::ptime& time,
+                  const Security& security,
+                  const Currency& currency,
+                  const TradingSystem& tradingSystem,
+                  const OrderSide& side,
+                  const Qty& qty,
+                  const boost::optional<Price>& price,
+                  const TimeInForce& timeInForce,
+                  const OrderStatus& status,
+                  const QString& additionalInfo) {
     Orm::Order order;
     if (operationIdSuboperationId) {
       {
         auto operation = boost::make_shared<Orm::Operation>(
             ConvertToQUuid(operationIdSuboperationId->first));
-        db::fetch_by_id(operation, m_db);
+        Verify(!db::fetch_by_id(operation, m_db).isValid());
         order.setOperation(operation);
       }
       order.setSubOperationId(operationIdSuboperationId->second);
     }
-    order.setRemoteId(std::move(remoteId));
+    order.setRemoteId(remoteId);
     order.setOrderTime(ConvertToDbDateTime(time));
     order.setSymbol(QString::fromStdString(security.GetSymbol().GetSymbol()));
     order.setCurrency(QString::fromStdString(ConvertToIso(currency)));
@@ -241,52 +263,53 @@ class front::Engine::Implementation : private boost::noncopyable {
     order.setQty(qty);
     order.setRemainingQty(qty);
     order.setPrice(price.get_value_or(0));
+    order.setTimeInForce(CovertToTimeInForce(timeInForce));
     order.setStatus(status);
     order.setAdditionalInfo(additionalInfo);
-    db::insert(order, m_db);
+    Verify(!db::insert(order, m_db).isValid());
     emit m_self.OrderUpdate(order);
   }
 
   void OnOperationOrderSubmit(
-      const boost::optional<std::pair<ids::uuid, int64_t>>
-          &operationIdSuboperationId,
-      const OrderId &id,
-      const pt::ptime &time,
-      const Security &security,
-      const Currency &currency,
-      const TradingSystem &tradingSystem,
-      const OrderSide &side,
-      const Qty &qty,
-      const boost::optional<Price> &price,
-      const TimeInForce &) {
+      const boost::optional<std::pair<ids::uuid, int64_t>>&
+          operationIdSuboperationId,
+      const OrderId& id,
+      const pt::ptime& time,
+      const Security& security,
+      const Currency& currency,
+      const TradingSystem& tradingSystem,
+      const OrderSide& side,
+      const Qty& qty,
+      const boost::optional<Price>& price,
+      const TimeInForce& timeInForce) {
     OnNewOrder(operationIdSuboperationId, QString::fromStdString(id.GetValue()),
                time, security, currency, tradingSystem, side, qty, price,
-               ORDER_STATUS_SENT, QString());
+               timeInForce, ORDER_STATUS_SENT, QString());
   }
 
   void OnOperationOrderSubmitError(
-      const boost::optional<std::pair<ids::uuid, int64_t>>
-          &operationIdSuboperationId,
-      const pt::ptime &time,
-      const Security &security,
-      const Currency &currency,
-      const TradingSystem &tradingSystem,
-      const OrderSide &side,
-      const Qty &qty,
-      const boost::optional<Price> &price,
-      const TimeInForce &,
-      const QString &error) {
+      const boost::optional<std::pair<ids::uuid, int64_t>>&
+          operationIdSuboperationId,
+      const pt::ptime& time,
+      const Security& security,
+      const Currency& currency,
+      const TradingSystem& tradingSystem,
+      const OrderSide& side,
+      const Qty& qty,
+      const boost::optional<Price>& price,
+      const TimeInForce& timeInForce,
+      const QString& error) {
     auto fakeId = QUuid::createUuid().toString();
     OnNewOrder(operationIdSuboperationId, std::move(fakeId), time, security,
-               currency, tradingSystem, side, qty, price, ORDER_STATUS_ERROR,
-               error);
+               currency, tradingSystem, side, qty, price, timeInForce,
+               ORDER_STATUS_ERROR, error);
   }
 
-  void OnOrderUpdate(const OrderId &id,
-                     const TradingSystem *tradingSystem,
-                     const pt::ptime &time,
-                     const OrderStatus &status,
-                     const Qty &remainingQty) {
+  void OnOrderUpdate(const OrderId& id,
+                     const TradingSystem* tradingSystem,
+                     const pt::ptime& time,
+                     const OrderStatus& status,
+                     const Qty& remainingQty) {
     qx::QxSqlQuery query(
         "WHERE remote_id = :id AND trading_system = :tradingSystem");
     query.bind(":id", QString::fromStdString(id.GetValue()));
@@ -297,11 +320,12 @@ class front::Engine::Implementation : private boost::noncopyable {
             .isValid()) {
       Assert(false);
       return;
-    } else if (records.size() != 1) {
+    }
+    if (records.size() != 1) {
       AssertEq(1, records.size());
       return;
     }
-    auto &order = records.front();
+    auto& order = records.front();
     order.setUpdateTime(ConvertToDbDateTime(time));
     order.setStatus(status);
     order.setRemainingQty(remainingQty);
@@ -312,9 +336,9 @@ class front::Engine::Implementation : private boost::noncopyable {
     emit m_self.OrderUpdate(order);
   }
 
-  void OnOperationStart(const ids::uuid &id,
-                        const pt::ptime &time,
-                        const Strategy *strategySource) {
+  void OnOperationStart(const ids::uuid& id,
+                        const pt::ptime& time,
+                        const Strategy* strategySource) {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
     operation->setStartTime(ConvertToDbDateTime(time));
     {
@@ -323,49 +347,50 @@ class front::Engine::Implementation : private boost::noncopyable {
       db::fetch_by_id(strategyOrm, m_db);
       strategyOrm->setName(
           QString::fromStdString(strategySource->GetInstanceName()));
-      db::save(strategyOrm);
+      strategyOrm->setTypeId(ConvertToQUuid(strategySource->GetTypeId()));
+      Verify(!db::save(strategyOrm).isValid());
       operation->setStrategyInstance(strategyOrm);
     }
-    db::insert(operation, m_db);
+    Verify(!db::insert(operation, m_db).isValid());
     emit m_self.OperationUpdate(*operation);
   }
 
-  void OnOperationUpdate(const ids::uuid &id, const Pnl::Data &pnl) {
+  void OnOperationUpdate(const ids::uuid& id, const Pnl::Data& pnl) {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
-    db::fetch_by_id_with_relation("Pnl", operation, m_db);
+    Verify(!db::fetch_by_id_with_relation("Pnl", operation, m_db).isValid());
     UpdatePnl(operation, pnl);
-    db::update_with_relation("Pnl", operation, m_db);
+    Verify(!db::update_with_relation("Pnl", operation, m_db).isValid());
     emit m_self.OperationUpdate(*operation);
   }
 
-  void OnOperationEnd(const ids::uuid &id,
-                      const pt::ptime &time,
-                      const boost::shared_ptr<const Pnl> &pnl) {
+  void OnOperationEnd(const ids::uuid& id,
+                      const pt::ptime& time,
+                      const boost::shared_ptr<const Pnl>& pnl) {
     auto operation = boost::make_shared<Orm::Operation>(ConvertToQUuid(id));
-    db::fetch_by_id_with_relation("Pnl", operation, m_db);
+    Verify(!db::fetch_by_id_with_relation("Pnl", operation, m_db).isValid());
     operation->setEndTime(ConvertToDbDateTime(time));
     operation->setStatus(CovertToOperationStatus(pnl->GetResult()));
     UpdatePnl(operation, pnl->GetData());
-    db::update_with_relation("Pnl", operation, m_db);
+    Verify(!db::update_with_relation("Pnl", operation, m_db).isValid());
     emit m_self.OperationUpdate(*operation);
   }
 
-  void UpdatePnl(const boost::shared_ptr<Orm::Operation> &operation,
-                 const Pnl::Data &pnlSource) {
+  void UpdatePnl(const boost::shared_ptr<Orm::Operation>& operation,
+                 const Pnl::Data& pnlSource) {
     boost::unordered_map<std::string, boost::shared_ptr<Orm::Pnl>> index;
-    for (const auto &pnl : operation->getPnl()) {
-      const auto &symbol = pnl->getSymbol().toStdString();
-      const auto &source = pnlSource.find(symbol);
+    for (const auto& pnl : operation->getPnl()) {
+      const auto& symbol = pnl->getSymbol().toStdString();
+      const auto& source = pnlSource.find(symbol);
       if (source == pnlSource.cend()) {
-        db::delete_by_id(pnl, m_db);
+        Verify(!db::delete_by_id(pnl, m_db).isValid());
       } else {
-        index.emplace(std::move(symbol), pnl);
+        index.emplace(symbol, pnl);
       }
     }
 
     std::vector<boost::shared_ptr<Orm::Pnl>> result;
-    for (const auto &pnl : pnlSource) {
-      const auto &it = index.find(pnl.first);
+    for (const auto& pnl : pnlSource) {
+      const auto& it = index.find(pnl.first);
       boost::shared_ptr<Orm::Pnl> record;
       if (it == index.cend()) {
         record = boost::make_shared<Orm::Pnl>();
@@ -379,7 +404,7 @@ class front::Engine::Implementation : private boost::noncopyable {
       result.emplace_back(record);
     }
 
-    operation->setPnl(std::move(result));
+    operation->setPnl(result);
   }
 
 #ifdef DEV_VER
@@ -391,20 +416,19 @@ class front::Engine::Implementation : private boost::noncopyable {
     m_testFuture = boost::async([this]() {
       try {
         return RunTest();
-      } catch (const std::exception &ex) {
+      } catch (const std::exception& ex) {
         QMessageBox::critical(nullptr, tr("Debug test error"), ex.what(),
                               QMessageBox::Ok);
       }
     });
   }
+
   void RunTest() {
-    ids::random_generator generateUuid;
-    const auto operationId = generateUuid();
     m_testStrategy = boost::make_shared<Dummies::Strategy>(m_self.GetContext());
-    Security *security1 = nullptr;
-    Security *security2 = nullptr;
+    Security* security1 = nullptr;
+    Security* security2 = nullptr;
     m_self.GetContext().GetMarketDataSource(0).ForEachSecurity(
-        [&security1, &security2](Security &source) {
+        [&security1, &security2](Security& source) {
           if (!security1) {
             security1 = &source;
           } else if (!security2) {
@@ -416,10 +440,10 @@ class front::Engine::Implementation : private boost::noncopyable {
 
     for (size_t i = 0; i < 3; ++i) {
       boost::this_thread::sleep(pt::seconds(1));
-      const auto &operation = boost::make_shared<Operation>(
+      const auto& operation = boost::make_shared<Operation>(
           *m_testStrategy,
           boost::make_unique<TradingLib::PnlOneSymbolContainer>());
-      operation->OnNewPositionStart(*static_cast<Position *>(nullptr));
+      operation->OnNewPositionStart(*static_cast<Position*>(nullptr));
       if (i && !(i % 3)) {
         continue;
       }
@@ -431,12 +455,13 @@ class front::Engine::Implementation : private boost::noncopyable {
       operation->UpdatePnl(*security2, ORDER_SIDE_SELL, 1.23124 * i,
                            1.23124 * i, 0.00001);
       for (size_t j = 0; j < 6; ++j) {
-        const auto &tradingSystem =
+        const auto& tradingSystem =
             m_self.GetContext().GetTradingSystem(0, TRADING_MODE_LIVE);
         const auto position = boost::make_shared<LongPosition>(
             operation, j + 1, *security1, security1->GetSymbol().GetCurrency(),
-            2312313, 62423, TimeMeasurement::Milestones());
-        const auto &orderId = boost::lexical_cast<std::string>(generateUuid());
+            2312313, 62423, TimeMeasurement ::Milestones());
+        static ids::random_generator generateUuid;
+        const auto& orderId = boost::lexical_cast<std::string>(generateUuid());
         const auto qty = 100.00 * (j + 1) * (i + 1);
         m_dropCopy.CopySubmittedOrder(
             orderId, m_self.GetContext().GetCurrentTime(), *position,
@@ -463,89 +488,90 @@ class front::Engine::Implementation : private boost::noncopyable {
 #endif
 };
 
-front::Engine::Engine(const fs::path &path, QWidget *parent)
+FrontEnd::Engine::Engine(const fs::path& path, QWidget* parent)
     : QObject(parent),
       m_pimpl(boost::make_unique<Implementation>(*this, path)) {
   m_pimpl->InitDb();
   m_pimpl->ConnectSignals();
 }
 
-front::Engine::~Engine() {
+FrontEnd::Engine::~Engine() {
   // Fixes second stop by StateChanged-signal.
   m_pimpl->m_engine.reset();
 }
 
-const fs::path &front::Engine::GetConfigFilePath() const {
+const fs::path& FrontEnd::Engine::GetConfigFilePath() const {
   return m_pimpl->m_configFilePath;
 }
 
-bool front::Engine::IsStarted() const {
+bool FrontEnd::Engine::IsStarted() const {
   return m_pimpl->m_engine ? true : false;
 }
 
-void front::Engine::Start(
-    const boost::function<void(const std::string &)> &startProgressCallback) {
+void FrontEnd::Engine::Start(
+    const boost::function<void(const std::string&)>& startProgressCallback) {
   if (m_pimpl->m_engine) {
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
       GetConfigFilePath(),
-      boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
+      boost::bind(&Implementation ::OnContextStateChanged, &*m_pimpl, _1, _2),
       m_pimpl->m_dropCopy, startProgressCallback,
-      [this](const std::string &error) {
-        return QMessageBox::critical(
+      [this](const std ::string& error) {
+        return QMessageBox ::critical(
                    nullptr, tr("Error at engine starting"),
-                   QString::fromStdString(error.substr(0, 512)),
-                   QMessageBox::Retry | QMessageBox::Ignore) ==
-               QMessageBox::Ignore;
+                   QString ::fromStdString(error.substr(0, 512)),
+                   QMessageBox ::Retry | QMessageBox ::Ignore) ==
+               QMessageBox ::Ignore;
       },
-      [this](trdk::Engine::Context::Log &log) {
-        m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
-            &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
+      [this](Context::Log& log) {
+        m_pimpl->m_engineLogSubscription = log.Subscribe(boost ::bind(
+            &Implementation ::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
       },
       boost::unordered_map<std::string, std::string>());
 }
 
-void front::Engine::Stop() {
+void FrontEnd::Engine::Stop() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine.reset();
 }
 
-Context &front::Engine::GetContext() {
+Context& FrontEnd::Engine::GetContext() {
   if (!m_pimpl->m_engine) {
     throw Exception(tr("Engine is not started").toLocal8Bit().constData());
   }
   return m_pimpl->m_engine->GetContext();
 }
 
-const Context &front::Engine::GetContext() const {
-  return const_cast<Engine *>(this)->GetContext();
+const Context& FrontEnd::Engine::GetContext() const {
+  return const_cast<Engine*>(this)->GetContext();
 }
 
-const front::DropCopy &front::Engine::GetDropCopy() const {
+const FrontEnd::DropCopy& FrontEnd::Engine::GetDropCopy() const {
   return m_pimpl->m_dropCopy;
 }
 
-RiskControlScope &front::Engine::GetRiskControl(const TradingMode &mode) {
+RiskControlScope& FrontEnd::Engine::GetRiskControl(const TradingMode& mode) {
   return *m_pimpl->m_riskControls[mode];
 }
 
-std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
-    const QDateTime &startTime,
-    const boost::optional<QDateTime> &endTime,
+std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
+    const QDateTime& startTime,
+    const boost::optional<QDateTime>& endTime,
     const bool isTradesIncluded,
     const bool isErrorsIncluded,
-    const bool isCancelsIncluded) const {
+    const bool isCancelsIncluded,
+    const boost::optional<QString>& strategy) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  QString querySql = "WHERE ((startTime >= :timeFrom";
+  QString querySql = "WHERE ((start_time >= :timeFrom";
   if (endTime) {
-    querySql += " AND startTime <= :timeTo";
+    querySql += " AND start_time <= :timeTo";
   }
-  querySql += ") OR (endTime >= :timeFrom";
+  querySql += ") OR (end_time >= :timeFrom";
   if (endTime) {
-    querySql += " AND endTime <= :timeTo";
+    querySql += " AND end_time <= :timeTo";
   }
   querySql += "))";
   if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
@@ -560,12 +586,18 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
     if (!isCancelsIncluded) {
       list.append(QString::number(Orm::OperationStatus::CANCELED));
     }
-    querySql += " AND t_Operation.status NOT IN (" + list.join(", ") + ')';
+    querySql += " AND operation.status NOT IN (" + list.join(", ") + ')';
+  }
+  if (strategy) {
+    querySql += " AND strategy_instance.name = :strategy";
   }
   qx::QxSqlQuery query(querySql);
   query.bind(":timeFrom", startTime);
   if (endTime) {
     query.bind(":timeTo", *endTime);
+  }
+  if (strategy) {
+    query.bind(":strategy", *strategy);
   }
 
   Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
@@ -574,29 +606,47 @@ std::vector<boost::shared_ptr<Orm::Operation>> front::Engine::GetOperations(
 }
 
 #ifdef DEV_VER
-void front::Engine::Test() { m_pimpl->Test(); }
+void FrontEnd::Engine::Test() { m_pimpl->Test(); }
 #endif
 
-void front::Engine::StoreConfig(const Strategy &strategy,
-                                QString &&config,
-                                bool isActive) {
+void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
+                                   QString&& config,
+                                   bool isActive) {
   auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
       ConvertToQUuid(strategy.GetId()));
-  db::fetch_by_id(strategyOrm, m_pimpl->m_db);
+  Verify(!db::fetch_by_id(strategyOrm, m_pimpl->m_db).isValid());
   strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
   strategyOrm->setConfig(std::move(config));
   strategyOrm->setIsActive(isActive);
-  db::save(strategyOrm);
+  Verify(!db::save(strategyOrm).isValid());
 }
 
-void front::Engine::ForEachActiveStrategy(
-    const boost::function<void(const QUuid &typeId,
-                               const QUuid &instanceId,
-                               const QString &config)> &callback) const {
+void FrontEnd::Engine::ForEachActiveStrategy(
+    const boost::function<void(const QUuid& typeId,
+                               const QUuid& instanceId,
+                               const QString& name,
+                               const QString& config)>& callback) const {
   const qx::QxSqlQuery query("WHERE is_active != 0");
   std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
   Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
-  for (const auto &strategy : result) {
-    callback(strategy->getTypeId(), strategy->getId(), strategy->getConfig());
+  for (const auto& strategy : result) {
+    callback(strategy->getTypeId(), strategy->getId(), strategy->getName(),
+             strategy->getConfig());
   }
+}
+
+std::vector<QString> FrontEnd::Engine::GetStrategyNameList() const {
+  Assert(!m_pimpl->m_db);
+  QSqlQuery query(qx::QxSqlDatabase::getDatabase());
+  query.exec("SELECT DISTINCT name FROM strategy_instance");
+  std::vector<QString> result;
+  while (query.next()) {
+    result.emplace_back(query.value(0).toString());
+  }
+  return result;
+}
+
+QString FrontEnd::Engine::GenerateNewStrategyName(
+    const QString& nameBase) const {
+  return nameBase;
 }

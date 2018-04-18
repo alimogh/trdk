@@ -31,15 +31,16 @@ class StrategyWindow : public QMainWindow {
 
   struct Target {
     TradingMode tradingMode;
-    Security *security;
-    TargetWidgets *widgets;
+    Security* security;
+    TargetWidgets* widgets;
 
-    const Security *GetSecurityPtr() const { return security; }
-    const std::string &GetSymbol() const;
-    const trdk::TradingSystem *GetTradingSystem() const;
+    const Security* GetSecurityPtr() const { return security; }
+    const std::string& GetSymbol() const;
+    const TradingSystem* GetTradingSystem() const;
   };
 
   struct BySecurity {};
+
   struct BySymbol {};
 
   typedef boost::multi_index_container<
@@ -48,17 +49,17 @@ class StrategyWindow : public QMainWindow {
           boost::multi_index::hashed_unique<
               boost::multi_index::tag<BySecurity>,
               boost::multi_index::const_mem_fun<Target,
-                                                const Security *,
+                                                const Security*,
                                                 &Target::GetSecurityPtr>>,
           boost::multi_index::hashed_unique<
               boost::multi_index::tag<BySymbol>,
               boost::multi_index::composite_key<
                   Target,
                   boost::multi_index::const_mem_fun<Target,
-                                                    const TradingSystem *,
+                                                    const TradingSystem*,
                                                     &Target::GetTradingSystem>,
                   boost::multi_index::const_mem_fun<Target,
-                                                    const std::string &,
+                                                    const std::string&,
                                                     &Target::GetSymbol>>>>>
       TargetList;
 
@@ -68,13 +69,13 @@ class StrategyWindow : public QMainWindow {
     TargetAskWidget ask;
     TargetActionsWidget actions;
 
-    explicit TargetWidgets(const QString &title, QWidget *parent)
+    explicit TargetWidgets(const QString& title, QWidget* parent)
         : title(parent), bid(parent), ask(parent), actions(parent) {
       this->title.SetTitle(title);
     }
 
     template <typename Source>
-    void Update(const Source &source) {
+    void Update(const Source& source) {
       title.Update(source);
       bid.Update(source);
       ask.Update(source);
@@ -82,88 +83,86 @@ class StrategyWindow : public QMainWindow {
   };
 
  public:
-  explicit StrategyWindow(FrontEnd::Engine &,
-                          const QString &symbol,
-                          QWidget *parent);
-  explicit StrategyWindow(FrontEnd::Engine &,
-                          const QUuid &strategyId,
-                          const QString &config,
-                          QWidget *parent);
-  virtual ~StrategyWindow() override;
+  explicit StrategyWindow(FrontEnd::Engine&,
+                          const QString& symbol,
+                          QWidget* parent);
+  explicit StrategyWindow(FrontEnd::Engine&,
+                          const QUuid& strategyId,
+                          const QString& name,
+                          const QString& config,
+                          QWidget* parent);
+  ~StrategyWindow() override;
 
- public:
-  virtual QSize sizeHint() const override;
+  QSize sizeHint() const override;
 
  protected:
-  virtual void closeEvent(QCloseEvent *) override;
+  void closeEvent(QCloseEvent*) override;
 
  private slots:
   void TakeAdvice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
-  void OnSignalCheckErrors(const std::vector<std::string> &);
-  void OnBlocked(const QString &reason);
+  void OnSignalCheckErrors(const std::vector<std::string>&);
+  void OnBlocked(const QString& reason);
 
   void ToggleAutoTrading(bool activate);
   void DeactivateAutoTrading();
-  void UpdateAutoTradingLevel(const Lib::Double &level, const Qty &maxQty);
+  void UpdateAutoTradingLevel(const Lib::Double& level, const Qty& maxQty);
 
   void UpdateAdviceLevel(double level);
 
  signals:
-  void Advice(const trdk::Strategies::ArbitrageAdvisor::Advice &);
-  void SignalCheckErrors(const std::vector<std::string> &);
-  void Blocked(const QString &reason);
+  void Advice(const trdk::Strategies::ArbitrageAdvisor::Advice&);
+  void SignalCheckErrors(const std::vector<std::string>&);
+  void Blocked(const QString& reason);
 
  private:
   void Init();
 
   void ConnectSignals();
-  void SendOrder(const OrderSide &, TradingSystem *);
+  void SendOrder(const OrderSide&, TradingSystem*);
 
   bool IsAutoTradingActivated() const;
 
-  Strategy &GenerateNewStrategyInstance(const boost::uuids::uuid &strategyId,
-                                        size_t instanceNumber);
-  Strategy &RestoreStrategyInstance(const QUuid &strategyId,
-                                    size_t instanceNumber,
-                                    const QString &config);
-  Strategy &CreateStrategyInstance(const boost::uuids::uuid &strategyId,
-                                   size_t instanceNumber,
-                                   const std::string &config);
+  Strategy& GenerateNewStrategyInstance();
+  Strategy& RestoreStrategyInstance(const QUuid& strategyId,
+                                    const QString& name,
+                                    const QString& config);
+  Strategy& CreateStrategyInstance(const boost::uuids::uuid& strategyId,
+                                   const QString& name,
+                                   const std::string& config);
 
-  void AddTargetWidgets(TargetWidgets &);
+  void AddTargetWidgets(TargetWidgets&);
 
   std::string CreateConfig(
-      const boost::uuids::uuid &strategyId,
-      const Lib::Double &minPriceDifferenceToHighlightPercentage,
+      const boost::uuids::uuid& strategyId,
+      const Lib::Double& minPriceDifferenceToHighlightPercentage,
       bool isAutoTradingEnabled,
-      const Lib::Double &minPriceDifferenceToTradePercentage,
-      const Qty &maxQty,
+      const Lib::Double& minPriceDifferenceToTradePercentage,
+      const Qty& maxQty,
       bool isLowestSpreadEnabled,
-      const Lib::Double &lowestSpreadPercentage,
+      const Lib::Double& lowestSpreadPercentage,
       bool isStopLossEnabled,
       size_t stopLossDelaySec) const;
   std::string DumpConfig() const;
 
   void StoreConfig(bool isActive);
 
- private:
   Ui::StrategyWindow m_ui;
-  boost::unordered_map<TradingSystem *, std::unique_ptr<TargetWidgets>>
+  boost::unordered_map<TradingSystem*, std::unique_ptr<TargetWidgets>>
       m_targetWidgets;
   FrontEnd::PriceAdapter<QLabel> m_bestSpreadAbsValue;
 
-  FrontEnd::Engine &m_engine;
+  FrontEnd::Engine& m_engine;
   const TradingMode m_tradingMode;
   const std::string m_symbol;
 
-  Strategy &m_strategy;
+  Strategy& m_strategy;
   boost::signals2::scoped_connection m_adviceConnection;
   boost::signals2::scoped_connection m_tradingSignalCheckErrorsConnection;
   boost::signals2::scoped_connection m_blockConnection;
 
   TargetList m_targets;
-  TradingSystem *m_bestBuyTradingSystem;
-  TradingSystem *m_bestSellTradingSystem;
+  TradingSystem* m_bestBuyTradingSystem;
+  TradingSystem* m_bestSellTradingSystem;
 };
 }  // namespace ArbitrageAdvisor
 }  // namespace Strategies

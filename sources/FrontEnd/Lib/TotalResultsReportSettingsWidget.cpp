@@ -26,6 +26,11 @@ TotalResultsReportSettingsWidget::TotalResultsReportSettingsWidget(
     m_ui->startTime->setDateTime(now);
     m_ui->endTime->setDateTime(now);
   }
+  {
+    for (const auto &name : engine.GetStrategyNameList()) {
+      m_ui->strategies->addItem(name);
+    }
+  }
   Verify(connect(&engine, &Engine::OperationUpdate,
                  [this](const Orm::Operation &) {}));
 }
@@ -34,7 +39,7 @@ TotalResultsReportSettingsWidget::~TotalResultsReportSettingsWidget() = default;
 
 void TotalResultsReportSettingsWidget::Connect(TotalResultsReportModel &model) {
   Verify(connect(m_ui->apply, &QPushButton::clicked, [this, &model]() {
-    model.Build(GetStartTime(), GetEndTime());
+    model.Build(GetStartTime(), GetEndTime(), GetStrategy());
   }));
 }
 
@@ -48,4 +53,11 @@ boost::optional<QDateTime> TotalResultsReportSettingsWidget::GetEndTime()
     return boost::none;
   }
   return m_ui->endTime->dateTime();
+}
+
+boost::optional<QString> TotalResultsReportSettingsWidget::GetStrategy() const {
+  if (!m_ui->enableStrategy->isChecked()) {
+    return boost::none;
+  }
+  return m_ui->strategies->currentText();
 }

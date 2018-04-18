@@ -29,7 +29,7 @@ TakerStrategyWindow::TakerStrategyWindow(Engine& engine,
 
   m_ui.setupUi(this);
 
-  setWindowTitle(symbol + " " + tr("Market Maker \"Taker\"") + " - " +
+  setWindowTitle(symbol + " " + tr(R"(Market Maker "Taker")") + " - " +
                  QCoreApplication::applicationName());
 
   m_ui.symbol->setText(symbol);
@@ -288,18 +288,17 @@ TakerStrategy& TakerStrategyWindow ::CreateStrategyInstance(
   static boost::uuids::random_generator generateStrategyId;
   const auto& strategyId = generateStrategyId();
   {
-    static size_t instanceNumber = 0;
     const IniFile conf(m_engine.GetConfigFilePath());
     const IniSectionRef defaults(conf, "Defaults");
     std::ostringstream os;
-    os << "[Strategy.Taker/" << symbol.toStdString() << '/' << ++instanceNumber
+    os << "[Strategy."
+       << m_engine.GenerateNewStrategyName(R"(Market Maker "Taker" )" + symbol)
        << "]" << std::endl;
     os << "module = MarketMaker" << std::endl;
     os << "factory = CreateStrategy" << std::endl;
     os << "id = " << strategyId << std::endl;
     os << "is_enabled = true" << std::endl;
     os << "trading_mode = live" << std::endl;
-    os << "title = Taker" << std::endl;
     os << "requires = Level 1 Updates[" << symbol.toStdString() << "]"
        << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));

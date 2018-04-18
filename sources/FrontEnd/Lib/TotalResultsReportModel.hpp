@@ -26,7 +26,9 @@ class TRDK_FRONTEND_LIB_API TotalResultsReportModel
   explicit TotalResultsReportModel(Engine&, QObject* parent);
   ~TotalResultsReportModel() override;
 
-  void Build(const QDateTime& start, const boost::optional<QDateTime>& end);
+  void Build(const QDateTime& start,
+             const boost::optional<QDateTime>& end,
+             const boost::optional<QString>& strategy);
 
   QVariant headerData(int section, Qt::Orientation, int role) const override;
   QVariant data(const QModelIndex& index, int role) const override;

@@ -107,19 +107,18 @@ class TRDK_CORE_API Strategy : public Consumer {
   };
 
   explicit Strategy(Context &,
-                    const boost::uuids::uuid &typeUuid,
+                    const boost::uuids::uuid &typeId,
                     const std::string &implementationName,
                     const std::string &instanceName,
                     const Lib::IniSectionRef &);
   explicit Strategy(Context &,
-                    const std::string &typeUuid,
+                    const std::string &typeId,
                     const std::string &implementationName,
                     const std::string &instanceName,
                     const Lib::IniSectionRef &);
   ~Strategy() override;
 
   const boost::uuids::uuid &GetTypeId() const;
-  const std::string &GetTitle() const;
   TradingMode GetTradingMode() const;
   const DropCopyStrategyInstanceId &GetDropCopyInstanceId() const;
 
@@ -140,12 +139,18 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   void ClosePositions();
 
-  //! Schedules call after time. Callback have to be available before will ba
-  //! called or while module will not be destroyed.
+  //! Schedules call after time.
+  /**
+   * Callback must be available before will be called or while module will not
+   * be destroyed.
+   */
   void Schedule(const boost::posix_time::time_duration &,
                 boost::function<void()> &&);
-  //! Schedules call immediately. Callback have to be available before will ba
-  //! called or while module will not be destroyed.
+  //! Schedules call immediately.
+  /**
+   * Callback must be available before will be called or while module will not
+   * be destroyed.
+   */
   void Schedule(boost::function<void()> &&);
 
   void RaiseSecurityContractSwitchedEvent(const boost::posix_time::ptime &,

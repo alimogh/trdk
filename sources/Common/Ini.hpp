@@ -12,15 +12,11 @@
 
 #include "Exception.hpp"
 #include "Symbol.hpp"
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/noncopyable.hpp>
 #include <fstream>
-#include <list>
 #include <set>
 #include <string>
 
@@ -29,31 +25,31 @@ namespace Lib {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Ini : private boost::noncopyable {
+class Ini : boost::noncopyable {
  public:
   class Error : public Exception {
    public:
-    explicit Error(const char *what) throw();
+    explicit Error(const char* what) noexcept;
   };
 
   class KeyNotExistsError : public Error {
    public:
-    KeyNotExistsError(const char *what) throw();
+    explicit KeyNotExistsError(const char* what) noexcept;
   };
 
   class SectionNotExistsError : public Error {
    public:
-    SectionNotExistsError(const char *what) throw();
+    explicit SectionNotExistsError(const char* what) noexcept;
   };
 
   class KeyFormatError : public Error {
    public:
-    KeyFormatError(const char *what) throw();
+    explicit KeyFormatError(const char* what) noexcept;
   };
 
   class SectionNotUnique : public Error {
    public:
-    SectionNotUnique() throw();
+    SectionNotUnique() noexcept;
   };
 
   typedef std::vector<std::string> SectionList;
@@ -67,28 +63,28 @@ class Ini : private boost::noncopyable {
  public:
   SectionList ReadSectionsList() const;
 
-  void ReadSection(const std::string &section,
-                   const boost::function<bool(const std::string &)> &readLine,
+  void ReadSection(const std::string& section,
+                   const boost::function<bool(const std::string&)>& readLine,
                    bool isRequired) const;
 
-  bool IsSectionExist(const std::string &section) const;
-  bool IsKeyExist(const std::string &section, const std::string &key) const;
+  bool IsSectionExist(const std::string& section) const;
+  bool IsKeyExist(const std::string& section, const std::string& key) const;
 
   void ForEachKey(
-      const std::string &section,
-      const boost::function<bool(std::string &key, std::string &value)> &pred,
+      const std::string& section,
+      const boost::function<bool(std::string& key, std::string& value)>& pred,
       bool isRequired) const;
 
-  std::string ReadKey(const std::string &section, const std::string &key) const;
-  std::string ReadKey(const std::string &section,
-                      const std::string &key,
-                      const std::string &defaultValue) const;
+  std::string ReadKey(const std::string& section, const std::string& key) const;
+  std::string ReadKey(const std::string& section,
+                      const std::string& key,
+                      const std::string& defaultValue) const;
 
   template <typename T>
-  T ReadTypedKey(const std::string &section, const std::string &key) const {
+  T ReadTypedKey(const std::string& section, const std::string& key) const {
     try {
       return boost::lexical_cast<T>(ReadKey(section, key));
-    } catch (const boost::bad_lexical_cast &ex) {
+    } catch (const boost::bad_lexical_cast& ex) {
       boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
       message % section % key % ex.what();
       throw KeyFormatError(message.str().c_str());
@@ -96,58 +92,58 @@ class Ini : private boost::noncopyable {
   }
 
   template <typename T>
-  T ReadTypedKey(const std::string &section,
-                 const std::string &key,
-                 const T &defaultValue) const {
+  T ReadTypedKey(const std::string& section,
+                 const std::string& key,
+                 const T& defaultValue) const {
     try {
       return boost::lexical_cast<T>(ReadKey(section, key));
-    } catch (const boost::bad_lexical_cast &ex) {
+    } catch (const boost::bad_lexical_cast& ex) {
       boost::format message("Wrong INI-file key (\"%1%:%2%\") format: \"%3%\"");
       message % section % key % ex.what();
       throw KeyFormatError(message.str().c_str());
-    } catch (const KeyNotExistsError &) {
+    } catch (const KeyNotExistsError&) {
       return defaultValue;
     }
   }
 
-  boost::filesystem::path ReadFileSystemPath(const std::string &section,
-                                             const std::string &key) const;
+  boost::filesystem::path ReadFileSystemPath(const std::string& section,
+                                             const std::string& key) const;
   boost::filesystem::path ReadFileSystemPath(
-      const std::string &section,
-      const std::string &key,
-      const std::string &defaultValue) const;
+      const std::string& section,
+      const std::string& key,
+      const std::string& defaultValue) const;
 
-  static bool ConvertToBoolean(const std::string &);
+  static bool ConvertToBoolean(const std::string&);
   static std::string GetBooleanTrue();
   static std::string GetBooleanFalse();
 
-  bool ReadBoolKey(const std::string &section, const std::string &key) const;
-  bool ReadBoolKey(const std::string &section,
-                   const std::string &key,
+  bool ReadBoolKey(const std::string& section, const std::string& key) const;
+  bool ReadBoolKey(const std::string& section,
+                   const std::string& key,
                    bool defaultValue) const;
 
   std::vector<std::string> ReadList() const;
 
-  std::vector<std::string> ReadList(const std::string &section,
+  std::vector<std::string> ReadList(const std::string& section,
                                     bool isRequired) const;
 
-  std::vector<std::string> ReadList(const std::string &section,
-                                    const std::string &key,
-                                    const std::string &delimiter,
+  std::vector<std::string> ReadList(const std::string& section,
+                                    const std::string& key,
+                                    const std::string& delimiter,
                                     bool isRequired) const;
 
   template <typename T>
-  std::vector<T> ReadTypedList(const std::string &section,
-                               const std::string &key,
-                               const std::string &delimiter,
-                               bool isRequired) const {
-    const auto &source = ReadList(section, key, delimiter, isRequired);
+  std::vector<T> ReadTypedList(const std::string& section,
+                               const std::string& key,
+                               const std::string& delimiter,
+                               const bool isRequired) const {
+    const auto& source = ReadList(section, key, delimiter, isRequired);
     std::vector<T> result;
     result.reserve(source.size());
-    for (const auto &value : source) {
+    for (const auto& value : source) {
       try {
         result.emplace_back(boost::lexical_cast<T>(value));
-      } catch (const boost::bad_lexical_cast &ex) {
+      } catch (const boost::bad_lexical_cast& ex) {
         boost::format message(
             "Wrong INI-file key (\"%1%:%2%:%3%\") format: \"%4%\"");
         message % section % key % value % ex.what();
@@ -157,16 +153,14 @@ class Ini : private boost::noncopyable {
     return result;
   }
 
-  std::set<trdk::Lib::Symbol> ReadSymbols(
-      const trdk::Lib::SecurityType &defSecurityType,
-      const trdk::Lib::Currency &defCurrency) const;
-  std::set<trdk::Lib::Symbol> ReadSymbols(
-      const std::string &section,
-      const trdk::Lib::SecurityType &defSecurityType,
-      const trdk::Lib::Currency &defCurrency) const;
+  std::set<Symbol> ReadSymbols(const SecurityType& defSecurityType,
+                               const Currency& defCurrency) const;
+  std::set<Symbol> ReadSymbols(const std::string& section,
+                               const SecurityType& defSecurityType,
+                               const Currency& defCurrency) const;
 
  protected:
-  virtual std::istream &GetSource() const = 0;
+  virtual std::istream& GetSource() const = 0;
 
  private:
   std::string ReadCurrentLine() const;
@@ -174,36 +168,36 @@ class Ini : private boost::noncopyable {
 };
 
 template <>
-inline bool Ini::ReadTypedKey(const std::string &section,
-                              const std::string &key) const {
+inline bool Ini::ReadTypedKey(const std::string& section,
+                              const std::string& key) const {
   return ReadBoolKey(section, key);
 }
 
 template <>
-inline bool Ini::ReadTypedKey(const std::string &section,
-                              const std::string &key,
-                              const bool &defaultValue) const {
+inline bool Ini::ReadTypedKey(const std::string& section,
+                              const std::string& key,
+                              const bool& defaultValue) const {
   return ReadBoolKey(section, key, defaultValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-class IniFile : public trdk::Lib::Ini {
+class IniFile : public Ini {
  public:
   class FileOpenError : public Error {
    public:
-    FileOpenError() throw();
+    FileOpenError() noexcept;
   };
 
  public:
-  explicit IniFile(const boost::filesystem::path &);
+  explicit IniFile(const boost::filesystem::path&);
   virtual ~IniFile();
 
  public:
-  const boost::filesystem::path &GetPath() const { return m_path; }
+  const boost::filesystem::path& GetPath() const { return m_path; }
 
  protected:
-  virtual std::istream &GetSource() const { return m_file; }
+  std::istream& GetSource() const override { return m_file; }
 
  private:
   boost::filesystem::path m_path;
@@ -212,18 +206,18 @@ class IniFile : public trdk::Lib::Ini {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class IniString : public trdk::Lib::Ini {
+class IniString : public Ini {
  public:
   class FileOpenError : public Error {
    public:
-    FileOpenError() throw();
+    FileOpenError() noexcept;
   };
 
  public:
-  explicit IniString(const std::string &source) : m_source(source) {}
+  explicit IniString(const std::string& source) : m_source(source) {}
 
  protected:
-  virtual std::istream &GetSource() const { return m_source; }
+  std::istream& GetSource() const override { return m_source; }
 
  private:
   mutable std::istringstream m_source;
@@ -233,68 +227,66 @@ class IniString : public trdk::Lib::Ini {
 
 class IniSectionRef {
  public:
-  explicit IniSectionRef(const trdk::Lib::Ini &iniRef,
-                         const std::string &sectionName);
+  explicit IniSectionRef(const Ini& iniRef, const std::string& sectionName);
 
-  friend std::ostream &operator<<(std::ostream &,
-                                  const trdk::Lib::IniSectionRef &);
+  friend std::ostream& operator<<(std::ostream&, const IniSectionRef&);
 
   operator bool() const { return IsExist(); }
 
  public:
-  const std::string &GetName() const { return m_name; }
+  const std::string& GetName() const { return m_name; }
 
-  const trdk::Lib::Ini &GetBase() const { return *m_base; }
+  const Ini& GetBase() const { return *m_base; }
 
   bool IsExist() const;
 
-  bool IsKeyExist(const std::string &key) const;
+  bool IsKeyExist(const std::string& key) const;
 
-  void ForEachKey(const boost::function<bool(const std::string &key,
-                                             const std::string &value)> &pred,
+  void ForEachKey(const boost::function<bool(const std::string& key,
+                                             const std::string& value)>& pred,
                   bool isRequired) const;
 
-  std::string ReadKey(const std::string &key) const;
-  std::string ReadKey(const std::string &key,
-                      const std::string &defaultValue) const;
+  std::string ReadKey(const std::string& key) const;
+  std::string ReadKey(const std::string& key,
+                      const std::string& defaultValue) const;
 
   template <typename T>
-  T ReadTypedKey(const std::string &key) const {
+  T ReadTypedKey(const std::string& key) const {
     return GetBase().ReadTypedKey<T>(GetName(), key);
   }
 
   template <typename T>
-  T ReadTypedKey(const std::string &key, const T &defaultValue) const {
+  T ReadTypedKey(const std::string& key, const T& defaultValue) const {
     return GetBase().ReadTypedKey<T>(GetName(), key, defaultValue);
   }
 
-  boost::filesystem::path ReadFileSystemPath(const std::string &key) const;
+  boost::filesystem::path ReadFileSystemPath(const std::string& key) const;
   boost::filesystem::path ReadFileSystemPath(
-      const std::string &key, const std::string &defaultValue) const;
+      const std::string& key, const std::string& defaultValue) const;
 
-  bool ReadBoolKey(const std::string &key) const;
-  bool ReadBoolKey(const std::string &key, bool defaultValue) const;
+  bool ReadBoolKey(const std::string& key) const;
+  bool ReadBoolKey(const std::string& key, bool defaultValue) const;
 
   std::vector<std::string> ReadList(bool isRequired) const;
-  std::vector<std::string> ReadList(const std::string &key,
-                                    const std::string &delimiter,
+  std::vector<std::string> ReadList(const std::string& key,
+                                    const std::string& delimiter,
                                     bool isRequired) const;
+
   template <typename T>
-  std::vector<T> ReadTypedList(const std::string &key,
-                               const std::string &delimiter,
+  std::vector<T> ReadTypedList(const std::string& key,
+                               const std::string& delimiter,
                                bool isRequired) const {
     return GetBase().ReadTypedList<T>(GetName(), key, delimiter, isRequired);
   }
 
-  std::set<trdk::Lib::Symbol> ReadSymbols(
-      const trdk::Lib::SecurityType &defSecurityType,
-      const trdk::Lib::Currency &defCurrency) const;
+  std::set<Symbol> ReadSymbols(const SecurityType& defSecurityType,
+                               const Currency& defCurrency) const;
 
  private:
-  const trdk::Lib::Ini *m_base;
+  const Ini* m_base;
   std::string m_name;
 };
 
 //////////////////////////////////////////////////////////////////////////
-}
-}
+}  // namespace Lib
+}  // namespace trdk
