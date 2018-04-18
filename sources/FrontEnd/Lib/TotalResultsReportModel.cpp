@@ -21,9 +21,6 @@ enum Column {
   COLUMN_FINANCIAL_RESULT,
   COLUMN_COMMISSION,
   COLUMN_TOTAL,
-  COLUMN_EQUIVALENT_BTC,
-  COLUMN_EQUIVALENT_USD,
-  COLUMN_EQUIVALENT_EUR,
   numberOfColumns
 };
 
@@ -53,7 +50,7 @@ class Item {
   }
 
   QVariant GetData(const Column& column) const {
-    static_assert(numberOfColumns == 7, "List changed.");
+    static_assert(numberOfColumns == 4, "List changed.");
     switch (column) {
       case COLUMN_SYMBOL:
         return m_symbol;
@@ -63,10 +60,6 @@ class Item {
         return m_commission.Get();
       case COLUMN_TOTAL:
         return (m_finResult - m_commission).Get();
-      case COLUMN_EQUIVALENT_BTC:
-      case COLUMN_EQUIVALENT_USD:
-      case COLUMN_EQUIVALENT_EUR:
-        return "";
       default:
         return {};
     }
@@ -194,7 +187,7 @@ QVariant TotalResultsReportModel::headerData(const int section,
   if (role != Qt::DisplayRole || orientation != Qt::Horizontal) {
     return Base::headerData(section, orientation, role);
   }
-  static_assert(numberOfColumns == 7, "List changed.");
+  static_assert(numberOfColumns == 4, "List changed.");
   switch (section) {
     case COLUMN_SYMBOL:
       return tr("Symbol");
@@ -204,12 +197,6 @@ QVariant TotalResultsReportModel::headerData(const int section,
       return tr("Commission");
     case COLUMN_TOTAL:
       return tr("Total Result");
-    case COLUMN_EQUIVALENT_BTC:
-      return tr("BTC Equivalent");
-    case COLUMN_EQUIVALENT_USD:
-      return tr("USD Equivalent");
-    case COLUMN_EQUIVALENT_EUR:
-      return tr("EUR Equivalent");
     default:
       return {};
   }
