@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Common/Common.hpp"
+#include <boost/algorithm/string.hpp>
 #include <boost/logic/tribool.hpp>  // Strategies/MrigeshKejriwal/MrigeshKejriwalStrategyUTest.cpp
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>

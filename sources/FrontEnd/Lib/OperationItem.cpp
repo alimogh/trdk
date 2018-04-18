@@ -97,8 +97,8 @@ QVariant OperationNodeItem::GetData(int column) const {
       return GetRecord().totalResult;
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return GetRecord().strategyName;
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
-      return GetRecord().strategyInstance;
+    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
+      return GetRecord().strategyParams;
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return GetRecord().id;
   }
@@ -126,7 +126,7 @@ QVariant OperationOrderHeadItem::GetData(int column) const {
       return QObject::tr("Order price");
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return QObject::tr("Order qty.");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
       return QObject::tr("Order vol.");
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return QObject::tr("Remaining qty.");
@@ -175,7 +175,7 @@ QVariant OperationOrderItem::GetData(int column) const {
       return GetRecord().price.Get();
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return GetRecord().qty.Get();
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
+    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
       return (GetRecord().price * GetRecord().qty).Get();
     case OPERATION_COLUMN_ORDER_REMAINING_QTY:
       return GetRecord().remainingQty.Get();

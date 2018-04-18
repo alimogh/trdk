@@ -145,7 +145,8 @@ TotalResultsReportModel::TotalResultsReportModel(Engine& engine,
 TotalResultsReportModel::~TotalResultsReportModel() = default;
 
 void TotalResultsReportModel::Build(const QDateTime& start,
-                                    const boost::optional<QDateTime>& end) {
+                                    const boost::optional<QDateTime>& end,
+                                    const boost::optional<QString>& strategy) {
   {
     beginResetModel();
     m_pimpl->m_data.clear();
@@ -153,8 +154,9 @@ void TotalResultsReportModel::Build(const QDateTime& start,
   }
   m_pimpl->m_startTime = start;
   m_pimpl->m_endTime = end;
-  for (const auto& operation : m_pimpl->m_engine.GetOperations(
-           m_pimpl->m_startTime, m_pimpl->m_endTime)) {
+  for (const auto& operation :
+       m_pimpl->m_engine.GetOperations(m_pimpl->m_startTime, m_pimpl->m_endTime,
+                                       true, true, true, strategy)) {
     m_pimpl->Update(operation->getPnl());
   }
 }

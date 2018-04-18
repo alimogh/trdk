@@ -424,8 +424,6 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
   }
 
   void RunTest() {
-    ids::random_generator generateUuid;
-    const auto operationId = generateUuid();
     m_testStrategy = boost::make_shared<Dummies::Strategy>(m_self.GetContext());
     Security* security1 = nullptr;
     Security* security2 = nullptr;
@@ -462,6 +460,7 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
         const auto position = boost::make_shared<LongPosition>(
             operation, j + 1, *security1, security1->GetSymbol().GetCurrency(),
             2312313, 62423, TimeMeasurement ::Milestones());
+        static ids::random_generator generateUuid;
         const auto& orderId = boost::lexical_cast<std::string>(generateUuid());
         const auto qty = 100.00 * (j + 1) * (i + 1);
         m_dropCopy.CopySubmittedOrder(
@@ -563,15 +562,16 @@ std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
     const boost::optional<QDateTime>& endTime,
     const bool isTradesIncluded,
     const bool isErrorsIncluded,
-    const bool isCancelsIncluded) const {
+    const bool isCancelsIncluded,
+    const boost::optional<QString>& strategy) const {
   std::vector<boost::shared_ptr<Orm::Operation>> result;
-  QString querySql = "WHERE ((startTime >= :timeFrom";
+  QString querySql = "WHERE ((start_time >= :timeFrom";
   if (endTime) {
-    querySql += " AND startTime <= :timeTo";
+    querySql += " AND start_time <= :timeTo";
   }
-  querySql += ") OR (endTime >= :timeFrom";
+  querySql += ") OR (end_time >= :timeFrom";
   if (endTime) {
-    querySql += " AND endTime <= :timeTo";
+    querySql += " AND end_time <= :timeTo";
   }
   querySql += "))";
   if (!isTradesIncluded || !isErrorsIncluded || !isCancelsIncluded) {
@@ -586,12 +586,18 @@ std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
     if (!isCancelsIncluded) {
       list.append(QString::number(Orm::OperationStatus::CANCELED));
     }
-    querySql += " AND t_Operation.status NOT IN (" + list.join(", ") + ')';
+    querySql += " AND operation.status NOT IN (" + list.join(", ") + ')';
+  }
+  if (strategy) {
+    querySql += " AND strategy_instance.name = :strategy";
   }
   qx::QxSqlQuery query(querySql);
   query.bind(":timeFrom", startTime);
   if (endTime) {
     query.bind(":timeTo", *endTime);
+  }
+  if (strategy) {
+    query.bind(":strategy", *strategy);
   }
 
   Verify(!db::fetch_by_query_with_all_relation(query, result, m_pimpl->m_db)
@@ -618,11 +624,29 @@ void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
 void FrontEnd::Engine::ForEachActiveStrategy(
     const boost::function<void(const QUuid& typeId,
                                const QUuid& instanceId,
+                               const QString& name,
                                const QString& config)>& callback) const {
   const qx::QxSqlQuery query("WHERE is_active != 0");
   std::vector<boost::shared_ptr<Orm::StrategyInstance>> result;
   Verify(!db::fetch_by_query(query, result, m_pimpl->m_db).isValid());
   for (const auto& strategy : result) {
-    callback(strategy->getTypeId(), strategy->getId(), strategy->getConfig());
+    callback(strategy->getTypeId(), strategy->getId(), strategy->getName(),
+             strategy->getConfig());
   }
+}
+
+std::vector<QString> FrontEnd::Engine::GetStrategyNameList() const {
+  Assert(!m_pimpl->m_db);
+  QSqlQuery query(qx::QxSqlDatabase::getDatabase());
+  query.exec("SELECT DISTINCT name FROM strategy_instance");
+  std::vector<QString> result;
+  while (query.next()) {
+    result.emplace_back(query.value(0).toString());
+  }
+  return result;
+}
+
+QString FrontEnd::Engine::GenerateNewStrategyName(
+    const QString& nameBase) const {
+  return nameBase;
 }

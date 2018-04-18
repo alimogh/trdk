@@ -43,14 +43,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkBox">
+    <widget class="QCheckBox" name="enableStrategy">
      <property name="text">
       <string>Strategy:</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QComboBox" name="enableStrategy">
+    <widget class="QComboBox" name="strategies">
      <property name="enabled">
       <bool>false</bool>
      </property>
@@ -97,9 +97,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>enableStrategy</sender>
    <signal>toggled(bool)</signal>
-   <receiver>enableStrategy</receiver>
+   <receiver>strategies</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">

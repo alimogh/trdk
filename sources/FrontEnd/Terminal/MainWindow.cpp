@@ -163,23 +163,23 @@ void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
 
 void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
-  m_engine.ForEachActiveStrategy([this, &widgets](const QUuid &typeId,
-                                                  const QUuid &instanceId,
-                                                  const QString &config) {
-    for (const auto &module : m_moduleDlls) {
-      try {
-        for (auto &widget :
-             module->GetFunction<StrategyWidgetList(
-                 Engine &, const QUuid &, const QUuid &, const QString &,
-                 QWidget *)>("RestoreStrategyWidgets")(
-                 m_engine, typeId, instanceId, config, this)) {
-          widgets.emplace_back(widget.release());
+  m_engine.ForEachActiveStrategy(
+      [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
+                       const QString &name, const QString &config) {
+        for (const auto &module : m_moduleDlls) {
+          try {
+            for (auto &widget :
+                 module->GetFunction<StrategyWidgetList(
+                     Engine &, const QUuid &, const QUuid &, const QString &,
+                     const QString &, QWidget *)>("RestoreStrategyWidgets")(
+                     m_engine, typeId, instanceId, name, config, this)) {
+              widgets.emplace_back(widget.release());
+            }
+          } catch (const Dll::DllFuncException &) {
+            continue;
+          }
         }
-      } catch (const Dll::DllFuncException &) {
-        continue;
-      }
-    }
-  });
+      });
   ShowModuleWindows(widgets);
 }
 
@@ -238,7 +238,8 @@ void MainWindow::CreateNewTotalResultsReportWindow() {
     {
       auto &model = *new TotalResultsReportModel(m_engine, &tab);
       view.setModel(&model);
-      model.Build(settings.GetStartTime(), settings.GetEndTime());
+      model.Build(settings.GetStartTime(), settings.GetEndTime(),
+                  settings.GetStrategy());
       settings.Connect(model);
     }
     {

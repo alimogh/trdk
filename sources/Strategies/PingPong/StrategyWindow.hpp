@@ -22,18 +22,18 @@ class StrategyWindow : public QMainWindow {
  public:
   typedef QMainWindow Base;
 
- public:
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QString &symbol,
                           QWidget *parent);
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QUuid &strategyId,
+                          const QString &name,
                           const QString &config,
                           QWidget *parent);
-  virtual ~StrategyWindow() override;
+  ~StrategyWindow() override;
 
  protected:
-  virtual void closeEvent(QCloseEvent *) override;
+  void closeEvent(QCloseEvent *) override;
 
  private slots:
   void OnBlocked(const QString &reason);
@@ -49,13 +49,12 @@ class StrategyWindow : public QMainWindow {
   bool LoadExchanges();
   void ConnectSignals();
 
-  Strategy &GenerateNewStrategyInstance(const boost::uuids::uuid &strategyId,
-                                        size_t instanceNumber);
+  Strategy &GenerateNewStrategyInstance();
   Strategy &CreateStrategyInstance(const boost::uuids::uuid &strategyId,
-                                   size_t instanceNumber,
+                                   const QString &name,
                                    const std::string &config);
   Strategy &RestoreStrategyInstance(const QUuid &strategyId,
-                                    size_t instanceNumber,
+                                    const QString &name,
                                     const QString &config);
 
   void Disable();
@@ -83,7 +82,6 @@ class StrategyWindow : public QMainWindow {
 
   void StoreConfig(bool isActive);
 
- private:
   FrontEnd::Engine &m_engine;
   const std::string m_symbol;
   Ui::StrategyWindow m_ui;

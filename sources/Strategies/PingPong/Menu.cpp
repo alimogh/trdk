@@ -34,12 +34,13 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
 StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
                                           const QUuid &instanceId,
+                                          const QString &name,
                                           const QString &config,
                                           QWidget *parent) {
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == pp::Strategy::typeId) {
-    result.emplace_back(
-        boost::make_unique<StrategyWindow>(engine, instanceId, config, parent));
+    result.emplace_back(boost::make_unique<StrategyWindow>(
+        engine, instanceId, name, config, parent));
   }
   return result;
 }

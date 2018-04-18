@@ -18,7 +18,7 @@ struct OperationRecord {
   const QString id;
   const QDateTime startTime;
   const QString strategyName;
-  const QString strategyInstance;
+  const QString strategyParams;
   QString statusName;
   QDateTime endTime;
   Orm::OperationStatus::enum_OperationStatus status;

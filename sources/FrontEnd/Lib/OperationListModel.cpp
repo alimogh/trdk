@@ -144,8 +144,8 @@ QVariant OperationListModel::headerData(int section,
       return tr("Total result");
     case OPERATION_COLUMN_OPERATION_STRATEGY_NAME_OR_ORDER_QTY:
       return tr("Strategy");
-    case OPERATION_COLUMN_OPERATION_STRATEGY_INSTANCE_OR_ORDER_VOLUME:
-      return tr("Strategy instance");
+    case OPERATION_COLUMN_OPERATION_STRATEGY_PARAMS_OR_ORDER_VOLUME:
+      return tr("Parameters");
     case OPERATION_COLUMN_OPERATION_ID_OR_ORDER_ID:
       return tr("ID");
     default:

@@ -31,6 +31,7 @@
 #include "Core/TradingSystem.hpp"
 #include "FrontEnd/Lib/Engine.hpp"
 #include "FrontEnd/Lib/ModuleApi.hpp"
+#include "FrontEnd/Lib/Std.hpp"
 #include "FrontEnd/Lib/SymbolSelectionDialog.hpp"
 #include "FrontEnd/Lib/Types.hpp"
 #include "FrontEnd/Lib/Util.hpp"

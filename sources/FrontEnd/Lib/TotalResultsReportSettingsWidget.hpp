@@ -35,6 +35,8 @@ class TRDK_FRONTEND_LIB_API TotalResultsReportSettingsWidget : public QWidget {
   QDateTime GetStartTime() const;
   boost::optional<QDateTime> GetEndTime() const;
 
+  boost::optional<QString> GetStrategy() const;
+
  private:
   std::unique_ptr<Ui::TotalResultsReportSettingsWidget> m_ui;
 };

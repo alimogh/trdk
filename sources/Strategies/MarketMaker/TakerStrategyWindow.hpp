@@ -22,7 +22,6 @@ class TakerStrategyWindow : public QMainWindow {
  public:
   typedef QMainWindow Base;
 
- public:
   explicit TakerStrategyWindow(FrontEnd::Engine &,
                                const QString &symbol,
                                QWidget *parent);
@@ -49,7 +48,6 @@ class TakerStrategyWindow : public QMainWindow {
 
   void Disable();
 
- private:
   FrontEnd::Engine &m_engine;
   Ui::TakerStrategyWindow m_ui;
   bool m_hasExchanges;

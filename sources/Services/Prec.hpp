@@ -15,6 +15,7 @@
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/statistics/rolling_mean.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/regex.hpp>
