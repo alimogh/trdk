@@ -150,7 +150,7 @@ void TotalResultsReportModel::Build(const QDateTime& start,
   for (const auto& operation :
        m_pimpl->m_engine.GetOperations(m_pimpl->m_startTime, m_pimpl->m_endTime,
                                        true, true, true, strategy)) {
-    m_pimpl->Update(operation->getPnl());
+    UpdateOperation(*operation);
   }
 }
 
