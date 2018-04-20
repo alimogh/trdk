@@ -11,29 +11,57 @@
 #include "Prec.hpp"
 #include "MainWindow.hpp"
 #include "Lib/BalanceListModel.hpp"
+#include "Lib/BalanceListView.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OperationListModel.hpp"
+#include "Lib/OperationListSettingsWidget.hpp"
+#include "Lib/OperationListView.hpp"
 #include "Lib/OrderListModel.hpp"
+#include "Lib/OrderListView.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
+#include "Lib/TotalResultsReportModel.hpp"
+#include "Lib/TotalResultsReportSettingsWidget.hpp"
+#include "Lib/TotalResultsReportView.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Terminal;
+using namespace Terminal;
 
 namespace fs = boost::filesystem;
-namespace ids = boost::uuids;
 
 MainWindow::MainWindow(Engine &engine,
                        std::vector<std::unique_ptr<Dll>> &moduleDlls,
                        QWidget *parent)
     : QMainWindow(parent),
       m_engine(engine),
-      m_operationListView(this),
-      m_standaloneOrderList(m_engine, this),
-      m_balanceList(this),
+      m_ui({}),
       m_moduleDlls(moduleDlls) {
   m_ui.setupUi(this);
   setWindowTitle(QCoreApplication::applicationName());
+
+  ConnectSignals();
+
+  CreateNewBalanceListWindow();
+  CreateNewStrategyOperationsWindow();
+  CreateNewStandaloneOrderListWindow();
+  CreateNewTotalResultsReportWindow();
+
+  m_ui.centalTabs->setCurrentIndex(0);
+}
+
+MainWindow::~MainWindow() = default;
+
+void MainWindow::ConnectSignals() {
+  Verify(connect(
+      m_ui.centalTabs, &QTabWidget::tabCloseRequested, [this](const int index) {
+        std::unique_ptr<const QWidget> widget(m_ui.centalTabs->widget(index));
+        try {
+          m_ui.centalTabs->removeTab(index);
+        } catch (...) {
+          widget.release();
+          throw;
+        }
+      }));
 
 #ifdef _DEBUG
   {
@@ -43,57 +71,7 @@ MainWindow::MainWindow(Engine &engine,
     Verify(
         connect(&action, &QAction::triggered, [this]() { m_engine.Test(); }));
   }
-#endif  // DEV_VER
-
-  {
-    auto *model = new OperationListModel(m_engine, &m_operationListView);
-
-    m_operationListView.setModel(model);
-    m_ui.verticalLayout->addWidget(&m_operationListView);
-
-    m_ui.operationsFilterDateFrom->setDate(QDate::currentDate());
-    m_ui.operationsFilterDateTo->setDate(QDate::currentDate());
-
-    Verify(connect(m_ui.showTradeOperations, &QCheckBox::toggled, model,
-                   &OperationListModel::IncludeTrades));
-    Verify(connect(m_ui.showErrorOperations, &QCheckBox::toggled, model,
-                   &OperationListModel::IncludeErrors));
-    Verify(connect(m_ui.showCanceledOperations, &QCheckBox::toggled, model,
-                   &OperationListModel::IncludeCancels));
-
-    Verify(connect(m_ui.enableOperationsDateFilter, &QCheckBox::toggled,
-                   [model](bool isEnabled) {
-                     if (!isEnabled) {
-                       model->DisableTimeFilter();
-                     }
-                   }));
-    Verify(connect(m_ui.applyOperationsDateFilter, &QPushButton::clicked,
-                   [this, model]() {
-                     model->Filter(m_ui.operationsFilterDateFrom->date(),
-                                   m_ui.operationsFilterDateTo->date());
-                   }));
-  }
-
-  {
-    auto *model = new SortFilterProxyModel(&m_standaloneOrderList);
-    model->setSourceModel(new OrderListModel(m_engine, &m_standaloneOrderList));
-    m_standaloneOrderList.setModel(model);
-    Verify(connect(model, &QAbstractItemModel::rowsInserted,
-                   [this](const QModelIndex &index, int, int) {
-                     m_standaloneOrderList.sortByColumn(0, Qt::DescendingOrder);
-                     m_standaloneOrderList.scrollTo(index);
-                   }));
-    auto *layout = new QVBoxLayout;
-    layout->addWidget(&m_standaloneOrderList);
-    m_ui.standaloneOrders->setLayout(layout);
-  }
-
-  {
-    auto *model = new SortFilterProxyModel(&m_balanceList);
-    model->setSourceModel(new BalanceListModel(m_engine, &m_balanceList));
-    m_balanceList.setModel(model);
-    m_ui.balances->setWidget(&m_balanceList);
-  }
+#endif
 
   Verify(connect(&m_engine, &Engine::Message,
                  [this](const QString &message, bool isCritical) {
@@ -108,9 +86,20 @@ MainWindow::MainWindow(Engine &engine,
 
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
+
+  Verify(connect(m_ui.createStrategyOperationsWindow, &QAction::triggered, this,
+                 &MainWindow::CreateNewStrategyOperationsWindow));
+  Verify(connect(m_ui.createNewStandaloneOrdersWindow, &QAction::triggered,
+                 this, &MainWindow::CreateNewStandaloneOrderListWindow));
+  Verify(connect(m_ui.createNewTotalResultsReport, &QAction::triggered, this,
+                 &MainWindow::CreateNewTotalResultsReportWindow));
 }
 
-MainWindow::~MainWindow() = default;
+Engine &MainWindow::GetEngine() { return m_engine; }
+
+const Engine &MainWindow::GetEngine() const {
+  return const_cast<MainWindow *>(this)->GetEngine();
+}
 
 void MainWindow::LoadModule(const fs::path &path) {
   try {
@@ -174,22 +163,92 @@ void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
 
 void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
-  m_engine.ForEachActiveStrategy([this, &widgets](const QUuid &typeId,
-                                                  const QUuid &instanceId,
-                                                  const QString &config) {
-    for (const auto &module : m_moduleDlls) {
-      try {
-        for (auto &widget :
-             module->GetFunction<StrategyWidgetList(
-                 Engine &, const QUuid &, const QUuid &, const QString &,
-                 QWidget *)>("RestoreStrategyWidgets")(
-                 m_engine, typeId, instanceId, config, this)) {
-          widgets.emplace_back(widget.release());
+  m_engine.ForEachActiveStrategy(
+      [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
+                       const QString &name, const QString &config) {
+        for (const auto &module : m_moduleDlls) {
+          try {
+            for (auto &widget :
+                 module->GetFunction<StrategyWidgetList(
+                     Engine &, const QUuid &, const QUuid &, const QString &,
+                     const QString &, QWidget *)>("RestoreStrategyWidgets")(
+                     m_engine, typeId, instanceId, name, config, this)) {
+              widgets.emplace_back(widget.release());
+            }
+          } catch (const Dll::DllFuncException &) {
+            continue;
+          }
         }
-      } catch (const Dll::DllFuncException &) {
-        continue;
-      }
-    }
-  });
+      });
   ShowModuleWindows(widgets);
+}
+
+void MainWindow::CreateNewStrategyOperationsWindow() {
+  auto &tab = *new QWidget(this);
+  {
+    auto &settings = *new OperationListSettingsWidget(&tab);
+    auto &view = *new OperationListView(&tab);
+    {
+      auto &model = *new OperationListModel(m_engine, &tab);
+      view.setModel(&model);
+      settings.Connect(model);
+    }
+    {
+      auto &layout = *new QVBoxLayout(&tab);
+      tab.setLayout(&layout);
+      layout.addWidget(&settings);
+      layout.addWidget(&view);
+    }
+  }
+  m_ui.centalTabs->setCurrentIndex(
+      m_ui.centalTabs->addTab(&tab, tr("Strategy operations")));
+}
+
+void MainWindow::CreateNewStandaloneOrderListWindow() {
+  auto &view = *new OrderListView(m_engine, this);
+  {
+    auto &model = *new SortFilterProxyModel(&view);
+    model.setSourceModel(new OrderListModel(m_engine, &view));
+    view.setModel(&model);
+    Verify(connect(&model, &QAbstractItemModel::rowsInserted,
+                   [&view](const QModelIndex &index, int, int) {
+                     view.sortByColumn(0, Qt::DescendingOrder);
+                     view.scrollTo(index);
+                   }));
+  }
+  m_ui.centalTabs->setCurrentIndex(
+      m_ui.centalTabs->addTab(&view, tr("Standalone orders")));
+}
+
+void MainWindow::CreateNewBalanceListWindow() {
+  auto &view = *new BalanceListView(this);
+  {
+    auto &model = *new SortFilterProxyModel(&view);
+    model.setSourceModel(new BalanceListModel(m_engine, &view));
+    view.setModel(&model);
+  }
+  m_ui.balances->setWidget(&view);
+}
+
+void MainWindow::CreateNewTotalResultsReportWindow() {
+  auto &tab = *new QWidget(this);
+  {
+    auto &settings = *new TotalResultsReportSettingsWidget(m_engine, &tab);
+    auto &view = *new TotalResultsReportView(&tab);
+    {
+      auto &model = *new TotalResultsReportModel(m_engine, &tab);
+      view.setModel(&model);
+      model.Build(settings.GetStartTime(), settings.GetEndTime(),
+                  settings.GetStrategy());
+      settings.Connect(model);
+    }
+    {
+      auto &layout = *new QVBoxLayout(&tab);
+      tab.setLayout(&layout);
+      layout.addWidget(&settings);
+      layout.addWidget(&view);
+    }
+  }
+  m_ui.centalTabs->setCurrentIndex(
+      m_ui.centalTabs->addTab(&tab, tr("Total Results Report")));
 }

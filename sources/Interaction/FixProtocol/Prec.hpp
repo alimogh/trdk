@@ -14,6 +14,7 @@
 #include "Core/Settings.hpp"
 #include "Api.h"
 #include "Fwd.hpp"
+#include <boost/algorithm/string.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 
 #include "Common/NetworkStreamClient.hpp"

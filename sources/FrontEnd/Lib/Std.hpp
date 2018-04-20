@@ -12,7 +12,11 @@
 namespace trdk {
 namespace FrontEnd {
 
-inline std::size_t hash_value(const QString& value) { return qHash(value); }
+inline std::size_t hash_value(const QString &value) { return qHash(value); }
 
 }  // namespace FrontEnd
 }  // namespace trdk
+
+inline std::ostream &operator<<(std::ostream &os, const QString &str) {
+  return os << str.toStdString();
+}

@@ -12,18 +12,18 @@
 #include "OrderModelUtils.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Detail;
+using namespace Lib;
+using namespace FrontEnd;
+using namespace FrontEnd::Detail;
 
 namespace ids = boost::uuids;
 namespace pt = boost::posix_time;
 
 OrderRecord::OrderRecord(const Orm::Order &order, QString &&additionalInfo)
     : id(order.getRemoteId()),
+      orderTime(ConvertFromDbDateTime(order.getOrderTime()).time()),
       operationId(order.getOperation()->getId().toString()),
       subOperationId(order.getSubOperationId()),
-      orderTime(ConvertFromDbDateTime(order.getOrderTime()).time()),
       symbol(order.getSymbol()),
       currency(order.getCurrency()),
       tradingSystem(order.getTradingSystem()),
@@ -31,7 +31,8 @@ OrderRecord::OrderRecord(const Orm::Order &order, QString &&additionalInfo)
       sideName(ConvertToUiString(side)),
       qty(order.getQty()),
       price(order.getPrice()),
-      tif(TIME_IN_FORCE_GTC),
+      //! @todo: Temporary workaround. Cast to string from ORM type instead:
+      tif(ConvertToUiString(static_cast<TimeInForce>(order.getTimeInForce()))),
       additionalInfo(std::move(additionalInfo)) {
   Update(order);
 }

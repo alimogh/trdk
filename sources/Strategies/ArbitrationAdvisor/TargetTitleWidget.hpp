@@ -21,10 +21,8 @@ class TargetTitleWidget : public QWidget {
  public:
   typedef QWidget Base;
 
- public:
   explicit TargetTitleWidget(QWidget *parent);
 
- public:
   void SetTitle(const QString &);
   void Update(const Security &);
   void Update(const Advice &);

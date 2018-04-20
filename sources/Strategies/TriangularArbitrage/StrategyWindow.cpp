@@ -258,44 +258,44 @@ void StrategyWindow::ConnectSignals() {
 ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
   static boost::uuids::random_generator generateStrategyId;
   const auto &strategyId = generateStrategyId();
-  static size_t instanceNumber = 0;
   const IniFile conf(m_engine.GetConfigFilePath());
   const IniSectionRef defaults(conf, "Defaults");
-  std::ostringstream os;
-  os << "[Strategy.TriangularArbitrage/" << ++instanceNumber << "]" << std::endl
-     << "module = TriangularArbitrage" << std::endl
-     << "factory = CreateStrategy" << std::endl
-     << "id = " << strategyId << std::endl
-     << "is_enabled = true" << std::endl
-     << "trading_mode = live" << std::endl
-     << "title = Triangular Arbitrage" << std::endl
-     << "is_trading_enabled = no" << std::endl
-     << "min_volume = 0" << std::endl
-     << "max_volume = 1000" << std::endl
-     << "min_profit_ratio = 1.01" << std::endl
-     << "legs = ";
+  QString symbolStr;
   {
-    bool isFirst = true;
+    auto isFirst = true;
     for (const auto &leg : legSet) {
       if (!isFirst) {
-        os << ", ";
+        symbolStr += ", ";
       } else {
         isFirst = false;
       }
-      os << (leg.side == ORDER_SIDE_BUY ? '+' : '-')
-         << leg.symbol.toStdString();
+      symbolStr += (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol;
     }
   }
-  os << std::endl << "requires = ";
+  std::ostringstream os;
+  os << "[Strategy."
+     << m_engine.GenerateNewStrategyName("Triangular Arbitrage " + symbolStr)
+     << "]" << std::endl;
+  os << "module = TriangularArbitrage" << std::endl;
+  os << "factory = CreateStrategy" << std::endl;
+  os << "id = " << strategyId << std::endl;
+  os << "is_enabled = true" << std::endl;
+  os << "trading_mode = live" << std::endl;
+  os << "is_trading_enabled = no" << std::endl;
+  os << "min_volume = 0" << std::endl;
+  os << "max_volume = 1000" << std::endl;
+  os << "min_profit_ratio = 1.01" << std::endl;
+  os << "legs = " << symbolStr << std::endl;
+  os << "requires = ";
   {
-    bool isFirst = true;
+    auto isFirst = true;
     for (const auto &leg : legSet) {
       if (!isFirst) {
         os << ", ";
       } else {
         isFirst = false;
       }
-      os << "Level 1 Updates[" << leg.symbol.toStdString() << "]";
+      os << "Level 1 Updates[" << leg.symbol << "]";
     }
     os << std::endl;
     m_engine.GetContext().Add(IniString(os.str()));

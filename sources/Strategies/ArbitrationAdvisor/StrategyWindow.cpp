@@ -30,11 +30,6 @@ const TradingSystem *StrategyWindow::Target::GetTradingSystem() const {
       security->GetSource().GetIndex(), tradingMode);
 }
 
-namespace {
-size_t numberOfNextInstance = 1;
-ids::random_generator generateStrategyId;
-}  // namespace
-
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QString &symbol,
                                QWidget *parent)
@@ -42,8 +37,7 @@ StrategyWindow::StrategyWindow(Engine &engine,
       m_engine(engine),
       m_tradingMode(TRADING_MODE_LIVE),
       m_symbol(symbol.toStdString()),
-      m_strategy(GenerateNewStrategyInstance(generateStrategyId(),
-                                             numberOfNextInstance++)),
+      m_strategy(GenerateNewStrategyInstance()),
       m_bestBuyTradingSystem(nullptr),
       m_bestSellTradingSystem(nullptr) {
   Init();
@@ -52,14 +46,14 @@ StrategyWindow::StrategyWindow(Engine &engine,
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QUuid &strategyId,
+                               const QString &name,
                                const QString &config,
                                QWidget *parent)
     : Base(parent),
       m_engine(engine),
       m_tradingMode(TRADING_MODE_LIVE),
       m_symbol(ExtractSymbolFromConfig(config)),
-      m_strategy(
-          RestoreStrategyInstance(strategyId, numberOfNextInstance++, config)),
+      m_strategy(RestoreStrategyInstance(strategyId, name, config)),
       m_bestBuyTradingSystem(nullptr),
       m_bestSellTradingSystem(nullptr) {
   Init();
@@ -131,7 +125,7 @@ void StrategyWindow::Init() {
       AddTargetWidgets(*widgets->second);
     }
 
-    const Target target = {m_tradingMode, &security, &*widgets->second};
+    Target target = {m_tradingMode, &security, &*widgets->second};
     Verify(m_targets.emplace(std::move(target)).second);
   }
 
@@ -156,11 +150,11 @@ void StrategyWindow::Init() {
 
 void StrategyWindow::AddTargetWidgets(TargetWidgets &widgets) {
   const auto row = static_cast<int>(m_targetWidgets.size());
-  int column = 0;
+  auto column = 0;
   m_ui.targets->addWidget(&widgets.title, row, column++);
   m_ui.targets->addWidget(&widgets.bid, row, column++);
   m_ui.targets->addWidget(&widgets.ask, row, column++);
-  m_ui.targets->addWidget(&widgets.actions, row, column++);
+  m_ui.targets->addWidget(&widgets.actions, row, column);
 }
 
 void StrategyWindow::closeEvent(QCloseEvent *closeEvent) {
@@ -255,11 +249,12 @@ void StrategyWindow::ConnectSignals() {
                  [this]() { SendOrder(ORDER_SIDE_BUY, nullptr); }));
 }
 
-aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
-    const ids::uuid &strategyId, size_t instanceNumber) {
-  bool isLowestSpreadEnabed = false;
+aa::Strategy &StrategyWindow::GenerateNewStrategyInstance() {
+  static ids::random_generator generateStrategyId;
+  const auto &strategyId = generateStrategyId();
+  auto isLowestSpreadEnabed = false;
   Double lowestSpreadPercentage = 0;
-  bool isStopLossEnabled = false;
+  auto isStopLossEnabled = false;
   size_t stopLossDelaySec = 0;
   {
     const IniFile conf(m_engine.GetConfigFilePath());
@@ -290,27 +285,27 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance(
     }
   }
   return CreateStrategyInstance(
-      strategyId, instanceNumber,
+      strategyId,
+      m_engine.GenerateNewStrategyName(
+          QString::fromStdString("Arbitrage " + m_symbol)),
       CreateConfig(strategyId, .6, false, .6, 100000000, isLowestSpreadEnabed,
                    lowestSpreadPercentage, isStopLossEnabled,
                    stopLossDelaySec));
 }
 
 aa::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
-                                                      size_t instanceNumber,
+                                                      const QString &name,
                                                       const QString &config) {
-  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), instanceNumber,
+  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), name,
                                 config.toStdString());
 }
 
 aa::Strategy &StrategyWindow::CreateStrategyInstance(
     const ids::uuid &strategyId,
-    size_t instanceNumber,
+    const QString &name,
     const std::string &config) {
   std::ostringstream ini;
-  ini << "[Strategy.Arbitrage/" << m_symbol << '/' << instanceNumber << "]"
-      << std::endl;
-  ini << config;
+  ini << "[Strategy." << name.toStdString() << "]" << std::endl << config;
   m_engine.GetContext().Add(IniString(ini.str()));
   return *boost::polymorphic_downcast<aa::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
@@ -424,7 +419,7 @@ void StrategyWindow::SendOrder(const OrderSide &side,
   Assert(tragetIt->security);
   Security &security = *tragetIt->security;
 
-  static const OrderParams params;
+  static const OrderParams params = {};
   try {
     tradingSystem->SendOrder(security, security.GetSymbol().GetCurrency(),
                              m_ui.maxQty->value(),
@@ -502,7 +497,6 @@ std::string StrategyWindow::CreateConfig(
   result << "id = " << strategyId << std::endl;
   result << "is_enabled = true" << std::endl;
   result << "trading_mode = live" << std::endl;
-  result << "title = Arbitrage" << std::endl;
   result << "requires = Level 1 Updates[" << m_symbol << "]" << std::endl;
   result << "symbol = " << m_symbol << std::endl;
   result << "min_price_difference_to_highlight_percentage = "
@@ -558,13 +552,14 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
 
 StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
-                                          const QUuid &instanceId,
+                                          const QString &instanceId,
+                                          const QString &name,
                                           const QString &config,
                                           QWidget *parent) {
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == aa::Strategy::typeId) {
-    result.emplace_back(
-        boost::make_unique<StrategyWindow>(engine, instanceId, config, parent));
+    result.emplace_back(boost::make_unique<StrategyWindow>(
+        engine, instanceId, name, config, parent));
   }
   return result;
 }

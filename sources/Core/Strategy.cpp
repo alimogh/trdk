@@ -15,20 +15,15 @@
 #include "Operation.hpp"
 #include "RiskControl.hpp"
 #include "Service.hpp"
-#include "Settings.hpp"
 #include "Timer.hpp"
-#ifndef BOOST_WINDOWS
-#include <signal.h>
-#endif
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
 namespace sig = boost::signals2;
 namespace uuids = boost::uuids;
-namespace fs = boost::filesystem;
 
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -37,15 +32,15 @@ namespace {
 class PositionHolder {
  public:
   explicit PositionHolder(
-      Position &position,
-      const Position::StateUpdateConnection &stateUpdateConnection)
+      Position& position,
+      const Position::StateUpdateConnection& stateUpdateConnection)
       : m_refCount(new size_t(1)),
         m_position(position.shared_from_this()),
         m_stateUpdateConnection(stateUpdateConnection) {
     Assert(m_stateUpdateConnection.connected());
   }
 
-  PositionHolder(const PositionHolder &rhs)
+  PositionHolder(const PositionHolder& rhs)
       : m_refCount(rhs.m_refCount),
         m_position(rhs.m_position),
         m_stateUpdateConnection(rhs.m_stateUpdateConnection) {
@@ -67,30 +62,33 @@ class PositionHolder {
   }
 
  private:
-  PositionHolder &operator=(const PositionHolder &);
+  PositionHolder& operator=(const PositionHolder&);
 
  public:
-  bool operator==(const Position &rhs) const { return GetPtr() == &rhs; }
+  bool operator==(const Position& rhs) const { return GetPtr() == &rhs; }
 
-  Position &operator*() const {
-    return const_cast<PositionHolder *>(this)->Get();
+  Position& operator*() const {
+    return const_cast<PositionHolder*>(this)->Get();
   }
 
-  Position *operator->() const {
-    return const_cast<PositionHolder *>(this)->GetPtr();
+  Position* operator->() const {
+    return const_cast<PositionHolder*>(this)->GetPtr();
   }
 
-  Position &Get() { return *m_position; }
-  const Position &Get() const {
-    return const_cast<PositionHolder *>(this)->Get();
+  Position& Get() { return *m_position; }
+
+  const Position& Get() const {
+    return const_cast<PositionHolder*>(this)->Get();
   }
-  Position *GetPtr() { return &Get(); }
-  const Position *GetPtr() const {
-    return const_cast<PositionHolder *>(this)->GetPtr();
+
+  Position* GetPtr() { return &Get(); }
+
+  const Position* GetPtr() const {
+    return const_cast<PositionHolder*>(this)->GetPtr();
   }
 
  private:
-  size_t *m_refCount;
+  size_t* m_refCount;
   boost::shared_ptr<Position> m_position;
   Position::StateUpdateConnection m_stateUpdateConnection;
 };
@@ -102,7 +100,7 @@ typedef boost::multi_index_container<
     mi::indexed_by<
         mi::hashed_unique<mi::tag<ByPtr>,
                           mi::const_mem_fun<PositionHolder,
-                                            const Position *,
+                                            const Position*,
                                             &PositionHolder::GetPtr>>>>
     PositionHolderList;
 }  // namespace
@@ -112,81 +110,90 @@ typedef boost::multi_index_container<
 class Strategy::PositionList::Iterator::Implementation {
  public:
   PositionHolderList::iterator iterator;
-
- public:
-  explicit Implementation(PositionHolderList::iterator iterator)
-      : iterator(iterator) {}
 };
 
 class Strategy::PositionList::ConstIterator::Implementation {
  public:
   PositionHolderList::const_iterator iterator;
-
- public:
-  explicit Implementation(PositionHolderList::const_iterator iterator)
-      : iterator(iterator) {}
 };
 
 Strategy::PositionList::Iterator::Iterator(
-    std::unique_ptr<Implementation> &&pimpl)
+    std::unique_ptr<Implementation>&& pimpl)
     : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
-Strategy::PositionList::Iterator::Iterator(const Iterator &rhs)
+
+Strategy::PositionList::Iterator::Iterator(const Iterator& rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
+
 Strategy::PositionList::Iterator::~Iterator() = default;
-Strategy::PositionList::Iterator &Strategy::PositionList::Iterator::operator=(
-    const Iterator &rhs) {
+
+Strategy::PositionList::Iterator& Strategy::PositionList::Iterator::operator=(
+    const Iterator& rhs) {
   Assert(this != &rhs);
   Iterator(rhs).Swap(*this);
   return *this;
 }
-void Strategy::PositionList::Iterator::Swap(Iterator &rhs) noexcept {
+
+void Strategy::PositionList::Iterator::Swap(Iterator& rhs) noexcept {
   Assert(this != &rhs);
   std::swap(m_pimpl, rhs.m_pimpl);
 }
-Position &Strategy::PositionList::Iterator::dereference() const {
+
+Position& Strategy::PositionList::Iterator::dereference() const {
   return **m_pimpl->iterator;
 }
-bool Strategy::PositionList::Iterator::equal(const Iterator &rhs) const {
+
+bool Strategy::PositionList::Iterator::equal(const Iterator& rhs) const {
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
-bool Strategy::PositionList::Iterator::equal(const ConstIterator &rhs) const {
+
+bool Strategy::PositionList::Iterator::equal(const ConstIterator& rhs) const {
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
+
 void Strategy::PositionList::Iterator::increment() { ++m_pimpl->iterator; }
 
 Strategy::PositionList::ConstIterator::ConstIterator(
-    std::unique_ptr<Implementation> &&pimpl)
+    std::unique_ptr<Implementation>&& pimpl)
     : m_pimpl(std::move(pimpl)) {
   Assert(m_pimpl);
 }
-Strategy::PositionList::ConstIterator::ConstIterator(const Iterator &rhs)
-    : m_pimpl(boost::make_unique<Implementation>(rhs.m_pimpl->iterator)) {}
-Strategy::PositionList::ConstIterator::ConstIterator(const ConstIterator &rhs)
+
+Strategy::PositionList::ConstIterator::ConstIterator(const Iterator& rhs)
+    : m_pimpl(boost::make_unique<Implementation>({rhs.m_pimpl->iterator})) {}
+
+Strategy::PositionList::ConstIterator::ConstIterator(const ConstIterator& rhs)
     : m_pimpl(boost::make_unique<Implementation>(*rhs.m_pimpl)) {}
+
 Strategy::PositionList::ConstIterator::~ConstIterator() = default;
-Strategy::PositionList::ConstIterator &Strategy::PositionList::ConstIterator::
-operator=(const ConstIterator &rhs) {
+
+Strategy::PositionList::ConstIterator& Strategy::PositionList::ConstIterator::
+operator=(const ConstIterator& rhs) {
   Assert(this != &rhs);
   ConstIterator(rhs).Swap(*this);
   return *this;
 }
-void Strategy::PositionList::ConstIterator::Swap(ConstIterator &rhs) {
+
+void Strategy::PositionList::ConstIterator::Swap(ConstIterator& rhs) {
   Assert(this != &rhs);
   std::swap(m_pimpl, rhs.m_pimpl);
 }
-const Position &Strategy::PositionList::ConstIterator::dereference() const {
+
+const Position& Strategy::PositionList::ConstIterator::dereference() const {
   return **m_pimpl->iterator;
 }
+
 bool Strategy::PositionList::ConstIterator::equal(
-    const ConstIterator &rhs) const {
+    const ConstIterator& rhs) const {
   Assert(this != &rhs);
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
-bool Strategy::PositionList::ConstIterator::equal(const Iterator &rhs) const {
+
+bool Strategy::PositionList::ConstIterator::equal(const Iterator& rhs) const {
   return m_pimpl->iterator == rhs.m_pimpl->iterator;
 }
+
 void Strategy::PositionList::ConstIterator::increment() { ++m_pimpl->iterator; }
 
 namespace {
@@ -194,15 +201,16 @@ class PositionMutableList : public Strategy::PositionList {
  public:
   ~PositionMutableList() override = default;
 
-  void Insert(const PositionHolder &&holder) {
+  void Insert(const PositionHolder&& holder) {
     Verify(m_impl.emplace(std::move(holder)).second);
   }
-  void Erase(const Position &position) {
+
+  void Erase(const Position& position) {
     AssertLt(0, m_impl.get<ByPtr>().count(&position));
     m_impl.get<ByPtr>().erase(&position);
   }
 
-  bool Has(const Position &position) const {
+  bool Has(const Position& position) const {
     return m_impl.get<ByPtr>().count(&position) > 0;
   }
 
@@ -212,18 +220,22 @@ class PositionMutableList : public Strategy::PositionList {
 
   Iterator GetBegin() override {
     return Iterator(
-        boost::make_unique<Iterator::Implementation>(m_impl.begin()));
+        boost::make_unique<Iterator::Implementation>({m_impl.begin()}));
   }
+
   ConstIterator GetBegin() const override {
     return ConstIterator(
-        boost::make_unique<ConstIterator::Implementation>(m_impl.begin()));
+        boost::make_unique<ConstIterator::Implementation>({m_impl.begin()}));
   }
+
   Iterator GetEnd() override {
-    return Iterator(boost::make_unique<Iterator::Implementation>(m_impl.end()));
+    return Iterator(
+        boost::make_unique<Iterator::Implementation>({m_impl.end()}));
   }
+
   ConstIterator GetEnd() const override {
     return ConstIterator(
-        boost::make_unique<ConstIterator::Implementation>(m_impl.end()));
+        boost::make_unique<ConstIterator::Implementation>({m_impl.end()}));
   }
 
  private:
@@ -240,11 +252,11 @@ class ThreadPositionListTransaction : public Strategy::PositionListTransaction {
  public:
   class Data : public PositionListTransaction::Data {
    public:
-    explicit Data(PositionMutableList &list) : m_originalList(list) {}
+    explicit Data(PositionMutableList& list) : m_originalList(list) {}
 
     ~Data() {
       try {
-        const auto &end = m_inserted.cend();
+        const auto& end = m_inserted.cend();
         for (auto i = m_inserted.begin(); i != end; ++i) {
           m_originalList.Insert(std::move(*i));
         }
@@ -254,14 +266,13 @@ class ThreadPositionListTransaction : public Strategy::PositionListTransaction {
       }
     }
 
-   public:
-    void Insert(PositionHolder &&position) {
+    void Insert(PositionHolder&& position) {
       Assert(std::find(m_inserted.cbegin(), m_inserted.cend(), *position) ==
              m_inserted.cend());
       m_inserted.emplace_back(std::move(position));
     }
 
-    void Erase(const Position &position) {
+    void Erase(const Position& position) {
       // Supported only current list as another was not required before.
       const auto it = std::find(m_inserted.begin(), m_inserted.end(), position);
       Assert(it != m_inserted.cend());
@@ -272,28 +283,27 @@ class ThreadPositionListTransaction : public Strategy::PositionListTransaction {
     }
 
    private:
-    PositionMutableList &m_originalList;
+    PositionMutableList& m_originalList;
     std::list<PositionHolder> m_inserted;
   };
 
- public:
-  explicit ThreadPositionListTransaction(PositionMutableList &list) {
+  explicit ThreadPositionListTransaction(PositionMutableList& list) {
     if (IsStarted()) {
       throw SystemException("Thread position list transaction already started");
     }
     m_instance.reset(new Data(list));
   }
-  virtual ~ThreadPositionListTransaction() override { m_instance.reset(); }
 
- public:
-  virtual std::unique_ptr<PositionListTransaction::Data> MoveToThread()
-      override {
+  ~ThreadPositionListTransaction() override { m_instance.reset(); }
+
+  std::unique_ptr<PositionListTransaction::Data> MoveToThread() override {
     Assert(IsStarted());
     return std::unique_ptr<PositionListTransaction::Data>(m_instance.release());
   }
 
   static bool IsStarted() { return m_instance.get() ? true : false; }
-  static Data &GetData() {
+
+  static Data& GetData() {
     Assert(m_instance.get());
     Assert(IsStarted());
     return *m_instance.get();
@@ -328,10 +338,8 @@ class Strategy::Implementation : private boost::noncopyable {
         Signal;
   };
 
- public:
-  Strategy &m_strategy;
+  Strategy& m_strategy;
   const uuids::uuid m_typeId;
-  const std::string m_title;
   const TradingMode m_tradingMode;
 
   const std::unique_ptr<RiskControlScope> m_riskControlScope;
@@ -347,32 +355,30 @@ class Strategy::Implementation : private boost::noncopyable {
   PositionMutableList m_positions;
   SignalTrait<PositionUpdateSlotSignature>::Signal m_positionUpdateSignal;
 
-  std::vector<Position *> m_delayedPositionToForget;
+  std::vector<Position*> m_delayedPositionToForget;
 
   DropCopyStrategyInstanceId m_dropCopyInstanceId;
 
   TimerScope m_timerScope;
 
- public:
-  explicit Implementation(Strategy &strategy,
-                          const uuids::uuid &typeId,
-                          const IniSectionRef &conf)
+  explicit Implementation(Strategy& strategy,
+                          const uuids::uuid& typeId,
+                          const IniSectionRef& conf)
       : m_strategy(strategy),
         m_typeId(typeId),
-        m_title(conf.ReadKey("title")),
         m_tradingMode(
             ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
-        m_isEnabled(conf.ReadBoolKey("is_enabled")),
-        m_isBlocked(false),
         m_riskControlScope(
             m_strategy.GetContext()
                 .GetRiskControl(m_tradingMode)
                 .CreateScope(m_strategy.GetInstanceName(), conf)),
+        m_isEnabled(conf.ReadBoolKey("is_enabled")),
+        m_isBlocked(false),
         m_stopMode(STOP_MODE_UNKNOWN),
         m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
     std::string dropCopyInstanceIdStr = "not used";
     m_strategy.GetContext().InvokeDropCopy(
-        [this, &dropCopyInstanceIdStr](DropCopy &dropCopy) {
+        [this, &dropCopyInstanceIdStr](DropCopy& dropCopy) {
           m_dropCopyInstanceId = dropCopy.RegisterStrategyInstance(m_strategy);
           AssertNe(DropCopy::nStrategyInstanceId, m_dropCopyInstanceId);
           dropCopyInstanceIdStr =
@@ -385,8 +391,7 @@ class Strategy::Implementation : private boost::noncopyable {
         dropCopyInstanceIdStr);
   }
 
- public:
-  void ForgetPosition(const Position &position) {
+  void ForgetPosition(const Position& position) {
     Assert(std::find(m_delayedPositionToForget.cbegin(),
                      m_delayedPositionToForget.cend(),
                      &position) == m_delayedPositionToForget.cend());
@@ -395,14 +400,14 @@ class Strategy::Implementation : private boost::noncopyable {
         : m_positions.Erase(position);
   }
 
-  void BlockByRiskControlEvent(const RiskControlException &ex,
-                               const char *action) const {
+  void BlockByRiskControlEvent(const RiskControlException& ex,
+                               const char* action) const {
     boost::format message("Risk Control event: \"%1%\" (at %2%).");
     message % ex % action;
     m_strategy.Block(message.str());
   }
 
-  void Block(const std::string *reason = nullptr) noexcept {
+  void Block(const std::string* reason = nullptr) noexcept {
     try {
       const BlockLock lock(m_blockMutex);
       m_isBlocked = true;
@@ -431,13 +436,13 @@ class Strategy::Implementation : private boost::noncopyable {
     // Not supported as was not required before:
     Assert(!ThreadPositionListTransaction::IsStarted());
 
-    const auto &end = m_positions.GetEnd();
+    const auto& end = m_positions.GetEnd();
     for (auto it = m_positions.GetBegin(); it != end; ++it) {
       it->RunAlgos();
     }
   }
 
-  void RaiseSinglePositionUpdateEvent(Position &position) {
+  void RaiseSinglePositionUpdateEvent(Position& position) {
     // Not supported as was not required before:
     Assert(!ThreadPositionListTransaction::IsStarted());
 
@@ -457,10 +462,10 @@ class Strategy::Implementation : private boost::noncopyable {
       if (!position.IsCancelling()) {
         m_strategy.OnPositionUpdate(position);
       }
-    } catch (const RiskControlException &ex) {
+    } catch (const RiskControlException& ex) {
       BlockByRiskControlEvent(ex, "position update");
       return;
-    } catch (const Exception &ex) {
+    } catch (const Exception& ex) {
       m_strategy.Block(ex.what());
       return;
     }
@@ -470,7 +475,7 @@ class Strategy::Implementation : private boost::noncopyable {
     }
   }
 
-  void FlushDelayed(Lock &lock) {
+  void FlushDelayed(Lock& lock) {
     // Not supported as was not required before:
     Assert(!ThreadPositionListTransaction::IsStarted());
 
@@ -482,7 +487,7 @@ class Strategy::Implementation : private boost::noncopyable {
         break;
       }
       Assert(m_delayedPositionToForget.back());
-      auto &delayedPosition = *m_delayedPositionToForget.back();
+      auto& delayedPosition = *m_delayedPositionToForget.back();
       m_delayedPositionToForget.pop_back();
       Assert(delayedPosition.IsCompleted());
       // It may also be in the ThreadPositionListTransaction::GetInstance by
@@ -495,17 +500,17 @@ class Strategy::Implementation : private boost::noncopyable {
   }
 
   template <typename Callback>
-  void SignalByScheduledEvent(const Callback &callback) {
+  void SignalByScheduledEvent(const Callback& callback) {
     auto lock = m_strategy.LockForOtherThreads();
     if (m_strategy.IsBlocked()) {
       return;
     }
     try {
       callback();
-    } catch (const RiskControlException &ex) {
+    } catch (const RiskControlException& ex) {
       BlockByRiskControlEvent(ex, "scheduled event");
       return;
-    } catch (const Exception &ex) {
+    } catch (const Exception& ex) {
       m_strategy.Block(ex.what());
       return;
     }
@@ -522,22 +527,22 @@ namespace {
 const std::string typeName = "Strategy";
 }
 
-Strategy::Strategy(trdk::Context &context,
-                   const uuids::uuid &typeId,
-                   const std::string &implementationName,
-                   const std::string &instanceName,
-                   const IniSectionRef &conf)
+Strategy::Strategy(Context& context,
+                   const uuids::uuid& typeId,
+                   const std::string& implementationName,
+                   const std::string& instanceName,
+                   const IniSectionRef& conf)
     : Consumer(context, typeName, implementationName, instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {}
 
-Strategy::Strategy(trdk::Context &context,
-                   const std::string &typeUuid,
-                   const std::string &implementationName,
-                   const std::string &instanceName,
-                   const IniSectionRef &conf)
+Strategy::Strategy(Context& context,
+                   const std::string& typeId,
+                   const std::string& implementationName,
+                   const std::string& instanceName,
+                   const IniSectionRef& conf)
     : Consumer(context, typeName, implementationName, instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(
-          *this, uuids::string_generator()(typeUuid), conf)) {}
+          *this, uuids::string_generator()(typeId), conf)) {}
 
 Strategy::~Strategy() {
   Assert(!ThreadPositionListTransaction::IsStarted());
@@ -550,37 +555,38 @@ Strategy::~Strategy() {
   }
 }
 
-const uuids::uuid &Strategy::GetTypeId() const { return m_pimpl->m_typeId; }
-
-const std::string &Strategy::GetTitle() const { return m_pimpl->m_title; }
+const uuids::uuid& Strategy::GetTypeId() const { return m_pimpl->m_typeId; }
 
 TradingMode Strategy::GetTradingMode() const { return m_pimpl->m_tradingMode; }
 
-const DropCopyStrategyInstanceId &Strategy::GetDropCopyInstanceId() const {
+const DropCopyStrategyInstanceId& Strategy::GetDropCopyInstanceId() const {
   AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
   return m_pimpl->m_dropCopyInstanceId;
 }
 
-RiskControlScope &Strategy::GetRiskControlScope() {
+RiskControlScope& Strategy::GetRiskControlScope() {
   return *m_pimpl->m_riskControlScope;
 }
 
-TradingSystem &Strategy::GetTradingSystem(size_t index) {
+TradingSystem& Strategy::GetTradingSystem(const size_t index) {
   return GetContext().GetTradingSystem(index, GetTradingMode());
 }
-const TradingSystem &Strategy::GetTradingSystem(size_t index) const {
-  return const_cast<Strategy *>(this)->GetTradingSystem(index);
-}
-TradingSystem &Strategy::GetTradingSystem(const Security &security) {
-  return GetTradingSystem(security.GetSource().GetIndex());
-}
-const TradingSystem &Strategy::GetTradingSystem(
-    const Security &security) const {
-  return const_cast<Strategy *>(this)->GetTradingSystem(security);
+
+const TradingSystem& Strategy::GetTradingSystem(const size_t index) const {
+  return const_cast<Strategy*>(this)->GetTradingSystem(index);
 }
 
-void Strategy::OnLevel1Update(Security &security,
-                              const TimeMeasurement::Milestones &) {
+TradingSystem& Strategy::GetTradingSystem(const Security& security) {
+  return GetTradingSystem(security.GetSource().GetIndex());
+}
+
+const TradingSystem& Strategy::GetTradingSystem(
+    const Security& security) const {
+  return const_cast<Strategy*>(this)->GetTradingSystem(security);
+}
+
+void Strategy::OnLevel1Update(Security& security,
+                              const TimeMeasurement::Milestones&) {
   GetLog().Error(
       "Subscribed to %1% level 1 updates, but can't work with it"
       " (doesn't have OnLevel1Update method implementation).",
@@ -589,11 +595,11 @@ void Strategy::OnLevel1Update(Security &security,
       "Module subscribed to level 1 updates, but can't work with it");
 }
 
-void Strategy::OnPositionUpdate(Position &) {}
+void Strategy::OnPositionUpdate(Position&) {}
 
-void Strategy::OnBookUpdateTick(Security &security,
-                                const PriceBook &,
-                                const TimeMeasurement::Milestones &) {
+void Strategy::OnBookUpdateTick(Security& security,
+                                const PriceBook&,
+                                const TimeMeasurement::Milestones&) {
   GetLog().Error(
       "Subscribed to %1% book Update ticks, but can't work with it"
       " (doesn't have OnBookUpdateTick method implementation).",
@@ -602,7 +608,7 @@ void Strategy::OnBookUpdateTick(Security &security,
       "Module subscribed to book Update ticks, but can't work with it");
 }
 
-void Strategy::Register(Position &position) {
+void Strategy::Register(Position& position) {
   PositionHolder holder(position, position.Subscribe([this, &position]() {
     m_pimpl->m_positionUpdateSignal(position);
   }));
@@ -611,7 +617,7 @@ void Strategy::Register(Position &position) {
       : m_pimpl->m_positions.Insert(std::move(holder));
 }
 
-void Strategy::Unregister(Position &position) noexcept {
+void Strategy::Unregister(Position& position) noexcept {
   try {
     ThreadPositionListTransaction::IsStarted()
         ? ThreadPositionListTransaction::GetData().Erase(position)
@@ -623,7 +629,7 @@ void Strategy::Unregister(Position &position) noexcept {
 }
 
 void Strategy::RaiseLevel1UpdateEvent(
-    Security &security, const TimeMeasurement::Milestones &delayMeasurement) {
+    Security& security, const TimeMeasurement::Milestones& delayMeasurement) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -634,10 +640,10 @@ void Strategy::RaiseLevel1UpdateEvent(
   try {
     m_pimpl->RunAllAlgos();
     OnLevel1Update(security, delayMeasurement);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 update");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
@@ -645,10 +651,10 @@ void Strategy::RaiseLevel1UpdateEvent(
 }
 
 void Strategy::RaiseLevel1TickEvent(
-    trdk::Security &security,
-    const boost::posix_time::ptime &time,
-    const Level1TickValue &value,
-    const TimeMeasurement::Milestones &delayMeasurement) {
+    Security& security,
+    const boost::posix_time::ptime& time,
+    const Level1TickValue& value,
+    const TimeMeasurement::Milestones& delayMeasurement) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -659,20 +665,20 @@ void Strategy::RaiseLevel1TickEvent(
   try {
     m_pimpl->RunAllAlgos();
     OnLevel1Tick(security, time, value, delayMeasurement);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "level 1 tick");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaiseNewTradeEvent(Security &service,
-                                  const boost::posix_time::ptime &time,
-                                  const Price &price,
-                                  const Qty &qty) {
+void Strategy::RaiseNewTradeEvent(Security& service,
+                                  const boost::posix_time::ptime& time,
+                                  const Price& price,
+                                  const Qty& qty) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -681,10 +687,10 @@ void Strategy::RaiseNewTradeEvent(Security &service,
   }
   try {
     OnNewTrade(service, time, price, qty);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
@@ -692,8 +698,8 @@ void Strategy::RaiseNewTradeEvent(Security &service,
 }
 
 void Strategy::RaiseServiceDataUpdateEvent(
-    const Service &service,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+    const Service& service,
+    const TimeMeasurement::Milestones& timeMeasurement) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -702,17 +708,17 @@ void Strategy::RaiseServiceDataUpdateEvent(
   }
   try {
     OnServiceDataUpdate(service, timeMeasurement);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "service data update");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaisePositionUpdateEvent(Position &position) {
+void Strategy::RaisePositionUpdateEvent(Position& position) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -726,7 +732,7 @@ void Strategy::RaisePositionUpdateEvent(Position &position) {
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::OnPositionMarkedAsCompleted(Position &position) {
+void Strategy::OnPositionMarkedAsCompleted(Position& position) {
   //! @todo Extend: delay several positions, don't remove from callback,
   //! don't forget about all other callbacks where positions can be used.
   Assert(position.IsCompleted());
@@ -736,10 +742,10 @@ void Strategy::OnPositionMarkedAsCompleted(Position &position) {
   m_pimpl->m_delayedPositionToForget.emplace_back(&position);
 }
 
-void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
-                                                  Security &security,
-                                                  Security::Request &request,
-                                                  bool &isSwitched) {
+void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime& time,
+                                                  Security& security,
+                                                  Security::Request& request,
+                                                  bool& isSwitched) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -748,20 +754,20 @@ void Strategy::RaiseSecurityContractSwitchedEvent(const pt::ptime &time,
   }
   try {
     OnSecurityContractSwitched(time, security, request, isSwitched);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security contract switched");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
+void Strategy::RaiseBrokerPositionUpdateEvent(Security& security,
                                               bool isLong,
-                                              const Qty &qty,
-                                              const Volume &volume,
+                                              const Qty& qty,
+                                              const Volume& volume,
                                               bool isInitial) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
@@ -771,17 +777,17 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security &security,
   }
   try {
     OnBrokerPositionUpdate(security, isLong, qty, volume, isInitial);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "broker position update");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
+void Strategy::RaiseNewBarEvent(Security& security, const Security::Bar& bar) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -790,10 +796,10 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
   }
   try {
     OnNewBar(security, bar);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
@@ -801,9 +807,9 @@ void Strategy::RaiseNewBarEvent(Security &security, const Security::Bar &bar) {
 }
 
 void Strategy::RaiseBookUpdateTickEvent(
-    Security &security,
-    const PriceBook &book,
-    const TimeMeasurement::Milestones &timeMeasurement) {
+    Security& security,
+    const PriceBook& book,
+    const TimeMeasurement::Milestones& timeMeasurement) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -813,19 +819,19 @@ void Strategy::RaiseBookUpdateTickEvent(
   timeMeasurement.Measure(TimeMeasurement::SM_DISPATCHING_DATA_RAISE);
   try {
     OnBookUpdateTick(security, book, timeMeasurement);
-  } catch (const RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "book update tick");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
-                                         Security &security,
-                                         const Security::ServiceEvent &event) {
+void Strategy::RaiseSecurityServiceEvent(const pt::ptime& time,
+                                         Security& security,
+                                         const Security::ServiceEvent& event) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -834,10 +840,10 @@ void Strategy::RaiseSecurityServiceEvent(const pt::ptime &time,
   }
   try {
     OnSecurityServiceEvent(time, security, event);
-  } catch (const ::trdk::Lib::RiskControlException &ex) {
+  } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "security service event");
     return;
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     Block(ex.what());
     return;
   }
@@ -858,7 +864,8 @@ bool Strategy::IsBlocked(bool isForever) const {
   if (m_pimpl->m_blockEndTime == pt::not_a_date_time ||
       m_pimpl->m_blockEndTime > GetContext().GetCurrentTime()) {
     return true;
-  } else if (isForever) {
+  }
+  if (isForever) {
     return false;
   }
 
@@ -872,13 +879,13 @@ bool Strategy::IsBlocked(bool isForever) const {
 
 void Strategy::Block() noexcept { m_pimpl->Block(); }
 
-void Strategy::Block(const std::string &reason) noexcept {
+void Strategy::Block(const std::string& reason) noexcept {
   m_pimpl->Block(&reason);
 }
 
-void Strategy::Block(const pt::time_duration &blockDuration) {
+void Strategy::Block(const pt::time_duration& blockDuration) {
   const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
-  const pt::ptime &blockEndTime = GetContext().GetCurrentTime() + blockDuration;
+  const pt::ptime& blockEndTime = GetContext().GetCurrentTime() + blockDuration;
   if (m_pimpl->m_isBlocked && m_pimpl->m_blockEndTime != pt::not_a_date_time &&
       blockEndTime <= m_pimpl->m_blockEndTime) {
     return;
@@ -888,13 +895,13 @@ void Strategy::Block(const pt::time_duration &blockDuration) {
   GetLog().Warn("Blocked until %1%.", m_pimpl->m_blockEndTime);
 }
 
-void Strategy::Stop(const StopMode &stopMode) {
+void Strategy::Stop(const StopMode& stopMode) {
   const auto lock = LockForOtherThreads();
   m_pimpl->m_stopMode = stopMode;
   OnStopRequest(stopMode);
 }
 
-void Strategy::OnStopRequest(const StopMode &) { ReportStop(); }
+void Strategy::OnStopRequest(const StopMode&) { ReportStop(); }
 
 void Strategy::ReportStop() {
   const Implementation::BlockLock lock(m_pimpl->m_blockMutex);
@@ -902,7 +909,7 @@ void Strategy::ReportStop() {
   static_assert(numberOfStopModes == 3, "Stop mode list changed.");
   switch (GetStopMode()) {
     case STOP_MODE_GRACEFULLY_ORDERS:
-      for (const auto &pos : GetPositions()) {
+      for (const auto& pos : GetPositions()) {
         if (pos.HasActiveOrders()) {
           GetLog().Error(
               "Found position %1%/%2% with active orders at stop"
@@ -924,6 +931,7 @@ void Strategy::ReportStop() {
       break;
     case STOP_MODE_UNKNOWN:
       throw LogicError("Strategy stop not requested");
+    default:
       break;
   }
 
@@ -934,7 +942,7 @@ void Strategy::ReportStop() {
   m_pimpl->m_stopCondition.notify_all();
 }
 
-const StopMode &Strategy::GetStopMode() const { return m_pimpl->m_stopMode; }
+const StopMode& Strategy::GetStopMode() const { return m_pimpl->m_stopMode; }
 
 void Strategy::WaitForStop() {
   Implementation::BlockLock lock(m_pimpl->m_blockMutex);
@@ -947,18 +955,18 @@ void Strategy::WaitForStop() {
 }
 
 Strategy::PositionUpdateSlotConnection Strategy::SubscribeToPositionsUpdates(
-    const PositionUpdateSlot &slot) const {
+    const PositionUpdateSlot& slot) const {
   return m_pimpl->m_positionUpdateSignal.connect(slot);
 }
 
-Strategy::PositionList &Strategy::GetPositions() {
+Strategy::PositionList& Strategy::GetPositions() {
   // Not supported as was not required before:
   Assert(!ThreadPositionListTransaction::IsStarted());
   return m_pimpl->m_positions;
 }
 
-const Strategy::PositionList &Strategy::GetPositions() const {
-  return const_cast<Strategy *>(this)->GetPositions();
+const Strategy::PositionList& Strategy::GetPositions() const {
+  return const_cast<Strategy*>(this)->GetPositions();
 }
 
 std::unique_ptr<Strategy::PositionListTransaction>
@@ -967,7 +975,7 @@ Strategy::StartThreadPositionsTransaction() {
       m_pimpl->m_positions);
 }
 
-void Strategy::OnSettingsUpdate(const IniSectionRef &conf) {
+void Strategy::OnSettingsUpdate(const IniSectionRef& conf) {
   Consumer::OnSettingsUpdate(conf);
 
   if (m_pimpl->m_isEnabled != conf.ReadBoolKey("is_enabled")) {
@@ -984,16 +992,16 @@ void Strategy::ClosePositions() {
   OnPostionsCloseRequest();
 }
 
-bool Strategy::OnBlocked(const std::string *) noexcept { return true; }
+bool Strategy::OnBlocked(const std::string*) noexcept { return true; }
 
-void Strategy::Schedule(const pt::time_duration &delay,
-                        boost::function<void()> &&callback) {
+void Strategy::Schedule(const pt::time_duration& delay,
+                        boost::function<void()>&& callback) {
   GetContext().GetTimer().Schedule(
       delay, [this, callback]() { m_pimpl->SignalByScheduledEvent(callback); },
       m_pimpl->m_timerScope);
 }
 
-void Strategy::Schedule(boost::function<void()> &&callback) {
+void Strategy::Schedule(boost::function<void()>&& callback) {
   GetContext().GetTimer().Schedule(
       [this, callback]() { m_pimpl->SignalByScheduledEvent(callback); },
       m_pimpl->m_timerScope);

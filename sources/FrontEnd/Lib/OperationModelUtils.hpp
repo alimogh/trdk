@@ -18,7 +18,7 @@ struct OperationRecord {
   const QString id;
   const QDateTime startTime;
   const QString strategyName;
-  const QString strategyInstance;
+  const QString strategyParams;
   QString statusName;
   QDateTime endTime;
   Orm::OperationStatus::enum_OperationStatus status;
@@ -26,10 +26,8 @@ struct OperationRecord {
   QString commission;
   QString totalResult;
 
- public:
   explicit OperationRecord(const Orm::Operation &);
 
- public:
   void Update(const Orm::Operation &);
 };
 }  // namespace Detail

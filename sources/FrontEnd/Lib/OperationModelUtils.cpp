@@ -12,23 +12,18 @@
 #include "OperationModelUtils.hpp"
 
 using namespace trdk;
-using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Detail;
+using namespace FrontEnd;
+using namespace Detail;
 
 namespace pt = boost::posix_time;
 namespace ids = boost::uuids;
 
 namespace {
-QString ShortenStrategyInstance(const std::string &source) {
-  const auto &start = source.find('/');
-  return QString::fromStdString(
-      start == std::string::npos ? source : source.substr(start + 1));
-}
 
-void AddToBalanceString(const QString &symbol,
-                        const Volume &value,
-                        bool showPlus,
-                        QString &destination) {
+void AddToBalanceString(const QString& symbol,
+                        const Volume& value,
+                        const bool showPlus,
+                        QString& destination) {
   if (!value) {
     return;
   }
@@ -54,23 +49,24 @@ void AddToBalanceString(const QString &symbol,
   }
   destination += " " + symbol;
 }
+
 }  // namespace
 
-OperationRecord::OperationRecord(const Orm::Operation &operation)
+OperationRecord::OperationRecord(const Orm::Operation& operation)
     : id(operation.getId().toString()),
       startTime(ConvertFromDbDateTime(operation.getStartTime())),
       strategyName(operation.getStrategyInstance()->getName()) {
   Update(operation);
 }
 
-void OperationRecord::Update(const Orm::Operation &operation) {
+void OperationRecord::Update(const Orm::Operation& operation) {
   endTime = ConvertFromDbDateTime(operation.getEndTime());
   {
     financialResult.clear();
     commission.clear();
     totalResult.clear();
-    for (const auto &pnl : operation.getPnl()) {
-      const auto &symbol = pnl->getSymbol();
+    for (const auto& pnl : operation.getPnl()) {
+      const auto& symbol = pnl->getSymbol();
       AddToBalanceString(symbol, pnl->getFinancialResult(), true,
                          financialResult);
       AddToBalanceString(symbol, pnl->getCommission(), false, commission);

@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Core/TradingSystem.hpp"
 #include "Api.h"
 #include "Fwd.hpp"
 
@@ -21,49 +20,56 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Q_OBJECT
 
  public:
-  explicit Engine(const boost::filesystem::path &configFilePath,
-                  QWidget *parent);
+  explicit Engine(const boost::filesystem::path& configFilePath,
+                  QWidget* parent);
   ~Engine();
 
+ signals:
+  void StateChange(bool isStarted);
+  void Message(const QString&, bool isCritical);
+  void LogRecord(const QString&);
+
+  void OperationUpdate(const Orm::Operation&);
+  void OrderUpdate(const Orm::Order&);
+
  public:
-  const boost::filesystem::path &GetConfigFilePath() const;
+  const boost::filesystem::path& GetConfigFilePath() const;
 
   bool IsStarted() const;
 
-  Context &GetContext();
-  const FrontEnd::DropCopy &GetDropCopy() const;
+  Context& GetContext();
+  const Context& GetContext() const;
 
-  RiskControlScope &GetRiskControl(const TradingMode &);
+  const DropCopy& GetDropCopy() const;
+
+  RiskControlScope& GetRiskControl(const TradingMode&);
 
   std::vector<boost::shared_ptr<Orm::Operation>> GetOperations(
-      bool isTradesIncluded,
-      bool isErrorsIncluded,
-      bool isCancelsIncluded,
-      const QDate &dateFrom,
-      const QDate &dateTo) const;
+      const QDateTime& startTime,
+      const boost::optional<QDateTime>& endTime,
+      bool isTradesIncluded = true,
+      bool isErrorsIncluded = true,
+      bool isCancelsIncluded = true,
+      const boost::optional<QString>& strategy = boost::none) const;
 
-  void StoreConfig(const Strategy &, QString &&config, bool isActive);
+  void StoreConfig(const Strategy&, QString&& config, bool isActive);
+
   void ForEachActiveStrategy(
-      const boost::function<void(const QUuid &typeIt,
-                                 const QUuid &instanceId,
-                                 const QString &config)> &) const;
+      const boost::function<void(const QUuid& typeIt,
+                                 const QUuid& instanceId,
+                                 const QString& name,
+                                 const QString& config)>&) const;
+
+  std::vector<QString> GetStrategyNameList() const;
+
+  QString GenerateNewStrategyName(const QString& nameBase) const;
+
+  void Start(const boost::function<void(const std::string&)>& progressCallback);
+  void Stop();
 
 #ifdef DEV_VER
   void Test();
 #endif
-
- signals:
-  void StateChange(bool isStarted);
-  void Message(const QString &, bool isCritical);
-  void LogRecord(const QString &);
-
-  void OperationUpdate(const trdk::FrontEnd::Orm::Operation &);
-  void OrderUpdate(const trdk::FrontEnd::Orm::Order &);
-
- public:
-  void Start(
-      const boost::function<void(const std::string &)> &progressCallback);
-  void Stop();
 
  private:
   class Implementation;

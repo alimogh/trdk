@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
-#include "OpeartionItemDelegate.hpp"
+#include "OperationItemDelegate.hpp"
 #include "OperationItem.hpp"
 
 using namespace trdk::Lib;
@@ -128,23 +128,9 @@ void OperationItemDelegate::initStyleOption(QStyleOptionViewItem *options,
                                           : colorOfSellClosed);
           }
           break;
+        default:
+          break;
       }
     }
   }
-}
-
-QString OperationItemDelegate::displayText(const QVariant &source,
-                                           const QLocale &locale) const {
-  switch (source.type()) {
-    case QVariant::Time:
-      return source.toTime().toString("hh:mm:ss.zzz");
-    case QVariant::Double: {
-      const Double &value = source.toDouble();
-      if (value.IsNan()) {
-        return "-";
-      }
-      return QString::number(value, 'f', 8);
-    }
-  }
-  return Base::displayText(source, locale);
 }
