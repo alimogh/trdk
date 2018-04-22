@@ -11,6 +11,7 @@
 #include "Fwd.hpp"
 
 #include "Common/Common.hpp"
+#include "Core/TradingSystem.hpp"
 #include "Engine/Fwd.hpp"
 
 #pragma warning(push)

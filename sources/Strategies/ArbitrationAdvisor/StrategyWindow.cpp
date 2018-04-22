@@ -71,8 +71,6 @@ StrategyWindow::~StrategyWindow() {
 }
 
 void StrategyWindow::Init() {
-  setAttribute(Qt::WA_DeleteOnClose);
-
   m_ui.setupUi(this);
   m_ui.symbol->setText(QString::fromStdString(m_symbol));
 

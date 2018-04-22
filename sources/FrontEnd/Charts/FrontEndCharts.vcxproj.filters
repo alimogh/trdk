@@ -9,168 +9,90 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <ParseFiles>true</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files\Debug Standalone">
+      <UniqueIdentifier>{b9798e14-a399-4306-8141-58ae6275613b}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Test Standalone">
+      <UniqueIdentifier>{20f281de-aa01-4a69-88e9-9124ff529e67}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Release Standalone">
+      <UniqueIdentifier>{a816b00f-5bc5-4208-883e-6bb436fca4d5}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Assert.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FileSystemChangeNotificator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Exception.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SysError.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Symbol.cpp">
+    <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Ini.cpp">
+    <ClCompile Include="..\..\Common\Assert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Currency.cpp">
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ChartView.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ChartView.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ChartView.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TimeMeasurement.cpp">
+    <ClCompile Include="Chart.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SecurityType.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_ChartWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="ExpirationCalendar.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_ChartWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkStreamClient.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_ChartWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkStreamClientService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HttpStreamClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ExpirationCalendarUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SymbolUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UtilUTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VerifyModules.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkClientServiceSecureSocketIo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Crypto.cpp">
+    <ClCompile Include="ChartWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Assert.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UseUnused.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Common.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileSystemChangeNotificator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Dll.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Exception.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SysError.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Prec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Symbol.hpp">
+    <ClInclude Include="Api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Constants.h">
+    <ClInclude Include="Chart.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SegmentedVector.hpp">
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\FrontEndCharts.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="ChartView.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Ini.hpp">
+    </CustomBuild>
+    <CustomBuild Include="ChartWidget.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Currency.hpp">
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FrontEndCharts.def">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TimeMeasurement.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Spin.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Numeric.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VersionInfo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SecurityType.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ExpirationCalendar.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fwd.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkStreamClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkStreamClientService.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HttpStreamClient.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Accumulators.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VerifyModules.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceSocketIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceUnsecureSocketIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkClientServiceSecureSocketIo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Crypto.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Tuple.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    </None>
   </ItemGroup>
 </Project>

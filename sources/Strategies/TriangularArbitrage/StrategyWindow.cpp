@@ -30,8 +30,6 @@ StrategyWindow::StrategyWindow(Engine &engine,
           legSet.front().symbol.left(legSet.front().symbol.indexOf('_'))),
       m_maxNumberOfOppotunities(0),
       m_strategy(CreateStrategyInstance(legSet)) {
-  setAttribute(Qt::WA_DeleteOnClose);
-
   m_ui.setupUi(this);
   m_legs = {
       Leg{m_ui.leg1Symbol, m_ui.leg1BestPrice, m_ui.leg1BestExchange,

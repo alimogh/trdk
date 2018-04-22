@@ -72,6 +72,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Terminal", "FrontEnd\Terminal\Terminal.vcxproj", "{7DEF1DE9-34BE-4706-B828-41F8BBDDB6D1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C73A9600-7598-4603-885F-248D4FC88192} = {C73A9600-7598-4603-885F-248D4FC88192}
+		{66A7D906-8469-47E5-AA1C-283819474377} = {66A7D906-8469-47E5-AA1C-283819474377}
 		{9EF13741-7C1B-4A58-B79C-3800B42847E7} = {9EF13741-7C1B-4A58-B79C-3800B42847E7}
 		{4C2B855E-F48E-41E0-A08C-08DA1AE3E40C} = {4C2B855E-F48E-41E0-A08C-08DA1AE3E40C}
 		{D45ABB62-A550-474B-B938-0A8C53AE1FE4} = {D45ABB62-A550-474B-B938-0A8C53AE1FE4}
@@ -94,6 +95,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Ping Pong Strategy", "Strategies\PingPong\PingPong.vcxproj", "{2472A1A5-3CB8-4809-B21F-00D38FE40BE8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Triangular Arbitrage", "Strategies\TriangularArbitrage\TriangularArbitrage.vcxproj", "{D45ABB62-A550-474B-B938-0A8C53AE1FE4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Front-end Charts Library", "FrontEnd\Charts\FrontEndCharts.vcxproj", "{66A7D906-8469-47E5-AA1C-283819474377}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -801,6 +804,39 @@ Global
 		{D45ABB62-A550-474B-B938-0A8C53AE1FE4}.Test Standalone|Win32.Build.0 = Test Standalone|Win32
 		{D45ABB62-A550-474B-B938-0A8C53AE1FE4}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
 		{D45ABB62-A550-474B-B938-0A8C53AE1FE4}.Test Standalone|x64.Build.0 = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|Mixed Platforms.ActiveCfg = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|Mixed Platforms.Build.0 = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|Win32.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|Win32.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|x64.ActiveCfg = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug DLL|x64.Build.0 = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug Standalone|Mixed Platforms.ActiveCfg = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug Standalone|Mixed Platforms.Build.0 = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug Standalone|Win32.ActiveCfg = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug Standalone|x64.ActiveCfg = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Debug Standalone|x64.Build.0 = Debug Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|Mixed Platforms.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|Mixed Platforms.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|Win32.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|Win32.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|x64.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release DLL|x64.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release Standalone|Mixed Platforms.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release Standalone|Mixed Platforms.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release Standalone|Win32.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release Standalone|x64.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Release Standalone|x64.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|Mixed Platforms.ActiveCfg = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|Mixed Platforms.Build.0 = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|Win32.ActiveCfg = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|Win32.Build.0 = Release Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|x64.ActiveCfg = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test DLL|x64.Build.0 = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test Standalone|Mixed Platforms.ActiveCfg = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test Standalone|Mixed Platforms.Build.0 = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test Standalone|Win32.ActiveCfg = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test Standalone|x64.ActiveCfg = Test Standalone|x64
+		{66A7D906-8469-47E5-AA1C-283819474377}.Test Standalone|x64.Build.0 = Test Standalone|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -818,5 +854,6 @@ Global
 		{EEB952F5-CB06-44C9-A41A-DE4F8D7B58E6} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 		{2472A1A5-3CB8-4809-B21F-00D38FE40BE8} = {5CA346C1-8234-4485-8B30-89ADE810555C}
 		{D45ABB62-A550-474B-B938-0A8C53AE1FE4} = {5CA346C1-8234-4485-8B30-89ADE810555C}
+		{66A7D906-8469-47E5-AA1C-283819474377} = {88EE3328-50D8-4A68-89C4-CADC752CAABF}
 	EndGlobalSection
 EndGlobal

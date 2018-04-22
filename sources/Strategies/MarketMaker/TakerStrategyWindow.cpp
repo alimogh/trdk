@@ -25,8 +25,6 @@ TakerStrategyWindow::TakerStrategyWindow(Engine& engine,
     : Base(parent),
       m_engine(engine),
       m_strategy(CreateStrategyInstance(symbol)) {
-  setAttribute(Qt::WA_DeleteOnClose);
-
   m_ui.setupUi(this);
 
   setWindowTitle(symbol + " " + tr(R"(Market Maker "Taker")") + " - " +

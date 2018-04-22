@@ -202,6 +202,9 @@
     <ProjectReference Include="..\Lib\FrontEndLib.vcxproj">
       <Project>{5C1475B4-256B-4154-A714-EE4C531A781B}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Charts\FrontEndCharts.vcxproj">
+      <Project>{66A7D906-8469-47E5-AA1C-283819474377}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

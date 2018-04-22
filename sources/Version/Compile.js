@@ -29,6 +29,7 @@ var requiredModules = [
 	, 'Engine'
 	, 'FrontEnd'
 	, 'Shell'
+	, 'Charts'
 	, 'TestTradingSystems'
 	, 'FixProtocol'
 	, 'Rest'
