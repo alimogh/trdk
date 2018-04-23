@@ -10,8 +10,10 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
+#include "Charts/ChartWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
+#include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OperationListSettingsWidget.hpp"
@@ -19,12 +21,14 @@
 #include "Lib/OrderListModel.hpp"
 #include "Lib/OrderListView.hpp"
 #include "Lib/SortFilterProxyModel.hpp"
+#include "Lib/SymbolSelectionDialog.hpp"
 #include "Lib/TotalResultsReportModel.hpp"
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
+using namespace Charts;
 using namespace Terminal;
 
 namespace fs = boost::filesystem;
@@ -87,12 +91,14 @@ void MainWindow::ConnectSignals() {
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
 
-  Verify(connect(m_ui.createStrategyOperationsWindow, &QAction::triggered, this,
-                 &MainWindow::CreateNewStrategyOperationsWindow));
+  Verify(connect(m_ui.createNewChartWindow, &QAction::triggered, this,
+                 &MainWindow::CreateNewChartWindow));
+  Verify(connect(m_ui.createNewStrategyOperationsWindow, &QAction::triggered,
+                 this, &MainWindow::CreateNewStrategyOperationsWindow));
   Verify(connect(m_ui.createNewStandaloneOrdersWindow, &QAction::triggered,
                  this, &MainWindow::CreateNewStandaloneOrderListWindow));
-  Verify(connect(m_ui.createNewTotalResultsReport, &QAction::triggered, this,
-                 &MainWindow::CreateNewTotalResultsReportWindow));
+  Verify(connect(m_ui.createNewTotalResultsReportWindow, &QAction::triggered,
+                 this, &MainWindow::CreateNewTotalResultsReportWindow));
 }
 
 Engine &MainWindow::GetEngine() { return m_engine; }
@@ -140,9 +146,11 @@ void MainWindow::ShowModuleWindows(StrategyWidgetList &widgets) {
   widgetPos->setY(widgetPos->y() + 25);
   const auto &screen = QApplication::desktop()->screenGeometry();
   for (auto &widgetPtr : widgets) {
-    auto &widget = *widgetPtr.release();
+    auto &widget = *widgetPtr;
     widget.resize(widget.minimumSize());
     widget.show();
+    widget.setAttribute(Qt::WA_DeleteOnClose);
+    widgetPtr.release();
     if (!widgetPos) {
       continue;
     }
@@ -181,6 +189,33 @@ void MainWindow::RestoreModules() {
         }
       });
   ShowModuleWindows(widgets);
+}
+
+void MainWindow::CreateNewChartWindow() {
+  for (const auto &symbol :
+       SymbolSelectionDialog(m_engine, this).RequestSymbols()) {
+    auto window = boost::make_unique<QMainWindow>(this);
+    window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
+    {
+      auto &widget = *new ChartWidget(&*window);
+      const auto symbolStr = symbol.toStdString();
+      Verify(
+          connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate,
+                  [&widget, symbolStr](const Security *security) {
+                    if (security->GetSymbol().GetSymbol() != symbolStr) {
+                      return;
+                    }
+                    widget.OnPriceUpdate(
+                        ConvertToQDateTime(security->GetLastMarketDataTime()),
+                        security->GetLastPrice());
+                  }));
+      window->setCentralWidget(&widget);
+    }
+    window->resize(400, 250);
+    window->show();
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    window.release();
+  }
 }
 
 void MainWindow::CreateNewStrategyOperationsWindow() {

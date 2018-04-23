@@ -71,8 +71,6 @@ StrategyWindow::~StrategyWindow() {
 }
 
 void StrategyWindow::Init() {
-  setAttribute(Qt::WA_DeleteOnClose);
-
   m_ui.setupUi(this);
   m_ui.symbol->setText(QString::fromStdString(m_symbol));
 
@@ -305,7 +303,7 @@ aa::Strategy &StrategyWindow::CreateStrategyInstance(
     const QString &name,
     const std::string &config) {
   std::ostringstream ini;
-  ini << "[Strategy." << name.toStdString() << "]" << std::endl << config;
+  ini << "[Strategy." << name << "]" << std::endl << config;
   m_engine.GetContext().Add(IniString(ini.str()));
   return *boost::polymorphic_downcast<aa::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
@@ -553,7 +551,7 @@ StrategyMenuActionList CreateMenuActions(Engine &engine) {
 
 StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
-                                          const QString &instanceId,
+                                          const QUuid &instanceId,
                                           const QString &name,
                                           const QString &config,
                                           QWidget *parent) {

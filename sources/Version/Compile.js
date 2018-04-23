@@ -28,6 +28,7 @@ var requiredModules = [
 	'Core'
 	, 'Engine'
 	, 'FrontEnd'
+	, 'Charts'
 	, 'Rest'
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'

@@ -47,8 +47,6 @@ StrategyWindow::StrategyWindow(Engine& engine,
 StrategyWindow::~StrategyWindow() { m_strategy.Stop(); }
 
 void StrategyWindow::Init() {
-  setAttribute(Qt::WA_DeleteOnClose);
-
   m_ui.setupUi(this);
 
   setWindowTitle(QString::fromStdString(m_symbol) + " " +

@@ -58,22 +58,19 @@
     </property>
     <addaction name="showAbout"/>
    </widget>
-   <widget class="QMenu" name="menuView">
+   <widget class="QMenu" name="menuCreateWindow">
     <property name="title">
-     <string>View</string>
+     <string>&amp;Create Window</string>
     </property>
-    <addaction name="createStrategyOperationsWindow"/>
+    <addaction name="createNewChartWindow"/>
+    <addaction name="separator"/>
+    <addaction name="createNewStrategyOperationsWindow"/>
     <addaction name="createNewStandaloneOrdersWindow"/>
-   </widget>
-   <widget class="QMenu" name="menuReport">
-    <property name="title">
-     <string>Reports</string>
-    </property>
-    <addaction name="createNewTotalResultsReport"/>
+    <addaction name="separator"/>
+    <addaction name="createNewTotalResultsReportWindow"/>
    </widget>
    <addaction name="menuTrade"/>
-   <addaction name="menuView"/>
-   <addaction name="menuReport"/>
+   <addaction name="menuCreateWindow"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="balances">
@@ -112,7 +109,7 @@
     <string>F12</string>
    </property>
   </action>
-  <action name="createStrategyOperationsWindow">
+  <action name="createNewStrategyOperationsWindow">
    <property name="text">
     <string>&amp;Strategy Operations</string>
    </property>
@@ -128,12 +125,20 @@
     <string>Create new standalone orders window.</string>
    </property>
   </action>
-  <action name="createNewTotalResultsReport">
+  <action name="createNewTotalResultsReportWindow">
    <property name="text">
-    <string>New &amp;Total Results Report...</string>
+    <string>Total Results &amp;Report</string>
    </property>
    <property name="toolTip">
-    <string>Create total results report.</string>
+    <string>Create new total results report window.</string>
+   </property>
+  </action>
+  <action name="createNewChartWindow">
+   <property name="text">
+    <string>&amp;Charts...</string>
+   </property>
+   <property name="toolTip">
+    <string>Create new chart window.</string>
    </property>
   </action>
  </widget>

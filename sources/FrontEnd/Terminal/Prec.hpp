@@ -14,6 +14,7 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
+#include "Core/Security.hpp"
 #include "Engine/Fwd.hpp"
 #include "Lib/Util.hpp"
 #include "Fwd.hpp"
