@@ -614,8 +614,9 @@ void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
                                    bool isActive) {
   auto strategyOrm = boost::make_shared<Orm::StrategyInstance>(
       ConvertToQUuid(strategy.GetId()));
-  Verify(!db::fetch_by_id(strategyOrm, m_pimpl->m_db).isValid());
+  db::fetch_by_id(strategyOrm, m_pimpl->m_db);
   strategyOrm->setTypeId(ConvertToQUuid(strategy.GetTypeId()));
+  strategyOrm->setName(QString::fromStdString(strategy.GetInstanceName()));
   strategyOrm->setConfig(std::move(config));
   strategyOrm->setIsActive(isActive);
   Verify(!db::save(strategyOrm).isValid());
