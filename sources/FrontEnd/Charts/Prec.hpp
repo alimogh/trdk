@@ -16,3 +16,5 @@
 #pragma warning(disable : 4127)
 #include <QtCharts/QtCharts>
 #pragma warning(pop)
+
+#include "Fwd.hpp"

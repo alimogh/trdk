@@ -14,14 +14,7 @@ namespace trdk {
 namespace FrontEnd {
 namespace Charts {
 
-class ChartView : public QChartView {
-  Q_OBJECT
-
- public:
-  typedef QChartView Base;
-
-  explicit ChartView(QWidget *parent);
-};
+class ChartView;
 
 }  // namespace Charts
 }  // namespace FrontEnd

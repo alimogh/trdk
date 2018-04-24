@@ -10,17 +10,28 @@
 
 #pragma once
 
+#include "ChartWidget.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 namespace Charts {
 
-class ChartView : public QChartView {
+class TRDK_FRONTEND_CHARTS_API CandlestickChartWidget : public ChartWidget {
   Q_OBJECT
 
  public:
-  typedef QChartView Base;
+  typedef ChartWidget Base;
 
-  explicit ChartView(QWidget *parent);
+  explicit CandlestickChartWidget(QWidget* parent);
+  ~CandlestickChartWidget() override;
+
+ public slots:
+
+  void OnPriceUpdate(const QDateTime&, const Price&) override;
+
+ private:
+  class Implemnetation;
+  std::unique_ptr<Implemnetation> m_pimpl;
 };
 
 }  // namespace Charts

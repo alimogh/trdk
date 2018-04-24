@@ -10,7 +10,7 @@
 
 #include "Prec.hpp"
 #include "MainWindow.hpp"
-#include "Charts/ChartWidget.hpp"
+#include "Charts/CandlestickChartWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
 #include "Lib/DropCopy.hpp"
@@ -197,18 +197,22 @@ void MainWindow::CreateNewChartWindow() {
     auto window = boost::make_unique<QMainWindow>(this);
     window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
     {
-      auto &widget = *new ChartWidget(&*window);
+      auto &widget = *new CandlestickChartWidget(&*window);
       const auto symbolStr = symbol.toStdString();
-      Verify(
-          connect(&m_engine.GetDropCopy(), &DropCopy::PriceUpdate,
-                  [&widget, symbolStr](const Security *security) {
-                    if (security->GetSymbol().GetSymbol() != symbolStr) {
-                      return;
-                    }
-                    widget.OnPriceUpdate(
-                        ConvertToQDateTime(security->GetLastMarketDataTime()),
-                        security->GetLastPrice());
-                  }));
+      Verify(connect(
+          &m_engine.GetDropCopy(), &DropCopy::PriceUpdate, &widget,
+          [&widget, symbolStr](const Security *security) {
+            if (security->GetSymbol().GetSymbol() != symbolStr) {
+              return;
+            }
+            const auto &askPrice = security->GetAskPrice();
+            const auto lastPrice =
+                askPrice + (std::abs(askPrice - security->GetBidPrice()) / 2);
+            widget.OnPriceUpdate(
+                ConvertToQDateTime(security->GetLastMarketDataTime()),
+                lastPrice);
+          },
+          Qt::QueuedConnection));
       window->setCentralWidget(&widget);
     }
     window->resize(400, 250);
