@@ -16,17 +16,26 @@ using namespace trdk;
 using namespace FrontEnd;
 using namespace Charts;
 
-ChartWidget::ChartWidget(QWidget* parent) : Base(parent) {
-  auto& view = *new ChartView(this);
+class ChartWidget::Implementation : boost::noncopyable {
+ public:
+  ChartView m_view;
+
+  explicit Implementation(ChartWidget& self) : m_view(&self) {}
+};
+
+ChartWidget::ChartWidget(QWidget* parent)
+    : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
   {
     auto& layout = *new QVBoxLayout(this);
     setLayout(&layout);
-    layout.addWidget(&view);
+    layout.addWidget(&GetView());
   }
-  view.setRenderHint(QPainter::Antialiasing);
 }
 
-void ChartWidget::OnPriceUpdate(const QDateTime&, const Price& price) {
-  price;
-  price;
+ChartWidget::~ChartWidget() = default;
+
+ChartView& ChartWidget::GetView() { return m_pimpl->m_view; }
+
+const ChartView& ChartWidget::GetView() const {
+  return const_cast<ChartWidget*>(this)->GetView();
 }

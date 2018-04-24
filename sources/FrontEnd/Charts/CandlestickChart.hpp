@@ -10,17 +10,25 @@
 
 #pragma once
 
+#include "Chart.hpp"
+
 namespace trdk {
 namespace FrontEnd {
 namespace Charts {
 
-class ChartView : public QChartView {
-  Q_OBJECT
-
+class CandlestickChart : public Chart {
  public:
-  typedef QChartView Base;
+  typedef Chart Base;
 
-  explicit ChartView(QWidget *parent);
+  explicit CandlestickChart(QGraphicsItem *parent = nullptr);
+
+  void Update(const QCandlestickSet &);
+
+ private:
+  Price m_min;
+  Price m_max;
+  QStringList m_categories;
+  QCandlestickSeries *m_series;
 };
 
 }  // namespace Charts

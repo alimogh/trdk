@@ -14,5 +14,6 @@
 using namespace trdk::FrontEnd::Charts;
 
 Chart::Chart(QGraphicsItem *parent) : Base(parent) {
-  setAnimationOptions(QChart::AllAnimations);
+  setTheme(ChartThemeDark);
+  legend()->setVisible(false);
 }

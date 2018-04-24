@@ -15,5 +15,4 @@ using namespace trdk::FrontEnd::Charts;
 
 ChartView::ChartView(QWidget* parent) : Base(parent) {
   setRenderHint(QPainter::Antialiasing);
-  setChart(&m_chart);
 }

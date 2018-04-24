@@ -67,6 +67,21 @@
     <ClCompile Include="ChartWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_CandlestickChartWidget.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_CandlestickChartWidget.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_CandlestickChartWidget.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="CandlestickChartWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CandlestickChart.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -78,6 +93,12 @@
     <ClInclude Include="Chart.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CandlestickChart.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\FrontEndCharts.rc" />
@@ -87,6 +108,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="ChartWidget.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="CandlestickChartWidget.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

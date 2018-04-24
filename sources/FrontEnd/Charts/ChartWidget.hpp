@@ -8,8 +8,10 @@
 //  Copyright: Eugene V. Palchukovsky
 //
 
+#pragma once
+
 #include "Api.h"
-#include "Lib/Fwd.hpp"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace FrontEnd {
@@ -22,9 +24,18 @@ class TRDK_FRONTEND_CHARTS_API ChartWidget : public QWidget {
   typedef QWidget Base;
 
   explicit ChartWidget(QWidget *parent);
+  virtual ~ChartWidget();
 
  public slots:
-  void OnPriceUpdate(const QDateTime &, const Price &);
+  virtual void OnPriceUpdate(const QDateTime &, const Price &) = 0;
+
+ protected:
+  ChartView &GetView();
+  const ChartView &GetView() const;
+
+ private:
+  class Implementation;
+  std::unique_ptr<Implementation> m_pimpl;
 };
 
 }  // namespace Charts
