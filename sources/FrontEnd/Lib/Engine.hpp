@@ -32,6 +32,8 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   void OperationUpdate(const Orm::Operation&);
   void OrderUpdate(const Orm::Order&);
 
+  void PriceUpdate(const Security*);
+
  public:
   const boost::filesystem::path& GetConfigFilePath() const;
 

@@ -27,7 +27,7 @@ class TRDK_FRONTEND_CHARTS_API ChartWidget : public QWidget {
   virtual ~ChartWidget();
 
  public slots:
-  virtual void OnPriceUpdate(const QDateTime &, const Price &) = 0;
+  virtual void UpdatePrice(const QDateTime &, const Price &) = 0;
 
  protected:
   ChartView &GetView();

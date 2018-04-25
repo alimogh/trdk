@@ -14,69 +14,123 @@
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd::Charts;
 
-namespace {
-std::unique_ptr<QCandlestickSet> Clone(const QCandlestickSet &update) {
-  return std::make_unique<QCandlestickSet>(update.open(), update.high(),
-                                           update.low(), update.close(),
-                                           update.timestamp(), update.parent());
-}
-
-}  // namespace
-
-CandlestickChart::CandlestickChart(QGraphicsItem *parent)
-    : Base(parent), m_min(0), m_max(0) {
+CandlestickChart::CandlestickChart(const size_t capacity, QGraphicsItem *parent)
+    : Base(parent),
+      m_capacity(static_cast<decltype(m_capacity)>(capacity)),
+      m_min(0),
+      m_max(0) {
   {
     auto series = boost::make_unique<QCandlestickSeries>();
     addSeries(&*series);
     m_series = series.release();
   }
+  m_series->setIncreasingColor(QColor(Qt::green));
+  m_series->setDecreasingColor(QColor(Qt::red));
+  m_series->setBodyOutlineVisible(false);
   createDefaultAxes();
-  setAnimationOptions(SeriesAnimations);
+  setAnimationOptions(NoAnimation);
+  {
+    QStringList categories;
+    for (auto i = 1; i <= m_capacity; ++i) {
+      categories.push_back(QString::number(i));
+    }
+    auto &axis = *qobject_cast<QBarCategoryAxis *>(axes(Qt::Horizontal).at(0));
+    axis.setCategories(categories);
+    axis.setLabelsVisible(false);
+    axis.setGridLineVisible(false);
+  }
+  {
+    auto &axis = *qobject_cast<QValueAxis *>(axes(Qt::Vertical).at(0));
+    axis.setGridLineVisible(true);
+    axis.setRange(0, 0);
+  }
+}
+
+void CandlestickChart::SetCapacity(const size_t capacity) {
+  m_capacity = static_cast<decltype(m_capacity)>(capacity);
+  if (m_series->count() <= m_capacity) {
+    return;
+  }
+  auto sets = m_series->sets();
+  while (sets.size() >= m_capacity) {
+    m_series->remove(sets.front());
+    sets.pop_front();
+  }
+  CheckAxisesMinMax(sets);
+}
+
+size_t CandlestickChart::GetCapacity() const {
+  return static_cast<size_t>(m_capacity);
 }
 
 void CandlestickChart::Update(const QCandlestickSet &update) {
   auto sets = m_series->sets();
-  const auto updateTimestamp = static_cast<uintmax_t>(update.timestamp());
 
-  {
-    auto updateMinMax = false;
-    if (m_min == 0 || m_min > update.low()) {
-      m_min = update.low();
-      updateMinMax = true;
-    }
-    if (m_max < update.high()) {
-      m_max = update.high();
-      updateMinMax = true;
-    }
-    if (updateMinMax) {
-      auto &axis = *qobject_cast<QValueAxis *>(axes(Qt::Vertical).at(0));
-      axis.setMax(m_max * 1.01);
-      axis.setMin(m_min * 0.99);
-    }
-  }
-
-  for (auto index = 0; index < sets.size();) {
-    auto &set = *sets[index];
-    const auto setTimestamp = static_cast<uintmax_t>(set.timestamp());
-    if (setTimestamp == updateTimestamp) {
-      AssertEq(set.open(), update.open());
+  if (!sets.empty()) {
+    auto &set = *sets.back();
+    if (static_cast<uintmax_t>(set.timestamp()) ==
+        static_cast<uintmax_t>(update.timestamp())) {
+      AssertEq(Price(set.open()), update.open());
+      AssertLe(Price(set.high()), update.high());
+      AssertGe(Price(set.low()), update.low());
+      CheckAxisesMinMax(update);
       set.setHigh(update.high());
       set.setLow(update.low());
       set.setClose(update.close());
       return;
     }
-    AssertLt(setTimestamp, updateTimestamp);
-    break;
   }
 
+  while (sets.size() >= m_capacity) {
+    m_series->remove(sets.front());
+    sets.pop_front();
+  }
   {
-    auto newSet = Clone(update);
+    auto newSet = std::make_unique<QCandlestickSet>(
+        update.open(), update.high(), update.low(), update.close(),
+        update.timestamp(), update.parent());
+    sets.push_back(&*newSet);
+    CheckAxisesMinMax(sets);
     m_series->append(&*newSet);
     newSet.release();
   }
-  {
-    m_categories.push_back(QString::number(m_series->count()));
-    auto &axisX = *qobject_cast<QBarCategoryAxis *>(axes(Qt::Horizontal).at(0));
-    axisX.setCategories(m_categories);
+}
+
+void CandlestickChart::CheckAxisesMinMax(const QCandlestickSet &update) {
+  auto isMinMaxChanged = false;
+  if (m_min == 0 || m_min > update.low()) {
+    m_min = update.low();
+    isMinMaxChanged = true;
   }
+  if (m_max < update.high()) {
+    m_max = update.high();
+    isMinMaxChanged = true;
+  }
+  if (!isMinMaxChanged) {
+    return;
+  }
+  SetAxisesMinMax();
+}
+
+void CandlestickChart::CheckAxisesMinMax(const QList<QCandlestickSet *> &sets) {
+  m_min = m_max = 0;
+  for (const auto &set : sets) {
+    if (m_min == 0 || m_min > set->low()) {
+      m_min = set->low();
+    }
+    if (m_max < set->high()) {
+      m_max = set->high();
+    }
+  }
+  if (!m_min && !m_max) {
+    return;
+  }
+  SetAxisesMinMax();
+}
+
+void CandlestickChart::SetAxisesMinMax() {
+  AssertLe(m_min, m_max);
+  const auto margin = (m_max - m_min) * 1.01;
+  qobject_cast<QValueAxis *>(axes(Qt::Vertical).at(0))
+      ->setRange(m_min - margin, m_max + margin);
 }

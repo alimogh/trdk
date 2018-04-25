@@ -28,6 +28,7 @@ ChartWidget::ChartWidget(QWidget* parent)
   {
     auto& layout = *new QVBoxLayout(this);
     setLayout(&layout);
+    layout.setContentsMargins(0, 0, 0, 0);
     layout.addWidget(&GetView());
   }
 }

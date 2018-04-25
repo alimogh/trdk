@@ -179,6 +179,11 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
         &m_dropCopy, &DropCopy::OrderUpdate, &m_self,
         boost::bind(&Implementation::OnOrderUpdate, this, _1, _2, _3, _4, _5),
         Qt::QueuedConnection));
+
+    Verify(m_self.connect(
+        &m_dropCopy, &DropCopy::PriceUpdate, &m_self,
+        [this](const Security* security) { emit m_self.PriceUpdate(security); },
+        Qt::QueuedConnection));
   }
 
   void OnContextStateChanged(const Context::State& newState,

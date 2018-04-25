@@ -20,15 +20,22 @@ class CandlestickChart : public Chart {
  public:
   typedef Chart Base;
 
-  explicit CandlestickChart(QGraphicsItem *parent = nullptr);
+  explicit CandlestickChart(size_t capacity, QGraphicsItem *parent = nullptr);
+
+  void SetCapacity(size_t);
+  size_t GetCapacity() const;
 
   void Update(const QCandlestickSet &);
 
  private:
+  void SetAxisesMinMax();
+  void CheckAxisesMinMax(const QCandlestickSet &update);
+  void CheckAxisesMinMax(const QList<QCandlestickSet *> &sets);
+
+  int m_capacity;
+  QCandlestickSeries *m_series;
   Price m_min;
   Price m_max;
-  QStringList m_categories;
-  QCandlestickSeries *m_series;
 };
 
 }  // namespace Charts

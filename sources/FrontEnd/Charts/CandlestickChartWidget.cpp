@@ -18,45 +18,33 @@ using namespace FrontEnd::Charts;
 
 class CandlestickChartWidget::Implemnetation : boost::noncopyable {
  public:
-  CandlestickChart m_chart;
+  std::unique_ptr<CandlestickChart> m_chart;
 
   QDateTime m_setTime;
   QCandlestickSet m_set;
 
-  explicit Implemnetation(CandlestickChartWidget& self) : m_set(0, &self) {}
+  size_t m_numberOfSecondsInFrame;
 
-  void OnPriceUpdate(const QDateTime& updateTime, const Price& price) {
-    const auto periodMinutes = 1;
-    QDateTime periodTime;
-    if (!m_setTime.isValid()) {
+  explicit Implemnetation(CandlestickChartWidget& self,
+                          const size_t numberOfSecondsInFrame,
+                          const size_t capacity)
+      : m_chart(std::make_unique<CandlestickChart>(capacity)),
+        m_set(0, &self),
+        m_numberOfSecondsInFrame(numberOfSecondsInFrame) {
+    AssertEq(0, m_numberOfSecondsInFrame % 60);
+  }
+
+  void UpdatePrice(const QDateTime& updateTime, const Price& price) {
+    if (!m_setTime.isValid() ||
+        m_setTime.addSecs(m_numberOfSecondsInFrame) <= updateTime) {
       m_setTime = updateTime;
+      const auto& time = m_setTime.time();
       m_setTime.setTime(
-          {periodTime.time().hour(),
-           static_cast<int>(periodTime.time().minute() / periodMinutes) *
-               periodMinutes,
+          {time.hour(),
+           static_cast<int>((time.minute() / (m_numberOfSecondsInFrame / 60)) *
+                            (m_numberOfSecondsInFrame / 60)),
            0});
-      periodTime = m_setTime;
-    } else {
-      periodTime = m_setTime;
-      periodTime.addSecs(periodMinutes * 60);
-      if (periodTime > updateTime) {
-        periodTime = m_setTime;
-      } else {
-        periodTime.setTime(
-            {updateTime.time().hour(),
-             static_cast<int>(updateTime.time().minute() / periodMinutes) *
-                 periodMinutes,
-             0});
-      }
-    }
-
-    const auto updateTimestamp =
-        static_cast<uintmax_t>(periodTime.toSecsSinceEpoch());
-    const auto setTimestamp =
-        static_cast<decltype(updateTimestamp)>(m_set.timestamp());
-    if (setTimestamp != updateTimestamp) {
-      AssertLt(setTimestamp, updateTimestamp);
-      m_set.setTimestamp(static_cast<qreal>(updateTimestamp));
+      m_set.setTimestamp(static_cast<qreal>(m_setTime.toSecsSinceEpoch()));
       m_set.setOpen(price);
       m_set.setHigh(price);
       m_set.setLow(price);
@@ -69,18 +57,45 @@ class CandlestickChartWidget::Implemnetation : boost::noncopyable {
       }
       m_set.setClose(price);
     }
-    m_chart.Update(m_set);
+    m_chart->Update(m_set);
   }
 };
 
-CandlestickChartWidget::CandlestickChartWidget(QWidget* parent)
-    : Base(parent), m_pimpl(boost::make_unique<Implemnetation>(*this)) {
-  GetView().setChart(&m_pimpl->m_chart);
+CandlestickChartWidget::CandlestickChartWidget(
+    const size_t numberOfSecondsInFrame, const size_t capacity, QWidget* parent)
+    : Base(parent),
+      m_pimpl(boost::make_unique<Implemnetation>(
+          *this, numberOfSecondsInFrame, capacity)) {
+  GetView().setChart(&*m_pimpl->m_chart);
 }
 
 CandlestickChartWidget::~CandlestickChartWidget() = default;
 
-void CandlestickChartWidget::OnPriceUpdate(const QDateTime& time,
-                                           const Price& price) {
-  m_pimpl->OnPriceUpdate(time, price);
+void CandlestickChartWidget::SetNumberOfSecondsInFrame(
+    const size_t numberOfSecondsInFrame) {
+  if (m_pimpl->m_numberOfSecondsInFrame != numberOfSecondsInFrame) {
+    return;
+  }
+  const auto capacity = GetCapacity();
+  m_pimpl.reset();
+  m_pimpl = boost::make_unique<Implemnetation>(*this, numberOfSecondsInFrame,
+                                               capacity);
+  GetView().setChart(&*m_pimpl->m_chart);
+}
+
+size_t CandlestickChartWidget::GetNumberOfSecondsInFrame() const {
+  return m_pimpl->m_numberOfSecondsInFrame;
+}
+
+void CandlestickChartWidget::SetCapacity(const size_t capacity) {
+  m_pimpl->m_chart->SetCapacity(capacity);
+}
+
+size_t CandlestickChartWidget::GetCapacity() const {
+  return m_pimpl->m_chart->GetCapacity();
+}
+
+void CandlestickChartWidget::UpdatePrice(const QDateTime& time,
+                                         const Price& price) {
+  m_pimpl->UpdatePrice(time, price);
 }
