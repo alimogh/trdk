@@ -13,7 +13,6 @@
 #include "Charts/CandlestickChartWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
-#include "Lib/DropCopy.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/OperationListModel.hpp"
 #include "Lib/OperationListSettingsWidget.hpp"
@@ -91,8 +90,8 @@ void MainWindow::ConnectSignals() {
   Verify(connect(m_ui.showAbout, &QAction::triggered,
                  [this]() { ShowAbout(*this); }));
 
-  Verify(connect(m_ui.createNewChartWindow, &QAction::triggered, this,
-                 &MainWindow::CreateNewChartWindow));
+  Verify(connect(m_ui.createNewChartWindows, &QAction::triggered, this,
+                 &MainWindow::CreateNewChartWindows));
   Verify(connect(m_ui.createNewStrategyOperationsWindow, &QAction::triggered,
                  this, &MainWindow::CreateNewStrategyOperationsWindow));
   Verify(connect(m_ui.createNewStandaloneOrdersWindow, &QAction::triggered,
@@ -191,16 +190,16 @@ void MainWindow::RestoreModules() {
   ShowModuleWindows(widgets);
 }
 
-void MainWindow::CreateNewChartWindow() {
+void MainWindow::CreateNewChartWindows() {
   for (const auto &symbol :
        SymbolSelectionDialog(m_engine, this).RequestSymbols()) {
     auto window = boost::make_unique<QMainWindow>(this);
     window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
     {
-      auto &widget = *new CandlestickChartWidget(&*window);
+      auto &widget = *new CandlestickChartWidget(60, 50, &*window);
       const auto symbolStr = symbol.toStdString();
       Verify(connect(
-          &m_engine.GetDropCopy(), &DropCopy::PriceUpdate, &widget,
+          &m_engine, &Engine::PriceUpdate, &widget,
           [&widget, symbolStr](const Security *security) {
             if (security->GetSymbol().GetSymbol() != symbolStr) {
               return;
@@ -208,14 +207,14 @@ void MainWindow::CreateNewChartWindow() {
             const auto &askPrice = security->GetAskPrice();
             const auto lastPrice =
                 askPrice + (std::abs(askPrice - security->GetBidPrice()) / 2);
-            widget.OnPriceUpdate(
+            widget.UpdatePrice(
                 ConvertToQDateTime(security->GetLastMarketDataTime()),
                 lastPrice);
-          },
-          Qt::QueuedConnection));
+          }));
       window->setCentralWidget(&widget);
     }
-    window->resize(400, 250);
+    window->setContentsMargins(0, 0, 0, 0);
+    window->resize(600, 450);
     window->show();
     window->setAttribute(Qt::WA_DeleteOnClose);
     window.release();

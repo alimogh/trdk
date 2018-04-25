@@ -37,7 +37,7 @@ class MainWindow : public QMainWindow {
   void CreateModuleWindows(const StrategyWindowFactory &);
   void ShowModuleWindows(StrategyWidgetList &);
 
-  void CreateNewChartWindow();
+  void CreateNewChartWindows();
   void CreateNewStrategyOperationsWindow();
   void CreateNewStandaloneOrderListWindow();
   void CreateNewBalanceListWindow();

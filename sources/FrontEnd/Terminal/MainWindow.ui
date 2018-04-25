@@ -62,7 +62,7 @@
     <property name="title">
      <string>&amp;Create Window</string>
     </property>
-    <addaction name="createNewChartWindow"/>
+    <addaction name="createNewChartWindows"/>
     <addaction name="separator"/>
     <addaction name="createNewStrategyOperationsWindow"/>
     <addaction name="createNewStandaloneOrdersWindow"/>
@@ -132,13 +132,19 @@
    <property name="toolTip">
     <string>Create new total results report window.</string>
    </property>
+   <property name="shortcut">
+    <string>F3</string>
+   </property>
   </action>
-  <action name="createNewChartWindow">
+  <action name="createNewChartWindows">
    <property name="text">
     <string>&amp;Charts...</string>
    </property>
    <property name="toolTip">
-    <string>Create new chart window.</string>
+    <string>Create new chart windows.</string>
+   </property>
+   <property name="shortcut">
+    <string>F2</string>
    </property>
   </action>
  </widget>

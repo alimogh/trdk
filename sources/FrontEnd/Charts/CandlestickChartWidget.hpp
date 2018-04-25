@@ -22,12 +22,18 @@ class TRDK_FRONTEND_CHARTS_API CandlestickChartWidget : public ChartWidget {
  public:
   typedef ChartWidget Base;
 
-  explicit CandlestickChartWidget(QWidget* parent);
+  explicit CandlestickChartWidget(size_t numberOfSecondsInFrame,
+                                  size_t capacity,
+                                  QWidget* parent);
   ~CandlestickChartWidget() override;
 
- public slots:
+  size_t GetCapacity() const;
+  size_t GetNumberOfSecondsInFrame() const;
 
-  void OnPriceUpdate(const QDateTime&, const Price&) override;
+ public slots:
+  void SetCapacity(size_t);
+  void SetNumberOfSecondsInFrame(size_t);
+  void UpdatePrice(const QDateTime&, const Price&) override;
 
  private:
   class Implemnetation;
