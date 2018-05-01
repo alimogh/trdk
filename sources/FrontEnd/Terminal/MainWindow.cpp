@@ -11,6 +11,7 @@
 #include "Prec.hpp"
 #include "MainWindow.hpp"
 #include "Charts/CandlestickChartWidget.hpp"
+#include "Charts/ChartToolbarWidget.hpp"
 #include "Lib/BalanceListModel.hpp"
 #include "Lib/BalanceListView.hpp"
 #include "Lib/Engine.hpp"
@@ -196,22 +197,37 @@ void MainWindow::CreateNewChartWindows() {
     auto window = boost::make_unique<QMainWindow>(this);
     window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
     {
-      auto &widget = *new CandlestickChartWidget(60, 50, &*window);
-      const auto symbolStr = symbol.toStdString();
-      Verify(connect(
-          &m_engine, &Engine::PriceUpdate, &widget,
-          [&widget, symbolStr](const Security *security) {
-            if (security->GetSymbol().GetSymbol() != symbolStr) {
-              return;
-            }
-            const auto &askPrice = security->GetAskPrice();
-            const auto lastPrice =
-                askPrice + (std::abs(askPrice - security->GetBidPrice()) / 2);
-            widget.UpdatePrice(
-                ConvertToQDateTime(security->GetLastMarketDataTime()),
-                lastPrice);
-          }));
-      window->setCentralWidget(&widget);
+      auto &centralWidget = *new QWidget(&*window);
+      auto &layout = *new QVBoxLayout(&centralWidget);
+      centralWidget.setLayout(&layout);
+      auto &toolbar = *new ChartToolbarWidget(&centralWidget);
+      layout.addWidget(&toolbar);
+      {
+        auto &chart = *new CandlestickChartWidget(
+            toolbar.GetNumberOfSecondsInFrame(), 50, &centralWidget);
+        Verify(connect(
+            &toolbar, &ChartToolbarWidget::NumberOfSecondsInFrameChange, &chart,
+            &CandlestickChartWidget::SetNumberOfSecondsInFrame));
+        {
+          const auto symbolStr = symbol.toStdString();
+          Verify(connect(
+              &m_engine, &Engine::PriceUpdate, &chart,
+              [&chart, symbolStr](const Security *security) {
+                if (security->GetSymbol().GetSymbol() != symbolStr) {
+                  return;
+                }
+                const auto &askPrice = security->GetAskPrice();
+                const auto lastPrice =
+                    askPrice +
+                    (std::abs(askPrice - security->GetBidPrice()) / 2);
+                chart.UpdatePrice(
+                    ConvertToQDateTime(security->GetLastMarketDataTime()),
+                    lastPrice);
+              }));
+        }
+        layout.addWidget(&chart);
+      }
+      window->setCentralWidget(&centralWidget);
     }
     window->setContentsMargins(0, 0, 0, 0);
     window->resize(600, 450);
