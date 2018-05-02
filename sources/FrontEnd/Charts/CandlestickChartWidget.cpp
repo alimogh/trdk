@@ -18,7 +18,7 @@ using namespace FrontEnd::Charts;
 
 class CandlestickChartWidget::Implemnetation : boost::noncopyable {
  public:
-  std::unique_ptr<CandlestickChart> m_chart;
+  CandlestickChart* m_chart;
 
   QDateTime m_setTime;
   QCandlestickSet m_set;
@@ -26,11 +26,8 @@ class CandlestickChartWidget::Implemnetation : boost::noncopyable {
   size_t m_numberOfSecondsInFrame;
 
   explicit Implemnetation(CandlestickChartWidget& self,
-                          const size_t numberOfSecondsInFrame,
-                          const size_t capacity)
-      : m_chart(std::make_unique<CandlestickChart>(capacity)),
-        m_set(0, &self),
-        m_numberOfSecondsInFrame(numberOfSecondsInFrame) {
+                          const size_t numberOfSecondsInFrame)
+      : m_set(0, &self), m_numberOfSecondsInFrame(numberOfSecondsInFrame) {
     AssertEq(0, m_numberOfSecondsInFrame % 60);
   }
 
@@ -64,23 +61,27 @@ class CandlestickChartWidget::Implemnetation : boost::noncopyable {
 CandlestickChartWidget::CandlestickChartWidget(
     const size_t numberOfSecondsInFrame, const size_t capacity, QWidget* parent)
     : Base(parent),
-      m_pimpl(boost::make_unique<Implemnetation>(
-          *this, numberOfSecondsInFrame, capacity)) {
-  GetView().setChart(&*m_pimpl->m_chart);
+      m_pimpl(
+          boost::make_unique<Implemnetation>(*this, numberOfSecondsInFrame)) {
+  auto chart = std::make_unique<CandlestickChart>(capacity);
+  m_pimpl->m_chart = &*chart;
+  GetView().setChart(m_pimpl->m_chart);
+  chart.release();
 }
 
 CandlestickChartWidget::~CandlestickChartWidget() = default;
 
 void CandlestickChartWidget::SetNumberOfSecondsInFrame(
     const size_t numberOfSecondsInFrame) {
-  if (m_pimpl->m_numberOfSecondsInFrame != numberOfSecondsInFrame) {
+  if (m_pimpl->m_numberOfSecondsInFrame == numberOfSecondsInFrame) {
     return;
   }
   const auto capacity = GetCapacity();
-  m_pimpl.reset();
-  m_pimpl = boost::make_unique<Implemnetation>(*this, numberOfSecondsInFrame,
-                                               capacity);
-  GetView().setChart(&*m_pimpl->m_chart);
+  m_pimpl = boost::make_unique<Implemnetation>(*this, numberOfSecondsInFrame);
+  auto chart = std::make_unique<CandlestickChart>(capacity);
+  m_pimpl->m_chart = &*chart;
+  GetView().setChart(m_pimpl->m_chart);
+  chart.release();
 }
 
 size_t CandlestickChartWidget::GetNumberOfSecondsInFrame() const {
