@@ -4,11 +4,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_PropertySheetDisplayName>REST</_PropertySheetDisplayName>
+    <IgnoreImportLibrary>false</IgnoreImportLibrary>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
       <ModuleDefinitionFile>Rest.def</ModuleDefinitionFile>
     </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>TRDK_INTERACTION_REST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

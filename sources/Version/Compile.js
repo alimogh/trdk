@@ -33,6 +33,7 @@ var requiredModules = [
 	, 'TestTradingSystems'
 	, 'FixProtocol'
 	, 'Rest'
+	, 'Exmo'
 	, 'Services'
 	, 'TestStrategy'
 	, 'ArbitrationAdvisor'

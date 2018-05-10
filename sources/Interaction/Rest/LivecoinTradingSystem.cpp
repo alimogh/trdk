@@ -27,11 +27,10 @@ class LivecoinOrderTransactionContext : public OrderTransactionContext {
  public:
   explicit LivecoinOrderTransactionContext(LivecoinTradingSystem &tradingSystem,
                                            const std::string &productRequestId,
-                                           const OrderId &&orderId)
+                                           OrderId &&orderId)
       : OrderTransactionContext(tradingSystem, std::move(orderId)),
         m_productRequestId(productRequestId) {}
 
- public:
   const std::string &GetProductRequestId() const { return m_productRequestId; }
 
  private:

@@ -110,6 +110,6 @@ Rest::RequestExcambiorexProductAndCurrencyList(
 }
 
 std::unique_ptr<net::HTTPSClientSession> Rest::CreateExcambiorexSession(
-    const Settings &settings, bool isTrading) {
+    const Settings &settings, const bool isTrading) {
   return CreateSession("bit.excambiorex.com", settings, isTrading);
 }

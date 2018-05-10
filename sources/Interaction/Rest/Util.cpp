@@ -30,7 +30,7 @@ ptr::ptree Rest::ReadJson(const std::string &source) {
 
 std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
   std::stringstream ss;
-  boost::property_tree::json_parser::write_json(ss, source, multiline);
+  ptr::json_parser::write_json(ss, source, multiline);
   auto result = ss.str();
   if (!multiline) {
     boost::replace_all(result, "\n", " ");
@@ -40,7 +40,7 @@ std::string Rest::ConvertToString(const ptr::ptree &source, bool multiline) {
 }
 
 std::unique_ptr<net::HTTPSClientSession> Rest::CreateSession(
-    const std::string &host, const Settings &, bool isTrading) {
+    const std::string &host, const Settings &, const bool isTrading) {
   auto result = boost::make_unique<net::HTTPSClientSession>(host);
   result->setKeepAlive(true);
   result->setKeepAliveTimeout(Poco::Timespan(1150, 0));

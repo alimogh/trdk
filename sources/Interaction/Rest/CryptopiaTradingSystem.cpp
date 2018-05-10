@@ -36,12 +36,11 @@ class CryptopiaOrderTransactionContext : public OrderTransactionContext {
  public:
   explicit CryptopiaOrderTransactionContext(
       CryptopiaTradingSystem &tradingSystem,
-      const OrderId &&orderId,
+      OrderId &&orderId,
       bool isImmediatelyFilled)
       : OrderTransactionContext(tradingSystem, std::move(orderId)),
         m_isImmediatelyFilled(isImmediatelyFilled) {}
 
- public:
   bool IsImmediatelyFilled() const { return m_isImmediatelyFilled; }
 
  private:
@@ -361,8 +360,8 @@ CryptopiaTradingSystem::SendOrderTransaction(
         "Got error \"%1%\" at the new-order request sending. Trying to "
         "retrieve actual result...",
         ex.what());
-    const auto &orderId = FindNewOrderId(productId, startTime, actualSide,
-                                         actualQty, actualPrice);
+    auto orderId = FindNewOrderId(productId, startTime, actualSide, actualQty,
+                                  actualPrice);
     if (!orderId) {
       throw;
     }
@@ -398,7 +397,7 @@ CryptopiaTradingSystem::SendOrderTransaction(
 
   } catch (const ptr::ptree_error &ex) {
     boost::format error(
-        "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+        R"(Wrong server response to the request "%1%" (%2%): "%3%")");
     error % request.GetName()            // 1
         % request.GetRequest().getURI()  // 2
         % ex.what();                     // 3
@@ -420,6 +419,8 @@ void CryptopiaTradingSystem::SendCancelOrderTransaction(
           boost::lexical_cast<std::string>(transaction.GetOrderId()) + "}",
       GetContext(), GetLog(), GetTradingLog());
 
+  //! todo Deadlock is here - SendCancelOrderTransaction locks order mutex and
+  //!      OnOrderCancel will try to lock it too.
   const CancelOrderLock cancelOrderLock(m_cancelOrderMutex);
   request.Send(m_tradingSession);
   Verify(m_cancelingOrders.emplace(transaction.GetOrderId()).second);
@@ -471,7 +472,7 @@ bool CryptopiaTradingSystem::UpdateOrders() {
                                      order.get<Qty>("Remaining"));
         } catch (const std::exception &ex) {
           boost::format error(
-              "Failed to read order: \"%1%\". Message: \"%2%\"");
+              R"(Failed to read order: "%1%". Message: "%2%")");
           error % ex.what()                     // 1
               % ConvertToString(order, false);  // 2
           throw Exception(error.str().c_str());

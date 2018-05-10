@@ -16,18 +16,18 @@ namespace Rest {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class FloodControl : private boost::noncopyable {
+class TRDK_INTERACTION_REST_API FloodControl : boost::noncopyable {
  public:
   virtual ~FloodControl() = default;
 
- public:
   virtual void Check(bool isPriority, ModuleEventsLog &) = 0;
   virtual void OnRateLimitExceeded();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<FloodControl> CreateDisabledFloodControl();
+TRDK_INTERACTION_REST_API std::unique_ptr<FloodControl>
+CreateDisabledFloodControl();
 
 std::unique_ptr<FloodControl> CreateFloodControlWithMinTimeBetweenRequests(
     const boost::posix_time::time_duration &minTimeBetweenRequests,

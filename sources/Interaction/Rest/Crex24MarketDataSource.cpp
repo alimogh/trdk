@@ -13,14 +13,13 @@
 #include "Crex24Request.hpp"
 #include "PollingTask.hpp"
 #include "Security.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::Rest;
 
-namespace r = trdk::Interaction::Rest;
+namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -32,8 +31,6 @@ Crex24MarketDataSource::Crex24MarketDataSource(const App &,
                                                const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_serverTimeDiff(
-          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_session(CreateCrex24Session(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}

@@ -330,6 +330,12 @@
     <ClInclude Include="Crex24Util.hpp">
       <Filter>CREX24\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Api.h">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.hpp">
+      <Filter>General\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Rest.def">

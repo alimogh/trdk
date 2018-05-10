@@ -14,21 +14,20 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class Security : public trdk::Security {
+class TRDK_INTERACTION_REST_API Security : public trdk::Security {
  public:
   typedef trdk::Security Base;
 
- public:
   explicit Security(Context &,
                     const Lib::Symbol &,
                     MarketDataSource &,
                     const SupportedLevel1Types &);
 
- public:
+  using Base::SetLevel1;
   using Base::SetOnline;
   using Base::SetTradingSessionState;
-  using Base::SetLevel1;
 };
-}
-}
-}
+
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

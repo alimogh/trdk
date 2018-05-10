@@ -14,12 +14,12 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-std::string ConvertToString(const boost::property_tree::ptree &,
-                            bool multiline);
+TRDK_INTERACTION_REST_API std::string ConvertToString(
+    const boost::property_tree::ptree &, bool multiline);
 boost::property_tree::ptree ReadJson(const std::string &);
 
-std::unique_ptr<Poco::Net::HTTPSClientSession> CreateSession(
-    const std::string &host, const Settings &, bool isTrading);
+TRDK_INTERACTION_REST_API std::unique_ptr<Poco::Net::HTTPSClientSession>
+CreateSession(const std::string &host, const Settings &, bool isTrading);
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

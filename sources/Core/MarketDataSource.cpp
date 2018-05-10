@@ -48,7 +48,7 @@ typedef ConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE> ConcurrencyPolicy;
 typedef ConcurrencyPolicy::Mutex SecuritiesMutex;
 typedef ConcurrencyPolicy::ReadLock SecuritiesReadLock;
 typedef ConcurrencyPolicy::WriteLock SecuritiesWriteLock;
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +62,7 @@ std::string FormatStringId(const std::string &instanceName) {
   }
   return result;
 }
-}
+}  // namespace
 
 class MarketDataSource::Implementation : private boost::noncopyable {
  public:
@@ -161,6 +161,9 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 MarketDataSource::MarketDataSource(Context &context,
                                    const std::string &instanceName)
     : m_pimpl(std::make_unique<Implementation>(*this, context, instanceName)) {}
+
+MarketDataSource::MarketDataSource(MarketDataSource &&) = default;
+MarketDataSource &MarketDataSource::operator=(MarketDataSource &&) = default;
 
 MarketDataSource::~MarketDataSource() {
   try {

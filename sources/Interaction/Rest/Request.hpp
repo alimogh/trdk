@@ -14,7 +14,7 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class Request {
+class TRDK_INTERACTION_REST_API Request {
  public:
   typedef boost::tuple<boost::posix_time::ptime,
                        boost::property_tree::ptree,
@@ -29,7 +29,6 @@ class Request {
         : CommunicationError(what) {}
   };
 
- public:
   explicit Request(
       const std::string &uri,
       const std::string &name,
@@ -42,7 +41,6 @@ class Request {
       const std::string &version = Poco::Net::HTTPMessage::HTTP_1_1);
   virtual ~Request() = default;
 
- public:
   const std::string &GetName() const { return m_name; }
   void SetBody(const std::string &body) { m_body = body; }
 
@@ -82,7 +80,6 @@ class Request {
   std::unique_ptr<Poco::Net::HTTPSClientSession> RecreateSession(
       const Poco::Net::HTTPSClientSession &);
 
- private:
   const Context &m_context;
   ModuleEventsLog &m_log;
   ModuleTradingLog *const m_tradingLog;
@@ -92,6 +89,7 @@ class Request {
   const std::string m_name;
   std::string m_body;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

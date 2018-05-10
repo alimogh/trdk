@@ -14,14 +14,12 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class PollingSetttings {
+class TRDK_INTERACTION_REST_API PollingSetttings {
  public:
   explicit PollingSetttings(const Lib::IniSectionRef &);
 
- public:
   void Log(ModuleEventsLog &) const;
 
- public:
   const boost::posix_time::time_duration &GetInterval() const {
     return m_interval;
   }
@@ -43,6 +41,7 @@ class PollingSetttings {
   size_t m_pricesRequestFrequency;
   size_t m_balancesRequestFrequency;
 };
-}
-}
-}
+
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

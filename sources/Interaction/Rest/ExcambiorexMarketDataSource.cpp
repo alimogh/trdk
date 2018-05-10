@@ -45,8 +45,6 @@ ExcambiorexMarketDataSource::ExcambiorexMarketDataSource(
     const IniSectionRef &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
-      m_serverTimeDiff(
-          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_session(CreateExcambiorexSession(m_settings, false)),
       m_pollingTask(boost::make_unique<PollingTask>(m_settings.pollingSetttings,
                                                     GetLog())) {}
@@ -131,7 +129,7 @@ void ExcambiorexMarketDataSource::UpdatePrices(Request &request) {
   const auto &subscribtionIndex = m_subscribtionList.get<ById>();
   try {
     const auto &response = request.Send(m_session);
-    const auto &time = boost::get<0>(response) - m_serverTimeDiff;
+    const auto &time = boost::get<0>(response);
     for (const auto &node : boost::get<1>(response)) {
       const auto &security = subscribtionIndex.find(node.first);
       if (security == subscribtionIndex.cend()) {

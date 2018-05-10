@@ -42,9 +42,7 @@ class Crex24MarketDataSource : public MarketDataSource {
                                                 boost::shared_ptr<Request>>> &);
   void UpdatePrices(Security &, Request &);
 
- private:
   const Settings m_settings;
-  const boost::posix_time::time_duration m_serverTimeDiff;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 

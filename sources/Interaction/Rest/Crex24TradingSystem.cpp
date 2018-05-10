@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Crex24TradingSystem.hpp"
-#include "Util.hpp"
 
 using namespace trdk;
 using namespace trdk::Lib;
@@ -37,7 +36,7 @@ Crex24TradingSystem::Settings::Settings(const IniSectionRef &conf,
 ////////////////////////////////////////////////////////////////////////////////
 
 Crex24TradingSystem::OrderTransactionContext::OrderTransactionContext(
-    TradingSystem &tradingSystem, const OrderId &&orderId)
+    TradingSystem &tradingSystem, OrderId &&orderId)
     : Base(tradingSystem, std::move(orderId)) {}
 
 bool Crex24TradingSystem::OrderTransactionContext::RegisterTrade(
@@ -52,7 +51,7 @@ Crex24TradingSystem::PrivateRequest::PrivateRequest(
     const std::string &params,
     const Settings &settings,
     NonceStorage &nonces,
-    bool isPriority,
+    const bool isPriority,
     const Context &context,
     ModuleEventsLog &log,
     ModuleTradingLog *tradingLog)
@@ -148,7 +147,7 @@ Crex24TradingSystem::Crex24TradingSystem(const App &,
       m_nonces(boost::make_unique<NonceStorage::UnsignedInt64TimedGenerator>()),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest("ReturnBalances",
-                        "\"NeedNull\":\"false\"",
+                        R"("NeedNull":"false")",
                         m_settings,
                         m_nonces,
                         false,

@@ -103,8 +103,6 @@ ExcambiorexTradingSystem::ExcambiorexTradingSystem(
     const IniSectionRef &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
-      m_serverTimeDiff(
-          GetUtcTimeZoneDiff(GetContext().GetSettings().GetTimeZone())),
       m_balances(*this, GetLog(), GetTradingLog()),
       m_balancesRequest(m_settings, GetContext(), GetLog()),
       m_tradingSession(CreateExcambiorexSession(m_settings, true)),
@@ -218,7 +216,7 @@ bool ExcambiorexTradingSystem::UpdateOrders() {
         ActiveOrdersRequest("pairs=" + requestList, m_settings, GetContext(),
                             GetLog(), GetTradingLog())
             .Send(m_pollingSession);
-    time = boost::get<0>(response) - m_serverTimeDiff;
+    time = boost::get<0>(response);
     for (const auto &node : boost::get<1>(response).get_child("orders")) {
       const auto &order = node.second;
       Verify(actualIds.emplace(order.get<OrderId>("id")).second);

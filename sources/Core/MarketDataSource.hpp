@@ -20,52 +20,53 @@ namespace trdk {
 
 //! Market data source factory.
 /** Result can't be nullptr.
-  */
-typedef boost::shared_ptr<trdk::MarketDataSource>(MarketDataSourceFactory)(
-    trdk::Context &,
-    const std::string &instanceName,
-    const trdk::Lib::IniSectionRef &);
+ */
+typedef boost::shared_ptr<MarketDataSource>(MarketDataSourceFactory)(
+    Context&, const std::string& instanceName, const Lib::IniSectionRef&);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
+class TRDK_CORE_API MarketDataSource : virtual public Interactor {
  public:
-  typedef trdk::Interactor Base;
+  typedef Interactor Base;
 
-  typedef trdk::ModuleEventsLog Log;
-  typedef trdk::ModuleTradingLog TradingLog;
+  typedef ModuleEventsLog Log;
+  typedef ModuleTradingLog TradingLog;
 
- public:
-  explicit MarketDataSource(trdk::Context &, const std::string &instanceName);
-  virtual ~MarketDataSource() override;
+  explicit MarketDataSource(Context&, const std::string& instanceName);
+  MarketDataSource(MarketDataSource&&);
+  MarketDataSource(const MarketDataSource&) = delete;
+  MarketDataSource& operator=(MarketDataSource&&);
+  MarketDataSource& operator=(const MarketDataSource&) = delete;
+  ~MarketDataSource() override;
 
-  bool operator==(const MarketDataSource &rhs) const { return this == &rhs; }
-  bool operator!=(const MarketDataSource &rhs) const {
+  bool operator==(const MarketDataSource& rhs) const { return this == &rhs; }
+
+  bool operator!=(const MarketDataSource& rhs) const {
     return !operator==(rhs);
   }
 
-  TRDK_CORE_API friend std::ostream &operator<<(std::ostream &,
-                                                const trdk::MarketDataSource &);
+  TRDK_CORE_API friend std::ostream& operator<<(std::ostream&,
+                                                const MarketDataSource&);
 
- public:
   void AssignIndex(size_t);
   size_t GetIndex() const;
 
-  trdk::Context &GetContext();
-  const trdk::Context &GetContext() const;
+  Context& GetContext();
+  const Context& GetContext() const;
 
-  trdk::MarketDataSource::Log &GetLog() const noexcept;
-  trdk::MarketDataSource::TradingLog &GetTradingLog() const noexcept;
+  Log& GetLog() const noexcept;
+  TradingLog& GetTradingLog() const noexcept;
 
   //! Identifies Market Data Source object by verbose name.
   /** Market Data Source instance name is unique, but can be empty.
-    */
-  const std::string &GetInstanceName() const;
-  const std::string &GetStringId() const noexcept;
+   */
+  const std::string& GetInstanceName() const;
+  const std::string& GetStringId() const noexcept;
 
  public:
   //! Makes connection with Market Data Source.
-  virtual void Connect(const trdk::Lib::IniSectionRef &) = 0;
+  virtual void Connect(const Lib::IniSectionRef&) = 0;
 
   virtual void SubscribeToSecurities() = 0;
 
@@ -73,82 +74,77 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
   //! Returns security without expiration date, creates new object if it
   //! doesn't exist yet.
   /** @sa trdk::MarketDataSource::FindSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    */
-  trdk::Security &GetSecurity(const trdk::Lib::Symbol &);
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   */
+  Security& GetSecurity(const Lib::Symbol&);
   //! Returns security with expiration date, creates new object if it
   //! doesn't exist yet.
   /** @sa trdk::MarketDataSource::FindSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    */
-  trdk::Security &GetSecurity(const trdk::Lib::Symbol &,
-                              const trdk::Lib::ContractExpiration &);
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   */
+  Security& GetSecurity(const Lib::Symbol&, const Lib::ContractExpiration&);
 
   //! Finds security without expiration date.
   /** Doesn't search security with expiration date.
-    * @sa trdk::MarketDataSource::GetSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    * @return nullptr if security object doesn't exist.
-    */
-  trdk::Security *FindSecurity(const trdk::Lib::Symbol &);
+   * @sa trdk::MarketDataSource::GetSecurity
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   * @return nullptr if security object doesn't exist.
+   */
+  Security* FindSecurity(const Lib::Symbol&);
   //! Finds security without expiration date.
   /** @sa trdk::MarketDataSource::GetSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    * @return nullptr if security object doesn't exist.
-    */
-  const trdk::Security *FindSecurity(const trdk::Lib::Symbol &) const;
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   * @return nullptr if security object doesn't exist.
+   */
+  const Security* FindSecurity(const Lib::Symbol&) const;
   //! Finds security with expiration date.
   /** Doesn't search security with expiration date.
-    * @sa trdk::MarketDataSource::GetSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    * @return nullptr if security object doesn't exist.
-    */
-  trdk::Security *FindSecurity(const trdk::Lib::Symbol &,
-                               const trdk::Lib::ContractExpiration &);
+   * @sa trdk::MarketDataSource::GetSecurity
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   * @return nullptr if security object doesn't exist.
+   */
+  Security* FindSecurity(const Lib::Symbol&, const Lib::ContractExpiration&);
   //! Finds security with expiration date.
   /** @sa trdk::MarketDataSource::GetSecurity
-    * @sa trdk::MarketDataSource::GetActiveSecurityCount
-    * @return nullptr if security object doesn't exist.
-    */
-  const trdk::Security *FindSecurity(
-      const trdk::Lib::Symbol &, const trdk::Lib::ContractExpiration &) const;
+   * @sa trdk::MarketDataSource::GetActiveSecurityCount
+   * @return nullptr if security object doesn't exist.
+   */
+  const Security* FindSecurity(const Lib::Symbol&,
+                               const Lib::ContractExpiration&) const;
 
   size_t GetActiveSecurityCount() const;
 
-  void ForEachSecurity(
-      const boost::function<void(const trdk::Security &)> &) const;
-  void ForEachSecurity(const boost::function<void(trdk::Security &)> &);
+  void ForEachSecurity(const boost::function<void(const Security&)>&) const;
+  void ForEachSecurity(const boost::function<void(Security&)>&);
 
   //! Starts the asynchronous operation of switching security to the contract
   //! with the next expiry date.
   /** @param[in,out] security Security to switch. Should be not explicit.
-    */
-  void SwitchToNextContract(trdk::Security &security) const;
+   */
+  void SwitchToNextContract(Security& security) const;
 
  protected:
-  trdk::Security &CreateSecurity(const trdk::Lib::Symbol &);
+  Security& CreateSecurity(const Lib::Symbol&);
 
   //! Creates security object.
   /** Each object, that implements CreateNewSecurityObject should wait
-    * for log flushing before destroying objects.
-    */
-  virtual trdk::Security &CreateNewSecurityObject(
-      const trdk::Lib::Symbol &) = 0;
+   * for log flushing before destroying objects.
+   */
+  virtual Security& CreateNewSecurityObject(const Lib::Symbol&) = 0;
 
   //! Finds an expiration.
   /** Returns expiration by any previous date, even if contract is not started
-    * yet.
-    */
-  virtual boost::optional<trdk::Lib::ContractExpiration> FindContractExpiration(
-      const trdk::Lib::Symbol &, const boost::gregorian::date &) const;
+   * yet.
+   */
+  virtual boost::optional<Lib::ContractExpiration> FindContractExpiration(
+      const Lib::Symbol&, const boost::gregorian::date&) const;
 
   //! Switches security to the contract with specified expiration.
   /** @param[in,out] security   Security to switch. Should be not explicit.
-    * @param[in,out] expiration Required expiration.
-    */
+   * @param[in,out] expiration Required expiration.
+   */
   virtual void SwitchToContract(
-      trdk::Security &security,
-      const trdk::Lib::ContractExpiration &&expiration) const;
+      Security& security, const Lib::ContractExpiration&& expiration) const;
 
  private:
   class Implementation;
@@ -156,4 +152,4 @@ class TRDK_CORE_API MarketDataSource : virtual public trdk::Interactor {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk

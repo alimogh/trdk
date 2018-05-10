@@ -69,7 +69,6 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
 
  private:
   const Settings m_settings;
-  const boost::posix_time::time_duration m_serverTimeDiff;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;
 
