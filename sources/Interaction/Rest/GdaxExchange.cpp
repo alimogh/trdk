@@ -8,8 +8,6 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
-#pragma once
-
 #include "Prec.hpp"
 #include "FloodControl.hpp"
 #include "PollingTask.hpp"
@@ -19,12 +17,12 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Lib::Crypto;
-using namespace trdk::TradingLib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Crypto;
+using namespace TradingLib;
+using namespace Interaction;
+using namespace Rest;
 
 namespace pc = Poco;
 namespace net = pc::Net;
@@ -41,41 +39,34 @@ struct Settings : public Rest::Settings {
   std::vector<unsigned char> apiSecret;
   std::string apiPassphrase;
 
-  explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
+  explicit Settings(const IniSectionRef& conf, ModuleEventsLog& log)
       : Rest::Settings(conf, log),
         apiKey(conf.ReadKey("api_key")),
         apiSecret(Base64::Decode(conf.ReadKey("api_secret"))),
         apiPassphrase(conf.ReadKey("api_passphrase")) {
-    Log(log);
-    Validate();
-  }
-
-  void Log(ModuleEventsLog &log) {
-    log.Info("API key: \"%1%\". API secret: %2%. API passphrase: %3%.",
+    log.Info("API key: \"%1%\". API secret: %2%. API pass phrase: %3%.",
              apiKey,                                         // 1
              apiSecret.empty() ? "not set" : "is set",       // 2
              apiPassphrase.empty() ? "not set" : "is set");  // 3
   }
-
-  void Validate() {}
 };
 
 #pragma warning(push)
 #pragma warning(disable : 4702)  // Warning	C4702	unreachable code
 template <Level1TickType priceType, Level1TickType qtyType>
 std::pair<Level1TickValue, Level1TickValue> ReadTopOfBook(
-    const ptr::ptree &source) {
-  for (const auto &lines : source) {
+    const ptr::ptree& source) {
+  for (const auto& lines : source) {
     double price;
     size_t i = 0;
-    for (const auto &val : lines.second) {
+    for (const auto& val : lines.second) {
       if (i == 0) {
         price = val.second.get_value<double>();
         ++i;
       } else {
         AssertEq(1, i);
         return {
-            Level1TickValue::Create<priceType>(std::move(price)),
+            Level1TickValue::Create<priceType>(price),
             Level1TickValue::Create<qtyType>(val.second.get_value<double>())};
       }
     }
@@ -95,7 +86,7 @@ struct Product {
   uintmax_t precisionPower;
 };
 
-Volume ParseFee(const ptr::ptree &order) {
+Volume ParseFee(const ptr::ptree& order) {
   return order.get<Volume>("fill_fees");
 }
 }  // namespace
@@ -108,13 +99,12 @@ class Request : public Rest::Request {
  public:
   typedef Rest::Request Base;
 
- public:
-  explicit Request(const std::string &request,
-                   const std::string &method,
-                   const std::string &uriParams,
-                   const Context &context,
-                   ModuleEventsLog &log,
-                   ModuleTradingLog *tradingLog = nullptr)
+  explicit Request(const std::string& request,
+                   const std::string& method,
+                   const std::string& uriParams,
+                   const Context& context,
+                   ModuleEventsLog& log,
+                   ModuleTradingLog* tradingLog = nullptr)
       : Base("/" + request,
              request,
              method,
@@ -123,29 +113,35 @@ class Request : public Rest::Request {
              log,
              tradingLog) {}
 
-  virtual ~Request() override = default;
+  Request(Request&&) = default;
+  Request(const Request&) = delete;
+  Request& operator=(Request&&) = delete;
+  Request& operator=(const Request&) = delete;
+  ~Request() override = default;
 
  protected:
-  virtual void CheckErrorResponse(const net::HTTPResponse &response,
-                                  const std::string &responseContent,
-                                  size_t attemptNumber) const override {
+  void CheckErrorResponse(const net::HTTPResponse& response,
+                          const std::string& responseContent,
+                          size_t attemptNumber) const override {
     try {
-      const auto &message =
+      const auto& message =
           ReadJson(responseContent).get<std::string>("message");
       if (boost::iequals(message, "Order already done") ||
           boost::iequals(message, "order not found")) {
         throw OrderIsUnknownException(message.c_str());
-      } else if (boost::iequals(message, "Insufficient funds")) {
+      }
+      if (boost::iequals(message, "Insufficient funds")) {
         throw InsufficientFundsException(message.c_str());
-      } else if (!message.empty()) {
+      }
+      if (!message.empty()) {
         throw Exception(message.c_str());
       }
-    } catch (const ptr::ptree_error &) {
+    } catch (const ptr::ptree_error&) {
     }
     Base::CheckErrorResponse(response, responseContent, attemptNumber);
   }
 
-  virtual FloodControl &GetFloodControl() const override {
+  FloodControl& GetFloodControl() const override {
     static auto result = CreateDisabledFloodControl();
     return *result;
   }
@@ -155,46 +151,44 @@ class PublicRequest : public Request {
  public:
   typedef Request Base;
 
- public:
-  explicit PublicRequest(const std::string &request,
-                         const Context &context,
-                         ModuleEventsLog &log)
+  explicit PublicRequest(const std::string& request,
+                         const Context& context,
+                         ModuleEventsLog& log)
       : Base(request, net::HTTPRequest::HTTP_GET, std::string(), context, log) {
   }
 
-  virtual ~PublicRequest() override = default;
+  ~PublicRequest() override = default;
 
  protected:
-  virtual bool IsPriority() const { return false; }
+  bool IsPriority() const override { return false; }
 };
 
 class PrivateRequest : public Request {
  public:
   typedef Request Base;
 
- public:
-  explicit PrivateRequest(const std::string &request,
-                          const std::string &method,
-                          const Settings &settings,
+  explicit PrivateRequest(const std::string& request,
+                          const std::string& method,
+                          const Settings& settings,
                           bool isPriority,
-                          const std::string &uriParams,
-                          const Context &context,
-                          ModuleEventsLog &log,
-                          ModuleTradingLog *tradingLog = nullptr)
+                          const std::string& uriParams,
+                          const Context& context,
+                          ModuleEventsLog& log,
+                          ModuleTradingLog* tradingLog = nullptr)
       : Base(request, method, uriParams, context, log, tradingLog),
         m_settings(settings),
         m_isPriority(isPriority) {}
 
-  virtual ~PrivateRequest() override = default;
+  ~PrivateRequest() override = default;
 
  protected:
-  virtual void PrepareRequest(const net::HTTPClientSession &session,
-                              const std::string &body,
-                              net::HTTPRequest &request) const override {
-    const auto &timestamp = boost::lexical_cast<std::string>(
+  void PrepareRequest(const net::HTTPClientSession& session,
+                      const std::string& body,
+                      net::HTTPRequest& request) const override {
+    const auto& timestamp = boost::lexical_cast<std::string>(
         pt::to_time_t(pt::second_clock::universal_time()));
     {
-      const auto &digest = Hmac::CalcSha256Digest(
+      const auto& digest = Hmac::CalcSha256Digest(
           timestamp + GetRequest().getMethod() + GetRequest().getURI() + body,
           &m_settings.apiSecret[0], m_settings.apiSecret.size());
       request.set("CB-ACCESS-SIGN",
@@ -209,17 +203,14 @@ class PrivateRequest : public Request {
     Base::PrepareRequest(session, body, request);
   }
 
-  virtual bool IsPriority() const { return m_isPriority; }
+  bool IsPriority() const override { return m_isPriority; }
 
  private:
-  const Settings &m_settings;
+  const Settings& m_settings;
   const bool m_isPriority;
 };
 
-std::string NormilizeProductId(std::string source) {
-  return boost::replace_first_copy(source, "_", "-");
-}
-std::string RestoreSymbol(const std::string &source) {
+std::string RestoreSymbol(const std::string& source) {
   return boost::replace_first_copy(source, "-", "_");
 }
 }  // namespace
@@ -229,7 +220,6 @@ std::string RestoreSymbol(const std::string &source) {
 namespace {
 
 class GdaxExchange : public TradingSystem, public MarketDataSource {
- private:
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
@@ -240,11 +230,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   };
 
  public:
-  explicit GdaxExchange(const App &,
-                        const TradingMode &mode,
-                        Context &context,
-                        const std::string &instanceName,
-                        const IniSectionRef &conf)
+  explicit GdaxExchange(const App&,
+                        const TradingMode& mode,
+                        Context& context,
+                        const std::string& instanceName,
+                        const IniSectionRef& conf)
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -257,7 +247,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
-  virtual ~GdaxExchange() override {
+  GdaxExchange(GdaxExchange&&) = default;
+  GdaxExchange(const GdaxExchange&) = delete;
+  GdaxExchange& operator=(GdaxExchange&&) = delete;
+  GdaxExchange& operator=(const GdaxExchange&) = delete;
+
+  ~GdaxExchange() override {
     try {
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
@@ -270,25 +265,23 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
- public:
   using trdk::TradingSystem::GetContext;
 
-  TradingSystem::Log &GetTsLog() const noexcept {
+  TradingSystem::Log& GetTsLog() const noexcept {
     return TradingSystem::GetLog();
   }
-  TradingSystem::TradingLog &GetTsTradingLog() const noexcept {
+  TradingSystem::TradingLog& GetTsTradingLog() const noexcept {
     return TradingSystem::GetTradingLog();
   }
 
-  MarketDataSource::Log &GetMdsLog() const noexcept {
+  MarketDataSource::Log& GetMdsLog() const noexcept {
     return MarketDataSource::GetLog();
   }
 
- public:
-  virtual bool IsConnected() const override { return m_isConnected; }
+  bool IsConnected() const override { return m_isConnected; }
 
   //! Makes connection with Market Data Source.
-  virtual void Connect(const IniSectionRef &conf) override {
+  void Connect(const IniSectionRef& conf) override {
     // Implementation for trdk::MarketDataSource.
     if (IsConnected()) {
       return;
@@ -297,14 +290,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     CreateConnection(conf);
   }
 
-  virtual void SubscribeToSecurities() override {
+  void SubscribeToSecurities() override {
     {
       const SecuritiesLock lock(m_securitiesMutex);
-      for (auto &subscribtion : m_securities) {
+      for (auto& subscribtion : m_securities) {
         if (subscribtion.second.isSubscribed) {
           continue;
         }
-        GetMdsLog().Debug("Starting Market Data subscribtion for \"%1%\"...",
+        GetMdsLog().Debug(R"(Starting Market Data subscribtion for "%1%"...)",
                           *subscribtion.second.security);
         subscribtion.second.isSubscribed = true;
       }
@@ -312,44 +305,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     m_pollingTask->AddTask(
         "Prices", 1,
-        [this]() -> bool {
-          const SecuritiesLock lock(m_securitiesMutex);
-          for (const auto &subscribtion : m_securities) {
-            if (!subscribtion.second.isSubscribed) {
-              continue;
-            }
-            auto &security = *subscribtion.second.security;
-            auto &request = *subscribtion.second.request;
-            try {
-              const auto &response = request.Send(m_marketDataSession);
-              const auto &time = boost::get<0>(response);
-              const auto &update = boost::get<1>(response);
-              const auto &delayMeasurement = boost::get<2>(response);
-              const auto &bestBid =
-                  ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-                      update.get_child("bids"));
-              const auto &bestAsk =
-                  ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-                      update.get_child("asks"));
-              security.SetLevel1(time, std::move(bestBid.first),
-                                 std::move(bestBid.second),
-                                 std::move(bestAsk.first),
-                                 std::move(bestAsk.second), delayMeasurement);
-            } catch (const std::exception &ex) {
-              try {
-                security.SetOnline(pt::not_a_date_time, false);
-              } catch (...) {
-                AssertFailNoException();
-                throw;
-              }
-              boost::format error(
-                  "Failed to read order book for \"%1%\": \"%2%\"");
-              error % security  // 1
-                  % ex.what();  // 2
-              throw Exception(error.str().c_str());
-            }
-            security.SetOnline(pt::not_a_date_time, true);
-          }
+        [this]() {
+          UpdatePrices();
           return true;
         },
         m_settings.pollingSetttings.GetPricesRequestFrequency(), false);
@@ -357,14 +314,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_pollingTask->AccelerateNextPolling();
   }
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances& GetBalancesStorage() override { return m_balances; }
 
   boost::optional<OrderCheckError> CheckOrder(
-      const trdk::Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const boost::optional<Price> &price,
-      const OrderSide &side) const {
+      const trdk::Security& security,
+      const Currency& currency,
+      const Qty& qty,
+      const boost::optional<Price>& price,
+      const OrderSide& side) const override {
     {
       const auto result =
           TradingSystem::CheckOrder(security, currency, qty, price, side);
@@ -373,33 +330,34 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       }
     }
 
-    const auto &productIt = m_products.find(security.GetSymbol().GetSymbol());
+    const auto& productIt = m_products.find(security.GetSymbol().GetSymbol());
     if (productIt == m_products.cend()) {
       GetTsLog().Warn("Failed find product for \"%1%\" to check order.",
                       security);
       return boost::none;
     }
-    const auto &product = productIt->second;
+    const auto& product = productIt->second;
 
     if (qty < product.minQty) {
       return OrderCheckError{product.minQty};
-    } else if (product.maxQty < qty) {
+    }
+    if (product.maxQty < qty) {
       return OrderCheckError{product.maxQty};
     }
 
     return boost::none;
   }
 
-  virtual bool CheckSymbol(const std::string &symbol) const override {
+  bool CheckSymbol(const std::string& symbol) const override {
     return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
   }
 
-  virtual Volume CalcCommission(const Qty &qty,
-                                const Price &price,
-                                const OrderSide &,
-                                const trdk::Security &security) const override {
-    const auto &symbol = security.GetSymbol().GetSymbol();
-    const auto &fee =
+  Volume CalcCommission(const Qty& qty,
+                        const Price& price,
+                        const OrderSide&,
+                        const trdk::Security& security) const override {
+    const auto& symbol = security.GetSymbol().GetSymbol();
+    const auto& fee =
         (symbol == "BTC_USD" || symbol == "BCH_BTC" || symbol == "BCH_EUR" ||
          symbol == "BCH_USD" || symbol == "BTC_EUR" || symbol == "BTC_GBP")
             ? .25
@@ -408,11 +366,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   }
 
  protected:
-  virtual void CreateConnection(const IniSectionRef &) override {
+  void CreateConnection(const IniSectionRef&) override {
     try {
       UpdateBalances();
       RequestProducts();
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
       throw ConnectError(ex.what());
     }
 
@@ -434,9 +392,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     m_isConnected = true;
   }
 
-  virtual trdk::Security &CreateNewSecurityObject(
-      const Symbol &symbol) override {
-    const auto &product = m_products.find(symbol.GetSymbol());
+  trdk::Security& CreateNewSecurityObject(const Symbol& symbol) override {
+    const auto& product = m_products.find(symbol.GetSymbol());
     if (product == m_products.cend()) {
       boost::format message(
           "Symbol \"%1%\" is not in the exchange product list");
@@ -465,14 +422,14 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &security,
-      const Currency &currency,
-      const Qty &qty,
-      const boost::optional<Price> &price,
-      const OrderParams &params,
-      const OrderSide &side,
-      const TimeInForce &tif) override {
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security& security,
+      const Currency& currency,
+      const Qty& qty,
+      const boost::optional<Price>& price,
+      const OrderParams& params,
+      const OrderSide& side,
+      const TimeInForce& tif) override {
     static_assert(numberOfTimeInForces == 5, "List changed.");
     switch (tif) {
       case TIME_IN_FORCE_IOC:
@@ -490,7 +447,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       throw Exception("Market order is not supported");
     }
 
-    const auto &product = m_products.find(security.GetSymbol().GetSymbol());
+    const auto& product = m_products.find(security.GetSymbol().GetSymbol());
     if (product == m_products.cend()) {
       throw Exception("Symbol is not supported by exchange");
     }
@@ -510,13 +467,13 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
       request.SetBody(requestParams.str());
     }
 
-    const auto &result = request.Send(m_tradingSession);
+    const auto& result = request.Send(m_tradingSession);
     try {
       return boost::make_unique<OrderTransactionContext>(
           *this, boost::get<1>(result).get<OrderId>("id"));
-    } catch (const ptr::ptree_error &ex) {
+    } catch (const ptr::ptree_error& ex) {
       boost::format error(
-          "Wrong server response to the request \"%1%\" (%2%): \"%3%\"");
+          R"(Wrong server response to the request "%1%" (%2%): "%3%")");
       error % request.GetName()            // 1
           % request.GetRequest().getURI()  // 2
           % ex.what();                     // 3
@@ -524,8 +481,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &transaction) override {
+  void SendCancelOrderTransaction(
+      const OrderTransactionContext& transaction) override {
     PrivateRequest(
         "orders/" + boost::lexical_cast<std::string>(transaction.GetOrderId()),
         net::HTTPRequest::HTTP_DELETE, m_settings, true, std::string(),
@@ -533,8 +490,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         .Send(m_tradingSession);
   }
 
-  virtual void OnTransactionSent(
-      const OrderTransactionContext &transaction) override {
+  void OnTransactionSent(const OrderTransactionContext& transaction) override {
     TradingSystem::OnTransactionSent(transaction);
     m_pollingTask->AccelerateNextPolling();
   }
@@ -545,12 +501,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     PublicRequest request("products", GetContext(), GetTsLog());
     const auto response = boost::get<1>(request.Send(m_marketDataSession));
     std::vector<std::string> log;
-    for (const auto &node : response) {
-      const auto &productNode = node.second;
+    for (const auto& node : response) {
+      const auto& productNode = node.second;
       Product product = {productNode.get<std::string>("id"),
                          productNode.get<Qty>("base_min_size"),
                          productNode.get<Qty>("base_max_size")};
-      const auto &quoteIncrement =
+      const auto& quoteIncrement =
           productNode.get<std::string>("quote_increment");
       const auto dotPos = quoteIncrement.find('.');
       if (dotPos != std::string::npos && quoteIncrement.size() > dotPos) {
@@ -558,8 +514,8 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         product.precisionPower = static_cast<decltype(product.precisionPower)>(
             std::pow(10, product.precisionPower));
       }
-      const auto &symbol = RestoreSymbol(product.id);
-      const auto &productIt =
+      const auto& symbol = RestoreSymbol(product.id);
+      const auto& productIt =
           products.emplace(std::move(symbol), std::move(product));
       if (!productIt.second) {
         GetTsLog().Error("Product duplicate: \"%1%\"", productIt.first->first);
@@ -581,35 +537,35 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                            false, std::string(), GetContext(), GetTsLog());
     try {
       const auto response = boost::get<1>(request.Send(m_marketDataSession));
-      for (const auto &node : response) {
-        const auto &account = node.second;
+      for (const auto& node : response) {
+        const auto& account = node.second;
         m_balances.Set(account.get<std::string>("currency"),
                        account.get<Volume>("available"),
                        account.get<Volume>("hold"));
       }
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
       boost::format error("Failed to request accounts: \"%1%\"");
       error % ex.what();
       throw Exception(error.str().c_str());
     }
   }
 
-  void UpdateOrder(const ptr::ptree &order) {
-    const auto &orderId = order.get<OrderId>("id");
+  void UpdateOrder(const ptr::ptree& order) {
+    const auto& orderId = order.get<OrderId>("id");
 
-    const auto &qty = order.get<Qty>("size");
-    const auto &filledQty = order.get<Qty>("filled_size");
+    const auto& qty = order.get<Qty>("size");
+    const auto& filledQty = order.get<Qty>("filled_size");
     AssertGe(qty, filledQty);
-    const auto &remainingQty = qty - filledQty;
+    const auto& remainingQty = qty - filledQty;
 
-    const auto &time = ParseTime(order);
+    const auto& time = ParseTime(order);
 
-    const auto &status = order.get<std::string>("status");
+    const auto& status = order.get<std::string>("status");
     if (status == "open" || status == "pending") {
       remainingQty == 0 ? OnOrderFilled(time, orderId, ParseFee(order))
                         : OnOrderOpened(time, orderId);
     } else if (status == "done") {
-      const auto &fee = ParseFee(order);
+      const auto& fee = ParseFee(order);
       remainingQty ? OnOrderCanceled(time, orderId, remainingQty, fee)
                    : OnOrderFilled(time, orderId, fee);
     } else {
@@ -623,12 +579,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
      public:
       typedef PrivateRequest Base;
 
-     public:
-      explicit OrderStatusRequest(const OrderId &orderId,
-                                  const Settings &settings,
-                                  const Context &context,
-                                  ModuleEventsLog &log,
-                                  ModuleTradingLog &tradingLog)
+      explicit OrderStatusRequest(const OrderId& orderId,
+                                  const Settings& settings,
+                                  const Context& context,
+                                  ModuleEventsLog& log,
+                                  ModuleTradingLog& tradingLog)
           : Base("orders/" + orderId.GetValue(),
                  net::HTTPRequest::HTTP_GET,
                  settings,
@@ -637,36 +592,43 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
                  context,
                  log,
                  &tradingLog) {}
-      virtual ~OrderStatusRequest() override = default;
+
+      OrderStatusRequest(OrderStatusRequest&&) = default;
+      OrderStatusRequest(const OrderStatusRequest&) = delete;
+      OrderStatusRequest& operator=(OrderStatusRequest&&) = delete;
+      OrderStatusRequest& operator=(const OrderStatusRequest&) = delete;
+
+      ~OrderStatusRequest() override = default;
 
      protected:
-      virtual void CheckErrorResponse(const net::HTTPResponse &response,
-                                      const std::string &responseContent,
-                                      size_t attemptNumber) const {
+      void CheckErrorResponse(const net::HTTPResponse& response,
+                              const std::string& responseContent,
+                              size_t attemptNumber) const override {
         try {
-          const auto &message =
+          const auto& message =
               ReadJson(responseContent).get<std::string>("message");
           if (message == "NotFound") {
             throw OrderIsUnknownException(message.c_str());
-          } else if (!message.empty()) {
+          }
+          if (!message.empty()) {
             throw Exception(message.c_str());
           }
-        } catch (const ptr::ptree_error &) {
+        } catch (const ptr::ptree_error&) {
         }
         Base::CheckErrorResponse(response, responseContent, attemptNumber);
       }
     };
 
-    for (const auto &context : GetActiveOrderContextList()) {
-      const auto &orderId = context->GetOrderId();
+    for (const auto& context : GetActiveOrderContextList()) {
+      const auto& orderId = context->GetOrderId();
       OrderStatusRequest request(orderId, m_settings, GetContext(), GetTsLog(),
                                  GetTsTradingLog());
       try {
         UpdateOrder(boost::get<1>(request.Send(m_marketDataSession)));
-      } catch (const OrderIsUnknownException &) {
+      } catch (const OrderIsUnknownException&) {
         OnOrderCanceled(GetContext().GetCurrentTime(), orderId, boost::none,
                         boost::none);
-      } catch (const std::exception &ex) {
+      } catch (const std::exception& ex) {
         boost::format error("Failed to update order list: \"%1%\"");
         error % ex.what();
         throw Exception(error.str().c_str());
@@ -674,26 +636,62 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  pt::ptime ParseTime(const ptr::ptree &order) const {
+  pt::ptime ParseTime(const ptr::ptree& order) const {
     {
-      const auto &doneTimeField = order.get_optional<std::string>("done_at");
+      const auto& doneTimeField = order.get_optional<std::string>("done_at");
       if (doneTimeField) {
-        const std::string &value = *doneTimeField;
+        const std::string& value = *doneTimeField;
         return pt::ptime(gr::from_string(value.substr(0, 10)),
                          pt::duration_from_string(value.substr(11, 8))) -
                m_serverTimeDiff;
-        ;
       }
     }
     {
-      const auto &timeField = order.get<std::string>("created_at");
+      const auto& timeField = order.get<std::string>("created_at");
       return pt::ptime(gr::from_string(timeField.substr(0, 10)),
                        pt::duration_from_string(timeField.substr(11, 8))) -
              m_serverTimeDiff;
     }
   }
 
- private:
+  void UpdatePrices() {
+    const SecuritiesLock lock(m_securitiesMutex);
+    for (const auto& subscribtion : m_securities) {
+      if (!subscribtion.second.isSubscribed) {
+        continue;
+      }
+      auto& security = *subscribtion.second.security;
+      auto& request = *subscribtion.second.request;
+      try {
+        const auto& response = request.Send(m_marketDataSession);
+        const auto& time = boost::get<0>(response);
+        const auto& update = boost::get<1>(response);
+        const auto& delayMeasurement = boost::get<2>(response);
+        const auto& bestBid =
+            ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+                update.get_child("bids"));
+        const auto& bestAsk =
+            ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+                update.get_child("asks"));
+        security.SetLevel1(time, bestBid.first, bestBid.second, bestAsk.first,
+                           bestAsk.second, delayMeasurement);
+      } catch (const std::exception& ex) {
+        try {
+          security.SetOnline(pt::not_a_date_time, false);
+        } catch (...) {
+          AssertFailNoException();
+          throw;
+        }
+        boost::format error(
+            R"(Failed to read order book for "%1%": "%2%")");
+        error % security  // 1
+            % ex.what();  // 2
+        throw Exception(error.str().c_str());
+      }
+      security.SetOnline(pt::not_a_date_time, true);
+    }
+  }
+
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
@@ -702,13 +700,11 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<net::HTTPSClientSession> m_tradingSession;
 
   SecuritiesMutex m_securitiesMutex;
-  boost::unordered_map<Lib::Symbol, SecuritySubscribtion> m_securities;
+  boost::unordered_map<Symbol, SecuritySubscribtion> m_securities;
 
   BalancesContainer m_balances;
 
   std::unique_ptr<PollingTask> m_pollingTask;
-
-  trdk::Timer::Scope m_timerScope;
 
   boost::unordered_map<std::string, Product> m_products;
 };
@@ -717,19 +713,19 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 ////////////////////////////////////////////////////////////////////////////////
 
 TradingSystemAndMarketDataSourceFactoryResult CreateGdax(
-    const TradingMode &mode,
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<GdaxExchange>(
+    const TradingMode& mode,
+    Context& context,
+    const std::string& instanceName,
+    const IniSectionRef& configuration) {
+  const auto& result = boost::make_shared<GdaxExchange>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
 }
 
 boost::shared_ptr<MarketDataSource> CreateGdaxMarketDataSource(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    Context& context,
+    const std::string& instanceName,
+    const IniSectionRef& configuration) {
   return boost::make_shared<GdaxExchange>(App::GetInstance(), TRADING_MODE_LIVE,
                                           context, instanceName, configuration);
 }

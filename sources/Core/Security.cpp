@@ -13,7 +13,6 @@
 #include "Context.hpp"
 #include "DropCopy.hpp"
 #include "MarketDataSource.hpp"
-#include "Position.hpp"
 #include "PriceBook.hpp"
 #include "RiskControl.hpp"
 #include "Settings.hpp"
@@ -35,7 +34,7 @@ namespace {
 
 //! Level 1 data.
 /** Should be native double to use NaN value as marker.
-  */
+ */
 typedef std::array<boost::atomic<double>, numberOfLevel1TickTypes> Level1;
 
 bool IsSet(double value) { return !isnan(value); }
@@ -179,7 +178,7 @@ Qty GetLotSizeBySymbol(const Symbol &symbol) {
       return 1;
   }
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -223,8 +222,8 @@ class Log : private LogBase {
   typedef LogBase Base;
 
  public:
-  using Base::IsEnabled;
   using Base::EnableStream;
+  using Base::IsEnabled;
 
   explicit Log(const Context &context, const Security &security)
       : Base(context.GetSettings().GetTimeZone()), m_security(security) {}
@@ -348,8 +347,8 @@ class Log : private LogBase {
  private:
   const Security &m_security;
 };
-}
-}
+}  // namespace MarketDataLog
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -529,10 +528,9 @@ class Security::Implementation : private boost::noncopyable {
 
     if (m_expiration && m_isOnline && !m_isContractSwitchingActive &&
         m_expiration->GetDate() <=
-            time.date() +
-                m_self.GetContext()
-                    .GetSettings()
-                    .GetPeriodBeforeExpiryDayToSwitchContract()) {
+            time.date() + m_self.GetContext()
+                              .GetSettings()
+                              .GetPeriodBeforeExpiryDayToSwitchContract()) {
       m_isContractSwitchingActive = true;
       m_source.GetLog().Info(
           "Switching \"%1%\" to the next contract as last market data update"
@@ -739,10 +737,9 @@ void Security::SetTradingSessionState(const pt::ptime &time, bool isOpened) {
   {
     const auto lock = GetSource().GetContext().SyncDispatching();
     m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
-    m_pimpl->m_serviceEventSignal(time,
-                                  isOpened
-                                      ? SERVICE_EVENT_TRADING_SESSION_OPENED
-                                      : SERVICE_EVENT_TRADING_SESSION_CLOSED);
+    m_pimpl->m_serviceEventSignal(
+        time, isOpened ? SERVICE_EVENT_TRADING_SESSION_OPENED
+                       : SERVICE_EVENT_TRADING_SESSION_CLOSED);
   }
 }
 
@@ -758,20 +755,18 @@ void Security::SwitchTradingSession(const pt::ptime &time) {
 
     m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
     try {
-      m_pimpl->m_serviceEventSignal(time,
-                                    m_pimpl->m_isOpened
-                                        ? SERVICE_EVENT_TRADING_SESSION_CLOSED
-                                        : SERVICE_EVENT_TRADING_SESSION_OPENED);
+      m_pimpl->m_serviceEventSignal(
+          time, m_pimpl->m_isOpened ? SERVICE_EVENT_TRADING_SESSION_CLOSED
+                                    : SERVICE_EVENT_TRADING_SESSION_OPENED);
     } catch (...) {
       m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
       throw;
     }
 
     m_pimpl->m_isOpened = !m_pimpl->m_isOpened;
-    m_pimpl->m_serviceEventSignal(time,
-                                  m_pimpl->m_isOpened
-                                      ? SERVICE_EVENT_TRADING_SESSION_OPENED
-                                      : SERVICE_EVENT_TRADING_SESSION_CLOSED);
+    m_pimpl->m_serviceEventSignal(
+        time, m_pimpl->m_isOpened ? SERVICE_EVENT_TRADING_SESSION_OPENED
+                                  : SERVICE_EVENT_TRADING_SESSION_CLOSED);
   }
 }
 
@@ -925,8 +920,10 @@ void Security::SetLevel1(const pt::ptime &time,
           m_pimpl->SetLevel1(time, tick1, delayMeasurement, false, false))) {
     return;
   }
-  GetContext().InvokeDropCopy([this, &time, &tick1, &tick2](
-      DropCopy &dropCopy) { dropCopy.CopyLevel1(*this, time, tick1, tick2); });
+  GetContext().InvokeDropCopy(
+      [this, &time, &tick1, &tick2](DropCopy &dropCopy) {
+        dropCopy.CopyLevel1(*this, time, tick1, tick2);
+      });
   m_pimpl->m_marketDataLog.WriteLevel1Update(time, tick1, tick2);
 }
 
