@@ -30,6 +30,7 @@ var requiredModules = [
 	, 'FrontEnd'
 	, 'Charts'
 	, 'Rest'
+	, 'Exmo'
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'
 	, 'PingPong'

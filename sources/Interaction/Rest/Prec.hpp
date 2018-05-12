@@ -10,8 +10,18 @@
 
 #pragma once
 
-#include "Fwd.hpp"
-
+#include "Common.hpp"
+#include "TradingLib/BalancesContainer.hpp"
+#include "TradingLib/Util.hpp"
+#include "Core/MarketDataSource.hpp"
+#include "Core/Security.hpp"
+#include "Core/Settings.hpp"
+#include "Core/Timer.hpp"
+#include "Core/Trade.hpp"
+#include "Core/TradingLog.hpp"
+#include "Core/TradingSystem.hpp"
+#include "Core/TransactionContext.hpp"
+#include "Common/Crypto.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -20,10 +30,8 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/unordered_set.hpp>
 #include <Poco/Net/AcceptCertificateHandler.h>
-#include <Poco/Net/HTTPMessage.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
 #include <Poco/Net/HTTPSClientSession.h>
@@ -33,21 +41,3 @@
 #include <Poco/Net/SSLManager.h>
 #include <Poco/StreamCopier.h>
 #include <Poco/URI.h>
-
-#include "Common/Common.hpp"
-#include "Common/Crypto.hpp"
-
-#include "TradingLib/BalancesContainer.hpp"
-#include "TradingLib/Util.hpp"
-#include "Core/Context.hpp"
-#include "Core/EventsLog.hpp"
-#include "Core/MarketDataSource.hpp"
-#include "Core/Security.hpp"
-#include "Core/Settings.hpp"
-#include "Core/Timer.hpp"
-#include "Core/Trade.hpp"
-#include "Core/TradingLog.hpp"
-#include "Core/TradingSystem.hpp"
-#include "Core/TransactionContext.hpp"
-
-#include "App.hpp"

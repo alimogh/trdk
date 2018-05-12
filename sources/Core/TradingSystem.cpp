@@ -322,7 +322,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
     boost::shared_ptr<Order> result;
     {
       const ActiveOrderWriteLock listLock(m_activeOrdersMutex);
-      auto it = m_activeOrders.find(orderId);
+      const auto &it = m_activeOrders.find(orderId);
       if (it == m_activeOrders.cend()) {
         boost::format error(
             "Failed to take order as order ID \"%1%\" is unknown");
@@ -472,10 +472,9 @@ class TradingSystem::Implementation : private boost::noncopyable {
                        Order &order,
                        const boost::optional<Qty> &remainingQty,
                        const boost::optional<Volume> &commission) {
-    OrderStatus status = ORDER_STATUS_CANCELED;
-    const char *statusName = "canceled";
-    void (OrderStatusHandler::*handler)(const Volume &) =
-        &OrderStatusHandler::OnCanceled;
+    auto status = ORDER_STATUS_CANCELED;
+    const auto *statusName = "canceled";
+    auto handler = &OrderStatusHandler::OnCanceled;
     if (!order.isCancelRequestSent) {
       static_assert(numberOfTimeInForces == 5, "List changed.");
       switch (order.tif) {
@@ -485,6 +484,7 @@ class TradingSystem::Implementation : private boost::noncopyable {
           status = ORDER_STATUS_REJECTED;
           statusName = "canceled without request";
           handler = &OrderStatusHandler::OnRejected;
+        default:
           break;
       }
     }
@@ -536,7 +536,8 @@ TradingSystem::TradingSystem(const TradingMode &mode,
                              const std::string &instanceName)
     : m_pimpl(boost::make_unique<Implementation>(
           *this, mode, context, instanceName)) {}
-
+TradingSystem::TradingSystem(TradingSystem &&) = default;
+TradingSystem &TradingSystem::operator=(TradingSystem &&) = default;
 TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }

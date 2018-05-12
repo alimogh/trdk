@@ -11,8 +11,8 @@
 #include "Prec.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
 namespace pc = Poco;
 namespace net = pc::Net;

@@ -13,8 +13,8 @@
 #include "FloodControl.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
@@ -22,7 +22,7 @@ namespace ptr = boost::property_tree;
 namespace ios = boost::iostreams;
 
 namespace {
-void CopyToString(std::istream &source, std::string &result) {
+void CopyToString(std::istream& source, std::string& result) {
   //! Reimplement with std::string::data with C++17.
   Poco::StreamCopier::copyToString(source, result);
   result.erase(std::remove_if(result.begin(), result.end(),
@@ -31,8 +31,8 @@ void CopyToString(std::istream &source, std::string &result) {
 }
 }  // namespace
 
-void Request::AppendUriParams(const std::string &newParams,
-                              std::string &result) {
+void Request::AppendUriParams(const std::string& newParams,
+                              std::string& result) {
   if (newParams.empty()) {
     return;
   }
@@ -41,8 +41,9 @@ void Request::AppendUriParams(const std::string &newParams,
   }
   result += newParams;
 }
-std::string Request::AppendUriParams(const std::string &newParams,
-                                     const std::string &result) {
+
+std::string Request::AppendUriParams(const std::string& newParams,
+                                     const std::string& result) {
   if (newParams.empty()) {
     return result;
   }
@@ -51,15 +52,15 @@ std::string Request::AppendUriParams(const std::string &newParams,
   return resultCopy;
 }
 
-Request::Request(const std::string &uri,
-                 const std::string &name,
-                 const std::string &method,
-                 const std::string &uriParams,
-                 const Context &context,
-                 ModuleEventsLog &log,
-                 ModuleTradingLog *tradingLog,
-                 const std::string &contentType,
-                 const std::string &version)
+Request::Request(const std::string& uri,
+                 const std::string& name,
+                 const std::string& method,
+                 const std::string& uriParams,
+                 const Context& context,
+                 ModuleEventsLog& log,
+                 ModuleTradingLog* tradingLog,
+                 const std::string& contentType,
+                 const std::string& version)
     : m_context(context),
       m_log(log),
       m_tradingLog(tradingLog),
@@ -75,17 +76,17 @@ Request::Request(const std::string &uri,
   }
 }
 
-void Request::PrepareRequest(const net::HTTPClientSession &,
-                             const std::string &,
-                             net::HTTPRequest &) const {}
+void Request::PrepareRequest(const net::HTTPClientSession&,
+                             const std::string&,
+                             net::HTTPRequest&) const {}
 
-boost::tuple<pt::ptime, ptr::ptree, Lib::TimeMeasurement::Milestones>
-Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
+boost::tuple<pt::ptime, ptr::ptree, TimeMeasurement::Milestones> Request::Send(
+    std::unique_ptr<net::HTTPSClientSession>& session) {
   Assert(session);
 
   SetUri(m_uri, *m_request);
 
-  std::string body = m_body;
+  auto body = m_body;
   CreateBody(*session, body);
   PrepareRequest(*session, body, *m_request);
   m_request->setContentLength(body.size());
@@ -99,8 +100,8 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
       } else {
         session->sendRequest(*m_request);
       }
-    } catch (const std::exception &ex) {
-      const auto &getError = [this](const std::exception &ex) -> std::string {
+    } catch (const std::exception& ex) {
+      const auto& getError = [this](const std::exception& ex) -> std::string {
         boost::format error(
             "failed to send request \"%1%\" (%2%) to server: \"%3%\"");
         error % m_name             // 1
@@ -110,31 +111,31 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
       };
       try {
         throw;
-      } catch (const Poco::TimeoutException &ex) {
+      } catch (const Poco::TimeoutException& ex) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
-      } catch (const net::NoMessageException &) {
+      } catch (const net::NoMessageException&) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             getError(ex).c_str());
-      } catch (const Poco::Exception &ex) {
+      } catch (const Poco::Exception& ex) {
         session = RecreateSession(*session);
         throw CommunicationError(getError(ex).c_str());
-      } catch (const std::exception &) {
+      } catch (const std::exception&) {
         throw Exception(getError(ex).c_str());
       }
     }
 
-    const auto &delayMeasurement = m_context.StartStrategyTimeMeasurement();
-    const auto &updateTime = m_context.GetCurrentTime();
+    const auto& delayMeasurement = m_context.StartStrategyTimeMeasurement();
+    const auto& updateTime = m_context.GetCurrentTime();
 
     try {
       net::HTTPResponse response;
-      std::istream &responseStream = session->receiveResponse(response);
+      std::istream& responseStream = session->receiveResponse(response);
       std::string responseBuffer;
       if (m_tradingLog) {
         m_tradingLog->Write(
             "response-dump %1%\t%2%",
-            [this, &responseStream, &responseBuffer](TradingRecord &record) {
+            [this, &responseStream, &responseBuffer](TradingRecord& record) {
               CopyToString(responseStream, responseBuffer);
               record % GetName()     // 1
                   % responseBuffer;  // 2
@@ -152,13 +153,13 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
       ptr::ptree result;
       try {
         if (responseBuffer.empty()) {
-          ptr::read_json(responseStream, result);
+          read_json(responseStream, result);
         } else {
           ios::array_source source(&responseBuffer[0], responseBuffer.size());
           ios::stream<ios::array_source> is(source);
-          ptr::read_json(is, result);
+          read_json(is, result);
         }
-      } catch (const ptr::ptree_error &ex) {
+      } catch (const ptr::ptree_error& ex) {
         boost::format error(
             "Failed to read server response to the request \"%1%\" (%2%): "
             "\"%3%\"");
@@ -169,12 +170,12 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
       }
 
       return {updateTime, result, delayMeasurement};
-    } catch (const Poco::Exception &ex) {
+    } catch (const Poco::Exception& ex) {
       session = RecreateSession(*session);
       if (attempt < GetNumberOfAttempts()) {
         try {
           throw;
-        } catch (const net::NoMessageException &ex) {
+        } catch (const net::NoMessageException& ex) {
           m_log.Debug("Repeating request \"%1%\" after error \"%2%\"...",
                       m_request->getURI(),  // 1
                       ex.what());           // 2
@@ -189,10 +190,10 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
           % ex.what();           // 3
       try {
         throw;
-      } catch (const Poco::TimeoutException &) {
+      } catch (const Poco::TimeoutException&) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             error.str().c_str());
-      } catch (const net::NoMessageException &) {
+      } catch (const net::NoMessageException&) {
         throw CommunicationErrorWithUndeterminedRemoteResult(
             error.str().c_str());
       } catch (...) {
@@ -202,16 +203,16 @@ Request::Send(std::unique_ptr<net::HTTPSClientSession> &session) {
   }
 }
 
-void Request::CreateBody(const net::HTTPClientSession &,
-                         std::string &result) const {
+void Request::CreateBody(const net::HTTPClientSession&,
+                         std::string& result) const {
   if (m_request->getMethod() != net::HTTPRequest::HTTP_POST) {
     return;
   }
   AppendUriParams(m_uriParams, result);
 }
 
-void Request::CheckErrorResponse(const net::HTTPResponse &response,
-                                 const std::string &responseContent,
+void Request::CheckErrorResponse(const net::HTTPResponse& response,
+                                 const std::string& responseContent,
                                  size_t attemptNumber) const {
   AssertNe(net::HTTPResponse::HTTP_OK, response.getStatus());
   if (attemptNumber < 2) {
@@ -241,18 +242,18 @@ void Request::CheckErrorResponse(const net::HTTPResponse &response,
   }
 }
 
-void Request::SetUri(const std::string &uri, net::HTTPRequest &request) const {
-  std::string fullUri =
-      uri + "?nonce=" + pt::to_iso_string(pt::microsec_clock::universal_time());
+void Request::SetUri(const std::string& uri, net::HTTPRequest& request) const {
+  auto fullUri =
+      uri + "?nonce=" + to_iso_string(pt::microsec_clock::universal_time());
   if (!m_uriParams.empty() &&
       request.getMethod() == net::HTTPRequest::HTTP_GET) {
     fullUri += '&' + m_uriParams;
   }
-  request.setURI(std::move(fullUri));
+  request.setURI(fullUri);
 }
 
 std::unique_ptr<net::HTTPSClientSession> Request::RecreateSession(
-    const net::HTTPSClientSession &source) {
+    const net::HTTPSClientSession& source) {
   auto result = boost::make_unique<net::HTTPSClientSession>(source.getHost());
   result->setKeepAlive(source.getKeepAlive());
   result->setKeepAliveTimeout(source.getKeepAliveTimeout());
@@ -260,4 +261,4 @@ std::unique_ptr<net::HTTPSClientSession> Request::RecreateSession(
   return result;
 }
 
-ModuleEventsLog &Request::GetLog() const { return m_log; }
+ModuleEventsLog& Request::GetLog() const { return m_log; }

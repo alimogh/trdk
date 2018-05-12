@@ -12,8 +12,13 @@
 
 namespace trdk {
 
-class Interactor : private boost::noncopyable {
+class Interactor {
  public:
+  Interactor() = default;
+  Interactor(Interactor &&) = default;
+  Interactor(const Interactor &) = delete;
+  Interactor &operator=(Interactor &&) = default;
+  Interactor &operator=(const Interactor &) = default;
   virtual ~Interactor() = default;
 };
-}
+}  // namespace trdk

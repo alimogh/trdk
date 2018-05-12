@@ -10,27 +10,26 @@
 
 #pragma once
 
-#include "Api.h"
-
 namespace trdk {
 
-class OrderTransactionContext : private boost::noncopyable {
+class OrderTransactionContext : boost::noncopyable {
  public:
-  explicit OrderTransactionContext(trdk::TradingSystem &tradingSystem,
-                                   const trdk::OrderId &&orderId)
+  explicit OrderTransactionContext(TradingSystem& tradingSystem,
+                                   OrderId&& orderId)
       : m_tradingSystem(tradingSystem), m_orderId(std::move(orderId)) {}
+
   virtual ~OrderTransactionContext() = default;
 
- public:
-  trdk::TradingSystem &GetTradingSystem() { return m_tradingSystem; }
-  const trdk::TradingSystem &GetTradingSystem() const {
-    return const_cast<OrderTransactionContext *>(this)->GetTradingSystem();
+  TradingSystem& GetTradingSystem() { return m_tradingSystem; }
+
+  const TradingSystem& GetTradingSystem() const {
+    return const_cast<OrderTransactionContext*>(this)->GetTradingSystem();
   }
 
-  const trdk::OrderId &GetOrderId() const { return m_orderId; }
+  const OrderId& GetOrderId() const { return m_orderId; }
 
- public:
-  trdk::TradingSystem &m_tradingSystem;
-  const trdk::OrderId m_orderId;
+  TradingSystem& m_tradingSystem;
+  const OrderId m_orderId;
 };
-}
+
+}  // namespace trdk

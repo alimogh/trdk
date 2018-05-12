@@ -14,35 +14,33 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class NonceStorage : private boost::noncopyable {
+class TRDK_INTERACTION_REST_API NonceStorage : boost::noncopyable {
  public:
   typedef std::uint64_t Value;
 
-  class Generator : private boost::noncopyable {
+  class Generator : boost::noncopyable {
    public:
     virtual ~Generator() = default;
 
-   public:
     virtual Value TakeNextNonce() = 0;
   };
   class Int32TimedGenerator : public Generator {
    public:
     Int32TimedGenerator();
-    virtual ~Int32TimedGenerator() override = default;
+    ~Int32TimedGenerator() override = default;
 
-   public:
-    virtual Value TakeNextNonce() override { return m_nextValue++; }
+    Value TakeNextNonce() override { return m_nextValue++; }
 
    private:
     int32_t m_nextValue;
   };
-  class UnsignedInt64TimedGenerator : public Generator {
+  class TRDK_INTERACTION_REST_API UnsignedInt64TimedGenerator
+      : public Generator {
    public:
     UnsignedInt64TimedGenerator();
-    virtual ~UnsignedInt64TimedGenerator() override = default;
+    ~UnsignedInt64TimedGenerator() override = default;
 
-   public:
-    virtual Value TakeNextNonce() override { return m_nextValue++; }
+    Value TakeNextNonce() override { return m_nextValue++; }
 
    private:
     uint64_t m_nextValue;
@@ -55,10 +53,11 @@ class NonceStorage : private boost::noncopyable {
    public:
     TakenValue(Value &&value, Lock &&lock)
         : m_value(std::move(value)), m_lock(std::move(lock)) {}
-    TakenValue(TakenValue &&rhs)
-        : m_value(std::move(rhs.m_value)), m_lock(std::move(rhs.m_lock)) {}
+    TakenValue(TakenValue &&) = default;
+    TakenValue(const TakenValue &) = delete;
+    TakenValue &operator=(TakenValue &&) = delete;
+    TakenValue &operator=(const TakenValue &) = delete;
 
-   public:
     const Value &Get() const { return m_value; }
     void Use() { m_lock.unlock(); }
 
@@ -67,11 +66,9 @@ class NonceStorage : private boost::noncopyable {
     Lock m_lock;
   };
 
- public:
   explicit NonceStorage(std::unique_ptr<Generator> &&);
   NonceStorage(NonceStorage &&) = default;
 
- public:
   TakenValue TakeNonce();
 
  private:

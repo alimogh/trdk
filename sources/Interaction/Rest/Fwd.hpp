@@ -22,6 +22,6 @@ class PollingTask;
 
 class Request;
 class BittrexPublicRequest;
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

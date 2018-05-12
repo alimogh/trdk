@@ -16,7 +16,7 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-struct Settings {
+struct TRDK_INTERACTION_REST_API Settings {
   PollingSetttings pollingSetttings;
 
   explicit Settings(const Lib::IniSectionRef &conf, ModuleEventsLog &log)
@@ -29,6 +29,7 @@ struct Settings {
 
   void Validate() {}
 };
-}
-}
-}
+
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

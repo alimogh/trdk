@@ -14,8 +14,7 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class PollingTask : private boost::noncopyable {
- private:
+class TRDK_INTERACTION_REST_API PollingTask : boost::noncopyable {
   typedef boost::mutex Mutex;
   typedef Mutex::scoped_lock Lock;
 
@@ -33,7 +32,6 @@ class PollingTask : private boost::noncopyable {
   explicit PollingTask(const PollingSetttings &, ModuleEventsLog &);
   ~PollingTask();
 
- public:
   void AddTask(std::string &&name,
                size_t priority,
                const boost::function<bool()> &&,
@@ -59,7 +57,6 @@ class PollingTask : private boost::noncopyable {
 
   void SetTasks();
 
- private:
   ModuleEventsLog &m_log;
   Mutex m_mutex;
   boost::condition_variable m_condition;
@@ -69,6 +66,7 @@ class PollingTask : private boost::noncopyable {
   boost::optional<boost::thread> m_thread;
   bool m_isAccelerated;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

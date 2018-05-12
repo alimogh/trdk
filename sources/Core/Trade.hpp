@@ -17,13 +17,13 @@ class Trade {
  public:
   //! Trade price.
   /** If set as "zero" - will be calculated automatically by trading system.
-    */
-  trdk::Price price;
+   */
+  Price price;
   //! Trade quantity.
   /** If set as "zero" - will be calculated automatically by trading system.
-    */
-  trdk::Qty qty;
+   */
+  Qty qty;
   //! Trade ID. Optional.
   std::string id;
 };
-}
+}  // namespace trdk

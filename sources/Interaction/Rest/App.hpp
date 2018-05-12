@@ -14,16 +14,16 @@ namespace trdk {
 namespace Interaction {
 namespace Rest {
 
-class App : private boost::noncopyable {
- private:
+class TRDK_INTERACTION_REST_API App {
   App();
   ~App();
 
  public:
-  static App &GetInstance();
+  App(const App &) = delete;
+  App(App &&) = delete;
 
- private:
+  static App &GetInstance();
 };
-}
-}
-}
+}  // namespace Rest
+}  // namespace Interaction
+}  // namespace trdk

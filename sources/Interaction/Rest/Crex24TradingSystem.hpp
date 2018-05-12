@@ -37,7 +37,7 @@ class Crex24TradingSystem : public TradingSystem {
     typedef trdk::OrderTransactionContext Base;
 
    public:
-    explicit OrderTransactionContext(TradingSystem &, const OrderId &&);
+    explicit OrderTransactionContext(TradingSystem &, OrderId &&);
 
    public:
     bool RegisterTrade(const std::string &);

@@ -63,7 +63,7 @@ CexioTradingSystem::PrivateRequest::Send(
 void CexioTradingSystem::PrivateRequest::CreateBody(
     const net::HTTPClientSession &session, std::string &result) const {
   {
-    using namespace trdk::Lib::Crypto;
+    using namespace Crypto;
 
     const auto &digest =
         Hmac::CalcSha256Digest(boost::lexical_cast<std::string>(m_nonce.Get()) +

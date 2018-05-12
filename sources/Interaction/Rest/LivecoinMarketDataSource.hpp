@@ -53,7 +53,7 @@ class LivecoinMarketDataSource : public MarketDataSource {
   boost::unordered_map<std::string, LivecoinProduct> m_products;
 
   boost::mutex m_securitiesMutex;
-  boost::unordered_map<LivecoinProductId, boost::shared_ptr<Rest::Security>>
+  boost::unordered_map<LivecoinProductId, boost::shared_ptr<Security>>
       m_securities;
   LivecoinPublicRequest m_allOrderBooksRequest;
 

@@ -105,7 +105,12 @@ class TRDK_CORE_API TradingSystem : virtual public Interactor {
   explicit TradingSystem(const TradingMode &,
                          Context &,
                          const std::string &instanceName);
+  TradingSystem(TradingSystem &&);
+  TradingSystem(const TradingSystem &) = delete;
   ~TradingSystem() override;
+
+  TradingSystem &operator=(TradingSystem &&);
+  TradingSystem &operator=(const TradingSystem &) = delete;
 
   friend std::ostream &operator<<(std::ostream &oss,
                                   const TradingSystem &tradingSystem) {

@@ -361,6 +361,7 @@
     <ClCompile Include="YobitnetExchange.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Api.h" />
     <ClInclude Include="App.hpp" />
     <ClInclude Include="BittrexMarketDataSource.hpp" />
     <ClInclude Include="BittrexRequest.hpp" />
@@ -370,6 +371,7 @@
     <ClInclude Include="CexioRequest.hpp" />
     <ClInclude Include="CexioTradingSystem.hpp" />
     <ClInclude Include="CexioUtil.hpp" />
+    <ClInclude Include="Common.hpp" />
     <ClInclude Include="Crex24MarketDataSource.hpp" />
     <ClInclude Include="Crex24Request.hpp" />
     <ClInclude Include="Crex24TradingSystem.hpp" />
