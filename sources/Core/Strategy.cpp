@@ -14,7 +14,6 @@
 #include "MarketDataSource.hpp"
 #include "Operation.hpp"
 #include "RiskControl.hpp"
-#include "Service.hpp"
 #include "Timer.hpp"
 
 namespace mi = boost::multi_index;
@@ -689,27 +688,6 @@ void Strategy::RaiseNewTradeEvent(Security& service,
     OnNewTrade(service, time, price, qty);
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new trade");
-    return;
-  } catch (const Exception& ex) {
-    Block(ex.what());
-    return;
-  }
-  m_pimpl->FlushDelayed(lock);
-}
-
-void Strategy::RaiseServiceDataUpdateEvent(
-    const Service& service,
-    const TimeMeasurement::Milestones& timeMeasurement) {
-  auto lock = LockForOtherThreads();
-  // 1st time already checked: before enqueue event (without locking), here -
-  // control check (under mutex as blocking and enabling - under the mutex too):
-  if (IsBlocked()) {
-    return;
-  }
-  try {
-    OnServiceDataUpdate(service, timeMeasurement);
-  } catch (const RiskControlException& ex) {
-    m_pimpl->BlockByRiskControlEvent(ex, "service data update");
     return;
   } catch (const Exception& ex) {
     Block(ex.what());

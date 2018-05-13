@@ -29,36 +29,20 @@ class SubscriptionsManager : private boost::noncopyable {
 
  public:
   void SubscribeToSecurityContractSwitching(trdk::Security &, trdk::Strategy &);
-  void SubscribeToSecurityContractSwitching(trdk::Security &, trdk::Service &);
-  void SubscribeToSecurityContractSwitching(trdk::Security &, trdk::Observer &);
 
   void SubscribeToLevel1Updates(trdk::Security &, trdk::Strategy &);
-  void SubscribeToLevel1Updates(trdk::Security &, trdk::Service &);
-  void SubscribeToLevel1Updates(trdk::Security &, trdk::Observer &);
 
   void SubscribeToLevel1Ticks(trdk::Security &, trdk::Strategy &);
-  void SubscribeToLevel1Ticks(trdk::Security &, trdk::Service &);
-  void SubscribeToLevel1Ticks(trdk::Security &, trdk::Observer &);
 
   void SubscribeToTrades(trdk::Security &, trdk::Strategy &);
-  void SubscribeToTrades(trdk::Security &, trdk::Service &);
-  void SubscribeToTrades(trdk::Security &, trdk::Observer &);
 
   void SubscribeToBrokerPositionUpdates(trdk::Security &, trdk::Strategy &);
-  void SubscribeToBrokerPositionUpdates(trdk::Security &, trdk::Service &);
-  void SubscribeToBrokerPositionUpdates(trdk::Security &, trdk::Observer &);
 
   void SubscribeToBars(trdk::Security &, trdk::Strategy &);
-  void SubscribeToBars(trdk::Security &, trdk::Service &);
-  void SubscribeToBars(trdk::Security &, trdk::Observer &);
 
   void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Strategy &);
-  void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Service &);
-  void SubscribeToBookUpdateTicks(trdk::Security &, trdk::Observer &);
 
   void SubscribeToSecurityServiceEvents(trdk::Security &, trdk::Strategy &);
-  void SubscribeToSecurityServiceEvents(trdk::Security &, trdk::Service &);
-  void SubscribeToSecurityServiceEvents(trdk::Security &, trdk::Observer &);
 
  public:
   bool IsActive() const;
@@ -99,14 +83,11 @@ class SubscriptionsManager : private boost::noncopyable {
       std::list<boost::signals2::connection> &);
 
   void Subscribe(Security &, Strategy &, const SubscribeImpl &);
-  void Subscribe(Security &, Service &, const SubscribeImpl &);
-  void Subscribe(Security &, Observer &, const SubscribeImpl &);
 
- private:
   Dispatcher m_dispatcher;
   std::list<boost::signals2::connection> m_slotConnections;
 
   std::set<const Strategy *> m_subscribedStrategies;
 };
-}
-}
+}  // namespace Engine
+}  // namespace trdk

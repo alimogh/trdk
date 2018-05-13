@@ -11,9 +11,7 @@
 #include "Prec.hpp"
 #include "ContextBootstrap.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Observer.hpp"
 #include "Core/Security.hpp"
-#include "Core/Service.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingSystem.hpp"
@@ -39,9 +37,7 @@ bool GetModuleSection(const std::string &sectionName,
   boost::split(subs, sectionName, boost::is_any_of("."));
   if (subs.size() < 2) {
     return false;
-  } else if (!boost::iequals(*subs.begin(), Sections::strategy) &&
-             !boost::iequals(*subs.begin(), Sections::observer) &&
-             !boost::iequals(*subs.begin(), Sections::service)) {
+  } else if (!boost::iequals(*subs.begin(), Sections::strategy)) {
     return false;
   } else if (subs.size() != 2 || subs.rbegin()->empty()) {
     boost::format message("Wrong module section name format: \"%1%\", %2%");
@@ -433,12 +429,7 @@ enum SystemService {
  * checked last - service can be required by other, at last stage it
  * binds with systems service "by current strategy".
  */
-enum ModuleType {
-  MODULE_TYPE_STRATEGY,
-  MODULE_TYPE_OBSERVER,
-  MODULE_TYPE_SERVICE,
-  numberOfModuleTypes
-};
+enum ModuleType { MODULE_TYPE_STRATEGY, numberOfModuleTypes };
 
 template <typename ModuleTrait>
 std::string BuildDefaultFactoryName(const std::string &instanceName) {
@@ -457,38 +448,6 @@ struct ModuleTrait<Strategy> {
   static ModuleType GetType() { return static_cast<ModuleType>(Type); }
   static const char *GetName(bool capital) {
     return capital ? "Strategy" : "strategy";
-  }
-  static std::string GetDefaultFactory(const std::string &instanceName) {
-    return BuildDefaultFactoryName<ModuleTrait>(instanceName);
-  }
-  static std::string GetDefaultModule() { return std::string(); }
-};
-template <>
-struct ModuleTrait<Service> {
-  enum { Type = MODULE_TYPE_SERVICE };
-  typedef boost::shared_ptr<Service>(Factory)(trdk::Context &,
-                                              const std::string &instanceName,
-                                              const IniSectionRef &);
-  static ModuleType GetType() { return static_cast<ModuleType>(Type); }
-  static const char *GetName(bool capital) {
-    return capital ? "Service" : "service";
-  }
-  static std::string GetDefaultFactory(const std::string &instanceName) {
-    return BuildDefaultFactoryName<ModuleTrait>(instanceName);
-  }
-  static const std::string &GetDefaultModule() {
-    return DefaultValues::Modules::service;
-  }
-};
-template <>
-struct ModuleTrait<Observer> {
-  enum { Type = MODULE_TYPE_OBSERVER };
-  typedef boost::shared_ptr<Observer>(Factory)(trdk::Context &,
-                                               const std::string &instanceName,
-                                               const IniSectionRef &);
-  static ModuleType GetType() { return static_cast<ModuleType>(Type); }
-  static const char *GetName(bool capital) {
-    return capital ? "Observer" : "observer";
   }
   static std::string GetDefaultFactory(const std::string &instanceName) {
     return BuildDefaultFactoryName<ModuleTrait>(instanceName);
@@ -576,8 +535,6 @@ void ForEachModuleInstance(ModuleDll<Module> &module,
 }
 
 typedef std::map<std::string, ModuleDll<Strategy>> StrategyModules;
-typedef std::map<std::string, ModuleDll<Observer>> ObserverModules;
-typedef std::map<std::string, ModuleDll<Service>> ServiceModules;
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -589,37 +546,15 @@ class ContextStateBootstrapper : private boost::noncopyable {
       Engine::Context &context,
       SubscriptionsManager &subscriptionsManagerRef,
       Strategies &strategiesRef,
-      Observers &observersRef,
-      Services &servicesRef,
       ModuleList &moduleListRef)
       : m_context(context),
         m_subscriptionsManager(subscriptionsManagerRef),
         m_strategiesResult(&strategiesRef),
-        m_observersResult(&observersRef),
-        m_servicesResult(&servicesRef),
         m_moduleListResult(moduleListRef),
         m_conf(confRef) {}
 
-  explicit ContextStateBootstrapper(
-      const Lib::Ini &confRef,
-      Engine::Context &context,
-      SubscriptionsManager &subscriptionsManagerRef,
-      Strategies &strategiesRef,
-      Services &servicesRef,
-      ModuleList &moduleListRef)
-      : m_context(context),
-        m_subscriptionsManager(subscriptionsManagerRef),
-        m_strategiesResult(&strategiesRef),
-        m_observersResult(nullptr),
-        m_servicesResult(&servicesRef),
-        m_moduleListResult(moduleListRef),
-        m_conf(confRef) {}
-
- public:
   void Boot() {
     m_strategies.clear();
-    m_observers.clear();
-    m_services.clear();
 
     const auto sections = m_conf.ReadSectionsList();
 
@@ -637,10 +572,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
           nullptr;
       if (boost::iequals(type, Sections::strategy)) {
         initModule = &ContextStateBootstrapper::InitStrategy;
-      } else if (boost::iequals(type, Sections::observer)) {
-        initModule = &ContextStateBootstrapper::InitObserver;
-      } else if (boost::iequals(type, Sections::service)) {
-        initModule = &ContextStateBootstrapper::InitService;
       } else {
         AssertFail("Unknown module type");
         continue;
@@ -670,12 +601,8 @@ class ContextStateBootstrapper : private boost::noncopyable {
     }
 
     MakeModulesResult(m_strategies, m_strategiesResult);
-    MakeModulesResult(m_observers, m_observersResult);
-    MakeModulesResult(m_services, m_servicesResult);
 
     m_strategies.clear();
-    m_observers.clear();
-    m_services.clear();
   }
 
  private:
@@ -723,34 +650,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
           "Strategy section is found, but strategies can not be added");
     }
     InitModule(section, instanceName, m_strategies, requirementList);
-  }
-
-  void InitObserver(const IniSectionRef &section,
-                    const std::string &instanceName,
-                    RequirementsList &requirementList) {
-    if (!m_observersResult) {
-      m_context.GetLog().Error(
-          "Observer section \"%1%\" is found"
-          ", but strategies can not be added.",
-          section.GetName());
-      throw Exception(
-          "Observer section is found, but strategies can not be added");
-    }
-    InitModule(section, instanceName, m_observers, requirementList);
-  }
-
-  void InitService(const IniSectionRef &section,
-                   const std::string &instanceName,
-                   RequirementsList &requirementList) {
-    if (!m_servicesResult) {
-      m_context.GetLog().Error(
-          "Service section \"%1%\" is found"
-          ", but strategies can not be added.",
-          section.GetName());
-      throw Exception(
-          "Service section is found, but strategies can not be added");
-    }
-    InitModule(section, instanceName, m_services, requirementList);
   }
 
   template <typename Module>
@@ -870,9 +769,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
   template <typename Module>
   void CreateStandaloneModuleInstance(const std::string &instanceName,
                                       ModuleDll<Module> &module) {
-    typedef ModuleTrait<Module> Trait;
-    static_assert(int(Trait::Type) != int(MODULE_TYPE_SERVICE),
-                  "Wrong CreateStandaloneModuleInstance method choose.");
     CreateModuleInstance(instanceName, module);
   }
 
@@ -1107,18 +1003,11 @@ class ContextStateBootstrapper : private boost::noncopyable {
   }
 
   void BindWithModuleRequirements(const RequirementsList &requirements) {
-    for (const InstanceRequirementsList &moduleRequirements :
-         requirements.get<BySubscriber>()) {
-      static_assert(numberOfModuleTypes == 3, "Changed module type list.");
+    for (const auto &moduleRequirements : requirements.get<BySubscriber>()) {
+      static_assert(numberOfModuleTypes == 1, "Changed module type list.");
       switch (moduleRequirements.subscriberType) {
         case MODULE_TYPE_STRATEGY:
           BindModuleWithModuleRequirements(moduleRequirements, m_strategies);
-          break;
-        case MODULE_TYPE_SERVICE:
-          BindModuleWithModuleRequirements(moduleRequirements, m_services);
-          break;
-        case MODULE_TYPE_OBSERVER:
-          BindModuleWithModuleRequirements(moduleRequirements, m_observers);
           break;
         default:
           AssertEq(MODULE_TYPE_STRATEGY, moduleRequirements.subscriberType);
@@ -1128,18 +1017,11 @@ class ContextStateBootstrapper : private boost::noncopyable {
   }
 
   void BindWithSystemRequirements(const RequirementsList &requirements) {
-    for (const InstanceRequirementsList &moduleRequirements :
-         requirements.get<BySubscriber>()) {
-      static_assert(numberOfModuleTypes == 3, "Changed module type list.");
+    for (const auto &moduleRequirements : requirements.get<BySubscriber>()) {
+      static_assert(numberOfModuleTypes == 1, "Changed module type list.");
       switch (moduleRequirements.subscriberType) {
         case MODULE_TYPE_STRATEGY:
           BindModuleWithSystemRequirements(moduleRequirements, m_strategies);
-          break;
-        case MODULE_TYPE_SERVICE:
-          BindModuleWithSystemRequirements(moduleRequirements, m_services);
-          break;
-        case MODULE_TYPE_OBSERVER:
-          BindModuleWithSystemRequirements(moduleRequirements, m_observers);
           break;
         default:
           AssertEq(MODULE_TYPE_STRATEGY, moduleRequirements.subscriberType);
@@ -1160,74 +1042,9 @@ class ContextStateBootstrapper : private boost::noncopyable {
     if (modulePos == modules.end()) {
       return;
     }
-    ModuleDll<Module> &module = modulePos->second;
 
-    for (const auto &requirement : requirements.requiredModules) {
-      const auto &requirementTag = requirement.first;
-      const auto requredModulePos = m_services.find(requirementTag);
-      if (requredModulePos == m_services.end()) {
-        m_context.GetLog().Error(
-            "Unknown service with instance name \"%1%\""
-            " in requirement list.",
-            requirementTag);
-        throw Exception("Unknown service in requirement list");
-      }
-      ModuleDll<Service> &requredModule = requredModulePos->second;
-      for (const std::set<Symbol> &symbols : requirement.second) {
-        const auto createBySymbolSet =
-            [&](const std::set<Symbol> &symbols,
-                std::string &symbolsStrList) -> boost::shared_ptr<Service> {
-          std::list<std::string> symbolsStr;
-          for (const Symbol &symbol : symbols) {
-            Assert(symbol);
-            symbolsStr.push_back(symbol.GetAsString());
-          }
-          std::string symbolsStrListTmp = boost::join(symbolsStr, ", ");
-          const auto requredServicePos =
-              requredModule.symbolInstances.find(symbols);
-          boost::shared_ptr<Service> result;
-          if (requredServicePos != requredModule.symbolInstances.end()) {
-            result = requredServicePos->second.GetObjPtr();
-          } else {
-            result =
-                CreateModuleInstance(requirementTag, symbols, requredModule);
-            Assert(requredModule.symbolInstances.find(symbols) !=
-                   requredModule.symbolInstances.end());
-          }
-          symbolsStrListTmp.swap(symbolsStrList);
-          return result;
-        };
-
-        if (symbols.size() == 1 && !*symbols.begin()) {
-          for (auto &instance : module.symbolInstances) {
-            std::string symbolsStrList;
-            boost::shared_ptr<Service> requredService =
-                createBySymbolSet(instance.first, symbolsStrList);
-            requredService->RegisterSubscriber(*instance.second);
-            instance.second->GetLog().Debug(
-                "Subscribed to \"%1%\" with security(ies) \"%2%\".",
-                *requredService, symbolsStrList);
-          }
-
-        } else {
-          std::string symbolsStrList;
-          boost::shared_ptr<Service> requredService =
-              createBySymbolSet(symbols, symbolsStrList);
-
-          for (auto &instance : module.standaloneInstances) {
-            requredService->RegisterSubscriber(*instance);
-            instance->GetLog().Debug(
-                "Subscribed to \"%1%\" with security(ies) \"%2%\".",
-                *requredService, symbolsStrList);
-          }
-          for (auto &instance : module.symbolInstances) {
-            requredService->RegisterSubscriber(*instance.second);
-            instance.second->GetLog().Debug(
-                "Subscribed to \"%1%\" with security(ies) \"%2%\".",
-                *requredService, symbolsStrList);
-          }
-        }
-      }
+    if (!requirements.requiredModules.empty()) {
+      throw Exception("Services are not supported");
     }
   }
 
@@ -1311,37 +1128,39 @@ class ContextStateBootstrapper : private boost::noncopyable {
       }
       for (const Symbol &symbol : requirement.second) {
         if (symbol) {
-          m_context.ForEachMarketDataSource([&](MarketDataSource &source)
-                                                -> bool {
-            try {
-              Security &security = source.GetSecurity(symbol);
-              if (!uniqueInstance) {
-                ForEachModuleInstance(
-                    module,
-                    // bind is a workaround for g++ internal error with lambda:
-                    boost::bind(&ContextStateBootstrapper::
-                                    SubscribeModuleStandaloneInstance<Module>,
-                                this, _1, subscribe, &security),
-                    [&](Module &instance) {
-                      SubscribeModuleSymbolInstance(instance, subscribe,
-                                                    &security);
-                    });
-              } else if (isUniqueInstanceStandalone) {
-                SubscribeModuleStandaloneInstance(*uniqueInstance, subscribe,
+          m_context.ForEachMarketDataSource(
+              [&](MarketDataSource &source) -> bool {
+                try {
+                  Security &security = source.GetSecurity(symbol);
+                  if (!uniqueInstance) {
+                    ForEachModuleInstance(
+                        module,
+                        // bind is a workaround for g++ internal error with
+                        // lambda:
+                        boost::bind(
+                            &ContextStateBootstrapper::
+                                SubscribeModuleStandaloneInstance<Module>,
+                            this, _1, subscribe, &security),
+                        [&](Module &instance) {
+                          SubscribeModuleSymbolInstance(instance, subscribe,
+                                                        &security);
+                        });
+                  } else if (isUniqueInstanceStandalone) {
+                    SubscribeModuleStandaloneInstance(*uniqueInstance,
+                                                      subscribe, &security);
+                  } else {
+                    SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
                                                   &security);
-              } else {
-                SubscribeModuleSymbolInstance(*uniqueInstance, subscribe,
-                                              &security);
-              }
-            } catch (const SymbolIsNotSupportedException &ex) {
-              m_context.GetLog().Debug(
-                  "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
-                  symbol,      // 1
-                  source,      // 2
-                  ex.what());  // 3
-            }
-            return true;
-          });
+                  }
+                } catch (const SymbolIsNotSupportedException &ex) {
+                  m_context.GetLog().Debug(
+                      "Symbol \"%1%\" is not supported by \"%2%\": \"%3%\".",
+                      symbol,      // 1
+                      source,      // 2
+                      ex.what());  // 3
+                }
+                return true;
+              });
         } else {
           if (!uniqueInstance) {
             ForEachModuleInstance(
@@ -1368,20 +1187,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
     const auto end = module.GetSecurities().GetEnd();
     for (auto i = begin; i != end; ++i) {
       pred(*i);
-    }
-  }
-  template <typename Callback>
-  void ForEachSubscribedSecurity(Service &module, const Callback &callback) {
-    const auto begin = module.GetSecurities().GetBegin();
-    const auto end = module.GetSecurities().GetEnd();
-    for (auto i = begin; i != end; ++i) {
-      m_context.ForEachMarketDataSource([&](MarketDataSource &source) -> bool {
-        if (source != i->GetSource()) {
-          return true;
-        }
-        callback(source.GetSecurity(i->GetSymbol()));
-        return true;
-      });
     }
   }
 
@@ -1422,8 +1227,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
                                       const std::string &instanceName,
                                       const IniSectionRef &conf) {
     typedef ModuleTrait<Module> Trait;
-    static_assert(int(Trait::Type) != int(MODULE_TYPE_OBSERVER),
-                  "Wrong GetSymbolInstances method choose.");
 
     std::set<Symbol> result;
 
@@ -1551,30 +1354,12 @@ class ContextStateBootstrapper : private boost::noncopyable {
   SubscriptionsManager &m_subscriptionsManager;
 
   Strategies *m_strategiesResult;
-  Observers *m_observersResult;
-  Services *m_servicesResult;
   ModuleList &m_moduleListResult;
 
   StrategyModules m_strategies;
-  ObserverModules m_observers;
-  ServiceModules m_services;
 
   const Lib::Ini &m_conf;
 };
-
-template <>
-void ContextStateBootstrapper::CreateStandaloneModuleInstance(
-    const std::string &instanceName, ModuleDll<Service> &) {
-  typedef ModuleTrait<Service> Trait;
-  m_context.GetLog().Debug("%1% \"%2%\" instantiation delayed.",
-                           Trait::GetName(true), instanceName);
-}
-
-template <>
-std::set<Symbol> ContextStateBootstrapper::GetSymbolInstances(
-    const ModuleTrait<Observer> &, const std::string &, const IniSectionRef &) {
-  return std::set<Symbol>();
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1590,12 +1375,9 @@ void Engine::BootContextState(const Lib::Ini &conf,
                               Context &context,
                               SubscriptionsManager &subscriptionsManagerRef,
                               Strategies &strategiesRef,
-                              Observers &observersRef,
-                              Services &servicesRef,
                               ModuleList &moduleListRef) {
   ContextStateBootstrapper(conf, context, subscriptionsManagerRef,
-                           strategiesRef, observersRef, servicesRef,
-                           moduleListRef)
+                           strategiesRef, moduleListRef)
       .Boot();
 }
 
@@ -1604,10 +1386,9 @@ void Engine::BootNewStrategiesForContextState(
     Context &context,
     SubscriptionsManager &subscriptionsManagerRef,
     Strategies &strategiesRef,
-    Services &servicesRef,
     ModuleList &moduleListRef) {
   ContextStateBootstrapper(newStrategiesConf, context, subscriptionsManagerRef,
-                           strategiesRef, servicesRef, moduleListRef)
+                           strategiesRef, moduleListRef)
       .Boot();
 }
 

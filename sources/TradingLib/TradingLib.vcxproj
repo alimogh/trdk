@@ -316,7 +316,6 @@
     <ClInclude Include="PositionController.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="RelativeStrengthIndex.hpp" />
-    <ClInclude Include="SourcesSynchronizer.hpp" />
     <ClInclude Include="StopLimit.hpp" />
     <ClInclude Include="StopLoss.hpp" />
     <ClInclude Include="StopOrder.hpp" />

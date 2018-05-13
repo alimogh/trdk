@@ -34,7 +34,6 @@ var requiredModules = [
 	, 'FixProtocol'
 	, 'Rest'
 	, 'Exmo'
-	, 'Services'
 	, 'TestStrategy'
 	, 'ArbitrationAdvisor'
 	, 'MarketMaker'

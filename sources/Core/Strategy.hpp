@@ -180,8 +180,6 @@ class TRDK_CORE_API Strategy : public Consumer {
                           const boost::posix_time::ptime &,
                           const Price &,
                           const Qty &);
-  void RaiseServiceDataUpdateEvent(const Service &,
-                                   const Lib::TimeMeasurement::Milestones &);
   void RaisePositionUpdateEvent(Position &);
   void RaiseBookUpdateTickEvent(Security &,
                                 const PriceBook &,

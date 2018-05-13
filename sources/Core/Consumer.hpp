@@ -54,8 +54,8 @@ class TRDK_CORE_API Consumer : public trdk::Module {
 
   //! Notifies when security switched to another contract.
   /** All marked data for security will be reset (so if security just
-    * started).
-    */
+   * started).
+   */
   virtual void OnSecurityContractSwitched(const boost::posix_time::ptime &,
                                           trdk::Security &,
                                           trdk::Security::Request &,
@@ -71,17 +71,14 @@ class TRDK_CORE_API Consumer : public trdk::Module {
                           const trdk::Price &,
                           const trdk::Qty &);
 
-  virtual void OnServiceDataUpdate(
-      const trdk::Service &, const trdk::Lib::TimeMeasurement::Milestones &);
-
   //! Notifies about broker position update.
   /** @param[in, out] security  Security.
-    *  @param[in]     isLong    If true - position has type "long", "short"
-    *                           otherwise.
-    * @param[in]      qty       Position size.
-    * @param[in]      volume    Position volume.
-    * @param[in]      isInitial true if it initial data at start.
-    */
+   *  @param[in]      isLong    If true - position has type "long", "short"
+   *                            otherwise.
+   * @param[in]       qty       Position size.
+   * @param[in]       volume    Position volume.
+   * @param[in]       isInitial true if it initial data at start.
+   */
   virtual void OnBrokerPositionUpdate(trdk::Security &security,
                                       bool isLong,
                                       const trdk::Qty &qty,
@@ -98,4 +95,4 @@ class TRDK_CORE_API Consumer : public trdk::Module {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
+}  // namespace trdk

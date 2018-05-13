@@ -26,9 +26,6 @@
     <ClCompile Include="MarketDataSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Observer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -36,9 +33,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StrategyPositionState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Service.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Instrument.cpp">
@@ -87,9 +81,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MarketDataSourceMock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ServiceMock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ContextDummy.cpp">
@@ -181,9 +172,6 @@
     <ClInclude Include="ModuleVariant.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Observer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Position.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -200,12 +188,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SecurityMock.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Service.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ServiceMock.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Settings.hpp">

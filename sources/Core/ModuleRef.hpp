@@ -29,14 +29,6 @@ typedef trdk::ModuleReferenceWrapper<const trdk::Strategy>
     ConstStrategyRefWrapper;
 typedef trdk::ModuleReferenceWrapper<trdk::Strategy> StrategyRefWrapper;
 
-typedef trdk::ModuleReferenceWrapper<const trdk::Service>
-    ConstServiceRefWrapper;
-typedef trdk::ModuleReferenceWrapper<trdk::Service> ServiceRefWrapper;
-
-typedef trdk::ModuleReferenceWrapper<const trdk::Observer>
-    ConstObserverRefWrapper;
-typedef trdk::ModuleReferenceWrapper<trdk::Observer> ObserverRefWrapper;
-
 template <typename Module>
 inline trdk::ModuleReferenceWrapper<const Module> ConstModuleRef(
     const Module &module) {
@@ -51,4 +43,4 @@ inline trdk::ModuleReferenceWrapper<Module> ModuleRef(Module &module) {
                 "Template parameter must be derived from trdk::Module.");
   return trdk::ModuleReferenceWrapper<Module>(module);
 }
-}
+}  // namespace trdk

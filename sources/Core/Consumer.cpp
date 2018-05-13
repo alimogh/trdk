@@ -12,7 +12,6 @@
 #include "Consumer.hpp"
 #include "ModuleSecurityList.hpp"
 #include "Security.hpp"
-#include "Service.hpp"
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
@@ -75,16 +74,6 @@ void Consumer::OnNewTrade(Security &security,
       security);
   throw MethodIsNotImplementedException(
       "Module subscribed to new trades, but can't work with it");
-}
-
-void Consumer::OnServiceDataUpdate(const Service &service,
-                                   const TimeMeasurement::Milestones &) {
-  GetLog().Error(
-      "Subscribed to \"%1%\", but can't work with it"
-      " (doesn't have OnServiceDataUpdate method implementation).",
-      service);
-  throw MethodIsNotImplementedException(
-      "Module subscribed to service, but can't work with it");
 }
 
 void Consumer::OnBrokerPositionUpdate(

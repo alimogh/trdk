@@ -63,8 +63,6 @@ class TRDK_CORE_API Module : boost::noncopyable {
 
   void RaiseSettingsUpdateEvent(const Lib::IniSectionRef &);
 
-  virtual void OnServiceStart(const Service &);
-
  protected:
   Lock LockForOtherThreads() const {
     return const_cast<Module *>(this)->LockForOtherThreads();

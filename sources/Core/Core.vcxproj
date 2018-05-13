@@ -333,21 +333,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Service.cpp" />
-    <ClCompile Include="ServiceMock.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Strategy.cpp" />
     <ClCompile Include="StrategyDummy.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -366,7 +351,6 @@
     <ClCompile Include="StrategyPositionState.cpp" />
     <ClCompile Include="MarketDataSource.cpp" />
     <ClCompile Include="Module.cpp" />
-    <ClCompile Include="Observer.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Create</PrecompiledHeader>
@@ -431,15 +415,12 @@
     <ClInclude Include="TransactionContext.hpp" />
     <ClInclude Include="PriceBook.hpp" />
     <ClInclude Include="SecurityMock.hpp" />
-    <ClInclude Include="Service.hpp" />
-    <ClInclude Include="ServiceMock.hpp" />
     <ClInclude Include="Strategy.hpp" />
     <ClInclude Include="StrategyPositionState.hpp" />
     <ClInclude Include="Api.h" />
     <ClInclude Include="Instrument.hpp" />
     <ClInclude Include="MarketDataSource.hpp" />
     <ClInclude Include="Module.hpp" />
-    <ClInclude Include="Observer.hpp" />
     <ClInclude Include="Position.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="Security.hpp" />

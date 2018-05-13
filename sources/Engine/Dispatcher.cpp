@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
-#include "Core/Observer.hpp"
 #include "Core/Strategy.hpp"
 #include "Context.hpp"
 

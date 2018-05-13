@@ -26,8 +26,6 @@ void BootContextState(const trdk::Lib::Ini &,
                       Context &,
                       SubscriptionsManager &subscriptionsManagerRef,
                       Strategies &strategiesRef,
-                      Observers &observersRef,
-                      Services &servicesRef,
                       ModuleList &moduleListRef);
 
 void BootNewStrategiesForContextState(
@@ -35,7 +33,6 @@ void BootNewStrategiesForContextState(
     Context &,
     SubscriptionsManager &subscriptionsManagerRef,
     Strategies &strategiesRef,
-    Services &servicesRef,
     ModuleList &moduleListRef);
-}
-}
+}  // namespace Engine
+}  // namespace trdk

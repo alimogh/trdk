@@ -33,8 +33,6 @@ class DropCopy;
 class Module;
 class Consumer;
 class Strategy;
-class Observer;
-class Service;
 
 typedef size_t RiskControlOperationId;
 class RiskControl;
@@ -58,4 +56,4 @@ class ModuleTradingLog;
 
 class Timer;
 class TimerScope;
-}
+}  // namespace trdk
