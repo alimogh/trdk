@@ -25,12 +25,13 @@
 #include "Lib/TotalResultsReportModel.hpp"
 #include "Lib/TotalResultsReportSettingsWidget.hpp"
 #include "Lib/TotalResultsReportView.hpp"
+#include <boost/unordered/unordered_set.hpp>
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 using namespace Charts;
 using namespace Terminal;
-
+namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
 
 MainWindow::MainWindow(Engine &engine,
@@ -192,9 +193,66 @@ void MainWindow::RestoreModules() {
 }
 
 void MainWindow::CreateNewChartWindows() {
+  class ChartMainWindow : public QMainWindow {
+   public:
+    explicit ChartMainWindow(const QString &symbol,
+                             Engine &engine,
+                             QWidget *parent)
+        : QMainWindow(parent),
+          m_symbol(symbol.toStdString()),
+          m_engine(engine) {}
+    ChartMainWindow(ChartMainWindow &&) = default;
+    ChartMainWindow(const ChartMainWindow &) = delete;
+    ChartMainWindow &operator=(ChartMainWindow &&) = delete;
+    ChartMainWindow &operator=(const ChartMainWindow &) = delete;
+    ~ChartMainWindow() {
+      try {
+        StopBars();
+      } catch (...) {
+        AssertFailNoException();
+      }
+    }
+    void StartBars(const size_t numberOfFrames,
+                   const size_t newNumberOfSecondsInFrame) {
+      AssertEq(0, m_securities.size());
+      m_period = pt::seconds(static_cast<long>(newNumberOfSecondsInFrame));
+      const auto &startTime = m_engine.GetContext().GetCurrentTime() -
+                              (m_period * static_cast<int>(numberOfFrames + 2));
+      m_engine.GetContext().ForEachMarketDataSource(
+          [this, startTime](MarketDataSource &source) {
+            source.ForEachSecurity([this, startTime](Security &security) {
+              if (security.GetSymbol().GetSymbol() != m_symbol) {
+                return;
+              }
+              security.StartBars(startTime, m_period);
+              Verify(m_securities.emplace(&security).second);
+            });
+          });
+    }
+    void StopBars() {
+      if (m_period == pt::not_a_date_time) {
+        return;
+      }
+      for (auto *security : m_securities) {
+        security->StopBars(m_period);
+      }
+      m_securities.clear();
+    }
+    bool HasSecurity(const Security &security) const {
+      return m_securities.count(const_cast<Security *>(&security)) != 0;
+    }
+
+   private:
+    const std::string m_symbol;
+    Engine &m_engine;
+    boost::unordered_set<Security *> m_securities;
+    pt::time_duration m_period;
+  };
+
   for (const auto &symbol :
        SymbolSelectionDialog(m_engine, this).RequestSymbols()) {
-    auto window = boost::make_unique<QMainWindow>(this);
+    auto window =
+        boost::make_unique<ChartMainWindow>(symbol, GetEngine(), this);
     window->setWindowTitle(tr("%1 Candlestick Chart").arg(symbol));
     {
       auto &centralWidget = *new QWidget(&*window);
@@ -203,27 +261,30 @@ void MainWindow::CreateNewChartWindows() {
       auto &toolbar = *new ChartToolbarWidget(&centralWidget);
       layout.addWidget(&toolbar);
       {
-        auto &chart = *new CandlestickChartWidget(
-            toolbar.GetNumberOfSecondsInFrame(), 50, &centralWidget);
+        const auto numberOfFrames = 100;
+        auto &chart =
+            *new CandlestickChartWidget(toolbar.GetNumberOfSecondsInFrame(),
+                                        numberOfFrames, &centralWidget);
+        auto &windowRef = *window;
         Verify(connect(
             &toolbar, &ChartToolbarWidget::NumberOfSecondsInFrameChange, &chart,
-            &CandlestickChartWidget::SetNumberOfSecondsInFrame));
+            [&windowRef, &chart,
+             numberOfFrames](size_t newNumberOfSecondsInFrame) {
+              windowRef.StopBars();
+              windowRef.StartBars(numberOfFrames, newNumberOfSecondsInFrame);
+              chart.SetNumberOfSecondsInFrame(newNumberOfSecondsInFrame);
+            }));
         {
           const auto symbolStr = symbol.toStdString();
-          Verify(connect(
-              &m_engine, &Engine::PriceUpdate, &chart,
-              [&chart, symbolStr](const Security *security) {
-                if (security->GetSymbol().GetSymbol() != symbolStr) {
-                  return;
-                }
-                const auto &askPrice = security->GetAskPrice();
-                const auto lastPrice =
-                    askPrice +
-                    (std::abs(askPrice - security->GetBidPrice()) / 2);
-                chart.UpdatePrice(
-                    ConvertToQDateTime(security->GetLastMarketDataTime()),
-                    lastPrice);
-              }));
+          Verify(connect(&m_engine, &Engine::BarUpdate, &chart,
+                         [&windowRef, &chart, symbolStr](
+                             const Security *security, const Bar &bar) {
+                           if (!windowRef.HasSecurity(*security)) {
+                             return;
+                           }
+                           chart.Update(bar);
+                         }));
+          window->StartBars(numberOfFrames, chart.GetNumberOfSecondsInFrame());
         }
         layout.addWidget(&chart);
       }

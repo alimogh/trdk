@@ -70,7 +70,7 @@ class SubscriberPtrWrapper {
   void RaiseBrokerPositionUpdateEvent(
       const BrokerPosition &, const Lib::TimeMeasurement::Milestones &) const;
   void RaiseNewBarEvent(Security &,
-                        const Security::Bar &,
+                        const Bar &,
                         const Lib::TimeMeasurement::Milestones &) const;
   void RaiseBookUpdateTickEvent(Security &,
                                 const PriceBook &,
@@ -82,5 +82,5 @@ class SubscriberPtrWrapper {
  private:
   ModuleRefVariant m_subscriber;
 };
-}
-}
+}  // namespace Engine
+}  // namespace trdk

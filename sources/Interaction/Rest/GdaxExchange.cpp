@@ -152,10 +152,10 @@ class PublicRequest : public Request {
   typedef Request Base;
 
   explicit PublicRequest(const std::string& request,
+                         const std::string& params,
                          const Context& context,
                          ModuleEventsLog& log)
-      : Base(request, net::HTTPRequest::HTTP_GET, std::string(), context, log) {
-  }
+      : Base(request, net::HTTPRequest::HTTP_GET, params, context, log) {}
 
   ~PublicRequest() override = default;
 
@@ -224,8 +224,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
   struct SecuritySubscribtion {
+    std::string productId;
     boost::shared_ptr<Rest::Security> security;
-    boost::shared_ptr<Request> request;
+    boost::shared_ptr<Request> pricesRequest;
     bool isSubscribed;
   };
 
@@ -412,10 +413,12 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
 
     {
       const auto request = boost::make_shared<PublicRequest>(
-          "products/" + product->second.id + "/book/", GetContext(),
+          "products/" + product->second.id + "/book/", "", GetContext(),
           GetTsLog());
       const SecuritiesLock lock(m_securitiesMutex);
-      Verify(m_securities.emplace(symbol, SecuritySubscribtion{result, request})
+      Verify(m_securities
+                 .emplace(symbol, SecuritySubscribtion{product->second.id,
+                                                       result, request})
                  .second);
     }
 
@@ -498,7 +501,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
  private:
   void RequestProducts() {
     boost::unordered_map<std::string, Product> products;
-    PublicRequest request("products", GetContext(), GetTsLog());
+    PublicRequest request("products", "", GetContext(), GetTsLog());
     const auto response = boost::get<1>(request.Send(m_marketDataSession));
     std::vector<std::string> log;
     for (const auto& node : response) {
@@ -661,20 +664,9 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         continue;
       }
       auto& security = *subscribtion.second.security;
-      auto& request = *subscribtion.second.request;
       try {
-        const auto& response = request.Send(m_marketDataSession);
-        const auto& time = boost::get<0>(response);
-        const auto& update = boost::get<1>(response);
-        const auto& delayMeasurement = boost::get<2>(response);
-        const auto& bestBid =
-            ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
-                update.get_child("bids"));
-        const auto& bestAsk =
-            ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
-                update.get_child("asks"));
-        security.SetLevel1(time, bestBid.first, bestBid.second, bestAsk.first,
-                           bestAsk.second, delayMeasurement);
+        UpdatePrices(security, *subscribtion.second.pricesRequest);
+        UpdateBars(subscribtion.second.productId, security);
       } catch (const std::exception& ex) {
         try {
           security.SetOnline(pt::not_a_date_time, false);
@@ -689,6 +681,80 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
         throw Exception(error.str().c_str());
       }
       security.SetOnline(pt::not_a_date_time, true);
+    }
+  }
+
+  void UpdatePrices(Rest::Security& security, Request& request) {
+    const auto& response = request.Send(m_marketDataSession);
+    const auto& time = boost::get<0>(response);
+    const auto& update = boost::get<1>(response);
+    const auto& delayMeasurement = boost::get<2>(response);
+    const auto& bestBid =
+        ReadTopOfBook<LEVEL1_TICK_BID_PRICE, LEVEL1_TICK_BID_QTY>(
+            update.get_child("bids"));
+    const auto& bestAsk =
+        ReadTopOfBook<LEVEL1_TICK_ASK_PRICE, LEVEL1_TICK_ASK_QTY>(
+            update.get_child("asks"));
+    security.SetLevel1(time, bestBid.first, bestBid.second, bestAsk.first,
+                       bestAsk.second, delayMeasurement);
+  }
+
+  void UpdateBars(const std::string& productId, Rest::Security& security) {
+    for (const auto& startedBar : security.GetStartedBars()) {
+      const auto& startTime = startedBar.second;
+      const auto endTime = GetContext().GetCurrentTime();
+      if (endTime - startTime < pt::seconds(15)) {
+        continue;
+      }
+      boost::format requestParams("start=%1%&end=%2%&granularity=%3%");
+      requestParams %
+          pt::to_iso_extended_string(startTime + m_serverTimeDiff)  // 1
+          % pt::to_iso_extended_string(endTime + m_serverTimeDiff)  // 2
+          % startedBar.first.total_seconds();                       // 3
+      const auto response = boost::get<1>(
+          PublicRequest("products/" + productId + "/candles",
+                        requestParams.str(), GetContext(), GetTsLog())
+              .Send(m_marketDataSession));
+      std::vector<Bar> bars;
+      for (const auto& node : response) {
+        Bar bar = {};
+        for (const auto& dataNode : node.second) {
+          const auto& data = dataNode.second;
+          if (bar.time == pt::not_a_date_time) {
+            bar.time =
+                pt::from_time_t(data.get_value<time_t>()) - m_serverTimeDiff;
+            if (bar.time < startTime) {
+              break;
+            }
+          } else if (!bar.lowPrice) {
+            bar.lowPrice = data.get_value<Price>();
+          } else if (!bar.highPrice) {
+            bar.highPrice = data.get_value<Price>();
+          } else if (!bar.openPrice) {
+            bar.openPrice = data.get_value<Price>();
+          } else if (!bar.closePrice) {
+            bar.closePrice = data.get_value<Price>();
+          } else if (!bar.volume) {
+            bar.volume = data.get_value<Volume>();
+          } else {
+            AssertFail("Too many fields");
+          }
+        }
+        if (!bar.openPrice) {
+          break;
+        }
+        AssertLe(*bar.openPrice, *bar.highPrice);
+        AssertGe(*bar.openPrice, *bar.lowPrice);
+        AssertLe(*bar.closePrice, *bar.highPrice);
+        AssertGe(*bar.closePrice, *bar.lowPrice);
+        AssertLe(*bar.lowPrice, *bar.highPrice);
+        Assert(bars.empty() || bars.back().time > bar.time);
+        bars.emplace_back(std::move(bar));
+      }
+      security.SetBarsStartTime(startedBar.first, endTime);
+      for (const auto& bar : boost::adaptors::reverse(bars)) {
+        security.UpdateBar(bar);
+      }
     }
   }
 
@@ -707,7 +773,7 @@ class GdaxExchange : public TradingSystem, public MarketDataSource {
   std::unique_ptr<PollingTask> m_pollingTask;
 
   boost::unordered_map<std::string, Product> m_products;
-};
+};  // namespace
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////

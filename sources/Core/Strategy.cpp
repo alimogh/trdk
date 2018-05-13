@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Strategy.hpp"
-#include "DropCopy.hpp"
 #include "MarketDataSource.hpp"
 #include "Operation.hpp"
 #include "RiskControl.hpp"
@@ -356,8 +355,6 @@ class Strategy::Implementation : private boost::noncopyable {
 
   std::vector<Position*> m_delayedPositionToForget;
 
-  DropCopyStrategyInstanceId m_dropCopyInstanceId;
-
   TimerScope m_timerScope;
 
   explicit Implementation(Strategy& strategy,
@@ -373,21 +370,11 @@ class Strategy::Implementation : private boost::noncopyable {
                 .CreateScope(m_strategy.GetInstanceName(), conf)),
         m_isEnabled(conf.ReadBoolKey("is_enabled")),
         m_isBlocked(false),
-        m_stopMode(STOP_MODE_UNKNOWN),
-        m_dropCopyInstanceId(DropCopy::nStrategyInstanceId) {
-    std::string dropCopyInstanceIdStr = "not used";
-    m_strategy.GetContext().InvokeDropCopy(
-        [this, &dropCopyInstanceIdStr](DropCopy& dropCopy) {
-          m_dropCopyInstanceId = dropCopy.RegisterStrategyInstance(m_strategy);
-          AssertNe(DropCopy::nStrategyInstanceId, m_dropCopyInstanceId);
-          dropCopyInstanceIdStr =
-              boost::lexical_cast<std::string>(m_dropCopyInstanceId);
-        });
+        m_stopMode(STOP_MODE_UNKNOWN) {
     m_strategy.GetLog().Info(
-        "%1%, %2% mode, drop copy ID: %3%.",
-        m_isEnabled ? "ENABLED" : "DISABLED",
-        boost::to_upper_copy(ConvertToString(m_tradingMode)),
-        dropCopyInstanceIdStr);
+        "%1%, %2% mode.",
+        m_isEnabled ? "ENABLED" : "DISABLED",                   // 1
+        boost::to_upper_copy(ConvertToString(m_tradingMode)));  // 2
   }
 
   void ForgetPosition(const Position& position) {
@@ -557,11 +544,6 @@ Strategy::~Strategy() {
 const uuids::uuid& Strategy::GetTypeId() const { return m_pimpl->m_typeId; }
 
 TradingMode Strategy::GetTradingMode() const { return m_pimpl->m_tradingMode; }
-
-const DropCopyStrategyInstanceId& Strategy::GetDropCopyInstanceId() const {
-  AssertNe(DropCopy::nStrategyInstanceId, m_pimpl->m_dropCopyInstanceId);
-  return m_pimpl->m_dropCopyInstanceId;
-}
 
 RiskControlScope& Strategy::GetRiskControlScope() {
   return *m_pimpl->m_riskControlScope;
@@ -765,7 +747,7 @@ void Strategy::RaiseBrokerPositionUpdateEvent(Security& security,
   m_pimpl->FlushDelayed(lock);
 }
 
-void Strategy::RaiseNewBarEvent(Security& security, const Security::Bar& bar) {
+void Strategy::RaiseNewBarEvent(Security& security, const Bar& bar) {
   auto lock = LockForOtherThreads();
   // 1st time already checked: before enqueue event (without locking), here -
   // control check (under mutex as blocking and enabling - under the mutex too):
@@ -773,7 +755,7 @@ void Strategy::RaiseNewBarEvent(Security& security, const Security::Bar& bar) {
     return;
   }
   try {
-    OnNewBar(security, bar);
+    OnBarUpdate(security, bar);
   } catch (const RiskControlException& ex) {
     m_pimpl->BlockByRiskControlEvent(ex, "new bar");
     return;

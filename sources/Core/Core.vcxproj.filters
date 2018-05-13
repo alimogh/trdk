@@ -56,9 +56,6 @@
     <ClCompile Include="RiskControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DropCopy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -224,6 +221,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StrategyDummy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bar.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

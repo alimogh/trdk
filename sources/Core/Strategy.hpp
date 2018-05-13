@@ -120,7 +120,6 @@ class TRDK_CORE_API Strategy : public Consumer {
 
   const boost::uuids::uuid &GetTypeId() const;
   TradingMode GetTradingMode() const;
-  const DropCopyStrategyInstanceId &GetDropCopyInstanceId() const;
 
   RiskControlScope &GetRiskControlScope();
 
@@ -164,7 +163,7 @@ class TRDK_CORE_API Strategy : public Consumer {
                                       const Volume &,
                                       bool isInitial) override;
 
-  virtual void RaiseNewBarEvent(Security &, const Security::Bar &);
+  virtual void RaiseNewBarEvent(Security &, const Bar &);
 
   void RaiseSecurityServiceEvent(const boost::posix_time::ptime &,
                                  Security &,

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>588</width>
-    <height>41</height>
+    <height>50</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,53 +37,6 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="setFrameSize2m">
-     <property name="minimumSize">
-      <size>
-       <width>50</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>50</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>2m</string>
-     </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="setFrameSize3m">
-     <property name="minimumSize">
-      <size>
-       <width>50</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>50</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>3m</string>
-     </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
     </widget>
    </item>
    <item>
@@ -106,26 +59,7 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="setFrameSize10m">
-     <property name="minimumSize">
-      <size>
-       <width>50</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>50</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>10m</string>
-     </property>
-     <property name="checkable">
+     <property name="checked">
       <bool>true</bool>
      </property>
     </widget>
@@ -146,28 +80,6 @@
      </property>
      <property name="text">
       <string>15m</string>
-     </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="setFrameSize30m">
-     <property name="minimumSize">
-      <size>
-       <width>50</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>50</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>30m</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -197,7 +109,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="setFrameSize12h">
+    <widget class="QPushButton" name="setFrameSize6h">
      <property name="minimumSize">
       <size>
        <width>50</width>
@@ -211,7 +123,7 @@
       </size>
      </property>
      <property name="text">
-      <string>12h</string>
+      <string>6h</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -255,6 +167,14 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>setFrameSize5m</tabstop>
+  <tabstop>setFrameSize1m</tabstop>
+  <tabstop>setFrameSize15m</tabstop>
+  <tabstop>setFrameSize1h</tabstop>
+  <tabstop>setFrameSize6h</tabstop>
+  <tabstop>setFrameSize1d</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

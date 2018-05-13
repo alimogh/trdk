@@ -9,7 +9,7 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/TradingLog.hpp"
+#include "Core/Bar.hpp"
 #include "MarketDataSource.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -228,19 +228,22 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
             Level1TickValue::Create(type, ParsePriceField(field, lineNo)));
       }
       AssertEq(fields.size(), values.size() + 2);*/
-      Test::Security::Bar bar(time, Test::Security::Bar::TRADES);
-      bar.openPrice = ParsePriceField(fields[1], lineNo);
-      bar.highPrice = ParsePriceField(fields[2], lineNo);
-      bar.lowPrice = ParsePriceField(fields[3], lineNo);
-      bar.closePrice = ParsePriceField(fields[4], lineNo);
+      Bar bar{time,
+              boost::none,
+              boost::none,
+              ParsePriceField(fields[1], lineNo),
+              ParsePriceField(fields[2], lineNo),
+              ParsePriceField(fields[3], lineNo),
+              ParsePriceField(fields[4], lineNo)};
 
       GetContext().SetCurrentTime(time, true);
       // @todo fixme m_security->SetLevel1(time, values, Milestones());
       const auto &lastPrice = *bar.closePrice;
       const auto halfOfSpread = lastPrice * 0.005;
       m_security->AddLevel1Tick(
-          time, Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(lastPrice +
-                                                               halfOfSpread),
+          time,
+          Level1TickValue::Create<LEVEL1_TICK_ASK_PRICE>(lastPrice +
+                                                         halfOfSpread),
           Level1TickValue::Create<LEVEL1_TICK_BID_PRICE>(lastPrice -
                                                          halfOfSpread),
           Level1TickValue::Create<LEVEL1_TICK_LAST_PRICE>(*bar.closePrice),
@@ -320,7 +323,7 @@ AssertEq(numberOfLevel1TickTypes,
   const Settings m_settings;
   boost::shared_ptr<Test::Security> m_security;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 

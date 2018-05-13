@@ -28,15 +28,14 @@ class Security : public trdk::Security {
       : Base(context, symbol, source, supportedData) {}
 
  public:
+  using Base::AddLevel1Tick;
+  using Base::AddTrade;
+  using Base::SetBook;
+  using Base::SetExpiration;
+  using Base::SetLevel1;
   using Base::SetOnline;
   using Base::SetTradingSessionState;
-  using Base::SetExpiration;
-  using Base::SetBook;
-  using Base::AddTrade;
-  using Base::SetLevel1;
-  using Base::AddLevel1Tick;
-  using Base::AddBar;
 };
-}
-}
-}
+}  // namespace Test
+}  // namespace Interaction
+}  // namespace trdk

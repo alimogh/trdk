@@ -86,10 +86,10 @@ void Consumer::OnBrokerPositionUpdate(
       "Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
-void Consumer::OnNewBar(Security &security, const Security::Bar &) {
+void Consumer::OnBarUpdate(Security &security, const Bar &) {
   GetLog().Error(
-      "Subscribed to %1% new bars, but can't work with it"
-      " (doesn't have OnNewBar method implementation).",
+      "Subscribed to %1% bars, but can't work with it (doesn't have OnNewBar "
+      "method implementation).",
       security);
   throw MethodIsNotImplementedException(
       "Module subscribed to new bars, but can't work with it");

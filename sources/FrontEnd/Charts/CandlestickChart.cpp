@@ -77,6 +77,11 @@ void CandlestickChart::Update(const QCandlestickSet &update) {
       set.setHigh(update.high());
       set.setLow(update.low());
       set.setClose(update.close());
+      AssertLe(Price(set.open()), set.high());
+      AssertGe(Price(set.open()), set.low());
+      AssertLe(Price(set.close()), set.high());
+      AssertGe(Price(set.close()), set.low());
+      AssertLe(Price(set.low()), set.high());
       return;
     }
   }
@@ -89,6 +94,11 @@ void CandlestickChart::Update(const QCandlestickSet &update) {
     auto newSet = std::make_unique<QCandlestickSet>(
         update.open(), update.high(), update.low(), update.close(),
         update.timestamp(), update.parent());
+    AssertLe(Price(newSet->open()), newSet->high());
+    AssertGe(Price(newSet->open()), newSet->low());
+    AssertLe(Price(newSet->close()), newSet->high());
+    AssertGe(Price(newSet->close()), newSet->low());
+    AssertLe(Price(newSet->low()), newSet->high());
     sets.push_back(&*newSet);
     CheckAxisesMinMax(sets);
     m_series->append(&*newSet);
@@ -130,7 +140,7 @@ void CandlestickChart::CheckAxisesMinMax(const QList<QCandlestickSet *> &sets) {
 
 void CandlestickChart::SetAxisesMinMax() {
   AssertLe(m_min, m_max);
-  const auto margin = (m_max - m_min) * 1.01;
+  const auto margin = 0;
   qobject_cast<QValueAxis *>(axes(Qt::Vertical).at(0))
       ->setRange(m_min - margin, m_max + margin);
 }

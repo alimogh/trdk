@@ -295,7 +295,7 @@ void Dispatcher::SignalBrokerPositionUpdate(SubscriberPtrWrapper &subscriber,
 
 void Dispatcher::SignalNewBar(SubscriberPtrWrapper &subscriber,
                               Security &security,
-                              const Security::Bar &bar) {
+                              const Bar &bar) {
   try {
     if (subscriber.IsBlocked()) {
       return;

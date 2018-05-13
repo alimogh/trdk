@@ -271,7 +271,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="DropCopy.cpp" />
     <ClCompile Include="EventsLog.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Consumer.cpp" />
@@ -391,6 +390,7 @@
   <ItemGroup>
     <ClInclude Include="AsyncLog.hpp" />
     <ClInclude Include="Balances.hpp" />
+    <ClInclude Include="Bar.hpp" />
     <ClInclude Include="Context.hpp" />
     <ClInclude Include="ContextDummy.hpp" />
     <ClInclude Include="ContextMock.hpp" />

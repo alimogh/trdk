@@ -10,23 +10,23 @@
 
 #pragma once
 
-#include "Api.h"
 #include "Pnl.hpp"
 
 namespace trdk {
 
-class TRDK_CORE_API DropCopy {
+class DropCopy {
  public:
-  class TRDK_CORE_API Exception : public Lib::Exception {
+  class Exception : public Lib::Exception {
    public:
-    explicit Exception(const char* what) throw();
+    explicit Exception(const char* what) noexcept : Lib::Exception(what) {}
   };
 
-  static const DropCopyStrategyInstanceId nStrategyInstanceId;
-  static const DropCopyDataSourceInstanceId nDataSourceInstanceId;
-
-  DropCopy();
-  virtual ~DropCopy();
+  DropCopy() = default;
+  DropCopy(DropCopy&&) = default;
+  DropCopy(const DropCopy&) = delete;
+  DropCopy& operator=(DropCopy&&) = default;
+  DropCopy& operator=(const DropCopy&) = delete;
+  virtual ~DropCopy() = default;
 
   //! Tries to flush buffered Drop Copy data.
   /**
@@ -37,15 +37,6 @@ class TRDK_CORE_API DropCopy {
 
   //! Dumps all buffer data and removes it from buffer.
   virtual void Dump() = 0;
-
-  virtual DropCopyStrategyInstanceId RegisterStrategyInstance(
-      const Strategy&) = 0;
-  virtual DropCopyStrategyInstanceId ContinueStrategyInstance(
-      const Strategy&, const boost::posix_time::ptime&) = 0;
-  virtual DropCopyDataSourceInstanceId RegisterDataSourceInstance(
-      const Strategy&,
-      const boost::uuids::uuid& type,
-      const boost::uuids::uuid& id) = 0;
 
   virtual void CopySubmittedOrder(const OrderId&,
                                   const boost::posix_time::ptime&,
@@ -115,18 +106,7 @@ class TRDK_CORE_API DropCopy {
 
   virtual void CopyBook(const Security&, const PriceBook&) = 0;
 
-  virtual void CopyBar(const DropCopyDataSourceInstanceId&,
-                       size_t index,
-                       const boost::posix_time::ptime&,
-                       const Price& open,
-                       const Price& high,
-                       const Price& low,
-                       const Price& close) = 0;
-
-  virtual void CopyAbstractData(const DropCopyDataSourceInstanceId&,
-                                size_t index,
-                                const boost::posix_time::ptime&,
-                                const Lib::Double& value) = 0;
+  virtual void CopyBar(const Security&, const Bar&) = 0;
 
   virtual void CopyLevel1(const Security&,
                           const boost::posix_time::ptime&,

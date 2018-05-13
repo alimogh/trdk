@@ -85,7 +85,7 @@ class TRDK_CORE_API Consumer : public trdk::Module {
                                       const trdk::Volume &volume,
                                       bool isInitial);
 
-  virtual void OnNewBar(trdk::Security &, const trdk::Security::Bar &);
+  virtual void OnBarUpdate(Security &, const Bar &);
 
   virtual void OnSecurityServiceEvent(const boost::posix_time::ptime &,
                                       trdk::Security &,

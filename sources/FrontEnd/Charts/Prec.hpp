@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Common/Common.hpp"
+#include "Core/Bar.hpp"
 
 #pragma warning(push)
 #pragma warning(disable : 4127)

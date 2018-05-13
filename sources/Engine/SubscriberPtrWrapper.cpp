@@ -186,38 +186,30 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 
 void SubscriberPtrWrapper::RaiseNewBarEvent(
     Security &security,
-    const Security::Bar &bar,
-    const TimeMeasurement::Milestones &delayMeasurement) const {
-  class Visitor : public boost::static_visitor<void>,
-                  private boost::noncopyable {
+    const Bar &bar,
+    const TimeMeasurement::Milestones &) const {
+  class Visitor : public boost::static_visitor<void>, boost::noncopyable {
    public:
-    explicit Visitor(Security &security,
-                     const Security::Bar &bar,
-                     const TimeMeasurement::Milestones &delayMeasurement)
-        : m_source(security),
-          m_bar(bar),
-          m_delayMeasurement(delayMeasurement) {}
+    explicit Visitor(Security &security, const Bar &bar)
+        : m_source(security), m_bar(bar) {}
 
-   public:
     void operator()(Strategy &strategy) const {
       strategy.RaiseNewBarEvent(m_source, m_bar);
     }
 
    private:
     Security &m_source;
-    const Security::Bar &m_bar;
-    const TimeMeasurement::Milestones &m_delayMeasurement;
+    const Bar &m_bar;
   };
 
-  boost::apply_visitor(Visitor(security, bar, delayMeasurement), m_subscriber);
+  boost::apply_visitor(Visitor(security, bar), m_subscriber);
 }
 
 void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
     Security &security,
     const PriceBook &book,
     const TimeMeasurement::Milestones &delayMeasurement) const {
-  class Visitor : public boost::static_visitor<void>,
-                  private boost::noncopyable {
+  class Visitor : public boost::static_visitor<void>, boost::noncopyable {
    public:
     explicit Visitor(Security &security,
                      const PriceBook &book,
