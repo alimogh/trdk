@@ -13,9 +13,7 @@
 #include "EventsLog.hpp"
 #include "ModuleSecurityList.hpp"
 #include "Security.hpp"
-#include "Service.hpp"
 #include "Settings.hpp"
-#include "Timer.hpp"
 #include "TradingLog.hpp"
 
 namespace fs = boost::filesystem;
@@ -204,8 +202,6 @@ Module::TradingLog &Module::GetTradingLog() const noexcept {
 }
 
 std::string Module::GetRequiredSuppliers() const { return std::string(); }
-
-void Module::OnServiceStart(const Service &) {}
 
 void Module::OnSettingsUpdate(const trdk::Lib::IniSectionRef &) {}
 

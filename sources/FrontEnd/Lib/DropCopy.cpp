@@ -24,43 +24,28 @@ front::DropCopy::DropCopy(QObject* parent)
       m_pollingInterval(pt::milliseconds(500)),
       m_lastSignalTime(pt::microsec_clock::universal_time() -
                        m_pollingInterval) {
-  qRegisterMetaType<trdk::OrderId>("trdk::OrderId");
+  qRegisterMetaType<OrderId>("trdk::OrderId");
   qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
   qRegisterMetaType<std::string>("std::string");
-  qRegisterMetaType<trdk::Lib::Currency>("trdk::Lib::Currency");
-  qRegisterMetaType<trdk::OrderStatus>("trdk::OrderStatus");
-  qRegisterMetaType<trdk::OrderSide>("trdk::OrderSide");
-  qRegisterMetaType<trdk::Volume>("trdk::Volume");
-  qRegisterMetaType<trdk::Qty>("trdk::Qty");
-  qRegisterMetaType<trdk::Price>("trdk::Price");
-  qRegisterMetaType<boost::optional<trdk::Price>>(
-      "boost::optional<trdk::Price>");
-  qRegisterMetaType<trdk::TimeInForce>("trdk::TimeInForce");
+  qRegisterMetaType<Currency>("trdk::Lib::Currency");
+  qRegisterMetaType<OrderStatus>("trdk::OrderStatus");
+  qRegisterMetaType<OrderSide>("trdk::OrderSide");
+  qRegisterMetaType<Volume>("trdk::Volume");
+  qRegisterMetaType<Qty>("trdk::Qty");
+  qRegisterMetaType<Price>("trdk::Price");
+  qRegisterMetaType<boost::optional<Price>>("boost::optional<trdk::Price>");
+  qRegisterMetaType<TimeInForce>("trdk::TimeInForce");
   qRegisterMetaType<boost::uuids::uuid>("boost::uuids::uuid");
-  qRegisterMetaType<boost::shared_ptr<const trdk::Pnl>>(
+  qRegisterMetaType<boost::shared_ptr<const Pnl>>(
       "boost::shared_ptr<const trdk::Pnl>");
-  qRegisterMetaType<trdk::Pnl::Data>("trdk::Pnl::Data");
+  qRegisterMetaType<Pnl::Data>("trdk::Pnl::Data");
   qRegisterMetaType<int64_t>("int64_t");
+  qRegisterMetaType<trdk::Bar>("trdk::Bar");
 }
 
 void front::DropCopy::Flush() {}
 
 void front::DropCopy::Dump() {}
-
-DropCopyStrategyInstanceId front::DropCopy::RegisterStrategyInstance(
-    const Strategy&) {
-  return 0;
-}
-
-DropCopyStrategyInstanceId front::DropCopy::ContinueStrategyInstance(
-    const Strategy&, const pt::ptime&) {
-  return 0;
-}
-
-DropCopyDataSourceInstanceId front::DropCopy::RegisterDataSourceInstance(
-    const Strategy&, const ids::uuid&, const ids::uuid&) {
-  return 0;
-}
 
 void front::DropCopy::CopySubmittedOrder(const OrderId& id,
                                          const pt::ptime& time,
@@ -147,18 +132,9 @@ void front::DropCopy::CopyTrade(const pt::ptime&,
 
 void front::DropCopy::CopyBook(const Security&, const PriceBook&) {}
 
-void front::DropCopy::CopyBar(const DropCopyDataSourceInstanceId&,
-                              size_t,
-                              const pt::ptime&,
-                              const Price&,
-                              const Price&,
-                              const Price&,
-                              const Price&) {}
-
-void front::DropCopy::CopyAbstractData(const DropCopyDataSourceInstanceId&,
-                                       size_t,
-                                       const pt::ptime&,
-                                       const Double&) {}
+void front::DropCopy::CopyBar(const Security& security, const Bar& bar) {
+  emit BarUpdate(&security, bar);
+}
 
 void front::DropCopy::CopyLevel1(const Security& security,
                                  const pt::ptime&,

@@ -10,9 +10,7 @@
 
 #include "Prec.hpp"
 #include "SubscriberPtrWrapper.hpp"
-#include "Core/Observer.hpp"
 #include "Core/Position.hpp"
-#include "Core/Service.hpp"
 #include "Core/Strategy.hpp"
 
 namespace pt = boost::posix_time;
@@ -24,54 +22,6 @@ using namespace trdk::Engine;
 //////////////////////////////////////////////////////////////////////////
 
 namespace {
-
-//////////////////////////////////////////////////////////////////////////
-
-void RaiseServiceDataUpdateEvent(Service &,
-                                 const TimeMeasurement::Milestones &);
-
-class RaiseServiceDataUpdateEventVisitor : public boost::static_visitor<void>,
-                                           private boost::noncopyable {
- public:
-  explicit RaiseServiceDataUpdateEventVisitor(
-      const Service &service,
-      const TimeMeasurement::Milestones &delayMeasurement)
-      : m_service(service), m_delayMeasurement(delayMeasurement) {}
-
- public:
-  void operator()(Strategy &strategy) const {
-    strategy.RaiseServiceDataUpdateEvent(m_service, m_delayMeasurement);
-  }
-  void operator()(Service &service) const {
-    if (!service.RaiseServiceDataUpdateEvent(m_service, m_delayMeasurement)) {
-      return;
-    }
-    RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-  }
-  void operator()(Observer &observer) const {
-    observer.RaiseServiceDataUpdateEvent(m_service, m_delayMeasurement);
-  }
-
- private:
-  const Service &m_service;
-  const TimeMeasurement::Milestones &m_delayMeasurement;
-};
-
-void RaiseServiceDataUpdateEvent(
-    Service &service, const TimeMeasurement::Milestones &delayMeasurement) {
-  const RaiseServiceDataUpdateEventVisitor visitor(service, delayMeasurement);
-  for (auto subscriber : service.GetSubscribers()) {
-    try {
-      boost::apply_visitor(visitor, subscriber);
-    } catch (const Exception &ex) {
-      service.GetContext().GetLog().Error(
-          "Error at service subscribers notification:"
-          " \"%1%\" (service: \"%2%\", subscriber: \"%3%\").",
-          ex, service, boost::apply_visitor(Visitors::GetModule(), subscriber));
-      throw;
-    }
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -98,7 +48,7 @@ void BlockVisitor::operator()(Strategy &strategy) const throw() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -134,14 +84,6 @@ void SubscriberPtrWrapper::RaiseLevel1UpdateEvent(
     void operator()(Strategy &strategy) const {
       strategy.RaiseLevel1UpdateEvent(m_security, m_delayMeasurement);
     }
-    void operator()(Service &service) const {
-      if (service.RaiseLevel1UpdateEvent(m_security)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseLevel1UpdateEvent(m_security);
-    }
 
    private:
     Security &m_security;
@@ -164,16 +106,6 @@ void SubscriberPtrWrapper::RaiseLevel1TickEvent(
    public:
     void operator()(Strategy &strategy) const {
       strategy.RaiseLevel1TickEvent(*m_tick.security, m_tick.time, m_tick.value,
-                                    m_delayMeasurement);
-    }
-    void operator()(Service &service) const {
-      if (service.RaiseLevel1TickEvent(*m_tick.security, m_tick.time,
-                                       m_tick.value)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseLevel1TickEvent(*m_tick.security, m_tick.time, m_tick.value,
                                     m_delayMeasurement);
     }
 
@@ -200,16 +132,6 @@ void SubscriberPtrWrapper::RaiseNewTradeEvent(
       strategy.RaiseNewTradeEvent(*m_trade.security, m_trade.time,
                                   m_trade.price, m_trade.qty);
     }
-    void operator()(Service &service) const {
-      if (service.RaiseNewTradeEvent(*m_trade.security, m_trade.time,
-                                     m_trade.price, m_trade.qty)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseNewTradeEvent(*m_trade.security, m_trade.time,
-                                  m_trade.price, m_trade.qty);
-    }
 
    private:
     const Trade &m_trade;
@@ -228,16 +150,6 @@ void SubscriberPtrWrapper::RaisePositionUpdateEvent(Position &position) const {
    public:
     void operator()(Strategy &strategy) const {
       strategy.RaisePositionUpdateEvent(m_position);
-    }
-    void operator()(const Service &) const {
-      throw Exception(
-          "Internal error:"
-          " Failed to raise position update event for service");
-    }
-    void operator()(const Observer &) const {
-      throw Exception(
-          "Internal error:"
-          " Failed to raise position update event for observer");
     }
 
    private:
@@ -263,18 +175,6 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
           *m_position.security, m_position.isLong, m_position.qty,
           m_position.volume, m_position.isInitial);
     }
-    void operator()(Service &service) const {
-      if (service.RaiseBrokerPositionUpdateEvent(
-              *m_position.security, m_position.isLong, m_position.qty,
-              m_position.volume, m_position.isInitial)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &observer) const {
-      return observer.RaiseBrokerPositionUpdateEvent(
-          *m_position.security, m_position.isLong, m_position.qty,
-          m_position.volume, m_position.isInitial);
-    }
 
    private:
     const BrokerPosition &m_position;
@@ -286,46 +186,30 @@ void SubscriberPtrWrapper::RaiseBrokerPositionUpdateEvent(
 
 void SubscriberPtrWrapper::RaiseNewBarEvent(
     Security &security,
-    const Security::Bar &bar,
-    const TimeMeasurement::Milestones &delayMeasurement) const {
-  class Visitor : public boost::static_visitor<void>,
-                  private boost::noncopyable {
+    const Bar &bar,
+    const TimeMeasurement::Milestones &) const {
+  class Visitor : public boost::static_visitor<void>, boost::noncopyable {
    public:
-    explicit Visitor(Security &security,
-                     const Security::Bar &bar,
-                     const TimeMeasurement::Milestones &delayMeasurement)
-        : m_source(security),
-          m_bar(bar),
-          m_delayMeasurement(delayMeasurement) {}
+    explicit Visitor(Security &security, const Bar &bar)
+        : m_source(security), m_bar(bar) {}
 
-   public:
     void operator()(Strategy &strategy) const {
       strategy.RaiseNewBarEvent(m_source, m_bar);
-    }
-    void operator()(Service &service) const {
-      if (service.RaiseNewBarEvent(m_source, m_bar)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseNewBarEvent(m_source, m_bar);
     }
 
    private:
     Security &m_source;
-    const Security::Bar &m_bar;
-    const TimeMeasurement::Milestones &m_delayMeasurement;
+    const Bar &m_bar;
   };
 
-  boost::apply_visitor(Visitor(security, bar, delayMeasurement), m_subscriber);
+  boost::apply_visitor(Visitor(security, bar), m_subscriber);
 }
 
 void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
     Security &security,
     const PriceBook &book,
     const TimeMeasurement::Milestones &delayMeasurement) const {
-  class Visitor : public boost::static_visitor<void>,
-                  private boost::noncopyable {
+  class Visitor : public boost::static_visitor<void>, boost::noncopyable {
    public:
     explicit Visitor(Security &security,
                      const PriceBook &book,
@@ -338,13 +222,6 @@ void SubscriberPtrWrapper::RaiseBookUpdateTickEvent(
     void operator()(Strategy &strategy) const {
       strategy.RaiseBookUpdateTickEvent(m_source, m_book, m_delayMeasurement);
     }
-    void operator()(Service &service) const {
-      if (service.RaiseBookUpdateTickEvent(m_source, m_book,
-                                           m_delayMeasurement)) {
-        RaiseServiceDataUpdateEvent(service, m_delayMeasurement);
-      }
-    }
-    void operator()(Observer &) const { AssertFail("Not supported."); }
 
    private:
     Security &m_source;
@@ -370,14 +247,6 @@ void SubscriberPtrWrapper::RaiseSecurityServiceEvent(
    public:
     void operator()(Strategy &strategy) const {
       strategy.RaiseSecurityServiceEvent(m_time, m_source, m_event);
-    }
-    void operator()(Service &service) const {
-      if (service.RaiseSecurityServiceEvent(m_time, m_source, m_event)) {
-        RaiseServiceDataUpdateEvent(service, TimeMeasurement::Milestones());
-      }
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseSecurityServiceEvent(m_time, m_source, m_event);
     }
 
    private:
@@ -409,14 +278,6 @@ void SubscriberPtrWrapper::RaiseSecurityContractSwitchedEvent(
    public:
     void operator()(Strategy &strategy) const {
       strategy.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
-                                                  m_isSwitched);
-    }
-    void operator()(Service &service) const {
-      service.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
-                                                 m_isSwitched);
-    }
-    void operator()(Observer &observer) const {
-      observer.RaiseSecurityContractSwitchedEvent(m_time, m_source, m_request,
                                                   m_isSwitched);
     }
 

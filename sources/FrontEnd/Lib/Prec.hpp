@@ -23,18 +23,8 @@
 #include "GeneratedFiles/Orm/include/Trdk_FrontEnd_Lib_Orm_all_include.gen.h"
 #pragma warning(pop)
 
-#include <boost/algorithm/string.hpp>
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-
 #include "Core/Balances.hpp"
+#include "Core/Bar.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Operation.hpp"
@@ -45,6 +35,16 @@
 #include "Engine/Engine.hpp"
 #include "Std.hpp"
 #include "Types.hpp"
+#include <boost/algorithm/string.hpp>
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/unordered_set.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 
 #ifdef DEV_VER
 #include "TradingLib/PnlContainer.hpp"

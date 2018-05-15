@@ -13,6 +13,7 @@
 #include "Common.hpp"
 #include "TradingLib/BalancesContainer.hpp"
 #include "TradingLib/Util.hpp"
+#include "Core/Bar.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
 #include "Core/Settings.hpp"
@@ -30,6 +31,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/unordered_set.hpp>
 #include <Poco/Net/AcceptCertificateHandler.h>
 #include <Poco/Net/HTTPRequest.h>

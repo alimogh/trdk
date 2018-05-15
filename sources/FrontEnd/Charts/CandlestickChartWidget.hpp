@@ -33,7 +33,7 @@ class TRDK_FRONTEND_CHARTS_API CandlestickChartWidget : public ChartWidget {
  public slots:
   void SetCapacity(size_t);
   void SetNumberOfSecondsInFrame(size_t);
-  void UpdatePrice(const QDateTime&, const Price&) override;
+  void Update(const Bar&) override;
 
  private:
   class Implemnetation;

@@ -12,7 +12,6 @@
 #include "Consumer.hpp"
 #include "ModuleSecurityList.hpp"
 #include "Security.hpp"
-#include "Service.hpp"
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
@@ -77,16 +76,6 @@ void Consumer::OnNewTrade(Security &security,
       "Module subscribed to new trades, but can't work with it");
 }
 
-void Consumer::OnServiceDataUpdate(const Service &service,
-                                   const TimeMeasurement::Milestones &) {
-  GetLog().Error(
-      "Subscribed to \"%1%\", but can't work with it"
-      " (doesn't have OnServiceDataUpdate method implementation).",
-      service);
-  throw MethodIsNotImplementedException(
-      "Module subscribed to service, but can't work with it");
-}
-
 void Consumer::OnBrokerPositionUpdate(
     Security &security, bool, const Qty &, const Volume &, bool) {
   GetLog().Error(
@@ -97,10 +86,10 @@ void Consumer::OnBrokerPositionUpdate(
       "Module subscribed to Broker Positions Updates, but can't work with it");
 }
 
-void Consumer::OnNewBar(Security &security, const Security::Bar &) {
+void Consumer::OnBarUpdate(Security &security, const Bar &) {
   GetLog().Error(
-      "Subscribed to %1% new bars, but can't work with it"
-      " (doesn't have OnNewBar method implementation).",
+      "Subscribed to %1% bars, but can't work with it (doesn't have OnNewBar "
+      "method implementation).",
       security);
   throw MethodIsNotImplementedException(
       "Module subscribed to new bars, but can't work with it");

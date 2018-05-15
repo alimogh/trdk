@@ -10,11 +10,11 @@
 
 #pragma once
 
+#include "Core/Bar.hpp"
 #include "Core/PriceBook.hpp"
 #include "Core/Settings.hpp"
 #include "Context.hpp"
 #include "SubscriberPtrWrapper.hpp"
-#include "Fwd.hpp"
 
 namespace trdk {
 namespace Engine {
@@ -264,8 +264,7 @@ class Dispatcher : private boost::noncopyable {
   typedef EventQueue<std::vector<BrokerPositionUpdateEvent>>
       BrokerPositionsUpdateEventQueue;
 
-  typedef boost::tuple<Security *, Security::Bar, SubscriberPtrWrapper>
-      NewBarEvent;
+  typedef boost::tuple<Security *, Bar, SubscriberPtrWrapper> NewBarEvent;
   //! @todo HAVY OPTIMIZATION!!! Use preallocated buffer here instead
   //!       std::list.
   typedef EventQueue<std::vector<NewBarEvent>> NewBarEventQueue;
@@ -328,7 +327,7 @@ class Dispatcher : private boost::noncopyable {
                                   const Qty &,
                                   const Volume &,
                                   bool isInitial);
-  void SignalNewBar(SubscriberPtrWrapper &, Security &, const Security::Bar &);
+  void SignalNewBar(SubscriberPtrWrapper &, Security &, const Bar &);
   void SignalBookUpdateTick(SubscriberPtrWrapper &,
                             Security &,
                             const PriceBook &,
@@ -1157,8 +1156,7 @@ inline void Dispatcher::RaiseEvent(NewBarEvent &newBarEvent) {
 }
 template <>
 inline void Dispatcher::RaiseEvent(BookUpdateTickEvent &bookUpdateTickEvent) {
-  Lib::TimeMeasurement::Milestones &timeMeasurement =
-      boost::get<2>(bookUpdateTickEvent);
+  auto &timeMeasurement = boost::get<2>(bookUpdateTickEvent);
   timeMeasurement.Measure(Lib::TimeMeasurement::SM_DISPATCHING_DATA_DEQUEUE);
   boost::get<3>(bookUpdateTickEvent)
       .RaiseBookUpdateTickEvent(*boost::get<0>(bookUpdateTickEvent),

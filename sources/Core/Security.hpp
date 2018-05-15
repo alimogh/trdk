@@ -77,40 +77,6 @@ class TRDK_CORE_API Security : public Instrument {
       BrokerPositionUpdateSlot;
   typedef boost::signals2::connection BrokerPositionUpdateSlotConnection;
 
-  struct TRDK_CORE_API Bar {
-    enum Type { TRADES, BID, ASK, numberOfTypes };
-
-    //! Bar start time.
-    boost::posix_time::ptime time;
-    //! Data type.
-    Type type;
-
-    //! The bar opening price.
-    boost::optional<Price> openPrice;
-    //! The high price during the time covered by the bar.
-    boost::optional<Price> highPrice;
-
-    //! The low price during the time covered by the bar.
-    boost::optional<Price> lowPrice;
-    //! The bar closing price.
-    boost::optional<Price> closePrice;
-
-    //! The volume during the time covered by the bar.
-    boost::optional<Qty> volume;
-
-    //! Bar size (if bar-by-time). If period is not set - this is
-    //! bar-by-points.
-    /** @sa numberOfPoints
-     */
-    boost::optional<boost::posix_time::time_duration> period;
-    //! Number of points (if existent).
-    /** @sa period
-     */
-    boost::optional<size_t> numberOfPoints;
-
-    explicit Bar(const boost::posix_time::ptime&, const Type&);
-  };
-
   typedef void(NewBarSlotSignature)(const Bar&);
   typedef boost::function<NewBarSlotSignature> NewBarSlot;
   typedef boost::signals2::connection NewBarSlotConnection;
@@ -250,7 +216,6 @@ class TRDK_CORE_API Security : public Instrument {
    */
   bool HasExpiration() const;
 
- public:
   //! Subscribes to contract switching event.
   /**
    * Notification should be synchronous. Notification generator will wait until
@@ -435,7 +400,7 @@ class TRDK_CORE_API Security : public Instrument {
                 const Lib::TimeMeasurement::Milestones&,
                 bool useAsLastTrade);
 
-  void AddBar(Bar&&);
+  void UpdateBar(const Bar&);
 
   //! Sets security broker position info.
   /**
@@ -503,6 +468,17 @@ class TRDK_CORE_API Security : public Instrument {
   //! Continue contract switching which started by signal "contract switching
   //! signal".
   void ContinueContractSwitchingToNextExpiration();
+
+  void StartBars(const boost::posix_time::ptime& startTime,
+                 const boost::posix_time::time_duration& barSize);
+  void StopBars(const boost::posix_time::time_duration& barSize);
+
+ protected:
+  void SetBarsStartTime(const boost::posix_time::time_duration&,
+                        const boost::posix_time::ptime&);
+  std::vector<
+      std::pair<boost::posix_time::time_duration, boost::posix_time::ptime>>
+  GetStartedBars() const;
 
  private:
   class Implementation;

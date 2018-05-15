@@ -42,14 +42,6 @@ typedef std::map<std::string /*instanceName*/,
                  std::vector<ModuleHolder<Strategy>>>
     Strategies;
 
-typedef std::map<std::string /*instanceName*/,
-                 std::vector<ModuleHolder<Observer>>>
-    Observers;
-
-typedef std::map<std::string /*instanceName*/,
-                 std::vector<ModuleHolder<Service>>>
-    Services;
-
 typedef std::set<boost::shared_ptr<trdk::Lib::Dll>> ModuleList;
-}
-}
+}  // namespace Engine
+}  // namespace trdk

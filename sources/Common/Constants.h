@@ -84,10 +84,6 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 #define TRDK_CORE_FILE_NAME "Core"
 #define TRDK_CORE_DLL_FILE_NAME TRDK_CORE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
 
-#define TRDK_SERVICES_FILE_NAME "Services"
-#define TRDK_SERVICES_DLL_FILE_NAME \
-  TRDK_SERVICES_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
-
 #define TRDK_ENGINE_FILE_NAME "Engine"
 #define TRDK_ENGINE_DLL_FILE_NAME \
   TRDK_ENGINE_FILE_NAME TRDK_FILE_MODIFICATOR ".dll"
@@ -162,9 +158,9 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
 
 #define TRDK_GET_MODUE_FILE_NAME_LIST()                                        \
   {                                                                            \
-    TRDK_CORE_FILE_NAME, TRDK_SERVICES_FILE_NAME, TRDK_ENGINE_FILE_NAME,       \
-        TRDK_ENGINE_SERVER_FILE_NAME, TRDK_TESTS_FILE_NAME,                    \
-        TRDK_INTERACTION_TEST_FILE_NAME, TRDK_INTERACTION_CSV_FILE_NAME,       \
+    TRDK_CORE_FILE_NAME, TRDK_ENGINE_FILE_NAME, TRDK_ENGINE_SERVER_FILE_NAME,  \
+        TRDK_TESTS_FILE_NAME, TRDK_INTERACTION_TEST_FILE_NAME,                 \
+        TRDK_INTERACTION_CSV_FILE_NAME,                                        \
         TRDK_INTERACTION_FIXPROTOCOL_FILE_NAME,                                \
         TRDK_INTERACTION_REST_FILE_NAME, TRDK_INTERACTION_EXMO_FILE_NAME,      \
         TRDK_STRATEGY_TEST_FILE_NAME,                                          \
@@ -173,6 +169,7 @@ enum Profile { PROFILE_RELAX, PROFILE_HFT, numberOfProfiles };
         TRDK_STRATEGY_TRIANGULARARBITRAGE_FILE_NAME,                           \
         TRDK_FRONTEND_LIB_FILE_NAME, TRDK_FRONTEND_SHELL_LIB_FILE_NAME,        \
         TRDK_FRONTEND_CHARTS_FILE_NAME                                         \
+  \
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -10,17 +10,14 @@
 
 #include "Prec.hpp"
 #include "Ini.hpp"
-#include "Core/Settings.hpp"
 
 namespace fs = boost::filesystem;
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Engine;
-using namespace trdk::Engine::Ini;
+using namespace Lib;
+using namespace Engine;
+using namespace Ini;
 
 const std::string Sections::strategy = "Strategy";
-const std::string Sections::observer = "Observer";
-const std::string Sections::service = "Service";
 
 const std::string Keys::module = "module";
 const std::string Keys::factory = "factory";
@@ -32,5 +29,3 @@ const std::string Constants::Services::level1Ticks = "Level 1 ticks";
 const std::string Constants::Services::trades = "Trades";
 const std::string Constants::Services::brokerPositionsUpdates =
     "Broker positions";
-
-const std::string DefaultValues::Modules::service = "Services";

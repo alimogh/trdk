@@ -11,15 +11,12 @@
 #include "Prec.hpp"
 #include "Context.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Core/Observer.hpp"
 #include "Core/RiskControl.hpp"
-#include "Core/Service.hpp"
 #include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "ContextBootstrap.hpp"
-#include "Ini.hpp"
 #include "SubscriptionsManager.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
@@ -118,12 +115,9 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
   SubscriptionsManager subscriptionsManager;
 
   Strategies strategies;
-  Observers observers;
-  Services services;
 
   DropCopy *dropCopy;
 
- public:
   explicit State(Context &context, DropCopy *dropCopy)
       : context(context), subscriptionsManager(context), dropCopy(dropCopy) {}
 
@@ -155,11 +149,8 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
           boost::join(markedDataSourcesStat, ", "));
     }
 
-    context.GetLog().Debug("Loaded %1% observers.", observers.size());
     context.GetLog().Debug("Loaded %1% strategies (%2% instances).",
                            strategies.size(), GetModulesCount(strategies));
-    context.GetLog().Debug("Loaded %1% services (%2% instances).",
-                           services.size(), GetModulesCount(services));
   }
 
   Strategy &GetSrategy(const ids::uuid &id) {
@@ -340,9 +331,7 @@ void Engine::Context::Start(
 
     try {
       BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
-                       m_pimpl->m_state->strategies,
-                       m_pimpl->m_state->observers, m_pimpl->m_state->services,
-                       m_pimpl->m_modulesDlls);
+                       m_pimpl->m_state->strategies, m_pimpl->m_modulesDlls);
     } catch (const Lib::Exception &ex) {
       GetLog().Error("Failed to init engine context: \"%1%\".", ex);
       throw Exception("Failed to init engine context");
@@ -443,8 +432,7 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
   try {
     BootNewStrategiesForContextState(
         newStrategiesConf, *this, m_pimpl->m_state->subscriptionsManager,
-        m_pimpl->m_state->strategies, m_pimpl->m_state->services,
-        m_pimpl->m_modulesDlls);
+        m_pimpl->m_state->strategies, m_pimpl->m_modulesDlls);
   } catch (const Lib::Exception &ex) {
     GetLog().Error("Failed to add new entities into engine context: \"%1%\".",
                    ex);
@@ -506,9 +494,7 @@ void Engine::Context::Update(const Lib::Ini &conf) {
     }
   }
 
-  UpdateModules(conf, m_pimpl->m_state->services);
   UpdateModules(conf, m_pimpl->m_state->strategies);
-  UpdateModules(conf, m_pimpl->m_state->observers);
 
   GetLog().Debug("Setting update completed.");
 }

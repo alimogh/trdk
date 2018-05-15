@@ -15,46 +15,25 @@
 
 using namespace trdk;
 using namespace FrontEnd::Charts;
+namespace pt = boost::posix_time;
 
 class CandlestickChartWidget::Implemnetation : boost::noncopyable {
  public:
+  CandlestickChartWidget& m_self;
   CandlestickChart* m_chart;
-
-  QDateTime m_setTime;
-  QCandlestickSet m_set;
 
   size_t m_numberOfSecondsInFrame;
 
   explicit Implemnetation(CandlestickChartWidget& self,
                           const size_t numberOfSecondsInFrame)
-      : m_set(0, &self), m_numberOfSecondsInFrame(numberOfSecondsInFrame) {
+      : m_self(self), m_numberOfSecondsInFrame(numberOfSecondsInFrame) {
     AssertEq(0, m_numberOfSecondsInFrame % 60);
   }
 
-  void UpdatePrice(const QDateTime& updateTime, const Price& price) {
-    if (!m_setTime.isValid() ||
-        m_setTime.addSecs(m_numberOfSecondsInFrame) <= updateTime) {
-      m_setTime = updateTime;
-      const auto& time = m_setTime.time();
-      m_setTime.setTime(
-          {time.hour(),
-           static_cast<int>((time.minute() / (m_numberOfSecondsInFrame / 60)) *
-                            (m_numberOfSecondsInFrame / 60)),
-           0});
-      m_set.setTimestamp(static_cast<qreal>(m_setTime.toSecsSinceEpoch()));
-      m_set.setOpen(price);
-      m_set.setHigh(price);
-      m_set.setLow(price);
-      m_set.setClose(price);
-    } else {
-      if (m_set.high() < price) {
-        m_set.setHigh(price);
-      } else if (m_set.low() > price) {
-        m_set.setLow(price);
-      }
-      m_set.setClose(price);
-    }
-    m_chart->Update(m_set);
+  void Update(const Bar& bar) {
+    m_chart->Update(QCandlestickSet{
+        *bar.openPrice, *bar.highPrice, *bar.lowPrice, *bar.closePrice,
+                        static_cast<qreal>(pt::to_time_t(bar.time)), &m_self});
   }
 };
 
@@ -96,7 +75,4 @@ size_t CandlestickChartWidget::GetCapacity() const {
   return m_pimpl->m_chart->GetCapacity();
 }
 
-void CandlestickChartWidget::UpdatePrice(const QDateTime& time,
-                                         const Price& price) {
-  m_pimpl->UpdatePrice(time, price);
-}
+void CandlestickChartWidget::Update(const Bar& bar) { m_pimpl->Update(bar); }

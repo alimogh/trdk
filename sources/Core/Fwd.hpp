@@ -23,18 +23,17 @@ class Balances;
 class OrderTransactionContext;
 class OrderStatusHandler;
 class Trade;
+
+struct Bar;
+
 class TradingSystem;
 class MarketDataSource;
 
-typedef std::int32_t DropCopyStrategyInstanceId;
-typedef std::int32_t DropCopyDataSourceInstanceId;
 class DropCopy;
 
 class Module;
 class Consumer;
 class Strategy;
-class Observer;
-class Service;
 
 typedef size_t RiskControlOperationId;
 class RiskControl;
@@ -58,4 +57,4 @@ class ModuleTradingLog;
 
 class Timer;
 class TimerScope;
-}
+}  // namespace trdk

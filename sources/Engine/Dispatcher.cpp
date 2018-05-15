@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Dispatcher.hpp"
-#include "Core/Observer.hpp"
 #include "Core/Strategy.hpp"
 #include "Context.hpp"
 
@@ -296,7 +295,7 @@ void Dispatcher::SignalBrokerPositionUpdate(SubscriberPtrWrapper &subscriber,
 
 void Dispatcher::SignalNewBar(SubscriberPtrWrapper &subscriber,
                               Security &security,
-                              const Security::Bar &bar) {
+                              const Bar &bar) {
   try {
     if (subscriber.IsBlocked()) {
       return;

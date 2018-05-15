@@ -23,9 +23,12 @@ class TRDK_INTERACTION_REST_API Security : public trdk::Security {
                     MarketDataSource &,
                     const SupportedLevel1Types &);
 
+  using Base::GetStartedBars;
+  using Base::SetBarsStartTime;
   using Base::SetLevel1;
   using Base::SetOnline;
   using Base::SetTradingSessionState;
+  using Base::UpdateBar;
 };
 
 }  // namespace Rest

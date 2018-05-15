@@ -11,7 +11,6 @@
 #include "Prec.hpp"
 #include "Engine.hpp"
 #include "DropCopy.hpp"
-#include <utility>
 
 using namespace trdk;
 using namespace Lib;
@@ -184,6 +183,14 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
         &m_dropCopy, &DropCopy::PriceUpdate, &m_self,
         [this](const Security* security) { emit m_self.PriceUpdate(security); },
         Qt::QueuedConnection));
+
+    qRegisterMetaType<Bar>("trdk::FrontEnd::Bar");
+    Verify(
+        m_self.connect(&m_dropCopy, &DropCopy::BarUpdate, &m_self,
+                       [this](const Security* security, const trdk::Bar& bar) {
+                         emit m_self.BarUpdate(security, bar);
+                       },
+                       Qt::QueuedConnection));
   }
 
   void OnContextStateChanged(const Context::State& newState,
@@ -213,6 +220,8 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
                                   .arg(QString::fromStdString(*updateMessage)),
                               true);
         }
+        break;
+      default:
         break;
     }
   }

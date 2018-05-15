@@ -15,14 +15,8 @@ namespace trdk {
 
 //////////////////////////////////////////////////////////////////////////
 
-typedef boost::variant<trdk::ConstStrategyRefWrapper,
-                       trdk::ConstServiceRefWrapper,
-                       trdk::ConstObserverRefWrapper>
-    ConstModuleRefVariant;
-typedef boost::variant<trdk::StrategyRefWrapper,
-                       trdk::ServiceRefWrapper,
-                       trdk::ObserverRefWrapper>
-    ModuleRefVariant;
+typedef boost::variant<trdk::ConstStrategyRefWrapper> ConstModuleRefVariant;
+typedef boost::variant<trdk::StrategyRefWrapper> ModuleRefVariant;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -34,22 +28,14 @@ struct GetConstModule : public boost::static_visitor<const trdk::Module &> {
   const trdk::Strategy &operator()(const trdk::Strategy &module) const {
     return module;
   }
-  const trdk::Service &operator()(const trdk::Service &module) const {
-    return module;
-  }
-  const trdk::Observer &operator()(const trdk::Observer &module) const {
-    return module;
-  }
 };
 
 struct GetModule : public boost::static_visitor<trdk::Module &> {
   trdk::Strategy &operator()(trdk::Strategy &module) const { return module; }
-  trdk::Service &operator()(trdk::Service &module) const { return module; }
-  trdk::Observer &operator()(trdk::Observer &module) const { return module; }
 };
 
 //////////////////////////////////////////////////////////////////////////
-}
+}  // namespace Visitors
 
 //////////////////////////////////////////////////////////////////////////
-}
+}  // namespace trdk
