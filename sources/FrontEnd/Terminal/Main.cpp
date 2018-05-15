@@ -45,7 +45,13 @@ int main(int argc, char *argv[]) {
   splash->show();
 
   try {
-    application.setApplicationName(TRDK_NAME);
+    application.setApplicationName(TRDK_NAME
+#ifdef DEV_VER
+
+                                   " (build: " TRDK_BUILD_IDENTITY
+                                   ",  build time: " __DATE__ " " __TIME__ ")"
+#endif
+    );
     application.setOrganizationDomain(TRDK_DOMAIN);
     splash->ShowMessage(
         application.tr("Loading " TRDK_NAME "...").toStdString());
