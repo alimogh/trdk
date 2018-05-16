@@ -1,0 +1,31 @@
+{
+  "name": "master",
+  "productName": "Trading Robot Development Kit",
+  "productNameFile": "trdk",
+  "vendorName": "Eugene V. Palchukovsky",
+  "domain": "robotdk.com",
+  "licenseServiceSubdomain": "licensing",
+  "supportEmail": "support@robotdk.com",
+  "copyright": "Copyright 2018 (C) Eugene V. Palchukovsky, robotdk.com. All rights reserved.",
+  "concurrencyProfileDebug": "PROFILE_RELAX",
+  "concurrencyProfileTest": "PROFILE_RELAX",
+  "concurrencyProfileRelease": "PROFILE_RELAX",
+  "guaranteedUsageDaysNumber": 30,
+  "numberOfDaysBeforeUsageStop": 75,
+  "requiredModules": [
+    "Core",
+    "Engine",
+    "FrontEnd",
+    "Shell",
+    "Charts",
+    "TestTradingSystems",
+    "FixProtocol",
+    "Rest",
+    "Exmo",
+    "TestStrategy",
+    "ArbitrationAdvisor",
+    "MarketMaker",
+    "PingPong",
+    "TriangularArbitrage"
+  ]
+}

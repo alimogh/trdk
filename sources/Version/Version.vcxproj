@@ -256,21 +256,8 @@
     <OutDir>$(ProjectDir)</OutDir>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="Branch.json" />
     <None Include="Compile.js">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">true</ExcludedFromBuild>
-    </None>
-    <None Include="SetVersion.cmd">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">true</ExcludedFromBuild>
@@ -323,6 +310,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">null</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">null</Outputs>
     </CustomBuild>
+    <None Include="Version.json" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Restrictions.h" />

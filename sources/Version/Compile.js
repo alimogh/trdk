@@ -10,62 +10,35 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// Customization:
-
-var branch = "master"
-var productName	= "Trading Robot Development Kit"
-var vendorName = "Eugene V. Palchukovsky"
-var domain = "robotdk.com"
-var licenseServiceSubdomain = "licensing"
-var supportEmail = "support@" + domain
-var copyright = "Copyright 2018 (C) " + vendorName + ", " + domain + ". All rights reserved."
-var concurrencyProfileDebug = "PROFILE_RELAX"
-var concurrencyProfileTest = "PROFILE_RELAX"
-var concurrencyProfileRelease = "PROFILE_RELAX"
-var guaranteedUsageDaysNumber = 30
-var numberOfDaysBeforeUsageStop = guaranteedUsageDaysNumber + 45;
-var requiredModules = [
-	'Core'
-	, 'Engine'
-	, 'FrontEnd'
-	, 'Shell'
-	, 'Charts'
-	, 'TestTradingSystems'
-	, 'FixProtocol'
-	, 'Rest'
-	, 'Exmo'
-	, 'TestStrategy'
-	, 'ArbitrationAdvisor'
-	, 'MarketMaker'
-	, 'PingPong'
-	, 'TriangularArbitrage'
-]
-
-//////////////////////////////////////////////////////////////////////////
 
 var shell = new ActiveXObject("WScript.Shell");
 var fileSystem = new ActiveXObject("Scripting.FileSystemObject");
 var inputFile = "";
 var outputDir = "";
+var version = null;
+
+eval('branch = ' +  fileSystem.OpenTextFile('Branch.json', 1).ReadAll());
 
 //////////////////////////////////////////////////////////////////////////
 
-function GetArgs() {
+function LoadArgs() {
 	for (i = 0; i < WScript.Arguments.length; ++i) {
 		var arg = WScript.Arguments(i);
 		var opt = arg.substring(0, arg.indexOf("="));
 		if (opt.length == 0) {
-			return false;
+			throw "Failed to get required arguments";
 		}
 		if (opt == "InputFile") {
 			inputFile = arg.substring(opt.length + 1, arg.length);
 		} else if (opt == "OutputDir") {
 			outputDir = arg.substring(opt.length + 1, arg.length);
 		} else {
-			return false;
+			throw "Unknown argument";
 		}
 	}
-	return inputFile != "" && outputDir != "";
+	if (inputFile == "" || outputDir == "") {
+		throw "Failed to get required arguments";
+	}
 }
 
 function IsExistsInFile(filePath, line) {
@@ -76,73 +49,67 @@ function IsExistsInFile(filePath, line) {
 				return true;
 			}
 		}
-	} catch (e) {
-		//...//
+	} catch (ex) {
 	}
 	return false;
 }
 
-function GetVersion() {
-	var f = fileSystem.OpenTextFile(inputFile, 1, false);
-	if (f.AtEndOfStream != true) {
-		var expression = /^\s*(\d+)\.(\d+)\.(\d+)\s*$/;
-		var match = expression.exec(f.ReadLine());
-		if (match) {
-			var version = new Object;
-			version.release = match[1];
-			version.build = match[2];
-			version.status = match[3];
-			return version;
-		} else {
-			shell.Popup("Version compiling: could not parse version file.");
-		}
-	} else {
-		shell.Popup("Version compiling: could not find version file.");
+function CompileVersion() {
+	var source = fileSystem.OpenTextFile(inputFile, 1, false);
+	if (source.AtEndOfStream == true) {
+		throw "Could not find version file";
 	}
-	return null;
+	var expression = /^\s*(\d+)\.(\d+)\.(\d+)\s*$/;
+	var match = expression.exec(source.ReadLine());
+	if (!match) {
+		throw "Could not parse version file";
+	}
+	var result = fileSystem.CreateTextFile(outputDir + "Version.json", true);
+	result.WriteLine("{");
+	result.WriteLine('  "release": ' + match[1] + ',');
+	result.WriteLine('  "build": ' + match[2] + ',');
+	result.WriteLine('  "status": ' + match[3]);
+	result.WriteLine("}");
+	result.Close();
+	eval('version = ' + fileSystem.OpenTextFile(outputDir + 'Version.json', 1).ReadAll());
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 function CreateVersionCppHeaderFile() {
 
-	var version = GetVersion();
-	if (version == null) {
-		return;
-	}
-
 	var versionReleaseLine		= "#define TRDK_VERSION_RELEASE " + version.release;
 	var versionBuildLine		= "#define TRDK_VERSION_BUILD " + version.build;
 	var versionStatusLine		= "#define TRDK_VERSION_STATUS " + version.status;
 
-	var versionBranchLine		= "#define TRDK_VERSION_BRANCH \"" + branch + "\"";
-	var versionBranchLineW		= "#define TRDK_VERSION_BRANCH_W L\"" + branch + "\"";
+	var versionBranchLine		= "#define TRDK_VERSION_BRANCH \"" + branch.name + "\"";
+	var versionBranchLineW		= "#define TRDK_VERSION_BRANCH_W L\"" + branch.name + "\"";
 
-	var vendorLine				= "#define TRDK_VENDOR \"" + vendorName + "\"";
-	var vendorLineW				= "#define TRDK_VENDOR_W L\"" + vendorName + "\"";
+	var vendorLine				= "#define TRDK_VENDOR \"" + branch.vendorName + "\"";
+	var vendorLineW				= "#define TRDK_VENDOR_W L\"" + branch.vendorName + "\"";
 
-	var domainLine				= "#define TRDK_DOMAIN \"" + domain + "\"";
-	var domainLineW				= "#define TRDK_DOMAIN_W L\"" + domain + "\"";
+	var domainLine				= "#define TRDK_DOMAIN \"" + branch.domain + "\"";
+	var domainLineW				= "#define TRDK_DOMAIN_W L\"" + branch.domain + "\"";
 
-	var supportEmailLine		= "#define TRDK_SUPPORT_EMAIL \"" + supportEmail + "\"";
-	var supportEmailLineW		= "#define TRDK_SUPPORT_EMAIL_W L\"" + supportEmail + "\"";
+	var supportEmailLine		= "#define TRDK_SUPPORT_EMAIL \"" + branch.supportEmail + "\"";
+	var supportEmailLineW		= "#define TRDK_SUPPORT_EMAIL_W L\"" + branch.supportEmail + "\"";
 
-	var licenseServiceSubdomainLine = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN \"" + licenseServiceSubdomain + "\"";
-	var licenseServiceSubdomainLineW = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W L\"" + licenseServiceSubdomain + "\"";
+	var licenseServiceSubdomainLine = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN \"" + branch.licenseServiceSubdomain + "\"";
+	var licenseServiceSubdomainLineW = "#define TRDK_LICENSE_SERVICE_SUBDOMAIN_W L\"" + branch.licenseServiceSubdomain + "\"";
 	
-	var nameLine				= "#define TRDK_NAME \"" + productName + "\"";
-	var nameLineW				= "#define TRDK_NAME_W L\"" + productName + "\"";
+	var nameLine				= "#define TRDK_NAME \"" + branch.productName + "\"";
+	var nameLineW				= "#define TRDK_NAME_W L\"" + branch.productName + "\"";
 	
-	var copyrightLine			= "#define TRDK_COPYRIGHT \"" + copyright + "\"";
-	var copyrightLineW = "#define TRDK_COPYRIGHT_W L\"" + copyright + "\"";
+	var copyrightLine			= "#define TRDK_COPYRIGHT \"" + branch.copyright + "\"";
+	var copyrightLineW = "#define TRDK_COPYRIGHT_W L\"" + branch.copyright + "\"";
 
-	var concurrencyProfileLineDebug = "#define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::" + concurrencyProfileDebug + ")"
-	var concurrencyProfileLineTest = "#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::" + concurrencyProfileTest + ")"
-	var concurrencyProfileLineRelease = "#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::" + concurrencyProfileRelease + ")"
+	var concurrencyProfileLineDebug = "#define TRDK_CONCURRENCY_PROFILE_DEBUG (::trdk::Lib::Concurrency::" + branch.concurrencyProfileDebug + ")"
+	var concurrencyProfileLineTest = "#define TRDK_CONCURRENCY_PROFILE_TEST (::trdk::Lib::Concurrency::" + branch.concurrencyProfileTest + ")"
+	var concurrencyProfileLineRelease = "#define TRDK_CONCURRENCY_PROFILE_RELEASE (::trdk::Lib::Concurrency::" + branch.concurrencyProfileRelease + ")"
 
 	var requiredModulesLine = '';
-	for (var i = 0; i < requiredModules.length; ++i) {
-		requiredModulesLine += '"' + requiredModules[i] + '", ';
+	for (var i = 0; i < branch.requiredModules.length; ++i) {
+		requiredModulesLine += '"' + branch.requiredModules[i] + '", ';
 	}
 	requiredModulesLine = '#define TRDK_GET_REQUIRED_MODUE_FILE_NAME_LIST() {' + requiredModulesLine + '};';
 
@@ -205,13 +172,13 @@ function CreateVersionCppHeaderFile() {
 	restrictionsFile.WriteLine("");
 	restrictionsFile.WriteLine("#pragma once");
 	restrictionsFile.WriteLine("");
-	if (branch != "master" && (guaranteedUsageDaysNumber != 0 || numberOfDaysBeforeUsageStop != 0)) {
+	if (branch.name != "master" && (branch.guaranteedUsageDaysNumber != 0 || branch.numberOfDaysBeforeUsageStop != 0)) {
 		var date = new Date;
-		date.setDate(date.getDate() + guaranteedUsageDaysNumber);
+		date.setDate(date.getDate() + branch.guaranteedUsageDaysNumber);
 		restrictionsFile.WriteLine("// " + date.toString());
 		restrictionsFile.WriteLine("#define TRDK_GUARANTEED_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
 		date = new Date;
-		date.setDate(date.getDate() + numberOfDaysBeforeUsageStop);
+		date.setDate(date.getDate() + branch.numberOfDaysBeforeUsageStop);
 		restrictionsFile.WriteLine("// " + date.toString());
 		restrictionsFile.WriteLine("#define TRDK_USAGE_STOP_TIMESTAMP_MS " + date.getTime());
 	} else {
@@ -222,45 +189,15 @@ function CreateVersionCppHeaderFile() {
 
 }
 
-function CreateVersionCmdFile() {
-	
-	var version = GetVersion();
-	if (version == null) {
-		return;
-	}
-
-	var f = fileSystem.CreateTextFile(outputDir + "SetVersion.cmd", true);
-	f.WriteLine("");
-	f.WriteLine("set TrdkVersionRelease=" + version.release);
-	f.WriteLine("set TrdkVersionBuild=" + version.build);
-	f.WriteLine("set TrdkVersionStatus=" + version.status);
-	f.WriteLine("set TrdkVersionBranch=" + branch);
-	f.WriteLine("");
-	f.WriteLine("set TrdkVersion=%TrdkVersionMajorHigh%.%TrdkVersionMajorLow%.%TrdkVersionMinorHigh%");
-	f.WriteLine("set TrdkVersionFull=%TrdkVersionMajorHigh%.%TrdkVersionMajorLow%.%TrdkVersionMinorHigh%.%TrdkVersionMinorLow%");
-	f.WriteLine("");
-	f.WriteLine("set TrdkVendor=" + vendorName);
-	f.WriteLine("set TrdkDomain=" + domain);
-	f.WriteLine("set TrdkSupportEmail=" + supportEmail);
-	f.WriteLine("set TrdkName=" + productName);
-
-}
-
-function main() {
-	if (!GetArgs()) {
-		shell.Popup("Version compiling: Wrong arguments!");
-		return;
-	}
-	CreateVersionCppHeaderFile();
-	CreateVersionCmdFile();
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 try {
-	main();
-} catch (e) {
-	shell.Popup("Version compiling: " + e.message);
+	LoadArgs();
+	CompileVersion();
+	CreateVersionCppHeaderFile();
+} catch (ex) {
+	shell.Popup("Version compiling: " + ex.message);
+	throw "Failed to compile Version";
 }
 
 //////////////////////////////////////////////////////////////////////////

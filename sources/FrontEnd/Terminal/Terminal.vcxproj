@@ -76,13 +76,13 @@
     <Import Project="..\..\Configuration Release.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
-    <TargetName>Terminal_dbg</TargetName>
+    <TargetName>Trdk_dbg</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
-    <TargetName>Terminal_test</TargetName>
+    <TargetName>Trdk_test</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
-    <TargetName>Terminal</TargetName>
+    <TargetName>Trdk</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
     <ClCompile>

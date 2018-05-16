@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug Standalone|Win32">
+      <Configuration>Debug Standalone</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug Standalone|x64">
+      <Configuration>Debug Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Standalone|Win32">
+      <Configuration>Release Standalone</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Standalone|x64">
+      <Configuration>Release Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Test Standalone|Win32">
+      <Configuration>Test Standalone</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Test Standalone|x64">
+      <Configuration>Test Standalone</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{EC3875D6-5056-4D5E-A567-C0D24E86A9F3}</ProjectGuid>
+    <RootNamespace>Installer</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Release.props" />
+    <Import Project="..\Configuration Release.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Release.props" />
+    <Import Project="..\Configuration Release.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Test.props" />
+    <Import Project="..\Configuration Test.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Test.props" />
+    <Import Project="..\Configuration Test.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x86.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Debug.props" />
+    <Import Project="..\Configuration Debug.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)Default.props" />
+    <Import Project="..\x64.props" />
+    <Import Project="..\Distribution Standalone.props" />
+    <Import Project="..\Distribution Standalone Debug.props" />
+    <Import Project="..\Configuration Debug.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
+    </TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">_test</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">_dbg</TargetName>
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'" />
+    <ExtensionsToDeleteOnClean Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">
+    <PostBuildEvent />
+    <PreBuildEvent />
+    <PreBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="Compile.js">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">null</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">null</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">null</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">null</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">null</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">cscript.exe "$(ProjectDir)Compile.js" "OutputDir=$(OutDir)" "IntDir=$(IntDir)" "Configuration=$(Configuration)" "SourceDir=$(OutDir)" "SolutionDir=$(SolutionDir)" "ProjectDir=$(ProjectDir)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">null</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|Win32'">Compiling installer...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Compiling installer...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|Win32'">Compiling installer...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Test Standalone|x64'">Compiling installer...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|x64'">Compiling installer...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release Standalone|x64'">Compiling installer...</Message>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config\config.xml" />
+    <Xml Include="packages\com.robotdk.trdk\meta\package.xml">
+      <SubType>Designer</SubType>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config\Controller.qs" />
+    <None Include="packages\com.robotdk.trdk\meta\Component.qs" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
