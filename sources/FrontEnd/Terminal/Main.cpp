@@ -63,6 +63,22 @@ int main(int argc, char *argv[]) {
         nullptr);
     std::vector<std::unique_ptr<trdk::Lib::Dll>> moduleDlls;
 
+    for (;;) {
+      try {
+        engine.Start([&splash](const std::string &message) {
+          splash->ShowMessage(message);
+        });
+        break;
+      } catch (const std::exception &ex) {
+        if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
+                                  QString("%1.").arg(ex.what()),
+                                  QMessageBox::Abort | QMessageBox::Retry) !=
+            QMessageBox::Retry) {
+          return 1;
+        }
+      }
+    }
+
     MainWindow mainWindow(engine, moduleDlls, nullptr);
     mainWindow.setEnabled(false);
     mainWindow.setWindowState(Qt::WindowMaximized);
@@ -77,22 +93,6 @@ int main(int argc, char *argv[]) {
       mainWindow.LoadModule("TriangularArbitrage");
       mainWindow.LoadModule("MarketMaker");
       mainWindow.LoadModule("PingPong");
-    }
-
-    for (;;) {
-      try {
-        mainWindow.GetEngine().Start([&splash](const std::string &message) {
-          splash->ShowMessage(message);
-        });
-        break;
-      } catch (const std::exception &ex) {
-        if (QMessageBox::critical(nullptr, application.tr("Failed to start"),
-                                  QString("%1.").arg(ex.what()),
-                                  QMessageBox::Abort | QMessageBox::Retry) !=
-            QMessageBox::Retry) {
-          return 1;
-        }
-      }
     }
 
     {

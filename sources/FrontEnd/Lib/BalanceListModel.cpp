@@ -48,14 +48,13 @@ class BalanceListModel::Implementation : boost::noncopyable {
       m_data;
   boost::unordered_set<std::string> m_defaultSymbols;
 
- public:
   explicit Implementation(BalanceListModel& self) : m_self(self) {}
 
   void OnUpdate(const TradingSystem* tradingSystem,
                 const std::string& symbol,
                 const Volume& available,
                 const Volume& locked,
-                bool isDefault) {
+                const bool isDefault) {
     auto tradingSystemIt = m_data.find(tradingSystem);
     if (tradingSystemIt == m_data.cend()) {
       if (!isDefault) {
@@ -65,7 +64,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
       }
       tradingSystemIt = m_data.find(tradingSystem);
       if (tradingSystemIt == m_data.cend()) {
-        const bool isUsed = m_defaultSymbols.count(symbol) > 0;
+        const auto isUsed = m_defaultSymbols.count(symbol) > 0;
         if (!isUsed && available == 0 && locked == 0) {
           return;
         }
@@ -88,7 +87,7 @@ class BalanceListModel::Implementation : boost::noncopyable {
       auto& symbolList = tradingSystemIt->second.second;
       const auto& symbolIt = symbolList.find(symbol);
       if (symbolIt == symbolList.cend()) {
-        const bool isUsed = m_defaultSymbols.count(symbol) > 0;
+        const auto isUsed = m_defaultSymbols.count(symbol) > 0;
         if (!isUsed && available == 0 && locked == 0) {
           return;
         }
@@ -121,7 +120,21 @@ class BalanceListModel::Implementation : boost::noncopyable {
 
 BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
     : Base(parent), m_pimpl(boost::make_unique<Implementation>(*this)) {
-  if (engine.IsStarted()) {
+  for (const auto& symbol :
+       IniSectionRef(engine.GetContext().GetSettings().GetConfig(), "Defaults")
+           .ReadList("symbol_list", ",", true)) {
+    for (auto it = boost::make_split_iterator(
+             symbol, boost::first_finder("_", boost::is_iequal()));
+         !it.eof(); ++it) {
+      auto subSymbol = boost::copy_range<std::string>(*it);
+      if (!subSymbol.empty()) {
+        m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
+      }
+    }
+  }
+  Verify(connect(&engine.GetDropCopy(), &front::DropCopy::BalanceUpdate, this,
+                 &BalanceListModel::OnUpdate, Qt::QueuedConnection));
+  {
     const auto& size = engine.GetContext().GetNumberOfTradingSystems();
     for (size_t i = 0; i < size; ++i) {
       const auto& tradingSystem =
@@ -134,23 +147,6 @@ BalanceListModel::BalanceListModel(const front::Engine& engine, QWidget* parent)
           });
     }
   }
-  {
-    const IniFile conf(engine.GetConfigFilePath());
-    const IniSectionRef defaults(conf, "Defaults");
-    for (const std::string& symbol :
-         defaults.ReadList("symbol_list", ",", true)) {
-      for (auto it = boost::make_split_iterator(
-               symbol, boost::first_finder("_", boost::is_iequal()));
-           !it.eof(); ++it) {
-        auto subSymbol = boost::copy_range<std::string>(*it);
-        if (!subSymbol.empty()) {
-          m_pimpl->m_defaultSymbols.emplace(std::move(subSymbol));
-        }
-      }
-    }
-  }
-  Verify(connect(&engine.GetDropCopy(), &front::DropCopy::BalanceUpdate, this,
-                 &BalanceListModel::OnUpdate, Qt::QueuedConnection));
 }
 
 BalanceListModel::~BalanceListModel() = default;

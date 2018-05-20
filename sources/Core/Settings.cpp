@@ -10,7 +10,6 @@
 
 #include "Prec.hpp"
 #include "Settings.hpp"
-#include "Security.hpp"
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -18,7 +17,42 @@ namespace fs = boost::filesystem;
 namespace lt = boost::local_time;
 
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
+
+namespace {
+
+class IniFile : public Ini {
+ public:
+  explicit IniFile(const fs::path &path)
+      : m_file(FindIniFile(path).string().c_str()) {
+    if (!m_file) {
+      throw Error("Failed to open INI-file");
+    }
+  }
+  ~IniFile() override = default;
+
+ protected:
+  std::istream &GetSource() const override { return m_file; }
+
+ private:
+  static fs::path FindIniFile(const fs::path &source) {
+    if (boost::iends_with(source.string(), ".ini")) {
+      return source;
+    }
+    if (fs::exists(source)) {
+      return source;
+    }
+    const fs::path pathWhithExt = source.string() + ".ini";
+    if (!fs::exists(pathWhithExt)) {
+      return source;
+    }
+    return pathWhithExt;
+  }
+
+  mutable std::ifstream m_file;
+};
+
+}  // namespace
 
 Settings::Settings()
     : m_defaultSecurityType(numberOfSecurityTypes),
@@ -27,13 +61,15 @@ Settings::Settings()
       m_isMarketDataLogEnabled(false),
       m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
 
-Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
-    : m_defaultSecurityType(numberOfSecurityTypes),
+Settings::Settings(const fs::path &confFile,
+                   const pt::ptime &universalStartTime)
+    : m_ini(boost::make_unique<IniFile>(confFile)),
+      m_defaultSecurityType(numberOfSecurityTypes),
       m_defaultCurrency(numberOfCurrencies),
       m_isReplayMode(false),
       m_isMarketDataLogEnabled(false) {
-  const IniSectionRef commonConf(conf, "General");
-  const IniSectionRef defaultsConf(conf, "Defaults");
+  const IniSectionRef commonConf(*m_ini, "General");
+  const IniSectionRef defaultsConf(*m_ini, "Defaults");
 
   const_cast<bool &>(m_isReplayMode) = commonConf.ReadBoolKey("is_replay_mode");
 
@@ -44,8 +80,8 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
       boost::make_shared<lt::posix_time_zone>(commonConf.ReadKey("timezone"));
 
   {
-    const char *const currencyKey = "currency";
-    std::string currency = defaultsConf.ReadKey(currencyKey);
+    const auto *const currencyKey = "currency";
+    auto currency = defaultsConf.ReadKey(currencyKey);
     if (!currency.empty()) {
       try {
         const_cast<Currency &>(m_defaultCurrency) =
@@ -77,7 +113,7 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
   }
 
   {
-    const char *const key =
+    const auto *const key =
         "number_of_days_before_expiry_day_to_switch_contract";
     if (commonConf.IsKeyExist(key)) {
       const_cast<gr::date_duration &>(m_periodBeforeExpiryDayToSwitchContract) =
@@ -86,7 +122,7 @@ Settings::Settings(const Ini &conf, const pt::ptime &universalStartTime)
   }
 
   {
-    const char *const key = "symbol_aliases";
+    const auto *const key = "symbol_aliases";
     if (commonConf.IsKeyExist(key)) {
       for (const auto &item : commonConf.ReadList(key, ",", false)) {
         const auto &delimter = item.find("=");

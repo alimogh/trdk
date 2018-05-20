@@ -75,15 +75,11 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
       m_riskControls;
   QSqlDatabase* const m_db;
 
- public:
   explicit Implementation(FrontEnd::Engine& self, fs::path path)
       : m_self(self),
         m_configFilePath(std::move(path)),
         m_dropCopy(m_self.parent()),
         m_db(nullptr) {
-    // Just a smoke-check that config is an engine config:
-    IniFile(m_configFilePath).ReadBoolKey("General", "is_replay_mode");
-
     for (auto i = 0; i < numberOfTradingModes; ++i) {
       m_riskControls[i] = boost::make_unique<EmptyRiskControlScope>(
           static_cast<TradingMode>(i), "Front-end");
@@ -514,10 +510,6 @@ FrontEnd::Engine::~Engine() {
   m_pimpl->m_engine.reset();
 }
 
-const fs::path& FrontEnd::Engine::GetConfigFilePath() const {
-  return m_pimpl->m_configFilePath;
-}
-
 bool FrontEnd::Engine::IsStarted() const {
   return m_pimpl->m_engine ? true : false;
 }
@@ -528,19 +520,19 @@ void FrontEnd::Engine::Start(
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
-      GetConfigFilePath(),
-      boost::bind(&Implementation ::OnContextStateChanged, &*m_pimpl, _1, _2),
+      m_pimpl->m_configFilePath,
+      boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
       m_pimpl->m_dropCopy, startProgressCallback,
-      [this](const std ::string& error) {
-        return QMessageBox ::critical(
+      [](const std ::string& error) {
+        return QMessageBox::critical(
                    nullptr, tr("Error at engine starting"),
-                   QString ::fromStdString(error.substr(0, 512)),
-                   QMessageBox ::Retry | QMessageBox ::Ignore) ==
-               QMessageBox ::Ignore;
+                   QString::fromStdString(error.substr(0, 512)),
+                   QMessageBox::Retry | QMessageBox::Ignore) ==
+               QMessageBox::Ignore;
       },
       [this](Context::Log& log) {
-        m_pimpl->m_engineLogSubscription = log.Subscribe(boost ::bind(
-            &Implementation ::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
+        m_pimpl->m_engineLogSubscription = log.Subscribe(boost::bind(
+            &Implementation::OnEngineNewLogRecord, &*m_pimpl, _1, _2, _3, _4));
       },
       boost::unordered_map<std::string, std::string>());
 }

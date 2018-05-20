@@ -256,7 +256,7 @@ void StrategyWindow::ConnectSignals() {
 ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
   static boost::uuids::random_generator generateStrategyId;
   const auto &strategyId = generateStrategyId();
-  const IniFile conf(m_engine.GetConfigFilePath());
+  const auto &conf = m_engine.GetContext().GetSettings().GetConfig();
   const IniSectionRef defaults(conf, "Defaults");
   QString symbolStr;
   {

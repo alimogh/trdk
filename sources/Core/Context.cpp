@@ -18,7 +18,7 @@
 #include "TradingLog.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 namespace pt = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -31,11 +31,11 @@ Context::DispatchingLock::~DispatchingLock() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Context::Exception::Exception(const char *what) noexcept
+Context::Exception::Exception(const char* what) noexcept
     : Lib::Exception(what) {}
 
 Context::TradingModeIsNotLoaded::TradingModeIsNotLoaded(
-    const char *what) noexcept
+    const char* what) noexcept
     : Exception(what) {}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ class StatReport : private boost::noncopyable {
   typedef boost::condition_variable StopCondition;
 
  public:
-  explicit StatReport(Context &context)
+  explicit StatReport(Context& context)
       : m_reportPeriod(pt::seconds(30)),
         m_strategyIndex(0),
         m_tsIndex(0),
@@ -120,16 +120,16 @@ class StatReport : private boost::noncopyable {
   }
 
  private:
-  void OpenStream(const std::string &name,
-                  const std::string &file,
-                  std::ofstream &stream) const {
+  void OpenStream(const std::string& name,
+                  const std::string& file,
+                  std::ofstream& stream) const {
     Assert(stream);
 
-    const fs::path &path = m_context.GetSettings().GetLogsInstanceDir() / file;
+    const fs::path& path = m_context.GetSettings().GetLogsInstanceDir() / file;
     m_context.GetLog().Debug("Reporting %1% to file %2% with period %3%...",
                              name, path, m_reportPeriod);
 
-    boost::filesystem::create_directories(path.branch_path());
+    create_directories(path.branch_path());
 
     stream.open(path.string().c_str(), std::ios::ate | std::ios::app);
     if (!stream) {
@@ -150,10 +150,10 @@ class StatReport : private boost::noncopyable {
            << ")." << std::endl;
   }
 
-  void TestTimings(std::ofstream &stream) const {
-    using namespace trdk::Lib::TimeMeasurement;
+  void TestTimings(std::ofstream& stream) const {
+    using namespace TimeMeasurement;
     typedef Milestones::Clock Clock;
-    const auto &test = [&](size_t period) {
+    const auto& test = [&](size_t period) {
       const auto start = Clock::now();
       boost::this_thread::sleep(pt::microseconds(period));
       const auto now = Clock::now();
@@ -202,9 +202,9 @@ class StatReport : private boost::noncopyable {
   void DumpSecurities() {
     bool securitiesHaveData = false;
 
-    m_context.ForEachMarketDataSource([&](const MarketDataSource &dataSource) {
+    m_context.ForEachMarketDataSource([&](const MarketDataSource& dataSource) {
       dataSource.ForEachSecurity(
-          [this, &securitiesHaveData](const Security &security) {
+          [this, &securitiesHaveData](const Security& security) {
             if (DumpSecurity(security, m_securititesStatStream)) {
               securitiesHaveData = true;
             }
@@ -224,19 +224,19 @@ class StatReport : private boost::noncopyable {
   }
 
   template <typename TimeMeasurementMilestone, typename MilestonesStatAccum>
-  void DumpAccum(size_t &index,
-                 const std::string &tag,
-                 MilestonesStatAccum &accum,
-                 std::ostream &destination) {
+  void DumpAccum(size_t& index,
+                 const std::string& tag,
+                 MilestonesStatAccum& accum,
+                 std::ostream& destination) {
     if (!accum.HasMeasures()) {
       return;
     }
 
     ++index;
 
-    const auto &now = m_context.GetLog().GetTime();
+    const auto& now = m_context.GetLog().GetTime();
     size_t milestoneIndex = 0;
-    for (const auto &stat : accum.GetMilestones()) {
+    for (const auto& stat : accum.GetMilestones()) {
       TimeMeasurementMilestone id =
           static_cast<TimeMeasurementMilestone>(milestoneIndex++);
       if (!stat) {
@@ -251,8 +251,8 @@ class StatReport : private boost::noncopyable {
     accum.Reset();
   }
 
-  bool DumpSecurity(const Security &security, std::ostream &destination) const {
-    const auto &numberOfMarketDataUpdates =
+  bool DumpSecurity(const Security& security, std::ostream& destination) const {
+    const auto& numberOfMarketDataUpdates =
         security.TakeNumberOfMarketDataUpdates();
     if (!m_isSecurititesStatStopped || numberOfMarketDataUpdates != 0) {
       destination << '\t' << m_context.GetLog().GetTime() << '\t'
@@ -275,7 +275,7 @@ class StatReport : private boost::noncopyable {
   size_t m_dispatchingIndex;
   bool m_isSecurititesStatStopped;
 
-  trdk::Context &m_context;
+  Context& m_context;
 
   struct Accums {
     boost::shared_ptr<StrategyMilestonesStatAccum> strategy;
@@ -295,7 +295,7 @@ class StatReport : private boost::noncopyable {
   StopCondition m_stopCondition;
   boost::thread m_thread;
 };
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -317,8 +317,8 @@ class Context::Implementation : private boost::noncopyable {
         Signal;
   };
 
-  Context::Log &m_log;
-  Context::TradingLog &m_tradingLog;
+  Log& m_log;
+  TradingLog& m_tradingLog;
 
   Settings m_settings;
 
@@ -335,31 +335,32 @@ class Context::Implementation : private boost::noncopyable {
   std::unique_ptr<Timer> m_timer;
 
   explicit Implementation(
-      Context &context,
-      Log &log,
-      TradingLog &tradingLog,
-      const Settings &settings,
-      const boost::unordered_map<std::string, std::string> &params)
+      Context& context,
+      Log& log,
+      TradingLog& tradingLog,
+      Settings&& settings,
+      const boost::unordered_map<std::string, std::string>& params)
       : m_log(log),
         m_tradingLog(tradingLog),
-        m_settings(settings),
+        m_settings(std::move(settings)),
         m_params(context, params) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(Log &log,
-                 TradingLog &tradingLog,
-                 const Settings &settings,
-                 const boost::unordered_map<std::string, std::string> &params)
+Context::Context(Log& log,
+                 TradingLog& tradingLog,
+                 Settings&& settings,
+                 const boost::unordered_map<std::string, std::string>& params)
     : m_pimpl(boost::make_unique<Implementation>(
-          *this, log, tradingLog, settings, params)) {
+          *this, log, tradingLog, std::move(settings), params)) {
   if (settings.IsMarketDataLogEnabled()) {
     m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
   }
   m_pimpl->m_timer = boost::make_unique<Timer>(*this);
 }
 
+Context::Context(Context&&) = default;
 Context::~Context() = default;
 
 void Context::OnStarted() {
@@ -375,20 +376,21 @@ void Context::OnBeforeStop() {
   }
 }
 
-Context::Log &Context::GetLog() const noexcept { return m_pimpl->m_log; }
+Context::Log& Context::GetLog() const noexcept { return m_pimpl->m_log; }
 
-Context::TradingLog &Context::GetTradingLog() const noexcept {
+Context::TradingLog& Context::GetTradingLog() const noexcept {
   return m_pimpl->m_tradingLog;
 }
 
-void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
+void Context::SetCurrentTime(const pt::ptime& time, bool signalAboutUpdate) {
   Assert(GetSettings().IsReplayMode());
 
   if (time.is_not_a_date_time()) {
     Assert(!time.is_not_a_date_time());
     throw Exception("New current is not set");
-  } else if (!m_pimpl->m_customCurrentTime.is_not_a_date_time() &&
-             time < m_pimpl->m_customCurrentTime) {
+  }
+  if (!m_pimpl->m_customCurrentTime.is_not_a_date_time() &&
+      time < m_pimpl->m_customCurrentTime) {
     AssertLe(m_pimpl->m_customCurrentTime, time);
     boost::format error(
         "Failed to set new current time %1%"
@@ -423,11 +425,11 @@ void Context::SetCurrentTime(const pt::ptime &time, bool signalAboutUpdate) {
 }
 
 Context::CurrentTimeChangeSlotConnection Context::SubscribeToCurrentTimeChange(
-    const CurrentTimeChangeSlot &slot) const {
+    const CurrentTimeChangeSlot& slot) const {
   return m_pimpl->m_customCurrentTimeChangeSignal.connect(slot);
 }
 
-const pt::ptime &Context::GetStartTime() const {
+const pt::ptime& Context::GetStartTime() const {
   return m_pimpl->m_settings.GetStartTime();
 }
 
@@ -435,23 +437,22 @@ pt::ptime Context::GetCurrentTime() const {
   return GetCurrentTime(m_pimpl->m_settings.GetTimeZone());
 }
 
-pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr &timeZone) const {
+pt::ptime Context::GetCurrentTime(const lt::time_zone_ptr& timeZone) const {
   if (!GetSettings().IsReplayMode()) {
     return lt::local_microsec_clock::local_time(timeZone).local_time();
-  } else {
-    Assert(!m_pimpl->m_customCurrentTime.is_not_a_date_time());
-    return m_pimpl->m_customCurrentTime;
   }
+  Assert(!m_pimpl->m_customCurrentTime.is_not_a_date_time());
+  return m_pimpl->m_customCurrentTime;
 }
 
-const Timer &Context::GetTimer() { return *m_pimpl->m_timer; }
+const Timer& Context::GetTimer() { return *m_pimpl->m_timer; }
 
-const Settings &Context::GetSettings() const { return m_pimpl->m_settings; }
+const Settings& Context::GetSettings() const { return m_pimpl->m_settings; }
 
-Context::Params &Context::GetParams() { return m_pimpl->m_params; }
+Context::Params& Context::GetParams() { return m_pimpl->m_params; }
 
-const Context::Params &Context::GetParams() const {
-  return const_cast<Context *>(this)->GetParams();
+const Context::Params& Context::GetParams() const {
+  return const_cast<Context*>(this)->GetParams();
 }
 
 TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
@@ -476,17 +477,17 @@ TimeMeasurement::Milestones Context::StartDispatchingTimeMeasurement() const {
 }
 
 Context::StateUpdateConnection Context::SubscribeToStateUpdates(
-    const StateUpdateSlot &slot) const {
+    const StateUpdateSlot& slot) const {
   return m_pimpl->m_stateUpdateSignal.connect(slot);
 }
 
-void Context::RaiseStateUpdate(const State &newState) const {
+void Context::RaiseStateUpdate(const State& newState) const {
   GetLog().Debug("Raising state update event %1%...", newState);
   m_pimpl->m_stateUpdateSignal(newState, nullptr);
 }
 
-void Context::RaiseStateUpdate(const State &newState,
-                               const std::string &message) const {
+void Context::RaiseStateUpdate(const State& newState,
+                               const std::string& message) const {
   GetLog().Debug("Raising state update event %1% with message \"%2%\"...",
                  newState, message);
   m_pimpl->m_stateUpdateSignal(newState, &message);
@@ -515,7 +516,7 @@ struct ParamsConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 
 typedef ParamsConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
     ParamsConcurrencyPolicy;
-}
+}  // namespace
 
 class Context::Params::Implementation : private boost::noncopyable {
  public:
@@ -525,35 +526,35 @@ class Context::Params::Implementation : private boost::noncopyable {
 
   typedef boost::unordered_map<std::string, std::string> Storage;
 
-  Implementation(const Context &context,
-                 const boost::unordered_map<std::string, std::string> &initial)
+  Implementation(const Context& context,
+                 const boost::unordered_map<std::string, std::string>& initial)
       : m_context(context), m_revision(0), m_storage(initial) {
     Assert(m_revision.is_lock_free());
   }
 
-  const Context &m_context;
+  const Context& m_context;
   boost::atomic<Revision> m_revision;
   Mutex m_mutex;
   Storage m_storage;
 };
 
-Context::Params::Exception::Exception(const char *what) noexcept
+Context::Params::Exception::Exception(const char* what) noexcept
     : Context::Exception(what) {}
 
 Context::Params::KeyDoesntExistError::KeyDoesntExistError(
-    const char *what) noexcept
+    const char* what) noexcept
     : Exception(what) {}
 
 Context::Params::Params(
-    const Context &context,
-    const boost::unordered_map<std::string, std::string> &initial)
+    const Context& context,
+    const boost::unordered_map<std::string, std::string>& initial)
     : m_pimpl(boost::make_unique<Implementation>(context, initial)) {}
 
 Context::Params::~Params() = default;
 
-std::string Context::Params::operator[](const std::string &key) const {
+std::string Context::Params::operator[](const std::string& key) const {
   const Implementation::ReadLock lock(m_pimpl->m_mutex);
-  const auto &pos = m_pimpl->m_storage.find(key);
+  const auto& pos = m_pimpl->m_storage.find(key);
   if (pos == m_pimpl->m_storage.end()) {
     boost::format message("Context parameter \"%1%\" doesn't exist");
     message % key;
@@ -562,8 +563,8 @@ std::string Context::Params::operator[](const std::string &key) const {
   return pos->second;
 }
 
-void Context::Params::Update(const std::string &key,
-                             const std::string &newValue) {
+void Context::Params::Update(const std::string& key,
+                             const std::string& newValue) {
   const Implementation::WriteLock lock(m_pimpl->m_mutex);
   ++m_pimpl->m_revision;
   auto it = m_pimpl->m_storage.find(key);
@@ -580,7 +581,7 @@ void Context::Params::Update(const std::string &key,
   }
 }
 
-bool Context::Params::IsExist(const std::string &key) const {
+bool Context::Params::IsExist(const std::string& key) const {
   const Implementation::ReadLock lock(m_pimpl->m_mutex);
   return m_pimpl->m_storage.find(key) != m_pimpl->m_storage.end();
 }

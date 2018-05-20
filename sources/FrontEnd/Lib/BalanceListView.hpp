@@ -22,6 +22,9 @@ class TRDK_FRONTEND_LIB_API BalanceListView : public QTreeView {
   typedef QTreeView Base;
 
   explicit BalanceListView(QWidget *parent);
+  ~BalanceListView() override = default;
+
+  void setModel(QAbstractItemModel *) override;
 
  private:
   void InitContextMenu();

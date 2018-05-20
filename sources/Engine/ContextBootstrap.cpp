@@ -684,15 +684,7 @@ class ContextStateBootstrapper : private boost::noncopyable {
 
     ModuleDll<Module> module = LoadModuleDll<Module>(conf, instanceName);
 
-    const std::set<Symbol> symbolInstances =
-        GetSymbolInstances(Trait(), instanceName, *module.conf);
-    if (!symbolInstances.empty()) {
-      for (const auto &symbol : symbolInstances) {
-        CreateModuleInstance(instanceName, symbol, module);
-      }
-    } else {
-      CreateStandaloneModuleInstance(instanceName, module);
-    }
+    CreateStandaloneModuleInstance(instanceName, module);
 
     std::map<std::string, ModuleDll<Module>> modulesTmp(modules);
     modulesTmp[instanceName] = module;
@@ -1218,57 +1210,6 @@ class ContextStateBootstrapper : private boost::noncopyable {
         (m_subscriptionsManager.*subscribe)(subscribedSecurity, instance);
       });
     }
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
-
-  template <typename Module>
-  std::set<Symbol> GetSymbolInstances(const ModuleTrait<Module> &,
-                                      const std::string &instanceName,
-                                      const IniSectionRef &conf) {
-    typedef ModuleTrait<Module> Trait;
-
-    std::set<Symbol> result;
-
-    if (!conf.IsKeyExist(Keys::instances)) {
-      return result;
-    }
-
-    fs::path symbolsFilePath;
-    if (dynamic_cast<const IniFile *>(&conf.GetBase())) {
-      try {
-        symbolsFilePath = Normalize(
-            conf.ReadKey(Keys::instances),
-            boost::polymorphic_downcast<const IniFile *>(&conf.GetBase())
-                ->GetPath()
-                .branch_path());
-      } catch (const Lib::Ini::Error &ex) {
-        m_context.GetLog().Error(
-            "Failed to get symbol instances file: \"%1%\".", ex);
-        throw;
-      }
-    } else {
-      symbolsFilePath = conf.ReadFileSystemPath(Keys::instances);
-    }
-    m_context.GetLog().Debug(
-        "Loading symbol instances from %1% for %2% \"%3%\"...", symbolsFilePath,
-        Trait::GetName(false), instanceName);
-    const IniFile symbolsIni(symbolsFilePath);
-    std::set<Symbol> symbols =
-        symbolsIni.ReadSymbols(m_context.GetSettings().GetDefaultSecurityType(),
-                               m_context.GetSettings().GetDefaultCurrency());
-
-    try {
-      for (const auto &iniSymbol : symbols) {
-        result.insert(Symbol(iniSymbol));
-      }
-    } catch (const Lib::Ini::Error &ex) {
-      m_context.GetLog().Error("Failed to load securities for %2%: \"%1%\".",
-                               ex, instanceName);
-      throw Lib::Ini::Error("Failed to load securities");
-    }
-
-    return result;
   }
 
   ////////////////////////////////////////////////////////////////////////////////

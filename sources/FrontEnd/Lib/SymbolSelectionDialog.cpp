@@ -20,10 +20,9 @@ SymbolSelectionDialog::SymbolSelectionDialog(Engine &engine, QWidget *parent)
     : Base(parent), m_ui(boost::make_unique<Ui::SymbolSelectionDialog>()) {
   m_ui->setupUi(this);
   {
-    const IniFile conf(engine.GetConfigFilePath());
+    const auto &conf = engine.GetContext().GetSettings().GetConfig();
     const IniSectionRef defaults(conf, "Defaults");
-    for (const std::string &symbol :
-         defaults.ReadList("symbol_list", ",", true)) {
+    for (const auto &symbol : defaults.ReadList("symbol_list", ",", true)) {
       m_ui->symbols->addItem(QString::fromStdString(symbol));
     }
   }

@@ -28,6 +28,7 @@
 #include "Core/Operation.hpp"
 #include "Core/Position.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"

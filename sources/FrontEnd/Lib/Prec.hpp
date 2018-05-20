@@ -31,6 +31,7 @@
 #include "Core/Position.hpp"
 #include "Core/RiskControl.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 #include "Core/Strategy.hpp"
 #include "Engine/Engine.hpp"
 #include "Std.hpp"

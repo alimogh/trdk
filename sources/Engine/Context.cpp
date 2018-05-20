@@ -49,7 +49,6 @@ class Engine::Context::Implementation : private boost::noncopyable {
  public:
   class State;
 
- public:
   Engine::Context &m_context;
 
   static_assert(numberOfTradingModes == 3, "List changed.");
@@ -68,9 +67,10 @@ class Engine::Context::Implementation : private boost::noncopyable {
   bool m_isStopped;
   std::unique_ptr<State> m_state;
 
- public:
-  explicit Implementation(Engine::Context &context, const Lib::Ini &conf)
+  explicit Implementation(Engine::Context &context)
       : m_context(context), m_isStopped(false) {
+    const auto &conf = m_context.GetSettings().GetConfig();
+
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControl.size(); ++i) {
       m_riskControl[i] = boost::make_unique<RiskControl>(
@@ -170,11 +170,10 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
 Engine::Context::Context(
     Context::Log &log,
     Context::TradingLog &tradingLog,
-    const trdk::Settings &settings,
-    const Lib::Ini &conf,
+    Settings &&settings,
     const boost::unordered_map<std::string, std::string> &params)
-    : Base(log, tradingLog, settings, params),
-      m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
+    : Base(log, tradingLog, std::move(settings), params),
+      m_pimpl(boost::make_unique<Implementation>(*this)) {}
 
 Engine::Context::~Context() {
   if (!m_pimpl->m_isStopped) {
