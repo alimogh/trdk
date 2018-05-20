@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 #ifdef DEV_VER
 
                                    " (build: " TRDK_BUILD_IDENTITY
-                                   ",  build time: " __DATE__ " " __TIME__ ")"
+                                   ", build time: " __DATE__ " " __TIME__ ")"
 #endif
     );
     application.setOrganizationDomain(TRDK_DOMAIN);

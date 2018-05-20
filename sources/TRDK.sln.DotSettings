@@ -13,7 +13,7 @@
 	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CppFormatting/WRAP_LIMIT/@EntryValue">80</s:Int64>
 	<s:Boolean x:Key="/Default/CodeStyle/EditorConfig/ShowEditorConfigStatusBarIndicator/@EntryValue">True</s:Boolean>
 	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">&#xD;
-   Created: 2018/04/07 3:47 PM&#xD;
+   Created: $CURRENT_YEAR$/$CURRENT_MONTH$/$CURRENT_DAY$ $CURRENT_TIME$&#xD;
     Author: Eugene V. Palchukovsky&#xD;
     E-mail: eugene@palchukovsky.com&#xD;
 ------------------------------------------&#xD;

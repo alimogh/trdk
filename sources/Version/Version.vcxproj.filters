@@ -4,7 +4,10 @@
     <None Include="Compile.js">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="SetVersion.cmd">
+    <None Include="Branch.json">
+      <Filter>Input</Filter>
+    </None>
+    <None Include="Version.json">
       <Filter>Output</Filter>
     </None>
   </ItemGroup>

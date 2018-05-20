@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{219439a9-9d42-4590-8f2f-1931b744a039}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{98981aaa-75f5-4434-8297-51fa1e184102}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages">
+      <UniqueIdentifier>{9fa255c2-a3a1-472b-b602-88bbaac6b231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages\com.robotdk.trdk">
+      <UniqueIdentifier>{137c8cd6-0bee-4a14-a6fe-0690b5a2e685}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages\com.robotdk.trdk\meta">
+      <UniqueIdentifier>{c88effbf-64cf-4a8d-b3bd-5748dc1538f1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config\config.xml">
+      <Filter>Config</Filter>
+    </Xml>
+    <Xml Include="packages\com.robotdk.trdk\meta\package.xml">
+      <Filter>Packages\com.robotdk.trdk\meta</Filter>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Compile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config\Controller.qs">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="packages\com.robotdk.trdk\meta\Component.qs">
+      <Filter>Packages\com.robotdk.trdk\meta</Filter>
+    </None>
+  </ItemGroup>
+</Project>

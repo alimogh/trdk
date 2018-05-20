@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+	<Name>%{Name}</Name>
+	<Version>%{Version}</Version>
+	<Title>%{Name} Installer</Title>
+	<Publisher>%{Publisher}</Publisher>
+	<ProductUrl>http://%{Domain}</ProductUrl>
+	<StartMenuDir>%{Name}</StartMenuDir>
+	<TargetDir>@ApplicationsDirX64@/%{Name}</TargetDir>
+	<AllowSpaceInPath>true</AllowSpaceInPath>
+	<ControlScript>Controller.qs</ControlScript>
+	<MaintenanceToolName>Maintenance</MaintenanceToolName>
+</Installer>
