@@ -276,8 +276,8 @@ class ContextBootstrapper : private boost::noncopyable {
   void LoadTradingSystems() {
     for (const auto &section : m_conf.ReadSectionsList()) {
       std::string instanceName;
-      bool hasMarketDataSource = false;
-      TradingMode mode = numberOfTradingModes;
+      auto hasMarketDataSource = false;
+      auto mode = numberOfTradingModes;
       if (!GetTradingSystemSection(section, instanceName, hasMarketDataSource,
                                    mode)) {
         continue;
@@ -303,7 +303,7 @@ class ContextBootstrapper : private boost::noncopyable {
       // It always must be a trading system service...
       Assert(tradingSystem);
 
-      bool isFound = false;
+      auto isFound = false;
       for (auto &holderByMode : m_tradingSystems) {
         if (holderByMode.instanceName != instanceName) {
           continue;
@@ -333,7 +333,7 @@ class ContextBootstrapper : private boost::noncopyable {
   DllObjectPtr<MarketDataSource> LoadMarketDataSource(
       const IniSectionRef &configurationSection,
       const std::string &instanceName) {
-    const std::string module = configurationSection.ReadKey(Keys::module);
+    const auto module = configurationSection.ReadKey(Keys::module);
     std::string factoryName = configurationSection.ReadKey(
         Keys::factory, DefaultValues::Factories::marketDataSource);
 

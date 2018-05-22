@@ -26,7 +26,7 @@ class IniFile : public Ini {
   explicit IniFile(const fs::path &path)
       : m_file(FindIniFile(path).string().c_str()) {
     if (!m_file) {
-      throw Error("Failed to open INI-file");
+      throw Error("Failed to open configuration file");
     }
   }
   ~IniFile() override = default;
@@ -36,17 +36,50 @@ class IniFile : public Ini {
 
  private:
   static fs::path FindIniFile(const fs::path &source) {
-    if (boost::iends_with(source.string(), ".ini")) {
-      return source;
-    }
     if (fs::exists(source)) {
       return source;
     }
-    const fs::path pathWhithExt = source.string() + ".ini";
-    if (!fs::exists(pathWhithExt)) {
-      return source;
+    try {
+      fs::create_directories(source.branch_path());
+    } catch (const fs::filesystem_error &ex) {
+      boost::format error("Failed to create default configuration file");
+      error % ex.what();
+      throw Error(error.str().c_str());
     }
-    return pathWhithExt;
+    {
+      std::ofstream file(source.string().c_str());
+      if (!file) {
+        throw Error("Failed to create default configuration file");
+      }
+
+      file << "[General]" << std::endl;
+      file << "\tis_replay_mode = no" << std::endl;
+      file << std::endl;
+      file << "\tlogs_dir = logs" << std::endl;
+      file << "\ttrading_log = yes" << std::endl;
+      file << "\tmarket_data_log = no" << std::endl;
+      file << std::endl;
+      file << "\t; When switch contract to the next. Zero - at the first"
+           << std::endl;
+      file << "\t; minutes of the expiration day. One - one day before"
+           << std::endl;
+      file << "\t; of the expiration day." << std::endl;
+      file << "\tnumber_of_days_before_expiry_day_to_switch_contract = 0"
+           << std::endl;
+
+      file << std::endl;
+      file << "[Defaults]" << std::endl;
+      file << "\tcurrency = BTC" << std::endl;
+      file << "\tsecurity_type = CRYPTO" << std::endl;
+      file << "\tsymbol_list = BTC_EUR, BTC_USD, ETH_BTC, ETH_EUR, ETH_USD, "
+              "DOGE_BTC, LTC_BTC, DASH_BTC, BCH_BTC"
+           << std::endl;
+
+      file << std::endl;
+      file << "[RiskControl]" << std::endl;
+      file << "\tis_enabled = false" << std::endl;
+    }
+    return source;
   }
 
   mutable std::ifstream m_file;
@@ -76,8 +109,24 @@ Settings::Settings(const fs::path &confFile,
   const_cast<bool &>(m_isMarketDataLogEnabled) =
       commonConf.ReadBoolKey("market_data_log");
 
-  const_cast<lt::time_zone_ptr &>(m_timeZone) =
-      boost::make_shared<lt::posix_time_zone>(commonConf.ReadKey("timezone"));
+  {
+    std::string timeZone;
+    if (commonConf.IsKeyExist("timezone")) {
+      timeZone = commonConf.ReadKey("timezone");
+    } else {
+      const auto &diff =
+          pt::second_clock::local_time() - pt::second_clock::universal_time();
+      timeZone = (boost::format("GMT%1%%2%:%3%") %
+                  (diff.is_negative() ? '-' : '+')  // 1
+                  % boost::io::group(std::setw(2), std::setfill('0'),
+                                     diff.hours())  // 2
+                  % boost::io::group(std::setw(2), std::setfill('0'),
+                                     (diff.minutes() / 15) * 15))  // 3
+                     .str();
+    }
+    const_cast<lt::time_zone_ptr &>(m_timeZone) =
+        boost::make_shared<lt::posix_time_zone>(timeZone);
+  }
 
   {
     const auto *const currencyKey = "currency";
@@ -88,8 +137,7 @@ Settings::Settings(const fs::path &confFile,
             ConvertCurrencyFromIso(currency);
       } catch (const Exception &ex) {
         boost::format error(
-            "Failed to parse default currency ISO 4217 code"
-            " \"%1%\": \"%2%\"");
+            R"(Failed to parse default currency ISO 4217 code "%1%": "%2%")");
         error % currency % ex.what();
         throw Exception(error.str().c_str());
       }

@@ -15,28 +15,39 @@
 
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
-using namespace trdk::FrontEnd::Terminal;
+using namespace Terminal;
+
+namespace fs = boost::filesystem;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
 class SplashScreen : public QSplashScreen {
  public:
   SplashScreen() : QSplashScreen(QPixmap(":/Terminal/Resources/splash.png")) {}
-  virtual ~SplashScreen() override = default;
+  SplashScreen(SplashScreen &&) = default;
+  SplashScreen(const SplashScreen &) = delete;
+  SplashScreen &operator=(SplashScreen &&) = delete;
+  SplashScreen &operator=(const SplashScreen &) = delete;
+  ~SplashScreen() = default;
 
- public:
   void ShowMessage(const std::string &message) {
     showMessage(QString::fromStdString(message),
                 Qt::AlignRight | Qt::AlignBottom, QColor(240, 240, 240));
   }
 };
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
   _CrtSetDbgFlag(0);
+
+#ifdef DEV_VER
+  QStandardPaths::setTestModeEnabled(true);
+#endif
 
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication application(argc, argv);
@@ -45,13 +56,7 @@ int main(int argc, char *argv[]) {
   splash->show();
 
   try {
-    application.setApplicationName(TRDK_NAME
-#ifdef DEV_VER
-
-                                   " (build: " TRDK_BUILD_IDENTITY
-                                   ", build time: " __DATE__ " " __TIME__ ")"
-#endif
-    );
+    application.setApplicationName(TRDK_NAME);
     application.setOrganizationDomain(TRDK_DOMAIN);
     splash->ShowMessage(
         application.tr("Loading " TRDK_NAME "...").toStdString());
@@ -59,9 +64,9 @@ int main(int argc, char *argv[]) {
     LoadStyle(application);
 
     Engine engine(
-        GetExeFilePath().branch_path() / "etc" / "Brutus" / "default.ini",
+        GetStandardFilePath("default.ini", QStandardPaths::AppDataLocation),
         nullptr);
-    std::vector<std::unique_ptr<trdk::Lib::Dll>> moduleDlls;
+    std::vector<std::unique_ptr<Dll>> moduleDlls;
 
     for (;;) {
       try {
@@ -80,6 +85,12 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow mainWindow(engine, moduleDlls, nullptr);
+    mainWindow.setWindowTitle(application.applicationName()
+#ifdef DEV_VER
+                              + " (build: " TRDK_BUILD_IDENTITY
+                                ", build time: " __DATE__ " " __TIME__ ")"
+#endif
+    );
     mainWindow.setEnabled(false);
     mainWindow.setWindowState(Qt::WindowMaximized);
     mainWindow.show();

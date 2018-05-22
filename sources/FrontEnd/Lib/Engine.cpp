@@ -23,6 +23,7 @@ namespace ids = boost::uuids;
 namespace db = qx::dao;
 
 namespace {
+
 Orm::OperationStatus::enum_OperationStatus CovertToOperationStatus(
     const Pnl::Result& source) {
   static_assert(Pnl::numberOfResults == 5, "List changed.");
@@ -62,9 +63,10 @@ Orm::TimeInForce::enum_TimeInForce CovertToTimeInForce(
       throw Exception("Time In Force code is unknown");
   }
 }
+
 }  // namespace
 
-class FrontEnd::Engine::Implementation : private boost::noncopyable {
+class FrontEnd::Engine::Implementation : boost::noncopyable {
  public:
   FrontEnd::Engine& m_self;
   const fs::path m_configFilePath;
@@ -89,7 +91,8 @@ class FrontEnd::Engine::Implementation : private boost::noncopyable {
   void InitDb() {
     qx::QxSqlDatabase::getSingleton()->setDriverName("QSQLITE");
     qx::QxSqlDatabase::getSingleton()->setDatabaseName(QString::fromStdString(
-        (m_configFilePath.branch_path() / "default.db").string()));
+        GetStandardFilePath("default.db", QStandardPaths::DataLocation)
+            .string()));
     qx::QxSqlDatabase::getSingleton()->setHostName("localhost");
     qx::QxSqlDatabase::getSingleton()->setUserName("root");
     qx::QxSqlDatabase::getSingleton()->setPassword("");

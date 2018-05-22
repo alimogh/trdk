@@ -17,22 +17,23 @@
 namespace trdk {
 namespace Engine {
 
-void BootContext(const trdk::Lib::Ini &,
+void BootContext(const Lib::Ini &,
                  Context &,
                  TradingSystems &tradingSystemsRef,
                  MarketDataSources &marketDataSourcesRef);
 
-void BootContextState(const trdk::Lib::Ini &,
+void BootContextState(const Lib::Ini &,
                       Context &,
                       SubscriptionsManager &subscriptionsManagerRef,
                       Strategies &strategiesRef,
                       ModuleList &moduleListRef);
 
 void BootNewStrategiesForContextState(
-    const trdk::Lib::Ini &newStrategiesConf,
+    const Lib::Ini &newStrategiesConf,
     Context &,
     SubscriptionsManager &subscriptionsManagerRef,
     Strategies &strategiesRef,
     ModuleList &moduleListRef);
+
 }  // namespace Engine
 }  // namespace trdk
