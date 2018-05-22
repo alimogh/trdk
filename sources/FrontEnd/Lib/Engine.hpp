@@ -37,8 +37,6 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   void BarUpdate(const Security*, const Bar&);
 
  public:
-  const boost::filesystem::path& GetConfigFilePath() const;
-
   bool IsStarted() const;
 
   Context& GetContext();

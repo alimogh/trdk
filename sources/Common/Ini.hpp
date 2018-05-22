@@ -180,39 +180,9 @@ inline bool Ini::ReadTypedKey(const std::string& section,
   return ReadBoolKey(section, key, defaultValue);
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-class IniFile : public Ini {
- public:
-  class FileOpenError : public Error {
-   public:
-    FileOpenError() noexcept;
-  };
-
- public:
-  explicit IniFile(const boost::filesystem::path&);
-  virtual ~IniFile();
-
- public:
-  const boost::filesystem::path& GetPath() const { return m_path; }
-
- protected:
-  std::istream& GetSource() const override { return m_file; }
-
- private:
-  boost::filesystem::path m_path;
-  mutable std::ifstream m_file;
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 
 class IniString : public Ini {
- public:
-  class FileOpenError : public Error {
-   public:
-    FileOpenError() noexcept;
-  };
-
  public:
   explicit IniString(const std::string& source) : m_source(source) {}
 

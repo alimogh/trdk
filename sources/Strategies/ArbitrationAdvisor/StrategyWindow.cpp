@@ -255,7 +255,7 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance() {
   auto isStopLossEnabled = false;
   size_t stopLossDelaySec = 0;
   {
-    const IniFile conf(m_engine.GetConfigFilePath());
+    const auto &conf = m_engine.GetContext().GetSettings().GetConfig();
     const IniSectionRef general(conf, "General");
     {
       const std::string key = "lowest_spread_enabled";

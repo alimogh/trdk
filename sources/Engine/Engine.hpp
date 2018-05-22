@@ -16,51 +16,50 @@
 namespace trdk {
 namespace Engine {
 
-class TRDK_ENGINE_API Engine : private boost::noncopyable {
+class TRDK_ENGINE_API Engine {
  public:
   explicit Engine(
-      const boost::filesystem::path &,
-      const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-      const boost::function<void(const std::string &)> &startProgressCallback,
-      const boost::function<bool(const std::string &)> &startErrorCallback,
-      const boost::function<void(trdk::Engine::Context::Log &)>
-          &logStartCallback,
-      const boost::unordered_map<std::string, std::string> &params);
+      const boost::filesystem::path&,
+      const Context::StateUpdateSlot& contextStateUpdateSlot,
+      const boost::function<void(const std::string&)>& startProgressCallback,
+      const boost::function<bool(const std::string&)>& startErrorCallback,
+      const boost::function<void(Context::Log&)>& logStartCallback,
+      const boost::unordered_map<std::string, std::string>& params);
   explicit Engine(
-      const boost::filesystem::path &,
-      const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-      DropCopy &dropCopy,
-      const boost::function<void(const std::string &)> &startProgressCallback,
-      const boost::function<bool(const std::string &)> &startErrorCallback,
-      const boost::function<void(trdk::Engine::Context::Log &)>
-          &logStartCallback,
-      const boost::unordered_map<std::string, std::string> &params);
+      const boost::filesystem::path&,
+      const Context::StateUpdateSlot& contextStateUpdateSlot,
+      DropCopy& dropCopy,
+      const boost::function<void(const std::string&)>& startProgressCallback,
+      const boost::function<bool(const std::string&)>& startErrorCallback,
+      const boost::function<void(Context::Log&)>& logStartCallback,
+      const boost::unordered_map<std::string, std::string>& params);
+  Engine(Engine&&);
+  Engine(const Engine&) = delete;
   ~Engine();
 
- public:
-  trdk::Context &GetContext();
+  Engine& operator=(Engine&&) = delete;
+  Engine& operator=(const Engine&) = delete;
 
-  void Stop(const trdk::StopMode &);
+  trdk::Context& GetContext();
+
+  void Stop(const StopMode&);
 
   void ClosePositions();
 
  private:
   void VerifyModules() const;
 
- private:
   void Run(
-      const boost::filesystem::path &,
-      const trdk::Context::StateUpdateSlot &,
-      DropCopy *dropCopy,
-      const boost::function<void(const std::string &)> &startProgressCallback,
-      const boost::function<bool(const std::string &)> &startErrorCallback,
-      const boost::function<void(trdk::Engine::Context::Log &)>
-          &logStartCallback,
-      const boost::unordered_map<std::string, std::string> &params);
+      const boost::filesystem::path&,
+      const Context::StateUpdateSlot&,
+      DropCopy* dropCopy,
+      const boost::function<void(const std::string&)>& startProgressCallback,
+      const boost::function<bool(const std::string&)>& startErrorCallback,
+      const boost::function<void(Context::Log&)>& logStartCallback,
+      const boost::unordered_map<std::string, std::string>& params);
 
- private:
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
+}  // namespace Engine
+}  // namespace trdk

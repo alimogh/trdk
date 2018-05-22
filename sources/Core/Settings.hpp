@@ -18,65 +18,73 @@ namespace trdk {
 class TRDK_CORE_API Settings {
  public:
   Settings();
-  explicit Settings(const trdk::Lib::Ini &,
-                    const boost::posix_time::ptime &universalStartTime);
+  explicit Settings(const boost::filesystem::path&,
+                    const boost::posix_time::ptime& universalStartTime);
+  Settings(Settings&&) = default;
+  Settings(const Settings&) = delete;
+  Settings& operator=(Settings&&) = default;
+  Settings& operator=(const Settings&) = delete;
+  ~Settings() = default;
 
- public:
-  void Log(trdk::Context::Log &) const;
+  const Lib::Ini& GetConfig() const { return *m_ini; }
 
- public:
-  const boost::posix_time::ptime &GetStartTime() const { return m_startTime; }
+  void Log(Context::Log&) const;
+
+  const boost::posix_time::ptime& GetStartTime() const { return m_startTime; }
 
   bool IsReplayMode() const noexcept { return m_isReplayMode; }
 
   bool IsMarketDataLogEnabled() const { return m_isMarketDataLogEnabled; }
 
-  const boost::filesystem::path &GetLogsRootDir() const {
+  const boost::filesystem::path& GetLogsRootDir() const {
     return m_logsRootDir;
   }
-  const boost::filesystem::path &GetLogsInstanceDir() const {
+
+  const boost::filesystem::path& GetLogsInstanceDir() const {
     return m_logsInstanceDir;
   }
 
   //! Default security Currency.
-  /** Path: Defaults::currency
+  /**
+   * Path: Defaults::currency
    * Ex.: "currency = USD"
    */
-  const trdk::Lib::Currency &GetDefaultCurrency() const {
-    return m_defaultCurrency;
-  }
+  const Lib::Currency& GetDefaultCurrency() const { return m_defaultCurrency; }
 
   //! Default security Security Type.
-  /** Path: Defaults::currency.
+  /**
+   * Path: Defaults::currency.
    * Values: STK, FUT, FOP, FOR, FORFOP
    * Ex.: "security_type = FOP"
    */
-  const trdk::Lib::SecurityType &GetDefaultSecurityType() const {
+  const Lib::SecurityType& GetDefaultSecurityType() const {
     return m_defaultSecurityType;
   }
 
-  const boost::local_time::time_zone_ptr &GetTimeZone() const {
+  const boost::local_time::time_zone_ptr& GetTimeZone() const {
     return m_timeZone;
   }
 
-  const boost::gregorian::date_duration &
+  const boost::gregorian::date_duration&
   GetPeriodBeforeExpiryDayToSwitchContract() const {
     return m_periodBeforeExpiryDayToSwitchContract;
   }
 
-  const std::string &ResolveSymbolAlias(const std::string &) const;
-  void ReplaceSymbolWithAlias(std::string &) const;
+  const std::string& ResolveSymbolAlias(const std::string&) const;
+  void ReplaceSymbolWithAlias(std::string&) const;
 
  private:
-  const trdk::Lib::SecurityType m_defaultSecurityType;
-  const trdk::Lib::Currency m_defaultCurrency;
-  const bool m_isReplayMode;
-  const bool m_isMarketDataLogEnabled;
-  const boost::posix_time::ptime m_startTime;
-  const boost::filesystem::path m_logsRootDir;
-  const boost::filesystem::path m_logsInstanceDir;
-  const boost::local_time::time_zone_ptr m_timeZone;
-  const boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
-  const boost::unordered_map<std::string, std::string> m_symbolAliases;
+  std::unique_ptr<Lib::Ini> m_ini;
+  Lib::SecurityType m_defaultSecurityType;
+  Lib::Currency m_defaultCurrency;
+  bool m_isReplayMode;
+  bool m_isMarketDataLogEnabled;
+  boost::posix_time::ptime m_startTime;
+  boost::filesystem::path m_logsRootDir;
+  boost::filesystem::path m_logsInstanceDir;
+  boost::local_time::time_zone_ptr m_timeZone;
+  boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
+  boost::unordered_map<std::string, std::string> m_symbolAliases;
 };
+
 }  // namespace trdk

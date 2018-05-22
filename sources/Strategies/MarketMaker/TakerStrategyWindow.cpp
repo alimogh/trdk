@@ -286,7 +286,7 @@ TakerStrategy& TakerStrategyWindow ::CreateStrategyInstance(
   static boost::uuids::random_generator generateStrategyId;
   const auto& strategyId = generateStrategyId();
   {
-    const IniFile conf(m_engine.GetConfigFilePath());
+    const auto& conf = m_engine.GetContext().GetSettings().GetConfig();
     const IniSectionRef defaults(conf, "Defaults");
     std::ostringstream os;
     os << "[Strategy."

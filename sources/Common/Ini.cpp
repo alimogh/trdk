@@ -28,7 +28,7 @@ void TrimSection(std::string &line) {
   boost::trim_right_if(line, boost::is_any_of("]"));
   boost::trim_left_if(line, boost::is_any_of("["));
 }
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -229,7 +229,7 @@ bool IsValueFromBooleanFalseEnum(const std::string &val) {
   return boost::iequals(val, "false") || boost::iequals(val, "no") ||
          val == "0";
 }
-}
+}  // namespace
 bool Ini::ConvertToBoolean(const std::string &val) {
   if (IsValueFromBooleanTrueEnum(val)) {
     return true;
@@ -339,36 +339,6 @@ std::set<Symbol> Ini::ReadSymbols(const std::string &section,
   }
   return result;
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-fs::path FindIniFile(const fs::path &source) {
-  if (boost::iends_with(source.string(), ".ini")) {
-    return source;
-  } else if (fs::exists(source)) {
-    return source;
-  }
-  const fs::path pathWhithExt = source.string() + ".ini";
-  if (!fs::exists(pathWhithExt)) {
-    return source;
-  }
-  return pathWhithExt;
-}
-}
-
-IniFile::FileOpenError::FileOpenError() throw()
-    : Error("Failed to open INI-file") {}
-
-IniFile::IniFile(const fs::path &path)
-    : m_path(FindIniFile(path)), m_file(m_path.string().c_str()) {
-  if (!m_file) {
-    throw FileOpenError();
-  }
-}
-
-IniFile::~IniFile() {}
 
 //////////////////////////////////////////////////////////////////////////
 

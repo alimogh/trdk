@@ -11,15 +11,16 @@
 #include "Prec.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
+using namespace Lib;
+using namespace FrontEnd;
 
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 namespace ids = boost::uuids;
-namespace front = trdk::FrontEnd;
+namespace front = FrontEnd;
 
-void front::ShowAbout(QWidget &parent) {
-  const auto &text =
+void front::ShowAbout(QWidget& parent) {
+  const auto& text =
       parent
           .tr("%1\nVersion %2 (%3, x%4-bit)\n\nVendor: %5\nWebsite: "
               "%6\nSupport email: %7")
@@ -38,14 +39,14 @@ void front::ShowAbout(QWidget &parent) {
   QMessageBox::about(&parent, parent.tr("About"), text);
 }
 
-void front::PinToTop(QWidget &widget, bool pin) {
+void front::PinToTop(QWidget& widget, bool pin) {
   auto flags = widget.windowFlags();
   pin ? flags |= Qt::WindowStaysOnTopHint : flags &= ~Qt::WindowStaysOnTopHint;
   widget.setWindowFlags(flags);
   widget.show();
 }
 
-QString front::ConvertTimeToText(const pt::time_duration &source) {
+QString front::ConvertTimeToText(const pt::time_duration& source) {
   if (source == pt::not_a_date_time) {
     return "--:--:--";
   }
@@ -53,33 +54,33 @@ QString front::ConvertTimeToText(const pt::time_duration &source) {
                            source.seconds());
 }
 
-QString front::ConvertPriceToText(const Price &source) {
+QString front::ConvertPriceToText(const Price& source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QString front::ConvertVolumeToText(const Price &source) {
+QString front::ConvertVolumeToText(const Price& source) {
   return ConvertPriceToText(source);
 }
 
-QString front::ConvertPriceToText(const boost::optional<Price> &source) {
+QString front::ConvertPriceToText(const boost::optional<Price>& source) {
   return ConvertPriceToText(source ? *source
                                    : std::numeric_limits<double>::quiet_NaN());
 }
 
-QString front::ConvertQtyToText(const Qty &source) {
+QString front::ConvertQtyToText(const Qty& source) {
   if (source.IsNan()) {
     return "---";
   }
   return QString::number(source, 'f', source.GetPrecision());
 }
 
-QDateTime front::ConvertToQDateTime(const pt::ptime &source) {
-  const auto &date = source.date();
-  const auto &time = source.time_of_day();
-  const auto &ms =
+QDateTime front::ConvertToQDateTime(const pt::ptime& source) {
+  const auto& date = source.date();
+  const auto& time = source.time_of_day();
+  const auto& ms =
       time - pt::time_duration(time.hours(), time.minutes(), time.seconds());
   return {
       QDate(date.year(), date.month().as_number(), date.day()),
@@ -88,24 +89,24 @@ QDateTime front::ConvertToQDateTime(const pt::ptime &source) {
             static_cast<long>(ms.total_milliseconds()))};
 }
 
-QDateTime front::ConvertToDbDateTime(const pt::ptime &source) {
+QDateTime front::ConvertToDbDateTime(const pt::ptime& source) {
   return ConvertToQDateTime(source);
 }
 
-QDateTime front::ConvertFromDbDateTime(const QDateTime &source) {
+QDateTime front::ConvertFromDbDateTime(const QDateTime& source) {
   return source;
 }
 
-QString front::ConvertToUiString(const TimeInForce &tif) {
+QString front::ConvertToUiString(const TimeInForce& tif) {
   return QString(ConvertToPch(tif)).toUpper();
 }
 
-QString front::ConvertToUiString(const OrderSide &side) {
+QString front::ConvertToUiString(const OrderSide& side) {
   static_assert(numberOfOrderSides == 2, "List changed");
   return side == ORDER_SIDE_BUY ? QObject::tr("buy") : QObject::tr("sell");
 }
 
-QString front::ConvertToUiString(const OrderStatus &status) {
+QString front::ConvertToUiString(const OrderStatus& status) {
   static_assert(numberOfOrderStatuses == 7, "List changed.");
   switch (status) {
     case ORDER_STATUS_SENT:
@@ -127,91 +128,91 @@ QString front::ConvertToUiString(const OrderStatus &status) {
   return QObject::tr("undefined");
 }
 
-QUuid front::ConvertToQUuid(const ids::uuid &source) {
+QUuid front::ConvertToQUuid(const ids::uuid& source) {
   static_assert(sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
                         sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
                         sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
                         sizeof(uchar) ==
                     sizeof(ids::uuid::data),
                 "Wrong size.");
-  const auto &l = reinterpret_cast<const uint &>(source.data[0]);
-  const auto &w1 = reinterpret_cast<const ushort &>(source.data[sizeof(uint)]);
-  const auto &w2 = reinterpret_cast<const ushort &>(
+  const auto& l = reinterpret_cast<const uint&>(source.data[0]);
+  const auto& w1 = reinterpret_cast<const ushort&>(source.data[sizeof(uint)]);
+  const auto& w2 = reinterpret_cast<const ushort&>(
       source.data[sizeof(uint) + sizeof(ushort)]);
-  return QUuid(((l >> 24) & 0xff) | ((l << 8) & 0xff0000) |
-                   ((l >> 8) & 0xff00) | ((l << 24) & 0xff000000),  // uint l
-               (w1 >> 8) | (w1 << 8),                               // ushort w1
-               (w2 >> 8) | (w2 << 8),                               // ushort w2
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) +
-                               sizeof(ushort)]),  // uchar b1
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar)]),  //  uchar b2
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar)]),  // uchar b3
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar)]),  // uchar b4
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar)]),  // uchar b5
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar) + sizeof(uchar)]),  // uchar b6
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar)]),  // uchar b7
-               reinterpret_cast<const uchar &>(
-                   source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
-                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
-                               sizeof(uchar)]));  // uchar b8
+  return QUuid(
+      ((l >> 24) & 0xff) | ((l << 8) & 0xff0000) | ((l >> 8) & 0xff00) |
+          ((l << 24) & 0xff000000),  // uint l
+      (w1 >> 8) | (w1 << 8),         // ushort w1
+      (w2 >> 8) | (w2 << 8),         // ushort w2
+      reinterpret_cast<const uchar&>(source.data[sizeof(uint) + sizeof(ushort) +
+                                                 sizeof(ushort)]),  // uchar b1
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar)]),  //  uchar b2
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar)]),  // uchar b3
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar)]),  // uchar b4
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar)]),  // uchar b5
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar) + sizeof(uchar)]),  // uchar b6
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar)]),  // uchar b7
+      reinterpret_cast<const uchar&>(
+          source.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
+                      sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
+                      sizeof(uchar)]));  // uchar b8
 }
 
-ids::uuid front::ConvertToBoostUuid(const QUuid &source) {
+ids::uuid front::ConvertToBoostUuid(const QUuid& source) {
   ids::uuid result;
-  reinterpret_cast<uint &>(result.data[0]) =
+  reinterpret_cast<uint&>(result.data[0]) =
       ((source.data1 >> 24) & 0xff) | ((source.data1 << 8) & 0xff0000) |
       ((source.data1 >> 8) & 0xff00) | ((source.data1 << 24) & 0xff000000);
-  reinterpret_cast<ushort &>(result.data[sizeof(uint)]) =
+  reinterpret_cast<ushort&>(result.data[sizeof(uint)]) =
       (source.data2 >> 8) | (source.data2 << 8);
-  reinterpret_cast<ushort &>(result.data[sizeof(uint) + sizeof(ushort)]) =
+  reinterpret_cast<ushort&>(result.data[sizeof(uint) + sizeof(ushort)]) =
       (source.data3 >> 8) | (source.data3 << 8);
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort)]) =
       source.data4[0];
-  reinterpret_cast<uchar &>(result.data[sizeof(uint) + sizeof(ushort) +
-                                        sizeof(ushort) + sizeof(uchar)]) =
+  reinterpret_cast<uchar&>(result.data[sizeof(uint) + sizeof(ushort) +
+                                       sizeof(ushort) + sizeof(uchar)]) =
       source.data4[1];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
                   sizeof(uchar) + sizeof(uchar)]) = source.data4[2];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
                   sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
       source.data4[3];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result
           .data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
                 sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
       source.data4[4];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
                   sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
                   sizeof(uchar) + sizeof(uchar)]) = source.data4[5];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result.data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) +
                   sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
                   sizeof(uchar) + sizeof(uchar) + sizeof(uchar)]) =
       source.data4[6];
-  reinterpret_cast<uchar &>(
+  reinterpret_cast<uchar&>(
       result
           .data[sizeof(uint) + sizeof(ushort) + sizeof(ushort) + sizeof(uchar) +
                 sizeof(uchar) + sizeof(uchar) + sizeof(uchar) + sizeof(uchar) +
@@ -220,9 +221,9 @@ ids::uuid front::ConvertToBoostUuid(const QUuid &source) {
   return result;
 }
 
-void front::ScrollToLastChild(QAbstractItemView &view,
-                              const QModelIndex &index) {
-  const auto &subRowCount = view.model()->rowCount(index);
+void front::ScrollToLastChild(QAbstractItemView& view,
+                              const QModelIndex& index) {
+  const auto& subRowCount = view.model()->rowCount(index);
   if (subRowCount) {
     view.scrollTo(index.child(subRowCount - 1, index.column()));
   } else {
@@ -230,11 +231,11 @@ void front::ScrollToLastChild(QAbstractItemView &view,
   }
 }
 
-void front::ScrollToLastChild(QAbstractItemView &view) {
+void front::ScrollToLastChild(QAbstractItemView& view) {
   ScrollToLastChild(view, view.model()->index(view.model()->rowCount() - 1, 0));
 }
 
-void front::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
+void front::ShowBlockedStrategyMessage(const QString& reason, QWidget* parent) {
   QString message = QObject::tr("Strategy instance is blocked!");
   message += "\n\n";
   if (!reason.isEmpty()) {
@@ -259,9 +260,9 @@ void front::ShowBlockedStrategyMessage(const QString &reason, QWidget *parent) {
                         QMessageBox::Ok);
 }
 
-std::string front::ExtractSymbolFromConfig(const QString &config) {
+std::string front::ExtractSymbolFromConfig(const QString& config) {
   IniString ini(config.toStdString());
-  for (const auto &line : ini.ReadList()) {
+  for (const auto& line : ini.ReadList()) {
     std::vector<std::string> parts;
     boost::split(parts, line, boost::is_any_of("="));
     if (parts.size() != 2 || boost::trim_copy(parts.front()) != "symbol") {
@@ -270,4 +271,23 @@ std::string front::ExtractSymbolFromConfig(const QString &config) {
     return boost::trim_copy(parts.back());
   }
   throw Exception("Failed to find symbol in the strategy configuration");
+}
+
+fs::path front::GetStandardFilePath(
+    const QString& fileName, const QStandardPaths::StandardLocation& pathType) {
+  fs::path result;
+  const auto actualPath = QStandardPaths::locate(pathType, fileName);
+  if (!actualPath.isEmpty()) {
+    result = actualPath.toStdString();
+  } else {
+    const auto& locations = QStandardPaths::standardLocations(pathType);
+    AssertLt(0, locations.size());
+    if (locations.isEmpty()) {
+      return fileName.toStdString();
+    }
+    result = locations.front().toStdString();
+    result /= fileName.toStdString();
+  }
+  fs::create_directories(result.branch_path());
+  return result;
 }

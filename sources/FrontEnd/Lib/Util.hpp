@@ -8,55 +8,60 @@
  * Copyright: Eugene V. Palchukovsky
  ******************************************************************************/
 
+#pragma once
+
 #include "Api.h"
 
 namespace trdk {
 namespace FrontEnd {
-TRDK_FRONTEND_LIB_API void ShowAbout(QWidget &);
-TRDK_FRONTEND_LIB_API void PinToTop(QWidget &, bool pin);
+
+TRDK_FRONTEND_LIB_API void ShowAbout(QWidget&);
+TRDK_FRONTEND_LIB_API void PinToTop(QWidget&, bool pin);
 TRDK_FRONTEND_LIB_API QString
-ConvertTimeToText(const boost::posix_time::time_duration &);
-TRDK_FRONTEND_LIB_API QString ConvertPriceToText(const trdk::Price &);
-TRDK_FRONTEND_LIB_API QString ConvertVolumeToText(const trdk::Volume &);
-TRDK_FRONTEND_LIB_API QString
-ConvertPriceToText(const boost::optional<trdk::Price> &);
-TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const trdk::Qty &);
+ConvertTimeToText(const boost::posix_time::time_duration&);
+TRDK_FRONTEND_LIB_API QString ConvertPriceToText(const Price&);
+TRDK_FRONTEND_LIB_API QString ConvertVolumeToText(const Volume&);
+TRDK_FRONTEND_LIB_API QString ConvertPriceToText(const boost::optional<Price>&);
+TRDK_FRONTEND_LIB_API QString ConvertQtyToText(const Qty&);
 
 TRDK_FRONTEND_LIB_API QDateTime
-ConvertToQDateTime(const boost::posix_time::ptime &);
+ConvertToQDateTime(const boost::posix_time::ptime&);
 
 TRDK_FRONTEND_LIB_API QDateTime
-ConvertToDbDateTime(const boost::posix_time::ptime &);
-TRDK_FRONTEND_LIB_API QDateTime ConvertFromDbDateTime(const QDateTime &);
+ConvertToDbDateTime(const boost::posix_time::ptime&);
+TRDK_FRONTEND_LIB_API QDateTime ConvertFromDbDateTime(const QDateTime&);
 
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::TimeInForce &);
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderSide &);
-TRDK_FRONTEND_LIB_API QString ConvertToUiString(const trdk::OrderStatus &);
+TRDK_FRONTEND_LIB_API QString ConvertToUiString(const TimeInForce&);
+TRDK_FRONTEND_LIB_API QString ConvertToUiString(const OrderSide&);
+TRDK_FRONTEND_LIB_API QString ConvertToUiString(const OrderStatus&);
 
-TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid &);
-TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid &);
+TRDK_FRONTEND_LIB_API QUuid ConvertToQUuid(const boost::uuids::uuid&);
+TRDK_FRONTEND_LIB_API boost::uuids::uuid ConvertToBoostUuid(const QUuid&);
 
 template <typename Result>
-const Result &ResolveModelIndexItem(const QModelIndex &source) {
+const Result& ResolveModelIndexItem(const QModelIndex& source) {
   Assert(source.isValid());
-  const auto *const proxy =
-      dynamic_cast<const QAbstractProxyModel *>(source.model());
+  const auto* const proxy =
+      dynamic_cast<const QAbstractProxyModel*>(source.model());
   if (!proxy) {
     Assert(source.internalPointer());
-    return *static_cast<const Result *>(source.internalPointer());
+    return *static_cast<const Result*>(source.internalPointer());
   }
-  const auto &index = proxy->mapToSource(source);
+  const auto& index = proxy->mapToSource(source);
   Assert(index.internalPointer());
-  return *static_cast<const Result *>(index.internalPointer());
+  return *static_cast<const Result*>(index.internalPointer());
 }
 
-void ScrollToLastChild(QAbstractItemView &, const QModelIndex &);
-void ScrollToLastChild(QAbstractItemView &);
+void ScrollToLastChild(QAbstractItemView&, const QModelIndex&);
+void ScrollToLastChild(QAbstractItemView&);
 
-TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString &,
-                                                      QWidget *parent);
+TRDK_FRONTEND_LIB_API void ShowBlockedStrategyMessage(const QString&,
+                                                      QWidget* parent);
 
-TRDK_FRONTEND_LIB_API std::string ExtractSymbolFromConfig(const QString &);
+TRDK_FRONTEND_LIB_API std::string ExtractSymbolFromConfig(const QString&);
+
+TRDK_FRONTEND_LIB_API boost::filesystem::path GetStandardFilePath(
+    const QString& fileName, const QStandardPaths::StandardLocation&);
 
 }  // namespace FrontEnd
 }  // namespace trdk

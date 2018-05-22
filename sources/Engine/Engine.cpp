@@ -20,41 +20,47 @@ namespace pt = boost::posix_time;
 using namespace trdk::Engine;
 using namespace trdk::Lib;
 
-class Engine::Implementation : private boost::noncopyable {
+class Engine::Implementation {
  public:
   std::ofstream m_eventsLogFile;
-  std::unique_ptr<trdk::Engine::Context::Log> m_eventsLog;
+  std::unique_ptr<Context::Log> m_eventsLog;
 
   std::ofstream m_tradingLogFile;
-  std::unique_ptr<trdk::Engine::Context::TradingLog> m_tradingLog;
+  std::unique_ptr<Context::TradingLog> m_tradingLog;
 
-  std::unique_ptr<trdk::Engine::Context> m_context;
+  std::unique_ptr<Context> m_context;
+
+  Implementation() = default;
+  Implementation(const Implementation&) = delete;
+  Implementation& operator=(const Implementation&) = delete;
 };
 
 Engine::Engine(
-    const fs::path &path,
-    const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-    const boost::function<void(const std::string &)> &startProgressCallback,
-    const boost::function<bool(const std::string &)> &startErrorCallback,
-    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
-    const boost::unordered_map<std::string, std::string> &params)
+    const fs::path& path,
+    const Context::StateUpdateSlot& contextStateUpdateSlot,
+    const boost::function<void(const std::string&)>& startProgressCallback,
+    const boost::function<bool(const std::string&)>& startErrorCallback,
+    const boost::function<void(Context::Log&)>& logStartCallback,
+    const boost::unordered_map<std::string, std::string>& params)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(path, contextStateUpdateSlot, nullptr, startProgressCallback,
       startErrorCallback, logStartCallback, params);
 }
 
 Engine::Engine(
-    const fs::path &path,
-    const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-    trdk::DropCopy &dropCopy,
-    const boost::function<void(const std::string &)> &startProgressCallback,
-    const boost::function<bool(const std::string &)> &startErrorCallback,
-    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
-    const boost::unordered_map<std::string, std::string> &params)
+    const fs::path& path,
+    const Context::StateUpdateSlot& contextStateUpdateSlot,
+    trdk::DropCopy& dropCopy,
+    const boost::function<void(const std::string&)>& startProgressCallback,
+    const boost::function<bool(const std::string&)>& startErrorCallback,
+    const boost::function<void(Context::Log&)>& logStartCallback,
+    const boost::unordered_map<std::string, std::string>& params)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(path, contextStateUpdateSlot, &dropCopy, startProgressCallback,
       startErrorCallback, logStartCallback, params);
 }
+
+Engine::Engine(Engine&&) = default;
 
 Engine::~Engine() {
   if (m_pimpl->m_context) {
@@ -63,13 +69,13 @@ Engine::~Engine() {
 }
 
 void Engine::Run(
-    const fs::path &path,
-    const trdk::Engine::Context::StateUpdateSlot &contextStateUpdateSlot,
-    trdk::DropCopy *dropCopy,
-    const boost::function<void(const std::string &)> &startProgressCallback,
-    const boost::function<bool(const std::string &)> &startErrorCallback,
-    const boost::function<void(trdk::Engine::Context::Log &)> &logStartCallback,
-    const boost::unordered_map<std::string, std::string> &params) {
+    const fs::path& path,
+    const Context::StateUpdateSlot& contextStateUpdateSlot,
+    trdk::DropCopy* dropCopy,
+    const boost::function<void(const std::string&)>& startProgressCallback,
+    const boost::function<bool(const std::string&)>& startErrorCallback,
+    const boost::function<void(Context::Log&)>& logStartCallback,
+    const boost::unordered_map<std::string, std::string>& params) {
   Assert(!m_pimpl->m_context);
   Assert(!m_pimpl->m_eventsLog);
   Assert(!m_pimpl->m_tradingLog);
@@ -79,58 +85,61 @@ void Engine::Run(
       startProgressCallback("Reading settings...");
     }
 
-    const IniFile ini(path);
-    const trdk::Settings settings(ini, pt::microsec_clock::universal_time());
-
-    fs::create_directories(settings.GetLogsInstanceDir());
-
-    fs::copy_file(path, settings.GetLogsInstanceDir() / path.filename(),
-                  fs::copy_option::fail_if_exists);
-
-    m_pimpl->m_eventsLog =
-        boost::make_unique<trdk::Engine::Context::Log>(settings.GetTimeZone());
-    if (logStartCallback) {
-      logStartCallback(*m_pimpl->m_eventsLog);
-    }
     {
-      const auto &logFilePath = settings.GetLogsInstanceDir() / "engine.log";
-      m_pimpl->m_eventsLogFile.open(
-          logFilePath.string().c_str(),
-          std::ios::out | std::ios::ate | std::ios::app);
-      if (!m_pimpl->m_eventsLogFile) {
-        boost::format error("Failed to open events log file %1%.");
-        error % logFilePath;
-        throw Exception(error.str().c_str());
+      Settings settings(path, pt::microsec_clock::universal_time());
+
+      create_directories(settings.GetLogsInstanceDir());
+
+      copy_file(path, settings.GetLogsInstanceDir() / path.filename(),
+                fs::copy_option::fail_if_exists);
+
+      m_pimpl->m_eventsLog =
+          boost::make_unique<Context::Log>(settings.GetTimeZone());
+      if (logStartCallback) {
+        logStartCallback(*m_pimpl->m_eventsLog);
       }
-      m_pimpl->m_eventsLog->EnableStream(m_pimpl->m_eventsLogFile, true);
+      {
+        const auto& logFilePath = settings.GetLogsInstanceDir() / "engine.log";
+        m_pimpl->m_eventsLogFile.open(
+            logFilePath.string().c_str(),
+            std::ios::out | std::ios::ate | std::ios::app);
+        if (!m_pimpl->m_eventsLogFile) {
+          boost::format error("Failed to open events log file %1%.");
+          error % logFilePath;
+          throw Exception(error.str().c_str());
+        }
+        m_pimpl->m_eventsLog->EnableStream(m_pimpl->m_eventsLogFile, true);
+      }
+      settings.Log(*m_pimpl->m_eventsLog);
+
+      if (startProgressCallback) {
+        startProgressCallback("Verifying modules...");
+      }
+      VerifyModules();
+
+      if (startProgressCallback) {
+        startProgressCallback("Starting engine...");
+      }
+
+      m_pimpl->m_tradingLog =
+          boost::make_unique<Context::TradingLog>(settings.GetTimeZone());
+
+      m_pimpl->m_context = boost::make_unique<Context>(
+          *m_pimpl->m_eventsLog, *m_pimpl->m_tradingLog, std::move(settings),
+          params);
     }
-    settings.Log(*m_pimpl->m_eventsLog);
-
-    if (startProgressCallback) {
-      startProgressCallback("Verifying modules...");
-    }
-    VerifyModules();
-
-    if (startProgressCallback) {
-      startProgressCallback("Starting engine...");
-    }
-
-    m_pimpl->m_tradingLog =
-        boost::make_unique<trdk::Engine::Context::TradingLog>(
-            settings.GetTimeZone());
-
-    m_pimpl->m_context = boost::make_unique<trdk::Engine::Context>(
-        *m_pimpl->m_eventsLog, *m_pimpl->m_tradingLog, settings, ini, params);
+    const auto& settings = m_pimpl->m_context->GetSettings();
+    const auto& ini = settings.GetConfig();
 
     m_pimpl->m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 
     {
-      const auto &tradingLogFilePath =
+      const auto& tradingLogFilePath =
           settings.GetLogsInstanceDir() / "trading.log";
       if (ini.ReadBoolKey("General", "trading_log")) {
         m_pimpl->m_tradingLogFile.open(
             tradingLogFilePath.string().c_str(),
-            std::ios::out | std::ios::ate | std::ios::app);
+            std::ios::out | std::ios::ate | std::ios ::app);
         if (!m_pimpl->m_tradingLogFile) {
           boost::format error("Failed to open trading log file %1%.");
           error % tradingLogFilePath;
@@ -146,8 +155,7 @@ void Engine::Run(
 
     m_pimpl->m_context->Start(ini, startProgressCallback, startErrorCallback,
                               dropCopy);
-
-  } catch (const trdk::Lib::Exception &ex) {
+  } catch (const Exception& ex) {
     if (m_pimpl->m_eventsLog) {
       m_pimpl->m_eventsLog->Error("Failed to init engine context: \"%1%\".",
                                   ex.what());
@@ -158,14 +166,14 @@ void Engine::Run(
   }
 }
 
-trdk::Context &Engine::GetContext() {
+trdk::Context& Engine::GetContext() {
   if (!m_pimpl->m_context) {
     throw Exception("Engine has no context as it not started");
   }
   return *m_pimpl->m_context;
 }
 
-void Engine::Stop(const trdk::StopMode &stopMode) {
+void Engine::Stop(const trdk::StopMode& stopMode) {
   if (!m_pimpl->m_context) {
     throw Exception("Failed to stop engine, engine is stopped");
   }
@@ -192,10 +200,10 @@ void Engine::ClosePositions() {
 
 void Engine::VerifyModules() const {
   try {
-    Lib::VerifyModules([this](const fs::path &module) {
+    Lib::VerifyModules([this](const fs::path& module) {
       m_pimpl->m_eventsLog->Debug("Found module %1%.", module);
     });
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     m_pimpl->m_eventsLog->Error("Failed to verify required modules: \"%1%\".",
                                 ex.what());
     throw Exception("Failed to verify required modules");

@@ -19,8 +19,8 @@ BalanceListView::BalanceListView(QWidget *parent) : Base(parent) {
   setSortingEnabled(true);
   sortByColumn(0, Qt::AscendingOrder);
   setAlternatingRowColors(true);
-  setSelectionBehavior(QAbstractItemView::SelectItems);
-  setSelectionMode(QAbstractItemView::ExtendedSelection);
+  setSelectionBehavior(SelectItems);
+  setSelectionMode(ExtendedSelection);
   setItemDelegate(new BalanceItemDelegate(this));
   setIndentation(10);
   InitContextMenu();
@@ -37,7 +37,7 @@ void BalanceListView::InitContextMenu() {
     addAction(action);
   }
   {
-    QAction *separator = new QAction(this);
+    auto *separator = new QAction(this);
     separator->setSeparator(true);
     addAction(separator);
   }
@@ -69,6 +69,11 @@ void BalanceListView::CopySelectedValuesToClipboard() const {
     previous = &current;
   }
   QApplication::clipboard()->setText(result);
+}
+
+void BalanceListView::setModel(QAbstractItemModel *model) {
+  Base::setModel(model);
+  expandAll();
 }
 
 void BalanceListView::rowsInserted(const QModelIndex &index,

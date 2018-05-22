@@ -21,7 +21,6 @@ const std::string Sections::strategy = "Strategy";
 
 const std::string Keys::module = "module";
 const std::string Keys::factory = "factory";
-const std::string Keys::instances = "instances";
 const std::string Keys::requires = "requires";
 
 const std::string Constants::Services::level1Updates = "Level 1 updates";
