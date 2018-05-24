@@ -38,6 +38,22 @@ class SplashScreen : public QSplashScreen {
   }
 };
 
+fs::path GetLogsDir() {
+  fs::path result;
+#ifndef _DEBUG
+  {
+    const auto &locations =
+        QStandardPaths::standardLocations(QStandardPaths::DataLocation);
+    AssertLt(0, locations.size());
+    if (!locations.isEmpty()) {
+      result = locations.front().toStdString();
+    }
+  }
+#endif
+  result /= "Logs";
+  return result;
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     Engine engine(
         GetStandardFilePath("default.ini", QStandardPaths::AppDataLocation),
-        nullptr);
+        GetLogsDir(), nullptr);
     std::vector<std::unique_ptr<Dll>> moduleDlls;
 
     for (;;) {

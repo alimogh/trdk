@@ -20,7 +20,8 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
   Q_OBJECT
 
  public:
-  explicit Engine(const boost::filesystem::path& configFilePath,
+  explicit Engine(const boost::filesystem::path& configFile,
+                  const boost::filesystem::path& logsDir,
                   QWidget* parent);
   ~Engine();
 

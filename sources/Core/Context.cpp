@@ -125,7 +125,7 @@ class StatReport : private boost::noncopyable {
                   std::ofstream& stream) const {
     Assert(stream);
 
-    const fs::path& path = m_context.GetSettings().GetLogsInstanceDir() / file;
+    const auto& path = m_context.GetSettings().GetLogsDir() / file;
     m_context.GetLog().Debug("Reporting %1% to file %2% with period %3%...",
                              name, path, m_reportPeriod);
 

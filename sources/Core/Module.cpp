@@ -212,7 +212,7 @@ void Module::RaiseSettingsUpdateEvent(const IniSectionRef &conf) {
 
 std::ofstream Module::OpenDataLog(const std::string &fileExtension,
                                   const std::string &suffix) const {
-  fs::path path = GetContext().GetSettings().GetLogsInstanceDir();
+  auto path = GetContext().GetSettings().GetLogsDir();
   path /= GetImplementationName();
   {
     boost::format fileName("%1%__%2%__%3%_%4%%5%");

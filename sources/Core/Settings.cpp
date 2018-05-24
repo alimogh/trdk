@@ -55,7 +55,6 @@ class IniFile : public Ini {
       file << "[General]" << std::endl;
       file << "\tis_replay_mode = no" << std::endl;
       file << std::endl;
-      file << "\tlogs_dir = logs" << std::endl;
       file << "\ttrading_log = yes" << std::endl;
       file << "\tmarket_data_log = no" << std::endl;
       file << std::endl;
@@ -95,19 +94,20 @@ Settings::Settings()
       m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
 
 Settings::Settings(const fs::path &confFile,
+                   const fs::path &logsDir,
                    const pt::ptime &universalStartTime)
     : m_ini(boost::make_unique<IniFile>(confFile)),
       m_defaultSecurityType(numberOfSecurityTypes),
       m_defaultCurrency(numberOfCurrencies),
       m_isReplayMode(false),
-      m_isMarketDataLogEnabled(false) {
+      m_isMarketDataLogEnabled(false),
+      m_logsDir(logsDir) {
   const IniSectionRef commonConf(*m_ini, "General");
   const IniSectionRef defaultsConf(*m_ini, "Defaults");
 
-  const_cast<bool &>(m_isReplayMode) = commonConf.ReadBoolKey("is_replay_mode");
+  m_isReplayMode = commonConf.ReadBoolKey("is_replay_mode");
 
-  const_cast<bool &>(m_isMarketDataLogEnabled) =
-      commonConf.ReadBoolKey("market_data_log");
+  m_isMarketDataLogEnabled = commonConf.ReadBoolKey("market_data_log");
 
   {
     std::string timeZone;
@@ -124,8 +124,7 @@ Settings::Settings(const fs::path &confFile,
                                      (diff.minutes() / 15) * 15))  // 3
                      .str();
     }
-    const_cast<lt::time_zone_ptr &>(m_timeZone) =
-        boost::make_shared<lt::posix_time_zone>(timeZone);
+    m_timeZone = boost::make_shared<lt::posix_time_zone>(timeZone);
   }
 
   {
@@ -133,8 +132,7 @@ Settings::Settings(const fs::path &confFile,
     auto currency = defaultsConf.ReadKey(currencyKey);
     if (!currency.empty()) {
       try {
-        const_cast<Currency &>(m_defaultCurrency) =
-            ConvertCurrencyFromIso(currency);
+        m_defaultCurrency = ConvertCurrencyFromIso(currency);
       } catch (const Exception &ex) {
         boost::format error(
             R"(Failed to parse default currency ISO 4217 code "%1%": "%2%")");
@@ -144,12 +142,11 @@ Settings::Settings(const fs::path &confFile,
     }
   }
   {
-    const char *const securityTypeKey = "security_type";
+    const auto securityTypeKey = "security_type";
     std::string securityType = defaultsConf.ReadKey(securityTypeKey);
     if (!securityType.empty()) {
       try {
-        const_cast<SecurityType &>(m_defaultSecurityType) =
-            ConvertSecurityTypeFromString(securityType);
+        m_defaultSecurityType = ConvertSecurityTypeFromString(securityType);
       } catch (const Exception &ex) {
         boost::format error(
             "Failed to parse default security type"
@@ -164,7 +161,7 @@ Settings::Settings(const fs::path &confFile,
     const auto *const key =
         "number_of_days_before_expiry_day_to_switch_contract";
     if (commonConf.IsKeyExist(key)) {
-      const_cast<gr::date_duration &>(m_periodBeforeExpiryDayToSwitchContract) =
+      m_periodBeforeExpiryDayToSwitchContract =
           gr::days(commonConf.ReadTypedKey<long>(key));
     }
   }
@@ -173,7 +170,7 @@ Settings::Settings(const fs::path &confFile,
     const auto *const key = "symbol_aliases";
     if (commonConf.IsKeyExist(key)) {
       for (const auto &item : commonConf.ReadList(key, ",", false)) {
-        const auto &delimter = item.find("=");
+        const auto &delimter = item.find('=');
         std::string symbol;
         std::string alias;
         if (delimter != std::string::npos) {
@@ -185,27 +182,18 @@ Settings::Settings(const fs::path &confFile,
           error % alias;
           throw Exception(error.str().c_str());
         }
-        const_cast<boost::unordered_map<std::string, std::string> &>(
-            m_symbolAliases)
-            .emplace(std::move(symbol), std::move(alias));
+        m_symbolAliases.emplace(std::move(symbol), std::move(alias));
       }
     }
   }
 
-  const_cast<pt::ptime &>(m_startTime) =
+  m_startTime =
       lt::local_date_time(universalStartTime, m_timeZone).local_time();
 
-  const_cast<fs::path &>(m_logsRootDir) =
-      commonConf.ReadFileSystemPath("logs_dir");
-#ifdef _DEBUG
-  const_cast<fs::path &>(m_logsRootDir) /= "DEBUG";
-#endif
-  const_cast<fs::path &>(m_logsInstanceDir) = m_logsRootDir;
   if (m_isReplayMode) {
-    const_cast<fs::path &>(m_logsInstanceDir) /=
-        "Replay_" + ConvertToFileName(m_startTime);
+    m_logsDir /= "Replay_" + ConvertToFileName(m_startTime);
   } else {
-    const_cast<fs::path &>(m_logsInstanceDir) /= ConvertToFileName(m_startTime);
+    m_logsDir /= ConvertToFileName(m_startTime);
   }
 }
 

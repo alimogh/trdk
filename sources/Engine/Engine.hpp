@@ -19,14 +19,16 @@ namespace Engine {
 class TRDK_ENGINE_API Engine {
  public:
   explicit Engine(
-      const boost::filesystem::path&,
+      const boost::filesystem::path& configFile,
+      const boost::filesystem::path& logsDir,
       const Context::StateUpdateSlot& contextStateUpdateSlot,
       const boost::function<void(const std::string&)>& startProgressCallback,
       const boost::function<bool(const std::string&)>& startErrorCallback,
       const boost::function<void(Context::Log&)>& logStartCallback,
       const boost::unordered_map<std::string, std::string>& params);
   explicit Engine(
-      const boost::filesystem::path&,
+      const boost::filesystem::path& configFile,
+      const boost::filesystem::path& logsDir,
       const Context::StateUpdateSlot& contextStateUpdateSlot,
       DropCopy& dropCopy,
       const boost::function<void(const std::string&)>& startProgressCallback,
@@ -50,7 +52,8 @@ class TRDK_ENGINE_API Engine {
   void VerifyModules() const;
 
   void Run(
-      const boost::filesystem::path&,
+      const boost::filesystem::path& configFile,
+      const boost::filesystem::path& logsDir,
       const Context::StateUpdateSlot&,
       DropCopy* dropCopy,
       const boost::function<void(const std::string&)>& startProgressCallback,

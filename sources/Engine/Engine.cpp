@@ -36,19 +36,21 @@ class Engine::Implementation {
 };
 
 Engine::Engine(
-    const fs::path& path,
+    const fs::path& configFile,
+    const fs::path& logsDir,
     const Context::StateUpdateSlot& contextStateUpdateSlot,
     const boost::function<void(const std::string&)>& startProgressCallback,
     const boost::function<bool(const std::string&)>& startErrorCallback,
     const boost::function<void(Context::Log&)>& logStartCallback,
     const boost::unordered_map<std::string, std::string>& params)
     : m_pimpl(boost::make_unique<Implementation>()) {
-  Run(path, contextStateUpdateSlot, nullptr, startProgressCallback,
-      startErrorCallback, logStartCallback, params);
+  Run(configFile, logsDir, contextStateUpdateSlot, nullptr,
+      startProgressCallback, startErrorCallback, logStartCallback, params);
 }
 
 Engine::Engine(
-    const fs::path& path,
+    const fs::path& configFile,
+    const fs::path& logsDir,
     const Context::StateUpdateSlot& contextStateUpdateSlot,
     trdk::DropCopy& dropCopy,
     const boost::function<void(const std::string&)>& startProgressCallback,
@@ -56,8 +58,8 @@ Engine::Engine(
     const boost::function<void(Context::Log&)>& logStartCallback,
     const boost::unordered_map<std::string, std::string>& params)
     : m_pimpl(boost::make_unique<Implementation>()) {
-  Run(path, contextStateUpdateSlot, &dropCopy, startProgressCallback,
-      startErrorCallback, logStartCallback, params);
+  Run(configFile, logsDir, contextStateUpdateSlot, &dropCopy,
+      startProgressCallback, startErrorCallback, logStartCallback, params);
 }
 
 Engine::Engine(Engine&&) = default;
@@ -69,7 +71,8 @@ Engine::~Engine() {
 }
 
 void Engine::Run(
-    const fs::path& path,
+    const fs::path& configFile,
+    const fs::path& logsDir,
     const Context::StateUpdateSlot& contextStateUpdateSlot,
     trdk::DropCopy* dropCopy,
     const boost::function<void(const std::string&)>& startProgressCallback,
@@ -86,11 +89,12 @@ void Engine::Run(
     }
 
     {
-      Settings settings(path, pt::microsec_clock::universal_time());
+      Settings settings(configFile, logsDir,
+                        pt::microsec_clock::universal_time());
 
-      create_directories(settings.GetLogsInstanceDir());
+      create_directories(settings.GetLogsDir());
 
-      copy_file(path, settings.GetLogsInstanceDir() / path.filename(),
+      copy_file(configFile, settings.GetLogsDir() / configFile.filename(),
                 fs::copy_option::fail_if_exists);
 
       m_pimpl->m_eventsLog =
@@ -99,7 +103,7 @@ void Engine::Run(
         logStartCallback(*m_pimpl->m_eventsLog);
       }
       {
-        const auto& logFilePath = settings.GetLogsInstanceDir() / "engine.log";
+        const auto& logFilePath = settings.GetLogsDir() / "engine.log";
         m_pimpl->m_eventsLogFile.open(
             logFilePath.string().c_str(),
             std::ios::out | std::ios::ate | std::ios::app);
@@ -134,8 +138,7 @@ void Engine::Run(
     m_pimpl->m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 
     {
-      const auto& tradingLogFilePath =
-          settings.GetLogsInstanceDir() / "trading.log";
+      const auto& tradingLogFilePath = settings.GetLogsDir() / "trading.log";
       if (ini.ReadBoolKey("General", "trading_log")) {
         m_pimpl->m_tradingLogFile.open(
             tradingLogFilePath.string().c_str(),

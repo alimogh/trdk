@@ -18,7 +18,8 @@ namespace trdk {
 class TRDK_CORE_API Settings {
  public:
   Settings();
-  explicit Settings(const boost::filesystem::path&,
+  explicit Settings(const boost::filesystem::path& confFile,
+                    const boost::filesystem::path& logsDir,
                     const boost::posix_time::ptime& universalStartTime);
   Settings(Settings&&) = default;
   Settings(const Settings&) = delete;
@@ -36,13 +37,7 @@ class TRDK_CORE_API Settings {
 
   bool IsMarketDataLogEnabled() const { return m_isMarketDataLogEnabled; }
 
-  const boost::filesystem::path& GetLogsRootDir() const {
-    return m_logsRootDir;
-  }
-
-  const boost::filesystem::path& GetLogsInstanceDir() const {
-    return m_logsInstanceDir;
-  }
+  const boost::filesystem::path& GetLogsDir() const { return m_logsDir; }
 
   //! Default security Currency.
   /**
@@ -80,8 +75,7 @@ class TRDK_CORE_API Settings {
   bool m_isReplayMode;
   bool m_isMarketDataLogEnabled;
   boost::posix_time::ptime m_startTime;
-  boost::filesystem::path m_logsRootDir;
-  boost::filesystem::path m_logsInstanceDir;
+  boost::filesystem::path m_logsDir;
   boost::local_time::time_zone_ptr m_timeZone;
   boost::gregorian::date_duration m_periodBeforeExpiryDayToSwitchContract;
   boost::unordered_map<std::string, std::string> m_symbolAliases;

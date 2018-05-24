@@ -39,14 +39,14 @@ const char *const help = "help";
 const char *const helpEx = "--help";
 const char *const helpShort = "h";
 const char *const helpShortEx = "-h";
-}
+}  // namespace Commands
 
 namespace Options {
 const char *const startDelay = "--start_delay";
 }
-}
-}
-}
+}  // namespace CommandLine
+}  // namespace EngineServer
+}  // namespace trdk
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -61,7 +61,7 @@ fs::path GetIniFilePath(const char *inputValue) {
   }
   return result;
 }
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -131,7 +131,7 @@ bool DebugStrategy(int argc, const char *argv[]) {
 
     try {
       engine = boost::make_unique<trdk::Engine::Engine>(
-          GetIniFilePath(argv[2]),
+          GetIniFilePath(argv[2]), "logs",
           [&](const trdk::Context::State &newState, const std::string *) {
             {
               const boost::mutex::scoped_lock lock(stateMutex);
@@ -200,7 +200,7 @@ bool ShowHelp(int argc, const char *argv[]) {
 
   return true;
 }
-}
+}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -257,12 +257,12 @@ void InstallOsSignalsHandler() {
     }
   }
 }
-}
+}  // namespace
 #else
 namespace {
 
 void InstallOsSignalsHandler() {}
-}
+}  // namespace
 #endif
 
 //////////////////////////////////////////////////////////////////////////
