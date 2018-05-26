@@ -23,5 +23,13 @@ Component.prototype.createOperations = function() {
 			"workingDirectory=@TargetDir@");
 		component.addOperation("CreateShortcut", installer.value("ProductUrl"),
 			"@StartMenuDir@/" + installer.value("Name") + " Web Site.url");
+		component.addOperation("CreateShortcut",
+			"@HomeDir@/AppData/Roaming/%{SuffixConfig}" + installer.value("Name"),
+			"@StartMenuDir@/" + installer.value("Name") + " Configuration.lnk");
+		component.addOperation("CreateShortcut",
+			"@HomeDir@/AppData/Local/%{SuffixConfig}" + installer.value("Name"),
+			"@StartMenuDir@/" + installer.value("Name") + " Data.lnk");
+		component.addOperation("CreateShortcut", installer.value("TargetDir"),
+			"@StartMenuDir@/" + installer.value("Name") + " Binaries.lnk");
 	}
 }

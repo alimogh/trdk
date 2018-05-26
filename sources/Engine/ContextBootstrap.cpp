@@ -173,13 +173,13 @@ class ContextBootstrapper : private boost::noncopyable {
       const IniSectionRef &configurationSection,
       const std::string &instanceName,
       const TradingMode &mode) {
-    const std::string module = configurationSection.ReadKey(Keys::module);
-    std::string factoryName = configurationSection.ReadKey(
+    const auto &module = configurationSection.ReadKey(Keys::module);
+    auto factoryName = configurationSection.ReadKey(
         Keys::factory,
         DefaultValues::Factories::tradingSystemAndMarketDataSource);
 
-    boost::shared_ptr<Dll> dll(new Dll(
-        module, configurationSection.ReadBoolKey(Keys::Dbg::autoName, true)));
+    const auto dll = boost::make_shared<Dll>(
+        module, configurationSection.ReadBoolKey(Keys::Dbg::autoName, true));
 
     typedef TradingSystemAndMarketDataSourceFactory Factory;
 
@@ -325,7 +325,7 @@ class ContextBootstrapper : private boost::noncopyable {
     }
 
     if (m_tradingSystems.empty()) {
-      throw Exception("No one trading system found in the configuration");
+       throw Exception("No one trading system found in the configuration");
     }
   }
 

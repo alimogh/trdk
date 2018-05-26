@@ -27,6 +27,7 @@ var projectDir = "";
 var configuration = "";
 var suffix = "";
 var suffixHumanReadable = "";
+var suffixConfig = "";
 var resultFile = "";
 var version = null;
 
@@ -54,6 +55,7 @@ function LoadArgs() {
 			} else if (configuration.substring(0, 4) == "test") {
 				suffix = "_test";
 				suffixHumanReadable = ' (TEST)';
+				suffixConfig = 'qttest/';
 			} else {
 				suffix = "_dbg";
 				suffixHumanReadable = ' (DEBUG)';
@@ -61,6 +63,7 @@ function LoadArgs() {
 				openSslSuffix = 'd';
 				qxOrmSuffix = 'd';
 				pocoSuffix = 'd';
+				suffixConfig = 'qttest/';
 			}
 		} else if (opt == "SourceDir") {
 			sourceDir = arg.substring(opt.length + 1, arg.length);
@@ -121,6 +124,7 @@ function CompileConfig(file) {
 			+ '-' + mm + '-' + now.getDate());
 	}
 	result = result.replace(/%{Domain}/g, branch.domain);
+	result = result.replace(/%{SuffixConfig}/g, suffixConfig);
 	// result = result.replace(/%{SolutionDir}/g, solutionDir);
 	fileSystem.OpenTextFile(file, 2).Write(result);
 }

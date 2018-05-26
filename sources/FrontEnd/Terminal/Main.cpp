@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "Prec.hpp"
+#include "Config.hpp"
 #include "Lib/Engine.hpp"
 #include "Lib/Style.hpp"
 #include "MainWindow.hpp"
@@ -16,7 +17,6 @@
 using namespace trdk::Lib;
 using namespace trdk::FrontEnd;
 using namespace Terminal;
-
 namespace fs = boost::filesystem;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,6 +38,29 @@ class SplashScreen : public QSplashScreen {
   }
 };
 
+fs::path GetLogsDir() {
+  fs::path result;
+#ifndef _DEBUG
+  {
+    const auto &locations =
+        QStandardPaths::standardLocations(QStandardPaths::DataLocation);
+    AssertLt(0, locations.size());
+    if (!locations.isEmpty()) {
+      result = locations.front().toStdString();
+    }
+  }
+#else
+  result = GetExeFilePath().branch_path() / "Var";
+#endif
+  result /= "Logs";
+  fs::create_directories(result);
+  return result;
+}
+
+fs::path GetConfigFilePath() {
+  return GetStandardFilePath("default.ini", QStandardPaths::AppDataLocation);
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,20 +75,22 @@ int main(int argc, char *argv[]) {
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication application(argc, argv);
 
-  auto splash = boost::make_unique<SplashScreen>();
-  splash->show();
-
   try {
     application.setApplicationName(TRDK_NAME);
     application.setOrganizationDomain(TRDK_DOMAIN);
+
+    CheckConfig(GetConfigFilePath());
+
+    auto splash = boost::make_unique<SplashScreen>();
+    splash->show();
+
     splash->ShowMessage(
         application.tr("Loading " TRDK_NAME "...").toStdString());
 
     LoadStyle(application);
 
-    Engine engine(
-        GetStandardFilePath("default.ini", QStandardPaths::AppDataLocation),
-        nullptr);
+    Engine engine(GetConfigFilePath(), GetLogsDir(), nullptr);
+
     std::vector<std::unique_ptr<Dll>> moduleDlls;
 
     for (;;) {
@@ -117,6 +142,13 @@ int main(int argc, char *argv[]) {
     splash.reset();
 
     return application.exec();
+  } catch (const CheckConfigException &) {
+    QMessageBox::warning(
+        nullptr, application.tr("Configuration required"),
+        application.tr(
+            "Impossible to continue to use application with the "
+            "current configuration. To configure, run the application again."),
+        QMessageBox::Close);
   } catch (const std::exception &ex) {
     QMessageBox::critical(nullptr, application.tr("Application fatal error"),
                           QString("%1.").arg(ex.what()), QMessageBox::Abort);

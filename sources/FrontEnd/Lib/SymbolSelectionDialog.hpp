@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include "Api.h"
-#include "Fwd.hpp"
-
 namespace Ui {
 class SymbolSelectionDialog;
 }

@@ -589,7 +589,7 @@ class Security::Implementation : private boost::noncopyable {
   }
 
   void StartMarketDataLog(size_t sourceIndex) {
-    auto path = m_self.GetContext().GetSettings().GetLogsInstanceDir();
+    auto path = m_self.GetContext().GetSettings().GetLogsDir();
     path /= "MarketData";
 
     if (m_self.GetContext().GetSettings().IsReplayMode()) {

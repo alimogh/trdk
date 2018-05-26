@@ -69,7 +69,8 @@ Orm::TimeInForce::enum_TimeInForce CovertToTimeInForce(
 class FrontEnd::Engine::Implementation : boost::noncopyable {
  public:
   FrontEnd::Engine& m_self;
-  const fs::path m_configFilePath;
+  const fs::path m_configFile;
+  const fs::path m_logsDir;
   FrontEnd::DropCopy m_dropCopy;
   std::unique_ptr<trdk::Engine::Engine> m_engine;
   sig::scoped_connection m_engineLogSubscription;
@@ -77,9 +78,12 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
       m_riskControls;
   QSqlDatabase* const m_db;
 
-  explicit Implementation(FrontEnd::Engine& self, fs::path path)
+  explicit Implementation(FrontEnd::Engine& self,
+                          fs::path configFile,
+                          fs::path logsDir)
       : m_self(self),
-        m_configFilePath(std::move(path)),
+        m_configFile(std::move(configFile)),
+        m_logsDir(std::move(logsDir)),
         m_dropCopy(m_self.parent()),
         m_db(nullptr) {
     for (auto i = 0; i < numberOfTradingModes; ++i) {
@@ -501,9 +505,11 @@ class FrontEnd::Engine::Implementation : boost::noncopyable {
 #endif
 };
 
-FrontEnd::Engine::Engine(const fs::path& path, QWidget* parent)
+FrontEnd::Engine::Engine(const fs::path& configFile,
+                         const fs::path& logsDir,
+                         QWidget* parent)
     : QObject(parent),
-      m_pimpl(boost::make_unique<Implementation>(*this, path)) {
+      m_pimpl(boost::make_unique<Implementation>(*this, configFile, logsDir)) {
   m_pimpl->InitDb();
   m_pimpl->ConnectSignals();
 }
@@ -523,7 +529,7 @@ void FrontEnd::Engine::Start(
     throw Exception(tr("Engine already started").toLocal8Bit().constData());
   }
   m_pimpl->m_engine = boost::make_unique<trdk::Engine::Engine>(
-      m_pimpl->m_configFilePath,
+      m_pimpl->m_configFile, m_pimpl->m_logsDir,
       boost::bind(&Implementation::OnContextStateChanged, &*m_pimpl, _1, _2),
       m_pimpl->m_dropCopy, startProgressCallback,
       [](const std ::string& error) {

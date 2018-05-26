@@ -193,11 +193,29 @@ class IniString : public Ini {
   mutable std::istringstream m_source;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
+class IniFile : public Ini {
+ public:
+  explicit IniFile(const boost::filesystem::path&);
+  IniFile(IniFile&&) = default;
+  IniFile(const IniFile&) = delete;
+  IniFile& operator=(IniFile&&) = delete;
+  IniFile& operator=(const IniFile&) = delete;
+  ~IniFile() override = default;
+
+ protected:
+  std::istream& GetSource() const override;
+
+ private:
+  mutable std::ifstream m_file;
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 class IniSectionRef {
  public:
-  explicit IniSectionRef(const Ini& iniRef, const std::string& sectionName);
+  explicit IniSectionRef(const Ini& iniRef, std::string sectionName);
 
   friend std::ostream& operator<<(std::ostream&, const IniSectionRef&);
 
