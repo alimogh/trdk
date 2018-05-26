@@ -76,6 +76,9 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_MainWindow.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="Config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -85,6 +88,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

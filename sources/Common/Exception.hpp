@@ -20,68 +20,67 @@ class Exception : public std::exception {
  public:
   explicit Exception(const char *what) noexcept;
   Exception(const Exception &) noexcept;
-  virtual ~Exception() noexcept;
+  ~Exception() noexcept override;
 
   Exception &operator=(const Exception &) noexcept;
 
-  friend std::ostream &operator<<(std::ostream &, const trdk::Lib::Exception &);
+  friend std::ostream &operator<<(std::ostream &, const Exception &);
 
- public:
-  virtual const char *what() const noexcept;
+  const char *what() const noexcept override;
 
  private:
   const char *m_what;
   bool m_doFree;
 };
 
-class LogicError : public trdk::Lib::Exception {
+class LogicError : public Exception {
  public:
   explicit LogicError(const char *what) noexcept;
 };
 
-class SystemException : public trdk::Lib::Exception {
+class SystemException : public Exception {
  public:
   explicit SystemException(const char *what) noexcept;
 };
 
-class MethodIsNotImplementedException : public trdk::Lib::Exception {
+class MethodIsNotImplementedException : public Exception {
  public:
   explicit MethodIsNotImplementedException(const char *what) noexcept;
 };
 
-class ModuleError : public trdk::Lib::Exception {
+class ModuleError : public Exception {
  public:
   explicit ModuleError(const char *what) noexcept;
 };
 
-class RiskControlException : public trdk::Lib::Exception {
+class RiskControlException : public Exception {
  public:
   explicit RiskControlException(const char *what) noexcept;
 };
 
-class ConnectError : public trdk::Lib::Exception {
+class ConnectError : public Exception {
  public:
   ConnectError(const char *what) noexcept : Exception(what) {}
 };
 
-class CommunicationError : public trdk::Lib::Exception {
+class CommunicationError : public Exception {
  public:
   CommunicationError(const char *what) noexcept : Exception(what) {}
 };
 
-class InsufficientFundsException : public trdk::Lib::CommunicationError {
+class InsufficientFundsException : public CommunicationError {
  public:
   explicit InsufficientFundsException(const char *what) noexcept
       : CommunicationError(what) {}
 };
 
-class OrderIsUnknownException : public trdk::Lib::Exception {
+class OrderIsUnknownException : public Exception {
  public:
   explicit OrderIsUnknownException(const char *what) noexcept
       : Exception(what) {}
 };
 
-class SymbolIsNotSupportedException : public trdk::Lib::Exception {
+class SymbolIsNotSupportedException : public Exception {
  public:
   explicit SymbolIsNotSupportedException(const char *what) noexcept
       : Exception(what) {}

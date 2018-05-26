@@ -39,7 +39,7 @@ std::string Base64::Encode(const unsigned char *source,
 }
 
 std::vector<unsigned char> Base64::Decode(const std::string &source) {
-  size_t resultLen = source.size();
+  auto resultLen = source.size();
   if (resultLen >= 2) {
     size_t padding = 0;
     if (source[resultLen - 1] == '=' && source[resultLen - 2] == '=') {

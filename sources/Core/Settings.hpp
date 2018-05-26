@@ -19,7 +19,7 @@ class TRDK_CORE_API Settings {
  public:
   Settings();
   explicit Settings(const boost::filesystem::path& confFile,
-                    const boost::filesystem::path& logsDir,
+                    boost::filesystem::path logsDir,
                     const boost::posix_time::ptime& universalStartTime);
   Settings(Settings&&) = default;
   Settings(const Settings&) = delete;

@@ -36,7 +36,7 @@ SymbolSelectionDialog::~SymbolSelectionDialog() = default;
 std::vector<QString> SymbolSelectionDialog::RequestSymbols() {
   for (;;) {
     std::vector<QString> result;
-    if (exec() != QDialog::Accepted) {
+    if (exec() != Accepted) {
       return result;
     }
     if (!m_ui->symbols->selectedItems().size()) {

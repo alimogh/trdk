@@ -10,6 +10,7 @@
 
 #include "Prec.hpp"
 #include "Settings.hpp"
+#include <utility>
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -19,73 +20,6 @@ namespace lt = boost::local_time;
 using namespace trdk;
 using namespace Lib;
 
-namespace {
-
-class IniFile : public Ini {
- public:
-  explicit IniFile(const fs::path &path)
-      : m_file(FindIniFile(path).string().c_str()) {
-    if (!m_file) {
-      throw Error("Failed to open configuration file");
-    }
-  }
-  ~IniFile() override = default;
-
- protected:
-  std::istream &GetSource() const override { return m_file; }
-
- private:
-  static fs::path FindIniFile(const fs::path &source) {
-    if (fs::exists(source)) {
-      return source;
-    }
-    try {
-      fs::create_directories(source.branch_path());
-    } catch (const fs::filesystem_error &ex) {
-      boost::format error("Failed to create default configuration file");
-      error % ex.what();
-      throw Error(error.str().c_str());
-    }
-    {
-      std::ofstream file(source.string().c_str());
-      if (!file) {
-        throw Error("Failed to create default configuration file");
-      }
-
-      file << "[General]" << std::endl;
-      file << "\tis_replay_mode = no" << std::endl;
-      file << std::endl;
-      file << "\ttrading_log = yes" << std::endl;
-      file << "\tmarket_data_log = no" << std::endl;
-      file << std::endl;
-      file << "\t; When switch contract to the next. Zero - at the first"
-           << std::endl;
-      file << "\t; minutes of the expiration day. One - one day before"
-           << std::endl;
-      file << "\t; of the expiration day." << std::endl;
-      file << "\tnumber_of_days_before_expiry_day_to_switch_contract = 0"
-           << std::endl;
-
-      file << std::endl;
-      file << "[Defaults]" << std::endl;
-      file << "\tcurrency = BTC" << std::endl;
-      file << "\tsecurity_type = CRYPTO" << std::endl;
-      file << "\tsymbol_list = BTC_EUR, BTC_USD, ETH_BTC, ETH_EUR, ETH_USD, "
-              "DOGE_BTC, LTC_BTC, DASH_BTC, BCH_BTC"
-           << std::endl;
-
-      file << std::endl;
-      file << "[RiskControl]" << std::endl;
-      file << "\tis_enabled = false" << std::endl;
-    }
-    return source;
-  }
-
-  mutable std::ifstream m_file;
-};
-
-}  // namespace
-
 Settings::Settings()
     : m_defaultSecurityType(numberOfSecurityTypes),
       m_defaultCurrency(numberOfCurrencies),
@@ -94,14 +28,14 @@ Settings::Settings()
       m_timeZone(boost::make_shared<lt::posix_time_zone>("GMT")) {}
 
 Settings::Settings(const fs::path &confFile,
-                   const fs::path &logsDir,
+                   fs::path logsDir,
                    const pt::ptime &universalStartTime)
     : m_ini(boost::make_unique<IniFile>(confFile)),
       m_defaultSecurityType(numberOfSecurityTypes),
       m_defaultCurrency(numberOfCurrencies),
       m_isReplayMode(false),
       m_isMarketDataLogEnabled(false),
-      m_logsDir(logsDir) {
+      m_logsDir(std::move(logsDir)) {
   const IniSectionRef commonConf(*m_ini, "General");
   const IniSectionRef defaultsConf(*m_ini, "Defaults");
 

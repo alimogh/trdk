@@ -276,6 +276,7 @@ std::string front::ExtractSymbolFromConfig(const QString& config) {
 fs::path front::GetStandardFilePath(
     const QString& fileName, const QStandardPaths::StandardLocation& pathType) {
   fs::path result;
+#ifndef _DEBUG
   const auto actualPath = QStandardPaths::locate(pathType, fileName);
   if (!actualPath.isEmpty()) {
     result = actualPath.toStdString();
@@ -288,6 +289,10 @@ fs::path front::GetStandardFilePath(
     result = locations.front().toStdString();
     result /= fileName.toStdString();
   }
+#else
+  UseUnused(pathType);
+  result = GetExeFilePath().branch_path() / "Var" / fileName.toStdString();
+#endif
   fs::create_directories(result.branch_path());
   return result;
 }

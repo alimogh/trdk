@@ -23,6 +23,7 @@
 #include "GeneratedFiles/Orm/include/Trdk_FrontEnd_Lib_Orm_all_include.gen.h"
 #pragma warning(pop)
 
+#include "Common.hpp"
 #include "Core/Balances.hpp"
 #include "Core/Bar.hpp"
 #include "Core/Context.hpp"
@@ -43,7 +44,6 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 

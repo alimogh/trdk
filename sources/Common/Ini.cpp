@@ -67,7 +67,7 @@ Ini::SectionList Ini::ReadSectionsList() const {
   const_cast<Ini *>(this)->Reset();
   auto &source = GetSource();
   while (!source.eof() && !source.fail()) {
-    std::string line = ReadCurrentLine();
+    auto line = ReadCurrentLine();
     if (IsSection(line)) {
       TrimSection(line);
       for (const auto &i : result) {
@@ -342,8 +342,18 @@ std::set<Symbol> Ini::ReadSymbols(const std::string &section,
 
 //////////////////////////////////////////////////////////////////////////
 
-IniSectionRef::IniSectionRef(const Ini &base, const std::string &name)
-    : m_base(&base), m_name(name) {}
+IniFile::IniFile(const fs::path &path) : m_file(path.string().c_str()) {
+  if (!m_file) {
+    throw Error("Failed to open configuration file");
+  }
+}
+
+std::istream &IniFile::GetSource() const { return m_file; }
+
+//////////////////////////////////////////////////////////////////////////
+
+IniSectionRef::IniSectionRef(const Ini &base, std::string name)
+    : m_base(&base), m_name(std::move(name)) {}
 
 bool IniSectionRef::IsExist() const {
   return GetBase().IsSectionExist(GetName());

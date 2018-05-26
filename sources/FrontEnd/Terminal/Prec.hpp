@@ -14,10 +14,12 @@
 #pragma warning(pop)
 
 #include "Common/Common.hpp"
+#include "Lib/Common.hpp"
 #include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 #include "Engine/Fwd.hpp"
 #include "Lib/Util.hpp"
 #include "Fwd.hpp"
-#include "Lib/Fwd.hpp"
+#include <boost/algorithm/string/predicate.hpp>
