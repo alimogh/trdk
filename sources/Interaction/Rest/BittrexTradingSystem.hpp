@@ -24,13 +24,13 @@ class BittrexTradingSystem : public TradingSystem {
   typedef TradingSystem Base;
 
  private:
-  struct Settings : public Rest::Settings {
+  struct Settings : Rest::Settings {
     typedef Rest::Settings Base;
 
     std::string apiKey;
     std::string apiSecret;
 
-    explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+    explicit Settings(const boost::property_tree::ptree &, ModuleEventsLog &);
   };
 
   class OrderTransactionRequest;
@@ -39,19 +39,18 @@ class BittrexTradingSystem : public TradingSystem {
    public:
     typedef BittrexRequest Base;
 
-   public:
     explicit PrivateRequest(const std::string &name,
                             const std::string &uriParams,
                             const Settings &settings,
                             const Context &context,
                             ModuleEventsLog &log,
                             ModuleTradingLog *tradingLog = nullptr);
-    virtual ~PrivateRequest() override = default;
+    ~PrivateRequest() override = default;
 
    protected:
-    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                                const std::string &,
-                                Poco::Net::HTTPRequest &) const override;
+    void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                        const std::string &,
+                        Poco::Net::HTTPRequest &) const override;
 
    private:
     const Settings &m_settings;
@@ -61,7 +60,6 @@ class BittrexTradingSystem : public TradingSystem {
    public:
     typedef PrivateRequest Base;
 
-   public:
     explicit AccountRequest(const std::string &name,
                             const std::string &uriParams,
                             const Settings &settings,
@@ -69,17 +67,16 @@ class BittrexTradingSystem : public TradingSystem {
                             ModuleEventsLog &log,
                             TradingLog *tradingLog = nullptr)
         : Base(name, uriParams, settings, context, log, tradingLog) {}
-    virtual ~AccountRequest() override = default;
+    ~AccountRequest() override = default;
 
    protected:
-    virtual bool IsPriority() const override { return false; }
+    bool IsPriority() const override { return false; }
   };
 
   class BalancesRequest : public AccountRequest {
    public:
     typedef AccountRequest Base;
 
-   public:
     explicit BalancesRequest(const Settings &settings,
                              const Context &context,
                              ModuleEventsLog &log)
@@ -91,44 +88,41 @@ class BittrexTradingSystem : public TradingSystem {
                                 const TradingMode &,
                                 Context &,
                                 const std::string &instanceName,
-                                const Lib::IniSectionRef &);
-  virtual ~BittrexTradingSystem() override = default;
+                                const boost::property_tree::ptree &);
+  ~BittrexTradingSystem() override = default;
 
- public:
-  virtual bool IsConnected() const override { return !m_products.empty(); }
+  bool IsConnected() const override { return !m_products.empty(); }
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Qty &,
-                                const Price &,
-                                const OrderSide &,
-                                const trdk::Security &) const override;
+  Volume CalcCommission(const Qty &,
+                        const Price &,
+                        const OrderSide &,
+                        const trdk::Security &) const override;
 
-  virtual boost::optional<OrderCheckError> CheckOrder(
-      const trdk::Security &,
+  boost::optional<OrderCheckError> CheckOrder(const trdk::Security &,
+                                              const Lib::Currency &,
+                                              const Qty &,
+                                              const boost::optional<Price> &,
+                                              const OrderSide &) const override;
+
+  bool CheckSymbol(const std::string &) const override;
+
+ protected:
+  void CreateConnection() override;
+
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &,
       const Lib::Currency &,
       const Qty &,
       const boost::optional<Price> &,
-      const OrderSide &) const override;
+      const OrderParams &,
+      const OrderSide &,
+      const TimeInForce &) override;
 
-  virtual bool CheckSymbol(const std::string &) const override;
+  void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
- protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
-
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &) override;
-
-  virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &) override;
-
-  virtual void OnTransactionSent(const OrderTransactionContext &) override;
+  void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
@@ -137,7 +131,6 @@ class BittrexTradingSystem : public TradingSystem {
 
   boost::posix_time::ptime ParseTime(std::string &&) const;
 
- private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
@@ -151,6 +144,7 @@ class BittrexTradingSystem : public TradingSystem {
 
   PollingTask m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

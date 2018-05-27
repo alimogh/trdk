@@ -1,4 +1,5 @@
 /*******************************************************************************
+/*******************************************************************************
  *   Created: 2018/01/31 21:34:47
  *    Author: Eugene V. Palchukovsky
  *    E-mail: eugene@palchukovsky.com
@@ -28,7 +29,7 @@ class StrategyWindow : public QMainWindow {
   explicit StrategyWindow(FrontEnd::Engine &,
                           const QUuid &strategyId,
                           const QString &name,
-                          const QString &config,
+                          const boost::property_tree::ptree &config,
                           QWidget *parent);
   ~StrategyWindow() override;
 
@@ -51,15 +52,15 @@ class StrategyWindow : public QMainWindow {
 
   Strategy &GenerateNewStrategyInstance();
   Strategy &CreateStrategyInstance(const boost::uuids::uuid &strategyId,
-                                   const QString &name,
-                                   const std::string &config);
+                                   const std::string &name,
+                                   const boost::property_tree::ptree &config);
   Strategy &RestoreStrategyInstance(const QUuid &strategyId,
-                                    const QString &name,
-                                    const QString &config);
+                                    const std::string &name,
+                                    const boost::property_tree::ptree &config);
 
   void Disable();
 
-  std::string CreateConfig(
+  boost::property_tree::ptree CreateConfig(
       const boost::uuids::uuid &strategyId,
       bool isLongOpeningEnabled,
       bool isShortOpeningEnabled,
@@ -78,7 +79,7 @@ class StrategyWindow : public QMainWindow {
       const Volume &takeProfitTrailingShareToClose,
       const Lib::Double &maxLossShare,
       const boost::posix_time::time_duration &frameSize) const;
-  std::string DumpConfig() const;
+  boost::property_tree::ptree DumpConfig() const;
 
   void StoreConfig(bool isActive);
 

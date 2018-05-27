@@ -32,6 +32,7 @@ using namespace trdk::FrontEnd;
 using namespace Charts;
 using namespace Terminal;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 
 MainWindow::MainWindow(Engine &engine,
@@ -122,7 +123,7 @@ void MainWindow::LoadModule(const fs::path &path) {
             "CreateMenuActions")(m_engine);
   } catch (const std::exception &ex) {
     const auto &error =
-        QString("Failed to load module front-end: \"%1\".").arg(ex.what());
+        QString(tr("Failed to load module front-end: \"%1\".")).arg(ex.what());
     QMessageBox::critical(this, tr("Failed to load module."), error,
                           QMessageBox::Ignore);
   }
@@ -136,7 +137,17 @@ void MainWindow::LoadModule(const fs::path &path) {
 }
 
 void MainWindow::CreateModuleWindows(const StrategyWindowFactory &factory) {
-  auto widgets = factory(this);
+  StrategyWidgetList widgets;
+  try {
+    widgets = factory(this);
+  } catch (const std::exception &ex) {
+    const auto &error =
+        QString(R"(Failed to create new strategy window: "%1".)")
+            .arg(ex.what());
+    QMessageBox::critical(this, tr("Strategy error."), error,
+                          QMessageBox::Abort);
+    return;
+  }
   ShowModuleWindows(widgets);
 }
 
@@ -174,13 +185,13 @@ void MainWindow::RestoreModules() {
   StrategyWidgetList widgets;
   m_engine.ForEachActiveStrategy(
       [this, &widgets](const QUuid &typeId, const QUuid &instanceId,
-                       const QString &name, const QString &config) {
+                       const QString &name, const ptr::ptree &config) {
         for (const auto &module : m_moduleDlls) {
           try {
             for (auto &widget :
                  module->GetFunction<StrategyWidgetList(
                      Engine &, const QUuid &, const QUuid &, const QString &,
-                     const QString &, QWidget *)>("RestoreStrategyWidgets")(
+                     const ptr::ptree &, QWidget *)>("RestoreStrategyWidgets")(
                      m_engine, typeId, instanceId, name, config, this)) {
               widgets.emplace_back(widget.release());
             }

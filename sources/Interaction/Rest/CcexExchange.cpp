@@ -19,12 +19,11 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace TradingLib;
+using namespace Interaction;
+using namespace Rest;
 namespace pc = Poco;
 namespace net = pc::Net;
 namespace pt = boost::posix_time;
@@ -50,16 +49,15 @@ Endpoint &GetEndpoint() {
   return result;
 }
 
-struct Settings : public Rest::Settings {
+struct Settings : Rest::Settings {
   std::string apiKey;
   std::string apiSecret;
 
-  explicit Settings(const IniSectionRef &conf, ModuleEventsLog &log)
+  explicit Settings(const ptr::ptree &conf, ModuleEventsLog &log)
       : Rest::Settings(conf, log),
-        apiKey(conf.ReadKey("api_key")),
-        apiSecret(conf.ReadKey("api_secret")) {
+        apiKey(conf.get<std::string>("config.auth.apiKey")),
+        apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
     Log(log);
-    Validate();
   }
 
   void Log(ModuleEventsLog &log) {
@@ -67,13 +65,12 @@ struct Settings : public Rest::Settings {
              apiKey,                                     // 1
              apiSecret.empty() ? "not set" : "is set");  // 2
   }
-
-  void Validate() {}
 };
 
 struct Product {
   std::string id;
 };
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,10 +98,9 @@ class Request : public Rest::Request {
              tradingLog),
         m_floodControl(floodControl) {}
 
-  virtual ~Request() override = default;
+  ~Request() override = default;
 
- public:
-  virtual boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
+  boost::tuple<pt::ptime, ptr::ptree, Milestones> Send(
       std::unique_ptr<net::HTTPSClientSession> &session) override {
     auto result = Base::Send(session);
     const auto &responseTree = boost::get<1>(result);
@@ -151,9 +147,7 @@ class Request : public Rest::Request {
     }
     return *result;
   }
-  virtual FloodControl &GetFloodControl() const override {
-    return m_floodControl;
-  }
+  FloodControl &GetFloodControl() const override { return m_floodControl; }
 
  private:
   FloodControl &m_floodControl;
@@ -163,7 +157,6 @@ class PublicRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit PublicRequest(const std::string &name,
                          FloodControl &floodControl,
                          const std::string &uriParams,
@@ -179,11 +172,10 @@ class PrivateRequest : public Request {
  public:
   typedef Request Base;
 
- public:
   explicit PrivateRequest(const std::string &name,
                           const Settings &settings,
                           FloodControl &floodControl,
-                          bool isPriority,
+                          const bool isPriority,
                           const std::string &uriParams,
                           const Context &context,
                           ModuleEventsLog &log,
@@ -198,13 +190,13 @@ class PrivateRequest : public Request {
         m_apiSecret(settings.apiSecret),
         m_isPriority(isPriority) {}
 
-  virtual ~PrivateRequest() override = default;
+  ~PrivateRequest() override = default;
 
  protected:
-  virtual void PrepareRequest(const net::HTTPClientSession &session,
-                              const std::string &body,
-                              net::HTTPRequest &request) const override {
-    using namespace trdk::Lib::Crypto;
+  void PrepareRequest(const net::HTTPClientSession &session,
+                      const std::string &body,
+                      net::HTTPRequest &request) const override {
+    using namespace Crypto;
     const auto &digest =
         Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
                                    session.getHost() + GetRequest().getURI(),
@@ -232,7 +224,6 @@ std::string RestoreSymbol(const std::string &source) {
 
 namespace {
 class CcexExchange : public TradingSystem, public MarketDataSource {
- private:
   typedef boost::mutex SecuritiesMutex;
   typedef SecuritiesMutex::scoped_lock SecuritiesLock;
 
@@ -247,7 +238,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                         const TradingMode &mode,
                         Context &context,
                         const std::string &instanceName,
-                        const IniSectionRef &conf)
+                        const ptr::ptree &conf)
       : TradingSystem(mode, context, instanceName),
         MarketDataSource(context, instanceName),
         m_settings(conf, GetTsLog()),
@@ -259,7 +250,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
         m_pollingTask(boost::make_unique<PollingTask>(
             m_settings.pollingSetttings, GetMdsLog())) {}
 
-  virtual ~CcexExchange() override {
+  ~CcexExchange() override {
     try {
       m_pollingTask.reset();
       // Each object, that implements CreateNewSecurityObject should wait for
@@ -272,7 +263,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
- public:
   using trdk::TradingSystem::GetContext;
 
   TradingSystem::Log &GetTsLog() const noexcept {
@@ -286,20 +276,19 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return MarketDataSource::GetLog();
   }
 
- public:
-  virtual bool IsConnected() const override { return m_isConnected; }
+  bool IsConnected() const override { return m_isConnected; }
 
   //! Makes connection with Market Data Source.
-  virtual void Connect(const IniSectionRef &conf) override {
+  void Connect() override {
     // Implementation for trdk::MarketDataSource.
     if (IsConnected()) {
       return;
     }
     GetTsLog().Debug("Creating connection...");
-    CreateConnection(conf);
+    CreateConnection();
   }
 
-  virtual void SubscribeToSecurities() override {
+  void SubscribeToSecurities() override {
     const SecuritiesLock lock(m_securitiesMutex);
     for (auto &subscribtion : m_securities) {
       if (subscribtion.second.isSubscribed) {
@@ -311,16 +300,16 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const Qty &qty,
-                                const Price &price,
-                                const OrderSide &,
-                                const trdk::Security &) const override {
+  Volume CalcCommission(const Qty &qty,
+                        const Price &price,
+                        const OrderSide &,
+                        const trdk::Security &) const override {
     return (qty * price) * (0.2 / 100);
   }
 
-  virtual boost::optional<OrderCheckError> CheckOrder(
+  boost::optional<OrderCheckError> CheckOrder(
       const trdk::Security &security,
       const Currency &currency,
       const Qty &qty,
@@ -340,12 +329,12 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return TradingSystem::CheckOrder(security, currency, qty, price, side);
   }
 
-  virtual bool CheckSymbol(const std::string &symbol) const override {
+  bool CheckSymbol(const std::string &symbol) const override {
     return TradingSystem::CheckSymbol(symbol) && m_products.count(symbol) > 0;
   }
 
  protected:
-  virtual void CreateConnection(const IniSectionRef &) override {
+  void CreateConnection() override {
     try {
       UpdateBalances();
       RequestProducts();
@@ -380,8 +369,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     m_isConnected = true;
   }
 
-  virtual trdk::Security &CreateNewSecurityObject(
-      const Symbol &symbol) override {
+  trdk::Security &CreateNewSecurityObject(const Symbol &symbol) override {
     const auto &product = m_products.find(symbol.GetSymbol());
     if (product == m_products.cend()) {
       boost::format message(
@@ -420,7 +408,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     return *result;
   }
 
-  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       trdk::Security &security,
       const Currency &currency,
       const Qty &qty,
@@ -474,7 +462,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     }
   }
 
-  virtual void SendCancelOrderTransaction(
+  void SendCancelOrderTransaction(
       const OrderTransactionContext &transaction) override {
     const auto orderId = transaction.GetOrderId();
 
@@ -482,7 +470,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
      public:
       typedef PrivateRequest Base;
 
-     public:
       explicit CancelOrderRequest(const OrderId &orderId,
                                   const Settings &settings,
                                   FloodControl &floodControl,
@@ -498,10 +485,10 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
                  log,
                  &tradingLog) {}
 
-      virtual ~CancelOrderRequest() override = default;
+      ~CancelOrderRequest() override = default;
 
      protected:
-      virtual const ptr::ptree &ExtractContent(
+      const ptr::ptree &ExtractContent(
           const ptr::ptree &responseTree) const override {
         return responseTree;
       }
@@ -513,8 +500,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
     m_canceled.emplace(orderId);
   }
 
-  virtual void OnTransactionSent(
-      const OrderTransactionContext &transaction) override {
+  void OnTransactionSent(const OrderTransactionContext &transaction) override {
     TradingSystem::OnTransactionSent(transaction);
     m_pollingTask->AccelerateNextPolling();
   }
@@ -567,7 +553,6 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
           GetTsLog().Error("Product duplicate: \"%1%\"",
                            productIt.first->first);
           Assert(productIt.second);
-          continue;
         }
       }
     } catch (const std::exception &ex) {
@@ -580,7 +565,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
 
   void UpdateOrder(const OrderId &orderId, const ptr::ptree &order) {
     pt::ptime time;
-    OrderStatus status = numberOfOrderStatuses;
+    auto status = numberOfOrderStatuses;
     Qty remainingQty = 0;
     try {
       AssertEq(orderId, order.get<OrderId>("OrderUuid"));
@@ -597,7 +582,7 @@ class CcexExchange : public TradingSystem, public MarketDataSource {
       }
     } catch (const std::exception &ex) {
       boost::format error(
-          "Failed to read state for order: \"%1%\" (response: \"%2%\")");
+          R"(Failed to read state for order: "%1%" (response: "%2%"))");
       error % ex.what()                     // 1
           % ConvertToString(order, false);  // 2
       throw CommunicationError(error.str().c_str());
@@ -745,7 +730,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<CcexExchange>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return {result, result};
@@ -754,7 +739,7 @@ TradingSystemAndMarketDataSourceFactoryResult CreateCcex(
 boost::shared_ptr<MarketDataSource> CreateCcexMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<CcexExchange>(App::GetInstance(), TRADING_MODE_LIVE,
                                           context, instanceName, configuration);
 }

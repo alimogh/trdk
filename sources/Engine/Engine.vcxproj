@@ -257,7 +257,6 @@
     <ClCompile Include="ContextBootstrap.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="SubscriptionsManager.cpp" />
-    <ClCompile Include="Ini.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Standalone|Win32'">Create</PrecompiledHeader>
@@ -281,10 +280,8 @@
     <ClInclude Include="Context.hpp" />
     <ClInclude Include="ContextBootstrap.hpp" />
     <ClInclude Include="Engine.hpp" />
-    <ClInclude Include="Types.hpp" />
     <ClInclude Include="SubscriptionsManager.hpp" />
     <ClInclude Include="Fwd.hpp" />
-    <ClInclude Include="Ini.hpp" />
     <ClInclude Include="Dispatcher.hpp" />
     <ClInclude Include="Prec.hpp" />
     <ClInclude Include="SubscriberPtrWrapper.hpp" />

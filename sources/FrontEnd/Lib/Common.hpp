@@ -12,5 +12,4 @@
 
 #include "Api.h"
 #include "Fwd.hpp"
-#include <boost/property_tree/ptree.hpp>
 #include <boost/unordered_set.hpp>

@@ -21,22 +21,17 @@ class TRDK_ENGINE_API Context : public trdk::Context {
  public:
   typedef trdk::Context Base;
 
-  explicit Context(
-      Context::Log &,
-      Context::TradingLog &,
-      Settings &&,
-      const boost::unordered_map<std::string, std::string> &params);
+  explicit Context(Log &, TradingLog &, Settings &&);
   ~Context() override;
 
   void Start(
-      const Lib::Ini &,
       const boost::function<void(const std::string &)> &startProgressCallback,
       const boost::function<bool(const std::string &)> &startErrorCallback,
       DropCopy * = nullptr);
   void Stop(const StopMode &);
 
-  void Add(const Lib::Ini &) override;
-  void Update(const Lib::Ini &);
+  void Add(const boost::property_tree::ptree &) override;
+  void Update(const boost::property_tree::ptree &);
 
   std::unique_ptr<DispatchingLock> SyncDispatching() const override;
 

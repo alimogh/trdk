@@ -24,7 +24,7 @@ class MarketDataSource : public trdk::MarketDataSource {
   static MarketDataSource &GetInstance();
 
  public:
-  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
+  virtual void Connect() override;
 
   virtual void SubscribeToSecurities() override;
 
@@ -32,6 +32,6 @@ class MarketDataSource : public trdk::MarketDataSource {
   virtual trdk::Security &CreateNewSecurityObject(
       const trdk::Lib::Symbol &) override;
 };
-}
-}
-}
+}  // namespace Dummies
+}  // namespace Tests
+}  // namespace trdk

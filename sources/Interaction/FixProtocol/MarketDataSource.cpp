@@ -15,19 +15,19 @@
 #include "Security.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::FixProtocol;
-
-namespace fix = trdk::Interaction::FixProtocol;
-namespace in = fix::Incoming;
-namespace out = fix::Outgoing;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::FixProtocol;
+namespace fix = Interaction::FixProtocol;
+namespace in = Incoming;
+namespace out = Outgoing;
 namespace gr = boost::gregorian;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
-fix::MarketDataSource::MarketDataSource(Context &context,
-                                        const std::string &instanceName,
-                                        const IniSectionRef &conf)
+fix::MarketDataSource::MarketDataSource(Context& context,
+                                        const std::string& instanceName,
+                                        const ptr::ptree& conf)
     : trdk::MarketDataSource(context, instanceName),
       Handler(context, conf, trdk::MarketDataSource::GetLog()),
       m_client("Prices", *this) {}
@@ -44,18 +44,19 @@ fix::MarketDataSource::~MarketDataSource() {
   }
 }
 
-Context &fix::MarketDataSource::GetContext() {
-  return trdk::MarketDataSource::GetContext();
-}
-const Context &fix::MarketDataSource::GetContext() const {
+Context& fix::MarketDataSource::GetContext() {
   return trdk::MarketDataSource::GetContext();
 }
 
-ModuleEventsLog &fix::MarketDataSource::GetLog() const {
+const Context& fix::MarketDataSource::GetContext() const {
+  return trdk::MarketDataSource::GetContext();
+}
+
+ModuleEventsLog& fix::MarketDataSource::GetLog() const {
   return trdk::MarketDataSource::GetLog();
 }
 
-void fix::MarketDataSource::Connect(const IniSectionRef &) {
+void fix::MarketDataSource::Connect() {
   GetLog().Debug("Connecting...");
   m_client.Connect();
   GetLog().Info("Connected.");
@@ -66,8 +67,8 @@ void fix::MarketDataSource::SubscribeToSecurities() {
                  m_securities.size());
 
   try {
-    for (const auto &it : m_securities) {
-      auto &security = *it.second;
+    for (const auto& it : m_securities) {
+      auto& security = *it.second;
       if (!security.GetRequest()) {
         security.SetOnline(security.GetLastMarketDataTime(), true);
       }
@@ -78,7 +79,7 @@ void fix::MarketDataSource::SubscribeToSecurities() {
                     message.GetSymbolId());  // 2
       m_client.Send(std::move(message));
     }
-  } catch (const Exception &ex) {
+  } catch (const Exception& ex) {
     GetLog().Error("Failed to send market data request: \"%1%\".", ex);
     throw Exception("Failed to send market data request");
   }
@@ -86,24 +87,24 @@ void fix::MarketDataSource::SubscribeToSecurities() {
   GetLog().Debug("Market data request sent.");
 }
 
-trdk::Security &fix::MarketDataSource::CreateNewSecurityObject(
-    const Symbol &symbol) {
-  const auto &result =
-      boost::make_shared<fix::Security>(GetContext(), symbol, *this,
-                                        Security::SupportedLevel1Types()
-                                            .set(LEVEL1_TICK_BID_PRICE)
-                                            .set(LEVEL1_TICK_ASK_PRICE));
+trdk::Security& fix::MarketDataSource::CreateNewSecurityObject(
+    const Symbol& symbol) {
+  const auto& result =
+      boost::make_shared<Security>(GetContext(), symbol, *this,
+                                   Security::SupportedLevel1Types()
+                                       .set(LEVEL1_TICK_BID_PRICE)
+                                       .set(LEVEL1_TICK_ASK_PRICE));
   Verify(m_securities.emplace(result->GetFixId(), result).second);
   return *result;
 }
 
-const fix::Security &fix::MarketDataSource::GetSecurityByFixId(
+const fix::Security& fix::MarketDataSource::GetSecurityByFixId(
     size_t id) const {
-  return const_cast<MarketDataSource *>(this)->GetSecurityByFixId(id);
+  return const_cast<MarketDataSource*>(this)->GetSecurityByFixId(id);
 }
 
-fix::Security &fix::MarketDataSource::GetSecurityByFixId(size_t id) {
-  const auto &result = m_securities.find(id);
+fix::Security& fix::MarketDataSource::GetSecurityByFixId(size_t id) {
+  const auto& result = m_securities.find(id);
   if (result == m_securities.cend()) {
     boost::format error("Failed to resolve security with FIX Symbol ID %1%");
     error % id;
@@ -118,12 +119,12 @@ void fix::MarketDataSource::OnConnectionRestored() {
 }
 
 void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
-    const in::MarketDataSnapshotFullRefresh &snapshot,
-    NetworkStreamClient &,
-    const Milestones &delayMeasurement) {
-  auto &security = snapshot.ReadSymbol(*this);
+    const in::MarketDataSnapshotFullRefresh& snapshot,
+    NetworkStreamClient&,
+    const Milestones& delayMeasurement) {
+  auto& security = snapshot.ReadSymbol(*this);
   bool isPreviouslyChanged = false;
-  snapshot.ReadEachMdEntry([&](Level1TickValue &&value, bool isLast) {
+  snapshot.ReadEachMdEntry([&](Level1TickValue&& value, bool isLast) {
     security.AddLevel1Tick(snapshot.GetTime(), std::move(value), isLast,
                            isPreviouslyChanged, delayMeasurement);
     if (!security.IsTradingSessionOpened()) {
@@ -135,9 +136,9 @@ void fix::MarketDataSource::OnMarketDataSnapshotFullRefresh(
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::MarketDataSource> CreateMarketDataSource(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    Context& context,
+    const std::string& instanceName,
+    const ptr::ptree& configuration) {
   return boost::make_shared<fix::MarketDataSource>(context, instanceName,
                                                    configuration);
 }

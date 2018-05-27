@@ -23,11 +23,11 @@
 #include "TransactionContext.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Lib::Concurrency;
-
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Lib::Concurrency;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 namespace {
 
@@ -121,7 +121,6 @@ class TradingSystem::Implementation : private boost::noncopyable {
     OrderLock m_lock;
   };
 
- public:
   TradingSystem &m_self;
 
   const TradingMode m_mode;
@@ -133,8 +132,8 @@ class TradingSystem::Implementation : private boost::noncopyable {
   const std::string m_instanceName;
   const std::string m_stringId;
 
-  TradingSystem::Log m_log;
-  TradingSystem::TradingLog m_tradingLog;
+  Log m_log;
+  TradingLog m_tradingLog;
 
   ActiveOrderMutex m_activeOrdersMutex;
   Orders m_activeOrders;
@@ -537,7 +536,6 @@ TradingSystem::TradingSystem(const TradingMode &mode,
     : m_pimpl(boost::make_unique<Implementation>(
           *this, mode, context, instanceName)) {}
 TradingSystem::TradingSystem(TradingSystem &&) = default;
-TradingSystem &TradingSystem::operator=(TradingSystem &&) = default;
 TradingSystem::~TradingSystem() = default;
 
 const TradingMode &TradingSystem::GetMode() const { return m_pimpl->m_mode; }
@@ -644,11 +642,11 @@ const TradingSystem::Orders &TradingSystem::GetActiveOrders() const {
   return m_pimpl->m_activeOrders;
 }
 
-void TradingSystem::Connect(const IniSectionRef &conf) {
+void TradingSystem::Connect() {
   if (IsConnected()) {
     return;
   }
-  CreateConnection(conf);
+  CreateConnection();
 }
 
 boost::shared_ptr<const OrderTransactionContext> TradingSystem::SendOrder(
@@ -852,8 +850,6 @@ bool TradingSystem::CancelOrder(const OrderId &orderId) {
 
   return true;
 }
-
-void TradingSystem::OnSettingsUpdate(const IniSectionRef &) {}
 
 void TradingSystem::OnOrderOpened(const pt::ptime &time,
                                   const OrderId &orderId) {

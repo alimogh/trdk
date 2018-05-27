@@ -20,13 +20,11 @@ class Strategy : public trdk::Strategy {
  public:
   typedef trdk::Strategy Base;
 
- public:
   explicit Strategy(Context &,
                     const std::string &instanceName,
-                    const Lib::IniSectionRef &);
-  virtual ~Strategy() override;
+                    const boost::property_tree::ptree &);
+  ~Strategy() override;
 
- public:
   bool IsTradingEnabled() const;
   void EnableTrading(bool);
 
@@ -56,13 +54,12 @@ class Strategy : public trdk::Strategy {
   Leg GetLeg(const Security &) const;
 
  protected:
-  virtual void OnSecurityStart(trdk::Security &,
-                               trdk::Security::Request &) override;
-  virtual void OnLevel1Update(
-      trdk::Security &, const Lib::TimeMeasurement::Milestones &) override;
-  virtual void OnPositionUpdate(trdk::Position &) override;
+  void OnSecurityStart(Security &, Security::Request &) override;
+  void OnLevel1Update(Security &,
+                      const Lib::TimeMeasurement::Milestones &) override;
+  void OnPositionUpdate(Position &) override;
   void OnPostionsCloseRequest() override;
-  virtual bool OnBlocked(const std::string * = nullptr) noexcept override;
+  bool OnBlocked(const std::string * = nullptr) noexcept override;
 
  private:
   class Implementation;

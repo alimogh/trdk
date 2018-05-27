@@ -16,14 +16,13 @@
 #include "Core/Position.hpp"
 #include "Core/Strategy.hpp"
 #include "Core/TradingLog.hpp"
-#include "Api.h"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
-
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace TradingLib;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace uuids = boost::uuids;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,38 +37,31 @@ class Operation : public trdk::Operation {
  public:
   typedef trdk::Operation Base;
 
- public:
   explicit Operation(Strategy &strategy)
       : Base(strategy, boost::make_unique<PnlOneSymbolContainer>()),
         m_orderPolicy(boost::make_shared<LimitGtcOrderPolicy>()) {}
-  virtual ~Operation() override = default;
+  ~Operation() override = default;
 
- public:
-  virtual const OrderPolicy &GetOpenOrderPolicy(
-      const Position &) const override {
+  const OrderPolicy &GetOpenOrderPolicy(const Position &) const override {
     return *m_orderPolicy;
   }
-  virtual const OrderPolicy &GetCloseOrderPolicy(
-      const Position &) const override {
+  const OrderPolicy &GetCloseOrderPolicy(const Position &) const override {
     return *m_orderPolicy;
   }
-  virtual bool IsLong(const Security &) const override {
-    return *GetIsRising();
-  }
-  virtual Qty GetPlannedQty(const Security &) const override { return 10; }
-  virtual bool HasCloseSignal(const Position &position) const override {
+  bool IsLong(const Security &) const override { return *GetIsRising(); }
+  Qty GetPlannedQty(const Security &) const override { return 10; }
+  bool HasCloseSignal(const Position &position) const override {
     const auto &isRising = GetIsRising();
     return !isRising || IsLong(position.GetSecurity()) == position.IsLong();
   }
-  virtual boost::shared_ptr<trdk::Operation> StartInvertedPosition(
-      const trdk::Position &) override {
+  boost::shared_ptr<trdk::Operation> StartInvertedPosition(
+      const Position &) override {
     return boost::make_shared<Operation>(GetStrategy());
   }
 
  private:
   boost::optional<bool> GetIsRising() const;
 
- private:
   const boost::shared_ptr<OrderPolicy> m_orderPolicy;
 };
 
@@ -81,11 +73,10 @@ class TestStrategy : public Strategy {
  public:
   typedef Strategy Super;
 
- public:
   explicit TestStrategy(Context &context,
                         const std::string &name,
                         const std::string &instanceName,
-                        const Lib::IniSectionRef &conf)
+                        const ptr::ptree &conf)
       : Super(context,
               "{063AB9A2-EE3E-4AF7-85B0-AC0B63E27F43}",
               name,
@@ -94,17 +85,17 @@ class TestStrategy : public Strategy {
         m_direction(0),
         m_prevPrice(0) {}
 
-  virtual ~TestStrategy() override = default;
+  ~TestStrategy() override = default;
 
  protected:
   void OnPositionUpdate(Position &position) {
     m_positionController.OnUpdate(position);
   }
 
-  virtual void OnLevel1Tick(Security &security,
-                            const pt::ptime &,
-                            const Level1TickValue &tick,
-                            const Milestones &delayMeasurement) override {
+  void OnLevel1Tick(Security &security,
+                    const pt::ptime &,
+                    const Level1TickValue &tick,
+                    const Milestones &delayMeasurement) override {
     if (tick.GetType() != LEVEL1_TICK_LAST_PRICE) {
       return;
     }
@@ -130,7 +121,7 @@ class TestStrategy : public Strategy {
     CheckSignal(security, delayMeasurement);
   }
 
-  virtual void OnPostionsCloseRequest() override {
+  void OnPostionsCloseRequest() override {
     m_positionController.OnCloseAllRequest(*this);
   }
 
@@ -175,13 +166,11 @@ boost::optional<bool> Operation::GetIsRising() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-boost::shared_ptr<trdk::Strategy> CreateStrategy(
-    trdk::Context &context,
-    const std::string &instanceName,
-    const trdk::Lib::IniSectionRef &conf) {
-  return boost::shared_ptr<trdk::Strategy>(
-      new trdk::Strategies::Test::TestStrategy(context, "Test", instanceName,
-                                               conf));
+boost::shared_ptr<Strategy> CreateStrategy(Context &context,
+                                           const std::string &instanceName,
+                                           const ptr::ptree &conf) {
+  return boost::shared_ptr<Strategy>(
+      new Strategies::Test::TestStrategy(context, "Test", instanceName, conf));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

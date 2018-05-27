@@ -13,14 +13,14 @@
 #include "CryptopiaTradingSystem.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace Interaction::Rest;
 
-trdk::TradingSystemAndMarketDataSourceFactoryResult CreateCryptopia(
-    const trdk::TradingMode &mode,
-    trdk::Context &context,
+TradingSystemAndMarketDataSourceFactoryResult CreateCryptopia(
+    const TradingMode &mode,
+    Context &context,
     const std::string &instanceName,
-    const trdk::Lib::IniSectionRef &conf) {
+    const boost::property_tree::ptree &conf) {
   return {boost::make_shared<CryptopiaTradingSystem>(
               App::GetInstance(), mode, context, instanceName, conf),
           boost::make_shared<CryptopiaMarketDataSource>(

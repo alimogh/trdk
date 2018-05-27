@@ -13,10 +13,9 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::Crypto;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Crypto;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 namespace ptr = boost::property_tree;
 
@@ -40,11 +39,11 @@ class LivecoinOrderTransactionContext : public OrderTransactionContext {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-LivecoinTradingSystem::Settings::Settings(const IniSectionRef &conf,
+LivecoinTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                           ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")) {
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -191,7 +190,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
                                              const TradingMode &mode,
                                              Context &context,
                                              const std::string &instanceName,
-                                             const IniSectionRef &conf)
+                                             const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_balances(*this, GetLog(), GetTradingLog()),
@@ -200,7 +199,7 @@ LivecoinTradingSystem::LivecoinTradingSystem(const App &,
       m_pollingSession(CreateSession("api.livecoin.net", m_settings, false)),
       m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
-void LivecoinTradingSystem::CreateConnection(const IniSectionRef &) {
+void LivecoinTradingSystem::CreateConnection() {
   Assert(m_products.empty());
 
   try {
@@ -491,7 +490,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateLivecoinTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<LivecoinTradingSystem>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return result;

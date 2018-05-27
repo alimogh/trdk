@@ -17,7 +17,7 @@
 #include "Common/ExpirationCalendar.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 namespace pt = boost::posix_time;
 namespace gr = boost::gregorian;
@@ -161,10 +161,7 @@ class MarketDataSource::Implementation : private boost::noncopyable {
 MarketDataSource::MarketDataSource(Context &context,
                                    const std::string &instanceName)
     : m_pimpl(std::make_unique<Implementation>(*this, context, instanceName)) {}
-
 MarketDataSource::MarketDataSource(MarketDataSource &&) = default;
-MarketDataSource &MarketDataSource::operator=(MarketDataSource &&) = default;
-
 MarketDataSource::~MarketDataSource() {
   try {
     if (!m_pimpl->m_asyncTasks.list.empty()) {
@@ -215,7 +212,7 @@ const std::string &MarketDataSource::GetStringId() const noexcept {
 }
 
 Security &MarketDataSource::GetSecurity(const Symbol &symbol) {
-  trdk::Security *result = FindSecurity(symbol);
+  auto *result = FindSecurity(symbol);
   if (result) {
     return *result;
   }

@@ -18,8 +18,8 @@ using namespace Lib;
 using namespace TimeMeasurement;
 using namespace FrontEnd;
 using namespace Strategies::ArbitrageAdvisor;
-
 namespace ids = boost::uuids;
+namespace ptr = boost::property_tree;
 namespace aa = Strategies::ArbitrageAdvisor;
 
 const std::string &StrategyWindow::Target::GetSymbol() const {
@@ -47,13 +47,14 @@ StrategyWindow::StrategyWindow(Engine &engine,
 StrategyWindow::StrategyWindow(Engine &engine,
                                const QUuid &strategyId,
                                const QString &name,
-                               const QString &config,
+                               const ptr::ptree &config,
                                QWidget *parent)
     : Base(parent),
       m_engine(engine),
       m_tradingMode(TRADING_MODE_LIVE),
-      m_symbol(ExtractSymbolFromConfig(config)),
-      m_strategy(RestoreStrategyInstance(strategyId, name, config)),
+      m_symbol(config.get<std::string>("config.symbol")),
+      m_strategy(
+          RestoreStrategyInstance(strategyId, name.toStdString(), config)),
       m_bestBuyTradingSystem(nullptr),
       m_bestSellTradingSystem(nullptr) {
   Init();
@@ -255,56 +256,49 @@ aa::Strategy &StrategyWindow::GenerateNewStrategyInstance() {
   auto isStopLossEnabled = false;
   size_t stopLossDelaySec = 0;
   {
-    const auto &conf = m_engine.GetContext().GetSettings().GetConfig();
-    const IniSectionRef general(conf, "General");
+    const auto &conf =
+        m_engine.GetContext().GetSettings().GetConfig().get_child("general");
     {
-      const std::string key = "lowest_spread_enabled";
-      if (general.IsKeyExist(key)) {
-        isLowestSpreadEnabed = general.ReadBoolKey(key);
-      }
+      const auto &key = conf.get_optional<bool>("lowestSpreadEnabled");
+      isLowestSpreadEnabed = key && *key;
     }
     {
-      const std::string key = "lowest_spread_percentage";
-      if (general.IsKeyExist(key)) {
-        lowestSpreadPercentage = general.ReadTypedKey<Double>(key);
-      }
+      const auto &key = conf.get_optional<bool>("lowestSpreadPercentage");
+      lowestSpreadPercentage = key && *key;
     }
     {
-      const std::string key = "stop_loss_enabled";
-      if (general.IsKeyExist(key)) {
-        isStopLossEnabled = general.ReadBoolKey(key);
-      }
+      const auto &key = conf.get_optional<bool>("isStopLossEnabled");
+      isStopLossEnabled = key && *key;
     }
     {
-      const std::string key = "stop_loss_delay_sec";
-      if (general.IsKeyExist(key)) {
-        stopLossDelaySec = general.ReadTypedKey<size_t>(key);
-      }
+      const auto &key = conf.get_optional<bool>("stopLossDelaySec");
+      stopLossDelaySec = key && *key;
     }
   }
   return CreateStrategyInstance(
       strategyId,
-      m_engine.GenerateNewStrategyName(
-          QString::fromStdString("Arbitrage " + m_symbol)),
+      m_engine.GenerateNewStrategyInstanceName("Arbitrage " + m_symbol),
       CreateConfig(strategyId, .6, false, .6, 100000000, isLowestSpreadEnabed,
                    lowestSpreadPercentage, isStopLossEnabled,
                    stopLossDelaySec));
 }
 
-aa::Strategy &StrategyWindow::RestoreStrategyInstance(const QUuid &strategyId,
-                                                      const QString &name,
-                                                      const QString &config) {
-  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), name,
-                                config.toStdString());
+aa::Strategy &StrategyWindow::RestoreStrategyInstance(
+    const QUuid &strategyId,
+    const std::string &name,
+    const ptr::ptree &config) {
+  return CreateStrategyInstance(ConvertToBoostUuid(strategyId), name, config);
 }
 
 aa::Strategy &StrategyWindow::CreateStrategyInstance(
     const ids::uuid &strategyId,
-    const QString &name,
-    const std::string &config) {
-  std::ostringstream ini;
-  ini << "[Strategy." << name << "]" << std::endl << config;
-  m_engine.GetContext().Add(IniString(ini.str()));
+    const std::string &name,
+    const ptr::ptree &config) {
+  {
+    ptr::ptree namedConfig;
+    namedConfig.add_child(name, config);
+    m_engine.GetContext().Add(namedConfig);
+  }
   return *boost::polymorphic_downcast<aa::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));
 }
@@ -480,7 +474,7 @@ void StrategyWindow::UpdateAdviceLevel(double level) {
   StoreConfig(true);
 }
 
-std::string StrategyWindow::CreateConfig(
+ptr::ptree StrategyWindow::CreateConfig(
     const ids::uuid &strategyId,
     const Double &minPriceDifferenceToHighlightPercentage,
     const bool isAutoTradingEnabled,
@@ -490,31 +484,31 @@ std::string StrategyWindow::CreateConfig(
     const Double &lowestSpreadPercentage,
     const bool isStopLossEnabled,
     const size_t stopLossDelaySec) const {
-  std::ostringstream result;
-  result << "module = ArbitrationAdvisor" << std::endl;
-  result << "id = " << strategyId << std::endl;
-  result << "is_enabled = true" << std::endl;
-  result << "trading_mode = live" << std::endl;
-  result << "requires = Level 1 Updates[" << m_symbol << "]" << std::endl;
-  result << "symbol = " << m_symbol << std::endl;
-  result << "min_price_difference_to_highlight_percentage = "
-         << minPriceDifferenceToHighlightPercentage << std::endl;
-  result << "auto_trading_enabled = "
-         << (isAutoTradingEnabled ? "true" : "false") << std::endl;
-  result << "min_price_difference_to_trade_percentage = "
-         << minPriceDifferenceToTradePercentage << std::endl;
-  result << "max_qty = " << maxQty << std::endl;
-  result << "lowest_spread_enabled = "
-         << (isLowestSpreadEnabled ? "true" : "false") << std::endl;
-  result << "lowest_spread_percentage = " << lowestSpreadPercentage
-         << std::endl;
-  result << "stop_loss_enabled = " << (isStopLossEnabled ? "true" : "false")
-         << std::endl;
-  result << "stop_loss_delay_sec = " << stopLossDelaySec << std::endl;
-  return result.str();
+  ptr::ptree result;
+  result.add("module", "ArbitrationAdvisor");
+  result.add("id", strategyId);
+  result.add("isEnabled", true);
+  result.add("tradingMode", "live");
+  {
+    ptr::ptree symbols;
+    symbols.push_back({"", ptr::ptree().put("", m_symbol)});
+    result.add_child("requirements.level1Updates.symbols", symbols);
+  }
+  result.add("config.symbol", m_symbol);
+  result.add("config.minPriceDifferenceToHighlightPercentage",
+             minPriceDifferenceToHighlightPercentage);
+  result.add("config.isAutoTradingEnabled", isAutoTradingEnabled);
+  result.add("config.minPriceDifferenceToTradePercentage",
+             minPriceDifferenceToTradePercentage);
+  result.add("config.maxQty", maxQty);
+  result.add("config.isLowestSpreadEnabled", isLowestSpreadEnabled);
+  result.add("config.lowestSpreadPercentage", lowestSpreadPercentage);
+  result.add("config.isStopLossEnabled", isStopLossEnabled);
+  result.add("config.stopLossDelaySec", stopLossDelaySec);
+  return result;
 }
 
-std::string StrategyWindow::DumpConfig() const {
+ptr::ptree StrategyWindow::DumpConfig() const {
   const auto &tradingSettings = m_strategy.GetTradingSettings();
   const auto isShouldBeEnabledImmediatelyAfterRestoration =
       false;  // m_strategy.GetTradingSettings().isEnabled;
@@ -528,8 +522,7 @@ std::string StrategyWindow::DumpConfig() const {
 }
 
 void StrategyWindow::StoreConfig(const bool isActive) {
-  m_engine.StoreConfig(m_strategy, QString::fromStdString(DumpConfig()),
-                       isActive);
+  m_engine.StoreConfig(m_strategy, DumpConfig(), isActive);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -552,7 +545,7 @@ StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
                                           const QUuid &instanceId,
                                           const QString &name,
-                                          const QString &config,
+                                          const ptr::ptree &config,
                                           QWidget *parent) {
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == aa::Strategy::typeId) {

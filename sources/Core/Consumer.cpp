@@ -15,9 +15,9 @@
 
 namespace fs = boost::filesystem;
 namespace pt = boost::posix_time;
-
+namespace ptr = boost::property_tree;
 using namespace trdk;
-using namespace trdk::Lib;
+using namespace Lib;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +32,7 @@ Consumer::Consumer(Context &context,
                    const std::string &typeName,
                    const std::string &name,
                    const std::string &instanceName,
-                   const IniSectionRef &conf)
+                   const ptr::ptree &conf)
     : Module(context, typeName, name, instanceName, conf),
       m_pimpl(new Implementation) {}
 

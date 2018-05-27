@@ -21,31 +21,15 @@
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace fs = boost::filesystem;
 namespace ids = boost::uuids;
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Engine;
+using namespace Lib;
+using namespace Engine;
 
-////////////////////////////////////////////////////////////////////////////////
-
-namespace {
-
-template <typename T>
-size_t GetModulesCount(
-    const std::map<std::string, std::vector<T>> &modulesByTag) {
-  size_t result = 0;
-  for (const auto &modules : modulesByTag) {
-    result += modules.second.size();
-  }
-  return result;
-}
-}  // namespace
-
-//////////////////////////////////////////////////////////////////////////
-
-class Engine::Context::Implementation : private boost::noncopyable {
+class Engine::Context::Implementation {
  public:
   class State;
 
@@ -57,47 +41,50 @@ class Engine::Context::Implementation : private boost::noncopyable {
 
   const fs::path m_fileLogsDir;
 
-  ModuleList m_modulesDlls;
-
   std::unique_ptr<ExpirationCalendar> m_expirationCalendar;
 
-  TradingSystems m_tradingSystems;
-  MarketDataSources m_marketDataSources;
+  std::vector<DllObjectPtr<TradingSystem>> m_tradingSystems;
+  std::vector<DllObjectPtr<MarketDataSource>> m_marketDataSources;
 
   bool m_isStopped;
   std::unique_ptr<State> m_state;
 
   explicit Implementation(Engine::Context &context)
       : m_context(context), m_isStopped(false) {
-    const auto &conf = m_context.GetSettings().GetConfig();
-
     static_assert(numberOfTradingModes == 3, "List changed.");
     for (size_t i = 0; i < m_riskControl.size(); ++i) {
       m_riskControl[i] = boost::make_unique<RiskControl>(
-          m_context, conf, static_cast<TradingMode>(i));
+          m_context, context.GetSettings().GetConfig(),
+          static_cast<TradingMode>(i));
     }
 
-    if (conf.IsSectionExist("Expiration")) {
-      const auto &expirationCalendarFilePath =
-          conf.ReadFileSystemPath("Expiration", "calendar_csv");
-      m_context.GetLog().Debug("Loading expiration calendar from %1%...",
-                               expirationCalendarFilePath);
-      auto expirationCalendar = std::make_unique<ExpirationCalendar>();
-      expirationCalendar->ReloadCsv(expirationCalendarFilePath);
-      const ExpirationCalendar::Stat stat = expirationCalendar->CalcStat();
-      const char *const message =
-          "Expiration calendar has %1% symbol(s)"
-          " and %2% expiration(s).";
-      stat.numberOfExpirations &&stat.numberOfSymbols
-          ? m_context.GetLog().Info(message, stat.numberOfSymbols,
-                                    stat.numberOfExpirations)
-          : m_context.GetLog().Warn(message, stat.numberOfSymbols,
-                                    stat.numberOfExpirations);
-      m_expirationCalendar.swap(expirationCalendar);
+    {
+      const auto &expiration =
+          m_context.GetSettings().GetConfig().get_child_optional("expiration");
+      if (expiration) {
+        const auto &expirationCalendarFilePath =
+            Normalize(expiration->get<fs::path>("calendarCsv"));
+        m_context.GetLog().Debug("Loading expiration calendar from %1%...",
+                                 expirationCalendarFilePath);
+        auto expirationCalendar = std::make_unique<ExpirationCalendar>();
+        expirationCalendar->ReloadCsv(expirationCalendarFilePath);
+        const auto stat = expirationCalendar->CalcStat();
+        const auto *const message =
+            "Expiration calendar has %1% symbol(s) and %2% expiration(s).";
+        stat.numberOfExpirations &&stat.numberOfSymbols
+            ? m_context.GetLog().Info(message, stat.numberOfSymbols,
+                                      stat.numberOfExpirations)
+            : m_context.GetLog().Warn(message, stat.numberOfSymbols,
+                                      stat.numberOfExpirations);
+        m_expirationCalendar.swap(expirationCalendar);
+      }
     }
-
-    BootContext(conf, m_context, m_tradingSystems, m_marketDataSources);
+    boost::tie(m_tradingSystems, m_marketDataSources) = LoadSources(m_context);
   }
+  Implementation(Implementation &&) = default;
+  Implementation(const Implementation &) = delete;
+  Implementation &operator=(Implementation &&) = delete;
+  Implementation &operator=(const Implementation &) = delete;
 
   ~Implementation() { m_context.GetTradingLog().WaitForFlush(); }
 
@@ -108,32 +95,33 @@ class Engine::Context::Implementation : private boost::noncopyable {
 
 //////////////////////////////////////////////////////////////////////////
 
-class Engine::Context::Implementation::State : private boost::noncopyable {
+class Engine::Context::Implementation::State {
  public:
-  Context &context;
-
-  SubscriptionsManager subscriptionsManager;
-
-  Strategies strategies;
-
+  Context &m_context;
+  SubscriptionsManager m_subscriptionsManager;
+  std::vector<DllObjectPtr<Strategy>> m_strategies;
   DropCopy *dropCopy;
 
   explicit State(Context &context, DropCopy *dropCopy)
-      : context(context), subscriptionsManager(context), dropCopy(dropCopy) {}
-
+      : m_context(context),
+        m_subscriptionsManager(context),
+        dropCopy(dropCopy) {}
+  State(State &&) = delete;
+  State(const State &) = delete;
+  State &operator=(State &&) = delete;
+  State &operator=(const State &) = delete;
   ~State() {
-    //     Assert(!subscriptionsManager.IsActive());
+    //     Assert(!m_subscriptionsManager.IsActive());
     // ... no new events expected, wait until old records will be flushed...
-    context.GetTradingLog().WaitForFlush();
+    m_context.GetTradingLog().WaitForFlush();
     // ... then we can destroy objects and unload DLLs...
   }
 
- public:
   void ReportState() const {
     {
       std::vector<std::string> markedDataSourcesStat;
       size_t commonSecuritiesCount = 0;
-      context.ForEachMarketDataSource([&](const MarketDataSource &source) {
+      m_context.ForEachMarketDataSource([&](const MarketDataSource &source) {
         std::ostringstream oss;
         oss << markedDataSourcesStat.size() + 1;
         if (!source.GetInstanceName().empty()) {
@@ -143,22 +131,20 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
         markedDataSourcesStat.push_back(oss.str());
         commonSecuritiesCount += source.GetActiveSecurityCount();
       });
-      context.GetLog().Debug(
+      m_context.GetLog().Debug(
           "Loaded %1% market data sources with %2% securities: %3%.",
           markedDataSourcesStat.size(), commonSecuritiesCount,
           boost::join(markedDataSourcesStat, ", "));
     }
 
-    context.GetLog().Debug("Loaded %1% strategies (%2% instances).",
-                           strategies.size(), GetModulesCount(strategies));
+    m_context.GetLog().Debug("Loaded %1% strategy instances.",
+                             m_strategies.size());
   }
 
   Strategy &GetSrategy(const ids::uuid &id) {
-    for (const auto &set : strategies) {
-      for (const auto &module : set.second) {
-        if (module.module->GetId() == id) {
-          return *module.module;
-        }
+    for (auto &strategy : m_strategies) {
+      if (strategy->GetId() == id) {
+        return *strategy;
       }
     }
     throw Exception("Strategy with the given ID is not existent");
@@ -167,12 +153,8 @@ class Engine::Context::Implementation::State : private boost::noncopyable {
 
 //////////////////////////////////////////////////////////////////////////
 
-Engine::Context::Context(
-    Context::Log &log,
-    Context::TradingLog &tradingLog,
-    Settings &&settings,
-    const boost::unordered_map<std::string, std::string> &params)
-    : Base(log, tradingLog, std::move(settings), params),
+Engine::Context::Context(Log &log, TradingLog &tradingLog, Settings &&settings)
+    : Base(log, tradingLog, std::move(settings)),
       m_pimpl(boost::make_unique<Implementation>(*this)) {}
 
 Engine::Context::~Context() {
@@ -182,7 +164,6 @@ Engine::Context::~Context() {
 }
 
 void Engine::Context::Start(
-    const Lib::Ini &conf,
     const boost::function<void(const std::string &)> &startProgressCallback,
     const boost::function<bool(const std::string &)> &startErrorCallback,
     DropCopy *dropCopy) {
@@ -190,10 +171,10 @@ void Engine::Context::Start(
 
   if (m_pimpl->m_isStopped) {
     throw LogicError("Already is stopped");
-  } else if (m_pimpl->m_state) {
+  }
+  if (m_pimpl->m_state) {
     throw LogicError("Already is started");
   }
-  Assert(m_pimpl->m_modulesDlls.empty());
 
   // It must be destroyed after state-object, as it state-object has
   // sub-objects from this DLL:
@@ -208,24 +189,22 @@ void Engine::Context::Start(
       for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
         auto &source = m_pimpl->m_marketDataSources[i];
         if (startProgressCallback) {
-          startProgressCallback("Connecting to " +
-                                source.marketDataSource->GetInstanceName() +
+          startProgressCallback("Connecting to " + source->GetInstanceName() +
                                 " market data source...");
         }
         try {
-          source.marketDataSource->Connect(IniSectionRef(conf, source.section));
+          source->Connect();
         } catch (const ConnectError &ex) {
           boost::format message(
-              "Failed to connect to market data source \"%1%\": \"%2%\"");
-          message % source.marketDataSource->GetInstanceName()  // 1
-              % ex;                                             // 2
+              R"(Failed to connect to market data source "%1%": "%2%")");
+          message % source->GetInstanceName()  // 1
+              % ex;                            // 2
           if (startErrorCallback && startErrorCallback(message.str() + ".")) {
             GetLog().Warn("Ignoring error: \"%1%\"...", message);
             Verify(errors.emplace(i).second);
             continue;
-          } else {
-            throw ConnectError(message.str().c_str());
           }
+          throw ConnectError(message.str().c_str());
         } catch (const Lib::Exception &ex) {
           GetLog().Error("Failed to make market data connection: \"%1%\".", ex);
           throw Exception("Failed to make market data connection");
@@ -237,42 +216,33 @@ void Engine::Context::Start(
           continue;
         }
 
-        auto &tradingSystemsByMode = m_pimpl->m_tradingSystems[i];
-        for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
-          if (!tradingSystemRef.tradingSystem) {
-            AssertEq(std::string(), tradingSystemRef.section);
-            continue;
+        auto &tradingSystem = m_pimpl->m_tradingSystems[i];
+        if (!tradingSystem) {
+          continue;
+        }
+        if (startProgressCallback) {
+          startProgressCallback("Connecting to " +
+                                tradingSystem->GetInstanceName() +
+                                " trading system...");
+        }
+
+        try {
+          tradingSystem->Connect();
+        } catch (const ConnectError &ex) {
+          boost::format message(
+              "Failed to connect to trading system \"%1%\": \"%2%\"");
+          message % tradingSystem->GetInstanceName()  // 1
+              % ex;                                   // 2
+          if (startErrorCallback && startErrorCallback(message.str() + ".")) {
+            GetLog().Warn("Ignoring error: \"%1%\"...", message);
+            Verify(errors.emplace(i).second);
+          } else {
+            throw ConnectError(message.str().c_str());
           }
-          Assert(!tradingSystemRef.section.empty());
-
-          auto &tradingSystem = *tradingSystemRef.tradingSystem;
-
-          if (startProgressCallback) {
-            startProgressCallback("Connecting to " +
-                                  tradingSystem.GetInstanceName() +
-                                  " trading system...");
-          }
-
-          const IniSectionRef confSection(conf, tradingSystemRef.section);
-
-          try {
-            tradingSystem.Connect(confSection);
-          } catch (const ConnectError &ex) {
-            boost::format message(
-                "Failed to connect to trading system \"%1%\": \"%2%\"");
-            message % tradingSystem.GetInstanceName()  // 1
-                % ex;                                  // 2
-            if (startErrorCallback && startErrorCallback(message.str() + ".")) {
-              GetLog().Warn("Ignoring error: \"%1%\"...", message);
-              Verify(errors.emplace(i).second);
-            } else {
-              throw ConnectError(message.str().c_str());
-            }
-          } catch (const Lib::Exception &ex) {
-            GetLog().Error("Failed to make trading system connection: \"%1%\".",
-                           ex);
-            throw Exception("Failed to make trading system connection");
-          }
+        } catch (const Lib::Exception &ex) {
+          GetLog().Error("Failed to make trading system connection: \"%1%\".",
+                         ex);
+          throw Exception("Failed to make trading system connection");
         }
       }
 
@@ -280,7 +250,7 @@ void Engine::Context::Start(
         AssertEq(m_pimpl->m_marketDataSources.size(),
                  m_pimpl->m_tradingSystems.size());
         {
-          MarketDataSources marketDataSources;
+          std::vector<DllObjectPtr<MarketDataSource>> marketDataSources;
           for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
             if (errors.count(i)) {
               continue;
@@ -298,7 +268,7 @@ void Engine::Context::Start(
                  m_pimpl->m_tradingSystems.size());
 
         if (m_pimpl->m_tradingSystems.empty() ||
-            m_pimpl->m_tradingSystems.empty()) {
+            m_pimpl->m_marketDataSources.empty()) {
           throw ConnectError("Failed to start: All sources failed to connect.");
         }
 
@@ -314,25 +284,23 @@ void Engine::Context::Start(
     AssertEq(m_pimpl->m_marketDataSources.size(),
              m_pimpl->m_tradingSystems.size());
     for (size_t i = 0; i < m_pimpl->m_marketDataSources.size(); ++i) {
-      m_pimpl->m_marketDataSources[i].marketDataSource->AssignIndex(i);
+      m_pimpl->m_marketDataSources[i]->AssignIndex(i);
     }
-    for (size_t i = 0; i < m_pimpl->m_tradingSystems.size(); ++i) {
-      auto &tradingSystemsByMode = m_pimpl->m_tradingSystems[i];
-      for (auto &tradingSystemRef : tradingSystemsByMode.holders) {
-        if (!tradingSystemRef.tradingSystem) {
-          AssertEq(std::string(), tradingSystemRef.section);
-          continue;
+    {
+      size_t index = 0;
+      for (auto &tradingSystem : m_pimpl->m_tradingSystems) {
+        if (tradingSystem) {
+          tradingSystem->AssignIndex(index);
         }
-        Assert(!tradingSystemRef.section.empty());
-        tradingSystemRef.tradingSystem->AssignIndex(i);
+        ++index;
       }
     }
 
     try {
-      BootContextState(conf, *this, m_pimpl->m_state->subscriptionsManager,
-                       m_pimpl->m_state->strategies, m_pimpl->m_modulesDlls);
+      m_pimpl->m_state->m_strategies =
+          LoadStrategies(*this, m_pimpl->m_state->m_subscriptionsManager);
     } catch (const Lib::Exception &ex) {
-      GetLog().Error("Failed to init engine context: \"%1%\".", ex);
+      GetLog().Error(R"(Failed to init engine context: "%1%".)", ex);
       throw Exception("Failed to init engine context");
     }
 
@@ -359,7 +327,7 @@ void Engine::Context::Start(
 
     OnStarted();
 
-    m_pimpl->m_state->subscriptionsManager.Activate();
+    m_pimpl->m_state->m_subscriptionsManager.Activate();
 
     RaiseStateUpdate(Context::STATE_ENGINE_STARTED);
   } catch (...) {
@@ -376,7 +344,7 @@ void Engine::Context::Stop(const StopMode &stopMode) {
   }
   m_pimpl->m_isStopped = true;
 
-  const char *stopModeStr = "unknown";
+  const auto *stopModeStr = "unknown";
   static_assert(numberOfStopModes == 3, "Stop mode list changed.");
   switch (stopMode) {
     case STOP_MODE_IMMEDIATELY:
@@ -388,30 +356,30 @@ void Engine::Context::Stop(const StopMode &stopMode) {
     case STOP_MODE_GRACEFULLY_POSITIONS:
       stopModeStr = "wait for positions before";
       break;
+    default:
+      break;
   }
 
-  GetLog().Info("Stopping with mode \"%1%\"...", stopModeStr);
+  GetLog().Info(R"(Stopping with mode "%1%"...)", stopModeStr);
 
   OnBeforeStop();
 
   {
     std::vector<Strategy *> stoppedStrategies;
-    for (auto &strategyies : m_pimpl->m_state->strategies) {
-      for (auto &strategyHolder : strategyies.second) {
-        strategyHolder.module->Stop(stopMode);
-        stoppedStrategies.push_back(&*strategyHolder.module);
-      }
+    for (auto &strategy : m_pimpl->m_state->m_strategies) {
+      strategy->Stop(stopMode);
+      stoppedStrategies.push_back(&*strategy);
     }
-    for (Strategy *strategy : stoppedStrategies) {
+    for (auto strategy : stoppedStrategies) {
       strategy->WaitForStop();
     }
   }
 
   // Suspend events...
-  m_pimpl->m_state->subscriptionsManager.Suspend();
+  m_pimpl->m_state->m_subscriptionsManager.Suspend();
 
   {
-    DropCopy *const dropCopy = GetDropCopy();
+    auto *const dropCopy = GetDropCopy();
     if (dropCopy) {
       dropCopy->Flush();
       dropCopy->Dump();
@@ -424,29 +392,33 @@ void Engine::Context::Stop(const StopMode &stopMode) {
   m_pimpl->m_state.reset();
 }
 
-void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
+void Engine::Context::Add(const ptr::ptree &newStrategiesConf) {
   GetLog().Debug("Adding new entities into engine context...");
-  m_pimpl->m_state->subscriptionsManager.Suspend();
+  m_pimpl->m_state->m_subscriptionsManager.Suspend();
 
+  std::vector<DllObjectPtr<Strategy>> newStrategies;
   try {
-    BootNewStrategiesForContextState(
-        newStrategiesConf, *this, m_pimpl->m_state->subscriptionsManager,
-        m_pimpl->m_state->strategies, m_pimpl->m_modulesDlls);
-  } catch (const Lib::Exception &ex) {
+    newStrategies = LoadStrategies(newStrategiesConf, *this,
+                                   m_pimpl->m_state->m_subscriptionsManager);
+  } catch (const Exception &ex) {
     GetLog().Error("Failed to add new entities into engine context: \"%1%\".",
                    ex);
-    throw Exception("Failed to add new strategies into engine context");
+    throw Exception("Failed to add new m_strategies into engine context");
   }
-  m_pimpl->m_state->ReportState();
+  m_pimpl->m_state->m_strategies.insert(
+      m_pimpl->m_state->m_strategies.end(),
+      std::make_move_iterator(newStrategies.begin()),
+      std::make_move_iterator(newStrategies.end()));
 
-  m_pimpl->m_state->subscriptionsManager.Activate();
+  m_pimpl->m_state->ReportState();
+  m_pimpl->m_state->m_subscriptionsManager.Activate();
 
   ForEachMarketDataSource([&](MarketDataSource &source) {
     try {
       source.SubscribeToSecurities();
     } catch (const Lib::Exception &ex) {
-      source.GetLog().Error("Failed to make market data subscription: \"%1%\".",
-                            ex);
+      source.GetLog().Error(
+          R"(Failed to make market data subscription: "%1%".)", ex);
       throw Exception("Failed to make market data subscription");
     }
   });
@@ -455,48 +427,20 @@ void Engine::Context::Add(const Lib::Ini &newStrategiesConf) {
 namespace {
 
 template <typename Modules>
-void UpdateModules(const Lib::Ini &conf, Modules &modules) {
+void UpdateModules(const ptr::ptree &conf, Modules &modules) {
   for (auto &set : modules) {
     for (auto &holder : set.second) {
       try {
         holder.module->RaiseSettingsUpdateEvent(
             IniSectionRef(conf, holder.section));
-      } catch (const Lib::Exception &ex) {
-        holder.module->GetLog().Error("Failed to update settings: \"%1%\".",
+      } catch (const Exception &ex) {
+        holder.module->GetLog().Error(R"(Failed to update settings: "%1%".)",
                                       ex);
       }
     }
   }
 }
 }  // namespace
-
-void Engine::Context::Update(const Lib::Ini &conf) {
-  GetLog().Info("Updating setting...");
-
-  static_assert(numberOfTradingModes == 3, "List changed.");
-  for (size_t i = 0; i < numberOfTradingModes; ++i) {
-    if (i == TRADING_MODE_BACKTESTING) {
-      continue;
-    }
-    GetRiskControl(TradingMode(i)).OnSettingsUpdate(conf);
-  }
-
-  for (auto &tradingSystemByMode : m_pimpl->m_tradingSystems) {
-    for (auto &tradingSystem : tradingSystemByMode.holders) {
-      try {
-        tradingSystem.tradingSystem->OnSettingsUpdate(
-            IniSectionRef(conf, tradingSystem.section));
-      } catch (const Lib::Exception &ex) {
-        tradingSystem.tradingSystem->GetLog().Error(
-            "Failed to update settings: \"%1%\".", ex);
-      }
-    }
-  }
-
-  UpdateModules(conf, m_pimpl->m_state->strategies);
-
-  GetLog().Debug("Setting update completed.");
-}
 
 std::unique_ptr<Engine::Context::DispatchingLock>
 Engine::Context::SyncDispatching() const {
@@ -510,7 +454,7 @@ Engine::Context::SyncDispatching() const {
   };
 
   return boost::make_unique<Lock>(
-      m_pimpl->m_state->subscriptionsManager.SyncDispatching());
+      m_pimpl->m_state->m_subscriptionsManager.SyncDispatching());
 }
 
 DropCopy *Engine::Context::GetDropCopy() const {
@@ -534,7 +478,7 @@ const ExpirationCalendar &Engine::Context::GetExpirationCalendar() const {
 }
 
 bool Engine::Context::HasExpirationCalendar() const {
-  return m_pimpl->m_expirationCalendar ? true : false;
+  return static_cast<bool>(m_pimpl->m_expirationCalendar);
 }
 
 size_t Engine::Context::GetNumberOfMarketDataSources() const {
@@ -542,7 +486,7 @@ size_t Engine::Context::GetNumberOfMarketDataSources() const {
 }
 
 const MarketDataSource &Engine::Context::GetMarketDataSource(
-    size_t index) const {
+    const size_t index) const {
   return const_cast<Engine::Context *>(this)->GetMarketDataSource(index);
 }
 
@@ -550,24 +494,20 @@ MarketDataSource &Engine::Context::GetMarketDataSource(size_t index) {
   if (index >= m_pimpl->m_marketDataSources.size()) {
     throw Exception("Market Data Source index is out of range");
   }
-  return *m_pimpl->m_marketDataSources[index].marketDataSource;
+  return *m_pimpl->m_marketDataSources[index];
 }
 
 void Engine::Context::ForEachMarketDataSource(
     const boost::function<void(const MarketDataSource &)> &callback) const {
-#ifdef BOOST_ENABLE_ASSERT_HANDLER
-  size_t i = 0;
-#endif
   for (const auto &source : m_pimpl->m_marketDataSources) {
-    AssertEq(i++, source.marketDataSource->GetIndex());
-    callback(*source.marketDataSource);
+    callback(*source);
   }
 }
 
 void Engine::Context::ForEachMarketDataSource(
     const boost::function<void(MarketDataSource &)> &callback) {
   for (auto &source : m_pimpl->m_marketDataSources) {
-    callback(*source.marketDataSource);
+    callback(*source);
   }
 }
 
@@ -575,25 +515,25 @@ size_t Engine::Context::GetNumberOfTradingSystems() const {
   return m_pimpl->m_tradingSystems.size();
 }
 
-TradingSystem &Engine::Context::GetTradingSystem(size_t index,
+TradingSystem &Engine::Context::GetTradingSystem(const size_t index,
                                                  const TradingMode &mode) {
   if (index >= m_pimpl->m_tradingSystems.size()) {
     throw Exception("Trading System index is out of range");
   }
-  if (mode >= m_pimpl->m_tradingSystems[index].holders.size()) {
+  if (mode != TRADING_MODE_LIVE) {
     throw TradingModeIsNotLoaded(
         "Trading System with such trading mode is not implemented");
   }
-  auto &holder = m_pimpl->m_tradingSystems[index].holders[mode];
-  if (!holder.tradingSystem) {
+  auto &tradingSystem = m_pimpl->m_tradingSystems[index];
+  if (!tradingSystem) {
     throw TradingModeIsNotLoaded(
         "Trading System with such trading mode is not loaded");
   }
-  return *holder.tradingSystem;
+  return *tradingSystem;
 }
 
 const TradingSystem &Engine::Context::GetTradingSystem(
-    size_t index, const TradingMode &mode) const {
+    const size_t index, const TradingMode &mode) const {
   return const_cast<Context *>(this)->GetTradingSystem(index, mode);
 }
 
@@ -601,15 +541,10 @@ void Engine::Context::CloseSrategiesPositions() {
   if (!m_pimpl->m_state) {
     return;
   }
-
   GetLog().Info("Closing positions...");
-
-  for (auto &tagetStrategies : m_pimpl->m_state->strategies) {
-    for (auto &strategyHolder : tagetStrategies.second) {
-      strategyHolder.module->ClosePositions();
-    }
+  for (auto &strategy : m_pimpl->m_state->m_strategies) {
+    strategy->ClosePositions();
   }
-
   GetLog().Debug("Closing positions: requests sent.");
 }
 

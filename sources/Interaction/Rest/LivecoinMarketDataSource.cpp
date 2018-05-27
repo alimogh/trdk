@@ -15,11 +15,11 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::Rest;
 
-namespace r = trdk::Interaction::Rest;
+namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -29,7 +29,7 @@ LivecoinMarketDataSource::LivecoinMarketDataSource(
     const App &,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &conf)
+    const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -54,7 +54,7 @@ LivecoinMarketDataSource::~LivecoinMarketDataSource() {
   }
 }
 
-void LivecoinMarketDataSource::Connect(const IniSectionRef &) {
+void LivecoinMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   try {
     m_products = RequestLivecoinProductList(m_session, GetContext(), GetLog());
@@ -222,7 +222,7 @@ void LivecoinMarketDataSource::UpdatePrices(
 boost::shared_ptr<MarketDataSource> CreateLivecoinMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<LivecoinMarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }

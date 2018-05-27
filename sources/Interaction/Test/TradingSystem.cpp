@@ -16,11 +16,11 @@
 #include "Core/TransactionContext.hpp"
 
 namespace pt = boost::posix_time;
-
+namespace ptr = boost::property_tree;
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Test;
+using namespace Lib;
+using namespace Interaction;
+using namespace Test;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -29,13 +29,11 @@ namespace {
 struct Order {
   bool isIoc;
   Security *security;
-  Currency currency;
   bool isSell;
   OrderId id;
-  boost::function<void(void)> callback;
+  boost::function<void()> callback;
   Qty qty;
   Price price;
-  OrderParams params;
   size_t isCanceled;
 };
 
@@ -56,10 +54,10 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
     mutable boost::variate_generator<boost::mt19937, boost::uniform_int<size_t>>
         executionDelayGenerator;
 
-    explicit DelayGenerator(const IniSectionRef &conf)
+    explicit DelayGenerator(const ptr::ptree &conf)
         : executionDelayRange(
-              conf.ReadTypedKey<size_t>("delay_microseconds.execution.min"),
-              conf.ReadTypedKey<size_t>("delay_microseconds.execution.max")),
+              conf.get<size_t>("config.delayMicroseconds.execution.min"),
+              conf.get<size_t>("config.delayMicroseconds.execution.max")),
           executionDelayGenerator(random, executionDelayRange) {}
 
     void Validate() const {
@@ -77,9 +75,9 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 
   class ExecChanceGenerator {
    public:
-    explicit ExecChanceGenerator(const IniSectionRef &conf)
+    explicit ExecChanceGenerator(const ptr::ptree &conf)
         : m_executionProbability(
-              conf.ReadTypedKey<uint16_t>("execution_probability")),
+              conf.get<uint16_t>("config.executionProbability")),
           m_range(0, 100),
           m_generator(m_random, m_range) {}
 
@@ -129,8 +127,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 
   const std::string m_orderNumberSuffix;
 
- public:
-  explicit Implementation(TradingSystem &self, const IniSectionRef &conf)
+  explicit Implementation(TradingSystem &self, const ptr::ptree &conf)
       : m_self(&self),
         m_delayGenerator(conf),
         m_execChanceGenerator(conf),
@@ -401,7 +398,7 @@ class Test::TradingSystem::Implementation : private boost::noncopyable {
 Test::TradingSystem::TradingSystem(const TradingMode &mode,
                                    Context &context,
                                    const std::string &instanceName,
-                                   const IniSectionRef &conf)
+                                   const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_pimpl(std::make_unique<Implementation>(*this, conf)) {
   m_pimpl->m_delayGenerator.Report(GetLog());
@@ -411,13 +408,11 @@ Test::TradingSystem::~TradingSystem() = default;
 
 bool Test::TradingSystem::IsConnected() const { return m_pimpl->IsStarted(); }
 
-void Test::TradingSystem::CreateConnection(const IniSectionRef &) {
-  m_pimpl->Start();
-}
+void Test::TradingSystem::CreateConnection() { m_pimpl->Start(); }
 
 std::unique_ptr<OrderTransactionContext>
 Test::TradingSystem::SendOrderTransaction(Security &,
-                                          const Lib::Currency &,
+                                          const Currency &,
                                           const Qty &,
                                           const boost::optional<Price> &,
                                           const OrderParams &,
@@ -439,16 +434,6 @@ void Test::TradingSystem::SendCancelOrderTransaction(
   m_pimpl->m_condition.notify_all();
 }
 
-void Test::TradingSystem::OnSettingsUpdate(const IniSectionRef &conf) {
-  Base::OnSettingsUpdate(conf);
-
-  Implementation::DelayGenerator delayGenerator(conf);
-  delayGenerator.Validate();
-  const SettingsWriteLock lock(m_pimpl->m_settingsMutex);
-  m_pimpl->m_delayGenerator = delayGenerator;
-  delayGenerator.Report(GetLog());
-}
-
 Volume Test::TradingSystem::CalcCommission(const Qty &,
                                            const Price &,
                                            const OrderSide &,
@@ -463,7 +448,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
     const trdk::TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<Test::TradingSystem>(mode, context, instanceName,
                                                  configuration);
 }

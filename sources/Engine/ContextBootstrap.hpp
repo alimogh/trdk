@@ -10,30 +10,22 @@
 
 #pragma once
 
-#include "Context.hpp"
-#include "SubscriptionsManager.hpp"
-#include "Types.hpp"
+#include "Fwd.hpp"
 
 namespace trdk {
 namespace Engine {
 
-void BootContext(const Lib::Ini &,
-                 Context &,
-                 TradingSystems &tradingSystemsRef,
-                 MarketDataSources &marketDataSourcesRef);
+std::pair<std::vector<Lib::DllObjectPtr<TradingSystem>>,
+          std::vector<Lib::DllObjectPtr<MarketDataSource>>>
+LoadSources(trdk::Context &);
 
-void BootContextState(const Lib::Ini &,
-                      Context &,
-                      SubscriptionsManager &subscriptionsManagerRef,
-                      Strategies &strategiesRef,
-                      ModuleList &moduleListRef);
+std::vector<Lib::DllObjectPtr<Strategy>> LoadStrategies(
+    const boost::property_tree::ptree &,
+    trdk::Context &,
+    SubscriptionsManager &);
 
-void BootNewStrategiesForContextState(
-    const Lib::Ini &newStrategiesConf,
-    Context &,
-    SubscriptionsManager &subscriptionsManagerRef,
-    Strategies &strategiesRef,
-    ModuleList &moduleListRef);
+std::vector<Lib::DllObjectPtr<Strategy>> LoadStrategies(trdk::Context &,
+                                                        SubscriptionsManager &);
 
 }  // namespace Engine
 }  // namespace trdk

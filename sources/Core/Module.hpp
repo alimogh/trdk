@@ -34,7 +34,7 @@ class TRDK_CORE_API Module : boost::noncopyable {
                   const std::string &typeName,
                   const std::string &implementationName,
                   const std::string &instanceName,
-                  const Lib::IniSectionRef &);
+                  const boost::property_tree::ptree &);
   virtual ~Module();
 
   TRDK_CORE_API friend std::ostream &operator<<(std::ostream &, const Module &);
@@ -61,14 +61,14 @@ class TRDK_CORE_API Module : boost::noncopyable {
   //! Returns list of required services.
   virtual std::string GetRequiredSuppliers() const;
 
-  void RaiseSettingsUpdateEvent(const Lib::IniSectionRef &);
+  void RaiseSettingsUpdateEvent(const boost::property_tree::ptree &);
 
  protected:
   Lock LockForOtherThreads() const {
     return const_cast<Module *>(this)->LockForOtherThreads();
   }
 
-  virtual void OnSettingsUpdate(const Lib::IniSectionRef &);
+  virtual void OnSettingsUpdate(const boost::property_tree::ptree &);
 
  private:
   class Implementation;

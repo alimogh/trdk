@@ -19,7 +19,6 @@
 #include "UseUnused.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#include <boost/noncopyable.hpp>
 #if defined(BOOST_MSVC)
 #include <Windows.h>
 #elif defined(BOOST_GCC)
@@ -31,7 +30,7 @@ namespace Lib {
 
 //////////////////////////////////////////////////////////////////////////
 
-class Dll : private boost::noncopyable {
+class Dll {
  public:
   class Error : public Exception {
    public:
@@ -42,16 +41,18 @@ class Dll : private boost::noncopyable {
   class DllLoadException : public Error {
    public:
     explicit DllLoadException(const boost::filesystem::path &dllFile,
-                              const trdk::Lib::SysError &error)
-        : Error((boost::format("Failed to load DLL file %1% (%2%)") % dllFile %
-                 error)
+                              const SysError &error)
+        : Error((boost::format("Failed to load DLL file %1% (%2%)") %
+                 dllFile   // 1
+                 % error)  // 2
                     .str()
                     .c_str()) {}
     explicit DllLoadException(const boost::filesystem::path &dllFile,
                               const char *error = nullptr)
         : Error((boost::format(
-                     "Failed to load DLL file %1% with error: \"%2%\"") %
-                 dllFile % (error ? error : "Success"))
+                     R"(Failed to load DLL file %1% with error: "%2%")") %
+                 dllFile                         // 1
+                 % (error ? error : "Success"))  // 2
                     .str()
                     .c_str()) {}
   };
@@ -61,18 +62,22 @@ class Dll : private boost::noncopyable {
    public:
     explicit DllFuncException(const boost::filesystem::path &dllFile,
                               const char *const funcName,
-                              const trdk::Lib::SysError &error)
+                              const SysError &error)
         : Error((boost::format(
-                     "Failed to find function \"%2%\" in DLL %1% (%3%).") %
-                 dllFile % funcName % error)
+                     R"(Failed to find function "%2%" in DLL %1% (%3%))") %
+                 dllFile     // 1
+                 % funcName  // 2
+                 % error)    // 3
                     .str()
                     .c_str()) {}
     explicit DllFuncException(const boost::filesystem::path &dllFile,
                               const char *const funcName,
                               const char *error = nullptr)
         : Error((boost::format(
-                     "Failed to find function \"%2%\" in DLL %1% (%3%).") %
-                 dllFile % funcName % (error ? error : "Success"))
+                     R"(Failed to find function "%2%" in DLL %1% (%3%))") %
+                 dllFile                         // 1
+                 % funcName                      // 2
+                 % (error ? error : "Success"))  // 3
                     .str()
                     .c_str()) {}
   };
@@ -85,9 +90,8 @@ class Dll : private boost::noncopyable {
 #endif
 
  public:
-  explicit Dll(const boost::filesystem::path &dllFile, bool autoName = false)
-      : m_file(dllFile) {
-    UseUnused(autoName);
+  explicit Dll(boost::filesystem::path dllFile, const bool autoName = false)
+      : m_file(std::move(dllFile)) {
 #ifdef BOOST_WINDOWS
     if (!m_file.has_extension()) {
       m_file.replace_extension(".dll");
@@ -97,18 +101,20 @@ class Dll : private boost::noncopyable {
       auto tmp = m_file;
       tmp.replace_extension("");
 #if defined(_DEBUG)
-      const std::string tmpStr = tmp.string() + "_dbg";
+      const auto tmpStr = tmp.string() + "_dbg";
 #elif defined(_TEST)
-      const std::string tmpStr = tmp.string() + "_test";
+      const auto tmpStr = tmp.string() + "_test";
 #endif
       tmp = tmpStr;
       tmp.replace_extension(m_file.extension());
       m_file = tmp;
     }
+#else
+    UseUnused(autoName);
 #endif
     m_handle = LoadLibraryW(m_file.c_str());
-    if (m_handle == NULL) {
-      throw DllLoadException(m_file, trdk::Lib::SysError(::GetLastError()));
+    if (m_handle == nullptr) {
+      throw DllLoadException(m_file, SysError(::GetLastError()));
     }
 #else
     if (autoName) {
@@ -137,7 +143,6 @@ class Dll : private boost::noncopyable {
 
   ~Dll() noexcept { Reset(); }
 
- public:
   void Reset() noexcept {
     if (m_handle) {
 #ifdef BOOST_WINDOWS
@@ -146,26 +151,23 @@ class Dll : private boost::noncopyable {
       dlclose(m_handle);
 #endif
     }
-    m_handle = NULL;
+    m_handle = nullptr;
   }
 
-  void Release() noexcept { m_handle = NULL; }
+  void Release() noexcept { m_handle = nullptr; }
 
- public:
   const boost::filesystem::path &GetFile() const { return m_file; }
 
- public:
   template <typename Func>
   Func *GetFunction(const char *funcName) const {
 #ifdef BOOST_WINDOWS
-    FARPROC procAddr = GetProcAddress(m_handle, funcName);
-    if (procAddr == NULL) {
-      throw DllFuncException(m_file, funcName,
-                             trdk::Lib::SysError(::GetLastError()));
+    const auto procAddr = GetProcAddress(m_handle, funcName);
+    if (procAddr == nullptr) {
+      throw DllFuncException(m_file, funcName, SysError(::GetLastError()));
     }
 #else
-    void *procAddr = dlsym(m_handle, funcName);
-    if (procAddr == NULL) {
+    auto *procAddr = dlsym(m_handle, funcName);
+    if (procAddr == nullptr) {
       throw DllFuncException(m_file, funcName, dlerror());
     }
 #endif
@@ -185,7 +187,8 @@ class Dll : private boost::noncopyable {
 //////////////////////////////////////////////////////////////////////////
 
 //! Holder for object pointer, that was received from a DLL.
-/** Closes dll only after object will be destroyed.
+/**
+ * Closes dll only after object will be destroyed.
  * @sa: ::TunnelEx::Helpers::Dll;
  */
 template <typename Tx>
@@ -196,12 +199,11 @@ class DllObjectPtr {
   static_assert(!boost::is_same<ValueType, Dll>::value,
                 "DllObjectPtr can't be used for Dll-objects.");
 
- public:
   DllObjectPtr() { Assert(!operator bool()); }
 
   explicit DllObjectPtr(boost::shared_ptr<Dll> dll,
                         boost::shared_ptr<ValueType> objFormDll)
-      : m_dll(dll), m_objFormDll(objFormDll) {
+      : m_dll(std::move(dll)), m_objFormDll(std::move(objFormDll)) {
     Assert(operator bool());
   }
 
@@ -210,28 +212,27 @@ class DllObjectPtr {
     m_objFormDll.swap(rhs.m_objFormDll);
   }
 
- public:
-  operator bool() const {
+  explicit operator bool() const {
     Assert(m_objFormDll || !m_dll);
     return m_objFormDll ? true : false;
   }
 
-  operator ValueType &() { return *GetObjPtr(); }
+  explicit operator ValueType *() { return *GetObjPtr(); }
 
-  operator const ValueType &() const {
+  explicit operator const ValueType *() const {
     return const_cast<DllObjectPtr *>(this)->operator ValueType &();
   }
 
-  operator boost::shared_ptr<ValueType>() { return GetObjPtr(); }
+  explicit operator boost::shared_ptr<ValueType>() { return GetObjPtr(); }
 
-  operator boost::shared_ptr<const ValueType>() const {
+  explicit operator boost::shared_ptr<const ValueType>() const {
     return const_cast<DllObjectPtr *>(this)->
     operator boost::shared_ptr<ValueType>();
   }
 
-  operator boost::shared_ptr<Dll>() { return GetDll(); }
+  explicit operator boost::shared_ptr<Dll>() { return GetDll(); }
 
-  operator boost::shared_ptr<const Dll>() const {
+  explicit operator boost::shared_ptr<const Dll>() const {
     return const_cast<DllObjectPtr *>(this)->operator boost::shared_ptr<Dll>();
   }
 
@@ -246,7 +247,6 @@ class DllObjectPtr {
     return const_cast<DllObjectPtr *>(this)->operator->();
   }
 
- public:
   void Reset(boost::shared_ptr<Dll> dll,
              boost::shared_ptr<ValueType> objFormDll) {
     m_dll = dll;
@@ -254,7 +254,6 @@ class DllObjectPtr {
     Assert(operator bool());
   }
 
- public:
   boost::shared_ptr<ValueType> GetObjPtr() {
     Assert(operator bool());
     return m_objFormDll;

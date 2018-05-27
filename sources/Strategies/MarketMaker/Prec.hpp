@@ -42,5 +42,6 @@
 #include "FrontEnd/Lib/Fwd.hpp"
 #include "Fwd.hpp"
 #include <boost/logic/tribool.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/random.hpp>
 #include <boost/uuid/uuid_generators.hpp>

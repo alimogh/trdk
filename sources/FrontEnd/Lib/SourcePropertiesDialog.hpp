@@ -19,7 +19,7 @@ class TRDK_FRONTEND_LIB_API SourcePropertiesDialog : public QDialog {
   typedef QDialog Base;
 
   explicit SourcePropertiesDialog(
-      const boost::unordered_set<std::string> &disabledSources,
+      const boost::unordered_set<std::string> &disabledImplementations,
       QWidget *parent);
   SourcePropertiesDialog(SourcePropertiesDialog &&) = delete;
   SourcePropertiesDialog(const SourcePropertiesDialog &) = delete;
@@ -27,7 +27,7 @@ class TRDK_FRONTEND_LIB_API SourcePropertiesDialog : public QDialog {
   SourcePropertiesDialog &operator=(const SourcePropertiesDialog &) = delete;
   ~SourcePropertiesDialog();
 
-  boost::property_tree::ptree GetSerializedProperties() const;
+  boost::property_tree::ptree Dump() const;
 
  private:
   class Implementation;

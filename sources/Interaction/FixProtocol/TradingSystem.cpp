@@ -17,18 +17,18 @@
 #include "TransactionContext.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::FixProtocol;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::FixProtocol;
+namespace fix = Interaction::FixProtocol;
+namespace out = Outgoing;
+namespace in = Incoming;
+namespace ptr = boost::property_tree;
 
-namespace fix = trdk::Interaction::FixProtocol;
-namespace out = fix::Outgoing;
-namespace in = fix::Incoming;
-
-fix::TradingSystem::TradingSystem(const TradingMode &mode,
-                                  Context &context,
-                                  const std::string &instanceName,
-                                  const IniSectionRef &conf)
+fix::TradingSystem::TradingSystem(const TradingMode& mode,
+                                  Context& context,
+                                  const std::string& instanceName,
+                                  const ptr::ptree& conf)
     : trdk::TradingSystem(mode, context, instanceName),
       Handler(context, conf, trdk::TradingSystem::GetLog()),
       m_client("Trade", *this) {}
@@ -42,40 +42,41 @@ fix::TradingSystem::~TradingSystem() {
   }
 }
 
-Context &fix::TradingSystem::GetContext() {
-  return trdk::TradingSystem::GetContext();
-}
-const Context &fix::TradingSystem::GetContext() const {
+Context& fix::TradingSystem::GetContext() {
   return trdk::TradingSystem::GetContext();
 }
 
-ModuleEventsLog &fix::TradingSystem::GetLog() const {
+const Context& fix::TradingSystem::GetContext() const {
+  return trdk::TradingSystem::GetContext();
+}
+
+ModuleEventsLog& fix::TradingSystem::GetLog() const {
   return trdk::TradingSystem::GetLog();
 }
 
 bool fix::TradingSystem::IsConnected() const { return m_client.IsConnected(); }
 
-Volume fix::TradingSystem::CalcCommission(const Qty &,
-                                          const Price &,
-                                          const OrderSide &,
-                                          const trdk::Security &) const {
+Volume fix::TradingSystem::CalcCommission(const Qty&,
+                                          const Price&,
+                                          const OrderSide&,
+                                          const trdk::Security&) const {
   return 0;
 }
 
-void fix::TradingSystem::CreateConnection(const IniSectionRef &) {
+void fix::TradingSystem::CreateConnection() {
   GetLog().Debug("Connecting...");
   m_client.Connect();
   GetLog().Info("Connected.");
 }
 
 std::unique_ptr<trdk::OrderTransactionContext>
-fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
-                                         const Currency &currency,
-                                         const Qty &qty,
-                                         const boost::optional<Price> &price,
-                                         const OrderParams &params,
-                                         const OrderSide &side,
-                                         const TimeInForce &tif) {
+fix::TradingSystem::SendOrderTransaction(trdk::Security& security,
+                                         const Currency& currency,
+                                         const Qty& qty,
+                                         const boost::optional<Price>& price,
+                                         const OrderParams& params,
+                                         const OrderSide& side,
+                                         const TimeInForce& tif) {
   static_assert(numberOfTimeInForces == 5, "List changed.");
   switch (tif) {
     case TIME_IN_FORCE_IOC:
@@ -100,17 +101,17 @@ fix::TradingSystem::SendOrderTransaction(trdk::Security &security,
   }
   if (params.position) {
     message.SetPosMaintRptId(
-        boost::polymorphic_downcast<const OrderTransactionContext *>(
+        boost::polymorphic_downcast<const OrderTransactionContext*>(
             params.position)
             ->GetPositionId());
   }
   m_client.Send(message);
-  return boost::make_unique<fix::OrderTransactionContext>(
+  return boost::make_unique<OrderTransactionContext>(
       *this, message.GetSequenceNumber());
 }
 
 void fix::TradingSystem::SendCancelOrderTransaction(
-    const trdk::OrderTransactionContext &transaction) {
+    const trdk::OrderTransactionContext& transaction) {
   m_client.Send(out::OrderCancelRequest(transaction.GetOrderId(),
                                         GetStandardOutgoingHeader()));
 }
@@ -120,10 +121,10 @@ void fix::TradingSystem::OnConnectionRestored() {
       "fix::TradingSystem::OnConnectionRestored is not implemented");
 }
 
-void fix::TradingSystem::OnReject(const in::Reject &message,
-                                  Lib::NetworkStreamClient &) {
-  const auto &orderId = message.ReadRefSeqNum();
-  const auto &text = message.ReadText();
+void fix::TradingSystem::OnReject(const in::Reject& message,
+                                  NetworkStreamClient&) {
+  const auto& orderId = message.ReadRefSeqNum();
+  const auto& text = message.ReadText();
   if (GetSettings().policy->IsUnknownOrderIdError(text)) {
     GetLog().Warn("Received Reject for unknown order %1%: \"%2%\" .",
                   orderId,  // 1
@@ -140,7 +141,7 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
       OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
                    std::move(text));
     }
-  } catch (const OrderIsUnknownException &ex) {
+  } catch (const OrderIsUnknownException& ex) {
     message.ResetReadingState();
     GetLog().Warn("Received Reject for unknown order %1% (\"%2%\"): \"%3%\" .",
                   orderId,              // 1
@@ -150,11 +151,11 @@ void fix::TradingSystem::OnReject(const in::Reject &message,
 }
 
 void fix::TradingSystem::OnBusinessMessageReject(
-    const in::BusinessMessageReject &message,
-    NetworkStreamClient &,
-    const Milestones &) {
-  const auto &reason = message.ReadText();
-  const auto &orderId = message.ReadBusinessRejectRefId();
+    const in::BusinessMessageReject& message,
+    NetworkStreamClient&,
+    const Milestones&) {
+  const auto& reason = message.ReadText();
+  const auto& orderId = message.ReadBusinessRejectRefId();
   if (GetSettings().policy->IsUnknownOrderIdError(reason)) {
     GetLog().Warn(
         "Received Business Message Reject for unknown order %1%: \"%2%\" .",
@@ -173,7 +174,7 @@ void fix::TradingSystem::OnBusinessMessageReject(
       OnOrderError(message.GetTime(), orderId, boost::none, boost::none,
                    std::move(reason));
     }
-  } catch (const OrderIsUnknownException &ex) {
+  } catch (const OrderIsUnknownException& ex) {
     message.ResetReadingState();
     GetLog().Warn(
         "Received Business Message Reject for unknown order %1% (\"%2%\"): "
@@ -184,15 +185,15 @@ void fix::TradingSystem::OnBusinessMessageReject(
   }
 }
 
-void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
-                                           NetworkStreamClient &,
-                                           const Milestones &) {
-  const OrderId &orderId = message.ReadClOrdId();
+void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport& message,
+                                           NetworkStreamClient&,
+                                           const Milestones&) {
+  const OrderId& orderId = message.ReadClOrdId();
   OrderStatus orderStatus = message.ReadOrdStatus();
-  const ExecType &execType = message.ReadExecType();
-  const auto &setPositionId =
-      [&message](trdk::OrderTransactionContext &transactionContext) {
-        boost::polymorphic_downcast<fix::OrderTransactionContext *>(
+  const ExecType& execType = message.ReadExecType();
+  const auto& setPositionId =
+      [&message](trdk::OrderTransactionContext& transactionContext) {
+        boost::polymorphic_downcast<OrderTransactionContext*>(
             &transactionContext)
             ->SetPositionId(message.ReadPosMaintRptId());
         return true;
@@ -267,7 +268,7 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
             break;
         }
     }
-  } catch (const OrderIsUnknownException &ex) {
+  } catch (const OrderIsUnknownException& ex) {
     GetLog().Warn(
         "Received Execution Report for unknown order %1% (\"%2%\"): %3%.",
         orderId,    // 1
@@ -277,9 +278,9 @@ void fix::TradingSystem::OnExecutionReport(const in::ExecutionReport &message,
 }
 
 void fix::TradingSystem::OnOrderCancelReject(
-    const in::OrderCancelReject &message,
-    NetworkStreamClient &,
-    const Milestones &) {
+    const in::OrderCancelReject& message,
+    NetworkStreamClient&,
+    const Milestones&) {
   GetLog().Warn("Received Order Cancel Reject for order %1%.",
                 message.ReadClOrdId());
 }
@@ -287,11 +288,11 @@ void fix::TradingSystem::OnOrderCancelReject(
 ////////////////////////////////////////////////////////////////////////////////
 
 boost::shared_ptr<trdk::TradingSystem> CreateTradingSystem(
-    const TradingMode &mode,
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
-  const auto &result = boost::make_shared<fix::TradingSystem>(
+    const TradingMode& mode,
+    Context& context,
+    const std::string& instanceName,
+    const ptr::ptree& configuration) {
+  const auto& result = boost::make_shared<fix::TradingSystem>(
       mode, context, instanceName, configuration);
   return result;
 }

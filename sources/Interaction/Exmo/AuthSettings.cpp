@@ -15,11 +15,12 @@ using namespace trdk;
 using namespace Lib;
 using namespace Interaction;
 using namespace Exmo;
+namespace ptr = boost::property_tree;
 
-AuthSettings::AuthSettings(const IniSectionRef &conf, ModuleEventsLog &log)
+AuthSettings::AuthSettings(const ptr::ptree &conf, ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")) {
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2

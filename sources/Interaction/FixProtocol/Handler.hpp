@@ -16,7 +16,7 @@ namespace FixProtocol {
 class Handler : private boost::noncopyable {
  public:
   explicit Handler(const Context &,
-                   const Lib::IniSectionRef &,
+                   const boost::property_tree::ptree &,
                    ModuleEventsLog &);
   virtual ~Handler();
 
@@ -69,6 +69,6 @@ class Handler : private boost::noncopyable {
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
-}
+}  // namespace FixProtocol
+}  // namespace Interaction
+}  // namespace trdk

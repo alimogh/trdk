@@ -13,10 +13,9 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::Crypto;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Crypto;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
@@ -24,12 +23,12 @@ namespace gr = boost::gregorian;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CexioTradingSystem::Settings::Settings(const IniSectionRef &conf,
+CexioTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                        ModuleEventsLog &log)
     : Rest::Settings(conf, log),
-      username(conf.ReadKey("username")),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")) {
+      username(conf.get<std::string>("config.auth.username")),
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("auth.apiSecret")) {
   log.Info("Username: \"%1%\". API key: \"%2%\". API secret: %3%.",
            username,                                   // 1
            apiKey,                                     // 2
@@ -109,7 +108,7 @@ CexioTradingSystem::CexioTradingSystem(const App &,
                                        const TradingMode &mode,
                                        Context &context,
                                        const std::string &instanceName,
-                                       const IniSectionRef &conf)
+                                       const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -120,7 +119,7 @@ CexioTradingSystem::CexioTradingSystem(const App &,
       m_pollingSession(CreateCexioSession(m_settings, false)),
       m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
-void CexioTradingSystem::CreateConnection(const IniSectionRef &) {
+void CexioTradingSystem::CreateConnection() {
   Assert(m_products.empty());
 
   try {
@@ -345,7 +344,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateCexioTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<CexioTradingSystem>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return result;

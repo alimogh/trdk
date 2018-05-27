@@ -24,20 +24,18 @@ class CryptopiaMarketDataSource : public MarketDataSource {
  public:
   typedef MarketDataSource Base;
 
- public:
   explicit CryptopiaMarketDataSource(const App &,
                                      Context &context,
                                      const std::string &instanceName,
-                                     const Lib::IniSectionRef &);
-  virtual ~CryptopiaMarketDataSource() override;
+                                     const boost::property_tree::ptree &);
+  ~CryptopiaMarketDataSource() override;
 
- public:
-  virtual void Connect(const Lib::IniSectionRef &conf) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   void UpdatePrices(Request &);
@@ -47,7 +45,6 @@ class CryptopiaMarketDataSource : public MarketDataSource {
                     Rest::Security &,
                     const Lib::TimeMeasurement::Milestones &);
 
- private:
   const Settings m_settings;
   CryptopiaProductList m_products;
 
@@ -61,6 +58,7 @@ class CryptopiaMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

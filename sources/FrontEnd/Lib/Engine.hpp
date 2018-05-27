@@ -55,17 +55,21 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
       bool isCancelsIncluded = true,
       const boost::optional<QString>& strategy = boost::none) const;
 
-  void StoreConfig(const Strategy&, QString&& config, bool isActive);
+  void StoreConfig(const Strategy&,
+                   const boost::property_tree::ptree& config,
+                   bool isActive);
 
   void ForEachActiveStrategy(
       const boost::function<void(const QUuid& typeIt,
                                  const QUuid& instanceId,
                                  const QString& name,
-                                 const QString& config)>&) const;
+                                 const boost::property_tree::ptree& config)>&)
+      const;
 
   std::vector<QString> GetStrategyNameList() const;
 
-  QString GenerateNewStrategyName(const QString& nameBase) const;
+  std::string GenerateNewStrategyInstanceName(
+      const std::string& nameBase) const;
 
   void Start(const boost::function<void(const std::string&)>& progressCallback);
   void Stop();

@@ -21,59 +21,51 @@ class TradingSystem : public trdk::TradingSystem, public Handler {
  public:
   typedef trdk::TradingSystem Base;
 
- public:
-  explicit TradingSystem(const TradingMode &,
-                         Context &,
-                         const std::string &instanceName,
-                         const Lib::IniSectionRef &);
-  virtual ~TradingSystem() override;
+  explicit TradingSystem(const TradingMode&,
+                         Context&,
+                         const std::string& instanceName,
+                         const boost::property_tree::ptree&);
+  ~TradingSystem() override;
 
- public:
-  Context &GetContext() override;
-  const Context &GetContext() const override;
+  Context& GetContext() override;
+  const Context& GetContext() const override;
 
-  virtual ModuleEventsLog &GetLog() const override;
+  ModuleEventsLog& GetLog() const override;
 
- public:
-  virtual bool IsConnected() const override;
+  bool IsConnected() const override;
 
-  virtual trdk::Volume CalcCommission(const trdk::Qty &,
-                                      const trdk::Price &,
-                                      const trdk::OrderSide &,
-                                      const trdk::Security &) const override;
+  Volume CalcCommission(const Qty&,
+                        const Price&,
+                        const OrderSide&,
+                        const trdk::Security&) const override;
 
- public:
-  virtual void OnConnectionRestored() override;
+  void OnConnectionRestored() override;
 
-  virtual void OnReject(const Incoming::Reject &,
-                        Lib::NetworkStreamClient &) override;
-  virtual void OnBusinessMessageReject(
-      const Incoming::BusinessMessageReject &,
-      Lib::NetworkStreamClient &,
-      const Lib::TimeMeasurement::Milestones &) override;
-  virtual void OnExecutionReport(
-      const Incoming::ExecutionReport &,
-      Lib::NetworkStreamClient &,
-      const Lib::TimeMeasurement::Milestones &) override;
-  virtual void OnOrderCancelReject(
-      const Incoming::OrderCancelReject &,
-      Lib::NetworkStreamClient &,
-      const Lib::TimeMeasurement::Milestones &) override;
+  void OnReject(const Incoming::Reject&, Lib::NetworkStreamClient&) override;
+  void OnBusinessMessageReject(
+      const Incoming::BusinessMessageReject&,
+      Lib::NetworkStreamClient&,
+      const Lib::TimeMeasurement::Milestones&) override;
+  void OnExecutionReport(const Incoming::ExecutionReport&,
+                         Lib::NetworkStreamClient&,
+                         const Lib::TimeMeasurement::Milestones&) override;
+  void OnOrderCancelReject(const Incoming::OrderCancelReject&,
+                           Lib::NetworkStreamClient&,
+                           const Lib::TimeMeasurement::Milestones&) override;
 
  protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
+  void CreateConnection() override;
 
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &security,
-      const trdk::Lib::Currency &currency,
-      const trdk::Qty &qty,
-      const boost::optional<trdk::Price> &price,
-      const trdk::OrderParams &params,
-      const trdk::OrderSide &side,
-      const trdk::TimeInForce &tif) override;
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security& security,
+      const Lib::Currency& currency,
+      const Qty& qty,
+      const boost::optional<Price>& price,
+      const OrderParams& params,
+      const OrderSide& side,
+      const TimeInForce& tif) override;
 
-  virtual void SendCancelOrderTransaction(
-      const trdk::OrderTransactionContext &) override;
+  void SendCancelOrderTransaction(const OrderTransactionContext&) override;
 
  private:
   Client m_client;

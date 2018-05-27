@@ -18,33 +18,29 @@ namespace trdk {
 namespace Interaction {
 namespace Test {
 
-class RandomMarketDataSource : public trdk::MarketDataSource {
+class RandomMarketDataSource : public MarketDataSource {
  public:
-  typedef trdk::MarketDataSource Base;
+  typedef MarketDataSource Base;
 
- public:
   explicit RandomMarketDataSource(Context &context,
                                   const std::string &instanceName,
-                                  const Lib::IniSectionRef &);
-  virtual ~RandomMarketDataSource() override;
+                                  const boost::property_tree::ptree &);
+  ~RandomMarketDataSource() override;
 
- public:
-  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
-  virtual void SubscribeToSecurities() override {}
+  void Connect() override;
+  void SubscribeToSecurities() override {}
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(
-      const trdk::Lib::Symbol &) override;
+  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   void NotificationThread();
 
- private:
   boost::thread_group m_threads;
   boost::atomic_bool m_stopFlag;
 
   std::vector<boost::shared_ptr<Security>> m_securityList;
 };
-}
-}
-}
+}  // namespace Test
+}  // namespace Interaction
+}  // namespace trdk

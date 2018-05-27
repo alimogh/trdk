@@ -110,12 +110,12 @@ class TRDK_CORE_API Strategy : public Consumer {
                     const boost::uuids::uuid &typeId,
                     const std::string &implementationName,
                     const std::string &instanceName,
-                    const Lib::IniSectionRef &);
+                    const boost::property_tree::ptree &);
   explicit Strategy(Context &,
                     const std::string &typeId,
                     const std::string &implementationName,
                     const std::string &instanceName,
-                    const Lib::IniSectionRef &);
+                    const boost::property_tree::ptree &);
   ~Strategy() override;
 
   const boost::uuids::uuid &GetTypeId() const;
@@ -214,7 +214,7 @@ class TRDK_CORE_API Strategy : public Consumer {
   virtual void OnBookUpdateTick(Security &,
                                 const PriceBook &,
                                 const Lib::TimeMeasurement::Milestones &);
-  void OnSettingsUpdate(const Lib::IniSectionRef &) override;
+  void OnSettingsUpdate(const boost::property_tree::ptree &) override;
 
   const StopMode &GetStopMode() const;
   virtual void OnStopRequest(const StopMode &);

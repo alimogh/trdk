@@ -322,8 +322,6 @@ class Context::Implementation : private boost::noncopyable {
 
   Settings m_settings;
 
-  Params m_params;
-
   std::unique_ptr<StatReport> m_statReport;
 
   pt::ptime m_customCurrentTime;
@@ -334,27 +332,16 @@ class Context::Implementation : private boost::noncopyable {
 
   std::unique_ptr<Timer> m_timer;
 
-  explicit Implementation(
-      Context& context,
-      Log& log,
-      TradingLog& tradingLog,
-      Settings&& settings,
-      const boost::unordered_map<std::string, std::string>& params)
-      : m_log(log),
-        m_tradingLog(tradingLog),
-        m_settings(std::move(settings)),
-        m_params(context, params) {}
+  explicit Implementation(Log& log, TradingLog& tradingLog, Settings&& settings)
+      : m_log(log), m_tradingLog(tradingLog), m_settings(std::move(settings)) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-Context::Context(Log& log,
-                 TradingLog& tradingLog,
-                 Settings&& settings,
-                 const boost::unordered_map<std::string, std::string>& params)
+Context::Context(Log& log, TradingLog& tradingLog, Settings&& settings)
     : m_pimpl(boost::make_unique<Implementation>(
-          *this, log, tradingLog, std::move(settings), params)) {
-  if (settings.IsMarketDataLogEnabled()) {
+          log, tradingLog, std::move(settings))) {
+  if (m_pimpl->m_settings.IsMarketDataLogEnabled()) {
     m_pimpl->m_statReport = boost::make_unique<StatReport>(*this);
   }
   m_pimpl->m_timer = boost::make_unique<Timer>(*this);
@@ -449,12 +436,6 @@ const Timer& Context::GetTimer() { return *m_pimpl->m_timer; }
 
 const Settings& Context::GetSettings() const { return m_pimpl->m_settings; }
 
-Context::Params& Context::GetParams() { return m_pimpl->m_params; }
-
-const Context::Params& Context::GetParams() const {
-  return const_cast<Context*>(this)->GetParams();
-}
-
 TimeMeasurement::Milestones Context::StartStrategyTimeMeasurement() const {
   if (!m_pimpl->m_statReport) {
     return TimeMeasurement::Milestones();
@@ -517,77 +498,5 @@ struct ParamsConcurrencyPolicyT<Lib::Concurrency::PROFILE_HFT> {
 typedef ParamsConcurrencyPolicyT<TRDK_CONCURRENCY_PROFILE>
     ParamsConcurrencyPolicy;
 }  // namespace
-
-class Context::Params::Implementation : private boost::noncopyable {
- public:
-  typedef ParamsConcurrencyPolicy::Mutex Mutex;
-  typedef ParamsConcurrencyPolicy::ReadLock ReadLock;
-  typedef ParamsConcurrencyPolicy::WriteLock WriteLock;
-
-  typedef boost::unordered_map<std::string, std::string> Storage;
-
-  Implementation(const Context& context,
-                 const boost::unordered_map<std::string, std::string>& initial)
-      : m_context(context), m_revision(0), m_storage(initial) {
-    Assert(m_revision.is_lock_free());
-  }
-
-  const Context& m_context;
-  boost::atomic<Revision> m_revision;
-  Mutex m_mutex;
-  Storage m_storage;
-};
-
-Context::Params::Exception::Exception(const char* what) noexcept
-    : Context::Exception(what) {}
-
-Context::Params::KeyDoesntExistError::KeyDoesntExistError(
-    const char* what) noexcept
-    : Exception(what) {}
-
-Context::Params::Params(
-    const Context& context,
-    const boost::unordered_map<std::string, std::string>& initial)
-    : m_pimpl(boost::make_unique<Implementation>(context, initial)) {}
-
-Context::Params::~Params() = default;
-
-std::string Context::Params::operator[](const std::string& key) const {
-  const Implementation::ReadLock lock(m_pimpl->m_mutex);
-  const auto& pos = m_pimpl->m_storage.find(key);
-  if (pos == m_pimpl->m_storage.end()) {
-    boost::format message("Context parameter \"%1%\" doesn't exist");
-    message % key;
-    throw KeyDoesntExistError(message.str().c_str());
-  }
-  return pos->second;
-}
-
-void Context::Params::Update(const std::string& key,
-                             const std::string& newValue) {
-  const Implementation::WriteLock lock(m_pimpl->m_mutex);
-  ++m_pimpl->m_revision;
-  auto it = m_pimpl->m_storage.find(key);
-  if (it != m_pimpl->m_storage.cend()) {
-    m_pimpl->m_context.GetLog().Debug(
-        "Context param \"%1%\" updating (%2%): \"%3%\" -> \"%4%\"...", key,
-        Revision(m_pimpl->m_revision), it->second, newValue);
-    it->second = newValue;
-  } else {
-    m_pimpl->m_context.GetLog().Debug(
-        "Context param \"%1%\" creating (%2%): \"%3%\"...", key,
-        Revision(m_pimpl->m_revision), newValue);
-    Verify(m_pimpl->m_storage.emplace(std::make_pair(key, newValue)).second);
-  }
-}
-
-bool Context::Params::IsExist(const std::string& key) const {
-  const Implementation::ReadLock lock(m_pimpl->m_mutex);
-  return m_pimpl->m_storage.find(key) != m_pimpl->m_storage.end();
-}
-
-Context::Params::Revision Context::Params::GetRevision() const {
-  return m_pimpl->m_revision;
-}
 
 ////////////////////////////////////////////////////////////////////////////////

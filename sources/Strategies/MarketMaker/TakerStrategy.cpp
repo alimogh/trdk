@@ -17,9 +17,9 @@ using namespace trdk;
 using namespace Lib;
 using namespace TimeMeasurement;
 using namespace Strategies::MarketMaker;
-
 namespace sig = boost::signals2;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace ids = boost::uuids;
 
 namespace {
@@ -243,7 +243,7 @@ class TakerStrategy::Implementation : private boost::noncopyable {
 
 TakerStrategy::TakerStrategy(Context &context,
                              const std::string &instanceName,
-                             const IniSectionRef &conf)
+                             const ptr::ptree &conf)
     : Base(context,
            "{24895049-4058-4F3B-A4E8-AC6FE5549D4D}",
            "MarketMakerTaker",
@@ -542,7 +542,7 @@ const Volume &TakerStrategy::GetTradeMaxVolume() const {
 
 std::unique_ptr<Strategy> CreateStrategy(Context &context,
                                          const std::string &instanceName,
-                                         const IniSectionRef &conf) {
+                                         const ptr::ptree &conf) {
   return boost::make_unique<TakerStrategy>(context, instanceName, conf);
 }
 

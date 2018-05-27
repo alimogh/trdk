@@ -31,6 +31,6 @@ d::Strategy::Strategy(Context &context)
                      "{00000000-0000-0000-0000-000000000000}",
                      "Dummy Strategy",
                      "Dummy Instance",
-                     IniSectionRef(IniString(GetConf()), "Strategy.Dummy")) {}
+                     {}) {}
 
 void d::Strategy::OnPostionsCloseRequest(){};

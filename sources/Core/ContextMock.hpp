@@ -63,8 +63,8 @@ class Context : public trdk::Context {
 
   MOCK_CONST_METHOD0(GetCurrentTime, boost::posix_time::ptime());
 
-  MOCK_METHOD1(Add, void(const trdk::Lib::Ini &));
+  MOCK_METHOD1(Add, void(const boost::property_tree::ptree &));
 };
-}
-}
-}
+}  // namespace Mocks
+}  // namespace Tests
+}  // namespace trdk

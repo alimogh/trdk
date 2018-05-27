@@ -24,11 +24,11 @@ class LivecoinTradingSystem : public TradingSystem {
   typedef TradingSystem Base;
 
  private:
-  struct Settings : public Rest::Settings {
+  struct Settings : Rest::Settings {
     std::string apiKey;
     std::string apiSecret;
 
-    explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+    explicit Settings(const boost::property_tree::ptree &, ModuleEventsLog &);
   };
 
   class PrivateRequest : public LivecoinRequest {
@@ -40,12 +40,12 @@ class LivecoinTradingSystem : public TradingSystem {
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
-    virtual ~PrivateRequest() override = default;
+    ~PrivateRequest() override = default;
 
    protected:
-    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                                const std::string &,
-                                Poco::Net::HTTPRequest &) const override;
+    void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                        const std::string &,
+                        Poco::Net::HTTPRequest &) const override;
 
    private:
     const Settings &m_settings;
@@ -59,13 +59,12 @@ class LivecoinTradingSystem : public TradingSystem {
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
-    virtual ~TradingRequest() override = default;
+    ~TradingRequest() override = default;
 
-   public:
     Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
-    virtual bool IsPriority() const override { return true; }
+    bool IsPriority() const override { return true; }
   };
 
   class BalancesRequest : public PrivateRequest {
@@ -73,10 +72,10 @@ class LivecoinTradingSystem : public TradingSystem {
     explicit BalancesRequest(const Settings &,
                              const Context &,
                              ModuleEventsLog &);
-    virtual ~BalancesRequest() override = default;
+    ~BalancesRequest() override = default;
 
    protected:
-    virtual bool IsPriority() const override { return false; }
+    bool IsPriority() const override { return false; }
   };
 
  public:
@@ -84,50 +83,46 @@ class LivecoinTradingSystem : public TradingSystem {
                                  const TradingMode &,
                                  Context &,
                                  const std::string &instanceName,
-                                 const Lib::IniSectionRef &);
-  virtual ~LivecoinTradingSystem() override = default;
+                                 const boost::property_tree::ptree &);
+  ~LivecoinTradingSystem() override = default;
 
- public:
-  virtual bool IsConnected() const override { return !m_products.empty(); }
+  bool IsConnected() const override { return !m_products.empty(); }
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const trdk::Qty &,
-                                const trdk::Price &,
-                                const trdk::OrderSide &,
-                                const trdk::Security &) const override;
+  Volume CalcCommission(const Qty &,
+                        const Price &,
+                        const OrderSide &,
+                        const trdk::Security &) const override;
 
-  virtual boost::optional<OrderCheckError> CheckOrder(
-      const trdk::Security &,
+  boost::optional<OrderCheckError> CheckOrder(const trdk::Security &,
+                                              const Lib::Currency &,
+                                              const Qty &,
+                                              const boost::optional<Price> &,
+                                              const OrderSide &) const override;
+
+  bool CheckSymbol(const std::string &) const override;
+
+ protected:
+  void CreateConnection() override;
+
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &,
       const Lib::Currency &,
       const Qty &,
       const boost::optional<Price> &,
-      const OrderSide &) const override;
+      const OrderParams &,
+      const OrderSide &,
+      const TimeInForce &) override;
 
-  virtual bool CheckSymbol(const std::string &) const override;
+  void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
- protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
-
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &) override;
-
-  virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &) override;
-
-  virtual void OnTransactionSent(const OrderTransactionContext &) override;
+  void OnTransactionSent(const OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
   void UpdateOrders();
 
- private:
   Settings m_settings;
   boost::unordered_map<std::string, LivecoinProduct> m_products;
 
@@ -139,6 +134,7 @@ class LivecoinTradingSystem : public TradingSystem {
 
   PollingTask m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

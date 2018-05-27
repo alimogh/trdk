@@ -52,12 +52,12 @@ const char *const startDelay = "--start_delay";
 
 namespace {
 
-fs::path GetIniFilePath(const char *inputValue) {
-  fs::path result = Normalize(GetExeWorkingDir() / inputValue);
+fs::path GetConfigFilePath(const char *inputValue) {
+  auto result = Normalize(GetExeWorkingDir() / inputValue);
   if (fs::is_directory(result)) {
-    result /= "default.ini";
+    result /= "config.json";
   } else if (!result.has_extension()) {
-    result.replace_extension("ini");
+    result.replace_extension("json");
   }
   return result;
 }
@@ -116,35 +116,21 @@ bool DebugStrategy(int argc, const char *argv[]) {
   boost::condition_variable stateCondition;
   boost::optional<trdk::Context::State> state;
 
-  {
-    boost::unordered_map<std::string, std::string> params;
-
-    std::vector<std::string> cmd;
-    for (auto i = 0; i < argc; ++i) {
-      cmd.emplace_back(argv[i]);
-      boost::smatch match;
-      if (boost::regex_match(cmd.back(), match,
-                             boost::regex("([^=]+)=([^=]+)"))) {
-        params.emplace(std::make_pair(match[1], match[2]));
-      }
-    }
-
-    try {
-      engine = boost::make_unique<trdk::Engine::Engine>(
-          GetIniFilePath(argv[2]), "logs",
-          [&](const trdk::Context::State &newState, const std::string *) {
-            {
-              const boost::mutex::scoped_lock lock(stateMutex);
-              state = newState;
-            }
-            stateCondition.notify_all();
-          },
-          [](const std::string &) {}, [](const std::string &) { return false; },
-          [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); }, params);
-    } catch (const trdk::Lib::Exception &ex) {
-      std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;
-      result = false;
-    }
+  try {
+    engine = boost::make_unique<trdk::Engine::Engine>(
+        GetConfigFilePath(argv[2]), "logs",
+        [&](const trdk::Context::State &newState, const std::string *) {
+          {
+            const boost::mutex::scoped_lock lock(stateMutex);
+            state = newState;
+          }
+          stateCondition.notify_all();
+        },
+        [](const std::string &) {}, [](const std::string &) { return false; },
+        [](trdk::Engine::Context::Log &log) { log.EnableStdOut(); });
+  } catch (const Exception &ex) {
+    std::cerr << "Failed to start engine: \"" << ex << "\"." << std::endl;
+    result = false;
   }
 
   if (result) {
@@ -173,30 +159,30 @@ bool ShowHelp(int argc, const char *argv[]) {
     return false;
   }
 
-  std::cout << std::endl
-            << "Usage: " << argv[0]
-            << " command command-args  [ --options [options-args] ]"
-            << std::endl
-            << std::endl
-            << "Command:" << std::endl
-            << std::endl
-            << "    " << standalone << " (or " << standaloneShort
-            << ")"
-               " \"path to INI-file or path to default.ini directory\""
-            << std::endl
-            << std::endl
-            << "    " << debug << " (or " << debugShort << ")"
-            << " \"path to INI-file or path to default.ini directory\""
-            << std::endl
-            << std::endl
-            << "    " << help << " (or " << helpShort << ")" << std::endl
-            << std::endl
-            << "Options:" << std::endl
-            << std::endl
-            << "    " << startDelay << " \"number of seconds to wait before"
-            << " service start\"" << std::endl
-            << std::endl
-            << std::endl;
+  std::cout
+      << std::endl
+      << "Usage: " << argv[0]
+      << " command command-args  [ --options [options-args] ]" << std::endl
+      << std::endl
+      << "Command:" << std::endl
+      << std::endl
+      << "    " << standalone << " (or " << standaloneShort
+      << ")"
+         " \"path to configuration file or path to config.json directory\""
+      << std::endl
+      << std::endl
+      << "    " << debug << " (or " << debugShort << ")"
+      << " \"path to configuration file or path to config.json directory\""
+      << std::endl
+      << std::endl
+      << "    " << help << " (or " << helpShort << ")" << std::endl
+      << std::endl
+      << "Options:" << std::endl
+      << std::endl
+      << "    " << startDelay << " \"number of seconds to wait before"
+      << " service start\"" << std::endl
+      << std::endl
+      << std::endl;
 
   return true;
 }

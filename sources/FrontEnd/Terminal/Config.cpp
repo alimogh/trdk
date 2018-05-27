@@ -17,68 +17,60 @@ using namespace trdk;
 using namespace Lib;
 using namespace FrontEnd;
 namespace fs = boost::filesystem;
+namespace ptr = boost::property_tree;
 
 namespace {
 
-class IniFileWizard : public IniFile {
- public:
-  explicit IniFileWizard(const fs::path &path) : IniFile(FindIniFile(path)) {}
+void CreateConfigFile(const fs::path &path) {
+  ptr::ptree config;
 
- private:
-  static fs::path FindIniFile(const fs::path &source) {
-    if (fs::exists(source)) {
-      return source;
+  config.add("general.isReplayMode", false);
+  config.add("general.tradingLog.isEnabled", true);
+  config.add("general.marketDataLog.isEnabled", false);
+
+  config.add("defaults.currency", "BTC");
+  config.add("defaults.securityType", "CRYPTO");
+  {
+    const std::string symbols[] = {"BTC_EUR", "BTC_USD",  "ETH_BTC",
+                                   "ETH_EUR", "ETH_USD",  "DOGE_BTC",
+                                   "LTC_BTC", "DASH_BTC", "BCH_BTC"};
+    ptr::ptree symbolsConfig;
+    for (const auto &symbol : symbols) {
+      symbolsConfig.push_back({"", ptr::ptree().put("", symbol)});
     }
-    try {
-      fs::create_directories(source.branch_path());
-    } catch (const fs::filesystem_error &ex) {
-      boost::format error("Failed to create default configuration file");
-      error % ex.what();
-      throw Error(error.str().c_str());
-    }
-    {
-      std::ofstream file(source.string().c_str());
-      if (!file) {
-        throw Error("Failed to create default configuration file");
-      }
-
-      file << "[General]" << std::endl;
-      file << "\tis_replay_mode = no" << std::endl;
-      file << std::endl;
-      file << "\ttrading_log = yes" << std::endl;
-      file << "\tmarket_data_log = no" << std::endl;
-      file << std::endl;
-      file << "\t; When switch contract to the next. Zero - at the first"
-           << std::endl;
-      file << "\t; minutes of the expiration day. One - one day before"
-           << std::endl;
-      file << "\t; of the expiration day." << std::endl;
-      file << "\tnumber_of_days_before_expiry_day_to_switch_contract = 0"
-           << std::endl;
-      file << std::endl;
-
-      file << "[Defaults]" << std::endl;
-      file << "\tcurrency = BTC" << std::endl;
-      file << "\tsecurity_type = CRYPTO" << std::endl;
-      file << "\tsymbol_list = BTC_EUR, BTC_USD, ETH_BTC, ETH_EUR, ETH_USD, "
-              "DOGE_BTC, LTC_BTC, DASH_BTC, BCH_BTC"
-           << std::endl;
-
-      file << "[RiskControl]" << std::endl;
-      file << "\tis_enabled = false" << std::endl;
-      file << std::endl;
-    }
-    return source;
+    config.add_child("defaults.symbols", symbolsConfig);
   }
-};
 
+  config.add("riskControl.isEnabled", false);
+
+  try {
+    fs::create_directories(path.branch_path());
+  } catch (const fs::filesystem_error &ex) {
+    boost::format error("Failed to create default configuration file");
+    error % ex.what();
+    throw Exception(error.str().c_str());
+  }
+
+  std::ofstream file(path.string().c_str());
+  if (!file) {
+    throw Exception("Failed to create default configuration file");
+  }
+  ptr::json_parser::write_json(file, config, true);
+}
 }  // namespace
 
 void FrontEnd::CheckConfig(const fs::path &configFilePath) {
+  if (!fs::exists(configFilePath)) {
+    CreateConfigFile(configFilePath);
+  }
+
+  ptr::ptree config;
   {
-    for (const auto &section :
-         IniFileWizard(configFilePath).ReadSectionsList()) {
-      if (boost::istarts_with(section, "TradingSystemAndMarketDataSource.")) {
+    std::ifstream file(configFilePath.string().c_str());
+    ptr::json_parser::read_json(file, config);
+    {
+      const auto &tradingSystems = config.get_child_optional("sources");
+      if (tradingSystems && !tradingSystems->empty()) {
         return;
       }
     }
@@ -98,12 +90,13 @@ void FrontEnd::CheckConfig(const fs::path &configFilePath) {
   QDialog sourceListDialog;
   auto &listWidget = *new SourcesListWidget(&sourceListDialog);
   {
-    SourcePropertiesDialog firstSourceDialog(listWidget.GetTags(), nullptr);
+    SourcePropertiesDialog firstSourceDialog(listWidget.GetImplementations(),
+                                             nullptr);
     if (firstSourceDialog.exec() != QDialog::Accepted) {
       throw CheckConfigException(
           "The configuration does not have access to any trading system");
     }
-    listWidget.AddSource(firstSourceDialog.GetSerializedProperties());
+    listWidget.AddSource(firstSourceDialog.Dump());
   }
 
   {
@@ -115,15 +108,15 @@ void FrontEnd::CheckConfig(const fs::path &configFilePath) {
       auto &addButton =
           *new QPushButton(QObject::tr("Add New..."), &sourceListDialog);
       vLayout.addWidget(&addButton);
-      Verify(QObject::connect(
-          &addButton, &QPushButton::clicked, &sourceListDialog,
-          [&listWidget]() {
-            SourcePropertiesDialog dialog(listWidget.GetTags(), nullptr);
-            if (dialog.exec() != QDialog::Accepted) {
-              return;
-            }
-            listWidget.AddSource(dialog.GetSerializedProperties());
-          }));
+      Verify(QObject::connect(&addButton, &QPushButton::clicked,
+                              &sourceListDialog, [&listWidget]() {
+                                SourcePropertiesDialog dialog(
+                                    listWidget.GetImplementations(), nullptr);
+                                if (dialog.exec() != QDialog::Accepted) {
+                                  return;
+                                }
+                                listWidget.AddSource(dialog.Dump());
+                              }));
     }
     {
       auto &okButton = *new QPushButton(QObject::tr("OK"), &sourceListDialog);
@@ -148,10 +141,10 @@ void FrontEnd::CheckConfig(const fs::path &configFilePath) {
         "The configuration does not have access to any trading system");
   }
 
+  config.put_child("sources", listWidget.Dump());
+
   {
-    std::ofstream file(configFilePath.string().c_str(), std::ofstream::out |
-                                                            std::ofstream::app |
-                                                            std::ofstream::ate);
-    listWidget.DumpList(file);
+    std::ofstream file(configFilePath.string().c_str());
+    ptr::json_parser::write_json(file, config, true);
   }
 }

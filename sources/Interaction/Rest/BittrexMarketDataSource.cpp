@@ -16,11 +16,10 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::Rest;
-
-namespace r = trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::Rest;
+namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -30,7 +29,7 @@ BittrexMarketDataSource::BittrexMarketDataSource(
     const App &,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &conf)
+    const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_session(CreateSession("bittrex.com", m_settings, false)),
@@ -49,7 +48,7 @@ BittrexMarketDataSource::~BittrexMarketDataSource() {
   }
 }
 
-void BittrexMarketDataSource::Connect(const IniSectionRef &) {
+void BittrexMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   try {
     m_products = RequestBittrexProductList(m_session, GetContext(), GetLog());
@@ -181,7 +180,7 @@ void BittrexMarketDataSource::UpdatePrices(const pt::ptime &time,
 boost::shared_ptr<MarketDataSource> CreateBittrexMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<BittrexMarketDataSource>(
       App::GetInstance(), context, instanceName, configuration);
 }

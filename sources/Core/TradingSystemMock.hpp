@@ -35,7 +35,7 @@ class TradingSystem : public trdk::TradingSystem {
   MOCK_CONST_METHOD0(GetInstanceName, const std::string &());
 
   MOCK_CONST_METHOD0(IsConnected, virtual bool());
-  MOCK_METHOD1(Connect, void(const trdk::Lib::IniSectionRef &));
+  MOCK_METHOD0(Connect, void());
 
   virtual boost::shared_ptr<const trdk::OrderTransactionContext> SendOrder(
       trdk::Security &security,
@@ -66,8 +66,7 @@ class TradingSystem : public trdk::TradingSystem {
 
   MOCK_METHOD1(CancelOrder, bool(const OrderId &));
 
-  MOCK_METHOD1(OnSettingsUpdate, void(const trdk::Lib::IniSectionRef &));
-  MOCK_METHOD1(CreateConnection, void(const trdk::Lib::IniSectionRef &));
+  MOCK_METHOD0(CreateConnection, void());
 
   MOCK_METHOD7(SendOrderTransaction,
                std::unique_ptr<trdk::OrderTransactionContext>(
@@ -81,6 +80,6 @@ class TradingSystem : public trdk::TradingSystem {
 
   MOCK_METHOD1(SendCancelOrderTransaction, void(const OrderId &));
 };
-}
-}
-}
+}  // namespace Mocks
+}  // namespace Tests
+}  // namespace trdk

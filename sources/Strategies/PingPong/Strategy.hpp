@@ -88,7 +88,7 @@ class Strategy : public trdk::Strategy {
  public:
   explicit Strategy(Context &,
                     const std::string &instanceName,
-                    const Lib::IniSectionRef &);
+                    const boost::property_tree::ptree &);
   virtual ~Strategy() override;
 
  public:

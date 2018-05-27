@@ -21,23 +21,21 @@ class TradingSystem : public trdk::TradingSystem {
  public:
   typedef trdk::TradingSystem Base;
 
- public:
-  explicit TradingSystem(const trdk::TradingMode &,
+  explicit TradingSystem(const TradingMode &,
                          Context &context,
                          const std::string &instanceName,
-                         const Lib::IniSectionRef &);
-  virtual ~TradingSystem() override;
+                         const boost::property_tree::ptree &);
+  ~TradingSystem() override;
 
- public:
-  virtual bool IsConnected() const override;
+  bool IsConnected() const override;
 
-  virtual trdk::Volume CalcCommission(const trdk::Qty &,
-                                      const trdk::Price &,
-                                      const trdk::OrderSide &,
-                                      const trdk::Security &) const override;
+  Volume CalcCommission(const Qty &,
+                        const Price &,
+                        const OrderSide &,
+                        const Security &) const override;
 
  protected:
-  virtual std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
+  std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       Security &,
       const Lib::Currency &,
       const Qty &,
@@ -45,14 +43,10 @@ class TradingSystem : public trdk::TradingSystem {
       const OrderParams &,
       const OrderSide &,
       const TimeInForce &) override;
-  virtual void SendCancelOrderTransaction(
-      const OrderTransactionContext &) override;
+  void SendCancelOrderTransaction(const OrderTransactionContext &) override;
 
  public:
-  virtual void CreateConnection(const Lib::IniSectionRef &) override;
-
- public:
-  virtual void OnSettingsUpdate(const Lib::IniSectionRef &) override;
+  void CreateConnection() override;
 
  private:
   class Implementation;

@@ -16,11 +16,10 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::Rest;
-
-namespace r = trdk::Interaction::Rest;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::Rest;
+namespace r = Interaction::Rest;
 namespace pt = boost::posix_time;
 namespace ptr = boost::property_tree;
 
@@ -29,7 +28,7 @@ namespace ptr = boost::property_tree;
 CexioMarketDataSource::CexioMarketDataSource(const App &,
                                              Context &context,
                                              const std::string &instanceName,
-                                             const IniSectionRef &conf)
+                                             const ptr::ptree &conf)
     : Base(context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -50,7 +49,7 @@ CexioMarketDataSource::~CexioMarketDataSource() {
   GetTradingLog().WaitForFlush();
 }
 
-void CexioMarketDataSource::Connect(const IniSectionRef &) {
+void CexioMarketDataSource::Connect() {
   GetLog().Debug("Creating connection...");
   try {
     m_products = RequestCexioProductList(m_session, GetContext(), GetLog());
@@ -237,7 +236,7 @@ pt::ptime CexioMarketDataSource::ParseTimeStamp(const ptr::ptree &source) {
 boost::shared_ptr<MarketDataSource> CreateCexioMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<CexioMarketDataSource>(App::GetInstance(), context,
                                                    instanceName, configuration);
 }

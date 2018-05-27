@@ -15,19 +15,19 @@
 #include "Settings.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction::FixProtocol;
-
-namespace fix = trdk::Interaction::FixProtocol;
-namespace in = fix::Incoming;
-namespace out = fix::Outgoing;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction::FixProtocol;
+namespace fix = Interaction::FixProtocol;
+namespace in = Incoming;
+namespace out = Outgoing;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 namespace {
 typedef NetworkStreamClient::ProtocolError ProtocolError;
 
-fix::Settings LoadSettings(const IniSectionRef &conf,
+fix::Settings LoadSettings(const ptr::ptree &conf,
                            const trdk::Settings &settings,
                            ModuleEventsLog &log) {
   fix::Settings result(conf, settings);
@@ -35,7 +35,7 @@ fix::Settings LoadSettings(const IniSectionRef &conf,
   result.Validate();
   return result;
 }
-}
+}  // namespace
 
 class Handler::Implementation : private boost::noncopyable {
  public:
@@ -45,7 +45,7 @@ class Handler::Implementation : private boost::noncopyable {
 
  public:
   explicit Implementation(const Context &context,
-                          const IniSectionRef &conf,
+                          const ptr::ptree &conf,
                           ModuleEventsLog &log)
       : m_settings(LoadSettings(conf, context.GetSettings(), log)),
         m_isAuthorized(false),
@@ -53,7 +53,7 @@ class Handler::Implementation : private boost::noncopyable {
 };
 
 Handler::Handler(const Context &context,
-                 const IniSectionRef &conf,
+                 const ptr::ptree &conf,
                  ModuleEventsLog &log)
     : m_pimpl(boost::make_unique<Implementation>(context, conf, log)) {}
 

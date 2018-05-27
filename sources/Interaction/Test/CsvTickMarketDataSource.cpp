@@ -11,16 +11,18 @@
 #include "Prec.hpp"
 #include "Core/Bar.hpp"
 #include "MarketDataSource.hpp"
+#include "Security.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace gr = boost::gregorian;
-
+namespace fs = boost::filesystem;
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Test;
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace Interaction;
+using namespace Test;
 
 namespace {
 
@@ -30,7 +32,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
 
  private:
   struct Settings {
-    boost::filesystem::path filePath;
+    fs::path filePath;
     std::string delimiter;
     bool skipFirstLine;
 
@@ -39,10 +41,10 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
     size_t timeFieldIndex;
     bool hasLastPriceField;
 
-    explicit Settings(const IniSectionRef &conf)
-        : filePath(conf.ReadFileSystemPath("source")),
+    explicit Settings(const ptr::ptree &conf)
+        : filePath(Normalize(conf.get<fs::path>("source"))),
           delimiter(";" /* @todo fixme conf.ReadKey("delimiter") */),
-          skipFirstLine(conf.ReadBoolKey("skip_first_line")),
+          skipFirstLine(conf.get<bool>("skipFirstLine")),
           hasLastPriceField(false) {
       dateFieldIndex = timeFieldIndex = 0;
       /* @todo fixme
@@ -129,7 +131,7 @@ class CsvTickMarketDataSource : public Test::MarketDataSource {
  public:
   explicit CsvTickMarketDataSource(Context &context,
                                    const std::string &instanceName,
-                                   const IniSectionRef &conf)
+                                   const ptr::ptree &conf)
       : Base(context, instanceName, conf), m_settings(conf) {
     m_settings.Log(GetLog());
   }
@@ -330,7 +332,7 @@ AssertEq(numberOfLevel1TickTypes,
 TRDK_INTERACTION_TEST_API boost::shared_ptr<trdk::MarketDataSource>
 CreateCsvTickMarketDataSource(Context &context,
                               const std::string &instanceName,
-                              const IniSectionRef &configuration) {
+                              const ptr::ptree &configuration) {
   return boost::make_shared<CsvTickMarketDataSource>(context, instanceName,
                                                      configuration);
 }

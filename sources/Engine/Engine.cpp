@@ -41,11 +41,10 @@ Engine::Engine(
     const Context::StateUpdateSlot& contextStateUpdateSlot,
     const boost::function<void(const std::string&)>& startProgressCallback,
     const boost::function<bool(const std::string&)>& startErrorCallback,
-    const boost::function<void(Context::Log&)>& logStartCallback,
-    const boost::unordered_map<std::string, std::string>& params)
+    const boost::function<void(Context::Log&)>& logStartCallback)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(configFile, logsDir, contextStateUpdateSlot, nullptr,
-      startProgressCallback, startErrorCallback, logStartCallback, params);
+      startProgressCallback, startErrorCallback, logStartCallback);
 }
 
 Engine::Engine(
@@ -55,11 +54,10 @@ Engine::Engine(
     trdk::DropCopy& dropCopy,
     const boost::function<void(const std::string&)>& startProgressCallback,
     const boost::function<bool(const std::string&)>& startErrorCallback,
-    const boost::function<void(Context::Log&)>& logStartCallback,
-    const boost::unordered_map<std::string, std::string>& params)
+    const boost::function<void(Context::Log&)>& logStartCallback)
     : m_pimpl(boost::make_unique<Implementation>()) {
   Run(configFile, logsDir, contextStateUpdateSlot, &dropCopy,
-      startProgressCallback, startErrorCallback, logStartCallback, params);
+      startProgressCallback, startErrorCallback, logStartCallback);
 }
 
 Engine::Engine(Engine&&) = default;
@@ -77,8 +75,7 @@ void Engine::Run(
     trdk::DropCopy* dropCopy,
     const boost::function<void(const std::string&)>& startProgressCallback,
     const boost::function<bool(const std::string&)>& startErrorCallback,
-    const boost::function<void(Context::Log&)>& logStartCallback,
-    const boost::unordered_map<std::string, std::string>& params) {
+    const boost::function<void(Context::Log&)>& logStartCallback) {
   Assert(!m_pimpl->m_context);
   Assert(!m_pimpl->m_eventsLog);
   Assert(!m_pimpl->m_tradingLog);
@@ -129,17 +126,16 @@ void Engine::Run(
           boost::make_unique<Context::TradingLog>(settings.GetTimeZone());
 
       m_pimpl->m_context = boost::make_unique<Context>(
-          *m_pimpl->m_eventsLog, *m_pimpl->m_tradingLog, std::move(settings),
-          params);
+          *m_pimpl->m_eventsLog, *m_pimpl->m_tradingLog, std::move(settings));
     }
     const auto& settings = m_pimpl->m_context->GetSettings();
-    const auto& ini = settings.GetConfig();
+    const auto& config = settings.GetConfig();
 
     m_pimpl->m_context->SubscribeToStateUpdates(contextStateUpdateSlot);
 
     {
       const auto& tradingLogFilePath = settings.GetLogsDir() / "trading.log";
-      if (ini.ReadBoolKey("General", "trading_log")) {
+      if (config.get<bool>("general.tradingLog.isEnabled")) {
         m_pimpl->m_tradingLogFile.open(
             tradingLogFilePath.string().c_str(),
             std::ios::out | std::ios::ate | std::ios ::app);
@@ -156,7 +152,7 @@ void Engine::Run(
       }
     }
 
-    m_pimpl->m_context->Start(ini, startProgressCallback, startErrorCallback,
+    m_pimpl->m_context->Start(startProgressCallback, startErrorCallback,
                               dropCopy);
   } catch (const Exception& ex) {
     if (m_pimpl->m_eventsLog) {

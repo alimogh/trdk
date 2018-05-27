@@ -13,11 +13,11 @@
 #include "Strategy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::FrontEnd;
-using namespace trdk::Strategies::TriangularArbitrage;
-
-namespace ta = trdk::Strategies::TriangularArbitrage;
+using namespace Lib;
+using namespace FrontEnd;
+using namespace Strategies::TriangularArbitrage;
+namespace ta = Strategies::TriangularArbitrage;
+namespace ptr = boost::property_tree;
 
 StrategyWindow::StrategyWindow(Engine &engine,
                                const LegsConf &legSet,
@@ -256,47 +256,41 @@ void StrategyWindow::ConnectSignals() {
 ta::Strategy &StrategyWindow::CreateStrategyInstance(const LegsConf &legSet) {
   static boost::uuids::random_generator generateStrategyId;
   const auto &strategyId = generateStrategyId();
-  const auto &conf = m_engine.GetContext().GetSettings().GetConfig();
-  const IniSectionRef defaults(conf, "Defaults");
-  QString symbolStr;
+  std::string legsStr;
+  ptr::ptree legs;
+  ptr::ptree symbols;
   {
     auto isFirst = true;
     for (const auto &leg : legSet) {
       if (!isFirst) {
-        symbolStr += ", ";
+        legsStr += ", ";
       } else {
         isFirst = false;
       }
-      symbolStr += (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol;
+      const auto &legStr =
+          (leg.side == ORDER_SIDE_BUY ? '+' : '-') + leg.symbol.toStdString();
+      legsStr += legStr;
+      legs.push_back({"", ptr::ptree().put("", legStr)});
+      symbols.push_back({"", ptr::ptree().put("", leg.symbol)});
     }
   }
-  std::ostringstream os;
-  os << "[Strategy."
-     << m_engine.GenerateNewStrategyName("Triangular Arbitrage " + symbolStr)
-     << "]" << std::endl;
-  os << "module = TriangularArbitrage" << std::endl;
-  os << "factory = CreateStrategy" << std::endl;
-  os << "id = " << strategyId << std::endl;
-  os << "is_enabled = true" << std::endl;
-  os << "trading_mode = live" << std::endl;
-  os << "is_trading_enabled = no" << std::endl;
-  os << "min_volume = 0" << std::endl;
-  os << "max_volume = 1000" << std::endl;
-  os << "min_profit_ratio = 1.01" << std::endl;
-  os << "legs = " << symbolStr << std::endl;
-  os << "requires = ";
   {
-    auto isFirst = true;
-    for (const auto &leg : legSet) {
-      if (!isFirst) {
-        os << ", ";
-      } else {
-        isFirst = false;
-      }
-      os << "Level 1 Updates[" << leg.symbol << "]";
-    }
-    os << std::endl;
-    m_engine.GetContext().Add(IniString(os.str()));
+    ptr::ptree strategyConfig;
+    strategyConfig.add("module", "TriangularArbitrage");
+    strategyConfig.add("id", strategyId);
+    strategyConfig.add("isEnabled", true);
+    strategyConfig.add("tradingMode", "live");
+    strategyConfig.add("config.isTradingEnabled", false);
+    strategyConfig.add("config.minVolume", 0);
+    strategyConfig.add("config.maxVolume", 1000);
+    strategyConfig.add("config.minProfitRatio", 1.01);
+    strategyConfig.add_child("config.legs", legs);
+    strategyConfig.add_child("requirements.level1Updates.symbols", symbols);
+    ptr::ptree strategyTagedConfig;
+    strategyTagedConfig.add_child(m_engine.GenerateNewStrategyInstanceName(
+                                          "Triangular Arbitrage " + legsStr),
+                                      strategyConfig);
+    m_engine.GetContext().Add(strategyTagedConfig);
   }
   auto &result = *boost::polymorphic_downcast<ta::Strategy *>(
       &m_engine.GetContext().GetSrategy(strategyId));

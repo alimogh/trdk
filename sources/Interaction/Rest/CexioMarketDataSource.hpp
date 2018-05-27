@@ -35,16 +35,15 @@ class CexioMarketDataSource : public MarketDataSource {
   explicit CexioMarketDataSource(const App &,
                                  Context &context,
                                  const std::string &instanceName,
-                                 const Lib::IniSectionRef &);
-  virtual ~CexioMarketDataSource() override;
+                                 const boost::property_tree::ptree &);
+  ~CexioMarketDataSource() override;
 
- public:
-  virtual void Connect(const Lib::IniSectionRef &conf) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
 
  private:
   void UpdatePrices();
@@ -54,7 +53,6 @@ class CexioMarketDataSource : public MarketDataSource {
 
   boost::posix_time::ptime ParseTimeStamp(const boost::property_tree::ptree &);
 
- private:
   const Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
 
@@ -67,6 +65,7 @@ class CexioMarketDataSource : public MarketDataSource {
 
   std::unique_ptr<PollingTask> m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

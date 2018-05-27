@@ -24,50 +24,49 @@ class ExcambiorexMarketDataSource : public MarketDataSource {
 
  private:
   struct Subscribtion {
-    boost::shared_ptr<Rest::Security> security;
-    const ExcambiorexProduct *product;
+    boost::shared_ptr<Security> security;
+    const ExcambiorexProduct* product;
 
-    const std::string &GetSymbol() const;
-    const std::string &GetProductId() const;
+    const std::string& GetSymbol() const;
+    const std::string& GetProductId() const;
   };
+
   typedef boost::multi_index_container<
       Subscribtion,
       boost::multi_index::indexed_by<
           boost::multi_index::hashed_unique<
               boost::multi_index::tag<Subscribtion>,
               boost::multi_index::const_mem_fun<Subscribtion,
-                                                const std::string &,
+                                                const std::string&,
                                                 &Subscribtion::GetSymbol>>,
           boost::multi_index::hashed_unique<
               boost::multi_index::tag<ById>,
               boost::multi_index::const_mem_fun<Subscribtion,
-                                                const std::string &,
+                                                const std::string&,
                                                 &Subscribtion::GetProductId>>>>
       SubscribtionList;
 
  public:
-  explicit ExcambiorexMarketDataSource(const App &,
-                                       Context &context,
-                                       const std::string &instanceName,
-                                       const Lib::IniSectionRef &);
-  virtual ~ExcambiorexMarketDataSource() override;
+  explicit ExcambiorexMarketDataSource(const App&,
+                                       Context& context,
+                                       const std::string& instanceName,
+                                       const boost::property_tree::ptree&);
+  ~ExcambiorexMarketDataSource() override;
 
- public:
-  virtual void Connect(const Lib::IniSectionRef &conf) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
-  virtual trdk::Security &CreateNewSecurityObject(const Lib::Symbol &) override;
+  trdk::Security& CreateNewSecurityObject(const Lib::Symbol&) override;
 
  private:
-  void UpdatePrices(Request &);
-  void UpdatePrices(const boost::posix_time::ptime &,
-                    const boost::property_tree::ptree &,
-                    Security &,
-                    const Lib::TimeMeasurement::Milestones &);
+  void UpdatePrices(Request&);
+  void UpdatePrices(const boost::posix_time::ptime&,
+                    const boost::property_tree::ptree&,
+                    Security&,
+                    const Lib::TimeMeasurement::Milestones&);
 
- private:
   const Settings m_settings;
 
   std::unique_ptr<Poco::Net::HTTPSClientSession> m_session;

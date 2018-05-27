@@ -26,7 +26,7 @@ Dummies::MarketDataSource &Dummies::MarketDataSource::GetInstance() {
   return result;
 }
 
-void Dummies::MarketDataSource::Connect(const trdk::Lib::IniSectionRef &) {
+void Dummies::MarketDataSource::Connect() {
   throw std::logic_error("Not supported");
 }
 

@@ -25,21 +25,19 @@ class Crex24TradingSystem : public TradingSystem {
   typedef TradingSystem Base;
 
  private:
-  struct Settings : public Rest::Settings {
+  struct Settings : Rest::Settings {
     std::string apiKey;
     std::vector<unsigned char> apiSecret;
 
-    explicit Settings(const Lib::IniSectionRef &, ModuleEventsLog &);
+    explicit Settings(const boost::property_tree::ptree &, ModuleEventsLog &);
   };
 
   class OrderTransactionContext : public trdk::OrderTransactionContext {
    public:
     typedef trdk::OrderTransactionContext Base;
 
-   public:
     explicit OrderTransactionContext(TradingSystem &, OrderId &&);
 
-   public:
     bool RegisterTrade(const std::string &);
 
    private:
@@ -50,7 +48,6 @@ class Crex24TradingSystem : public TradingSystem {
    public:
     typedef Crex24Request Base;
 
-   public:
     explicit PrivateRequest(const std::string &name,
                             const std::string &params,
                             const Settings &,
@@ -59,19 +56,17 @@ class Crex24TradingSystem : public TradingSystem {
                             const Context &,
                             ModuleEventsLog &,
                             ModuleTradingLog * = nullptr);
-    virtual ~PrivateRequest() override = default;
+    ~PrivateRequest() override = default;
 
-   public:
-    virtual Response Send(
-        std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
+    Response Send(std::unique_ptr<Poco::Net::HTTPSClientSession> &) override;
 
    protected:
-    virtual void PrepareRequest(const Poco::Net::HTTPClientSession &,
-                                const std::string &body,
-                                Poco::Net::HTTPRequest &) const override;
-    virtual bool IsPriority() const override;
-    virtual void CreateBody(const Poco::Net::HTTPClientSession &,
-                            std::string &result) const override;
+    void PrepareRequest(const Poco::Net::HTTPClientSession &,
+                        const std::string &body,
+                        Poco::Net::HTTPRequest &) const override;
+    bool IsPriority() const override;
+    void CreateBody(const Poco::Net::HTTPClientSession &,
+                    std::string &result) const override;
 
    private:
     const Settings &m_settings;
@@ -85,45 +80,42 @@ class Crex24TradingSystem : public TradingSystem {
                                const TradingMode &,
                                Context &,
                                const std::string &instanceName,
-                               const Lib::IniSectionRef &);
-  virtual ~Crex24TradingSystem() override = default;
+                               const boost::property_tree::ptree &);
+  ~Crex24TradingSystem() override = default;
 
- public:
-  virtual bool IsConnected() const override;
+  bool IsConnected() const override;
 
-  virtual Balances &GetBalancesStorage() override { return m_balances; }
+  Balances &GetBalancesStorage() override { return m_balances; }
 
-  virtual Volume CalcCommission(const trdk::Qty &,
-                                const trdk::Price &,
-                                const trdk::OrderSide &,
-                                const trdk::Security &) const override;
+  Volume CalcCommission(const Qty &,
+                        const Price &,
+                        const OrderSide &,
+                        const trdk::Security &) const override;
 
-  virtual boost::optional<OrderCheckError> CheckOrder(
-      const trdk::Security &,
+  boost::optional<OrderCheckError> CheckOrder(const trdk::Security &,
+                                              const Lib::Currency &,
+                                              const Qty &,
+                                              const boost::optional<Price> &,
+                                              const OrderSide &) const override;
+
+  bool CheckSymbol(const std::string &) const override;
+
+ protected:
+  void CreateConnection() override;
+
+  std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
+      trdk::Security &,
       const Lib::Currency &,
       const Qty &,
       const boost::optional<Price> &,
-      const OrderSide &) const override;
+      const OrderParams &,
+      const OrderSide &,
+      const TimeInForce &) override;
 
-  virtual bool CheckSymbol(const std::string &) const override;
-
- protected:
-  virtual void CreateConnection(const trdk::Lib::IniSectionRef &) override;
-
-  virtual std::unique_ptr<trdk::OrderTransactionContext> SendOrderTransaction(
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const boost::optional<trdk::Price> &,
-      const trdk::OrderParams &,
-      const trdk::OrderSide &,
-      const trdk::TimeInForce &) override;
-
-  virtual void SendCancelOrderTransaction(
+  void SendCancelOrderTransaction(
       const trdk::OrderTransactionContext &) override;
 
-  virtual void OnTransactionSent(
-      const trdk::OrderTransactionContext &) override;
+  void OnTransactionSent(const trdk::OrderTransactionContext &) override;
 
  private:
   void UpdateBalances();
@@ -133,7 +125,6 @@ class Crex24TradingSystem : public TradingSystem {
                    const boost::posix_time::ptime &,
                    const boost::property_tree::ptree &);
 
- private:
   Settings m_settings;
   const boost::posix_time::time_duration m_serverTimeDiff;
   boost::unordered_map<std::string, Crex24Product> m_products;
@@ -148,6 +139,7 @@ class Crex24TradingSystem : public TradingSystem {
 
   PollingTask m_pollingTask;
 };
+
 }  // namespace Rest
 }  // namespace Interaction
 }  // namespace trdk

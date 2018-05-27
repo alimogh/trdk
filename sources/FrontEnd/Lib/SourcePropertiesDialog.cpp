@@ -22,18 +22,18 @@ class SourcePropertiesDialog::Implementation {
   Ui::SourcePropertiesDialog m_ui;
 
   explicit Implementation(
-      const boost::unordered_set<std::string> &disabledSources,
+      const boost::unordered_set<std::string> &disabledImplementations,
       SourcePropertiesDialog &self)
       : m_self(self) {
     m_ui.setupUi(&m_self);
 
     {
-      const auto &addExchange = [&disabledSources, this](const char *title,
-                                                         const char *tag) {
-        if (disabledSources.count(tag)) {
+      const auto &addExchange = [&disabledImplementations, this](
+                                    const char *title, const char *impl) {
+        if (disabledImplementations.count(impl)) {
           return;
         }
-        m_ui.exchange->addItem(title, tag);
+        m_ui.exchange->addItem(title, impl);
       };
       addExchange("GDAX", "Gdax");
       addExchange("CEX.IO", "Cexio");
@@ -61,34 +61,34 @@ class SourcePropertiesDialog::Implementation {
     m_ui.apiPassphrase->setEnabled(hasPassphrase);
   }
 
-  ptr::ptree GetSerializedProperties() const {
-    ptr::ptree nodes;
-    nodes.put("title", m_ui.exchange->currentText().toStdString());
-    const auto &tag = m_ui.exchange->currentData().toString().toStdString();
-    if (tag != "Exmo") {
-      nodes.put("module", "Rest");
-      nodes.put("factory", tag);
-    } else {
-      nodes.put("module", tag);
-    }
-    nodes.put("api_key", m_ui.apiKey->text().toStdString());
-    nodes.put("api_secret", m_ui.apiSecret->text().toStdString());
-    if (m_ui.apiPassphrase->isEnabled()) {
-      nodes.put("api_passphrase", m_ui.apiPassphrase->text().toStdString());
-    }
-
+  ptr::ptree Dump() const {
+    const auto &impl = m_ui.exchange->currentData().toString().toStdString();
     ptr::ptree result;
-    result.add_child(tag, nodes);
+    result.add("impl", impl);
+    result.add("tradingMode", "live");
+    result.add("title", m_ui.exchange->currentText().toStdString());
+    if (impl != "Exmo") {
+      result.add("module", "Rest");
+      result.add("factory", "Create" + impl);
+    } else {
+      result.add("module", impl);
+    }
+    result.add("config.auth.apiKey", m_ui.apiKey->text().toStdString());
+    result.add("config.auth.apiSecret", m_ui.apiSecret->text().toStdString());
+    if (m_ui.apiPassphrase->isEnabled()) {
+      result.add("config.auth.apiPassphrase",
+                 m_ui.apiPassphrase->text().toStdString());
+    }
     return result;
   }
 };
 
 SourcePropertiesDialog::SourcePropertiesDialog(
-    const boost::unordered_set<std::string> &disabledSources, QWidget *parent)
+    const boost::unordered_set<std::string> &disabledImplementations,
+    QWidget *parent)
     : Base(parent),
-      m_pimpl(boost::make_unique<Implementation>(disabledSources, *this)) {}
+      m_pimpl(
+          boost::make_unique<Implementation>(disabledImplementations, *this)) {}
 SourcePropertiesDialog::~SourcePropertiesDialog() = default;
 
-ptr::ptree SourcePropertiesDialog::GetSerializedProperties() const {
-  return m_pimpl->GetSerializedProperties();
-}
+ptr::ptree SourcePropertiesDialog::Dump() const { return m_pimpl->Dump(); }

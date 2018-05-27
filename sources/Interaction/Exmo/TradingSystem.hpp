@@ -31,7 +31,7 @@ class TradingSystem : public trdk::TradingSystem {
                          const TradingMode &,
                          Context &,
                          const std::string &instanceName,
-                         const Lib::IniSectionRef &);
+                         const boost::property_tree::ptree &);
   TradingSystem(TradingSystem &&) = default;
   TradingSystem(const TradingSystem &) = delete;
   TradingSystem &operator=(TradingSystem &&) = default;
@@ -56,7 +56,7 @@ class TradingSystem : public trdk::TradingSystem {
   bool CheckSymbol(const std::string &) const override;
 
  protected:
-  void CreateConnection(const Lib::IniSectionRef &) override;
+  void CreateConnection() override;
 
   std::unique_ptr<OrderTransactionContext> SendOrderTransaction(
       Security &,

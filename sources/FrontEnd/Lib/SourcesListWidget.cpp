@@ -18,12 +18,12 @@ namespace ptr = boost::property_tree;
 class SourcesListWidget::Implementation {
  public:
   Ui::SourcesListWidget m_ui;
-  boost::unordered_map<std::string, ptr::ptree> m_list;
+  ptr::ptree m_result;
 
   void Sync() {
     const QSignalBlocker signalBlocker(m_ui.list);
     m_ui.list->clear();
-    for (const auto &node : m_list) {
+    for (const auto &node : m_result) {
       m_ui.list->addItem(
           QString::fromStdString(node.second.get<std::string>("title")));
     }
@@ -37,31 +37,26 @@ SourcesListWidget::SourcesListWidget(QWidget *parent)
 
 SourcesListWidget::~SourcesListWidget() = default;
 
-boost::unordered_set<std::string> SourcesListWidget::GetTags() const {
+boost::unordered_set<std::string> SourcesListWidget::GetImplementations()
+    const {
   boost::unordered_set<std::string> result;
-  for (const auto &node : m_pimpl->m_list) {
-    result.emplace(node.first);
+  for (const auto &node : m_pimpl->m_result) {
+    Verify(result.emplace(node.second.get<std::string>("impl")).second);
   }
   return result;
 }
 
-void SourcesListWidget::AddSource(const ptr::ptree &node) {
-  for (const auto &subNode : node) {
-    m_pimpl->m_list[subNode.first] = subNode.second;
+void SourcesListWidget::AddSource(const ptr::ptree &config) {
+  {
+    auto tag = config.get<std::string>("impl");
+    if (!tag.empty()) {
+      tag[0] = static_cast<char>(std::tolower(tag[0]));
+    }
+    m_pimpl->m_result.put_child(tag, config);
   }
   m_pimpl->Sync();
 }
 
-size_t SourcesListWidget::GetSize() const { return m_pimpl->m_list.size(); }
+size_t SourcesListWidget::GetSize() const { return m_pimpl->m_result.size(); }
 
-void SourcesListWidget::DumpList(std::ostream &os) const {
-  for (const auto &node : m_pimpl->m_list) {
-    os << "[TradingSystemAndMarketDataSource." << node.first << ']'
-       << std::endl;
-    for (const auto &subNode : node.second) {
-      os << '\t' << subNode.first << " = "
-         << subNode.second.get_value<std::string>() << std::endl;
-    }
-    os << std::endl;
-  }
-}
+const ptr::ptree &SourcesListWidget::Dump() const { return m_pimpl->m_result; }

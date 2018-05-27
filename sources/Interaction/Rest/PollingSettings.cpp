@@ -12,10 +12,10 @@
 #include "PollingSettings.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 
 namespace {
 const pt::time_duration &minInterval = pt::microseconds(1);
@@ -26,23 +26,25 @@ const size_t defaultAllOrdersRequestFrequency = 60;
 const size_t defaultBalancesRequestFrequency = 120;
 }  // namespace
 
-PollingSetttings::PollingSetttings(const IniSectionRef &conf)
+PollingSetttings::PollingSetttings(const ptr::ptree &conf)
     : m_interval(std::max<pt::time_duration>(
-          pt::seconds(conf.ReadTypedKey<long>(
-              "polling_interval_second",
+          pt::seconds(conf.get<long>(
+              "config.polling.intervalSeconds",
               static_cast<long>(defailtInterval.total_seconds()))),
           minInterval)),
       m_actualOrdersRequestFrequency(
-          conf.ReadTypedKey<size_t>("actual_order_request_frequency",
-                                    defaultActualOrdersRequestFrequency)),
-      m_allOrdersRequestFrequency(conf.ReadTypedKey<size_t>(
-          "all_order_request_frequency", defaultAllOrdersRequestFrequency)),
-      m_pricesRequestFrequency(std::max<size_t>(
-          conf.ReadTypedKey<size_t>("price_request_frequency",
-                                    defaultPriceRequestFrequency),
-          1)),
-      m_balancesRequestFrequency(conf.ReadTypedKey<size_t>(
-          "balances_request_frequency", defaultBalancesRequestFrequency)) {}
+          conf.get<size_t>("config.polling.frequency.actualOrders",
+                           defaultActualOrdersRequestFrequency)),
+      m_allOrdersRequestFrequency(
+          conf.get<size_t>("config.polling.allOrderRequestFrequency",
+                           defaultAllOrdersRequestFrequency)),
+      m_pricesRequestFrequency(
+          std::max<size_t>(conf.get<size_t>("config.polling.frequency.prices",
+                                            defaultPriceRequestFrequency),
+                           1)),
+      m_balancesRequestFrequency(
+          conf.get<size_t>("config.polling.frequency.balances",
+                           defaultBalancesRequestFrequency)) {}
 
 void PollingSetttings::Log(ModuleEventsLog &log) const {
   if (GetInterval() == defailtInterval &&

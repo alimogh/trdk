@@ -30,7 +30,7 @@ class Strategy : public trdk::Strategy {
 
   explicit Strategy(Context &,
                     const std::string &instanceName,
-                    const Lib::IniSectionRef &);
+                    const boost::property_tree::ptree &config);
   ~Strategy() override;
 
   boost::signals2::scoped_connection SubscribeToAdvice(

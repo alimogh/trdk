@@ -13,22 +13,21 @@
 #include "Policy.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::FixProtocol;
+using namespace Lib;
+using namespace Interaction::FixProtocol;
+namespace fix = Interaction::FixProtocol;
+namespace ptr = boost::property_tree;
 
-namespace fix = trdk::Interaction::FixProtocol;
-
-fix::Settings::Settings(const IniSectionRef &conf,
-                        const trdk::Settings &settings)
-    : host(conf.ReadKey("host")),
-      port(conf.ReadTypedKey<size_t>("port")),
-      isSecure(conf.ReadBoolKey("secure")),
-      username(conf.ReadKey("username")),
-      password(conf.ReadKey("password")),
-      senderCompId(conf.ReadKey("sender_comp_id")),
-      targetCompId(conf.ReadKey("target_comp_id")),
-      senderSubId(conf.ReadKey("sender_sub_id")),
-      targetSubId(conf.ReadKey("target_sub_id")),
+fix::Settings::Settings(const ptr::ptree &conf, const trdk::Settings &settings)
+    : host(conf.get<std::string>("conf.host")),
+      port(conf.get<size_t>("config.port")),
+      isSecure(conf.get<bool>("config.secure")),
+      username(conf.get<std::string>("config.username")),
+      password(conf.get<std::string>("config.password")),
+      senderCompId(conf.get<std::string>("config.senderCompId")),
+      targetCompId(conf.get<std::string>("config.targetCompId")),
+      senderSubId(conf.get<std::string>("config.senderSubId")),
+      targetSubId(conf.get<std::string>("config.targetSubId")),
       policy(boost::make_unique<Policy>(settings)) {}
 
 fix::Settings::Settings(Settings &&rhs) = default;

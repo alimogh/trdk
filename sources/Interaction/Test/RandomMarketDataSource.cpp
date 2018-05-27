@@ -10,21 +10,20 @@
 
 #include "Prec.hpp"
 #include "RandomMarketDataSource.hpp"
-#include "Core/PriceBook.hpp"
 #include "Core/TradingLog.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace gr = boost::gregorian;
-
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Test;
+using namespace Lib;
+using namespace Interaction;
+using namespace Test;
 
 RandomMarketDataSource::RandomMarketDataSource(Context &context,
                                                const std::string &instanceName,
-                                               const IniSectionRef &)
+                                               const ptr::ptree &)
     : Base(context, instanceName), m_stopFlag(false) {}
 
 RandomMarketDataSource::~RandomMarketDataSource() {
@@ -35,7 +34,7 @@ RandomMarketDataSource::~RandomMarketDataSource() {
   GetTradingLog().WaitForFlush();
 }
 
-void RandomMarketDataSource::Connect(const IniSectionRef &) {
+void RandomMarketDataSource::Connect() {
   if (m_threads.size()) {
     return;
   }
@@ -174,7 +173,7 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<MarketDataSource> CreateRandomMarketDataSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<RandomMarketDataSource>(context, instanceName,
                                                     configuration);
 }

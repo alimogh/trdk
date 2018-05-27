@@ -24,8 +24,7 @@ class TRDK_ENGINE_API Engine {
       const Context::StateUpdateSlot& contextStateUpdateSlot,
       const boost::function<void(const std::string&)>& startProgressCallback,
       const boost::function<bool(const std::string&)>& startErrorCallback,
-      const boost::function<void(Context::Log&)>& logStartCallback,
-      const boost::unordered_map<std::string, std::string>& params);
+      const boost::function<void(Context::Log&)>& logStartCallback);
   explicit Engine(
       const boost::filesystem::path& configFile,
       const boost::filesystem::path& logsDir,
@@ -33,8 +32,7 @@ class TRDK_ENGINE_API Engine {
       DropCopy& dropCopy,
       const boost::function<void(const std::string&)>& startProgressCallback,
       const boost::function<bool(const std::string&)>& startErrorCallback,
-      const boost::function<void(Context::Log&)>& logStartCallback,
-      const boost::unordered_map<std::string, std::string>& params);
+      const boost::function<void(Context::Log&)>& logStartCallback);
   Engine(Engine&&);
   Engine(const Engine&) = delete;
   ~Engine();
@@ -58,8 +56,7 @@ class TRDK_ENGINE_API Engine {
       DropCopy* dropCopy,
       const boost::function<void(const std::string&)>& startProgressCallback,
       const boost::function<bool(const std::string&)>& startErrorCallback,
-      const boost::function<void(Context::Log&)>& logStartCallback,
-      const boost::unordered_map<std::string, std::string>& params);
+      const boost::function<void(Context::Log&)>& logStartCallback);
 
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;

@@ -14,6 +14,7 @@
 #include "TimeMeasurement.hpp"
 #include "Fwd.hpp"
 #include <boost/asio/buffer.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 
 namespace trdk {
 namespace Lib {
@@ -85,12 +86,12 @@ class NetworkStreamClient
 
   //! Find message end by reverse iterators.
   /** Called under lock.
-    * @param[in] bufferBegin     Buffer begin.
-    * @param[in] transferedBegin Last operation transfered begin.
-    * @param[in] bufferEnd       Buffer end.
-    * @return Last byte of a message, or bufferEnd if the range
-    *         doesn't include message end.
-    */
+   * @param[in] bufferBegin     Buffer begin.
+   * @param[in] transferedBegin Last operation transfered begin.
+   * @param[in] bufferEnd       Buffer end.
+   * @return Last byte of a message, or bufferEnd if the range
+   *         doesn't include message end.
+   */
   virtual Buffer::const_iterator FindLastMessageLastByte(
       const Buffer::const_iterator &bufferBegin,
       const Buffer::const_iterator &transferedEnd,
@@ -98,7 +99,7 @@ class NetworkStreamClient
 
   //! Handles messages in the buffer.
   /** Called under lock. This range has one or more messages.
-    */
+   */
   virtual void HandleNewMessages(
       const boost::posix_time::ptime &time,
       const Buffer::const_iterator &begin,
@@ -108,14 +109,14 @@ class NetworkStreamClient
  protected:
   //! Returns number of received bytes.
   /** Thread-safe only from HandleNewMessages call.
-    */
+   */
   size_t GetNumberOfReceivedBytes() const;
 
   //! Returns number of received bytes.
   /** Thread-safe only from HandleNewMessages call.
-    *
-    * @return Pair where 1-st value - value, second - unit name.
-    */
+   *
+   * @return Pair where 1-st value - value, second - unit name.
+   */
   std::pair<double, std::string> GetReceivedVerbouseStat() const;
 
   virtual trdk::Lib::NetworkStreamClientService &GetService();
@@ -142,5 +143,5 @@ class NetworkStreamClient
   class Implementation;
   std::unique_ptr<Implementation> m_pimpl;
 };
-}
-}
+}  // namespace Lib
+}  // namespace trdk

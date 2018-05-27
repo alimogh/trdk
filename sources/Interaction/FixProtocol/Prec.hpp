@@ -11,19 +11,18 @@
 #pragma once
 
 #include "Common/Common.hpp"
-#include "Core/Settings.hpp"
-#include "Api.h"
-#include "Fwd.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-
-#include "Common/NetworkStreamClient.hpp"
-#include "Common/NetworkStreamClientService.hpp"
-
 #include "Core/MarketDataSource.hpp"
 #include "Core/Module.hpp"
 #include "Core/Security.hpp"
+#include "Core/Settings.hpp"
 #include "Core/Trade.hpp"
 #include "Core/TradingLog.hpp"
 #include "Core/TradingSystem.hpp"
 #include "Core/TransactionContext.hpp"
+#include "Api.h"
+#include "Fwd.hpp"
+#include "Common/NetworkStreamClient.hpp"
+#include "Common/NetworkStreamClientService.hpp"
+#include <boost/algorithm/string.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/thread/recursive_mutex.hpp>

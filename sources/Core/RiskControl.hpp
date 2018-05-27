@@ -26,8 +26,8 @@ class RiskControlSymbolContext {
       PositionFabric;
 
  public:
-  explicit RiskControlSymbolContext(const trdk::Lib::Symbol &,
-                                    const trdk::Lib::IniSectionRef &,
+  explicit RiskControlSymbolContext(const Lib::Symbol &,
+                                    const boost::property_tree::ptree &,
                                     const PositionFabric &);
 
  private:
@@ -36,7 +36,7 @@ class RiskControlSymbolContext {
  public:
   const trdk::Lib::Symbol &GetSymbol() const;
 
-  void AddScope(const trdk::Lib::IniSectionRef &,
+  void AddScope(const boost::property_tree::ptree &,
                 const PositionFabric &,
                 size_t index);
 
@@ -46,12 +46,11 @@ class RiskControlSymbolContext {
 
  private:
   void InitScope(Scope &,
-                 const trdk::Lib::IniSectionRef &,
+                 const boost::property_tree::ptree &,
                  const PositionFabric &,
                  bool isAdditinalScope) const;
 
- private:
-  const trdk::Lib::Symbol m_symbol;
+  const Lib::Symbol m_symbol;
   std::vector<boost::shared_ptr<Scope>> m_scopes;
 };
 
@@ -87,25 +86,23 @@ class TRDK_CORE_API RiskControlScope : private boost::noncopyable {
                                const trdk::Qty &remainingQty,
                                const trdk::Trade *) = 0;
 
-  virtual void ConfirmSellOrder(const trdk::RiskControlOperationId &,
-                                const trdk::OrderStatus &,
-                                trdk::Security &,
-                                const trdk::Lib::Currency &,
-                                const trdk::Price &orderPrice,
-                                const trdk::Qty &remainingQty,
-                                const trdk::Trade *) = 0;
+  virtual void ConfirmSellOrder(const RiskControlOperationId &,
+                                const OrderStatus &,
+                                Security &,
+                                const Lib::Currency &,
+                                const Price &orderPrice,
+                                const Qty &remainingQty,
+                                const Trade *) = 0;
 
- public:
-  virtual void CheckTotalPnl(const trdk::Volume &pnl) const = 0;
+  virtual void CheckTotalPnl(const Volume &pnl) const = 0;
 
   virtual void CheckTotalWinRatio(size_t totalWinRatio,
                                   size_t operationsCount) const = 0;
 
- public:
-  virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &) = 0;
+  virtual void OnSettingsUpdate(const boost::property_tree::ptree &) = 0;
 
  private:
-  const trdk::TradingMode m_tradingMode;
+  const TradingMode m_tradingMode;
 };
 
 class TRDK_CORE_API EmptyRiskControlScope : public trdk::RiskControlScope {
@@ -144,14 +141,12 @@ class TRDK_CORE_API EmptyRiskControlScope : public trdk::RiskControlScope {
                                 const trdk::Qty &remainingQty,
                                 const trdk::Trade *);
 
- public:
-  virtual void CheckTotalPnl(const trdk::Volume &) const;
+  virtual void CheckTotalPnl(const Volume &) const;
 
   virtual void CheckTotalWinRatio(size_t totalWinRatio,
                                   size_t operationsCount) const;
 
- public:
-  virtual void OnSettingsUpdate(const trdk::Lib::IniSectionRef &);
+  virtual void OnSettingsUpdate(const boost::property_tree::ptree &);
 
  private:
   const std::string m_name;
@@ -204,36 +199,32 @@ class TRDK_CORE_API RiskControl : private boost::noncopyable {
     trdk::Security &GetSecurity();
   };
 
- public:
-  RiskControl(trdk::Context &,
-              const trdk::Lib::Ini &,
-              const trdk::TradingMode &);
+  RiskControl(Context &,
+              const boost::property_tree::ptree &,
+              const TradingMode &);
   ~RiskControl();
 
- public:
-  const trdk::TradingMode &GetTradingMode() const;
+  const TradingMode &GetTradingMode() const;
 
- public:
-  boost::shared_ptr<trdk::RiskControlSymbolContext> CreateSymbolContext(
-      const trdk::Lib::Symbol &) const;
-  std::unique_ptr<trdk::RiskControlScope> CreateScope(
-      const std::string &name, const trdk::Lib::IniSectionRef &) const;
+  boost::shared_ptr<RiskControlSymbolContext> CreateSymbolContext(
+      const Lib::Symbol &) const;
+  std::unique_ptr<RiskControlScope> CreateScope(
+      const std::string &name, const boost::property_tree::ptree &) const;
 
- public:
-  trdk::RiskControlOperationId CheckNewBuyOrder(
-      trdk::RiskControlScope &,
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::Lib::TimeMeasurement::Milestones &);
-  trdk::RiskControlOperationId CheckNewSellOrder(
-      trdk::RiskControlScope &,
-      trdk::Security &,
-      const trdk::Lib::Currency &,
-      const trdk::Qty &,
-      const trdk::Price &,
-      const trdk::Lib::TimeMeasurement::Milestones &);
+  RiskControlOperationId CheckNewBuyOrder(
+      RiskControlScope &,
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const Price &,
+      const Lib::TimeMeasurement::Milestones &);
+  RiskControlOperationId CheckNewSellOrder(
+      RiskControlScope &,
+      Security &,
+      const Lib::Currency &,
+      const Qty &,
+      const Price &,
+      const Lib::TimeMeasurement::Milestones &);
 
   void ConfirmBuyOrder(const trdk::RiskControlOperationId &,
                        trdk::RiskControlScope &,
@@ -261,11 +252,10 @@ class TRDK_CORE_API RiskControl : private boost::noncopyable {
                           size_t totalWinRatio,
                           size_t operationsCount) const;
 
- public:
-  void OnSettingsUpdate(const trdk::Lib::Ini &);
+  void OnSettingsUpdate(const boost::property_tree::ptree &);
 
  private:
   class Implementation;
   Implementation *m_pimpl;
 };
-}
+}  // namespace trdk

@@ -9,27 +9,21 @@
  **************************************************************************/
 
 #include "Prec.hpp"
+#include "Core/Security.hpp"
 #include "MarketDataSource.hpp"
+#include "Security.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace gr = boost::gregorian;
 namespace fs = boost::filesystem;
-
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Test;
+using namespace Lib;
+using namespace Interaction;
+using namespace Test;
 
 namespace {
-
-fs::path ReadSourcePath(const Context &context, const IniSectionRef &conf) {
-  if (context.GetParams().IsExist("test_market_data_source")) {
-    return context.GetParams()["test_market_data_source"];
-  } else {
-    return conf.ReadFileSystemPath("source");
-  }
-}
 
 class TrdkMarketDataLogSource : public Test::MarketDataSource {
  public:
@@ -38,13 +32,13 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
  public:
   explicit TrdkMarketDataLogSource(Context &context,
                                    const std::string &instanceName,
-                                   const IniSectionRef &conf)
+                                   const ptr::ptree &conf)
       : Base(context, instanceName, conf),
-        m_filePath(ReadSourcePath(GetContext(), conf)) {
+        m_filePath(Normalize(conf.get<fs::path>("source"))) {
     GetLog().Info("Source is %1%.", m_filePath);
   }
 
-  virtual ~TrdkMarketDataLogSource() override {
+  ~TrdkMarketDataLogSource() override {
     try {
       Stop();
     } catch (...) {
@@ -170,7 +164,7 @@ class TrdkMarketDataLogSource : public Test::MarketDataSource {
   const boost::filesystem::path m_filePath;
   boost::shared_ptr<Test::Security> m_security;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -178,7 +172,7 @@ TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource> CreateTrdkMarketDataLogSource(
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   return boost::make_shared<TrdkMarketDataLogSource>(context, instanceName,
                                                      configuration);
 }

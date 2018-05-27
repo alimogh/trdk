@@ -30,5 +30,6 @@
 #include "Fwd.hpp"
 #include "Common/Crypto.hpp"
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/unordered_set.hpp>
 #include <Poco/Net/HTTPRequest.h>

@@ -14,13 +14,14 @@
 #include "Operation.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::TradingLib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::Strategies::TriangularArbitrage;
+using namespace Lib;
+using namespace TradingLib;
+using namespace TimeMeasurement;
+using namespace Strategies::TriangularArbitrage;
 
-namespace ta = trdk::Strategies::TriangularArbitrage;
+namespace ta = Strategies::TriangularArbitrage;
 namespace sig = boost::signals2;
+namespace ptr = boost::property_tree;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +29,7 @@ namespace {
 class BuyLegPolicy : public LegPolicy {
  public:
   explicit BuyLegPolicy(const std::string &symbol) : LegPolicy(symbol) {}
-  virtual ~BuyLegPolicy() override = default;
+  ~BuyLegPolicy() override = default;
 
  public:
   virtual const OrderSide &GetSide() const override {
@@ -62,25 +63,24 @@ class BuyLegPolicy : public LegPolicy {
 class SellLegPolicy : public LegPolicy {
  public:
   explicit SellLegPolicy(const std::string &symbol) : LegPolicy(symbol) {}
-  virtual ~SellLegPolicy() override = default;
+  ~SellLegPolicy() override = default;
 
- public:
-  virtual const OrderSide &GetSide() const override {
-    static const OrderSide result = ORDER_SIDE_SELL;
+  const OrderSide &GetSide() const override {
+    static const auto result = ORDER_SIDE_SELL;
     return result;
   }
 
-  virtual Qty GetQty(const Security &security) const override {
+  Qty GetQty(const Security &security) const override {
     return security.GetBidQty();
   }
 
-  virtual Price GetPrice(const Security &security) const override {
+  Price GetPrice(const Security &security) const override {
     return security.GetBidPrice();
   }
 
-  virtual Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
-                                          const Security &security,
-                                          const Price &) const override {
+  Qty GetOrderQtyAllowedByBalance(const TradingSystem &tradingSystem,
+                                  const Security &security,
+                                  const Price &) const override {
     return tradingSystem.GetBalances().GetAvailableToTrade(
         security.GetSymbol().GetBaseSymbol());
   }
@@ -96,7 +96,6 @@ class DirectLegPolicy : public Base {
   explicit DirectLegPolicy(const std::string &symbol) : Base(symbol) {}
   virtual ~DirectLegPolicy() override = default;
 
- public:
   virtual typename Base::X CalcX(const Security &security) const override {
     return GetPrice(security);
   }
@@ -108,7 +107,6 @@ class OppositeLegPolicy : public Base {
   explicit OppositeLegPolicy(const std::string &symbol) : Base(symbol) {}
   virtual ~OppositeLegPolicy() override = default;
 
- public:
   virtual typename Base::X CalcX(const Security &security) const override {
     return 1 / GetPrice(security);
   }
@@ -183,8 +181,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
   boost::unordered_set<const TradingSystem *> m_failedTargets;
 
- public:
-  Implementation(ta::Strategy &self)
+  explicit Implementation(Strategy &self)
       : m_self(self), m_isStopped(false), m_numberOfSecuriries(0) {}
 
   void CheckSignal(const Milestones &delayMeasurement) {
@@ -586,7 +583,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
         std::min(m_maxVolume / targets[LEG_1].price, getMarketQty(LEG_1));
     points[CALC_QTYS_POINT_LEG_1_ORIGINAL] = targets[LEG_1].qty;
     const auto minLeg1Qty = m_minVolume / targets[LEG_1].price;
-    const bool isLeg1QtyForced = targets[LEG_1].qty <= minLeg1Qty;
+    const auto isLeg1QtyForced = targets[LEG_1].qty <= minLeg1Qty;
     if (isLeg1QtyForced) {
       targets[LEG_1].qty = minLeg1Qty;
       points[CALC_QTYS_POINT_LEG_1_FORCED] = targets[LEG_1].qty;
@@ -720,7 +717,7 @@ class ta::Strategy::Implementation : private boost::noncopyable {
 
 ta::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
-                       const IniSectionRef &conf)
+                       const ptr::ptree &conf)
     : Base(context,
            "{F0F45162-F1D3-484A-A0F3-7AC7DF7F9DA9}",
            "TriangularArbitrage",
@@ -728,17 +725,18 @@ ta::Strategy::Strategy(Context &context,
            conf),
       m_pimpl(boost::make_unique<Implementation>(*this)) {
   {
-    m_pimpl->m_isTradingEnabled = conf.ReadBoolKey("is_trading_enabled");
-    m_pimpl->m_minVolume = conf.ReadTypedKey<Volume>("min_volume");
-    m_pimpl->m_maxVolume = conf.ReadTypedKey<Volume>("max_volume");
-    m_pimpl->m_minProfitRatio = conf.ReadTypedKey<Double>("min_profit_ratio");
+    m_pimpl->m_isTradingEnabled = conf.get<bool>("config.isTradingEnabled");
+    m_pimpl->m_minVolume = conf.get<Volume>("config.minVolume");
+    m_pimpl->m_maxVolume = conf.get<Volume>("config.maxVolume");
+    m_pimpl->m_minProfitRatio = conf.get<Double>("config.minProfitRatio");
   }
   {
     std::vector<std::pair<std::string, OrderSide>> legsConf;
     legsConf.reserve(numberOfLegs);
     size_t numberOfShorts = 0;
     size_t numberOfLongs = 0;
-    for (const auto &legConf : conf.ReadList("legs", ",", true)) {
+    for (const auto &node : conf.get_child("config.legs")) {
+      const auto &legConf = node.second.get_value<std::string>();
       if (legConf.size() < 2 || (legConf[0] != '-' && legConf[0] != '+')) {
         throw Exception("Wrong leg configuration in leg set configuration");
       }
@@ -1016,7 +1014,7 @@ Leg ta::Strategy::GetLeg(const Security &security) const {
 
 std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
                                                const std::string &instanceName,
-                                               const IniSectionRef &conf) {
+                                               const ptr::ptree &conf) {
   return boost::make_unique<ta::Strategy>(context, instanceName, conf);
 }
 

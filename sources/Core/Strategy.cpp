@@ -17,9 +17,9 @@
 
 namespace mi = boost::multi_index;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace sig = boost::signals2;
 namespace uuids = boost::uuids;
-
 using namespace trdk;
 using namespace Lib;
 
@@ -359,16 +359,16 @@ class Strategy::Implementation : private boost::noncopyable {
 
   explicit Implementation(Strategy& strategy,
                           const uuids::uuid& typeId,
-                          const IniSectionRef& conf)
+                          const ptr::ptree& conf)
       : m_strategy(strategy),
         m_typeId(typeId),
         m_tradingMode(
-            ConvertTradingModeFromString(conf.ReadKey("trading_mode"))),
+            ConvertTradingModeFromString(conf.get<std::string>("tradingMode"))),
         m_riskControlScope(
             m_strategy.GetContext()
                 .GetRiskControl(m_tradingMode)
                 .CreateScope(m_strategy.GetInstanceName(), conf)),
-        m_isEnabled(conf.ReadBoolKey("is_enabled")),
+        m_isEnabled(conf.get<bool>("isEnabled")),
         m_isBlocked(false),
         m_stopMode(STOP_MODE_UNKNOWN) {
     m_strategy.GetLog().Info(
@@ -517,7 +517,7 @@ Strategy::Strategy(Context& context,
                    const uuids::uuid& typeId,
                    const std::string& implementationName,
                    const std::string& instanceName,
-                   const IniSectionRef& conf)
+                   const ptr::ptree& conf)
     : Consumer(context, typeName, implementationName, instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this, typeId, conf)) {}
 
@@ -525,7 +525,7 @@ Strategy::Strategy(Context& context,
                    const std::string& typeId,
                    const std::string& implementationName,
                    const std::string& instanceName,
-                   const IniSectionRef& conf)
+                   const ptr::ptree& conf)
     : Consumer(context, typeName, implementationName, instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(
           *this, uuids::string_generator()(typeId), conf)) {}
@@ -935,10 +935,10 @@ Strategy::StartThreadPositionsTransaction() {
       m_pimpl->m_positions);
 }
 
-void Strategy::OnSettingsUpdate(const IniSectionRef& conf) {
+void Strategy::OnSettingsUpdate(const ptr::ptree& conf) {
   Consumer::OnSettingsUpdate(conf);
 
-  if (m_pimpl->m_isEnabled != conf.ReadBoolKey("is_enabled")) {
+  if (m_pimpl->m_isEnabled != conf.get<bool>("isEnabled")) {
     m_pimpl->m_isEnabled = !m_pimpl->m_isEnabled;
     GetLog().Info("%1%.", m_pimpl->m_isEnabled ? "ENABLED" : "DISABLED");
   }

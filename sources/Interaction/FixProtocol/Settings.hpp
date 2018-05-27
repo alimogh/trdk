@@ -25,12 +25,12 @@ struct Settings {
   std::string targetSubId;
   std::unique_ptr<Policy> policy;
 
-  Settings(const Lib::IniSectionRef &, const trdk::Settings &);
+  Settings(const boost::property_tree::ptree &, const trdk::Settings &);
   Settings(Settings &&);
   ~Settings();
   void Log(Module::Log &) const;
   void Validate() const;
 };
-}
-}
-}
+}  // namespace FixProtocol
+}  // namespace Interaction
+}  // namespace trdk

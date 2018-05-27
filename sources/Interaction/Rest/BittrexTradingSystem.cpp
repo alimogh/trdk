@@ -13,20 +13,19 @@
 #include "Util.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction::Rest;
-
+using namespace Lib;
+using namespace Interaction::Rest;
 namespace net = Poco::Net;
 namespace ptr = boost::property_tree;
 namespace pt = boost::posix_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BittrexTradingSystem::Settings::Settings(const IniSectionRef &conf,
+BittrexTradingSystem::Settings::Settings(const ptr::ptree &conf,
                                          ModuleEventsLog &log)
     : Base(conf, log),
-      apiKey(conf.ReadKey("api_key")),
-      apiSecret(conf.ReadKey("api_secret")) {
+      apiKey(conf.get<std::string>("config.auth.apiKey")),
+      apiSecret(conf.get<std::string>("config.auth.apiSecret")) {
   log.Info("API key: \"%1%\". API secret: %2%.",
            apiKey,                                     // 1
            apiSecret.empty() ? "not set" : "is set");  // 2
@@ -53,7 +52,7 @@ void BittrexTradingSystem::PrivateRequest::PrepareRequest(
     const net::HTTPClientSession &session,
     const std::string &body,
     net::HTTPRequest &request) const {
-  using namespace trdk::Lib::Crypto;
+  using namespace Crypto;
   const auto &digest =
       Hmac::CalcSha512Digest((session.secure() ? "https://" : "http://") +
                                  session.getHost() + GetRequest().getURI(),
@@ -86,7 +85,7 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
                                            const TradingMode &mode,
                                            Context &context,
                                            const std::string &instanceName,
-                                           const IniSectionRef &conf)
+                                           const ptr::ptree &conf)
     : Base(mode, context, instanceName),
       m_settings(conf, GetLog()),
       m_serverTimeDiff(
@@ -97,7 +96,7 @@ BittrexTradingSystem::BittrexTradingSystem(const App &,
       m_pollingSession(CreateSession("bittrex.com", m_settings, false)),
       m_pollingTask(m_settings.pollingSetttings, GetLog()) {}
 
-void BittrexTradingSystem::CreateConnection(const IniSectionRef &) {
+void BittrexTradingSystem::CreateConnection() {
   Assert(!IsConnected());
 
   try {
@@ -427,7 +426,7 @@ boost::shared_ptr<trdk::TradingSystem> CreateBittrexTradingSystem(
     const TradingMode &mode,
     Context &context,
     const std::string &instanceName,
-    const IniSectionRef &configuration) {
+    const ptr::ptree &configuration) {
   const auto &result = boost::make_shared<BittrexTradingSystem>(
       App::GetInstance(), mode, context, instanceName, configuration);
   return result;

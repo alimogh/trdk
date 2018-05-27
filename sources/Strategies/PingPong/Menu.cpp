@@ -14,8 +14,8 @@
 
 using namespace trdk::Strategies::PingPong;
 using namespace trdk::FrontEnd;
-
 namespace pp = trdk::Strategies::PingPong;
+namespace ptr = boost::property_tree;
 
 StrategyMenuActionList CreateMenuActions(Engine &engine) {
   return {1,
@@ -35,7 +35,7 @@ StrategyWidgetList RestoreStrategyWidgets(Engine &engine,
                                           const QUuid &typeId,
                                           const QUuid &instanceId,
                                           const QString &name,
-                                          const QString &config,
+                                          const ptr::ptree &config,
                                           QWidget *parent) {
   StrategyWidgetList result;
   if (ConvertToBoostUuid(typeId) == pp::Strategy::typeId) {

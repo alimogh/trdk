@@ -9,14 +9,13 @@
  **************************************************************************/
 
 #include "Prec.hpp"
-#include "Core/Settings.hpp"
-#include "Core/TradingLog.hpp"
 #include "MarketDataSource.hpp"
+#include "Security.hpp"
 #include "Common/ExpirationCalendar.hpp"
 
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace gr = boost::gregorian;
-
 using namespace trdk;
 using namespace trdk::Lib;
 using namespace trdk::Interaction;
@@ -30,9 +29,7 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
 
  public:
   explicit CsvContinuousContractMarketDataSource(
-      Context &context,
-      const std::string &instanceName,
-      const IniSectionRef &conf)
+      Context &context, const std::string &instanceName, const ptr::ptree &conf)
       : Base(context, instanceName, conf) {}
 
   virtual ~CsvContinuousContractMarketDataSource() override {
@@ -224,16 +221,15 @@ class CsvContinuousContractMarketDataSource : public Test::MarketDataSource {
  private:
   boost::shared_ptr<Test::Security> m_security;
 };
-}
+}  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
 TRDK_INTERACTION_TEST_API
 boost::shared_ptr<trdk::MarketDataSource>
-CreateCsvContinuousContractMarketDataSource(
-    Context &context,
-    const std::string &instanceName,
-    const IniSectionRef &configuration) {
+CreateCsvContinuousContractMarketDataSource(Context &context,
+                                            const std::string &instanceName,
+                                            const ptr::ptree &configuration) {
   return boost::make_shared<CsvContinuousContractMarketDataSource>(
       context, instanceName, configuration);
 }

@@ -15,14 +15,14 @@
 
 namespace trdk {
 
-class TRDK_CORE_API Consumer : public trdk::Module {
+class TRDK_CORE_API Consumer : public Module {
  public:
-  explicit Consumer(trdk::Context &,
+  explicit Consumer(Context &,
                     const std::string &typeName,
                     const std::string &name,
                     const std::string &instanceName,
-                    const trdk::Lib::IniSectionRef &);
-  virtual ~Consumer() override;
+                    const boost::property_tree::ptree &);
+  ~Consumer() override;
 
  public:
   void RegisterSource(trdk::Security &);

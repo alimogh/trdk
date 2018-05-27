@@ -14,15 +14,15 @@
 #include "PositionController.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Lib::TimeMeasurement;
-using namespace trdk::TradingLib;
-using namespace trdk::Strategies::ArbitrageAdvisor;
-
+using namespace Lib;
+using namespace TimeMeasurement;
+using namespace TradingLib;
+using namespace Strategies::ArbitrageAdvisor;
 namespace pt = boost::posix_time;
+namespace ptr = boost::property_tree;
 namespace sig = boost::signals2;
 namespace ids = boost::uuids;
-namespace aa = trdk::Strategies::ArbitrageAdvisor;
+namespace aa = Strategies::ArbitrageAdvisor;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -148,23 +148,21 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
   mutable std::vector<std::string> m_lastTradingSignalCheckErrors;
 
-  explicit Implementation(aa::Strategy &self, const IniSectionRef &conf)
+  explicit Implementation(aa::Strategy &self, const ptr::ptree &conf)
       : m_self(self),
-        m_isLowestSpreadEnabled(conf.ReadBoolKey("lowest_spread_enabled")),
-        m_lowestSpreadRatio(
-            conf.ReadTypedKey<Double>("lowest_spread_percentage") / 100),
-        m_isStopLossEnabled(conf.ReadBoolKey("stop_loss_enabled")),
-        m_stopLossDelay(
-            pt::seconds(conf.ReadTypedKey<long>("stop_loss_delay_sec"))),
+        m_isLowestSpreadEnabled(conf.get<bool>("config.isLowestSpreadEnabled")),
+        m_lowestSpreadRatio(conf.get<Double>("config.lowestSpreadPercentage") /
+                            100),
+        m_isStopLossEnabled(conf.get<bool>("config.isStopLossEnabled")),
+        m_stopLossDelay(pt::seconds(conf.get<long>("config.stopLossDelaySec"))),
         m_minPriceDifferenceRatioToAdvice(
-            conf.ReadTypedKey<Double>(
-                "min_price_difference_to_highlight_percentage") /
+            conf.get<Double>("config.minPriceDifferenceToHighlightPercentage") /
             100),
-        m_tradingSettings({conf.ReadBoolKey("auto_trading_enabled"),
-                           conf.ReadTypedKey<Double>(
-                               "min_price_difference_to_trade_percentage") /
-                               100,
-                           conf.ReadTypedKey<Qty>("max_qty")}) {
+        m_tradingSettings(
+            {conf.get<bool>("config.isAutoTradingEnabled"),
+             conf.get<Double>("config.minPriceDifferenceToTradePercentage") /
+                 100,
+             conf.get<Qty>("config.maxQty")}) {
     m_self.GetLog().Info(
         "Min. price diff. to highlight: %1%%%. Trading: %2%. Min. price diff. "
         "to trade: %3%%%. Max. qty.: %4%.",
@@ -706,7 +704,7 @@ class aa::Strategy::Implementation : private boost::noncopyable {
 
 aa::Strategy::Strategy(Context &context,
                        const std::string &instanceName,
-                       const IniSectionRef &conf)
+                       const ptr::ptree &conf)
     : Base(context, typeId, "ArbitrageAdvisor", instanceName, conf),
       m_pimpl(boost::make_unique<Implementation>(*this, conf)) {}
 
@@ -851,7 +849,7 @@ bool aa::Strategy::OnBlocked(const std::string *reason) noexcept {
 
 std::unique_ptr<trdk::Strategy> CreateStrategy(Context &context,
                                                const std::string &instanceName,
-                                               const IniSectionRef &conf) {
+                                               const ptr::ptree &conf) {
   return boost::make_unique<aa::Strategy>(context, instanceName, conf);
 }
 

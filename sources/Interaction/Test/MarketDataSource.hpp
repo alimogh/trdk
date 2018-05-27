@@ -10,9 +10,7 @@
 
 #pragma once
 
-#include "Core/Context.hpp"
 #include "Core/MarketDataSource.hpp"
-#include "Security.hpp"
 
 namespace trdk {
 namespace Interaction {
@@ -22,16 +20,14 @@ class MarketDataSource : public trdk::MarketDataSource {
  public:
   typedef trdk::MarketDataSource Base;
 
- public:
   MarketDataSource(Context &context,
                    const std::string &instanceName,
-                   const Lib::IniSectionRef &);
-  virtual ~MarketDataSource() override = default;
+                   const boost::property_tree::ptree &);
+  ~MarketDataSource() override = default;
 
- public:
-  virtual void Connect(const trdk::Lib::IniSectionRef &) override;
+  void Connect() override;
 
-  virtual void SubscribeToSecurities() override;
+  void SubscribeToSecurities() override;
 
  protected:
   virtual void Run() = 0;
@@ -45,6 +41,6 @@ class MarketDataSource : public trdk::MarketDataSource {
   boost::thread_group m_threads;
   boost::atomic_bool m_stopFlag;
 };
-}
-}
-}
+}  // namespace Test
+}  // namespace Interaction
+}  // namespace trdk

@@ -16,7 +16,7 @@ namespace Rest {
 
 class TRDK_INTERACTION_REST_API PollingSetttings {
  public:
-  explicit PollingSetttings(const Lib::IniSectionRef &);
+  explicit PollingSetttings(const boost::property_tree::ptree &);
 
   void Log(ModuleEventsLog &) const;
 

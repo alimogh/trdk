@@ -14,13 +14,14 @@
 #include "Core/TradingLog.hpp"
 
 using namespace trdk;
-using namespace trdk::Lib;
-using namespace trdk::Interaction;
-using namespace trdk::Interaction::Test;
+using namespace Lib;
+using namespace Interaction;
+using namespace Test;
+namespace ptr = boost::property_tree;
 
 Test::MarketDataSource::MarketDataSource(Context &context,
                                          const std::string &instanceName,
-                                         const IniSectionRef &)
+                                         const ptr::ptree &)
     : Base(context, instanceName), m_stopFlag(false) {
   if (!GetContext().GetSettings().IsReplayMode()) {
     throw Exception("Failed to start without Replay Mode");
@@ -36,7 +37,7 @@ void Test::MarketDataSource::Stop() {
   GetTradingLog().WaitForFlush();
 }
 
-void Test::MarketDataSource::Connect(const IniSectionRef &) {}
+void Test::MarketDataSource::Connect() {}
 
 void Test::MarketDataSource::SubscribeToSecurities() {
   AssertEq(0, m_threads.size());
