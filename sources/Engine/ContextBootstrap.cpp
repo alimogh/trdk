@@ -61,7 +61,7 @@ LoadTradingSystemAndMarketDataSourceModule(const ptr::ptree &config,
                                            Context &context) {
   const auto factory =
       LoadModuleFactory<TradingSystemAndMarketDataSourceFactory>(
-          config, "CreateTradingSystemAndMarketDataSourceModule");
+          config, "CreateTradingSystemAndMarketDataSource");
 
   TradingSystemAndMarketDataSourceFactoryResult result;
   try {

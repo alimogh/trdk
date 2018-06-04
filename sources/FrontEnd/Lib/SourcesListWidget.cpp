@@ -17,24 +17,30 @@ namespace ptr = boost::property_tree;
 
 class SourcesListWidget::Implementation {
  public:
-  Ui::SourcesListWidget m_ui;
   ptr::ptree m_result;
+  Ui::SourcesListWidget m_ui;
 
   void Sync() {
     const QSignalBlocker signalBlocker(m_ui.list);
     m_ui.list->clear();
     for (const auto &node : m_result) {
-      m_ui.list->addItem(
-          QString::fromStdString(node.second.get<std::string>("title")));
+      auto &item = *new QListWidgetItem(
+          QString::fromStdString(node.second.get<std::string>("title")),
+          m_ui.list);
+      item.setData(Qt::UserRole, QString::fromStdString(node.first));
+      m_ui.list->addItem(&item);
     }
   }
 };
 
-SourcesListWidget::SourcesListWidget(QWidget *parent)
-    : Base(parent), m_pimpl(boost::make_unique<Implementation>()) {
+SourcesListWidget::SourcesListWidget(const ptr::ptree &config, QWidget *parent)
+    : Base(parent), m_pimpl(boost::make_unique<Implementation>({config})) {
   m_pimpl->m_ui.setupUi(this);
+  m_pimpl->Sync();
+  Verify(QObject::connect(
+      m_pimpl->m_ui.list, &QListWidget::doubleClicked,
+      [this](const QModelIndex &index) { emit SourceDoubleClicked(index); }));
 }
-
 SourcesListWidget::~SourcesListWidget() = default;
 
 boost::unordered_set<std::string> SourcesListWidget::GetImplementations()
@@ -58,5 +64,10 @@ void SourcesListWidget::AddSource(const ptr::ptree &config) {
 }
 
 size_t SourcesListWidget::GetSize() const { return m_pimpl->m_result.size(); }
+
+const ptr::ptree &SourcesListWidget::Dump(const QModelIndex &index) const {
+  return m_pimpl->m_result.get_child(
+      index.data(Qt::UserRole).toString().toStdString());
+}
 
 const ptr::ptree &SourcesListWidget::Dump() const { return m_pimpl->m_result; }

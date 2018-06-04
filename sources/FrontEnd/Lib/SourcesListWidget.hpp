@@ -19,7 +19,8 @@ class TRDK_FRONTEND_LIB_API SourcesListWidget : public QWidget {
  public:
   typedef QWidget Base;
 
-  explicit SourcesListWidget(QWidget *parent);
+  explicit SourcesListWidget(const boost::property_tree::ptree &,
+                             QWidget *parent);
   ~SourcesListWidget();
 
   boost::unordered_set<std::string> GetImplementations() const;
@@ -29,6 +30,10 @@ class TRDK_FRONTEND_LIB_API SourcesListWidget : public QWidget {
   size_t GetSize() const;
 
   const boost::property_tree::ptree &Dump() const;
+  const boost::property_tree::ptree &Dump(const QModelIndex &) const;
+
+ signals:
+  void SourceDoubleClicked(const QModelIndex &);
 
  private:
   class Implementation;

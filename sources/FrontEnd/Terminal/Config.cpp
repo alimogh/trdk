@@ -88,10 +88,10 @@ void FrontEnd::CheckConfig(const fs::path &configFilePath) {
   }
 
   QDialog sourceListDialog;
-  auto &listWidget = *new SourcesListWidget(&sourceListDialog);
+  auto &listWidget = *new SourcesListWidget({}, &sourceListDialog);
   {
-    SourcePropertiesDialog firstSourceDialog(listWidget.GetImplementations(),
-                                             nullptr);
+    SourcePropertiesDialog firstSourceDialog(
+        boost::none, listWidget.GetImplementations(), nullptr);
     if (firstSourceDialog.exec() != QDialog::Accepted) {
       throw CheckConfigException(
           "The configuration does not have access to any trading system");
@@ -111,6 +111,7 @@ void FrontEnd::CheckConfig(const fs::path &configFilePath) {
       Verify(QObject::connect(&addButton, &QPushButton::clicked,
                               &sourceListDialog, [&listWidget]() {
                                 SourcePropertiesDialog dialog(
+                                    boost::none,
                                     listWidget.GetImplementations(), nullptr);
                                 if (dialog.exec() != QDialog::Accepted) {
                                   return;

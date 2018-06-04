@@ -22,15 +22,21 @@ class SourcePropertiesDialog::Implementation {
   Ui::SourcePropertiesDialog m_ui;
 
   explicit Implementation(
+      const boost::optional<ptr::ptree> &config,
       const boost::unordered_set<std::string> &disabledImplementations,
       SourcePropertiesDialog &self)
       : m_self(self) {
     m_ui.setupUi(&m_self);
 
     {
-      const auto &addExchange = [&disabledImplementations, this](
+      std::string currentImpl;
+      if (config) {
+        currentImpl = config->get<std::string>("impl");
+      }
+      const auto &addExchange = [&currentImpl, &disabledImplementations, this](
                                     const char *title, const char *impl) {
-        if (disabledImplementations.count(impl)) {
+        if ((!currentImpl.empty() && currentImpl != impl) ||
+            disabledImplementations.count(impl)) {
           return;
         }
         m_ui.exchange->addItem(title, impl);
@@ -47,6 +53,18 @@ class SourcePropertiesDialog::Implementation {
       addExchange("ExcambioRex", "Excambiorex");
     }
     CheckApiPassphrase();
+
+    if (config) {
+      m_ui.exchange->setEnabled(false);
+      m_ui.apiKey->setText(QString::fromStdString(
+          config->get<std::string>("config.auth.apiKey")));
+      m_ui.apiSecret->setText(QString::fromStdString(
+          config->get<std::string>("config.auth.apiSecret")));
+      if (m_ui.apiPassphrase->isEnabled()) {
+        m_ui.apiPassphrase->setText(QString::fromStdString(
+            config->get<std::string>("config.auth.apiPassphrase")));
+      }
+    }
 
     Verify(connect(
         m_ui.exchange,
@@ -84,11 +102,12 @@ class SourcePropertiesDialog::Implementation {
 };
 
 SourcePropertiesDialog::SourcePropertiesDialog(
+    const boost::optional<ptr::ptree> &config,
     const boost::unordered_set<std::string> &disabledImplementations,
     QWidget *parent)
     : Base(parent),
-      m_pimpl(
-          boost::make_unique<Implementation>(disabledImplementations, *this)) {}
+      m_pimpl(boost::make_unique<Implementation>(
+          config, disabledImplementations, *this)) {}
 SourcePropertiesDialog::~SourcePropertiesDialog() = default;
 
 ptr::ptree SourcePropertiesDialog::Dump() const { return m_pimpl->Dump(); }

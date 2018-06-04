@@ -330,6 +330,18 @@
     <ClCompile Include="GeneratedFiles\Release Standalone\moc_SourcePropertiesDialog.cpp">
       <Filter>Generated Files\Release Standalone</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug Standalone\moc_SymbolDialog.cpp">
+      <Filter>Generated Files\Debug Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="SymbolDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Test Standalone\moc_SymbolDialog.cpp">
+      <Filter>Generated Files\Test Standalone</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release Standalone\moc_SymbolDialog.cpp">
+      <Filter>Generated Files\Release Standalone</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prec.hpp">
@@ -390,6 +402,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_SourcePropertiesDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_SymbolDialog.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -606,6 +621,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="SourcePropertiesDialog.hpp">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="SymbolDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="SymbolDialog.hpp">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

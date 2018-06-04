@@ -623,6 +623,31 @@ std::vector<boost::shared_ptr<Orm::Operation>> FrontEnd::Engine::GetOperations(
 void FrontEnd::Engine::Test() { m_pimpl->Test(); }
 #endif
 
+ptr::ptree FrontEnd::Engine::LoadConfig() const {
+  std::ifstream file(m_pimpl->m_configFile.c_str());
+  if (!file) {
+    throw Exception(
+        tr("Filed to read configuration file").toStdString().c_str());
+  }
+  ptr::ptree result;
+  try {
+    ptr::json_parser::read_json(file, result);
+  } catch (const ptr::json_parser_error&) {
+    throw Exception(
+        tr("Configuration file has invalid format").toStdString().c_str());
+  }
+  return result;
+}
+
+void FrontEnd::Engine::StoreConfig(const ptr::ptree& config) {
+  std::ofstream file(m_pimpl->m_configFile.c_str());
+  if (!file) {
+    throw Exception(
+        tr("Filed to write configuration file").toStdString().c_str());
+  }
+  ptr::json_parser::write_json(file, config, true);
+}
+
 void FrontEnd::Engine::StoreConfig(const Strategy& strategy,
                                    const ptr::ptree& config,
                                    const bool isActive) {

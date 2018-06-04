@@ -55,6 +55,9 @@ class TRDK_FRONTEND_LIB_API Engine : public QObject {
       bool isCancelsIncluded = true,
       const boost::optional<QString>& strategy = boost::none) const;
 
+  boost::property_tree::ptree LoadConfig() const;
+  void StoreConfig(const boost::property_tree::ptree&);
+
   void StoreConfig(const Strategy&,
                    const boost::property_tree::ptree& config,
                    bool isActive);

@@ -36,7 +36,7 @@
      <x>0</x>
      <y>0</y>
      <width>943</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTrade">
@@ -49,6 +49,8 @@
      </property>
     </widget>
     <addaction name="strategiesMenu"/>
+    <addaction name="editExchangeList"/>
+    <addaction name="addSymbol"/>
     <addaction name="separator"/>
     <addaction name="exit"/>
    </widget>
@@ -145,6 +147,22 @@
    </property>
    <property name="shortcut">
     <string>F2</string>
+   </property>
+  </action>
+  <action name="editExchangeList">
+   <property name="text">
+    <string>Edit &amp;Exchange List...</string>
+   </property>
+   <property name="toolTip">
+    <string>Edit Exchange List...</string>
+   </property>
+  </action>
+  <action name="addSymbol">
+   <property name="text">
+    <string>Add &amp;Symbol...</string>
+   </property>
+   <property name="toolTip">
+    <string>Add Symbol...</string>
    </property>
   </action>
  </widget>
